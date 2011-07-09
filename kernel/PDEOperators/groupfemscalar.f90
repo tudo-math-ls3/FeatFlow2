@@ -79,38 +79,52 @@
 !# 3.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
 !#     -> Assembles the diffusive part of the transport operator
 !#
-!# 4.) gfsc_buildConvectionVectorFCT = gfsc_buildConvVecFCTScalar /
-!#                                     gfsc_buildConvVecFCTBlock
+!# 4.) gfsc_buildFluxFCT = gfsc_buildFluxFCTScalar /
+!#                         gfsc_buildFluxFCTBlock
+!#     -> Assembles the raw antidiffusive flux for AFC stabilisation of FCT type
+!#
+!# 5.) gfsc_buildConvectionVectorFCT = gfsc_buildConvVecFCTScalar /
+!#                                     gfsc_buildConvVecFCTBlock /
 !#     -> Assembles the convective vector for AFC stabilisation of FCT type
 !#
-!# 5.) gfsc_buildConvectionVectorTVD = gfsc_buildConvVecTVDScalar /
+!# 6.) gfsc_buildConvectionVectorTVD = gfsc_buildConvVecTVDScalar /
 !#                                     gfsc_buildConvVecTVDBlock
 !#     -> Assembles the convective vector for AFC stabilisation of TVD type
 !#
-!# 6.) gfsc_buildConvectionVectorGP = gfsc_buildConvVecGPScalar /
+!# 7.) gfsc_buildConvectionVectorGP = gfsc_buildConvVecGPScalar /
 !#                                    gfsc_buildConvVecGPBlock
 !#     -> Assembles the convective vector for AFC stabilisation of general-purpose type
 !#
-!# 7.) gfsc_buildConvectionVectorSymm = gfsc_buildConvVecSymmScalar /
+!# 8.) gfsc_buildConvectionVectorSymm = gfsc_buildConvVecSymmScalar /
 !#                                      gfsc_buildConvVecSymmBlock
 !#     -> Assembles the convective vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
-!# 8.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
-!#                                    gfsc_buildConvJacobianBlock
-!#     -> Assembles the Jacobian matrix for the convective part of
-!#        the transport operator for a scalar convection equation
+!# 9.) gfsc_buildFluxLPT = gfsc_buildFluxLPTScalar /
+!#                         gfsc_buildFluxLPTBlock
+!#     -> Assembles the raw antidiffusive flux for the
+!#        linearity-preserving stabilisation
 !#
-!# 9.) gfsc_buildJacobianFCT = gfsc_buildJacLinearFCTScalar /
-!#                             gfsc_buildJacLinearFCTBlock /
-!#                             gfsc_buildJacobianFCTScalar /
-!#                             gfsc_buildJacobianFCTBlock
-!#     -> Assembles the Jacobian matrix for the stabilisation part of FCT type;
-!#        For the first two routines, the velocity is assumed to be linear which
-!#        simplifies the evaluation of the Jacobian matrix significantly.
-!#        For the second two routines, the velocity can be arbitrary.
+!# 10.) gfsc_buildVectorLPT = gfsc_buildVecLPTScalar /
+!#                            gfsc_buildVecLPTBlock
+!#      -> Assembles the vector for stabilisation by means of linearity-
+!#         preserving flux correction for mass matrices
 !#
-!# 10.) gfsc_buildJacobianTVD = gfsc_buildJacLinearTVDScalar /
+!# 11.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
+!#                                     gfsc_buildConvJacobianBlock
+!#      -> Assembles the Jacobian matrix for the convective part of
+!#         the transport operator for a scalar convection equation
+!#
+!# 12.) gfsc_buildJacobianFCT = gfsc_buildJacLinearFCTScalar /
+!#                              gfsc_buildJacLinearFCTBlock /
+!#                              gfsc_buildJacobianFCTScalar /
+!#                              gfsc_buildJacobianFCTBlock
+!#      -> Assembles the Jacobian matrix for the stabilisation part of FCT type;
+!#         For the first two routines, the velocity is assumed to be linear which
+!#         simplifies the evaluation of the Jacobian matrix significantly.
+!#         For the second two routines, the velocity can be arbitrary.
+!#
+!# 13.) gfsc_buildJacobianTVD = gfsc_buildJacLinearTVDScalar /
 !#                              gfsc_buildJacLinearTVDBlock /
 !#                              gfsc_buildJacobianTVDScalar /
 !#                              gfsc_buildJacobianTVDBlock
@@ -119,7 +133,7 @@
 !#         simplifies the evaluation of the Jacobian matrix significantly.
 !#         For the second two routines, the velocity can be arbitrary.
 !#
-!# 11.) gfsc_buildJacobianGP = gfsc_buildJacLinearGPScalar /
+!# 14.) gfsc_buildJacobianGP = gfsc_buildJacLinearGPScalar /
 !#                             gfsc_buildJacLinearGPBlock /
 !#                             gfsc_buildJacobianGPScalar /
 !#                             gfsc_buildJacobianGPBlock
@@ -128,19 +142,10 @@
 !#         to be linear which simplifies the evaluation of the Jacobian matrix
 !#         significantly. For the second two routines, the velocity can be arbitrary.
 !#
-!# 12.) gfsc_buildJacobianSymm = gfsc_buildJacobianSymmScalar /
+!# 15.) gfsc_buildJacobianSymm = gfsc_buildJacobianSymmScalar /
 !#                               gfsc_buildJacobianSymmBlock
 !#      -> Assembles the Jacobian matrix for the stabilisation part of symmetric
 !#         flux limiting for diffusion operators
-!#
-!# 13.) gfsc_buildFluxFCT = gfsc_buildFluxFCTScalar /
-!#                          gfsc_buildFluxFCTBlock
-!#     -> Assembles the raw antidiffusive flux for the FEM-FCT stabilisation
-!#
-!# The following auxiliary routines are available:
-!#
-!# 1.) gfsc_hasOrientation
-!#     -> Checks if the stabilisation technique requires an oriented structure
 !#
 !# </purpose>
 !##############################################################################
@@ -167,16 +172,18 @@ module groupfemscalar
   public :: gfsc_initStabilisation
   public :: gfsc_buildConvectionOperator
   public :: gfsc_buildDiffusionOperator
+  public :: gfsc_buildFluxFCT
+  public :: gfsc_buildFluxLPT
   public :: gfsc_buildConvectionVectorFCT
   public :: gfsc_buildConvectionVectorTVD
   public :: gfsc_buildConvectionVectorGP
   public :: gfsc_buildConvectionVectorSymm
   public :: gfsc_buildConvectionJacobian
+  public :: gfsc_buildVectorLPT
   public :: gfsc_buildJacobianFCT
   public :: gfsc_buildJacobianTVD
   public :: gfsc_buildJacobianGP
   public :: gfsc_buildJacobianSymm
-  public :: gfsc_buildFluxFCT
  
 !<constants>
 
@@ -232,6 +239,16 @@ module groupfemscalar
     module procedure gfsc_buildConvOperatorBlock
   end interface
 
+  interface gfsc_buildFluxFCT
+    module procedure gfsc_buildFluxFCTScalar
+    module procedure gfsc_buildFluxFCTBlock
+  end interface
+
+  interface gfsc_buildFluxLPT
+    module procedure gfsc_buildFluxLPTScalar
+    module procedure gfsc_buildFluxLPTBlock
+  end interface
+
   interface gfsc_buildConvectionVectorFCT
     module procedure gfsc_buildConvVecFCTScalar
     module procedure gfsc_buildConvVecFCTBlock
@@ -255,6 +272,11 @@ module groupfemscalar
   interface gfsc_buildConvectionJacobian
     module procedure gfsc_buildConvJacobianScalar
     module procedure gfsc_buildConvJacobianBlock
+  end interface
+
+  interface gfsc_buildVectorLPT
+    module procedure gfsc_buildVecLPTScalar
+    module procedure gfsc_buildVecLPTBlock
   end interface
 
   interface gfsc_buildJacobianFCT
@@ -283,9 +305,9 @@ module groupfemscalar
     module procedure gfsc_buildJacobianSymmBlock
   end interface
 
-  interface gfsc_buildFluxFCT
-    module procedure gfsc_buildFluxFCTScalar
-    module procedure gfsc_buildFluxFCTBlock
+  interface gfsc_combineFluxes
+    module procedure gfsc_combineFluxesDble
+    module procedure gfsc_combineFluxesSngl
   end interface
 
   ! *****************************************************************************
@@ -327,15 +349,13 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    integer, dimension(2) :: Isize
-
     
     ! Set atomic data
     rafcstab%NVARtransformed = rmatrixTemplate%NVAR
-    rafcstab%NVAR  = rmatrixTemplate%NVAR
-    rafcstab%NEQ   = rmatrixTemplate%NEQ
-    rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
+    rafcstab%NVAR            = rmatrixTemplate%NVAR
+    rafcstab%NEQ             = rmatrixTemplate%NEQ
+    rafcstab%NEDGE           = (rmatrixTemplate%NA-rmatrixTemplate%NEQ)/2
+    rafcstab%NNVEDGE         = 0
     
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -344,268 +364,176 @@ contains
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
 
-      !-------------------------------------------------------------------------
-      ! Allocate minimal data structures for edge-based assembly
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
+
       !-------------------------------------------------------------------------
       
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
-
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_IMPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE)
       
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_IMPLICIT,&
-          AFCSTAB_FEMFCT_ITERATIVE)
-      
-      !-------------------------------------------------------------------------
-      ! Allocate data structures for edge-based assembly
-      !-------------------------------------------------------------------------
-
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
       
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
-      rafcstab%ncoeff = 3
-      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
-      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DcoefficientsAtEdge)
-      call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
-          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
+      call afcstab_allocCoeffsAtEdge(rafcstab,3)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
 
       ! We need the 3 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux0)
-      allocate(rafcstab%p_rvectorFlux)
-
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE, .false., ST_DOUBLE)
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
 
       ! We need the edgewise vector for the prelimited fluxes (if any)
       ! or for the semi-implicit version of the FCT algorithm
-      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_NOPRELIMITING) .or.&
-          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
-        allocate(rafcstab%p_rvectorFluxPrel)
-        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel, rafcstab%NEDGE, .false., ST_DOUBLE)
+      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_PRELIMITING_NONE) .or.&
+          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+        call afcstab_allocFluxPrel(rafcstab)
       end if
+      
+      ! We need the nodal vector for the predictor
+      allocate(rafcstab%p_rvectorPredictor)
+      if (present(rblockDiscretisation)) then
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
+      else
+        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+            rafcstab%NEQ, 1, .false., rafcstab%cdataType)
+      end if
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_TVD,&
+          AFCSTAB_GP)
+
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
+
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
+      call afcstab_allocCoeffsAtEdge(rafcstab,3)
+
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+      
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_LINFCT,&
+          AFCSTAB_LINFCT_MASS)
+      
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
+
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
+      call afcstab_allocCoeffsAtEdge(rafcstab,3)
+
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+
+      ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
+      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_SYMMETRIC)
+
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
+
+      ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
+      call afcstab_allocCoeffsAtEdge(rafcstab,2)
+
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the edgewise vector for the fluxes
+      call afcstab_allocFlux(rafcstab)
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_NLINLPT_MASS,&
+          AFCSTAB_LINLPT_MASS)
+
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
+
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      ! and one extra nodal vector Q
+      call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
+    
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
 
       ! We need the nodal vector for the predictor
       allocate(rafcstab%p_rvectorPredictor)
       if (present(rblockDiscretisation)) then
         call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
+            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
       else
         call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-            rafcstab%NEQ, 1, .false., ST_DOUBLE)
+            rafcstab%NEQ, 1, .false., rafcstab%cdataType)
       end if
 
-      
-    case (AFCSTAB_FEMTVD,&
-          AFCSTAB_FEMGP)
-      
-      !-------------------------------------------------------------------------
-      ! Allocate data structures for edge-based assembly
       !-------------------------------------------------------------------------
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+    case (AFCSTAB_NLINLPT_UPWINDBIASED,&
+          AFCSTAB_LINLPT_UPWINDBIASED)
 
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
-      
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
+
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
-      rafcstab%ncoeff = 3
-      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
-      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DcoefficientsAtEdge)
-      call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
-          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
+      call afcstab_allocCoeffsAtEdge(rafcstab,3)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
-      
-      ! We need the 3 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux0)
-      allocate(rafcstab%p_rvectorFlux)
-
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE, .false., ST_DOUBLE)
-      
-
-    case (AFCSTAB_FEMFCT_LINEARISED,&
-          AFCSTAB_FEMFCT_MASS)
-      
-      !-------------------------------------------------------------------------
-      ! Allocate data structures for edge-based assembly
-      !-------------------------------------------------------------------------
-
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
-      
-      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
-      rafcstab%ncoeff = 3
-      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
-      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DcoefficientsAtEdge)
-      call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
-          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
-
-      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
+      ! and one extra nodal vector Q
+      call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
 
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux)
-
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE, .false., ST_DOUBLE)
-
-      ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
-        allocate(rafcstab%p_rvectorFluxPrel)
-        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel, rafcstab%NEDGE, .false., ST_DOUBLE)
-      end if
-
-!!$      ! We need the nodal vector for the low-order predictor
-!!$      allocate(rafcstab%p_rvectorPredictor)
-!!$      if (present(rblockDiscretisation)) then
-!!$        call lsysbl_createVectorBlock(rblockDiscretisation,&
-!!$            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
-!!$      else
-!!$        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-!!$            rafcstab%NEQ, 1, .false., ST_DOUBLE)
-!!$      end if
-
-
-    case (AFCSTAB_SYMMETRIC)
-
-      !-------------------------------------------------------------------------
-      ! Allocate data structures for edge-based assembly
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
       !-------------------------------------------------------------------------
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+    case (AFCSTAB_NLINLPT_SYMMETRIC,&
+          AFCSTAB_LINLPT_SYMMETRIC)
 
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
-      rafcstab%ncoeff = 2
-      Isize = (/rafcstab%ncoeff, rafcstab%NEDGE/)
-      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DcoefficientsAtEdge)
-      call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
-          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
+      call afcstab_allocCoeffsAtEdge(rafcstab,2)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
+      ! and one extra nodal vector Q
+      call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
 
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ, .false., ST_DOUBLE)
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
 
-      ! We need the edgewise vector for the fluxes
-      allocate(rafcstab%p_rvectorFlux)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux, rafcstab%NEDGE, .false., ST_DOUBLE)
-
+      !-------------------------------------------------------------------------
 
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_initStabilisation')
       call sys_halt()
     end select
+    
 
     ! Set specifier
     rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
@@ -779,7 +707,6 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx,p_Kdiagonal
 
-
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised!',&
@@ -834,7 +761,7 @@ contains
             ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
         
         ! Do we need edge orientation?
-        if (gfsc_hasOrientation(rafcstab)) then
+        if (rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
           call doUpwindOrientation(rafcstab%NEDGE, p_IverticesAtEdge,&
               p_DcoefficientsAtEdge, p_DmatrixCoeffsAtEdge)
           rafcstab%istabilisationSpec =&
@@ -1118,7 +1045,7 @@ contains
       ! local variables
       integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
       integer :: i,iedge,igroup,ii,ij,ji,jj
-            
+
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
@@ -1328,20 +1255,16 @@ contains
       integer, intent(in) :: nedge
 
       ! local variables
-      real(DP), dimension(:), allocatable :: DauxCoeffs
       real(DP) :: daux
-      integer :: iedge,iaux
+      integer :: iedge,iaux,naux
 
-      !$omp parallel default(shared) private(iaux,daux,DauxCoeffs)&
+      naux  = size(DmatrixCoeffsAtEdge,1)
+
+      !$omp parallel do default(shared) private(iaux,daux)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-      
-      ! Allocate temporal memory
-      allocate(DauxCoeffs(size(DmatrixCoeffsAtEdge,1)))
-
-      ! Set up edge orientation
-      !$omp do
       do iedge = 1, nedge
-        if (DcoefficientsAtEdge(2,iedge) > DcoefficientsAtEdge(3,iedge)) then
+        if (DcoefficientsAtEdge(2,iedge) .gt.&
+            DcoefficientsAtEdge(3,iedge)) then
           ! Swap nodes i <-> j
           iaux = IverticesAtEdge(1,iedge)
           IverticesAtEdge(1,iedge) = IverticesAtEdge(2,iedge)
@@ -1358,16 +1281,14 @@ contains
           DcoefficientsAtEdge(3,iedge) = daux
 
           ! Swap edgewise matrix coefficients ij <-> ji
-          DauxCoeffs = DmatrixCoeffsAtEdge(:,1,iedge)
-          DmatrixCoeffsAtEdge(:,1,iedge) = DmatrixCoeffsAtEdge(:,2,iedge)
-          DmatrixCoeffsAtEdge(:,2,iedge) = DauxCoeffs
+          do iaux = 1, naux
+            daux = DmatrixCoeffsAtEdge(iaux,1,iedge)
+            DmatrixCoeffsAtEdge(iaux,1,iedge) = DmatrixCoeffsAtEdge(iaux,2,iedge)
+            DmatrixCoeffsAtEdge(iaux,2,iedge) = daux
+          end do
         end if
       end do
-      !$omp end do
-      
-      ! Deallocate temporal memory
-      deallocate(DauxCoeffs)
-      !$omp end parallel
+      !$omp end parallel do
 
     end subroutine doUpwindOrientation
     
@@ -1589,10 +1510,10 @@ contains
           do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3, iedge)
-            ji = IverticesAtEdge(4, iedge)
-            ii = Kdiagonal(IverticesAtEdge(1, iedge))
-            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            ij = IverticesAtEdge(3,iedge)
+            ji = IverticesAtEdge(4,iedge)
+            ii = Kdiagonal(IverticesAtEdge(1,iedge))
+            jj = Kdiagonal(IverticesAtEdge(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1611,10 +1532,10 @@ contains
           do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3, iedge)
-            ji = IverticesAtEdge(4, iedge)
-            ii = Kdiagonal(IverticesAtEdge(1, iedge))
-            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            ij = IverticesAtEdge(3,iedge)
+            ji = IverticesAtEdge(4,iedge)
+            ii = Kdiagonal(IverticesAtEdge(1,iedge))
+            jj = Kdiagonal(IverticesAtEdge(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1704,10 +1625,10 @@ contains
           do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
             
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3, iedge)
-            ji = IverticesAtEdge(4, iedge)
-            ii = Kdiagonal(IverticesAtEdge(1, iedge))
-            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            ij = IverticesAtEdge(3,iedge)
+            ji = IverticesAtEdge(4,iedge)
+            ii = Kdiagonal(IverticesAtEdge(1,iedge))
+            jj = Kdiagonal(IverticesAtEdge(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1729,10 +1650,10 @@ contains
           do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
             
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3, iedge)
-            ji = IverticesAtEdge(4, iedge)
-            ii = Kdiagonal(IverticesAtEdge(1, iedge))
-            jj = Kdiagonal(IverticesAtEdge(2, iedge))
+            ij = IverticesAtEdge(3,iedge)
+            ji = IverticesAtEdge(4,iedge)
+            ii = Kdiagonal(IverticesAtEdge(1,iedge))
+            jj = Kdiagonal(IverticesAtEdge(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1756,19 +1677,803 @@ contains
     end subroutine doOperatorAFCMat79
 
   end subroutine gfsc_buildDiffusionOperator
-  
+ 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecFCTBlock(rafcstab, rmatrix,&
-      rx, dscale, bclear, ioperationSpec, ry)
+  subroutine gfsc_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
+      bclear, bquickAssembly, ioperationSpec, rmatrix, rxTimeDeriv, rxPredictor)
+
+!<description>
+    ! This subroutine assembles the raw antidiffusive fluxes for
+    ! algebraic flux correction of FCT-type with or without the
+    ! contributions of the consistent mass matrix. Note that this
+    ! routine serves as a wrapper for block vectors. If there is only
+    ! one block, then the corresponding scalar routine is called.
+    ! Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! implicitness parameter
+    real(DP), intent(in) :: theta
+
+    ! time step size
+    real(DP), intent(in) :: tstep
+    
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for flux assembly
+    ! TRUE  : destination flux is cleared before assembly
+    ! FALSE : destination flux is no cleared before assembly
+    logical, intent(in) :: bclear
+
+    ! Switch for flux assembly
+    ! TRUE  : fluxes are not modified externally so that 
+    !         quicker assembly procedures may be feasible
+    ! FALSE : fluxes are truely assembled even if this
+    !         leads to an expensive addition of zeros
+    logical, intent(in) :: bquickAssembly
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCTFLUX_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: Consistent mass matrix
+    type(t_matrixScalar), intent(in), optional :: rmatrix
+
+    ! OPTIONAL: approximate time derivative of vector rx
+    type(t_vectorBlock), intent(in), optional :: rxTimeDeriv
+
+    ! OPTIONAL: low-order predictor of vector rx
+    ! This vector is required to assemble the fluxes for prelimiting
+    ! in some variants of the FCT algorithm.
+    type(t_vectorBlock), intent(in), optional :: rxPredictor
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    integer :: nblocks
+
+    ! Check if block vector(s) contains exactly one block
+    nblocks = rx%nblocks
+    if (present(rxTimeDeriv)) nblocks = max(nblocks, rxTimeDeriv%nblocks)
+    if (present(rxPredictor)) nblocks = max(nblocks, rxPredictor%nblocks)
+
+    if (nblocks .ne. 1) then
+      call output_line('Vector(s) must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTBlock')
+      call sys_halt()
+    end if
+
+    ! Call subroutine for scalar vectors
+    if (present(rxTimeDeriv)) then
+      if (present(rxPredictor)) then
+        ! ... both approximate time derivative and predictor are present
+        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
+            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+            rmatrix, rxTimeDeriv=rxTimeDeriv%RvectorBlock(1),&
+            rxPredictor=rxPredictor%RvectorBlock(1))
+      else
+        ! ... only the approximate time derivative is present
+        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
+            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+            rmatrix, rxTimeDeriv=rxTimeDeriv%RvectorBlock(1))
+      end if
+    else
+      if (present(rxPredictor)) then
+        ! ... only the predictor is present
+        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
+            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+            rmatrix, rxPredictor=rxPredictor%RvectorBlock(1))
+      else
+        ! ... neither the approximate time derivative nor the predictor is present
+        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
+            theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+            rmatrix)
+      end if
+    end if
+    
+  end subroutine gfsc_buildFluxFCTBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildFluxFCTScalar(rafcstab, rx, theta, tstep, dscale,&
+      bclear, bquickAssembly, ioperationSpec, rmatrix, rxTimeDeriv, rxPredictor)
+    
+!<description>
+    ! This subroutine assembles the raw antidiffusive fluxes for
+    ! algebraic flux correction of FCT-type with or without the
+    ! contribution of the consistent mass matrix.
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorScalar), intent(in) :: rx
+
+    ! implicitness parameter
+    real(DP), intent(in) :: theta
+
+    ! time step size
+    real(DP), intent(in) :: tstep
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for flux assembly
+    ! TRUE  : destination flux is cleared before assembly
+    ! FALSE : destination flux is no cleared before assembly
+    logical, intent(in) :: bclear
+
+    ! Switch for flux assembly
+    ! TRUE  : fluxes are not modified externally so that 
+    !         quicker assembly procedures may be feasible
+    ! FALSE : fluxes are truely assembled even if this
+    !         leads to an expensive addition of zeros
+    logical, intent(in) :: bquickAssembly
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCTFLUX_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(in), optional :: rmatrix
+
+    ! OPTIONAL: approximate time derivative of vector rx
+    type(t_vectorScalar), intent(in), optional :: rxTimeDeriv
+
+    ! OPTIONAL: low-order predictor of vector rx
+    ! This vector is required to assemble the fluxes for prelimiting
+    ! in some variants of the FCT algorithm.
+    type(t_vectorScalar), intent(in), optional :: rxPredictor
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dmatrix,p_Dx
+    real(DP), dimension(:), pointer :: p_DxTimeDeriv, p_DxPredictor
+    real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+      call sys_halt()
+    end if
+    
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      call output_line('Stabilisation does not provide edge data structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation is compatible with matrix
+    if (present(rmatrix)) then
+      if ((rafcstab%NEQ       .ne. rmatrix%NEQ) .or.&
+          (rafcstab%NEDGE * 2 .ne. rmatrix%NA-rmatrix%NEQ) .or.&
+          (rafcstab%cmatrixFormat .ne. rmatrix%cmatrixFormat)) then
+        call output_line('Matrix is not compatible with stabilisation structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+    call lsyssc_getbase_double(rx, p_Dx)
+
+    ! What kind of stabilisation are we?
+    select case(rafcstab%ctypeAFCstabilisation)
+      
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_IMPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE)
+
+      ! Set pointers
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+    
+      !-------------------------------------------------------------------------
+      ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
+      !
+      ! The raw antidiffusive fluxes for all algorithms can be
+      ! assembled essentially in the same way.
+      !
+      ! $$ f_{ij}^n = -m_{ij}*(u_i^n-u_j^n)+(1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
+      ! $$ f_{ij}^m = f_{ij}^n + m_{ij}*(u_i^m-u_j^m)+\theta\Delta t d_{ij}^m(u_i^m-u_j^m) $$
+      !
+      ! The only difference is that the amount of rejected  antidiffusion
+      ! is subtracted from the initial fluxes in subsequent iterations if
+      ! the iterative FEM-FCT algorithm is applied.
+      ! Moreover the initial flux without mass contribution is stored
+      ! separately for the semi-implicit FEM-FCT algorithm since it is
+      ! used to constrain the raw antidiffusive fluxes in each iteration.
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides edge data
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
+        call output_line('Stabilisation does not provide edge data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+        call sys_halt()
+      end if
+      
+      
+      if (iand(ioperationSpec, AFCSTAB_FCTFLUX_EXPLICIT) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Assemble explicit part of raw-antidiffive fluxes
+        !-----------------------------------------------------------------------
+        
+        ! Set pointers
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+        
+        if (theta .ne. 1.0_DP) then
+          ! Assemble the explicit part of the raw-antidiffusive fluxes
+          ! $$ f_{ij}^n = (1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
+          call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_DcoefficientsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
+              bclear, p_Dflux0)
+        elseif (.not.bquickAssembly .and. bclear) then
+          ! Clear the explicit part of the raw-antidiffusive fluxes
+          ! $$ f_{ij}^n = 0 $$
+          call lalg_clearVector(p_Dflux0, rafcstab%NEDGE)
+          ! if bquickAssembly = TRUE then this step can be skipped
+        end if
+
+        !-----------------------------------------------------------------------
+
+        ! Check for special treatment
+        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+          
+          ! Set pointers
+          call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+          
+          ! We have to store the raw-antidiffusive fluxes based on the
+          ! initial solution without contribution of the consistent
+          ! mass matrix and without scaling by the implicitness parameter
+          ! $$ f_{ij} = \Delta t d_{ij}^n(u_i^n-u_j^n) $$
+          call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_DcoefficientsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
+
+        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+          
+          ! We have to assemble the raw-antidiffusive fluxes for
+          ! prelimiting separately based on the low-order predictor
+          if (present(rxPredictor)) then
+            
+            ! Set pointers
+            call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
+            call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+            
+            if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+              ! Compute solution difference for standard prelimiting
+              call doDifferencesDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+                  p_DxPredictor, p_DfluxPrel)
+            elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+              ! Compute fluxes for minmod prelimiting
+              call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+                  p_DcoefficientsAtEdge, p_DxPredictor, dscale, .true., p_DfluxPrel)
+            else
+              call output_line('Invalid type of prelimiting!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+              call sys_halt()
+            end if
+          else
+            call output_line('Fluxes for prelimiting cannot be assembled without predictor!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+            call sys_halt()
+          end if
+        end if
+
+        !-----------------------------------------------------------------------
+
+        ! Do we have to include mass-antidiffuion?
+        if (present(rmatrix)) then
+          
+          ! Set pointers
+          call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+
+          ! Assemble the explicit part of the mass-antidiffusive fluxes
+          ! $$ f_{ij}^n := f_{ij}^n - m_{ij}(u_i^n-u_j^n) $$
+          call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
+        end if
+
+      end if
+
+
+      if (iand(ioperationSpec, AFCSTAB_FCTFLUX_IMPLICIT) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Assemble implicit part of raw-antidiffusive fluxes
+        !-----------------------------------------------------------------------
+        
+        if ((rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_ITERATIVE) .and.&
+            iand(ioperationSpec, AFCSTAB_FCTFLUX_REJECTED) .ne. 0) then
+          !---------------------------------------------------------------------
+          ! Apply the rejected antidiffusive fluxes from the previous limiting
+          ! step to the implicit part of the raw-antidiffusive fluxes
+          ! --------------------------------------------------------------------
+          
+          ! Check if stabilisation provides raw antidiffusive fluxes
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+            call output_line('Stabilisation does not provide correction factors!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+            call sys_halt()
+          end if
+          
+          ! Check if stabilisation provides raw antidiffusive fluxes
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+            call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+            call sys_halt()
+          end if
+          
+          ! Set pointer
+          call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+          
+          ! Subtract amount of rejected antidiffusion
+          call gfsc_combineFluxes(rafcstab%NEDGE, -1.0_DP, p_Dflux, p_Dflux0, p_Dalpha)
+        end if
+        
+        !-----------------------------------------------------------------------
+        
+        if (theta .ne. 0.0_DP) then
+          ! Assemble implicit part of the raw-antidiffusive fluxes
+          ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
+          call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_DcoefficientsAtEdge, p_Dx, theta*dscale, bclear, p_Dflux)
+        end if
+        
+        if (bquickAssembly) then
+          ! We may check of either the implicit or explicit part are
+          ! missing so that some redundant computations may be skipped
+          if (theta .ne. 1.0_DP) then
+            ! The explicit part of the raw-antidiffusive fluxes exists
+            if (theta .ne. 0.0_DP) then
+              ! The implicit part of the raw-antidiffusive fluxes
+              ! exists; so combine them both into common fluxes
+              call gfsc_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+            else
+              ! The implicit part of the raw-antidiffusive fluxes does
+              ! not exists; the fluxes should be cleared so just
+              ! overwrite them by the explicit part 
+              call lalg_copyVector(p_Dflux0, p_Dflux)
+            end if
+            ! if theta = 1 then the explicit part does not exist
+          end if
+        else
+          ! Truely combine both parts of the raw-antidiffusive fluxes
+          call gfsc_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+        end if
+
+        !-----------------------------------------------------------------------
+
+        ! Do we have to include mass-antidiffuion?
+        if (present(rmatrix)) then
+          
+          ! Set pointers
+          call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+
+          ! Assemble the implicit part of the mass-antidiffusive fluxes
+          ! $$ f_{ij}^m := f_{ij}^m + m_{ij}(u_i^m-u_j^m) $$
+          call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
+    
+        end if
+
+      end if
+
+
+      ! Set specifiers for raw antidiffusive fluxes
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+      
+
+    case (AFCSTAB_LINFCT)
+      
+      !-------------------------------------------------------------------------
+      ! Linearised FEM-FCT algorithm
+      !-------------------------------------------------------------------------
+      
+      ! Check if stabilisation provides edge data
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
+        call output_line('Stabilisation does not provide edge data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+        call sys_halt()
+      end if
+
+      !-------------------------------------------------------------------------
+      
+      ! Set pointer
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      
+      ! Assemble spatial part of raw-antidiffusive fluxes
+      call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+      
+      !-------------------------------------------------------------------------
+      
+      if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+        ! Compute fluxes for standard prelimiting based on the
+        ! low-order solution which serves as predictor
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+        call doDifferencesDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+            p_Dx, p_DfluxPrel)
+        
+      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+        ! Make a backup of the spatial part of the raw-antidiffusive
+        ! fluxes which are used for minmod prelimiting
+        call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
+            rafcstab%p_rvectorFluxPrel)
+      end if
+
+      !-------------------------------------------------------------------------
+      
+      ! Do we have to include mass antidiffusion?
+      if (present(rmatrix) .and. present(rxTimeDeriv)) then
+
+        ! Set pointer
+        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+        call lsyssc_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
+      
+        ! Apply mass antidiffusion to antidiffusive fluxes based on
+        ! the approximation to the time derivative
+        call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+            p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
+      end if
+      
+      ! Set specifiers for raw antidiffusive fluxes
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+      
+
+    case (AFCSTAB_LINFCT_MASS)
+      
+      !-------------------------------------------------------------------------
+      ! FEM-FCT algorithm for mass antidiffusion
+      !-------------------------------------------------------------------------
+      
+      if (present(rmatrix)) then
+        
+        ! Set pointers
+        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        
+        ! Clear vector and assemble antidiffusive fluxes
+        call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+            p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
+
+        ! Set specifiers for raw antidiffusive fluxes
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+        
+      else
+        call output_line('Unable to compute mass antidiffusion without mass matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+        call sys_halt()
+      end if
+      
+      
+    case default
+      call output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+      call sys_halt()
+    end select
+
+  contains
+    
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Assemble raw antidiffusive fluxes using the coefficients
+    ! supplied by the edge-by-edge array DcoefficientsAtEdge
+    
+    subroutine doFluxesByCoeffDble(IverticesAtEdge, NEDGE,&
+        DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
+      
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(inout) :: Dflux
+      
+      ! local variables
+      integer :: iedge,i,j
+      
+      if (dscale .eq. 0.0_DP) then
+        
+        if (bclear) call lalg_clearVector(Dflux, NEDGE)
+        
+      elseif (dscale .eq. 1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+        
+      elseif (dscale .eq. -1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        end if
+        
+      else
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+        
+      end if
+      
+    end subroutine doFluxesByCoeffDble
+
+    !**************************************************************
+    ! Assemble raw antidiffusive fluxes using the coefficients
+    ! supplied by the CSR-matrix Dmatrix
+    
+    subroutine doFluxesByMatrixDble(IverticesAtEdge, NEDGE,&
+        Dmatrix, Dx, dscale, bclear, Dflux)
+      
+      real(DP), dimension(:), intent(in) :: Dmatrix, Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(inout) :: Dflux
+    
+      ! local variables
+      integer :: iedge,i,j,ij
+      
+      if (dscale .eq. 0.0_DP) then
+
+        if (bclear) call lalg_clearVector(Dflux, NEDGE)
+
+      elseif (dscale .eq. 1.0_DP) then
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+
+      elseif (dscale .eq. -1.0_DP) then
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dmatrix(ij) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        end if
+
+      else
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+
+      end if
+
+    end subroutine doFluxesByMatrixDble
+    
+    !**************************************************************
+    ! Assemble solution difference used for classical prelimiting.
+
+    subroutine doDifferencesDble(IverticesAtEdge, NEDGE, Dx, Dflux)
+      
+      real(DP), dimension(:), intent(in) :: Dx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: Dflux
+
+      ! local variables
+      integer :: iedge,i,j
+
+      !$omp parallel do default(shared) private(i,j)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        
+        ! Compute solution difference; in contrast to the literature,
+        ! we compute the solution difference $u_i-u_j$ and check if
+        ! $f_{ij}(u_i-u_j)<0$ in the prelimiting step.
+        Dflux(iedge) = Dx(i)-Dx(j)
+      end do
+      !$omp end parallel do
+
+    end subroutine doDifferencesDble
+       
+  end subroutine gfsc_buildFluxFCTScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildConvVecFCTBlock(rafcstab, rmatrix, rx,&
+      dscale, bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
-    ! stabilisation of FEM-FCT type.  Note that this routine serves as
+    ! stabilisation of FEM-FCT type. Note that this routine serves as
     ! a wrapper for block vectors. If there is only one block, then
-    ! the corresponding scalar routine is called.  Otherwise, an error
+    ! the corresponding scalar routine is called. Otherwise, an error
     ! is thrown.
 !</description>
 
@@ -1788,7 +2493,7 @@ contains
     logical, intent(in) :: bclear
     
     ! Operation specification tag. This is a bitfield coming from an OR
-    ! combination of different AFCSTAB_FCT_xxxx constants and specifies
+    ! combination of different AFCSTAB_FCTALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 !</input>
@@ -1811,8 +2516,8 @@ contains
 
     else
       
-      call gfsc_buildConvVecFCTScalar(rafcstab, rmatrix,&
-          rx%RvectorBlock(1), dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
+      call gfsc_buildConvVecFCTScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
       
     end if
     
@@ -1822,8 +2527,8 @@ contains
   
 !<subroutine>
   
-  subroutine gfsc_buildConvVecFCTScalar(rafcstab, rmatrix,&
-      rx, dscale, bclear, ioperationSpec, ry)
+  subroutine gfsc_buildConvVecFCTScalar(rafcstab, rmatrix, rx,&
+      dscale, bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -1910,7 +2615,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Operation specification tag. This is a bitfield coming from an OR
-    ! combination of different AFCSTAB_FCT_xxxx constants and specifies
+    ! combination of different AFCSTAB_FCTALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 !</input>
@@ -1938,45 +2643,96 @@ contains
       call sys_halt()
     end if
 
+    ! Clear convective vector?
+    if (bclear) call lsyssc_clearVector(ry)
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+    call lsyssc_getbase_double(rx, p_Dx)
+    call lsyssc_getbase_double(ry, p_Dy)
+
     !---------------------------------------------------------------------------
-    ! The nonlinear FEM-FCT algorithm is split into the following
-    ! steps which can be skipped and performed externally by the user:
+    ! The FEM-FCT algorithm is split into the following steps which
+    ! can be skipped and performed externally by the user:
     !
     ! 1) Initialise the edgewise correction factors (alpha).
     !
-    ! 2) Compute the antidiffusive increments (Pp, Pm)
+    ! 2) Prelimit the antidiffusive fluxes (alpha).
     !
-    ! 3) Compute the local solution bounds (Qp, Qm).
+    ! 3) Compute the antidiffusive increments (Pp, Pm)
     !
-    ! 3) Compute the nodal correction factors (Rp, Rm).
+    ! 4) Compute the local solution bounds (Qp, Qm).
     !
-    ! 4) Apply the limited antiddifusive fluxes to the convective term
+    ! 5) Compute the nodal correction factors (Rp, Rm).
     !
-    !    Step 4) may be split into the following substeps
-    !    
-    !    4.1) Compute the edgewise correction factors based on the pre-
-    !         computed raw-antidiffusive fluxes.
+    ! 6) Compute edgewise correction factors (Alpha).
     !
-    !    4.2) Compute the raw antidiffusive fluxes for a different set of
-    !         variables and limit them by the precomputed correction factors.
+    ! 7) Apply the limited antiddifusive fluxes.
     !-------------------------------------------------------------------------
     
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_INITALPHA) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! Initialise the edgewise correction factors by unity
+      ! 1) Initialise the edgewise correction factors by unity
       !-------------------------------------------------------------------------
-      
-      ! Set pointers
-      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-      
+            
       ! Initialise alpha by unity
       call lalg_setVector(p_Dalpha, 1.0_DP)
     end if
 
+    
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_PRELIMIT) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 2) Prelimit the raw antidiffusive fluxes (if required)
+      !-------------------------------------------------------------------------
+      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+        
+        ! Check if stabilisation provides raw antidiffusive fluxes
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+          call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
+          call sys_halt()
+        end if
+        
+        ! Check if stabilisation provides edge-based structure
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+          call output_line('Stabilisation does not provide edge structure!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
+          call sys_halt()
+        end if
+        
+        ! Set additional pointer
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+        
+        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+          ! Perform standard prelimiting
+          call doStdPrelimit(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
+        elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+          ! Perform minmod prelimiting
+          call doMinModPrelimit(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
+        else
+          call output_line('Invalid type of prelimiting!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
+          call sys_halt()
+        end if
+      end if
+    end if
+    
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_ADINCREMENTS) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! Compute sums of antidiffusive increments 
+      ! 3) Compute sums of antidiffusive increments 
       !-------------------------------------------------------------------------
       
       ! Check if stabilisation provides raw antidiffusive fluxes
@@ -1993,41 +2749,22 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
-
-      ! Set pointers
-      call lsyssc_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
-      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
       
       ! Special treatment for semi-implicit FEM-FCT algorithm
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+        
+        ! Set additional pointer
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+        
+        ! Compute sums of antidiffusive increments based on the
+        ! prelimiting fluxes
+        call doADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
       else
-        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-      end if
-
-      ! Compute sums of antidiffusive increments ...
-      if (rafcstab%ctypePrelimiting .eq. AFCSTAB_NOPRELIMITING) then
-        ! ... without prelimiting
+        ! Compute sums of antidiffusive increments based on the
+        ! raw-antidiffusive fluxes
         call doADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
-        ! ... with standard prelimiting
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doPreADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-            rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
-        ! ... with minmod prelimiting
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doMinModPreADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-            rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
-      else
-        call output_line('Invalid type of prelimiting!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
-        call sys_halt()
       end if
 
       ! Set specifiers
@@ -2038,7 +2775,7 @@ contains
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_BOUNDS) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! Compute local bounds
+      ! 4) Compute local solution bounds
       !-------------------------------------------------------------------------
       
       ! Check if stabilisation provides edge-based structure
@@ -2049,48 +2786,34 @@ contains
         call sys_halt()
       end if
       
-      ! Set pointers
-      call lsyssc_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
-      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-
       ! Compute bounds
       call doBounds(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
           rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
 
       ! Set specifiers
       rafcstab%istabilisationSpec =&
-          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
     end if
 
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITNODAL) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! Compute nodal correction factors
+      ! 5) Compute nodal correction factors
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides antidiffusive increments and local bounds
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
-          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
-      ! Set pointers
-      call lsyssc_getbase_double(rx, p_Dx)
+      ! Set additional pointers
       call lsyssc_getbase_double(rmatrix, p_ML)
-      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
-      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
-      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
-      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
-      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
-      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
       ! Compute nodal correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         call doLimitNodal(rafcstab%NEQ, dscale,&
             p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
@@ -2106,7 +2829,7 @@ contains
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITEDGE) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! Compute edgewise correction factors
+      ! 6) Compute edgewise correction factors
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides nodal correction factors
@@ -2124,22 +2847,15 @@ contains
         call sys_halt()
       end if
 
-      ! Set pointers
-      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
-      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
-      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-
       ! Compute edgewise correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
         call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
             rafcstab%NEDGE, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
       else
         call doLimitEdgewise(p_IverticesAtEdge,&
-            rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+            rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
       end if
 
       ! Set specifier
@@ -2150,7 +2866,7 @@ contains
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_CORRECT) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! Correct antidiffusive fluxes and apply them
+      ! 7) Correct antidiffusive fluxes and apply them
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides edgewise correction factors
@@ -2175,16 +2891,6 @@ contains
         call sys_halt()
       end if
 
-      ! Set pointers
-      call lsyssc_getbase_double(ry, p_Dy)
-      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-
-      ! Clear convective vector?
-      if (bclear) call lsyssc_clearVector(ry)
-
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rmatrix, p_ML)
@@ -2201,6 +2907,89 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
+    ! Prelimit the raw antidiffusive fluxes the standard way, as
+    ! suggested by Boris and Book in their first FCT algorithm
+
+    subroutine doStdPrelimit(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, Dflux, DfluxPrel, Dalpha)
+      
+      real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+
+      ! On input: the edge-wise correction factor from previous
+      !           multiplicative correction steps
+      ! On exit:  the edge-wise correction factor with prelimiting
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! local variables
+      integer :: iedge
+
+      ! Loop over all edges
+      !$omp parallel do default(shared)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Check if the antidiffusive flux is directed down the gradient
+        !   $f_ij*(u_i-u_j) < 0$
+        ! and if its magnitude is larger than an absolute tolerance
+        !  $ |f_ij| > tol$
+        ! In this case, cancel the flux completely.
+        if ((Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) .and.&
+            abs(Dflux(iedge)) .gt. AFCSTAB_PRELIMABS)&
+            Dalpha(iedge) = 0.0_DP
+      end do
+      !$omp end parallel do
+
+    end subroutine doStdPrelimit
+    
+    !**************************************************************
+    ! Prelimit the raw antidiffusive fluxes using minmod limiter
+
+    subroutine doMinModPrelimit(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, Dflux, DfluxPrel, Dalpha)
+      
+      real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+
+      ! On input: the edge-wise correction factor from previous
+      !           multiplicative correction steps
+      ! On exit:  the edge-wise correction factor with prelimiting
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! local variables
+      integer :: iedge
+
+      ! Loop over all edges
+      !$omp parallel do default(shared)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Check if the magnitude of the antidiffusive flux is larger
+        ! than an absolute tolerance; otherwise no prelimiting is done
+        if (abs(Dflux(iedge)) .gt. AFCSTAB_PRELIMABS) then
+          ! Check if the antidiffusive flux is directed down the gradient
+          !   $f_ij*fp_ij < 0$
+          if (Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) then
+            ! Then, cancel the antidiffusive flux completely
+            Dalpha(iedge) = 0.0_DP
+          elseif (abs(Dflux(iedge)) .gt. abs(DfluxPrel(iedge))) then
+            ! Check if the magnitude of the raw antidiffusive flux
+            ! exceeds the magnitude of the prelimiting flux
+            !   $|f_ij| > |fp_ij|$
+            ! then set the correction factor as follows
+            Dalpha(iedge) = min(Dalpha(iedge),DfluxPrel(iedge)/Dflux(iedge))
+          end if
+        end if
+      end do
+      !$omp end parallel do
+      
+    end subroutine doMinModPrelimit
+    
+    !**************************************************************
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes without prelimiting
     
@@ -2212,19 +3001,27 @@ contains
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
 
+      ! On input: the edge-wise correction factor from previous
+      !           multiplicative correction steps
+      ! On exit:  the edge-wise correction factor with prelimiting
       real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! The sums of positive/negative antidiffusive increments
       real(DP), dimension(:), intent(out) :: Dpp,Dpm
       
       ! local variables
-      real(DP) :: f_ij
+      real(DP) :: f_ij,fp_ij,fm_ij
       integer :: i,iedge,igroup,j
+      
+      !$omp parallel default(shared) private(i,j,f_ij,fp_ij,fm_ij)
 
       ! Clear P`s
+      !$omp sections
+      !$omp section
       call lalg_clearVector(Dpp)
+      !$omp section
       call lalg_clearVector(Dpm)
-      
-      !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2238,162 +3035,28 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge) * Dflux(iedge)
-
+      
+          ! Separate fluxes into positive/negative contributions
+          fp_ij = max(0.0_DP,f_ij)
+          fm_ij = min(0.0_DP,f_ij)
+          
           ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
-          Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
-          Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
-          Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
+          Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
+          Dpp(j) = Dpp(j) - fm_ij   ! += max(0.0_DP,-f_ij)
+          Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
+          Dpm(j) = Dpm(j) - fp_ij   ! += min(0.0_DP,-f_ij)
         end do
         !$omp end do
-
+        
       end do ! igroup
       !$omp end parallel
 
     end subroutine doADIncrements
-
-    !**************************************************************
-    ! Assemble the sums of antidiffusive increments for the given
-    ! antidiffusive fluxes with standard prelimiting
-
-    subroutine doPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEDGE, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
-      
-      real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: Dalpha
-      real(DP), dimension(:), intent(out) :: Dpp,Dpm
-      
-      ! local variables
-      real(DP) :: f_ij
-      integer :: i,iedge,igroup,j
-
-      ! Clear P`s
-      call lalg_clearVector(Dpp)
-      call lalg_clearVector(Dpm)
-
-      !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
-        
-        ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-
-        ! Loop over all edges
-        !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-      
-          ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
-        
-          ! Check if the antidiffusive flux is directed down the gradient
-          if (Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) then
-
-            ! Cancel antidiffusive flux completely
-            Dalpha(iedge) = 0.0_DP
-
-          else
-          
-            ! Apply multiplicative correction factor
-            f_ij  = Dalpha(iedge)*Dflux(iedge)
-            
-            ! Compute the sums of antidiffusive increments
-            Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
-            Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
-            Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
-            Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
-          end if
-        end do
-        !$omp end do
-
-      end do ! igroup
-      !$omp end parallel
-      
-    end subroutine doPreADIncrements
-
-    !**************************************************************
-    ! Assemble the sums of antidiffusive increments for the given
-    ! antidiffusive fluxes without transformation and with minmod
-    ! prelimiting
-
-    subroutine doMinModPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEDGE, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
-      
-      real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: Dalpha
-      real(DP), dimension(:), intent(out) :: Dpp,Dpm
-      
-      ! local variables
-      real(DP) :: f_ij
-      integer :: i,iedge,igroup,j
-
-      ! Clear P`s
-      call lalg_clearVector(Dpp)
-      call lalg_clearVector(Dpm)
-
-      !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
-        
-        ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-
-        ! Loop over all edges
-        !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-      
-          ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
-        
-          ! Check if the antidiffusive flux is directed down the gradient
-          if (Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) then
-
-            ! Cancel antidiffusive flux completely
-            Dalpha(iedge) = 0.0_DP
-
-          else
-
-            ! Perform MinMod prelimiting
-            if (abs(Dflux(iedge)) .gt. abs(DfluxPrel(iedge)))&
-                Dalpha(iedge) = Dalpha(iedge) * DfluxPrel(iedge)/Dflux(iedge)
-            
-            ! Apply multiplicative correction factor
-            f_ij  = Dalpha(iedge)*Dflux(iedge)
-            
-            ! Compute the sums of antidiffusive increments
-            Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
-            Dpp(j) = Dpp(j) + max(0.0_DP,-f_ij)
-            Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
-            Dpm(j) = Dpm(j) + min(0.0_DP,-f_ij)
-
-          end if
-        end do
-        !$omp end do
-
-      end do ! igroup
-      !$omp end parallel
-      
-    end subroutine doMinModPreADIncrements
 
     !**************************************************************
     ! Assemble the local bounds from the predicted solution
@@ -2405,18 +3068,22 @@ contains
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
       
+      ! The local upper/lower bounds computed from Dx
       real(DP), dimension(:), intent(out) :: Dqp,Dqm
       
       ! local variables
-      real(DP) :: diff
       integer :: i,iedge,igroup,j
 
-      ! Clear Q`s
-      call lalg_clearVector(Dqp)
-      call lalg_clearVector(Dqm)
+      
+      !$omp parallel default(shared) private(i,j)
 
-      !$omp parallel default(shared) private(i,j,diff)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      ! Initialise Q`s by solution
+      !$omp sections
+      !$omp section
+      call lalg_copyVector(Dx, Dqp)
+      !$omp section
+      call lalg_copyVector(Dx, Dqm)
+      !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2424,30 +3091,26 @@ contains
         
         ! Do nothing for empty groups
         if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-
+        
         ! Loop over all edges
         !$omp do
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
-          ! Compute solution difference
-          diff = Dx(j)-Dx(i)
-        
-          ! Compute the distance to a local extremum
-          ! of the predicted solution
-          Dqp(i) = max(Dqp(i), diff)
-          Dqp(j) = max(Dqp(j),-diff)
-          Dqm(i) = min(Dqm(i), diff)
-          Dqm(j) = min(Dqm(j),-diff)
+          ! Compute local upper and lower bounds
+          Dqp(i) = max(Dqp(i), Dx(j))
+          Dqm(i) = min(Dqm(i), Dx(j))
+          Dqp(j) = max(Dqp(j), Dx(i))
+          Dqm(j) = min(Dqm(j), Dx(i))
         end do
         !$omp end do
 
       end do ! igroup
       !$omp end parallel
-      
+
     end subroutine doBounds
 
     !**************************************************************
@@ -2456,34 +3119,48 @@ contains
     subroutine doLimitNodal(NEQ, dscale,&
         ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
-      real(DP), dimension(:), intent(in) :: ML
-      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: ML,Dx
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ
       
+      ! The nodal correction factors for positive/negative fluxes
       real(DP), dimension(:), intent(inout) :: Drp,Drm
       
       ! local variables
+      real(DP) :: diff
       integer :: ieq
-
+      
+      !$omp parallel sections default(shared) private(ieq,diff)
+      
+      !$omp section
       ! Loop over all vertices
+      !$omp parallel do default(shared) private(ieq,diff)
       do ieq = 1, NEQ
+        diff = Dqp(ieq)-Dx(ieq)
         if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
-          Drp(ieq) = ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq))
+          Drp(ieq) = ML(ieq)*diff/(dscale*Dpp(ieq))
         else
           Drp(ieq) = 1.0_DP
         end if
       end do
+      !$omp end parallel do
 
+      !$omp section
       ! Loop over all vertices
+      !$omp parallel do default(shared) private(ieq,diff)
       do ieq = 1, NEQ
+        diff = Dqm(ieq)-Dx(ieq)
         if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
-          Drm(ieq) = ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq))
+          Drm(ieq) = ML(ieq)*diff/(dscale*Dpm(ieq))
         else
           Drm(ieq) = 1.0_DP
         end if
       end do
+      !$omp end parallel do
+
+      !$omp end parallel sections
+
     end subroutine doLimitNodal
 
     !**************************************************************
@@ -2492,140 +3169,81 @@ contains
     subroutine doLimitNodalConstrained(NEQ, dscale,&
         ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
       
-      real(DP), dimension(:), intent(in) :: ML
-      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: ML,Dx
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ
       
-      real(DP), dimension(:), intent(inout) :: Drp,Drm
+      ! The nodal correction factors for positive/negative fluxes
+      real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
+      real(DP) :: diff,pp,pm,err,aerr,corr,acorr
       integer :: ieq
+      
+      !$omp parallel sections default(shared) private(ieq,diff)
+      
+      !$omp section
 
-#ifndef GFSC_USE_SAFE_FPA
-
-      ! Loop over all vertices
+      !$omp parallel do default(shared) private(ieq,diff)
       do ieq = 1, NEQ
-        if (dscale*Dpp(ieq) .gt. AFCSTAB_EPSABS) then
-          Drp(ieq) = min(1.0_DP, ML(ieq)*Dqp(ieq)/(dscale*Dpp(ieq)))
+        diff = Dqp(ieq)-Dx(ieq)
+        if (dscale*Dpp(ieq) .gt. ML(ieq)*diff) then
+          Drp(ieq) = ML(ieq)*diff/(dscale*Dpp(ieq))
         else
           Drp(ieq) = 1.0_DP
         end if
       end do
+      !$omp end parallel do
 
-      ! Loop over all vertices
+      !$omp section
+
+      !$omp parallel do default(shared) private(ieq,diff)
       do ieq = 1, NEQ
-        if (dscale*Dpm(ieq) .lt. -AFCSTAB_EPSABS) then
-          Drm(ieq) = min(1.0_DP, ML(ieq)*Dqm(ieq)/(dscale*Dpm(ieq)))
+        diff = Dqm(ieq)-Dx(ieq)
+        if (dscale*Dpm(ieq) .lt. ML(ieq)*diff) then
+          Drm(ieq) = ML(ieq)*diff/(dscale*Dpm(ieq))
         else
           Drm(ieq) = 1.0_DP
         end if
       end do
+      !$omp end parallel do
 
-#else
+      !$omp end parallel sections
 
-      ! Loop over all vertices
-      do ieq = 1, NEQ
-        
-        ! Check if distance to upper bound is sufficiently large
-        if (Dqp(ieq) .gt. AFCSTAB_EPSREL*abs(Dx(ieq))) then
-
-          if (dscale*Dpp(ieq) .gt. ML(ieq)*Dqp(ieq)) then
-            Drp(ieq) = ML(ieq)*Dqp(ieq)/dscale/Dpp(ieq)
-          else
-            Drp(ieq) = 1.0_DP
-          end if
-          
-!!$          ! Compute auxiliary quantities
-!!$          daux  = dscale*Dpp(ieq) + ML(ieq)*Dqp(ieq) + 1e-1
-!!$          daux1 = 1.0_DP - max(dscale*Dpp(ieq),ML(ieq)*Dqp(ieq))/daux
-!!$          daux2 = 1.0_DP - ML(ieq)*Dqp(ieq)/daux
-!!$          
-!!$          ! Compute correction factors for positive contributions
-!!$          if (daux2 .le. daux1) then
-!!$            Drp(ieq) = 1.0_DP
-!!$          else
-!!$            Drp(ieq) = daux1/daux2
-!!$          end if
-
-        else
-          
-          Drp(ieq) = 0.0_DP
-
-!!$          if (dscale*Dpp(ieq) .gt. ML(ieq)*Dqp(ieq)) then
-!!$            Drp(ieq) = 0.0_DP
-!!$          else
-!!$            Drp(ieq) = 1.0_DP
-!!$          end if
-
-        end if
-
-        ! Check if distance to lower bound is sufficiently large
-        if (Dqm(ieq) .lt. -AFCSTAB_EPSREL*abs(Dx(ieq))) then
-          
-          if (dscale*Dpm(ieq) .lt. ML(ieq)*Dqm(ieq)) then
-            Drm(ieq) = ML(ieq)*Dqm(ieq)/dscale/Dpm(ieq)
-          else
-            Drm(ieq) = 1.0_DP
-          end if
-
-!!$          ! Compute auxiliary quantities
-!!$          daux  = dscale*Dpm(ieq) + ML(ieq)*Dqm(ieq) - 1e-1
-!!$          daux1 = 1.0_DP - min(dscale*Dpm(ieq),ML(ieq)*Dqm(ieq))/daux
-!!$          daux2 = 1.0_DP - ML(ieq)*Dqm(ieq)/daux
-!!$          
-!!$          ! Compute correction factors for negative contributions
-!!$          if (daux2 .le. daux1) then
-!!$            Drm(ieq) = 1.0_DP
-!!$          else
-!!$            Drm(ieq) = daux1/daux2
-!!$          end if
-
-        else
-
-          Drm(ieq) = 0.0_DP
-
-!!$          if (dscale*Dpm(ieq) .lt. ML(ieq)*Dqm(ieq)) then
-!!$            Drm(ieq) = 0.0_DP
-!!$          else
-!!$            Drm(ieq) = 1.0_DP
-!!$          end if
-          
-        end if
-
-      end do  
-
-#endif
-
-    end subroutine doLimitNodalConstrained    
+    end subroutine doLimitNodalConstrained
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of antidiffusive fluxes
     
     subroutine doLimitEdgewise(IverticesAtEdge,&
-        NEDGE, Dflux, Drp, Drm, Dalpha)
+        NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux
+      real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE
       
+      ! On input: the edge-wise correction factors from previous
+      !           multiplicative correction steps
+      ! On exit: the edge-wise correction factors resulting from
+      !          the nodal correction factors Rp and Rm
       real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
-      real(DP) :: f_ij,r_ij
+      real(DP) :: f_ij,r_ij,r_ji
       integer :: iedge,i,j
       
       ! Loop over all edges
-      !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
+      !$omp parallel do default(shared) private(i,j,f_ij,r_ij,r_ji)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f_ij = Dflux(iedge)
@@ -2638,7 +3256,7 @@ contains
         else
           r_ij = 1.0_DP
         end if
-
+        
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * r_ij
       end do
@@ -2671,8 +3289,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f1_ij = Dflux1(iedge)
@@ -2714,7 +3332,7 @@ contains
       real(DP) :: f_ij
       integer :: i,iedge,igroup,j
 
-      !$omp parallel default(shared) private(i,j,F_ij)&
+      !$omp parallel default(shared) private(i,j,f_ij)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
@@ -2729,8 +3347,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -2781,8 +3399,8 @@ contains
         do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
         
           ! Get node numbers
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -2804,13 +3422,14 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecTVDBlock(rafcstab, rx, dscale, ry)
+  subroutine gfsc_buildConvVecTVDBlock(rafcstab, rx, dscale,&
+      bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-TVD type.  Note that this routine serves as
     ! a wrapper for block vectors. If there is only one block, then
-    ! the corresponding scalar routine is called.  Otherwise, an error
+    ! the corresponding scalar routine is called. Otherwise, an error
     ! is thrown.
 !</description>
 
@@ -2820,6 +3439,16 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+    
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_TVDALGO_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
 !</input>
 
 !<inputoutput>
@@ -2841,8 +3470,8 @@ contains
 
     else
 
-      call gfsc_buildConvVecTVDScalar(rafcstab,&
-          rx%RvectorBlock(1), dscale, ry%RvectorBlock(1))
+      call gfsc_buildConvVecTVDScalar(rafcstab, rx%RvectorBlock(1),&
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
       
     end if
 
@@ -2852,7 +3481,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecTVDScalar(rafcstab, rx, dscale, ry)
+  subroutine gfsc_buildConvVecTVDScalar(rafcstab, rx, dscale,&
+      bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -2880,6 +3510,16 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+    
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_TVDALGO_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
 !</input>
 
 !<inputoutput>
@@ -2893,20 +3533,25 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm
+    real(DP), dimension(:), pointer :: p_Dqp,p_Dqm
+    real(DP), dimension(:), pointer :: p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dx,p_Dy,p_Dflux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
     
     
     ! Check if stabilisation is prepared
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)  .eq.0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION).eq.0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)     .eq.0)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq.0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq.0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq.0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDScalar')
       call sys_halt()
     end if
+
+    ! Clear destination vector?
+    if (bclear) call lsyssc_clearVector(ry)
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -2921,134 +3566,296 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rx, p_Dx)
     call lsyssc_getbase_double(ry, p_Dy)
-
+    
     ! Perform flux limiting of TVD-type
-    call doLimit_TVD(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+    call doLimitDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
         p_DcoefficientsAtEdge, p_Dx, dscale, rafcstab%NEDGE,&
         p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dflux, p_Dy)
-
-    ! Set specifier
-    rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
-    rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
-    rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
-    rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
     
   contains
 
     ! Here, the working routine follows
     
     !**************************************************************
-    ! The FEM-TVD limiting procedure
+    ! The upwind-biased FEM-TVD limiting procedure
     
-    subroutine doLimit_TVD(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doLimitDble(IverticesAtEdgeIdx, IverticesAtEdge,&
         DcoefficientsAtEdge, Dx, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dy)
-
+      
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
       integer, intent(in) :: NEDGE
-
+      
       real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(:), intent(inout) :: Dflux,Dy
-
+      
       ! local variables
-      real(DP) :: d_ij,diff,f_ij,l_ij,l_ji
+      real(DP) :: d_ij,diff,f_ij,fm_ij,fp_ij,l_ji
       integer :: i,iedge,igroup,ij,j
       
-
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(Dpp)
-      call lalg_clearVectorDble(Dpm)
-      call lalg_clearVectorDble(Dqp)
-      call lalg_clearVectorDble(Dqm)
-
-      !$omp parallel default(shared)&
-      !$omp private(i,j,d_ij,l_ij,l_ji,diff,f_ij)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
-
-        ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-
-        ! Loop over the edges
-        !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-        
-          ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          l_ij = DcoefficientsAtEdge(2,iedge)
-          l_ji = DcoefficientsAtEdge(3,iedge)
-          
-          ! Determine solution difference
-          diff = dscale*(Dx(i)-Dx(j))
-          
-          ! Prelimit the antidiffusive flux F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
-          f_ij = min(d_ij,l_ji)*diff; Dflux(iedge) = f_ij
-          
-          ! Assemble P`s accordingly
-          Dpp(i) = Dpp(i)+max(0.0_DP, f_ij)
-          Dpm(i) = Dpm(i)+min(0.0_DP, f_ij)
-          
-          ! Assemble Q`s
-          Dqp(i) = Dqp(i)+max(0.0_DP,-f_ij)
-          Dqp(j) = Dqp(j)+max(0.0_DP, f_ij)
-          Dqm(i) = Dqm(i)+min(0.0_DP,-f_ij)
-          Dqm(j) = Dqm(j)+min(0.0_DP, f_ij)
-        end do
-        !$omp end do
-      end do ! igroup
       
-      ! Apply the nodal limiter
-      !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
-      !$omp end single
+      if ((iand(ioperationSpec, AFCSTAB_TVDALGO_ADINCREMENTS) .ne. 0) .and.&
+          (iand(ioperationSpec, AFCSTAB_TVDALGO_BOUNDS)       .ne. 0)) then
+        
+        ! Clear nodal vectors
+        call lalg_clearVectorDble(Dpp)
+        call lalg_clearVectorDble(Dpm)
+        call lalg_clearVectorDble(Dqp)
+        call lalg_clearVectorDble(Dqm)
 
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
-        
-        ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-        
-        ! Loop over the edges
-        !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-          
-          ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
-          
-          ! Get precomputed raw antidiffusive flux
-          f_ij = Dflux(iedge)
-          
-          ! Apply correction factor and store limite flux
-          f_ij = merge(Drp(i), Drm(i), f_ij > 0)*f_ij
-          
-          ! Update the vector
-          Dy(i) = Dy(i)+f_ij
-          Dy(j) = Dy(j)-f_ij
-        end do
-        !$omp end do
-        
-      end do ! igroup
-      !$omp end parallel
+        if (iand(ioperationSpec, AFCSTAB_TVDALGO_ADFLUXES) .ne. 0) then
 
-    end subroutine doLimit_TVD
+          ! Assemble antidiffusive fluxes, sums of antidiffusive
+          ! increments and the upper and lower bounds simultaneously
+          ! to achieve higher efficiency.
+        
+          !$omp parallel default(shared)&
+          !$omp private(i,j,d_ij,l_ji,diff,f_ij,fm_ij,fp_ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IverticesAtEdgeIdx)-1
+            
+            ! Do nothing for empty groups
+            if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+            
+            ! Loop over the edges
+            !$omp do
+            do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+              
+              ! Determine indices
+              i = IverticesAtEdge(1,iedge)
+              j = IverticesAtEdge(2,iedge)
+              
+              ! Determine coefficients
+              d_ij = DcoefficientsAtEdge(1,iedge)
+              l_ji = DcoefficientsAtEdge(3,iedge)
+              
+              ! Determine solution difference
+              diff = Dx(i)-Dx(j)
+              
+              ! Prelimit the antidiffusive flux
+              ! F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
+              f_ij = dscale*min(d_ij,l_ji)*diff
+              
+              ! And store it
+              Dflux(iedge) = f_ij
+
+              ! Separate fluxes into positive/negative contributions
+              fp_ij = max(0.0_DP,f_ij)
+              fm_ij = min(0.0_DP,f_ij)
+              
+              ! Assemble P`s accordingly
+              Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
+              Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
+              
+              ! Assemble Q`s
+              Dqp(i) = Dqp(i) - fm_ij   ! += max(0.0_DP,-f_ij)
+              Dqp(j) = Dqp(j) + fp_ij   ! += max(0.0_DP, f_ij)
+              Dqm(i) = Dqm(i) - fp_ij   ! += min(0.0_DP,-f_ij)
+              Dqm(j) = Dqm(j) + fm_ij   ! += min(0.0_DP, f_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+          !$omp end parallel
+
+          ! Set specifier
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+          
+        else
+
+          ! Check if stabilisation is prepared
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq.0) then
+            call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDScalar')
+            call sys_halt()
+          end if
+          
+          ! Assemble antidiffusive fluxes, sums of antidiffusive
+          ! increments and the upper and lower bounds simultaneously
+          
+          !$omp parallel default(shared)&
+          !$omp private(i,j,f_ij,fm_ij,fp_ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IverticesAtEdgeIdx)-1
+            
+            ! Do nothing for empty groups
+            if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+            
+            ! Loop over the edges
+            !$omp do
+            do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+              
+              ! Determine indices
+              i = IverticesAtEdge(1,iedge)
+              j = IverticesAtEdge(2,iedge)
+              
+              ! Get antidiffusive flux
+              f_ij = Dflux(iedge)
+              
+              ! Assemble P`s accordingly
+              Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
+              Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
+              
+              ! Assemble Q`s
+              Dqp(i) = Dqp(i) - fm_ij   ! += max(0.0_DP,-f_ij)
+              Dqp(j) = Dqp(j) + fp_ij   ! += max(0.0_DP, f_ij)
+              Dqm(i) = Dqm(i) - fp_ij   ! += min(0.0_DP,-f_ij)
+              Dqm(j) = Dqm(j) + fm_ij   ! += min(0.0_DP, f_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+          !$omp end parallel
+          
+          ! Set specifier
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+
+        end if
+
+      elseif (iand(ioperationSpec, AFCSTAB_TVDALGO_ADFLUXES) .ne. 0) then
+
+        ! Assemble antidiffusive fluxes
+        
+        !$omp parallel default(shared)&
+        !$omp private(i,j,d_ij,l_ji,diff,f_ij)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IverticesAtEdgeIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          
+          ! Loop over the edges
+          !$omp do
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Determine indices
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+            
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+            
+            ! Determine solution difference
+            diff = dscale*(Dx(i)-Dx(j))
+            
+            ! Prelimit the antidiffusive flux
+            ! F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
+            f_ij = min(d_ij,l_ji)*diff
+            
+            ! And store it
+            Dflux(iedge) = f_ij
+          end do
+          !$omp end do
+        end do ! igroup
+        !$omp end parallel
+          
+        ! Set specifier
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+
+      end if
+
+      !-------------------------------------------------------------------------
+
+      if (iand(ioperationSpec, AFCSTAB_TVDALGO_LIMIT) .ne. 0) then
+        
+        ! Check if stabilisation is prepared
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)  .eq.0) .or.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS).eq.0)) then
+          call output_line('Stabilisation does not provide bounds or increments!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDScalar')
+          call sys_halt()
+        end if
+
+        ! Apply the nodal limiter
+        
+        !$omp parallel sections
+        !$omp section
+        Drp = afcstab_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
+
+        !$omp section
+        Drm = afcstab_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
+        !$omp end parallel sections
+
+        ! Set specifier
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
+        
+      end if
+
+      !-------------------------------------------------------------------------
+
+      if (iand(ioperationSpec, AFCSTAB_TVDALGO_CORRECT) .ne. 0) then
+        
+        ! Check if stabilisation is prepared
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq.0) .or.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)    .eq.0)) then
+          call output_line('Stabilisation does not provide fluxes or limiting factors!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDScalar')
+          call sys_halt()
+        end if
+
+        !$omp parallel default(shared)&
+        !$omp private(i,j,d_ij,l_ji,diff,f_ij)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IverticesAtEdgeIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          
+          ! Loop over the edges
+          !$omp do
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Determine indices
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+            
+            ! Get precomputed raw antidiffusive flux
+            f_ij = Dflux(iedge)
+            
+            ! Apply correction factor and store limited flux
+            if (f_ij .gt. 0.0_DP) then
+              f_ij = Drp(i)*f_ij
+            else
+              f_ij = Drm(i)*f_ij
+            end if
+            
+            ! Update the vector
+            Dy(i) = Dy(i)+f_ij
+            Dy(j) = Dy(j)-f_ij
+          end do
+          !$omp end do
+          
+        end do ! igroup
+        !$omp end parallel
+        
+      end if
+
+    end subroutine doLimitDble
     
   end subroutine gfsc_buildConvVecTVDScalar
 
@@ -3057,7 +3864,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvVecGPBlock(rafcstab, rmatrix,&
-      rx, rx0, theta, dscale, ry)
+      rx, rx0, theta, dscale, bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -3082,6 +3889,16 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+    
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_GPALGO_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
 !</input>
 
 !<inputoutput>
@@ -3105,7 +3922,8 @@ contains
     else
 
       call gfsc_buildConvVecGPScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
-          rx0%RvectorBlock(1), theta, dscale, ry%RvectorBlock(1))
+          rx0%RvectorBlock(1), theta, dscale, bclear, ioperationSpec,&
+          ry%RvectorBlock(1))
       
     end if
   end subroutine gfsc_buildConvVecGPBlock
@@ -3115,7 +3933,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvVecGPScalar(rafcstab, rmatrix,&
-      rx, rx0, theta, dscale, ry)
+      rx, rx0, theta, dscale, bclear, ioperationSpec, ry)
 
 !<description>
     ! This subroutine assembles the convective vector and applies
@@ -3151,6 +3969,16 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+    
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_TVDALGO_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
 !</input>
 
 !<inputoutput>
@@ -3204,7 +4032,7 @@ contains
     
     ! Set specifier
     rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
     rafcstab%istabilisationSpec =&
@@ -3379,7 +4207,7 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
-    ! scaling parameter
+    ! scaling factor
     real(DP), intent(in) :: dscale
 !</input>
 
@@ -3426,7 +4254,7 @@ contains
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
 
-    ! scaling parameter
+    ! scaling factor
     real(DP), intent(in) :: dscale
 !</input>
 
@@ -3477,7 +4305,7 @@ contains
 
     ! Set specifier
     rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
     rafcstab%istabilisationSpec =&
@@ -3606,6 +4434,1634 @@ contains
 
 !<subroutine>
 
+  subroutine gfsc_buildFluxLPTBlock(rafcstab, rx, dscale, bclear,&
+      ioperationSpec, rmatrix)
+
+!<description>
+    ! This subroutine assembles the raw antidiffusive fluxes for
+    ! linearity-preserving flux correction, whereby the coefficients
+    ! are determined from the off-diagonal entries of the matrix. Note
+    ! that this routine serves as a wrapper for block vectors. If
+    ! there is only one block, then the corresponding scalar routine
+    ! is called. Otherwise, an error is thrown. 
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for flux assembly
+    ! TRUE  : destination flux is cleared before assembly
+    ! FALSE : destination flux is no cleared before assembly
+    logical, intent(in) :: bclear
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_LPTFLUX_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: coefficient matrix which is used instead of the
+    ! coefficients at edges provided by the stabilisation structure
+    type(t_matrixScalar), intent(in), optional :: rmatrix
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    if (rx%nblocks .ne. 1) then
+      call output_line('Vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTBlock')
+      call sys_halt()
+    end if
+
+    ! Call subroutine for scalar vectors
+    call gfsc_buildFluxLPTScalar(rafcstab, rx%RvectorBlock(1),&
+        dscale, bclear, ioperationSpec, rmatrix)
+    
+  end subroutine gfsc_buildFluxLPTBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildFluxLPTScalar(rafcstab, rx, dscale, bclear,&
+      ioperationSpec, rmatrix)
+
+!<description>
+    ! This subroutine assembles the raw antidiffusive fluxes for
+    ! linearity-preserving flux correction, whereby the coefficients
+    ! are determined from the off-diagonal entries of the matrix.
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorScalar), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for flux assembly
+    ! TRUE  : destination flux is cleared before assembly
+    ! FALSE : destination flux is no cleared before assembly
+    logical, intent(in) :: bclear
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_LPTFLUX_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: coefficient matrix which is used instead of the
+    ! coefficients at edges provided by the stabilisation structure
+    type(t_matrixScalar), intent(in), optional :: rmatrix
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dmatrix,p_Dx
+    real(DP), dimension(:), pointer :: p_Dflux,p_Dq
+    real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+
+    ! Check if stabilisation is prepared
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      call output_line('Stabilisation does not provide edge data structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation is compatible with matrix
+    if (present(rmatrix)) then
+      if ((rafcstab%NEQ       .ne. rmatrix%NEQ) .or.&
+          (rafcstab%NEDGE * 2 .ne. rmatrix%NA-rmatrix%NEQ) .or.&
+          (rafcstab%cmatrixFormat .ne. rmatrix%cmatrixFormat)) then
+        call output_line('Matrix is not compatible with stabilisation structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+        call sys_halt()
+      end if
+    end if
+
+    
+    ! What kind of stabilisation are we?
+    select case(rafcstab%ctypeAFCstabilisation)
+
+    case(AFCSTAB_NLINLPT_MASS,&
+         AFCSTAB_LINLPT_MASS)
+      
+      if (present(rmatrix)) then
+
+        ! Set pointer
+        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+
+        !-----------------------------------------------------------------------
+
+        if (iand(ioperationSpec, AFCSTAB_LPTFLUX) .ne. 0) then
+
+          ! Set pointers
+          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+          call lsyssc_getbase_double(rx, p_Dx)
+
+          ! Assemble raw antidiffusive fluxes for mass antidiffusion
+          call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_Dmatrix, p_Dx, dscale, bclear, p_Dflux)
+
+          ! Set specifiers for raw antidiffusive fluxes
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+        end if
+
+        !-----------------------------------------------------------------------
+
+        if (iand(ioperationSpec, AFCSTAB_LPTFLUX_BOUNDS) .ne. 0) then
+
+          ! Check if stabilisation provides edgewise bounds
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS) .ne. 0) then
+
+            ! Set pointers
+            call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+            call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+            call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+            call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
+            
+            ! Assemble bounds based on matrix coefficients
+            call doBoundsByMatrixDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+                rafcstab%NEDGE, p_Dmatrix, p_DboundsAtEdge, p_Dq)
+            
+            ! Set specifiers for nodal bounds
+            rafcstab%istabilisationSpec =&
+                ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+
+          else
+
+            call output_line('Stabilisation does not provide bounds at edges!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+            call sys_halt()
+          end if
+        end if
+
+      else
+        call output_line('Unable to compute mass antidiffusion without mass matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+        call sys_halt()
+      end if
+
+      !-------------------------------------------------------------------------
+      
+    case(AFCSTAB_NLINLPT_UPWINDBIASED)
+
+      ! Check if stabilisation provides edge data
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .ne. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .ne. 0)) then
+
+        ! Set pointer
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+
+        !-----------------------------------------------------------------------
+
+        if (iand(ioperationSpec, AFCSTAB_LPTFLUX) .ne. 0) then
+          
+          ! Set pointers
+          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+          call lsyssc_getbase_double(rx, p_Dx)
+
+          ! Assemble upwind-biased raw antidiffusive fluxes
+          call doFluxesUpwindBiasedDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+
+          ! Set specifiers for raw antidiffusive fluxes
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+        end if
+
+        !-----------------------------------------------------------------------
+
+        if (iand(ioperationSpec, AFCSTAB_LPTFLUX_BOUNDS) .ne. 0) then
+        
+          ! Check if stabilisation provides edgewise bounds
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS) .ne. 0) then
+
+            ! Set pointers
+            call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+            call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+            call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+            call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
+
+            ! Assemble bounds based on edge coefficients
+            call doBoundsByCoeffDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+                rafcstab%NEDGE, p_DcoefficientsAtEdge, p_DboundsAtEdge, p_Dq)
+            
+            ! Set specifiers for nodal bounds
+            rafcstab%istabilisationSpec =&
+                ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+
+          else
+            
+            call output_line('Stabilisation does not provide bounds at edges!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+            call sys_halt()
+          end if
+        end if
+        
+      else
+        call output_line('Stabilisation does not provide (oriented) edge data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+        call sys_halt()
+      end if
+      
+      !-------------------------------------------------------------------------
+
+    case(AFCSTAB_NLINLPT_SYMMETRIC,&
+         AFCSTAB_LINLPT_SYMMETRIC,&
+         AFCSTAB_LINLPT_UPWINDBIASED)
+
+      ! Remark: in the linearised version, all fluxes must be limited
+      ! in a symmetric fashion since the flux into the downwind node
+      ! is no longer balanced by the nonoscillatory part of the
+      ! Galerkin operator
+
+      ! Check if stabilisation provides edge data
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .ne. 0) then
+
+        ! Set pointer
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+
+        !-----------------------------------------------------------------------
+
+        if (iand(ioperationSpec, AFCSTAB_LPTFLUX) .ne. 0) then
+
+          ! Set pointers
+          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+          call lsyssc_getbase_double(rx, p_Dx)
+
+          ! Assemble upwind-biased raw antidiffusive fluxes
+          call doFluxesSymmetricDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+
+          ! Set specifiers for raw antidiffusive fluxes
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+        end if
+
+        !-----------------------------------------------------------------------
+        
+        if (iand(ioperationSpec, AFCSTAB_LPTFLUX_BOUNDS) .ne. 0) then
+          
+          ! Check if stabilisation provides edgewise bounds
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS) .ne. 0) then
+            
+            ! Set pointers
+            call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+            call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+            call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+            call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
+            
+            ! Assemble bounds based on edge coefficients
+            call doBoundsByCoeffDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+                rafcstab%NEDGE, p_DcoefficientsAtEdge, p_DboundsAtEdge, p_Dq)
+            
+            ! Set specifiers for nodal bounds
+            rafcstab%istabilisationSpec =&
+                ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+            
+          else
+            
+            call output_line('Stabilisation does not provide bounds at edges!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+            call sys_halt()
+          end if
+        end if
+
+      else
+        call output_line('Stabilisation does not provide edge data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+        call sys_halt()
+      end if
+      
+    case default
+      call output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxLPTScalar')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Assemble symmetric raw antidiffusive fluxes using the
+    ! coefficients supplied by the CSR-matrix Dmatrix
+    
+    subroutine doFluxesByMatrixDble(IverticesAtEdge, NEDGE,&
+        Dmatrix, Dx, dscale, bclear, Dflux)
+      
+      real(DP), dimension(:), intent(in) :: Dmatrix, Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(inout) :: Dflux
+
+      ! local variables
+      integer :: iedge,i,j,ij
+      
+      if (dscale .eq. 0.0_DP) then
+
+        if (bclear) call lalg_clearVector(Dflux, NEDGE)
+
+      elseif (dscale .eq. 1.0_DP) then
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+
+      elseif (dscale .eq. -1.0_DP) then
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = Dmatrix(ij) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        end if
+
+      else
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,ij)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            ij = IverticesAtEdge(3,iedge)
+            
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+
+      end if
+
+    end subroutine doFluxesByMatrixDble
+
+    !**************************************************************
+    ! Assemble upwind-biased raw antidiffusive fluxes using the
+    ! coefficients supplied by the edge-by-edge array DcoefficientsAtEdge
+    
+    subroutine doFluxesUpwindBiasedDble(IverticesAtEdge, NEDGE,&
+        DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
+      
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(inout) :: Dflux
+
+      ! local variables
+      real(DP) :: f_ij,d_ij,l_ji,g_ij
+      integer :: iedge,i,j
+      
+      if (dscale .eq. 0.0_DP) then
+        
+        if (bclear) call lalg_clearVector(Dflux, NEDGE)
+        
+      elseif (dscale .eq. 1.0_DP) then
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+
+            ! Determine fluxes
+            f_ij = d_ij * (Dx(i)-Dx(j))
+            g_ij = l_ji * (Dx(i)-Dx(j))
+            
+            if (l_ji .lt. d_ij) then
+              ! f_ij := minmod(f_ij,g_ij)
+              if (f_ij*g_ij .le. 0.0_DP) then
+                f_ij = 0.0_DP
+              elseif (abs(g_ij) .lt. abs(f_ij)) then
+                f_ij = g_ij
+              end if
+            end if
+            
+            ! Store raw antidiffusive fluxes
+            Dflux(iedge) = f_ij
+          end do
+          !$omp end parallel do
+
+        else
+          !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+
+            ! Determine fluxes
+            f_ij = d_ij * (Dx(i)-Dx(j))
+            g_ij = l_ji * (Dx(i)-Dx(j))
+            
+            if (l_ji .lt. d_ij) then
+              ! f_ij := minmod(f_ij,g_ij)
+              if (f_ij*g_ij .le. 0.0_DP) then
+                f_ij = 0.0_DP
+              elseif (abs(g_ij) .lt. abs(f_ij)) then
+                f_ij = g_ij
+              end if
+            end if
+
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) + f_ij
+          end do
+          !$omp end parallel do
+        end if
+
+      elseif (dscale .eq. -1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+
+            ! Determine fluxes
+            f_ij = d_ij * (Dx(i)-Dx(j))
+            g_ij = l_ji * (Dx(i)-Dx(j))
+            
+            if (l_ji .lt. d_ij) then
+              ! f_ij := minmod(f_ij,g_ij)
+              if (f_ij*g_ij .le. 0.0_DP) then
+                f_ij = 0.0_DP
+              elseif (abs(g_ij) .lt. abs(f_ij)) then
+                f_ij = g_ij
+              end if
+            end if
+
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = -f_ij
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+
+            ! Determine fluxes
+            f_ij = d_ij * (Dx(i)-Dx(j))
+            g_ij = l_ji * (Dx(i)-Dx(j))
+            
+            if (l_ji .lt. d_ij) then
+              ! f_ij := minmod(f_ij,g_ij)
+              if (f_ij*g_ij .le. 0.0_DP) then
+                f_ij = 0.0_DP
+              elseif (abs(g_ij) .lt. abs(f_ij)) then
+                f_ij = g_ij
+              end if
+            end if
+
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) - f_ij
+          end do
+          !$omp end parallel do
+        end if
+        
+      else
+
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+
+            ! Determine fluxes
+            f_ij = d_ij * (Dx(i)-Dx(j))
+            g_ij = l_ji * (Dx(i)-Dx(j))
+            
+            if (l_ji .lt. d_ij) then
+              ! f_ij := minmod(f_ij,g_ij)
+              if (f_ij*g_ij .le. 0.0_DP) then
+                f_ij = 0.0_DP
+              elseif (abs(g_ij) .lt. abs(f_ij)) then
+                f_ij = g_ij
+              end if
+            end if
+
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = dscale * f_ij
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+
+            ! Determine coefficients
+            d_ij = DcoefficientsAtEdge(1,iedge)
+            l_ji = DcoefficientsAtEdge(3,iedge)
+
+            ! Determine fluxes
+            f_ij = d_ij * (Dx(i)-Dx(j))
+            g_ij = l_ji * (Dx(i)-Dx(j))
+            
+            if (l_ji .lt. d_ij) then
+              ! f_ij := minmod(f_ij,g_ij)
+              if (f_ij*g_ij .le. 0.0_DP) then
+                f_ij = 0.0_DP
+              elseif (abs(g_ij) .lt. abs(f_ij)) then
+                f_ij = g_ij
+              end if
+            end if
+
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge) + dscale*f_ij
+          end do
+          !$omp end parallel do
+        end if
+        
+      end if
+
+    end subroutine doFluxesUpwindBiasedDble
+    
+    !**************************************************************
+    ! Assemble symmetric raw antidiffusive fluxes using the
+    ! coefficients supplied by the edge-by-edge array DcoefficientsAtEdge
+    
+    subroutine doFluxesSymmetricDble(IverticesAtEdge, NEDGE,&
+        DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
+      
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      logical, intent(in) :: bclear
+      
+      real(DP), dimension(:), intent(inout) :: Dflux
+
+            ! local variables
+      integer :: iedge,i,j
+      
+      if (dscale .eq. 0.0_DP) then
+        
+        if (bclear) call lalg_clearVector(Dflux, NEDGE)
+        
+      elseif (dscale .eq. 1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+        
+      elseif (dscale .eq. -1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
+          end do
+          !$omp end parallel do
+        end if
+        
+      else
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Store raw antidiffusive flux
+            Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Update raw antidiffusive flux
+            Dflux(iedge) = Dflux(iedge)&
+                + dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          end do
+          !$omp end parallel do
+        end if
+        
+      end if
+
+    end subroutine doFluxesSymmetricDble
+    
+    !**************************************************************
+    ! Assemble nodal bounds using the coefficients supplied by the
+    ! CSR-matrix Dmatrix and the precomputed bounds at edges
+
+    subroutine doBoundsByMatrixDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, Dmatrix, DboundsAtEdge, Dq)
+      
+      real(DP), dimension(:,:), intent(in) :: DboundsAtEdge
+      real(DP), dimension(:), intent(in) :: Dmatrix
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(out) :: Dq
+
+      ! local variables
+      integer :: i,iedge,igroup,ij,j,ji
+
+      ! Clear bounds`s
+      call lalg_clearVector(Dq)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      !$omp parallel default(shared) private(iedge,i,j,ij,ji)
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+
+          ! Get node numbers and matrix positions
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Update bounds
+          Dq(i) = Dq(i) + DboundsAtEdge(1,iedge)*Dmatrix(ij)
+          Dq(j) = Dq(j) + DboundsAtEdge(2,iedge)*Dmatrix(ji)
+        end do
+        !$omp end do
+      end do
+      !$omp end parallel
+        
+    end subroutine doBoundsByMatrixDble
+
+    !**************************************************************
+    ! Assemble nodal bounds using the coefficients supplied by the
+    !  edge-by-edge array DcoefficientsAtEdge
+
+    subroutine doBoundsByCoeffDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, DcoefficientsAtEdge, DboundsAtEdge, Dq)
+
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:,:), intent(in) :: DboundsAtEdge
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(out) :: Dq
+
+      ! local variables
+      integer :: i,iedge,igroup,j
+
+      ! Clear bounds`s
+      call lalg_clearVector(Dq)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      !$omp parallel default(shared) private(iedge,i,j)
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+
+          ! Get node numbers
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+
+          ! Update bounds
+          Dq(i) = Dq(i) + DboundsAtEdge(1,iedge)*DcoefficientsAtEdge(1,iedge)
+          Dq(j) = Dq(j) + DboundsAtEdge(2,iedge)*DcoefficientsAtEdge(1,iedge)
+        end do
+        !$omp end do
+      end do
+      !$omp end parallel
+      
+    end subroutine doBoundsByCoeffDble
+
+  end subroutine gfsc_buildFluxLPTScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildVecLPTBlock(rafcstab, rx, dscale,&
+      bclear, ioperationSpec, ry)
+
+!<description>
+    ! This subroutine assembles the vector resulting from the
+    ! application of linearyity-preserving flux correction. Note that
+    ! this routine serves as a wrapper for block vectors. If there is
+    ! only one block, then the corresponding scalar routine is
+    ! called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+    
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_LPTALGO_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+
+    ! convective vector
+    type(t_vectorBlock), intent(inout) :: ry    
+!</inputoutput>
+!</subroutine>
+
+    ! Check if block vectors contain exactly one block
+    if (rx%nblocks .ne. 1 .or.&
+        ry%nblocks .ne. 1) then
+
+      call output_line('Vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTBlock')
+      call sys_halt()
+
+    else
+
+      call gfsc_buildVecLPTScalar(rafcstab, rx%RvectorBlock(1),&
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
+      
+    end if
+
+  end subroutine gfsc_buildVecLPTBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildVecLPTScalar(rafcstab, rx, dscale,&
+      bclear, ioperationSpec, ry)
+
+!<description>
+    ! This subroutine assembles the vector resulting from the
+    ! application of linearyity-preserving flux correction.
+    !
+    ! This subroutine provides different algorithms:
+    !
+    ! Nonlinear/Linearised FEM-LPT
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! Linearity-perserving flux correction for upwind-biased and
+    ! symmetric antidiffusive fluxes.
+    !
+    ! The details of this method can be found in:
+    !
+    ! D. Kuzmin, Linearity-preserving flux correction and convergence
+    ! acceleration for constrained Galerkin schemes, Ergebnisberichte
+    ! Angew. Math. 430, Technische Universität Dortmund, 2011.
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorScalar), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+    
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_LPTALGO_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+
+    ! convective vector
+    type(t_vectorScalar), intent(inout) :: ry    
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy,p_Dq
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+
+    ! Check if stabilisation is prepeared
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+      call sys_halt()
+    end if
+
+    ! Clear convective vector?
+    if (bclear) call lsyssc_clearVector(ry)
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+    call lsyssc_getbase_double(rx, p_Dx)
+    call lsyssc_getbase_double(ry, p_Dy)
+
+    !---------------------------------------------------------------------------
+    ! The FEM-LPT algorithm is split into the following steps which
+    ! can be skipped and performed externally by the user:
+    !
+    ! 1) Initialise the edgewise correction factors (alpha).
+    !
+    ! 2) Compute the antidiffusive increments (Pp, Pm)
+    !
+    ! 3) Compute the local solution bounds (Qp, Qm).
+    !
+    ! 4) Compute the nodal correction factors (Rp, Rm).
+    !
+    ! 5) Compute edgewise correction factors (Alpha).
+    !
+    ! 6) Apply the limited antiddifusive fluxes
+    !-------------------------------------------------------------------------
+    
+    if (iand(ioperationSpec, AFCSTAB_LPTALGO_INITALPHA) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 1) Initialise the edgewise correction factors by unity
+      !-------------------------------------------------------------------------
+
+      ! Initialise alpha by unity
+      call lalg_setVector(p_Dalpha, 1.0_DP)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_LPTALGO_ADINCREMENTS) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 2) Compute sums of antidiffusive increments 
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides raw antidiffusive fluxes
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+        call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Compute sums of antidiffusive increments based on the
+      ! raw-antidiffusive fluxes ...
+      select case(rafcstab%ctypeLimiting)
+      case (AFCSTAB_LIMITING_SYMMETRIC)!, AFCSTAB_LIMITING_UPWINDBIASED)
+        ! ... in a symmetric fashion
+        call doADIncrementsSymmDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        
+      case (AFCSTAB_LIMITING_UPWINDBIASED)!+4711)
+        ! ... in an upwind-biased fashion
+        call doADIncrementsUpwDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+
+      case default
+        call output_line('Unsupported type of flux limiting!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end select
+
+      ! Set specifiers
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_LPTALGO_BOUNDS) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 3) Compute local solution bounds
+      !-------------------------------------------------------------------------
+      
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+      
+      ! Compute bounds
+      call doBoundsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
+      
+      ! Set specifiers
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_LPTALGO_LIMITNODAL) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 4) Compute nodal correction factors
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides antidiffusive increments and local bounds
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
+        call output_line('Stabilisation does not provide increments and/or bounds!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Set additional pointer
+      call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
+
+      ! Compute nodal correction factors
+      call doLimitNodalConstrainedDble(rafcstab%NEQ,&
+          p_Dq, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+      
+      ! Set specifier
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_LPTALGO_LIMITEDGE) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 5) Compute edgewise correction factors
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides nodal correction factors
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
+        call output_line('Stabilisation does not provide nodal correction factors!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Compute edgewise correction factors ...
+      select case(rafcstab%ctypeLimiting)
+      case (AFCSTAB_LIMITING_SYMMETRIC)!, AFCSTAB_LIMITING_UPWINDBIASED)
+        ! ... in a symmetric fashion
+        call doLimitEdgewiseSymmDble(p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
+        
+      case (AFCSTAB_LIMITING_UPWINDBIASED)! + 4711)
+        ! ... in an upwind-biased fashion
+        call doLimitEdgewiseUpwDble(p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
+        
+      case default
+        call output_line('Unsupported type of flux limiting!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end select
+      
+      ! Set specifier
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
+    end if
+    
+
+    if (iand(ioperationSpec, AFCSTAB_LPTALGO_CORRECT) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 6) Correct antidiffusive fluxes and apply them
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides edgewise correction factors
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+        call output_line('Stabilisation does not provide edgewise correction factors!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides raw antidiffusive fluxes
+      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+        call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVecLPTScalar')
+        call sys_halt()
+      end if
+
+      ! Apply antidiffusive fluxes
+      call doCorrectDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
+    end if
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes in a symmetric fashion
+    
+    subroutine doADIncrementsSymmDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, Dflux, Dalpha, Dpp, Dpm)
+      
+      real(DP), dimension(:), intent(in) :: Dflux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+
+      ! On input: the edge-wise correction factor from previous
+      !           multiplicative correction steps
+      ! On exit:  the edge-wise correction factor with prelimiting
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! The sums of positive/negative antidiffusive increments
+      real(DP), dimension(:), intent(out) :: Dpp,Dpm
+      
+      ! local variables
+      real(DP) :: f_ij,fp_ij,fm_ij
+      integer :: i,iedge,igroup,j
+      
+      !$omp parallel default(shared) private(i,j,f_ij,fp_ij,fm_ij)
+
+      ! Clear P`s
+      !$omp sections
+      !$omp section
+      call lalg_clearVector(Dpp)
+      !$omp section
+      call lalg_clearVector(Dpm)
+      !$omp end sections
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          
+          ! Apply multiplicative correction factor
+          f_ij = Dalpha(iedge) * Dflux(iedge)
+      
+          ! Separate fluxes into positive/negative contributions
+          fp_ij = max(0.0_DP,f_ij)
+          fm_ij = min(0.0_DP,f_ij)
+          
+          ! Compute the sums of antidiffusive increments
+          Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
+          Dpp(j) = Dpp(j) - fm_ij   ! += max(0.0_DP,-f_ij)
+          Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
+          Dpm(j) = Dpm(j) - fp_ij   ! += min(0.0_DP,-f_ij)
+        end do
+        !$omp end do
+      end do ! igroup
+      !$omp end parallel
+
+    end subroutine doADIncrementsSymmDble
+    
+    !**************************************************************
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes in an upwind-biased fashion
+    
+    subroutine doADIncrementsUpwDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, Dflux, Dalpha, Dpp, Dpm)
+      
+      real(DP), dimension(:), intent(in) :: Dflux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+
+      ! On input: the edge-wise correction factor from previous
+      !           multiplicative correction steps
+      ! On exit:  the edge-wise correction factor with prelimiting
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! The sums of positive/negative antidiffusive increments
+      real(DP), dimension(:), intent(out) :: Dpp,Dpm
+      
+      ! local variables
+      real(DP) :: f_ij
+      integer :: i,iedge,igroup
+      
+      !$omp parallel default(shared) private(i,f_ij)
+
+      ! Clear P`s
+      !$omp sections
+      !$omp section
+      call lalg_clearVector(Dpp)
+      !$omp section
+      call lalg_clearVector(Dpm)
+      !$omp end sections
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node number of the upwind nodeee
+          i = IverticesAtEdge(1,iedge)
+          
+          ! Apply multiplicative correction factor
+          f_ij = Dalpha(iedge) * Dflux(iedge)
+      
+          ! Compute the sums of antidiffusive increments
+          Dpp(i) = Dpp(i) + max(0.0_DP,f_ij)
+          Dpm(i) = Dpm(i) + min(0.0_DP,f_ij)
+        end do
+        !$omp end do
+        
+      end do ! igroup
+      !$omp end parallel
+
+    end subroutine doADIncrementsUpwDble
+
+    !**************************************************************
+    ! Assemble the local bounds from the predicted solution
+    
+    subroutine doBoundsDble(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE, Dx, Dqp, Dqm)
+      
+      real(DP), dimension(:), intent(in) :: Dx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+      
+      ! The local upper/lower bounds computed from Dx
+      real(DP), dimension(:), intent(out) :: Dqp,Dqm
+      
+      ! local variables
+      integer :: i,iedge,igroup,j
+
+      
+      !$omp parallel default(shared) private(i,j)
+
+      ! Initialise Q`s by solution
+      !$omp sections
+      !$omp section
+      call lalg_copyVector(Dx, Dqp)
+      !$omp section
+      call lalg_copyVector(Dx, Dqm)
+      !$omp end sections
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+          
+          ! Compute local upper and lower bounds
+          Dqp(i) = max(Dqp(i), Dx(j))
+          Dqm(i) = min(Dqm(i), Dx(j))
+          Dqp(j) = max(Dqp(j), Dx(i))
+          Dqm(j) = min(Dqm(j), Dx(i))
+        end do
+        !$omp end do
+
+      end do ! igroup     
+      !$omp end parallel
+
+    end subroutine doBoundsDble
+
+    !**************************************************************
+    ! Compute nodal correction factors with constraints
+    
+    subroutine doLimitNodalConstrainedDble(NEQ, Dq, Dx,&
+        Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+      
+      real(DP), dimension(:), intent(in) :: Dq,Dx
+      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
+      integer, intent(in) :: NEQ
+      
+      ! The nodal correction factors for positive/negative fluxes
+      real(DP), dimension(:), intent(out) :: Drp,Drm
+      
+      ! local variables
+      real(DP) :: diff
+      integer :: ieq
+      
+      !$omp parallel sections default(shared) private(ieq,diff)
+      
+      !$omp section
+
+      !$omp parallel do default(shared) private(ieq,diff)
+      do ieq = 1, NEQ
+        diff = Dq(ieq)*(Dqp(ieq)-Dx(ieq))
+        if (Dpp(ieq) .gt. diff) then
+          Drp(ieq) = diff/Dpp(ieq)
+        else
+          Drp(ieq) = 1.0_DP
+        end if
+      end do
+      !$omp end parallel do
+
+      !$omp section
+
+      !$omp parallel do default(shared) private(ieq,diff)
+      do ieq = 1, NEQ
+        diff = Dq(ieq)*(Dqm(ieq)-Dx(ieq))
+        if (Dpm(ieq) .lt. diff) then
+          Drm(ieq) = diff/Dpm(ieq)
+        else
+          Drm(ieq) = 1.0_DP
+        end if
+      end do
+      !$omp end parallel do
+
+      !$omp end parallel sections
+
+    end subroutine doLimitNodalConstrainedDble
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of antidiffusive fluxes in
+    ! a symmetric fashion, e.g., consider the nodal correction factors
+    ! at both endpoints of the edge
+    
+    subroutine doLimitEdgewiseSymmDble(IverticesAtEdge,&
+        NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
+      
+      real(DP), dimension(:), intent(in) :: Dflux
+      real(DP), dimension(:), intent(in) :: Dpp,Dpm
+      real(DP), dimension(:), intent(in) :: Drp,Drm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      
+      ! On input: the edge-wise correction factors from previous
+      !           multiplicative correction steps
+      ! On exit: the edge-wise correction factors resulting from
+      !          the nodal correction factors Rp and Rm
+      real(DP), dimension(:), intent(inout) :: Dalpha
+      
+      ! local variables
+      real(DP) :: f_ij,r_ij,r_ji
+      integer :: iedge,i,j
+      
+      ! Loop over all edges
+      !$omp parallel do default(shared) private(i,j,f_ij,r_ij,r_ji)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        ! Get precomputed raw antidiffusive fluxes
+        f_ij = Dflux(iedge)
+
+        ! Compute nodal correction factors
+        if (f_ij .gt. AFCSTAB_EPSABS) then
+          r_ij = min(Drp(i),Drm(j))
+        elseif (f_ij .lt. -AFCSTAB_EPSABS) then
+          r_ij = min(Drp(j),Drm(i))
+        else
+          r_ij = 1.0_DP
+        end if
+
+        ! Compute multiplicative correction factor
+        Dalpha(iedge) = Dalpha(iedge) * r_ij
+      end do
+      !$omp end parallel do
+      
+    end subroutine doLimitEdgewiseSymmDble
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of antidiffusive fluxes in
+    ! an upwind-biased fashion, e.g., consider the nodal correction
+    ! factors only at the endpoint of the edge located upwind
+    
+    subroutine doLimitEdgewiseUpwDble(IverticesAtEdge,&
+        NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
+      
+      real(DP), dimension(:), intent(in) :: Dflux
+      real(DP), dimension(:), intent(in) :: Dpp,Dpm
+      real(DP), dimension(:), intent(in) :: Drp,Drm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      
+      ! On input: the edge-wise correction factors from previous
+      !           multiplicative correction steps
+      ! On exit: the edge-wise correction factors resulting from
+      !          the nodal correction factors Rp and Rm
+      real(DP), dimension(:), intent(inout) :: Dalpha
+      
+      ! local variables
+      real(DP) :: f_ij,r_ij
+      integer :: iedge,i
+      
+      ! Loop over all edges
+      !$omp parallel do default(shared) private(i,f_ij,r_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Get node number of the upwind node
+        i = IverticesAtEdge(1,iedge)
+        
+        ! Get precomputed raw antidiffusive fluxes
+        f_ij = Dflux(iedge)
+
+        ! Compute nodal correction factors
+        if (f_ij .gt. AFCSTAB_EPSABS) then
+          r_ij = Drp(i)
+        elseif (f_ij .lt. -AFCSTAB_EPSABS) then
+          r_ij = Drm(i)
+        else
+          r_ij = 1.0_DP
+        end if
+
+        ! Compute multiplicative correction factor
+        Dalpha(iedge) = Dalpha(iedge) * r_ij
+      end do
+      !$omp end parallel do
+      
+    end subroutine doLimitEdgewiseUpwDble
+
+    !**************************************************************
+    ! Correct the antidiffusive fluxes and apply them
+    
+    subroutine doCorrectDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, dscale, Dalpha, Dflux, Dy)
+      
+      real(DP), dimension(:), intent(in) :: Dalpha,Dflux
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: Dy
+      
+      ! local variables
+      real(DP) :: f_ij
+      integer :: i,iedge,igroup,j
+
+      !$omp parallel default(shared) private(i,j,f_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+          
+          ! Correct antidiffusive flux
+          f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
+          
+          ! Apply limited antidiffusive fluxes
+          Dy(i) = Dy(i) + f_ij
+          Dy(j) = Dy(j) - f_ij
+        end do
+        !$omp end do
+
+      end do ! igroup
+      !$omp end parallel
+      
+    end subroutine doCorrectDble
+
+  end subroutine gfsc_buildVecLPTScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
       hstep, dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
 
@@ -3627,7 +6083,7 @@ contains
     ! perturbation parameter
     real(DP), intent(in) :: hstep
 
-    ! Scaling parameter
+    ! Scaling factor
     real(DP), intent(in) :: dscale
 
     ! Switch for stabilisation
@@ -3692,7 +6148,7 @@ contains
     ! perturbation parameter
     real(DP), intent(in) :: hstep
 
-    ! Scaling parameter
+    ! Scaling factor
     real(DP), intent(in) :: dscale
 
     ! Switch for stabilisation
@@ -5522,7 +7978,7 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
-    case (AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_IMPLICIT)
       
       ! What kind of matrix are we?
       select case(rjacobian%cmatrixFormat)
@@ -5864,7 +8320,7 @@ contains
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)    .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearTVDScalar')
@@ -6528,7 +8984,7 @@ contains
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)    .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearGPScalar')
@@ -7348,7 +9804,7 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
-    case (AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_IMPLICIT)
       
       ! What kind of matrix format are we?
       select case(rjacobian%cmatrixFormat)
@@ -8446,7 +10902,7 @@ contains
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)    .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianTVDScalar')
@@ -9551,7 +12007,7 @@ contains
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)    .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianGPScalar')
@@ -10683,7 +13139,7 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
-    ! scaling parameter
+    ! scaling factor
     real(DP), intent(in) :: dscale
 
     ! perturbation parameter
@@ -10739,7 +13195,7 @@ contains
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
 
-    ! scaling parameter
+    ! scaling factor
     real(DP), intent(in) :: dscale
 
     ! perturbation parameter
@@ -10782,7 +13238,7 @@ contains
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)  .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)        .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)    .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)      .eq. 0)) then
       call output_line('Stabilisation does not provide required structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianSymmScalar')
@@ -11355,664 +13811,227 @@ contains
 
       end if
     end subroutine assembleJacobianMat79_Symm
+
   end subroutine gfsc_buildJacobianSymmScalar
 
-  !*****************************************************************************
+  ! ****************************************************************************
+  ! Here, some private auxiliary subroutine follow
+  ! ****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
-      binit, rmatrix, rxTimeDeriv, rxPredictor)
+  pure subroutine gfsc_combineFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha)
 
 !<description>
-    ! This subroutine assembles the raw antidiffusive fluxes for FEM-FCT schemes.
-    ! Note that this routine serves as a wrapper for block vectors. If there
-    ! is only one block, then the corresponding scalar routine is called.
-    ! Otherwise, an error is thrown.
+    ! This subroutine combines the two fluxes:
+    ! Dflux2 := Dflux2 + dscale * Dalpha * Dflux1
 !</description>
-
-!<input>
-    ! solution vector
-    type(t_vectorBlock), intent(in) :: rx
-
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
-    ! time step size
-    real(DP), intent(in) :: tstep
     
-    ! scaling parameter
+!<input>
+    ! First flux
+    real(DP), dimension(:), intent(in) :: Dflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(DP), dimension(:), intent(in), optional :: Dalpha
+
+    ! Global scaling factor for all entries of flux1
     real(DP), intent(in) :: dscale
 
-    ! Switch for flux assembly
-    ! TRUE  : assemble the initial antidiffusive flux
-    ! FALSE : assemble the antidiffusive flux using some initial values
-    logical, intent(in) :: binit
-
-    ! OPTIONAL: mass matrix
-    type(t_matrixScalar), intent(in), optional :: rmatrix
-
-    ! OPTIONAL: approximate time derivative of vector rx
-    type(t_vectorBlock), intent(in), optional :: rxTimeDeriv
-
-    ! OPTIONAL: low-order predictor of vector rx
-    ! This vector is required to assemble the fluxes for prelimiting
-    ! in some variants of the FCT algorithm.
-    type(t_vectorBlock), intent(in), optional :: rxPredictor
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
+    ! Second flux
+    real(DP), dimension(:), intent(inout) :: Dflux2
 !</inputoutput>
 !</subroutine>
-
-    integer :: nblocks
-
-    ! Check if block vector(s) contains exactly one block
-    nblocks = rx%nblocks
-    if (present(rxTimeDeriv)) nblocks = max(nblocks, rxTimeDeriv%nblocks)
-    if (present(rxPredictor)) nblocks = max(nblocks, rxPredictor%nblocks)
-
-    if (nblocks .ne. 1) then
-      call output_line('Vector(s) must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTBlock')
-      call sys_halt()
-    end if
-
-    ! Call subroutine for scalar vectors
-    if (present(rxTimeDeriv)) then
-      if (present(rxPredictor)) then
-        ! ... both approximate time derivative and predictor are present
-        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep,dscale, binit, rmatrix,&
-            rxTimeDeriv=rxTimeDeriv%RvectorBlock(1),&
-            rxPredictor=rxPredictor%RvectorBlock(1))
-      else
-        ! ... only the approximate time derivative is present
-        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep,dscale, binit, rmatrix,&
-            rxTimeDeriv=rxTimeDeriv%RvectorBlock(1))
-      end if
-    else
-      if (present(rxPredictor)) then
-        ! ... only the predictor is present
-        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep,dscale, binit, rmatrix,&
-            rxPredictor=rxPredictor%RvectorBlock(1))
-      else
-        ! ... neither the approximate time derivative nor the predictor is present
-        call gfsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-            theta, tstep,dscale, binit, rmatrix)
-      end if
-    end if
     
-  end subroutine gfsc_buildFluxFCTBlock
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsc_buildFluxFCTScalar(rafcstab, rx, theta, tstep, dscale,&
-      binit, rmatrix, rxTimeDeriv, rxPredictor)
-    
-!<description>
-    ! This subroutine assembles the raw antidiffusive fluxes for FEM-FCT schemes.
-!</description>
-
-!<input>
-    ! solution vector
-    type(t_vectorScalar), intent(in) :: rx
-
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
-    ! time step size
-    real(DP), intent(in) :: tstep
-
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
-
-    ! Switch for flux assembly
-    ! TRUE  : assemble the initial antidiffusive flux
-    ! FALSE : assemble the antidiffusive flux using some initial values
-    logical, intent(in) :: binit
-
-    ! OPTIONAL: mass matrix
-    type(t_matrixScalar), intent(in), optional :: rmatrix
-
-    ! OPTIONAL: approximate time derivative of vector rx
-    type(t_vectorScalar), intent(in), optional :: rxTimeDeriv
-
-    ! OPTIONAL: low-order predictor of vector rx
-    ! This vector is required to assemble the fluxes for prelimiting
-    ! in some variants of the FCT algorithm.
-    type(t_vectorScalar), intent(in), optional :: rxPredictor
-!</input>
-
-!<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
-!</subroutine>
-
     ! local variables
-    real(DP), dimension(:), pointer :: p_Dmatrix,p_Dx
-    real(DP), dimension(:), pointer :: p_DxTimeDeriv, p_DxPredictor
-    real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
-    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-
-    ! Check if stabilisation is prepared
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-      call sys_halt()
-    end if
+    integer :: iedge
     
-    ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-      call output_line('Stabilisation does not provide edge data structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-      call sys_halt()
-    end if
-
-    ! Check if stabilisation is compatible with matrix (if present)
-    if (present(rmatrix)) then
-      if ((rafcstab%NEQ .ne. rmatrix%NEQ) .or.&
-          (rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) .or.&
-          (rafcstab%cmatrixFormat .ne. rmatrix%cmatrixFormat)) then
-        call output_line('Matrix is not compatible with stabilisation structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-        call sys_halt()
-      end if
-    end if
-    
-    ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rx, p_Dx)
-
-    ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
+    if (present(Dalpha)) then
       
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
-    
-      !-------------------------------------------------------------------------
-      ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
-      ! The raw antidiffusive flux for all algorithms can be assembled 
-      ! in the same way. The only difference is that the amount of rejected 
-      ! antidiffusion is subtracted from the initial fluxes in subsequent
-      ! iterations if the iterative FEM-FCT algorithm is applied.
-      ! Moreover the initial flux is without mass contribution is stored
-      ! separately for the semi-implicit FEM-FCT algorithm since it is
-      ! used to constrain the raw antidiffusive fluxes in each iteration.
-      !-------------------------------------------------------------------------
-
-      ! Check if stabilisation provides edge data
-      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
-        call output_line('Stabilisation does not provide edge data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-        call sys_halt()
-      end if
-      
-      ! Set pointers
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-
-      !-------------------------------------------------------------------------
-      
-      ! Check if the amount of rejected antidiffusion from previous(!)
-      ! iterations should be included in the raw antidiffusive fluxes
-      if (.not.binit .and.&
-          rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+      if (dscale .eq. 1.0_DP) then
         
-        ! Check if stabilisation provides raw antidiffusive fluxes
-        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
-          call output_line('Stabilisation does not provide correction factors!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-          call sys_halt()
-        end if
-
-        ! Check if stabilisation provides raw antidiffusive fluxes
-        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
-          call output_line('Stabilisation does not provide antidiffusive fluxes!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-          call sys_halt()
-        end if
-
-        ! Set pointer
-        call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-
-        ! Subtract amount of rejected antidiffusion
-        call doCombineFluxes(rafcstab%NEDGE, -1.0_DP, p_Dflux, p_Dflux0, p_Dalpha)
-      end if
-
-      !-------------------------------------------------------------------------
-
-      ! Are we in the first step?
-      if (binit) then
-        
-        ! Assemble the total raw-antidiffusive fluxes for the first
-        ! step (implicitness parameter theta cancels out)
-        call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-            p_DcoefficientsAtEdge, p_Dx, dscale, p_Dflux)
-        
-        ! Assemble explicit part of the raw-antidiffusive fluxes; for
-        ! fully implicit schemes, the explicit part vanishes
-        if (theta .ne. 1.0_DP) then
-          call lalg_copyVector(p_Dflux, p_Dflux0)
-          call lalg_scaleVector(p_Dflux0, 1.0_DP-theta)
-        end if
-        
-      else
-        
-        ! Assemble implicit part of the raw-antidiffusive fluxes; for
-        ! fully explicit schemes, the implicit part vanishes
-        if (theta .ne. 0.0_DP)&
-            call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-            p_DcoefficientsAtEdge, p_Dx, theta*dscale, p_Dflux)
-        
-        ! Combine the explicit and implicit parts of the
-        ! raw-antidiffusive fluxes (if both exist)
-        if (theta .ne. 1.0_DP) then
-          if (theta .ne. 0.0_DP) then
-            ! both explicit and implicit parts exist
-            call doCombineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
-          else
-            ! only the explicit part exists
-            call lalg_copyVector(p_Dflux0, p_Dflux)
-          end if
-        end if
-      end if
-      
-      !-------------------------------------------------------------------------
-
-      ! Do we have a consistent mass matrix?
-      if (present(rmatrix)) then
-        
-        ! Set pointer
-        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
-
-        ! Are we in the first step?
-        if (binit) then
-
-          ! In the first step, the contribution of the explicit and
-          ! implicit part of the mass antidiffusive fluxes cancel each
-          ! other so that we have to apply mass antidiffusion only to
-          ! the explicit fluxes. Since the explicit fluxes have not
-          ! been initialied in the fully implicit case (i.e. theta=1)
-          ! we have to take care of the initialisation here
-          call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-              p_Dmatrix, p_Dx, -dscale/tstep, (theta .eq. 1.0_DP),&
-              p_Dflux0)
-          
-        else
-          
-          ! Apply mass antidiffusion to the implicit fluxes
-          call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-              p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
-        end if
-
-      end if
-      
-      !-------------------------------------------------------------------------
-      
-      ! Check for special treatment
-      if (binit) then
-
-        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-
-          ! We have to store the initial fluxes separately (i.e. the
-          ! raw-antidiffusive fluxes based on the initial solution
-          ! without the contribution of the consistent mass matrix and
-          ! without scaling by the implicitness parameter theta)
-          call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
-              rafcstab%p_rvectorFluxPrel)
-
-        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
-          
-          ! We have to assemble the raw-antidiffusive fluxes for
-          ! prelimiting separately based on the low-order predictor
-          if (present(rxPredictor)) then
-            call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
-            call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-
-            if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
-              ! Compute fluxes for standard prelimiting
-              call doPrelimitingFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-                  p_DxPredictor, p_DfluxPrel)
-            elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
-              ! Compute fluxes for minmod prelimiting
-              call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-                  p_DcoefficientsAtEdge, p_DxPredictor, dscale, p_DfluxPrel)
-            else
-              call output_line('Invalid type of prelimiting!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-              call sys_halt()
-            end if
-          else
-            call output_line('Fluxes for prelimiting cannot be assembled without predictor!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-            call sys_halt()
-          end if
-
-        end if
-      end if
-
-      ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%istabilisationSpec =&
-          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
-      
-
-    case (AFCSTAB_FEMFCT_LINEARISED)
-      
-      !-------------------------------------------------------------------------
-      ! Linearised FEM-FCT algorithm
-      !-------------------------------------------------------------------------
-      
-      ! Check if stabilisation provides edge data
-      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
-        call output_line('Stabilisation does not provide edge data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-        call sys_halt()
-      end if
-
-      !-------------------------------------------------------------------------
-
-      ! Set pointer
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-       
-      ! Assemble spatial part of raw-antidiffusive fluxes
-      call doFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-          p_DcoefficientsAtEdge, p_Dx, dscale, p_Dflux)
-      
-      !-------------------------------------------------------------------------
-      
-      if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
-        ! Compute fluxes for standard prelimiting based on the
-        ! low-order solution which serves as predictor
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doPrelimitingFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-            p_Dx, p_DfluxPrel)
-        
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
-        ! Make a backup of the spatial part of the raw-antidiffusive
-        ! fluxes which are used for minmod prelimiting
-        call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
-            rafcstab%p_rvectorFluxPrel)
-      end if
-
-      !-------------------------------------------------------------------------
-      
-      ! Do we have to include mass antidiffusion?
-      if (present(rmatrix) .and. present(rxTimeDeriv)) then
-
-        ! Set pointer
-        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
-        call lsyssc_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
-      
-        ! Apply mass antidiffusion to antidiffusive fluxes based on
-        ! the approximation to the time derivative
-        call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-            p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
-      end if
-      
-      ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%istabilisationSpec =&
-          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
-
-
-    case (AFCSTAB_FEMFCT_MASS)
-      
-      !-------------------------------------------------------------------------
-      ! FEM-FCT algorithm for mass antidiffusion
-      !-------------------------------------------------------------------------
-      
-      if (present(rmatrix)) then
-        
-        ! Set pointers
-        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
-
-        ! Clear vector and assemble antidiffusive fluxes
-        call doMassFluxes(p_IverticesAtEdge, rafcstab%NEDGE,&
-            p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
-
-        ! Set specifiers for raw antidiffusive fluxes
-        rafcstab%istabilisationSpec =&
-            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
-        
-      else
-        call output_line('Unable to compute mass antidiffusion without mass matrix!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-        call sys_halt()
-      end if
-      
-      
-    case default
-      call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
-      call sys_halt()
-    end select
-
-  contains
-    
-    ! Here, the working routines follow
-
-    !**************************************************************
-    ! Assemble raw antidiffusive fluxes without
-    ! contribution of the consistent mass matrix.
-
-    subroutine doFluxes(IverticesAtEdge, NEDGE, DcoefficientsAtEdge,&
-        Dx, dscale, Dflux)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: Dx
-      real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: Dflux
-
-      ! local variables
-      integer :: iedge,i,j
-
-      if (dscale .eq. 0.0_DP) then
-        
-        call lalg_clearVector(Dflux)
-
-      else
-        
-        !$omp parallel do default(shared) private(i,j)&
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
         !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
         do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          
-          ! Compute raw antidiffusive flux
-          Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
+          Dflux2(iedge) = Dflux2(iedge)&
+                        + Dalpha(iedge) * Dflux1(iedge)
         end do
         !$omp end parallel do
         
-      end if
-
-    end subroutine doFluxes
-
-    !**************************************************************
-    ! Assemble fluxes for classical prelimiting.
-
-#ifndef USE_OPENMP
-    pure&
-#endif
-      subroutine doPrelimitingFluxes(IverticesAtEdge, NEDGE, Dx, Dflux)
-      
-      real(DP), dimension(:), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: Dflux
-
-      ! local variables
-      integer :: iedge,i,j
-
-      !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
+      elseif (dscale .eq. -1.0_DP) then
         
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge)&
+                        - Dalpha(iedge) * Dflux1(iedge)
+        end do
+        !$omp end parallel do
         
-        ! Compute solution difference; in contrast to the literature,
-        ! we compute the solution difference $u_i-u_j$ and check if
-        ! $f_{ij}(u_i-u_j)<0$ in the prelimiting step.
-        Dflux(iedge) = Dx(i)-Dx(j)
-      end do
-      !$omp end parallel do
-
-    end subroutine doPrelimitingFluxes
-    
-    !**************************************************************
-    ! Assemble raw antidiffusive mass fluxes
-
-    subroutine doMassFluxes(IverticesAtEdge, NEDGE, DmatrixData,&
-        Dx, dscale, bclear, Dflux)
-      
-      real(DP), dimension(:), intent(in) :: DmatrixData, Dx
-      real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      logical, intent(in) :: bclear
-
-      real(DP), dimension(:), intent(inout) :: Dflux
-      
-      ! local variables
-      integer :: iedge,ij,i,j
-      
-
-      if (dscale .eq. 0.0_DP) then
-        
-        ! Do we have to clear the vector?
-        if (bclear) call lalg_clearVector(Dflux)
-
       else
         
-        ! Do we have to clear the vector
-        if (bclear) then
-          
-          ! Loop over all edges
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-            
-            ! Get node numbers and matrix positions
-            i  = IverticesAtEdge(1, iedge)
-            j  = IverticesAtEdge(2, iedge)
-            ij = IverticesAtEdge(3, iedge)
-            
-            ! Compute the raw antidiffusives fluxes
-            Dflux(iedge) = dscale * DmatrixData(ij) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-          
-        else
-          
-          ! Loop over all edges
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-            
-            ! Get node numbers and matrix positions
-            i  = IverticesAtEdge(1, iedge)
-            j  = IverticesAtEdge(2, iedge)
-            ij = IverticesAtEdge(3, iedge)
-            
-            ! Compute the raw antidiffusives fluxes
-            Dflux(iedge) = Dflux(iedge) + dscale * DmatrixData(ij) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-          
-        end if
-
-      end if
-
-    end subroutine doMassFluxes
-
-    !**************************************************************
-    ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
-
-    subroutine doCombineFluxes(NEDGE, dscale, Dflux1, Dflux2, Dalpha)
-      
-      real(DP), dimension(:), intent(in) :: Dflux1
-      real(DP), dimension(:), intent(in), optional :: Dalpha
-      real(DP), intent(in) :: dscale
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: Dflux2
-
-      ! local variables
-      integer :: iedge
-
-      if (present(Dalpha)) then
-
         ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge)&
                         + dscale * Dalpha(iedge) * Dflux1(iedge)
         end do
-
-      else
-
+        !$omp end parallel do
+        
+      end if
+      
+    else   ! Dalpha not present
+      
+      if (dscale .eq. 1.0_DP) then
+        
         ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge) + Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (dscale .eq. -1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge) - Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge) + dscale * Dflux1(iedge)
         end do
-
+        !$omp end parallel do
+        
       end if
       
-    end subroutine doCombineFluxes
-    
-  end subroutine gfsc_buildFluxFCTScalar
+    end if
 
-  !*****************************************************************************
-  !*****************************************************************************
-  !*****************************************************************************
+  end subroutine gfsc_combineFluxesDble
 
-!<function>
+  ! ****************************************************************************
 
-  pure function gfsc_hasOrientation(rafcstab) result(bhasOrientation)
+!<subroutine>
+
+  pure subroutine gfsc_combineFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha)
 
 !<description>
-    ! This function returns .TRUE. if the given stabilisation structure
-    ! requires an oriented edge data structure. Otherwise it returns .FALSE.
+    ! This subroutine combines the two fluxes:
+    ! Fflux2 := Fflux2 + fscale * Falpha * Fflux1
 !</description>
-
+    
 !<input>
-    ! stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
+    ! First flux
+    real(SP), dimension(:), intent(in) :: Fflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(SP), dimension(:), intent(in), optional :: Falpha
+
+    ! Global scaling factor for all entries of flux1
+    real(SP), intent(in) :: fscale
+
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
 !</input>
 
-!<result>
-    ! =.TRUE. if edge orientation is required
-    ! =.FALSE. otherwise
-    logical :: bhasOrientation
-!</result>
-!</function>
-
-    select case(rafcstab%ctypeAFCstabilisation)
-    case(AFCSTAB_FEMTVD,&
-         AFCSTAB_FEMGP)
-      bhasOrientation = .true.
+!<inputoutput>
+    ! Second flux
+    real(SP), dimension(:), intent(inout) :: Fflux2
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+    
+    if (present(Falpha)) then
       
-    case DEFAULT
-      bhasOrientation = .false.
-    end select
-  end function gfsc_hasOrientation
+      if (fscale .eq. 1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge)&
+                        + Falpha(iedge) * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (fscale .eq. -1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge)&
+                        - Falpha(iedge) * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge)&
+                        + fscale * Falpha(iedge) * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+      
+    else   ! Falpha not present
+      
+      if (fscale .eq. 1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge) + Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (fscale .eq. -1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge) - Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge) + fscale * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+      
+    end if
+
+  end subroutine gfsc_combineFluxesSngl
 
 end module groupfemscalar

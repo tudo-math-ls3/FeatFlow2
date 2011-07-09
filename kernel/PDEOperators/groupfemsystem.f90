@@ -92,18 +92,6 @@
 !#                          gfsys_buildFluxFCTBlock
 !#     -> assembles the raw antidiffusive flux for FEM-FCT stabilisation
 !#
-!#
-!# Remark: The general internal data layout is as follows:
-!# 
-!# The scalar nodal vectors 1-6 contain the values 
-!# for Pp, Pm, Qp, Qm, Rp, Rm in this order.
-!#
-!# The scalar edgewise vectors contain the following data
-!#
-!# 1 | alpha
-!# 2 | total raw antidiffusive flux (explicit+implicit parts)
-!# 3 | explicit part of the raw antidiffusive flux
-!# 4 | constraining flux for prelimiting/implicit flux correction
 !# </purpose>
 !##############################################################################
 
@@ -284,9 +272,6 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variables
-    integer, dimension(2) :: Isize
-
 
     ! Check if block matrix has only one block
     if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and.&
@@ -325,9 +310,9 @@ contains
     end if
     rafcstab%NVAR  = rmatrixBlockTemplate%nblocksPerCol
     rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
-    rafcstab%NEDGE = int(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
-                              rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ))
-
+    rafcstab%NEDGE = (rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
+                      rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ)/2
+    rafcstab%NNVEDGE = 0
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -335,190 +320,70 @@ contains
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
 
-    case (AFCSTAB_FEMTVD)
+    case (AFCSTAB_TVD)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-      
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
       
 
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
 
       ! We need the 3 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux0)
-      allocate(rafcstab%p_rvectorFlux)
-
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE,&
-          1, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
 
       ! We need the edgewise vector for the prelimited fluxes
-      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_NOPRELIMITING).or.&
-          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
-        allocate(rafcstab%p_rvectorFluxPrel)
-        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
-            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_PRELIMITING_NONE).or.&
+          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+        call afcstab_allocFluxPrel(rafcstab)
       end if
 
       ! We need the nodal block vector for the low-order predictor
       allocate(rafcstab%p_rvectorPredictor)
       if (present(rblockDiscretisation)) then
         call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
+            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
       else
         call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+            rafcstab%NEQ, rafcstab%NVAR, .false., rafcstab%cdataType)
       end if
 
 
-    case (AFCSTAB_FEMFCT_LINEARISED,&
-          AFCSTAB_FEMFCT_MASS)
+    case (AFCSTAB_LINFCT,&
+          AFCSTAB_LINFCT_MASS)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
 
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux)
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
 
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE,&
-          1, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-
-      ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
-        allocate(rafcstab%p_rvectorFluxPrel)
-        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
-            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      ! We need the edgewise vector if raw antidiffusive fluxes should
+      ! be prelimited
+      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+        call afcstab_allocFluxPrel(rafcstab)
       end if
 
-!!$      ! We need the nodal block vector for the low-order predictor
-!!$      allocate(rafcstab%p_rvectorPredictor)
-!!$      if (present(rblockDiscretisation)) then
-!!$        call lsysbl_createVectorBlock(rblockDiscretisation,&
-!!$            rafcstab%p_rvectorPredictor, .false., ST_DOUBLE)
-!!$      else
-!!$        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-!!$            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
-!!$      end if
-
-      
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_initStabilisationBlock')
@@ -567,7 +432,6 @@ contains
 
     ! local variables
     type(t_vectorScalar) :: rvectorTmp
-    integer, dimension(2) :: Isize
 
 
     ! Set atomic data
@@ -578,8 +442,8 @@ contains
     end if
     rafcstab%NVAR  = rmatrixTemplate%NVAR
     rafcstab%NEQ   = rmatrixTemplate%NEQ
-    rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
-
+    rafcstab%NEDGE = (rmatrixTemplate%NA-rmatrixTemplate%NEQ)/2
+    rafcstab%NNVEDGE = 0
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -587,123 +451,48 @@ contains
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
 
-    case (AFCSTAB_FEMTVD)
+    case (AFCSTAB_TVD)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
 
       
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
 
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
 
       ! We need the 3 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux0)
-      allocate(rafcstab%p_rvectorFlux)
-
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE,&
-          1, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
 
       ! We need the edgewise vector for the prelimited fluxes
-      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_NOPRELIMITING) .or.&
-          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
-        allocate(rafcstab%p_rvectorFluxPrel)
-        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
-            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_PRELIMITING_NONE) .or.&
+          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+        call afcstab_allocFluxPrel(rafcstab)
       end if
 
       ! We need the nodal block vector for the low-order predictor
       allocate(rafcstab%p_rvectorPredictor)
       if (present(rspatialDiscretisation)) then
         call lsyssc_createVecByDiscr(rspatialDiscretisation,&
-            rvectorTmp, rafcstab%NVAR, .false., ST_DOUBLE)
+            rvectorTmp, rafcstab%NVAR, .false., rafcstab%cdataType)
       else
         call lsyssc_createVector(rvectorTmp,&
-            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+            rafcstab%NEQ, rafcstab%NVAR, .false., rafcstab%cdataType)
       end if
       
       ! Convert into 1-block vector
@@ -711,57 +500,23 @@ contains
       call lsyssc_releaseVector(rvectorTmp)
       
 
-    case (AFCSTAB_FEMFCT_LINEARISED,&
-          AFCSTAB_FEMFCT_MASS)
-
-      ! Handle for IverticesAtEdgeIdx
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdgeIdx',&
-          2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
-
-      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
-      Isize = (/4, rafcstab%NEDGE/)
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
-          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+    case (AFCSTAB_LINFCT,&
+          AFCSTAB_LINFCT_MASS)
+      
+      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
-      allocate(rafcstab%p_rvectorPp)
-      allocate(rafcstab%p_rvectorPm)
-      allocate(rafcstab%p_rvectorQp)
-      allocate(rafcstab%p_rvectorQm)
-      allocate(rafcstab%p_rvectorRp)
-      allocate(rafcstab%p_rvectorRm)
-
-      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
-          rafcstab%NVARtransformed, .false., ST_DOUBLE)
+      call afcstab_allocVectorsPQR(rafcstab)
       
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
-      allocate(rafcstab%p_rvectorAlpha)
-      allocate(rafcstab%p_rvectorFlux)
-
-      call lsyssc_createVector(rafcstab%p_rvectorAlpha, rafcstab%NEDGE,&
-          1, .false., ST_DOUBLE)
-      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
-          rafcstab%NVAR, .false., ST_DOUBLE)
-
-      ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
-        allocate(rafcstab%p_rvectorFluxPrel)
-        call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,&
-            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      ! We need the edgewise vector if raw antidiffusive fluxes should
+      ! be prelimited
+      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+        call afcstab_allocFluxPrel(rafcstab)
       end if
       
       ! We need the nodal block vector for the low-order predictor
@@ -3420,6 +3175,7 @@ contains
         Dy(j,:) = Dy(j,:)-Dflux
         
       end do
+
       !$omp end parallel do
 
     end subroutine doLimitADFluxes_sim
@@ -4789,7 +4545,7 @@ contains
       call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
       else
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
@@ -4799,7 +4555,7 @@ contains
       if (present(fcb_calcADIncrements)) then
 
         ! User-supplied callback routine ...
-        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_NOPRELIMITING) then
+        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_NONE) then
           ! ... without prelimiting
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
@@ -4814,7 +4570,7 @@ contains
               p_Dpm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         end if
 
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_NOPRELIMITING) then
+      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_NONE) then
         ! ... without prelimiting
         if (present(fcb_calcFluxTransformation_sim)) then
           ! ... with flux transformation
@@ -4840,7 +4596,7 @@ contains
           ! ... without flux transformation
           call doPreADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_Dflux, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
+              p_Dflux, p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
         end if
         
       elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
@@ -4909,7 +4665,7 @@ contains
       
       ! Set specifiers
       rafcstab%istabilisationSpec =&
-          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
     end if
 
 
@@ -4920,7 +4676,7 @@ contains
 
       ! Check if stabilisation provides antidiffusive increments and local bounds
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
-          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
@@ -4941,7 +4697,7 @@ contains
         ! User-supplied callback routine
         call fcb_limitNodal(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
-      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Standard routine without constraints
         call doLimitNodal(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
@@ -4986,7 +4742,7 @@ contains
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
@@ -5285,9 +5041,10 @@ contains
     ! prelimiting
 
     subroutine doPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, Dx, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
 
       ! input parameters
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
@@ -5324,8 +5081,23 @@ contains
           i  = IverticesAtEdge(1,iedge)
           j  = IverticesAtEdge(2,iedge)
           
+#ifdef GFSYS_USE_SAFE_FPA
+          ! Check if the antidiffusive flux is directed down the
+          ! gradient using safe floating-point arithmetic, i.e.
+          !   $f_ij*(u_i-u_j) < -tol*min(|u_i|,|u_j|)$
+          ! In the standard procedure the right-hand side is a
+          ! constant which is the same for small and large solution
+          ! values. Here, we take into account the magnitude of the
+          ! solution and prelimit the flux if it has the wrong sign
+          ! and exceeds a solution dependent tolerance.          
+          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge)&
+              .lt. -AFCSTAB_PRELIMREL*min(abs(Dx(i,:)),abs(Dx(j,:))))) then
+#else
           ! Check if the antidiffusive flux is directed down the gradient
-          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge) .lt. 0.0_DP)) then
+          !   $f_ij*(u_i-u_j) < -tol$
+          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge)&
+              .lt. -AFCSTAB_PRELIMABS)) then
+#endif
 
             ! Cancel antidiffusive flux completely
             Dalpha(iedge) = 0.0_DP   
@@ -5371,6 +5143,8 @@ contains
 
       ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DdataAtNode
+      real(DP), dimension(:,:,:), pointer :: DdataAtNodeTransformed
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedPrelFluxesAtEdge
@@ -5387,13 +5161,25 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
       !$omp         DtransformedPrelFluxesAtEdge,F_ij,F_ji,IEDGEmax,&
-      !$omp         i,idx,iedge,j)
+      !$omp         i,idx,iedge,j,DdataAtNode,DdataAtNodeTransformed)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       allocate(DtransformedPrelFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+#ifdef GFSYS_USE_SAFE_FPA
+      ! Check if callback routine for nodal transformation is
+      ! available and allocate additional temporal memory
+      if (.not.(present(fcb_calcNodalTransformation_sim))) then
+        call output_line('Missing callback function fcb_calcNodalTransformation_sim',&
+            OU_CLASS_ERROR,OU_MODE_STD,'doPreADIncrementsTransformed')
+        call sys_halt()
+      end if
+      allocate(DdataAtNode(NVAR,GFSYS_NEDGESIM,2))
+      allocate(DdataAtNodeTransformed(NVARtransformed,GFSYS_NEDGESIM,2))
+#endif
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -5443,6 +5229,28 @@ contains
               DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
           
+#ifdef GFSYS_USE_SAFE_FPA
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtNode(:,idx,1) = Dx(IverticesAtEdge(1,iedge),:)
+            DdataAtNode(:,idx,2) = Dx(IverticesAtEdge(2,iedge),:)
+          end do
+
+          ! Use callback function to compute transformed nodal values
+          call fcb_calcNodalTransformation_sim(&
+              DdataAtNode(:,1:IEDGEmax-IEDGEset+1,1), IEDGEmax-IEDGEset+1,&
+              DdataAtNodeTransformed(:,1:IEDGEmax-IEDGEset+1,1), rcollection)
+          call fcb_calcNodalTransformation_sim(&
+              DdataAtNode(:,1:IEDGEmax-IEDGEset+1,2), IEDGEmax-IEDGEset+1,&
+              DdataAtNodeTransformed(:,1:IEDGEmax-IEDGEset+1,2), rcollection)
+#endif
+
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
           do idx = 1, IEDGEmax-IEDGEset+1
@@ -5454,9 +5262,27 @@ contains
             i = IverticesAtEdge(1,iedge)
             j = IverticesAtEdge(2,iedge)
       
-            ! Check if the antidiffusive flux is directed down the gradient
+#ifdef GFSYS_USE_SAFE_FPA
+            ! Check if the antidiffusive flux is directed down the
+            ! gradient using safe floating-point arithmetic, i.e.
+            !   $T(u_i)*f_ij*T(u_i)(u_i-u_j) < -tol*|T(u_i)*u_i|$
+            ! or
+            !   $T(u_j)*f_ji*T(u_j)(u_j-u_i) < -tol*|T(u_j)*u_j|$
+            ! In the standard procedure the right-hand side is a
+            ! constant which is the same for small and large solution
+            ! values. Here, we take into account the magnitude of the
+            ! solution and prelimit the flux if it has the wrong sign
+            ! and exceeds a solution dependent tolerance. 
             if (any(DtransformedFluxesAtEdge(:,:,idx)*&
-                DtransformedPrelFluxesAtEdge(:,:,idx) .lt. 0.0_DP)) then
+                DtransformedPrelFluxesAtEdge(:,:,idx)&
+                .lt. -AFCSTAB_PRELIMREL*abs(DdataAtNodeTransformed(:,idx,:)))) then
+#else
+            ! Check if the antidiffusive flux is directed down the gradient
+            !   $f_ij*(u_i-u_j) < -tol$
+            if (any(DtransformedFluxesAtEdge(:,:,idx)*&
+                DtransformedPrelFluxesAtEdge(:,:,idx)&
+                .lt. -AFCSTAB_PRELIMABS)) then
+#endif
 
               ! Cancel antidiffusive flux completely
               Dalpha(iedge) = 0.0_DP
@@ -5484,6 +5310,10 @@ contains
       deallocate(DfluxesAtEdge)
       deallocate(DtransformedFluxesAtEdge)
       deallocate(DtransformedPrelFluxesAtEdge)
+#ifdef GFSYS_USE_SAFE_FPA
+      deallocate(DdataAtNode)
+      deallocate(DdataAtNodeTransformed)
+#endif
       !$omp end parallel
 
     end subroutine doPreADIncrementsTransformed
@@ -5936,7 +5766,7 @@ contains
       integer :: IEQmax,IEQset,idx,ieq
 
       
-#ifndef GFSYS_USE_SAFE_FPA
+#ifndef GFSYS_USE_SAFE_FPA_OLD
 
       ! Loop over all vertices
       do ieq = 1, NEQ
@@ -6708,7 +6538,7 @@ contains
       ! Special treatment for semi-implicit FEM-FCT algorithm; we need
       ! the spatial part of the antidiffusive fluxes which, in this
       ! special case, is stored in the fluxes for prelimiting
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux)
       else
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
@@ -6718,7 +6548,7 @@ contains
       if (present(fcb_calcADIncrements)) then
 
         ! User-supplied callback routine ...
-        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_NOPRELIMITING) then
+        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_NONE) then
           ! ... without prelimiting
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
@@ -6733,7 +6563,7 @@ contains
               p_Dpm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         end if
 
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_NOPRELIMITING) then
+      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_NONE) then
         ! ... without prelimiting
         if (present(fcb_calcFluxTransformation_sim)) then
           ! ... with flux transformation
@@ -6758,7 +6588,7 @@ contains
         else
           ! ... without flux transformation
           call doPreADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, p_Dx,&
               p_Dflux, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
         end if
         
@@ -6828,7 +6658,7 @@ contains
       
       ! Set specifiers
       rafcstab%istabilisationSpec =&
-          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
     end if
 
 
@@ -6839,7 +6669,7 @@ contains
 
       ! Check if stabilisation provides antidiffusive increments and local bounds
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
-          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
@@ -6860,7 +6690,7 @@ contains
         ! User-supplied callback routine
         call fcb_limitNodal(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
-      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Standard routine without constraints
         call doLimitNodal(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
@@ -6875,7 +6705,7 @@ contains
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
     end if
 
-
+goto 10
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITEDGE) .ne. 0) then
       !-------------------------------------------------------------------------
       ! Compute edgewise correction factors
@@ -6905,7 +6735,7 @@ contains
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
@@ -6950,7 +6780,7 @@ contains
       end if
 
       ! Set specifier
-      rafcstab%istabilisationSpec =&
+10    rafcstab%istabilisationSpec =&
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
     end if
 
@@ -7205,9 +7035,10 @@ contains
     ! prelimiting
 
     subroutine doPreADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, Dx, Dflux, DfluxPrel, Dalpha, Dpp, Dpm)
       
       ! input parameters
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
@@ -7244,8 +7075,23 @@ contains
           i  = IverticesAtEdge(1,iedge)
           j  = IverticesAtEdge(2,iedge)
           
+#ifdef GFSYS_USE_SAFE_FPA
+          ! Check if the antidiffusive flux is directed down the
+          ! gradient using safe floating-point arithmetic, i.e.
+          !   $f_ij*(u_i-u_j) < -tol*min(|u_i|,|u_j|)$
+          ! In the standard procedure the right-hand side is a
+          ! constant which is the same for small and large solution
+          ! values. Here, we take into account the magnitude of the
+          ! solution and prelimit the flux if it has the wrong sign
+          ! and exceeds a solution dependent tolerance.          
+          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge)&
+              .lt. -AFCSTAB_PRELIMREL*min(abs(Dx(:,i)),abs(Dx(:,j))))) then
+#else
           ! Check if the antidiffusive flux is directed down the gradient
-          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge) .lt. 0.0_DP)) then
+          !   $f_ij*(u_i-u_j) < -tol$
+          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge)&
+              .lt. -AFCSTAB_PRELIMABS)) then
+#endif
 
             ! Cancel antidiffusive flux completely
             Dalpha(iedge) = 0.0_DP
@@ -7291,6 +7137,8 @@ contains
 
       ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DdataAtNode
+      real(DP), dimension(:,:,:), pointer :: DdataAtNodeTransformed
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DtransformedPrelFluxesAtEdge
@@ -7307,13 +7155,25 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
       !$omp         DtransformedPrelFluxesAtEdge,F_ij,F_ji,IEDGEmax,&
-      !$omp         i,idx,iedge,j)
+      !$omp         i,idx,iedge,j,DdataAtNode,DdataAtNodeTransformed)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
       allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
       allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
       allocate(DtransformedPrelFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+#ifdef GFSYS_USE_SAFE_FPA
+      ! Check if callback routine for nodal transformation is
+      ! available and allocate additional temporal memory
+      if (.not.(present(fcb_calcNodalTransformation_sim))) then
+        call output_line('Missing callback function fcb_calcNodalTransformation_sim',&
+            OU_CLASS_ERROR,OU_MODE_STD,'doPreADIncrementsTransformed')
+        call sys_halt()
+      end if
+      allocate(DdataAtNode(NVAR,GFSYS_NEDGESIM,2))
+      allocate(DdataAtNodeTransformed(NVARtransformed,GFSYS_NEDGESIM,2))
+#endif
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -7362,6 +7222,28 @@ contains
               DfluxPrel(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               rcollection)
+
+#ifdef GFSYS_USE_SAFE_FPA
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtNode(:,idx,1) = Dx(:,IverticesAtEdge(1,iedge))
+            DdataAtNode(:,idx,2) = Dx(:,IverticesAtEdge(2,iedge))
+          end do
+
+          ! Use callback function to compute transformed nodal values
+          call fcb_calcNodalTransformation_sim(&
+              DdataAtNode(:,1:IEDGEmax-IEDGEset+1,1), IEDGEmax-IEDGEset+1,&
+              DdataAtNodeTransformed(:,1:IEDGEmax-IEDGEset+1,1), rcollection)
+          call fcb_calcNodalTransformation_sim(&
+              DdataAtNode(:,1:IEDGEmax-IEDGEset+1,2), IEDGEmax-IEDGEset+1,&
+              DdataAtNodeTransformed(:,1:IEDGEmax-IEDGEset+1,2), rcollection)
+#endif
           
           ! Loop through all edges in the current set
           ! and scatter the entries to the global vector
@@ -7374,9 +7256,27 @@ contains
             i = IverticesAtEdge(1,iedge)
             j = IverticesAtEdge(2,iedge)
 
-            ! Check if the antidiffusive flux is directed down the gradient
+#ifdef GFSYS_USE_SAFE_FPA
+            ! Check if the antidiffusive flux is directed down the
+            ! gradient using safe floating-point arithmetic, i.e.
+            !   $T(u_i)*f_ij*T(u_i)(u_i-u_j) < -tol*|T(u_i)*u_i|$
+            ! or
+            !   $T(u_j)*f_ji*T(u_j)(u_j-u_i) < -tol*|T(u_j)*u_j|$
+            ! In the standard procedure the right-hand side is a
+            ! constant which is the same for small and large solution
+            ! values. Here, we take into account the magnitude of the
+            ! solution and prelimit the flux if it has the wrong sign
+            ! and exceeds a solution dependent tolerance. 
             if (any(DtransformedFluxesAtEdge(:,:,idx)*&
-                DtransformedPrelFluxesAtEdge(:,:,idx) .lt. 0.0_DP)) then
+                DtransformedPrelFluxesAtEdge(:,:,idx)&
+                .lt. -AFCSTAB_PRELIMREL*abs(DdataAtNodeTransformed(:,idx,:)))) then
+#else
+            ! Check if the antidiffusive flux is directed down the gradient
+            !   $f_ij*(u_i-u_j) < -tol$
+            if (any(DtransformedFluxesAtEdge(:,:,idx)*&
+                DtransformedPrelFluxesAtEdge(:,:,idx)&
+                .lt. -AFCSTAB_PRELIMABS)) then
+#endif
 
               ! Cancel antidiffusive flux completely
               Dalpha(iedge) = 0.0_DP
@@ -7399,12 +7299,16 @@ contains
         !$omp end do
 
       end do ! igroup
-      
+
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
       deallocate(DfluxesAtEdge)
       deallocate(DtransformedFluxesAtEdge)
       deallocate(DtransformedPrelFluxesAtEdge)
+#ifdef GFSYS_USE_SAFE_FPA
+      deallocate(DdataAtNode)
+      deallocate(DdataAtNodeTransformed)
+#endif
       !$omp end parallel
       
     end subroutine doPreADIncrementsTransformed
@@ -7454,8 +7358,10 @@ contains
           i  = IverticesAtEdge(1,iedge)
           j  = IverticesAtEdge(2,iedge)
           
-          ! Check if the antidiffusive flux is directed down the gradient
-          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge) .lt. 0.0_DP)) then
+          ! Check if the antidiffusive flux has different sign than
+          ! the antidiffusive flux without mass contribution (if any)
+          !   $f_ij*d_{ij}(u_i-u_j) < -tol$
+          if (any(Dflux(:,iedge)*DfluxPrel(:,iedge) .lt. -AFCSTAB_PRELIMABS)) then
             
             ! Cancel antidiffusive flux completely
             Dalpha(iedge) = 0.0_DP
@@ -7856,7 +7762,7 @@ contains
       integer :: IEQmax,IEQset,idx,ieq
 
 
-#ifndef GFSYS_USE_SAFE_FPA
+#ifndef GFSYS_USE_SAFE_FPA_OLD
       
       ! Loop over all vertices
       do ieq = 1, NEQ
@@ -8542,7 +8448,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0) .and.&
-        (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_FEMFCT_MASS)) then
+        (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_LINFCT_MASS)) then
       call output_line('Stabilisation does not provide edge-based data structures',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
       call sys_halt()
@@ -8550,8 +8456,8 @@ contains
 
     ! Check if stabilisation is compatible with matrix (if present)
     if (present(rmatrix)) then
-      if ((rafcstab%NEQ .ne. rmatrix%NEQ) .or.&
-          (rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) .or.&
+      if ((rafcstab%NEQ       .ne. rmatrix%NEQ) .or.&
+          (rafcstab%NEDGE * 2 .ne. rmatrix%NA-rmatrix%NEQ) .or.&
           (rafcstab%cmatrixFormat .ne. rmatrix%cmatrixFormat)) then
         call output_line('Matrix is not compatible with stabilisation structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
@@ -8567,9 +8473,9 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
 
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
 
       !-------------------------------------------------------------------------
       ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
@@ -8591,7 +8497,7 @@ contains
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
       if (.not.binit .and.&
-          rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+          rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_ITERATIVE) then
 
         ! Check if stabilisation provides raw antidiffusive fluxes
         if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
@@ -8689,7 +8595,7 @@ contains
       ! Check for special treatment
       if (binit) then
 
-        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
           ! We have to store the initial fluxes separately (i.e. the
           ! raw-antidiffusive fluxes based on the initial solution
@@ -8698,7 +8604,7 @@ contains
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
               rafcstab%p_rvectorFluxPrel)
 
-        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
+        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
           
           ! We have to assemble the raw-antidiffusive fluxes used for
           ! prelimiting separately based on the low-order predictor
@@ -8733,7 +8639,7 @@ contains
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
 
-    case (AFCSTAB_FEMFCT_LINEARISED)
+    case (AFCSTAB_LINFCT)
 
       !-------------------------------------------------------------------------
       ! Linearised FEM-FCT algorithm
@@ -8782,7 +8688,7 @@ contains
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
 
-    case (AFCSTAB_FEMFCT_MASS)
+    case (AFCSTAB_LINFCT_MASS)
 
       !-------------------------------------------------------------------------
       ! FEM-FCT algorithm for mass antidiffusion
@@ -9100,7 +9006,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0) .and.&
-        (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_FEMFCT_MASS)) then
+        (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_LINFCT_MASS)) then
       call output_line('Stabilisation does not provide edge-based data structures',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
       call sys_halt()
@@ -9108,8 +9014,8 @@ contains
 
     ! Check if stabilisation is compatible with matrix (if present)
     if (present(rmatrix)) then
-      if ((rafcstab%NEQ .ne. rmatrix%NEQ) .or.&
-          (rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) .or.&
+      if ((rafcstab%NEQ       .ne. rmatrix%NEQ) .or.&
+          (rafcstab%NEDGE * 2 .ne. rmatrix%NA-rmatrix%NEQ) .or.&
           (rafcstab%cmatrixFormat .ne. rmatrix%cmatrixFormat)) then
         call output_line('Matrix is not compatible with stabilisation structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
@@ -9125,9 +9031,9 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
 
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
 
       !-------------------------------------------------------------------------
       ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
@@ -9149,7 +9055,7 @@ contains
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
       if (.not.binit .and.&
-          rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+          rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_ITERATIVE) then
 
         ! Check if stabilisation provides raw antidiffusive fluxes
         if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
@@ -9247,7 +9153,7 @@ contains
       ! Check for special treatment
       if (binit) then
 
-        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
           ! We have to store the initial fluxes separately (i.e. the
           ! raw-antidiffusive fluxes based on the initial solution
@@ -9256,7 +9162,7 @@ contains
           call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
               rafcstab%p_rvectorFluxPrel)
 
-        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_NOPRELIMITING) then
+        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
           
           ! We have to assemble the raw-antidiffusive fluxes used for
           ! prelimiting separately based on the low-order predictor
@@ -9292,7 +9198,7 @@ contains
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
 
-    case (AFCSTAB_FEMFCT_LINEARISED)
+    case (AFCSTAB_LINFCT)
 
       !-------------------------------------------------------------------------
       ! Linearised FEM-FCT algorithm
@@ -9341,7 +9247,7 @@ contains
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
 
       
-    case (AFCSTAB_FEMFCT_MASS)
+    case (AFCSTAB_LINFCT_MASS)
 
       !-------------------------------------------------------------------------
       ! FEM-FCT algorithm for mass antidiffusion

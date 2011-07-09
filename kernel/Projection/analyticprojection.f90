@@ -1107,7 +1107,7 @@ contains
     
     ! Initialise the stabilisation structure
     rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
-    rafcstab%ctypePrelimiting = AFCSTAB_NOPRELIMITING
+    rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
     rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
     call gfsc_initStabilisation(rmatrixMass, rafcstab)
     call afcstab_generateVerticesAtEdge(rmatrixMass, rafcstab)

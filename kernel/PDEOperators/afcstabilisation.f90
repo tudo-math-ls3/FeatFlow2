@@ -63,63 +63,99 @@
 !# 15.) afcstab_getbase_IsubdiagEdge
 !#      -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 16.) afcstab_getbase_DcoeffsAtEdge
+!# 16.) afcstab_getbase_DcoeffsAtEdge = afcstab_getbase_DcoeffsAtEdge /
+!#                                      afcstab_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 17.) afcstab_getbase_DmatCoeffAtNode
+!# 17.) afcstab_getbase_DmatCoeffAtNode = afcstab_getbase_DmatCoeffAtNode /
+!#                                        afcstab_getbase_FmatCoeffAtNode
 !#      -> Returns pointer to the diagonal entries
 !#         of the auxiiliary constant matrix coefficients
 !#
-!# 18.) afcstab_getbase_DmatCoeffAtEdge
+!# 18.) afcstab_getbase_DmatCoeffAtEdge = afcstab_getbase_DmatCoeffAtEdge /
+!#                                        afcstab_getbase_FmatCoeffAtEdge
 !#      -> Returns pointer to the off-diagonal entries
 !#         of the auxiliary constant matrix coefficients
 !#
-!# 19.) afcstab_generateVerticesAtEdge
+!# 19.) afcstab_getbase_DboundsAtEdge = afcstab_getbase_DboundsAtEdge /
+!#                                      afcstab_getbase_FboundsAtEdge
+!#      -> Returns pointer to the bounds at edges
+!#
+!# 20.) afcstab_generateVerticesAtEdge
 !#      -> Generates the standard edge data structure
 !#
-!# 20.) afcstab_generateOffdiagEdges
+!# 21.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 21.) afcstab_generateExtSparsity
+!# 22.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 22.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
+!# 23.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
 !#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
-!# 23.) afcstab_copyH2D_IverticesAtEdge
+!# 24.) afcstab_copyH2D_IverticesAtEdge
 !#      -> Copies the vertices at edge structure from the host memory
 !#         to the device memory.
 !#
-!# 24.) afcstab_copyD2H_IverticesAtEdge
+!# 25.) afcstab_copyD2H_IverticesAtEdge
 !#      -> Copies the vertices at edge structure from the device memory
 !#         to the host memory.
 !#
-!# 25.) afcstab_copyH2D_DmatCoeffAtEdge
+!# 26.) afcstab_copyH2D_DmatCoeffAtEdge
 !# -> Copies the off-diagonal entries of the auxiliary constant matrix
 !#         coefficients from the host memory to the device memory.
 !#
-!# 26.) afcstab_copyD2H_DmatCoeffAtEdge
-!# -> Copies the off-diagonal entries of the auxiliary constant matrix
+!# 27.) afcstab_copyD2H_DmatCoeffAtEdge
+!#      -> Copies the off-diagonal entries of the auxiliary constant matrix
 !#         coefficients from the device memory to the host memory.
 !#
-!# The following auxiliary routines are available:
+!# 28.) afcstab_allocEdgeStructure
+!#      -> Allocates the edge data structure
 !#
-!# 1.) afcstab_limit = afcstab_limit_unbounded/
-!#                     afcstab_limit_bounded
-!#     -> Compute the nodal correction factors, i.e., the ratio of
-!#        admissible solution increments and raw antidiffusion
+!# 29.) afcstab_allocCoeffsAtEdge
+!#      -> Allocates the coefficients at edge data structure
+!#
+!# 30.) afcstab_allocVectorsPQR
+!#      -> Allocates the nodal vectors P, Q, and R each for '+' and '-'
+!#
+!# 31.) afcstab_allocFlux
+!#      -> Allocates the edge-wise flux vector flux
+!#
+!# 32.) afcstab_allocFlux0
+!#      -> Allocates the edge-wise flux vector flux0
+!#
+!# 33.) afcstab_allocFluxPrel
+!#      -> Allocates the edge-wise flux vector fluxPrel
+!#
+!# 34.) afcstab_allocAlpha
+!#      -> Allocates the edge-wise correction factors alpha
+!#
+!# 35.) afcstab_allocBoundsAtEdge
+!#      -> Allocates the bounds at edge data structure
+!#
+!# 36.) afcstab_limit = afcstab_limit_unbounded/
+!#                      afcstab_limit_bounded
+!#      -> Compute the nodal correction factors, i.e., the ratio of
+!#         admissible solution increments and raw antidiffusion
+!#
+!# 37.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
+!#                               afcstab_buildBoundsLPT2D /
+!#                               afcstab_buildBoundsLPT3D
+!#          
 !#
 !# </purpose>
 !##############################################################################
 module afcstabilisation
 
+  use basicgeometry
   use fsystem
   use genoutput
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use paramlist
+  use spatialdiscretisation
   use storage
   use triangulation
 
@@ -127,6 +163,7 @@ module afcstabilisation
   
   private
   public :: t_afcstab, t_array
+
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
@@ -136,6 +173,7 @@ module afcstabilisation
   public :: afcstab_copyMatrixCoeffs
   public :: afcstab_isMatrixCompatible
   public :: afcstab_isVectorCompatible
+
   public :: afcstab_getbase_array
   public :: afcstab_getbase_IvertAtEdgeIdx
   public :: afcstab_getbase_IverticesAtEdge
@@ -145,14 +183,28 @@ module afcstabilisation
   public :: afcstab_getbase_DcoeffsAtEdge
   public :: afcstab_getbase_DmatCoeffAtNode
   public :: afcstab_getbase_DmatCoeffAtEdge
+  public :: afcstab_getbase_DboundsAtEdge
+
   public :: afcstab_generateVerticesAtEdge
   public :: afcstab_generateOffdiagEdges
   public :: afcstab_generateExtSparsity
-  public :: afcstab_failsafeLimiting
+
   public :: afcstab_copyD2H_IverticesAtEdge
   public :: afcstab_copyD2H_DmatCoeffAtEdge
   public :: afcstab_copyH2D_IverticesAtEdge
   public :: afcstab_copyH2D_DmatCoeffAtEdge
+
+  public :: afcstab_failsafeLimiting
+  public :: afcstab_buildBoundsLPT
+
+  public :: afcstab_allocEdgeStructure
+  public :: afcstab_allocCoeffsAtEdge
+  public :: afcstab_allocBoundsAtEdge
+  public :: afcstab_allocVectorsPQR
+  public :: afcstab_allocFluxPrel
+  public :: afcstab_allocFlux0
+  public :: afcstab_allocFlux
+  public :: afcstab_allocAlpha
   
   public :: afcstab_limit
  
@@ -163,49 +215,88 @@ module afcstabilisation
 !<constants>
 !<constantblock description="Global format flags for AFC stabilisation">
 
+  ! ***** Stabilisation group 0x: no high-resolution stabilisation *****
+
   ! No stabilisation: use standard high-order Galerkin discretisation
   integer, parameter, public :: AFCSTAB_GALERKIN              = 0
   
-  ! Stabilisation of discrete upwind type for convection operators
+  ! Stabilisation of discrete upwind type for non-symmetric operators
   integer, parameter, public :: AFCSTAB_UPWIND                = 1
 
-  ! Stabilisation of discrete maximum principle preserving 
-  ! type for anisotropic diffusion operators
+  ! Stabilisation of discrete maximum principle preserving type for
+  ! symmetric operators
   integer, parameter, public :: AFCSTAB_DMP                   = 2
 
-  ! Stabilisation of semi-implicit FEM-FCT type
-  integer, parameter, public :: AFCSTAB_FEMFCT_IMPLICIT       = 10
 
-  ! Stabilisation of semi-explicit (classical) FEM-FCT type
-  integer, parameter, public :: AFCSTAB_FEMFCT_CLASSICAL      = 11
+  ! ***** Stabilisation group 1x: nonlinear FEM-FCT stabilisation *****
+
+  ! Stabilisation of semi-explicit FEM-FCT type
+  integer, parameter, public :: AFCSTAB_NLINFCT_EXPLICIT      = 10
+
+  ! Stabilisation of semi-implicit FEM-FCT type
+  integer, parameter, public :: AFCSTAB_NLINFCT_IMPLICIT      = 11
+
+  ! Stabilisation of iterative FEM-FCT type
+  integer, parameter, public :: AFCSTAB_NLINFCT_ITERATIVE     = 12
+
+
+  ! ***** Stabilisation group 2x: linearised FEM-FCT stabilisation *****
 
   ! Stabilisation of linearised FEM-FCT type
-  integer, parameter, public :: AFCSTAB_FEMFCT_LINEARISED     = 12
-  
-  ! Stabilisation of iterative FEM-FCT type
-  integer, parameter, public :: AFCSTAB_FEMFCT_ITERATIVE      = 13
-  
-  ! Stabilisation of characteristic FEM-FCT type
-  integer, parameter, public :: AFCSTAB_FEMFCT_CHARACTERISTIC = 14
+  integer, parameter, public :: AFCSTAB_LINFCT                = 20
 
-  ! Stabilisation of FEM-FCT type for mass antidiffusion
-  integer, parameter, public :: AFCSTAB_FEMFCT_MASS           = 15
+  ! Stabilisation of linearised FEM-FCT type for mass antidiffusion
+  integer, parameter, public :: AFCSTAB_LINFCT_MASS           = 21
 
-  ! Stabilisation of FEM-TVD type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMTVD                = 20
 
-  ! Stabilisation of general purpose type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMGP                 = 21
+  ! ***** Stabilisation group 3x: upwind-biased FEM-TVD stabilisation *****
   
+  ! Stabilisation of FEM-TVD type
+  integer, parameter, public :: AFCSTAB_TVD                   = 30
+  
+  ! Stabilisation of general purpose type
+  integer, parameter, public :: AFCSTAB_GP                    = 31
+
   ! Stabilisation of symmetric type for diffusion operators
-  integer, parameter, public :: AFCSTAB_SYMMETRIC             = 30
+  integer, parameter, public :: AFCSTAB_SYMMETRIC             = 32
+
+  
+  ! ***** Stabilisation group 4x: nonlinear FEM-LP stabilisation *****
+
+  ! Stabilisation of linearity-preserving flux correction type
+  ! for symmetric mass antidiffusion
+  integer, parameter, public :: AFCSTAB_NLINLPT_MASS          = 40
+
+  ! Stabilisation of linearity-preserving flux correction type
+  ! for upwind-biased antidiffusion (e.g., convection)
+  integer, parameter, public :: AFCSTAB_NLINLPT_UPWINDBIASED  = 41
+
+  ! Stabilisation of linearity-preserving flux correction type
+  ! for symmetric antidiffusion (e.g., diffusion)
+  integer, parameter, public :: AFCSTAB_NLINLPT_SYMMETRIC     = 42
+  
+  
+  ! ***** Stabilisation group 5x: linearised FEM-LP stabilisation *****
+
+  ! Stabilisation of linearised linearity-preserving flux correction
+  ! type for symmetric mass antidiffusion
+  integer, parameter, public :: AFCSTAB_LINLPT_MASS           = 50
+
+  ! Stabilisation of linearised linearity-preserving flux correction
+  ! type for upwind-biased antidiffusion (e.g., convection)
+  integer, parameter, public :: AFCSTAB_LINLPT_UPWINDBIASED   = 51
+
+  ! Stabilisation of linearised linearity-preserving flux correction
+  ! type for symmetric antidiffusion (e.g., diffusion)
+  integer, parameter, public :: AFCSTAB_LINLPT_SYMMETRIC      = 52
   
 !</constantblock>
+
 
 !<constantblock description="Global format flags for prelimiting">
 
   ! No prelimiting
-  integer, parameter, public :: AFCSTAB_NOPRELIMITING         = 0
+  integer, parameter, public :: AFCSTAB_PRELIMITING_NONE      = 0
 
   ! Standard prelimiting
   integer, parameter, public :: AFCSTAB_PRELIMITING_STD       = 1
@@ -213,7 +304,27 @@ module afcstabilisation
   ! Minmod prelimiting
   integer, parameter, public :: AFCSTAB_PRELIMITING_MINMOD    = 2
 
-!<constantblock description="Bitfield identifiers for state of stabilisation">
+!</constantblock>
+
+
+!<constantblock description="Global format flags for limiting">
+
+  ! No limiting at all
+  integer, parameter, public :: AFCSTAB_LIMITING_NONE             = 0
+
+  ! Symmetric limiting
+  integer, parameter, public :: AFCSTAB_LIMITING_SYMMETRIC        = 1
+
+  ! Upwind-biased limiting (implies edge-orientation)
+  integer, parameter, public :: AFCSTAB_LIMITING_UPWINDBIASED     = 2
+
+  ! Characteristic limiting
+  integer, parameter, public :: AFCSTAB_LIMITING_CHARACTERISTIC   = 3
+
+!</constantblock>
+
+
+!<constantblock description="Bitfield identifiers for properties of stabilisation">
 
   ! Stabilisation is undefined
   integer(I32), parameter, public :: AFCSTAB_UNDEFINED            = 2_I32**0
@@ -240,7 +351,7 @@ module afcstabilisation
   integer(I32), parameter, public :: AFCSTAB_HAS_ADINCREMENTS     = 2_I32**7
 
   ! Nodal upper/lower bounds have been computed: QP, QM
-  integer(I32), parameter, public :: AFCSTAB_HAS_BOUNDS           = 2_I32**8
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODEBOUNDS       = 2_I32**8
   
   ! Nodal correction factors have been computed: RP, RM
   integer(I32), parameter, public :: AFCSTAB_HAS_NODELIMITER      = 2_I32**9
@@ -256,6 +367,9 @@ module afcstabilisation
 
   ! Transformed nodal solution values have been computed
   integer(I32), parameter, public :: AFCSTAB_HAS_NODEVALUES       = 2_I32**13
+
+  ! Slope-based bounds have been computed
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEBOUNDS       = 2_I32**14
 
 !</constantblock>
 
@@ -281,7 +395,7 @@ module afcstabilisation
   integer(I32), parameter, public :: AFCSTAB_DUP_ADINCREMENTS     = AFCSTAB_HAS_ADINCREMENTS
 
   ! Duplicate nodal upper/lower bounds: QP, QM
-  integer(I32), parameter, public :: AFCSTAB_DUP_BOUNDS           = AFCSTAB_HAS_BOUNDS
+  integer(I32), parameter, public :: AFCSTAB_DUP_NODEBOUNDS       = AFCSTAB_HAS_NODEBOUNDS
   
   ! Duplicate nodal correction factors: RP, RM
   integer(I32), parameter, public :: AFCSTAB_DUP_NODELIMITER      = AFCSTAB_HAS_NODELIMITER
@@ -297,6 +411,9 @@ module afcstabilisation
 
   ! Duplicate transformed nodal solution values
   integer(I32), parameter, public :: AFCSTAB_DUP_NODEVALUES       = AFCSTAB_HAS_NODEVALUES
+
+  ! Duplicate slope-based bounds
+  integer(I32), parameter, public :: AFCSTAB_DUP_EDGEBOUNDS       = AFCSTAB_HAS_EDGEBOUNDS
 
 !</constantblock>
 
@@ -323,7 +440,7 @@ module afcstabilisation
   integer(I32), parameter, public :: AFCSTAB_SHARE_ADINCREMENTS     = AFCSTAB_DUP_ADINCREMENTS
 
   ! Share nodal upper/lower bounds: QP, QM
-  integer(I32), parameter, public :: AFCSTAB_SHARE_BOUNDS           = AFCSTAB_DUP_BOUNDS
+  integer(I32), parameter, public :: AFCSTAB_SHARE_NODEBOUNDS       = AFCSTAB_DUP_NODEBOUNDS
   
   ! Share nodal correction factors: RP, RM
   integer(I32), parameter, public :: AFCSTAB_SHARE_NODELIMITER      = AFCSTAB_DUP_NODELIMITER
@@ -339,6 +456,53 @@ module afcstabilisation
 
   ! Share transformed nodal solution values
   integer(I32), parameter, public :: AFCSTAB_SHARE_NODEVALUES       = AFCSTAB_DUP_NODEVALUES
+
+  ! Share slope-based bounds
+  integer(I32), parameter, public :: AFCSTAB_SHARE_EDGEBOUNDS       = AFCSTAB_DUP_EDGEBOUNDS
+
+!</constantblock>
+
+
+!<constantblock description="Bitfield identifiers for TVD-algorithm">
+
+  ! Compute the raw-antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADFLUXES     = 2_I32**0
+
+  ! Compute the sums of antidiffusive increments
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADINCREMENTS = 2_I32**1
+
+  ! Compute the local solution bounds
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_BOUNDS       = 2_I32**2
+  
+  ! Compute the nodal correction factors
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_LIMIT        = 2_I32**3
+
+  ! Correct raw antidiffusive fluxes and apply them
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_CORRECT      = 2_I32**4
+
+  ! FEM-TVD algorithm without application of the corrected fluxes
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_PREPARE   = AFCSTAB_TVDALGO_ADFLUXES +&
+                                                                 AFCSTAB_TVDALGO_ADINCREMENTS +&
+                                                                 AFCSTAB_TVDALGO_BOUNDS +&
+                                                                 AFCSTAB_TVDALGO_LIMIT
+
+  ! Standard FEM-TVD algorithm
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_STANDARD = AFCSTAB_TVDALGO_PREPARE +&
+                                                                AFCSTAB_TVDALGO_CORRECT
+
+!</constantblock>
+
+
+!<constantblock description="Bitfield identifiers for FCT-fluxes">
+
+   ! Compute explicit part of raw-antidiffusive fluxes
+   integer(I32), parameter, public :: AFCSTAB_FCTFLUX_EXPLICIT    = 2_I32**0
+
+   ! Compute implicit part of raw-antidiffusive fluxes
+   integer(I32), parameter, public :: AFCSTAB_FCTFLUX_IMPLICIT    = 2_I32**1
+
+   ! Apply rejected antidiffusives fluxes to the implicit part
+   integer(I32), parameter, public :: AFCSTAB_FCTFLUX_REJECTED    = 2_I32**2
 
 !</constantblock>
 
@@ -388,6 +552,52 @@ module afcstabilisation
                                                                 AFCSTAB_FCTALGO_CORRECT
   
 !</constantblock>
+
+
+!<constantblock description="Bitfield identifiers for LPT-fluxes">
+
+  ! Compute raw-antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_LPTFLUX          = 2_I32**0
+
+  ! Compute bounds
+  integer(I32), parameter, public :: AFCSTAB_LPTFLUX_BOUNDS   = 2_I32**1
+
+!</constantblock>
+
+
+!<constantblock description="Bitfield identifiers for LPT-algorithm">
+
+  ! Initialize the edgewise correction factors by unity
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_INITALPHA    = 2_I32**0
+
+  ! Compute the sums of antidiffusive increments
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_ADINCREMENTS = 2_I32**1
+
+  ! Compute the distances to a local extremum
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_BOUNDS       = 2_I32**2
+
+  ! Compute the nodal correction factors
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_LIMITNODAL   = 2_I32**3
+
+  ! Compute edgewise correction factors
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_LIMITEDGE    = 2_I32**4
+
+  ! Correct raw antidiffusive fluxes and apply them
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_CORRECT      = 2_I32**5
+
+  ! FEM-LPT algorithm without application of the corrected fluxes
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_PREPARE  = AFCSTAB_LPTALGO_INITALPHA +&
+                                                                AFCSTAB_LPTALGO_ADINCREMENTS +&
+                                                                AFCSTAB_LPTALGO_BOUNDS +&
+                                                                AFCSTAB_LPTALGO_LIMITNODAL +&
+                                                                AFCSTAB_LPTALGO_LIMITEDGE
+
+  ! Standard FEM-LPT algorithm
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_STANDARD = AFCSTAB_LPTALGO_PREPARE +&
+                                                                AFCSTAB_LPTALGO_CORRECT
+
+!</constantblock>
+
 
 !<constantblock description="Default tolerances for stabilisation">
   
@@ -446,18 +656,30 @@ module afcstabilisation
     integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
     ! Format Tag: Identifies the type of prelimiting
-    integer :: ctypePrelimiting = AFCSTAB_GALERKIN
+    ! Can take one of the AFCSTAB_PRELIMITING_xxxx flags.
+    integer :: ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
+
+    ! Format Tag: Identifies the type of limiting
+    integer :: ctypeLimiting = AFCSTAB_LIMITING_NONE
 
     ! Format Tag: Identifies the format of the scalar template matrix
     ! underlying the edge-based sparsity structure (if any)
     integer :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
 
-    ! Specification Flag: Specifies the stabilisation
-    integer(I32) :: istabilisationSpec = AFCSTAB_UNDEFINED
+    ! Format Tag: Identifies the data type
+    integer :: cdataType = ST_DOUBLE
+    
+    ! Duplication Flag: This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_SHARE_xxxx constants and
+    ! specifies which parts of the stabilisation are shared with
+    ! another stabilisation structure.
+    integer(I32) :: iduplicationFlag = AFCSTAB_UNDEFINED
 
-    ! Duplication Flag: Specifies which parts of the stabilisation are
-    ! shared with another stabilisation structure
-    integer(I32) :: iduplicationFlag = 0
+    ! Specification Flag: Specifies the stabilisation. This is a bitfield
+    ! coming from an OR combination of different AFCSTAB_HAS_xxxx
+    ! constants and specifies various properties of the stabilisation
+    ! structure.
+    integer(I32) :: istabilisationSpec = AFCSTAB_UNDEFINED
 
     ! Number of equations of the sparsity pattern
     integer :: NEQ = 0
@@ -487,10 +709,10 @@ module afcstabilisation
 
     ! Number of different matrix coefficients stored in
     ! DmatrixCoeffsAtNode and DmatrixCoeffsAtEdge, respectively.
-    integer :: nmatCoeff = 0
+    integer :: nmatrixCoeffs = 0
 
     ! Number of different coefficients stored in DCoefficientsAtEdge
-    integer :: ncoeff = 0
+    integer :: ncoeffs = 0
 
     ! Handle to index pointer for edge structure
     ! The numbers IverticesAtEdgeIdx(k):IverticesAtEdgeIdx(k+1)-1
@@ -524,6 +746,9 @@ module afcstabilisation
     ! Handle to auxiliary matrix data at edges (i.e. off-diagonal entries)
     integer :: h_DmatrixCoeffsAtEdge = ST_NOHANDLE
 
+    ! Handle to bounds at edges (i.e. off-diagonal entries)
+    integer :: h_DboundsAtEdge = ST_NOHANDLE
+
     ! Pointer to the vector of correction factors
     type(t_vectorScalar), pointer :: p_rvectorAlpha => null()
 
@@ -544,6 +769,7 @@ module afcstabilisation
     type(t_vectorScalar), pointer :: p_rvectorPm => null()
 
     ! Pointers to the vectors of local solution bounds
+    type(t_vectorScalar), pointer :: p_rvectorQ  => null()
     type(t_vectorScalar), pointer :: p_rvectorQp => null()
     type(t_vectorScalar), pointer :: p_rvectorQm => null()
 
@@ -566,7 +792,7 @@ module afcstabilisation
   type t_array
 
     ! Type of data associated to the handle ST_DOUBLE, ST_SINGLE)
-    integer :: idataType = 0
+    integer :: idataType = ST_NOHANDLE
 
     ! Pointer to the double-valued matrix data
     real(DP), dimension(:), pointer :: p_Ddata => null()
@@ -614,6 +840,32 @@ module afcstabilisation
     module procedure afcstab_getbase_arrayBlock
   end interface
 
+  interface afcstab_buildBoundsLPT
+    module procedure afcstab_buildBoundsLPT1D
+    module procedure afcstab_buildBoundsLPT2D
+    module procedure afcstab_buildBoundsLPT3D
+  end interface
+
+  interface afcstab_getbase_DcoeffsAtEdge
+    module procedure afcstab_getbase_DcoeffsAtEdge
+    module procedure afcstab_getbase_FcoeffsAtEdge
+  end interface
+
+  interface afcstab_getbase_DmatCoeffAtNode
+    module procedure afcstab_getbase_DmatCoeffAtNode
+    module procedure afcstab_getbase_FmatCoeffAtNode
+  end interface
+
+  interface afcstab_getbase_DmatCoeffAtEdge
+    module procedure afcstab_getbase_DmatCoeffAtEdge
+    module procedure afcstab_getbase_FmatCoeffAtEdge
+  end interface
+
+  interface afcstab_getbase_DboundsAtEdge
+    module procedure afcstab_getbase_DboundsAtEdge
+    module procedure afcstab_getbase_FboundsAtEdge
+  end interface
+
 contains
 
   ! ***************************************************************************
@@ -644,43 +896,74 @@ contains
     ! local variable
     integer :: istabilisation,iprelimiting
 
+    ! First, we retrieve all information of the stabilisation
+    ! structure specified in the parameter file. 
+
     ! Get type of stabilisation from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-        "istabilisation", istabilisation)
-    
-    ! Check if stabilisation should be applied
-    if (istabilisation .eq. AFCSTAB_GALERKIN) then
-      
-      return   ! -> high-order Galerkin
-      
-    elseif ((istabilisation .ne. AFCSTAB_UPWIND)            .and.&
-        (    istabilisation .ne. AFCSTAB_FEMFCT_CLASSICAL)  .and.&
-        (    istabilisation .ne. AFCSTAB_FEMFCT_IMPLICIT)   .and.&
-        (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARISED) .and.&
-        (    istabilisation .ne. AFCSTAB_FEMFCT_ITERATIVE)  .and.&
-        (    istabilisation .ne. AFCSTAB_FEMFCT_MASS)       .and.&
-        (    istabilisation .ne. AFCSTAB_FEMTVD)            .and.&
-        (    istabilisation .ne. AFCSTAB_FEMGP)             .and.&
-        (    istabilisation .ne. AFCSTAB_DMP)               .and.&
-        (    istabilisation .ne. AFCSTAB_SYMMETRIC)) then 
-      
-      call output_line('Invalid AFC type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initFromParameterlist')
-      call sys_halt()
-
-    else
-      ! Set type of stabilisation
-      rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
-      rafcstab%ctypeAFCstabilisation = istabilisation
-      
-    end if
+        "istabilisation", rafcstab%ctypeAFCstabilisation, AFCSTAB_GALERKIN)
 
     ! Get type of prelimiting from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-        "iprelimiting", iprelimiting, 0)
+        "iprelimiting", rafcstab%ctypePrelimiting, AFCSTAB_PRELIMITING_NONE)
 
-    ! Set type of prelimiting
-    rafcstab%ctypePrelimiting = iprelimiting
+
+    ! In a second step, special settings particular to individual
+    ! stabilisation techniques are made `by hand'.
+    
+    ! Check if stabilisation should be applied
+    select case(rafcstab%ctypeAFCstabilisation)
+
+    case (AFCSTAB_GALERKIN,&
+          AFCSTAB_UPWIND,&
+          AFCSTAB_DMP)
+      ! high-order Galerkin scheme, low-order scheme:
+      ! no prelimiting, no limiting
+      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
+      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_NONE
+
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_IMPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_LINFCT)
+      ! Symmetric flux limiting with prelimiting as given by the user
+      rafcstab%ctypeLimiting = AFCSTAB_LIMITING_SYMMETRIC
+
+    case (AFCSTAB_LINFCT_MASS,&
+          AFCSTAB_SYMMETRIC,&
+          AFCSTAB_NLINLPT_MASS,&
+          AFCSTAB_NLINLPT_SYMMETRIC,&
+          AFCSTAB_LINLPT_MASS,&
+          AFCSTAB_LINLPT_SYMMETRIC)
+      ! Symmetric flux limiting without prelimiting
+      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
+      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_SYMMETRIC
+
+    case (AFCSTAB_LINLPT_UPWINDBIASED)
+      ! For this special case, symmetric flux limiting must be
+      ! performed as stated in the conclusion of the paper:
+      ! D. Kuzmin, Linearity-preserving flux correction and
+      ! convergence acceleration for constrained Galerin schemes,
+      ! Technical Report 421, TU Dortmund, 2011.
+      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
+      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_SYMMETRIC
+
+    case (AFCSTAB_TVD)
+      ! Upwind-biased flux limiting with standard prelimiting
+      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_STD
+      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_UPWINDBIASED
+
+    case (AFCSTAB_GP,&
+          AFCSTAB_NLINLPT_UPWINDBIASED)
+      ! Upwind-biased flux limiting with minmod prelimiting
+      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_MINMOD
+      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_UPWINDBIASED
+
+    case default
+      call output_line('Invalid AFC type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initFromParameterlist')
+      call sys_halt()
+    end select
 
   end subroutine afcstab_initFromParameterlist
 
@@ -708,11 +991,20 @@ contains
       if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdgeIdx)
     end if
+    rafcstab%h_IverticesAtEdge = ST_NOHANDLE
+    rafcstab%h_IverticesAtEdgeIdx = ST_NOHANDLE
 
     ! Release edge values
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
         (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE))&
         call storage_free(rafcstab%h_DcoefficientsAtEdge)
+    rafcstab%h_DcoefficientsAtEdge = ST_NOHANDLE
+
+    ! Release edge bounds
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS) .and.&
+        (rafcstab%h_DboundsAtEdge .ne. ST_NOHANDLE))&
+        call storage_free(rafcstab%h_DboundsAtEdge)
+    rafcstab%h_DboundsAtEdge = ST_NOHANDLE
 
     ! Release off-diagonal edges
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
@@ -723,7 +1015,20 @@ contains
       if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IsubdiagEdges)
     end if
-        
+    rafcstab%h_IsuperdiagEdgesIdx = ST_NOHANDLE
+    rafcstab%h_IsubdiagEdgesIdx = ST_NOHANDLE
+    rafcstab%h_IsubdiagEdges = ST_NOHANDLE
+    
+    ! Release matrix data
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
+      if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
+      if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
+    end if
+    rafcstab%h_DmatrixCoeffsAtNode = ST_NOHANDLE
+    rafcstab%h_DmatrixCoeffsAtEdge = ST_NOHANDLE
+
     ! Release antidiffusive fluxes
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
       if (associated(rafcstab%p_rvectorFlux0)) then
@@ -739,14 +1044,9 @@ contains
         deallocate(rafcstab%p_rvectorFluxPrel)
       end if
     end if
-
-    ! Release matrix data
-    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
-      if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
-      if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
-    end if
+    rafcstab%p_rvectorFlux      => null()
+    rafcstab%p_rvectorFlux0     => null()
+    rafcstab%p_rvectorFluxPrel  => null()
 
     ! Release transformed nodal solution values
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEVALUES)) then
@@ -755,6 +1055,7 @@ contains
         deallocate(rafcstab%p_rvectorDx)
       end if
     end if
+    rafcstab%p_rvectorDx => null()
 
     ! Release antidiffusive increments
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
@@ -767,9 +1068,15 @@ contains
         deallocate(rafcstab%p_rvectorPm)
       end if
     end if
+    rafcstab%p_rvectorPp => null()
+    rafcstab%p_rvectorPm => null()
 
     ! Release upper/lower bounds
-    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_BOUNDS)) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
+      if (associated(rafcstab%p_rvectorQ)) then
+        call lsyssc_releaseVector(rafcstab%p_rvectorQ)
+        deallocate(rafcstab%p_rvectorQ)
+      end if
       if (associated(rafcstab%p_rvectorQp)) then
         call lsyssc_releaseVector(rafcstab%p_rvectorQp)
         deallocate(rafcstab%p_rvectorQp)
@@ -779,6 +1086,9 @@ contains
         deallocate(rafcstab%p_rvectorQm)
       end if
     end if
+    rafcstab%p_rvectorQ  => null()
+    rafcstab%p_rvectorQp => null()
+    rafcstab%p_rvectorQm => null()
     
     ! Release nodal limiting factors
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
@@ -791,6 +1101,8 @@ contains
         deallocate(rafcstab%p_rvectorRm)
       end if
     end if
+    rafcstab%p_rvectorRp => null()
+    rafcstab%p_rvectorRm => null()
 
     ! Release edge-wise limiting coefficients
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER) .and.&
@@ -798,6 +1110,7 @@ contains
       call lsyssc_releaseVector(rafcstab%p_rvectorAlpha)
       deallocate(rafcstab%p_rvectorAlpha)
     end if
+    rafcstab%p_rvectorAlpha => null()
 
     ! Release low-order predictor
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR) .and.&
@@ -805,23 +1118,14 @@ contains
       call lsysbl_releaseVector(rafcstab%p_rvectorPredictor)
       deallocate(rafcstab%p_rvectorPredictor)
     end if
-
-    ! Nullify pointers
-    rafcstab%p_rvectorDx        => null()
-    rafcstab%p_rvectorPp        => null()
-    rafcstab%p_rvectorPm        => null()
-    rafcstab%p_rvectorQp        => null()
-    rafcstab%p_rvectorQm        => null()
-    rafcstab%p_rvectorRp        => null()
-    rafcstab%p_rvectorRm        => null()
-    rafcstab%p_rvectorAlpha     => null()
-    rafcstab%p_rvectorFlux      => null()
-    rafcstab%p_rvectorFlux0     => null()
     rafcstab%p_rvectorPredictor => null()
-    
+
     ! Reset atomic data
     rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+    rafcstab%ctypePrelimiting      = AFCSTAB_PRELIMITING_NONE
+    rafcstab%ctypeLimiting         = AFCSTAB_LIMITING_NONE
     rafcstab%cmatrixFormat         = LSYSSC_MATRIXUNDEFINED
+    rafcstab%cdataType             = ST_DOUBLE
     rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
     rafcstab%iduplicationFlag      = 0
     rafcstab%NEQ                   = 0
@@ -829,13 +1133,13 @@ contains
     rafcstab%NVARtransformed       = 1
     rafcstab%NEDGE                 = 0
     rafcstab%NNVEDGE               = 0
-    rafcstab%nmatCoeff             = 0
-    rafcstab%ncoeff                = 0
+    rafcstab%nmatrixCoeffs         = 0
+    rafcstab%ncoeffs               = 0
 
   contains
 
     !**************************************************************
-    ! Checks if bitfield ibitfiled in idupFlag is not set.
+    ! Checks if bitfield ibitfield in idupFlag is not set.
 
     pure function check(idupFlag, ibitfield)
 
@@ -877,64 +1181,166 @@ contains
 !</subroutine>
     
     
+    ! REMARK: The handle IverticesAtEdgeIdx is not modified here due
+    ! to the following reasons: If the edges are not reordered into
+    ! independent groups then IverticesAtEdgeIdx(1:2)=(/1,NEDGE+1/).
+    ! Otherwise, the edge-data structure needs to be regenerated anyway.
+    
     ! Resize nodal quantities
     if (rafcstab%NEQ .ne. neq) then
 
       ! Set new number of nodes
       rafcstab%NEQ = neq
       
-      ! Resize edge index vector
+      ! Resize edge index vector and clear specification 
       if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEQ+1, rafcstab%h_IsuperdiagEdgesIdx,&
-            ST_NEWBLOCK_NOINIT, .false.)
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEQ+1, rafcstab%h_IsuperdiagEdgesIdx,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_IsuperdiagEdgesIdx '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
       
-      ! Resize subdiagonal edge index vector
+      ! Resize subdiagonal edge index vector and clear specification
       if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEQ+1, rafcstab%h_IsubdiagEdgesIdx,&
-            ST_NEWBLOCK_NOINIT, .false.)
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEQ+1, rafcstab%h_IsubdiagEdgesIdx,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_IsubdiagEdgesIdx '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
 
-      ! Resize matrix data at nodes
-       if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
-            ST_NEWBLOCK_NOINIT, .false.)
+      ! Resize matrix data at nodes and clear specification
+      if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_DmatrixCoeffsAtNode '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
 
       ! Resize transformed nodal vector
-      if (associated(rafcstab%p_rvectorDx))&
+      if (associated(rafcstab%p_rvectorDx)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEVALUES)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorDx,&
-          rafcstab%NEQ, .false., .false.)
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorDx '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
 
-      ! Resize nodal vectors P, Q, and R for '+' and '-'
-      if (associated(rafcstab%p_rvectorPp))&
+      ! Resize nodal vectors P+
+      if (associated(rafcstab%p_rvectorPp)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorPp,&
-          rafcstab%NEQ, .false., .false.)
-      if (associated(rafcstab%p_rvectorPm))&
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorPp '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      ! Resize nodal vectors P-
+      if (associated(rafcstab%p_rvectorPm)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorPm,&
-          rafcstab%NEQ, .false., .false.)
-      if (associated(rafcstab%p_rvectorQp))&
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorPm '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      ! Resize nodal vectors Q
+      if (associated(rafcstab%p_rvectorQ)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
+          call lsyssc_resizeVector(rafcstab%p_rvectorQ,&
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorQ '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+
+      ! Resize nodal vectors Q+
+      if (associated(rafcstab%p_rvectorQp)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorQp,&
-          rafcstab%NEQ, .false., .false.)
-      if (associated(rafcstab%p_rvectorQm))&
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorQp '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      ! Resize nodal vectors Q-
+      if (associated(rafcstab%p_rvectorQm)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorQm,&
-          rafcstab%NEQ, .false., .false.)
-      if (associated(rafcstab%p_rvectorRp))&
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorQm '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      ! Resize nodal vectors R+
+      if (associated(rafcstab%p_rvectorRp)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorRp,&
-          rafcstab%NEQ, .false., .false.)
-      if (associated(rafcstab%p_rvectorRm))&
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorRp '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      ! Resize nodal vectors R-
+      if (associated(rafcstab%p_rvectorRm)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorRm,&
           rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorRm '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
       
       ! Resize nodal vector for the low-order predictor
-      if (associated(rafcstab%p_rvectorPredictor))&
+      if (associated(rafcstab%p_rvectorPredictor)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR)) then
           call lsysbl_resizeVectorBlock(rafcstab%p_rvectorPredictor,&
-          rafcstab%NEQ, .false., .false.)
+              rafcstab%NEQ, .false., .false.)
+        else
+          call output_line('Vector p_rvectorPredictor '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+
     end if
-    
+      
     
     ! Resize edge quantities
     if (rafcstab%NEDGE .ne. nedge) then
@@ -944,53 +1350,137 @@ contains
 
       ! Resize array of edges
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEDGE, rafcstab%h_IverticesAtEdge,&
-            ST_NEWBLOCK_NOINIT, .false.)
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEDGE, rafcstab%h_IverticesAtEdge,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_IverticesAtEdge '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
-
+      
       ! Resize array of subdiagonal edges
       if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEDGE, rafcstab%h_IsubdiagEdges,&
-            ST_NEWBLOCK_NOINIT, .false.)
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEDGE, rafcstab%h_IsubdiagEdges,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_IsubdiagEdges '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
 
       ! Resize array of edge data
       if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEDGE, rafcstab%h_DcoefficientsAtEdge,&
-            ST_NEWBLOCK_NOINIT, .false.)
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEDGE, rafcstab%h_DcoefficientsAtEdge,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_DcoefficientsAtEdge '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
-
+      
+      ! Resize array of edge bounds
+      if (rafcstab%h_DboundsAtEdge .ne. ST_NOHANDLE) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEDGE, rafcstab%h_DboundsAtEdge,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_DboundsAtEdge '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
       ! Resize matrix data at edges
-       if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE) then
-        call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEDGE, rafcstab%h_DmatrixCoeffsAtEdge,&
-            ST_NEWBLOCK_NOINIT, .false.)
+      if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEDGE, rafcstab%h_DmatrixCoeffsAtEdge,&
+              ST_NEWBLOCK_NOINIT, .false.)
+        else
+          call output_line('Handle h_DmatrixCoeffsAtEdge '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
       end if
 
       ! Resize edge vectors for the correction factor and the fluxes
-      if(associated(rafcstab%p_rvectorAlpha))&
+      if(associated(rafcstab%p_rvectorAlpha)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorAlpha,&
-          rafcstab%NEDGE, .false., .false.)
-      if(associated(rafcstab%p_rvectorFlux0))&
+              rafcstab%NEDGE, .false., .false.)
+        else
+          call output_line('Vector p_rvectorAlpha '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      if(associated(rafcstab%p_rvectorFlux0)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux0,&
-          rafcstab%NEDGE, .false., .false.)
-      if(associated(rafcstab%p_rvectorFlux))&
+              rafcstab%NEDGE, .false., .false.)
+        else
+          call output_line('Vector p_rvectorFlux0 '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+
+      if(associated(rafcstab%p_rvectorFlux)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
-          rafcstab%NEDGE, .false., .false.)
-      if(associated(rafcstab%p_rvectorFluxPrel))&
+              rafcstab%NEDGE, .false., .false.)
+        else
+          call output_line('Vector p_rvectorFlux '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+      
+      if(associated(rafcstab%p_rvectorFluxPrel)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
           call lsyssc_resizeVector(rafcstab%p_rvectorFluxPrel,&
-          rafcstab%NEDGE, .false., .false.)
+              rafcstab%NEDGE, .false., .false.)
+        else
+          call output_line('Vector p_rvectorFluxPrel '&
+              'is shared and cannot be resized!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+        end if
+      end if
+
     end if
     
-    ! Set state of stabilisation
+    ! Set state of stabilisation to either undefined or initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
     else
       rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
     end if
+
+  contains
+
+    !**************************************************************
+    ! Checks if bitfield ibitfield in idupFlag is not set.
+
+    pure function check(idupFlag, ibitfield)
+
+      integer(I32), intent(in) :: idupFlag,ibitfield
+      
+      logical :: check
+      
+      check = (iand(idupFlag,ibitfield) .ne. ibitfield)
+
+    end function check
 
   end subroutine afcstab_resizeStabDirect
 
@@ -1024,7 +1514,7 @@ contains
     
     ! Determine number of equations and edges
     neq   = rmatrixTemplate%NEQ
-    nedge = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
+    nedge = (rmatrixTemplate%NA-rmatrixTemplate%NEQ)/2
 
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
@@ -1072,48 +1562,13 @@ contains
 
     ! Determine number of equations and edges
     neq   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
-    nedge = int(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
-                     rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ))
+    nedge = (rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
+             rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ)/2
 
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
 
   end subroutine afcstab_resizeStabIndBlock
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
-
-!<description>
-    ! Returns a pointer to the index pointer for vertices at edge structure
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! Pointer to the index pointer for superdiagonal edge numbers.
-    ! NULL() if the stabilisation structure does not provide it.
-    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
-!</output>
-!</subroutine>
-
-    ! Do we have an edge separator at all?
-    if ((rafcstab%h_IsuperdiagEdgesIdx .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEQ .eq. 0)) then
-      nullify(p_IsuperdiagEdgesIdx)
-      return
-    end if
-    
-    ! Get the array
-    call storage_getbase_int(rafcstab%h_IsuperdiagEdgesIdx,&
-        p_IsuperdiagEdgesIdx,rafcstab%NEQ+1)
-
-  end subroutine afcstab_getbase_IsupdiagEdgeIdx
 
   !*****************************************************************************
 
@@ -1146,12 +1601,16 @@ contains
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
       rafcstabDest%ctypePrelimiting      = rafcstabSrc%ctypePrelimiting
+      rafcstabDest%ctypeLimiting         = rafcstabSrc%ctypeLimiting
       rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
+      rafcstabDest%cdataType             = rafcstabSrc%cdataType
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
       rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
       rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
       rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
+      rafcstabDest%istabilisationSpec    = ior(rafcstabDest%istabilisationSpec,&
+                                               AFCSTAB_INITIALISED)
     end if
 
     ! Copy edge structre
@@ -1306,14 +1765,23 @@ contains
     end if
     
     ! Copy upper/lower bounds
-    if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS)) then
+    if (check(idupFlag, AFCSTAB_DUP_NODEBOUNDS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)) then
       ! Unlink pointers to vectors which are shared by the structure
-      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))&
-          nullify(rafcstabDest%p_rvectorQp, rafcstabDest%p_rvectorQm)
+      if (check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS))&
+          nullify(rafcstabDest%p_rvectorQp,&
+                  rafcstabDest%p_rvectorQm,&
+                  rafcstabDest%p_rvectorQ)
       ! Reset ownership
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          not(AFCSTAB_SHARE_BOUNDS))
+          not(AFCSTAB_SHARE_NODEBOUNDS))
+      ! Copy upper bounds Q
+      if (associated(rafcstabSrc%p_rvectorQ)) then
+        if (.not.(associated(rafcstabDest%p_rvectorQ)))&
+            allocate(rafcstabDest%p_rvectorQ)
+        call lsyssc_copyVector(rafcstabSrc%p_rvectorQ,&
+            rafcstabDest%p_rvectorQ)
+      end if
       ! Copy upper bounds Qp
       if (associated(rafcstabSrc%p_rvectorQp)) then
         if (.not.(associated(rafcstabDest%p_rvectorQp)))&
@@ -1330,7 +1798,7 @@ contains
       end if
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS))
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS))
     end if
 
     ! Copy nodal limiting coefficients
@@ -1451,12 +1919,16 @@ contains
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
       rafcstabDest%ctypePrelimiting      = rafcstabSrc%ctypePrelimiting
+      rafcstabDest%ctypeLimiting         = rafcstabSrc%ctypeLimiting
       rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
+      rafcstabDest%cdataType             = rafcstabSrc%cdataType
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
       rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
       rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
       rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
+      rafcstabDest%istabilisationSpec    = ior(rafcstabDest%istabilisationSpec,&
+                                               AFCSTAB_INITIALISED)
     end if
 
     ! Duplicate edge structre
@@ -1494,6 +1966,22 @@ contains
       ! Set ownership to shared
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
           AFCSTAB_SHARE_EDGEVALUES)
+    end if
+
+    ! Duplicate edge bounds
+    if (check(idupFlag, AFCSTAB_DUP_EDGEBOUNDS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS)) then
+      ! Remove existing data owned by the destination structure
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS)))&
+          call storage_free(rafcstabDest%h_DboundsAtEdge)
+      ! Copy handle from source to destination structure
+      rafcstabDest%h_DboundsAtEdge = rafcstabSrc%h_DboundsAtEdge
+      ! Adjust specifier of the destination structure
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS))
+      ! Set ownership to shared
+      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
+          AFCSTAB_SHARE_EDGEBOUNDS)
     end if
 
     ! Duplicate off-diagonal edges
@@ -1600,22 +2088,26 @@ contains
     end if
 
     ! Duplicate upper/lower bounds
-    if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS)) then
+    if (check(idupFlag, AFCSTAB_DUP_NODEBOUNDS) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)) then
       ! Remove existing data owned by the destination structure
-      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_BOUNDS))) then
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS))) then
         call lsyssc_releaseVector(rafcstabDest%p_rvectorQp)
         call lsyssc_releaseVector(rafcstabDest%p_rvectorQm)
+        if (associated(rafcstabDest%p_rvectorQ))&
+            call lsyssc_releaseVector(rafcstabDest%p_rvectorQ)
       end if
       ! Copy pointers from source to destination structure
       rafcstabDest%p_rvectorQp => rafcstabSrc%p_rvectorQp
       rafcstabDest%p_rvectorQm => rafcstabSrc%p_rvectorQm
+      if (associated(rafcstabSrc%p_rvectorQ))&
+          rafcstabDest%p_rvectorQ => rafcstabSrc%p_rvectorQ
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_BOUNDS))
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS))
       ! Set ownership to shared
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          AFCSTAB_SHARE_BOUNDS)
+          AFCSTAB_SHARE_NODEBOUNDS)
     end if
 
     ! Duplicate nodal limiting coefficients
@@ -1749,7 +2241,7 @@ contains
     end if
 
     ! Store number of auxiliary matrices
-    rafcstab%nmatCoeff = n
+    rafcstab%nmatrixCoeffs = n
 
   end subroutine afcstab_initMatrixCoeffs
 
@@ -1836,7 +2328,7 @@ contains
     
     ! Check if first matrix is compatible with the stabilisation structure
     if ((Rmatrices(1)%NEQ .ne. rafcstab%NEQ) .or.&
-        (int(0.5*(Rmatrices(1)%NA-Rmatrices(1)%NEQ),I32) .ne. rafcstab%NEDGE) .or.&
+        ((Rmatrices(1)%NA-Rmatrices(1)%NEQ)/2 .ne. rafcstab%NEDGE) .or.&
         (Rmatrices(1)%cmatrixFormat .ne. rafcstab%cmatrixFormat)) then
       call output_line('Matrix is not compatible with stabilisation structure!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
@@ -1965,7 +2457,7 @@ contains
     ! Matrix/operator must have the same size
     if (rafcstab%NEQ   .ne. rmatrix%NEQ  .or.&
         rafcstab%NVAR  .ne. rmatrix%NVAR .or.&
-        rafcstab%NEDGE .ne. int(0.5*(rmatrix%NA-rmatrix%NEQ),I32)) then
+        rafcstab%NEDGE .ne. (rmatrix%NA-rmatrix%NEQ)/2) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
@@ -2042,8 +2534,8 @@ contains
     ! Matrix/operator must have the same size
     if (rafcstab%NVAR  .ne. rmatrixBlock%nblocksPerCol .or.&
         rafcstab%NEQ   .ne. rmatrixBlock%RmatrixBlock(1,1)%NEQ  .or.&
-        rafcstab%NEDGE .ne. int(0.5*(rmatrixBlock%RmatrixBlock(1,1)%NA-&
-                                     rmatrixBlock%RmatrixBlock(1,1)%NEQ))) then
+        rafcstab%NEDGE .ne. (rmatrixBlock%RmatrixBlock(1,1)%NA-&
+                             rmatrixBlock%RmatrixBlock(1,1)%NEQ)/2) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
@@ -2154,6 +2646,135 @@ contains
 
 !<subroutine>
 
+  subroutine afcstab_getbase_arrayBlock(rmatrix, rarray, bisFullMatrix)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the scalar
+    ! submatrices of the given block matrix rmatrix.
+    ! If the optional parameter bisFullMatrix is given, then this routine
+    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
+    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
+    ! blocks of the block matrix are associated.
+!</description>
+
+!<input>
+    ! The block matrix
+    type(t_matrixBlock), intent(in) :: rmatrix
+!</input>
+
+!<output>
+    ! The array
+    type(t_array), dimension(:,:), intent(out) :: rarray
+
+    ! OPTIONAL: indicator for full block matrix
+    logical, intent(out), optional :: bisFullMatrix
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: iblock,jblock
+    logical :: bisFull
+
+    ! Check if array is compatible
+    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
+        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
+      call output_line('Block matrix and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
+      call sys_halt()
+    end if
+
+    ! Assign pointers
+    bisFull = .true.
+    do iblock = 1, rmatrix%nblocksPerCol
+      do jblock = 1, rmatrix%nblocksPerRow
+        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
+          select case(rmatrix%RmatrixBlock(iblock,jblock)%cdataType)
+          case (ST_DOUBLE)
+            rarray(iblock,jblock)%idataType = ST_DOUBLE
+            call lsyssc_getbase_double(&
+                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Ddata)
+          case (ST_SINGLE)
+            rarray(iblock,jblock)%idataType = ST_SINGLE
+            call lsyssc_getbase_single(&
+                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Fdata)
+          case default
+            call output_line('Unsupported data type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
+            call sys_halt()
+          end select
+        else
+          nullify(rarray(iblock,jblock)%p_Ddata)
+          nullify(rarray(iblock,jblock)%p_Fdata)
+          bisFull = .false.
+        end if
+      end do
+    end do
+
+    if (present(bisFullMatrix)) bisFullMatrix = bisFull
+
+  end subroutine afcstab_getbase_arrayBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_arrayScalar(Rmatrices, rarray)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the array
+    ! of scalar matrices.
+!</description>
+
+!<input>
+    ! The array of scalar matrices
+    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
+!</input>
+
+!<output>
+    ! The array
+    type(t_array), dimension(:), intent(out) :: rarray
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Check if array is compatible
+    if (size(Rmatrices) .ne. size(rarray)) then
+      call output_line('Array of matrices and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
+      call sys_halt()
+    end if
+
+    ! Assing pointers
+    do i = 1, size(Rmatrices)
+      if (lsyssc_isExplicitMatrix1D(Rmatrices(i))) then
+        select case(Rmatrices(i)%cdataType)
+        case (ST_DOUBLE)
+          rarray(i)%idataType = ST_DOUBLE
+          call lsyssc_getbase_double(&
+              Rmatrices(i), rarray(i)%p_Ddata)
+        case (ST_SINGLE)
+          rarray(i)%idataType = ST_SINGLE
+          call lsyssc_getbase_single(&
+              Rmatrices(i), rarray(i)%p_Fdata)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
+          call sys_halt()
+        end select
+      else
+        nullify(rarray(i)%p_Ddata)
+        nullify(rarray(i)%p_Fdata)
+      end if
+    end do
+
+  end subroutine afcstab_getbase_arrayScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
 
 !<description>
@@ -2218,6 +2839,41 @@ contains
         p_IverticesAtEdge,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_IverticesAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
+
+!<description>
+    ! Returns a pointer to the index pointer for vertices at edge structure
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the index pointer for superdiagonal edge numbers.
+    ! NULL() if the stabilisation structure does not provide it.
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
+!</output>
+!</subroutine>
+
+    ! Do we have an edge separator at all?
+    if ((rafcstab%h_IsuperdiagEdgesIdx .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEQ .eq. 0)) then
+      nullify(p_IsuperdiagEdgesIdx)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_int(rafcstab%h_IsuperdiagEdgesIdx,&
+        p_IsuperdiagEdgesIdx,rafcstab%NEQ+1)
+
+  end subroutine afcstab_getbase_IsupdiagEdgeIdx
 
   !*****************************************************************************
 
@@ -2329,6 +2985,41 @@ contains
 
 !<subroutine>
 
+  subroutine afcstab_getbase_FcoeffsAtEdge(rafcstab,p_FcoefficientsAtEdge)
+
+!<description>
+    ! Returns a pointer to the single-valued edge data
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the double-valued edge data
+    ! NULL() if the stabilisation structure does not provide it.
+    real(SP), dimension(:,:), pointer :: p_FcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have double-valued edge data at all?
+    if ((rafcstab%h_DcoefficientsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE                 .eq. 0)) then
+      nullify(p_FcoefficientsAtEdge)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_single2D(rafcstab%h_DcoefficientsAtEdge,&
+        p_FcoefficientsAtEdge,rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_FcoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine afcstab_getbase_DmatCoeffAtNode(rafcstab,p_DmatrixCoeffsAtNode)
 
 !<description>
@@ -2364,6 +3055,41 @@ contains
 
 !<subroutine>
 
+  subroutine afcstab_getbase_FmatCoeffAtNode(rafcstab,p_FmatrixCoeffsAtNode)
+
+!<description>
+    ! Returns a pointer to the matrix coefficients at nodes
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the matrix coefficients at nodes
+    ! NULL() if the stabilisation structure does not provide it.
+    real(SP), dimension(:,:), pointer :: p_FmatrixCoeffsAtNode
+!</output>
+!</subroutine>
+
+    ! Do we have matrix coefficients at nodes data at all?
+    if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEQ                   .eq. 0)) then
+      nullify(p_FmatrixCoeffsAtNode)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_single2D(rafcstab%h_DmatrixCoeffsAtNode,&
+        p_FmatrixCoeffsAtNode,rafcstab%NEQ)
+
+  end subroutine afcstab_getbase_FmatCoeffAtNode
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine afcstab_getbase_DmatCoeffAtEdge(rafcstab,p_DmatrixCoeffsAtEdge)
 
 !<description>
@@ -2394,6 +3120,111 @@ contains
         p_DmatrixCoeffsAtEdge,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_DmatCoeffAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_FmatCoeffAtEdge(rafcstab,p_FmatrixCoeffsAtEdge)
+
+!<description>
+    ! Returns a pointer to the matrix coefficients at edges
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the matrix coefficients at edges
+    ! NULL() if the stabilisation structure does not provide it.
+    real(SP), dimension(:,:,:), pointer :: p_FmatrixCoeffsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have matrix coefficients at edges data at all?
+    if ((rafcstab%h_DmatrixCoeffsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE                 .eq. 0)) then
+      nullify(p_FmatrixCoeffsAtEdge)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_single3D(rafcstab%h_DmatrixCoeffsAtEdge,&
+        p_FmatrixCoeffsAtEdge,rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_FmatCoeffAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_DboundsAtEdge(rafcstab,p_DboundsAtEdge)
+
+!<description>
+    ! Returns a pointer to the bounds at edges
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the bounds at edges
+    ! NULL() if the stabilisation structure does not provide it.
+    real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have bounds at edges data at all?
+    if ((rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE           .eq. 0)) then
+      nullify(p_DboundsAtEdge)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_double2D(rafcstab%h_DboundsAtEdge,&
+        p_DboundsAtEdge,rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_DboundsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_FboundsAtEdge(rafcstab,p_FboundsAtEdge)
+
+!<description>
+    ! Returns a pointer to the bounds at edges
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the bounds at edges
+    ! NULL() if the stabilisation structure does not provide it.
+    real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have bounds at edges data at all?
+    if ((rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE           .eq. 0)) then
+      nullify(p_FboundsAtEdge)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_single2D(rafcstab%h_DboundsAtEdge,&
+        p_FboundsAtEdge,rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_FboundsAtEdge
  
   !*****************************************************************************
 
@@ -2431,6 +3262,15 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
       call sys_halt()
     end if
+
+    ! Check if edge structure is owned by the stabilisation structure
+    if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .eq.&
+        AFCSTAB_SHARE_EDGESTRUCTURE) then
+      call output_line('Edge structure is not owned by stabilisation and '&
+          'therefore cannot be generated',&
+          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+      return
+    end if
     
     ! Set pointer to edge structure
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
@@ -2450,7 +3290,7 @@ contains
       ! OpenMP-Extension: Perform edge-coloring to find groups of
       ! edges which can be processed in parallel, that is, the
       ! vertices of the edges in the group are all distinct
-      
+
       !$ call storage_free(rafcstab%h_IverticesAtEdgeIdx)
       !$ call storage_new('afcstab_generateVerticesAtEdge','IverticesAtEdgeIdx',&
       !$     2*(rmatrixTemplate%NEQ-1)+1, ST_INT, rafcstab%h_IverticesAtEdgeIdx,&
@@ -3610,134 +4450,7 @@ contains
 
   end subroutine afcstab_applyCorrectionDim2
 
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_arrayBlock(rmatrix, rarray, bisFullMatrix)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the scalar
-    ! submatrices of the given block matrix rmatrix.
-    ! If the optional parameter bisFullMatrix is given, then this routine
-    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
-    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
-    ! blocks of the block matrix are associated.
-!</description>
-
-!<input>
-    ! The block matrix
-    type(t_matrixBlock), intent(in) :: rmatrix
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:,:), intent(out) :: rarray
-
-    ! OPTIONAL: indicator for full block matrix
-    logical, intent(out), optional :: bisFullMatrix
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: iblock,jblock
-    logical :: bisFull
-
-    ! Check if array is compatible
-    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
-        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
-      call output_line('Block matrix and array are not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
-      call sys_halt()
-    end if
-
-    ! Assign pointers
-    bisFull = .true.
-    do iblock = 1, rmatrix%nblocksPerCol
-      do jblock = 1, rmatrix%nblocksPerRow
-        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
-          select case(rmatrix%RmatrixBlock(iblock,jblock)%cdataType)
-          case (ST_DOUBLE)
-            rarray(iblock,jblock)%idataType = ST_DOUBLE
-            call lsyssc_getbase_double(&
-                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Ddata)
-          case (ST_SINGLE)
-            rarray(iblock,jblock)%idataType = ST_SINGLE
-            call lsyssc_getbase_single(&
-                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Fdata)
-          case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
-            call sys_halt()
-          end select
-        else
-          nullify(rarray(iblock,jblock)%p_Ddata)
-          nullify(rarray(iblock,jblock)%p_Fdata)
-          bisFull = .false.
-        end if
-      end do
-    end do
-
-    if (present(bisFullMatrix)) bisFullMatrix = bisFull
-
-  end subroutine afcstab_getbase_arrayBlock
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_arrayScalar(Rmatrices, rarray)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the array
-    ! of scalar matrices.
-!</description>
-
-!<input>
-    ! The array of scalar matrices
-    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:), intent(out) :: rarray
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: i
-
-    ! Check if array is compatible
-    if (size(Rmatrices) .ne. size(rarray)) then
-      call output_line('Array of matrices and array are not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
-      call sys_halt()
-    end if
-
-    ! Assing pointers
-    do i = 1, size(Rmatrices)
-      if (lsyssc_isExplicitMatrix1D(Rmatrices(i))) then
-        select case(Rmatrices(i)%cdataType)
-        case (ST_DOUBLE)
-          rarray(i)%idataType = ST_DOUBLE
-          call lsyssc_getbase_double(&
-              Rmatrices(i), rarray(i)%p_Ddata)
-        case (ST_SINGLE)
-          rarray(i)%idataType = ST_SINGLE
-          call lsyssc_getbase_single(&
-              Rmatrices(i), rarray(i)%p_Fdata)
-        case default
-          call output_line('Unsupported data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
-          call sys_halt()
-        end select
-      else
-        nullify(rarray(i)%p_Ddata)
-        nullify(rarray(i)%p_Fdata)
-      end if
-    end do
-
-  end subroutine afcstab_getbase_arrayScalar
+  
 
   !*****************************************************************************
 
@@ -3850,5 +4563,1757 @@ contains
         ST_SYNCBLOCK_COPY_D2H, btranspose)
 
   end subroutine afcstab_copyD2H_DmatCoeffAtEdge
+
+  !*****************************************************************************
+
+  !<subroutine>
+
+  subroutine afcstab_allocEdgeStructure(rafcstab, ndata)
+
+!<description>
+    ! This subroutine allocates the edge data structure
+!</description>
+
+!<input>
+    ! Number of data items per edge
+    integer, intent(in) :: ndata
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(2) :: Isize
+
+    ! Handle for IverticesAtEdgeIdx
+    if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+    call storage_new('afcstab_allocEdgeStructure', 'IverticesAtEdgeIdx',&
+        2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+    
+    ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
+    Isize = (/ndata, rafcstab%NEDGE/)
+    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IverticesAtEdge)
+    call storage_new('afcstab_allocEdgeStructure', 'IverticesAtEdge',&
+        Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+    
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_EDGESTRUCTURE))
+
+  end subroutine afcstab_allocEdgeStructure
+
+  !*****************************************************************************
   
+!<subroutine>
+
+  subroutine afcstab_allocCoeffsAtEdge(rafcstab, ncoeffs, cdataType)
+
+!<description>
+    ! This subroutine allocates the coefficients at edge structuree
+!</description>
+
+!<input>
+    ! Number of coefficients at edge
+    integer, intent(in) :: ncoeffs
+    
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    integer, dimension(2) :: Isize
+    integer :: ctype
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+
+    rafcstab%ncoeffs = ncoeffs
+    Isize = (/rafcstab%ncoeffs, rafcstab%NEDGE/)
+    if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_DcoefficientsAtEdge)
+    call storage_new('afcstab_allocCoeffsAtEdge', 'DcoefficientsAtEdge',&
+        Isize, cType, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
+    
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_EDGEVALUES))
+
+  end subroutine afcstab_allocCoeffsAtEdge
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_allocBoundsAtEdge(rafcstab, cdataType)
+
+!<description>
+    ! This subroutine allocates the bounds at edge structuree
+!</description>
+
+!<input>
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    integer, dimension(2) :: Isize
+    integer :: ctype
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+    
+    Isize = (/2, rafcstab%NEDGE/)
+    if (rafcstab%h_DboundsAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_DboundsAtEdge)
+    call storage_new('afcstab_allocBoundsAtEdge', 'DboundsAtEdge',&
+        Isize, cType, rafcstab%h_DboundsAtEdge, ST_NEWBLOCK_NOINIT)
+    
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_EDGEBOUNDS))
+
+  end subroutine afcstab_allocBoundsAtEdge
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_allocVectorsPQR(rafcstab, cdataType, ballocCommonQ)
+
+!<description>
+    ! This subroutine allocates the nodal vectors P, Q, and R for '+'
+    ! and '-'. If ballocCommonQ = .TRUE., then an additional nodal
+    ! vector Q is allocated commonly used by Q '+' and '-'
+!</description>
+
+!<input>
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+
+    ! OPTIONAL: switch for common nodal vector Q
+    logical, intent(in) , optional :: ballocCommonQ
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ctype
+    logical :: ballocQ
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+
+    ballocQ = .false.
+    if (present(ballocCommonQ)) ballocQ = ballocCommonQ
+
+    if (.not.associated(rafcstab%p_rvectorPp)) allocate(rafcstab%p_rvectorPp)
+    if (.not.associated(rafcstab%p_rvectorPm)) allocate(rafcstab%p_rvectorPm)
+    if (.not.associated(rafcstab%p_rvectorQp)) allocate(rafcstab%p_rvectorQp)
+    if (.not.associated(rafcstab%p_rvectorQm)) allocate(rafcstab%p_rvectorQm)
+    if (.not.associated(rafcstab%p_rvectorRp)) allocate(rafcstab%p_rvectorRp)
+    if (.not.associated(rafcstab%p_rvectorRm)) allocate(rafcstab%p_rvectorRm)
+    
+    if (rafcstab%p_rvectorPp%NEQ .ne. 0)&
+        call lsyssc_releaseVector(rafcstab%p_rvectorPp)
+    if (rafcstab%p_rvectorPm%NEQ .ne. 0)&
+        call lsyssc_releaseVector(rafcstab%p_rvectorPm)
+    if (rafcstab%p_rvectorQp%NEQ .ne. 0)&
+        call lsyssc_releaseVector(rafcstab%p_rvectorQp)
+    if (rafcstab%p_rvectorQm%NEQ .ne. 0)&
+        call lsyssc_releaseVector(rafcstab%p_rvectorQm)
+    if (rafcstab%p_rvectorRp%NEQ .ne. 0)&
+        call lsyssc_releaseVector(rafcstab%p_rvectorRp)
+    if (rafcstab%p_rvectorRm%NEQ .ne. 0)&
+        call lsyssc_releaseVector(rafcstab%p_rvectorRm)
+
+    if (ballocQ) then
+      if (.not.associated(rafcstab%p_rvectorQ)) allocate(rafcstab%p_rvectorQ)
+      if (rafcstab%p_rvectorQ%NEQ .ne. 0)&
+          call lsyssc_releaseVector(rafcstab%p_rvectorQ)
+    end if
+
+    if (rafcstab%NVARtransformed .ne. 1) then
+     
+      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+    
+      if (ballocQ)&
+          call lsyssc_createVector(rafcstab%p_rvectorQ, rafcstab%NEQ,&
+          rafcstab%NVARtransformed, .false., ctype)
+  
+    else
+
+      call lsyssc_createVector(rafcstab%p_rvectorPp, rafcstab%NEQ,&
+          .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorPm, rafcstab%NEQ,&
+          .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorQp, rafcstab%NEQ,&
+          .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorQm, rafcstab%NEQ,&
+          .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorRp, rafcstab%NEQ,&
+          .false., ctype)
+      call lsyssc_createVector(rafcstab%p_rvectorRm, rafcstab%NEQ,&
+          .false., ctype)
+
+      if (ballocQ)&
+          call lsyssc_createVector(rafcstab%p_rvectorQ, rafcstab%NEQ,&
+          .false., ctype)
+
+    end if
+
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_ADINCREMENTS))
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_NODEBOUNDS))
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_NODELIMITER))
+
+  end subroutine afcstab_allocVectorsPQR
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_allocFlux0(rafcstab, cdataType)
+
+!<description>
+    ! This subroutine allocates the edgewise flux vector flux0
+!</description>
+
+!<input>
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ctype
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+
+    if (.not.associated(rafcstab%p_rvectorFlux0))&
+        allocate(rafcstab%p_rvectorFlux0)
+    
+    if (rafcstab%NVAR .ne. 1) then
+
+      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE,&
+          rafcstab%NVAR, .false., ctype)
+      
+    else
+
+      call lsyssc_createVector(rafcstab%p_rvectorFlux0, rafcstab%NEDGE,&
+          .false., ctype)
+
+    end if
+    
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_ADFLUXES))
+
+  end subroutine afcstab_allocFlux0
+  
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_allocFlux(rafcstab, cdataType)
+
+!<description>
+    ! This subroutine allocates the edgewise flux vector flux
+!</description>
+
+!<input>
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ctype
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+
+    if (.not.associated(rafcstab%p_rvectorFlux))&
+        allocate(rafcstab%p_rvectorFlux)
+
+    if (rafcstab%NVAR .ne. 1) then
+
+      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
+          rafcstab%NVAR, .false., ctype)
+      
+    else
+
+      call lsyssc_createVector(rafcstab%p_rvectorFlux,  rafcstab%NEDGE,&
+          .false., ctype)
+
+    end if
+
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_ADFLUXES))
+    
+  end subroutine afcstab_allocFlux
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_allocFluxPrel(rafcstab, cdataType)
+
+!<description>
+    ! This subroutine allocates the edgewise flux vector fluxPrel
+!</description>
+
+!<input>
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ctype
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+
+    if (.not.associated(rafcstab%p_rvectorFluxPrel))&
+        allocate(rafcstab%p_rvectorFluxPrel)
+
+    if (rafcstab%NVAR .ne. 1) then
+
+      call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,  rafcstab%NEDGE,&
+          rafcstab%NVAR, .false., ctype)
+      
+    else
+
+      call lsyssc_createVector(rafcstab%p_rvectorFluxPrel,  rafcstab%NEDGE,&
+          .false., ctype)
+
+    end if
+
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_ADFLUXES))
+    
+  end subroutine afcstab_allocFluxPrel
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_allocAlpha(rafcstab, cdataType)
+
+!<description>
+    ! This subroutine allocates the edgewise correction factors alpha
+!</description>
+
+!<input>
+    ! OPTIONAL: data type which overwrites internal setting
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ctype
+
+    ctype = rafcstab%cdataType
+    if (present(cdataType)) ctype = cdataType
+
+    if (.not.associated(rafcstab%p_rvectorAlpha))&
+        allocate(rafcstab%p_rvectorAlpha)
+
+    call lsyssc_createVector(rafcstab%p_rvectorAlpha,  rafcstab%NEDGE,&
+        .false., ctype)
+    
+    ! Set ownership
+    rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
+        not(AFCSTAB_SHARE_EDGELIMITER))
+
+  end subroutine afcstab_allocAlpha
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_buildBoundsLPT1D(rafcstab, rmatrixCx, rmatrixM, dscale)
+
+!<description>
+    ! This subroutine computes the solution bounds for
+    ! linearity-preserving flux correction in 1D
+!</description>
+
+!<input>
+    ! Coefficient matrix
+    type(t_matrixScalar), intent(in) :: rmatrixCx
+
+    ! Diagonal scaling matrix
+    type(t_matrixScalar), intent(in) :: rmatrixM
+
+    ! Global scaling factor
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
+    real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
+    real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx
+    real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld, p_Kcol
+
+    ! Check spatial discretisation structure
+    if (.not. rmatrixCx%bidenticalTrialAndTest) then
+      call output_line('Test and trial functions must be identical!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+
+    ! Set pointer to triangulation; note that for more general
+    ! discretisations the coordinates of the degrees of freedom must
+    ! be computed and cannot be adopted from the vertex coordinates
+    p_rtriangulation => rmatrixCx%p_rspatialDiscrTrial%p_rtriangulation
+
+    ! Check if this is a 1D triangulation
+    if (p_rtriangulation%ndim .ne. NDIM1D) then
+      call output_line('Only 1D triangulations are supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+    
+    ! Get vertex coordinates
+    call storage_getbase_double2D(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      call afcstab_generateVerticesAtEdge(rmatrixCx, rafcstab)
+    end if
+
+    ! Check if stabilisation structure provides array to store bounds;
+    ! otherwise allocate new memory using the predefined data type
+    if (rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE)&
+        call afcstab_allocBoundsAtEdge(rafcstab, rafcstab%cdataType)
+
+    ! Check if source matrix is compatible with stabilisation structure
+    if ((rmatrixCx%NA-rmatrixCx%NEQ .ne. rafcstab%NEDGE * 2) .or.&
+        (rmatrixCx%cdataType .ne. rafcstab%cdataType)) then
+      call output_line('Matrix/stabilisation structure is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+    
+    ! Check if scaling matrix rmatrixM is diagonal and 
+    ! has the same data type as the source matrix
+    if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
+        (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
+        (rmatrixM%NEQ .ne. rmatrixCx%NEQ)) then
+      call output_line('Coefficient matrices are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)   
+
+    ! What type of matrix are we?
+    select case(rmatrixCx%cmatrixFormat)
+    case (LSYSSC_MATRIX7)
+      call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
+      
+      ! What type of data format are we?
+      select case(rmatrixCx%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrixM, p_DdataM)
+        call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+        
+        call doBoundsMat7Dble(p_IverticesAtEdge, p_Kld,&
+            p_DdataCx, p_DdataM, p_DvertexCoords, dscale, p_DboundsAtEdge)
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrixM, p_FdataM)
+        call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+
+        call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
+            p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+        call sys_halt()
+      end select
+
+    case (LSYSSC_MATRIX9)
+      call lsyssc_getbase_Kdiagonal(rmatrixCx, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
+      
+      ! What type of data format are we?
+      select case(rmatrixCx%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrixM, p_DdataM)
+        call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+        
+        call doBoundsMat9Dble(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+            p_DdataCx, p_DdataM, p_DvertexCoords, dscale, p_DboundsAtEdge)
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrixM, p_FdataM)
+        call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+
+        call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+            p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Compute the bounds in double precision.
+    ! All matrices are stored in matrix format 7.
+
+    subroutine doBoundsMat7Dble(IverticesAtEdge, Kld,&
+        DdataCx, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kld
+      real(DP), dimension(:), intent(in) :: DdataCx, DdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
+
+      ! local variables
+      real(DP) :: daux,diff
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i)+1, Kld(i+1)-1
+          daux = daux + abs(DdataCx(ik)*diff)
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j)+1, Kld(j+1)-1
+          daux = daux + abs(DdataCx(jk)*diff)
+        end do
+        
+        ! Store result into second entry
+        DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat7Dble
+
+    !**************************************************************
+    ! Compute the bounds in double precision.
+    ! All matrices are stored in matrix format 9.
+
+    subroutine doBoundsMat9Dble(IverticesAtEdge, Kdiagonal, Kld,&
+        DdataCx, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal, Kld
+      real(DP), dimension(:), intent(in) :: DdataCx, DdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
+
+      ! local variables
+      real(DP) :: daux,diff
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i), Kdiagonal(i)-1
+          daux = daux + abs(DdataCx(ik)*diff)
+        end do
+        
+        do ik = Kdiagonal(i)+1, Kld(i+1)-1
+          daux = daux + abs(DdataCx(ik)*diff)
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j), Kdiagonal(j)-1
+          daux = daux + abs(DdataCx(jk)*diff)
+        end do
+        
+        do jk = Kdiagonal(j)+1, Kld(j+1)-1
+          daux = daux + abs(DdataCx(jk)*diff)
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat9Dble
+
+    !**************************************************************
+    ! Compute the bounds in single precision.
+    ! All matrices are stored in matrix format 7.
+
+    subroutine doBoundsMat7Sngl(IverticesAtEdge, Kld,&
+        FdataCx, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kld
+      real(SP), dimension(:), intent(in) :: FdataCx, FdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
+
+      ! local variables
+      real(DP) :: daux,diff
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i)+1, Kld(i+1)-1
+          daux = daux + abs(FdataCx(ik)*diff)
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j)+1, Kld(j+1)-1
+          daux = daux + abs(FdataCx(jk)*diff)
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat7Sngl
+
+    !**************************************************************
+    ! Compute the bounds in single precision.
+    ! All matrices are stored in matrix format 9.
+
+    subroutine doBoundsMat9Sngl(IverticesAtEdge, Kdiagonal, Kld,&
+        FdataCx, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal, Kld
+      real(SP), dimension(:), intent(in) :: FdataCx, FdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
+
+      ! local variables
+      real(DP) :: daux,diff
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        diff = DvertexCoords(1,i) - DvertexCoords(1,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i), Kdiagonal(i)-1
+          daux = daux + abs(FdataCx(ik)*diff)
+        end do
+        
+        do ik = Kdiagonal(i)+1, Kld(i+1)-1
+          daux = daux + abs(FdataCx(ik)*diff)
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j), Kdiagonal(j)-1
+          daux = daux + abs(FdataCx(jk)*diff)
+        end do
+        
+        do jk = Kdiagonal(j)+1, Kld(j+1)-1
+          daux = daux + abs(FdataCx(jk)*diff)
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat9Sngl
+
+  end subroutine afcstab_buildBoundsLPT1D
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_buildBoundsLPT2D(rafcstab, rmatrixCx, rmatrixCy,&
+      rmatrixM, dscale)
+
+!<description>
+    ! This subroutine computes the solution bounds for
+    ! linearity-preserving flux correction in 2D
+!</description>
+
+!<input>
+    ! Coefficient matrices
+    type(t_matrixScalar), intent(in) :: rmatrixCx, rmatrixCy
+
+    ! Diagonal scaling matrix
+    type(t_matrixScalar), intent(in) :: rmatrixM
+
+    ! Global scaling factor
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+  
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
+    real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
+    real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy
+    real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx, p_FdataCy
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld, p_Kcol
+
+    ! Check spatial discretisation structure
+    if (.not. rmatrixCx%bidenticalTrialAndTest) then
+      call output_line('Test and trial functions must be identical!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+      call sys_halt()
+    end if
+
+    ! Set pointer to triangulation; note that for more general
+    ! discretisations the coordinates of the degrees of freedom must
+    ! be computed and cannot be adopted from the vertex coordinates
+    p_rtriangulation => rmatrixCx%p_rspatialDiscrTrial%p_rtriangulation
+
+    ! Check if this is a 2D triangulation
+    if (p_rtriangulation%ndim .ne. NDIM2D) then
+      call output_line('Only 3D triangulations are supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+      call sys_halt()
+    end if
+    
+    ! Get vertex coordinates
+    call storage_getbase_double2D(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      call afcstab_generateVerticesAtEdge(rmatrixCx, rafcstab)
+    end if
+
+    ! Check if stabilisation structure provides array to store bounds;
+    ! otherwise allocate new memory using the predefined data type
+    if (rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE)&
+        call afcstab_allocBoundsAtEdge(rafcstab, rafcstab%cdataType)
+
+    ! Check if source matrix is compatible with stabilisation structure
+    if ((rmatrixCx%NA-rmatrixCx%NEQ .ne. rafcstab%NEDGE * 2) .or.&
+        (rmatrixCx%cdataType .ne. rafcstab%cdataType)) then
+      call output_line('Matrix/stabilisation structure is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+      call sys_halt()
+    end if
+    
+    ! Check if coefficient matrices are compatible
+    call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCy)
+
+    ! Check if scaling matrix rmatrixM is diagonal and 
+    ! has the same data type as the source matrix
+    if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
+        (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
+        (rmatrixM%NEQ .ne. rmatrixCx%NEQ)) then
+      call output_line('Coefficient matrices are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+      call sys_halt()
+    end if
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)   
+
+    ! What type of matrix are we?
+    select case(rmatrixCx%cmatrixFormat)
+    case (LSYSSC_MATRIX7)
+      call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
+      
+      ! What type of data format are we?
+      select case(rmatrixCx%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrixM, p_DdataM)
+        call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
+        call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+        
+        call doBoundsMat7Dble(p_IverticesAtEdge, p_Kld,&
+            p_DdataCx, p_DdataCy, p_DdataM, p_DvertexCoords,&
+            dscale, p_DboundsAtEdge)
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrixM, p_FdataM)
+        call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
+        call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+
+        call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
+            p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
+            dscale, p_FboundsAtEdge)
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+        call sys_halt()
+      end select
+
+    case (LSYSSC_MATRIX9)
+      call lsyssc_getbase_Kdiagonal(rmatrixCx, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
+      
+      ! What type of data format are we?
+      select case(rmatrixCx%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrixM, p_DdataM)
+        call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
+        call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+        
+        call doBoundsMat9Dble(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+            p_DdataCx, p_DdataCy, p_DdataM, p_DvertexCoords,&
+            dscale, p_DboundsAtEdge)
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrixM, p_FdataM)
+        call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
+        call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+
+        call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+            p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
+            dscale, p_FboundsAtEdge)
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT2D')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Compute the bounds in double precision.
+    ! All matrices are stored in matrix format 7.
+
+    subroutine doBoundsMat7Dble(IverticesAtEdge, Kld,&
+        DdataCx, DdataCy, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kld
+      real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i)+1, Kld(i+1)-1
+          daux = daux + abs(DdataCx(ik)*Diff(1)+&
+                            DdataCy(ik)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j)+1, Kld(j+1)-1
+          daux = daux + abs(DdataCx(jk)*Diff(1)+&
+                            DdataCy(jk)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat7Dble
+
+    !**************************************************************
+    ! Compute the bounds in double precision.
+    ! All matrices are stored in matrix format 9.
+
+    subroutine doBoundsMat9Dble(IverticesAtEdge, Kdiagonal, Kld,&
+        DdataCx, DdataCy, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal, Kld
+      real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i), Kdiagonal(i)-1
+          daux = daux + abs(DdataCx(ik)*Diff(1)+&
+                            DdataCy(ik)*Diff(2))
+        end do
+        
+        do ik = Kdiagonal(i)+1, Kld(i+1)-1
+          daux = daux + abs(DdataCx(ik)*Diff(1)+&
+                            DdataCy(ik)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j), Kdiagonal(j)-1
+          daux = daux + abs(DdataCx(jk)*Diff(1)+&
+                            DdataCy(jk)*Diff(2))
+        end do
+        
+        do jk = Kdiagonal(j)+1, Kld(j+1)-1
+          daux = daux + abs(DdataCx(jk)*Diff(1)+&
+                            DdataCy(jk)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat9Dble
+
+    !**************************************************************
+    ! Compute the bounds in single precision.
+    ! All matrices are stored in matrix format 7.
+
+    subroutine doBoundsMat7Sngl(IverticesAtEdge, Kld,&
+        FdataCx, FdataCy, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kld
+      real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i)+1, Kld(i+1)-1
+          daux = daux + abs(FdataCx(ik)*Diff(1)+&
+                            FdataCy(ik)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j)+1, Kld(j+1)-1
+          daux = daux + abs(FdataCx(jk)*Diff(1)+&
+                            FdataCy(jk)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat7Sngl
+
+    !**************************************************************
+    ! Compute the bounds in single precision.
+    ! All matrices are stored in matrix format 9.
+
+    subroutine doBoundsMat9Sngl(IverticesAtEdge, Kdiagonal, Kld,&
+        FdataCx, FdataCy, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal, Kld
+      real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i), Kdiagonal(i)-1
+          daux = daux + abs(FdataCx(ik)*Diff(1)+&
+                            FdataCy(ik)*Diff(2))
+        end do
+        
+        do ik = Kdiagonal(i)+1, Kld(i+1)-1
+          daux = daux + abs(FdataCx(ik)*Diff(1)+&
+                            FdataCy(ik)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j), Kdiagonal(j)-1
+          daux = daux + abs(FdataCx(jk)*Diff(1)+&
+                            FdataCy(jk)*Diff(2))
+        end do
+        
+        do jk = Kdiagonal(j)+1, Kld(j+1)-1
+          daux = daux + abs(FdataCx(jk)*Diff(1)+&
+                            FdataCy(jk)*Diff(2))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat9Sngl
+
+  end subroutine afcstab_buildBoundsLPT2D
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine afcstab_buildBoundsLPT3D(rafcstab, rmatrixCx, rmatrixCy,&
+      rmatrixCz, rmatrixM, dscale)
+
+!<description>
+    ! This subroutine computes the solution bounds for
+    ! linearity-preserving flux correction in 3D
+!</description>
+
+!<input>
+    ! Coefficient matrices
+    type(t_matrixScalar), intent(in) :: rmatrixCx, rmatrixCy, rmatrixCz
+
+    ! Diagonal scaling matrix
+    type(t_matrixScalar), intent(in) :: rmatrixM
+
+    ! Global scaling factor
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+  
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
+    real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
+    real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy, p_DdataCz
+    real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx, p_FdataCy, p_FdataCz
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld, p_Kcol
+
+    ! Check spatial discretisation structure
+    if (.not. rmatrixCx%bidenticalTrialAndTest) then
+      call output_line('Test and trial functions must be identical!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+      call sys_halt()
+    end if
+
+    ! Set pointer to triangulation; note that for more general
+    ! discretisations the coordinates of the degrees of freedom must
+    ! be computed and cannot be adopted from the vertex coordinates
+    p_rtriangulation => rmatrixCx%p_rspatialDiscrTrial%p_rtriangulation
+
+    ! Check if this is a 3D triangulation
+    if (p_rtriangulation%ndim .ne. NDIM3D) then
+      call output_line('Only 3D triangulations are supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+      call sys_halt()
+    end if
+    
+    ! Get vertex coordinates
+    call storage_getbase_double2D(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT1D')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+      call afcstab_generateVerticesAtEdge(rmatrixCx, rafcstab)
+    end if
+
+    ! Check if stabilisation structure provides array to store bounds;
+    ! otherwise allocate new memory using the predefined data type
+    if (rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE)&
+        call afcstab_allocBoundsAtEdge(rafcstab, rafcstab%cdataType)
+
+    ! Check if source matrix is compatible with stabilisation structure
+    if ((rmatrixCx%NA-rmatrixCx%NEQ .ne. rafcstab%NEDGE * 2) .or.&
+        (rmatrixCx%cdataType .ne. rafcstab%cdataType)) then
+      call output_line('Matrix/stabilisation structure is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+      call sys_halt()
+    end if
+    
+    ! Check if coefficient matrices are compatible
+    call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCy)
+    call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCz)
+
+    ! Check if scaling matrix rmatrixM is diagonal and 
+    ! has the same data type as the source matrix
+    if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
+        (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
+        (rmatrixM%NEQ .ne. rmatrixCx%NEQ)) then
+      call output_line('Coefficient matrices are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+      call sys_halt()
+    end if
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)   
+
+    ! What type of matrix are we?
+    select case(rmatrixCx%cmatrixFormat)
+    case (LSYSSC_MATRIX7)
+      call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
+      
+      ! What type of data format are we?
+      select case(rmatrixCx%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrixM, p_DdataM)
+        call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
+        call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
+        call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+        
+        call doBoundsMat7Dble(p_IverticesAtEdge, p_Kld,&
+            p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
+            p_DvertexCoords, dscale, p_DboundsAtEdge)
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrixM, p_FdataM)
+        call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
+        call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
+        call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+
+        call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
+            p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
+            p_DvertexCoords, dscale, p_FboundsAtEdge)
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+        call sys_halt()
+      end select
+
+    case (LSYSSC_MATRIX9)
+      call lsyssc_getbase_Kdiagonal(rmatrixCx, p_Kdiagonal)
+      call lsyssc_getbase_Kld(rmatrixCx, p_Kld)
+      
+      ! What type of data format are we?
+      select case(rmatrixCx%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrixM, p_DdataM)
+        call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
+        call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
+        call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
+        
+        call doBoundsMat9Dble(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+            p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
+            p_DvertexCoords, dscale, p_DboundsAtEdge)
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrixM, p_FdataM)
+        call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
+        call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
+        call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
+        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+
+        call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+            p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
+            p_DvertexCoords, dscale, p_FboundsAtEdge)
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_buildBoundsLPT3D')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Compute the bounds in double precision.
+    ! All matrices are stored in matrix format 7.
+
+    subroutine doBoundsMat7Dble(IverticesAtEdge, Kld,&
+        DdataCx, DdataCy, DdataCz, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kld
+      real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataCz, DdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i)+1, Kld(i+1)-1
+          daux = daux + abs(DdataCx(ik)*Diff(1)+&
+                            DdataCy(ik)*Diff(2)+&
+                            DdataCz(ik)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j)+1, Kld(j+1)-1
+          daux = daux + abs(DdataCx(jk)*Diff(1)+&
+                            DdataCy(jk)*Diff(2)+&
+                            DdataCz(jk)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat7Dble
+
+    !**************************************************************
+    ! Compute the bounds in double precision.
+    ! All matrices are stored in matrix format 9.
+
+    subroutine doBoundsMat9Dble(IverticesAtEdge, Kdiagonal, Kld,&
+        DdataCx, DdataCy, DdataCz, DdataM, DvertexCoords, dscale, DboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal, Kld
+      real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataCz, DdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(DP), dimension(:,:), intent(out) :: DboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i), Kdiagonal(i)-1
+          daux = daux + abs(DdataCx(ik)*Diff(1)+&
+                            DdataCy(ik)*Diff(2)+&
+                            DdataCz(ik)*Diff(3))
+        end do
+        
+        do ik = Kdiagonal(i)+1, Kld(i+1)-1
+          daux = daux + abs(DdataCx(ik)*Diff(1)+&
+                            DdataCy(ik)*Diff(2)+&
+                            DdataCz(ik)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(1,iedge) = dscale*daux/DdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j), Kdiagonal(j)-1
+          daux = daux + abs(DdataCx(jk)*Diff(1)+&
+                            DdataCy(jk)*Diff(2)+&
+                            DdataCz(jk)*Diff(3))
+        end do
+        
+        do jk = Kdiagonal(j)+1, Kld(j+1)-1
+          daux = daux + abs(DdataCx(jk)*Diff(1)+&
+                            DdataCy(jk)*Diff(2)+&
+                            DdataCz(jk)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat9Dble
+
+    !**************************************************************
+    ! Compute the bounds in single precision.
+    ! All matrices are stored in matrix format 7.
+
+    subroutine doBoundsMat7Sngl(IverticesAtEdge, Kld,&
+        FdataCx, FdataCy, FdataCz, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kld
+      real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataCz, FdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i)+1, Kld(i+1)-1
+          daux = daux + abs(FdataCx(ik)*Diff(1)+&
+                            FdataCy(ik)*Diff(2)+&
+                            FdataCz(ik)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j)+1, Kld(j+1)-1
+          daux = daux + abs(FdataCx(jk)*Diff(1)+&
+                            FdataCy(jk)*Diff(2)+&
+                            FdataCz(jk)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat7Sngl
+
+    !**************************************************************
+    ! Compute the bounds in single precision.
+    ! All matrices are stored in matrix format 9.
+
+    subroutine doBoundsMat9Sngl(IverticesAtEdge, Kdiagonal, Kld,&
+        FdataCx, FdataCy, FdataCz, FdataM, DvertexCoords, dscale, FboundsAtEdge)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal, Kld
+      real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataCz, FdataM
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), intent(in) :: dscale
+
+      real(SP), dimension(:,:), intent(out) :: FboundsAtEdge
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: Diff
+      real(DP) :: daux
+      integer :: iedge,i,j,ik,jk
+
+      ! Loop over all edges of the structure
+      !$omp parallel do default(shared)&
+      !$omp private(daux,diff,i,ik,j,jk)
+      edges: do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get the numbers of the two endpoints
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+
+        ! Compute difference (x_i-x_j)
+        Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
+        
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{ik}*(x_i-x_j)| $
+        do ik = Kld(i), Kdiagonal(i)-1
+          daux = daux + abs(FdataCx(ik)*Diff(1)+&
+                            FdataCy(ik)*Diff(2)+&
+                            FdataCz(ik)*Diff(3))
+        end do
+        
+        do ik = Kdiagonal(i)+1, Kld(i+1)-1
+          daux = daux + abs(FdataCx(ik)*Diff(1)+&
+                            FdataCy(ik)*Diff(2)+&
+                            FdataCz(ik)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(1,iedge) = real(dscale*daux,SP)/FdataM(i)
+
+        ! Clear temporal variable
+        daux = 0.0_DP
+
+        ! Loop over all off-diagonal entries of current row and sum
+        ! the absolute values $ |c_{jk}*(x_j-x_i)| $
+        do jk = Kld(j), Kdiagonal(j)-1
+          daux = daux + abs(FdataCx(jk)*Diff(1)+&
+                            FdataCy(jk)*Diff(2)+&
+                            FdataCz(jk)*Diff(3))
+        end do
+        
+        do jk = Kdiagonal(j)+1, Kld(j+1)-1
+          daux = daux + abs(FdataCx(jk)*Diff(1)+&
+                            FdataCy(jk)*Diff(2)+&
+                            FdataCz(jk)*Diff(3))
+        end do
+        
+        ! Store result into first entry
+        FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
+      end do edges
+
+    end subroutine doBoundsMat9Sngl
+
+  end subroutine afcstab_buildBoundsLPT3D
+
 end module afcstabilisation
