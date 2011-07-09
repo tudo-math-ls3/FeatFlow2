@@ -530,7 +530,9 @@ contains
 !</subroutine>
 
     ! section names
+    character(LEN=SYS_STRLEN) :: smass
     character(LEN=SYS_STRLEN) :: sinviscid
+    character(LEN=SYS_STRLEN) :: sviscous
 
     ! abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
@@ -539,7 +541,10 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! local variables
-    integer :: inviscidAFC, iconvToTria
+    integer :: massAFC
+    integer :: inviscidAFC
+    integer :: viscousAFC
+    integer :: iconvToTria
 
 
     ! Get global configuration from parameter list
@@ -552,13 +557,23 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'inviscid', sinviscid)
+        ssectionName, 'mass', smass, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'inviscid', sinviscid, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'viscous', sviscous, '')
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'inviscidAFC', inviscidAFC)
+        ssectionName, 'massAFC', massAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'viscousAFC', viscousAFC, 0)
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1   ! one discretisation
-    rproblemDescriptor%nafcstab        = 1   ! stabilisation for inviscid fluxes
+    rproblemDescriptor%nafcstab        = max(massAFC,&
+                                             inviscidAFC,&
+                                             viscousAFC)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 5
@@ -579,10 +594,20 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
-      if (inviscidAFC > 0) then
-        call afcstab_initFromParameterlist(rparlist, sinviscid,&
-            p_rproblemLevel%Rafcstab(inviscidAFC))
-      end if
+      ! Initialize the stabilisation structure for mass term (if required)
+      if (massAFC > 0)&
+          call afcstab_initFromParameterlist(rparlist, smass,&
+          p_rproblemLevel%Rafcstab(massAFC))
+      
+      ! Initialize the stabilisation structure for inviscid term (if required)
+      if (inviscidAFC > 0)&
+          call afcstab_initFromParameterlist(rparlist, sinviscid,&
+          p_rproblemLevel%Rafcstab(inviscidAFC))
+
+      ! Initialize the stabilisation structure for viscous term (if required)
+      if (viscousAFC > 0)&
+          call afcstab_initFromParameterlist(rparlist, sviscous,&
+          p_rproblemLevel%Rafcstab(viscousAFC))
 
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
@@ -639,7 +664,9 @@ contains
     integer :: coeffMatrix_CXY
     integer :: coeffMatrix_CXZ
     integer :: coeffMatrix_CYZ
+    integer :: massAFC
     integer :: inviscidAFC
+    integer :: viscousAFC
     integer :: discretisation
     integer :: isystemFormat
     integer :: isystemCoupling
@@ -656,33 +683,37 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'templatematrix', templateMatrix)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'systemmatrix', systemMatrix)
+        ssectionName, 'systemmatrix', systemMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'jacobianmatrix', jacobianMatrix)
+        ssectionName, 'jacobianmatrix', jacobianMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
+        ssectionName, 'coeffmatrix_cx', coeffMatrix_CX, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
+        ssectionName, 'coeffmatrix_cy', coeffMatrix_CY, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+        ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cxx', coeffMatrix_CXX)
+        ssectionName, 'coeffmatrix_cxx', coeffMatrix_CXX, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cyy', coeffMatrix_CYY)
+        ssectionName, 'coeffmatrix_cyy', coeffMatrix_CYY, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_czz', coeffMatrix_CZZ)
+        ssectionName, 'coeffmatrix_czz', coeffMatrix_CZZ, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cxy', coeffMatrix_CXY)
+        ssectionName, 'coeffmatrix_cxy', coeffMatrix_CXY, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cxz', coeffMatrix_CXZ)
+        ssectionName, 'coeffmatrix_cxz', coeffMatrix_CXZ, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'coeffmatrix_cyz', coeffMatrix_CYZ)
+        ssectionName, 'coeffmatrix_cyz', coeffMatrix_CYZ, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'inviscidAFC', inviscidAFC)
+        ssectionName, 'massAFC', massAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'viscousAFC', viscousAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist,&
@@ -1339,16 +1370,10 @@ contains
 
         ! Compute number of matrices to by copied
         nmatrices = 0
-        if (coeffMatrix_CX   > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CY   > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXX  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CYY  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZZ  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXY  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXZ  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CYZ  > 0) nmatrices = nmatrices+1
-
+        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
+        
         ! Initialise memory for constant coefficient matrices
         if (nmatrices > 0)&
             call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(inviscidAFC), nmatrices)
@@ -1384,43 +1409,135 @@ contains
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
       end if
+     
+    end if
+
+    ! The same applies to the viscous stabilisation structure
+    if (viscousAFC > 0) then
+      if (rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
+
+        ! Get number of expressions for limiting variables
+        nvariable = max(1,&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'slimitingvariable'))
+        
+        ! Initialise number of limiting variables
+        nvartransformed = 1
+
+        ! Determine maximum number of limiting variables in a single set
+        do ivariable = 1, nvariable
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'slimitingvariable',&
+              slimitingvariable, isubstring=ivariable)
+          nvartransformed = max(nvartransformed,&
+              mhd_getNVARtransformed(rproblemLevel, slimitingvariable))
+        end do
+
+        ! Initialise stabilisation structure
+        call gfsys_initStabilisation(&
+            rproblemLevel%RmatrixBlock(systemMatrix),&
+            rproblemLevel%Rafcstab(viscousAFC),&
+            nvartransformed, p_rdiscretisation)
+
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_CXX  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CYY  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZZ  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXY  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXZ  > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CYZ  > 0) nmatrices = nmatrices+1
+
+        ! Initialise memory for constant coefficient matrices
+        if (nmatrices > 0)&
+            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(viscousAFC), nmatrices)
+        
+      else
+        ! Resize stabilisation structure
+        call afcstab_resizeStabilisation(&
+            rproblemLevel%Rafcstab(viscousAFC),&
+            rproblemLevel%Rmatrix(templateMatrix))
+
+        rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec =&
+            iand(rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec,&
+            not(AFCSTAB_HAS_OFFDIAGONALEDGES))
+      end if
+
+      ! Copy constant coefficient matrices to stabilisation structure
+      nmatrices = 0
       if (coeffMatrix_CXX > 0) then
         nmatrices = nmatrices+1
         call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(viscousAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CXX:coeffMatrix_CXX), (/nmatrices/))
       end if
       if (coeffMatrix_CYY > 0) then
         nmatrices = nmatrices+1
         call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(viscousAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CYY:coeffMatrix_CYY), (/nmatrices/))
       end if
       if (coeffMatrix_CZZ > 0) then
         nmatrices = nmatrices+1
         call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(viscousAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CZZ:coeffMatrix_CZZ), (/nmatrices/))
       end if
       if (coeffMatrix_CXY > 0) then
         nmatrices = nmatrices+1
         call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(viscousAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CXY:coeffMatrix_CXY), (/nmatrices/))
       end if
       if (coeffMatrix_CXZ > 0) then
         nmatrices = nmatrices+1
         call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(viscousAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CXZ:coeffMatrix_CXZ), (/nmatrices/))
       end if
       if (coeffMatrix_CYZ > 0) then
         nmatrices = nmatrices+1
         call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(viscousAFC),&
             rproblemLevel%Rmatrix(coeffMatrix_CYZ:coeffMatrix_CYZ), (/nmatrices/))
       end if
 
+    end if
+
+    ! The same applies to the mass stabilisation structure
+    if (massAFC > 0) then
+      if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
+
+        ! Get number of expressions for limiting variables
+        nvariable = max(1,&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'slimitingvariable'))
+        
+        ! Initialise number of limiting variables
+        nvartransformed = 1
+
+        ! Determine maximum number of limiting variables in a single set
+        do ivariable = 1, nvariable
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'slimitingvariable',&
+              slimitingvariable, isubstring=ivariable)
+          nvartransformed = max(nvartransformed,&
+              mhd_getNVARtransformed(rproblemLevel, slimitingvariable))
+        end do
+
+        ! Initialise stabilisation structure
+        call gfsys_initStabilisation(&
+            rproblemLevel%RmatrixBlock(systemMatrix),&
+            rproblemLevel%Rafcstab(massAFC),&
+            nvartransformed, p_rdiscretisation)
+      else
+        ! Resize stabilisation structure
+        call afcstab_resizeStabilisation(&
+            rproblemLevel%Rafcstab(massAFC),&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
     end if
 
   end subroutine mhd_initProblemLevel
@@ -1830,8 +1947,8 @@ contains
         
         ! Initialise stabilisation structure by hand
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
-        rafcstab%ctypePrelimiting   = AFCSTAB_NOPRELIMITING
-        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        rafcstab%ctypePrelimiting   = AFCSTAB_PRELIMITING_NONE
+        rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         call afcstab_generateVerticesAtEdge(&

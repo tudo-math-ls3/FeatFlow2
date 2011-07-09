@@ -1276,9 +1276,9 @@ contains
 
     ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
 
 
       ! Set pointer to predictor
@@ -1295,7 +1295,7 @@ contains
           call lsysbl_copyVector(rsolution, p_rpredictor)
         end if
       elseif (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-              .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+              .eq. AFCSTAB_NLINFCT_ITERATIVE) then
         ! ... in each iteration for iterative limiting
         call lsysbl_invertedDiagMatVec(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1316,19 +1316,19 @@ contains
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
       else
         select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_NLINFCT_EXPLICIT)
           ! Perform standard flux correction without recomputing bounds
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
                            AFCSTAB_FCTALGO_BOUNDS
 
-        case (AFCSTAB_FEMFCT_IMPLICIT)
+        case (AFCSTAB_NLINFCT_IMPLICIT)
           ! Perform semi-implicit flux correction
           ioperationSpec = AFCSTAB_FCTALGO_INITALPHA+&
                            AFCSTAB_FCTALGO_LIMITEDGE+&
                            AFCSTAB_FCTALGO_CORRECT+&
                            AFCSTAB_FCTALGO_CONSTRAIN
 
-        case (AFCSTAB_FEMFCT_ITERATIVE)
+        case (AFCSTAB_NLINFCT_ITERATIVE)
           ! Perform standard flux correction
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD
         end select
@@ -1341,7 +1341,7 @@ contains
 
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-          .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+          .eq. AFCSTAB_NLINFCT_ITERATIVE) then
         call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1669,7 +1669,7 @@ contains
     ! Do we have to apply linearised FEM-FCT?
     if (inviscidAFC .le. 0) return
     if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-        .ne. AFCSTAB_FEMFCT_LINEARISED) return
+        .ne. AFCSTAB_LINFCT) return
 
     ! Get more parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
@@ -4173,10 +4173,10 @@ contains
         !-----------------------------------------------------------------------
         
       case (AFCSTAB_UPWIND,&
-            AFCSTAB_FEMFCT_CLASSICAL,&
-            AFCSTAB_FEMFCT_ITERATIVE,&
-            AFCSTAB_FEMFCT_IMPLICIT,&
-            AFCSTAB_FEMFCT_LINEARISED)
+            AFCSTAB_NLINFCT_EXPLICIT,&
+            AFCSTAB_NLINFCT_ITERATIVE,&
+            AFCSTAB_NLINFCT_IMPLICIT,&
+            AFCSTAB_LINFCT)
         
         ! What type of dissipation is applied?
         select case(idissipationtype)
@@ -4351,7 +4351,7 @@ contains
         
         !-----------------------------------------------------------------------
 
-      case (AFCSTAB_FEMTVD)
+      case (AFCSTAB_TVD)
         
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
