@@ -663,7 +663,7 @@ module linearsystemscalar
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
     ! various details of the matrix. If it is =LSYSSC_MSPEC_STANDaRD,
     ! the matrix is a usual matrix that needs no special handling.
-    integer(I32) :: imatrixSpec = LSYSSC_MSPEC_STANDaRD
+    integer(I32) :: imatrixSpec = LSYSSC_MSPEC_STANDARD
     
     ! Number of elements in the matrix
     integer :: NA  = 0
