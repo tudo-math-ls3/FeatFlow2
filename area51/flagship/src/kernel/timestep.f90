@@ -874,8 +874,7 @@ contains
     timeadapt: do
 
       ! Increase simulation time provisionally
-      rtimestep%dStep = min(rtimestep%dStep,&
-          rtimestep%dfinalTime - rtimestep%dTime)
+      rtimestep%dStep = min(rtimestep%dStep, rtimestep%dfinalTime - rtimestep%dTime)
       rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps + 1
 
@@ -1244,8 +1243,7 @@ contains
     timeadapt: do
 
       ! Increase simulation time provisionally
-      rtimestep%dStep = min(rtimestep%dStep,&
-          rtimestep%dfinalTime - rtimestep%dTime)
+      rtimestep%dStep = min(rtimestep%dStep, rtimestep%dfinalTime - rtimestep%dTime)
       rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps + 1
 
@@ -1524,8 +1522,8 @@ contains
 
       ! Increase simulation time provisionally
       rtimestep%dStep = min(rtimestep%dStep, rtimestep%dfinalTime-rtimestep%dTime)
-      rtimestep%dTime = rtimestep%dTime+rtimestep%dStep
-      rtimestep%nSteps= rtimestep%nSteps+1
+      rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
+      rtimestep%nSteps= rtimestep%nSteps + 1
 
       if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
         call output_lbrk()
