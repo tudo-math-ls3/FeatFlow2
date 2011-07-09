@@ -23,6 +23,9 @@ ConvectionAFC = 1
 # Position of the stabilization for the diffusive term
 DiffusionAFC = 2
 
+# Position of the stabilization for the mass term
+MassAFC = 3
+
 # Position of the template matrix in the scalar matrix structure
 TemplateMatrix = 1
 

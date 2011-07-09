@@ -85,9 +85,8 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(2) = 
-  density
-  pressure
+slimitingvariable(1) = 
+  density,pressure,velocity
   
 # number of failsafe steps
 nfailsafe = 0
@@ -189,17 +188,21 @@ errorestimator = ErrorEstimator
 # type of spatial stabilization:
 #  0 = no stabilization (Galerkin)
 #  1 = discrete upwinding
-# 10 = semi-impl. FEM-FCT (iprelimiting =0, =2)
-# 11 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
-# 12 = linearised FEM-FCT (iprelimiting =0, =1, =2)
-# 13 = iterative FEM-FCT (iprelimiting =0, =1, =2)
-# 14 = characteristic FEM-FCT
-# 20 = FEM-TVD
-# 21 = FEM-GP
+# 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
+# 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
+# 12 = iterative FEM-FCT (iprelimiting =0, =1, =2)
+# 20 = linearised FEM-FCT (iprelimiting =0, =1, =2)
+# 30 = FEM-TVD
+# 31 = FEM-GP
+# 41 = nonlinear upwind-biased FEM-LPT
+# 51 = linearised upwind-biased FEM-LPT
 istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 0
+#  0 = no prelimiting
+#  1 = standard prelimiting
+#  2 = minmod prelimiting
+iprelimiting = 2
 
 
 ################################################################################
@@ -315,10 +318,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce

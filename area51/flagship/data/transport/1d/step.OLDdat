@@ -3,7 +3,7 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                     Convection of a sinusoidal profile in 1D                 #
+#                        Convection of a step function in 1D                   #
 #                                                                              #
 ################################################################################
 
@@ -20,10 +20,10 @@ application = transport
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/1d/sinusoidal.indat
+indatfile = data/transport/1d/step.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond2_weak_primal
+sprimalbdrcondname = bdrcond_weak_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -50,7 +50,10 @@ imassantidiffusiontype = 1
 # type of approximate time derivative
 # 0 = Galerkin method
 # 1 = low-order method
-iapproxtimederivativetype = 1
+iapproxtimederivativetype = 0
+
+# maximum number of Richardson iteration steps
+nmaxIterationsApproxTimeDerivative = 0
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -102,7 +105,7 @@ srhsname =
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = @initsol
+ssolutionname = @initsol1
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -111,7 +114,7 @@ ssolutionname = @initsol
 iexactsolutiontype = 1
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname = @exactsol3
 
 # type of target functional
 # 0 = zero target functional
@@ -128,7 +131,7 @@ stargetfuncname =
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/unit.tri
+trifile = grids/1d/unit257.tri
 
 # type of finite element space(s)
 celement = EL_P1_1D
@@ -174,20 +177,16 @@ errorestimator = ErrorEstimator
 # type of spatial stabilization:
 #  0 = no stabilization (Galerkin)
 #  1 = discrete upwinding
-# 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
-# 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
-# 12 = iterative FEM-FCT (iprelimiting =0, =1, =2)
-# 20 = linearised FEM-FCT (iprelimiting =0, =1, =2)
-# 30 = FEM-TVD
-# 31 = FEM-GP
-# 41 = nonlinear upwind-biased FEM-LPT
-# 51 = linearised upwind-biased FEM-LPT
-istabilisation = 12
+# 10 = semi-impl. FEM-FCT (iprelimiting =0, =2)
+# 11 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
+# 12 = linearised FEM-FCT (iprelimiting =0, =1, =2)
+# 13 = iterative FEM-FCT (iprelimiting =0, =1, =2)
+# 14 = characteristic FEM-FCT
+# 20 = FEM-TVD
+# 21 = FEM-GP
+istabilisation = 20
 
 # perform prelimiting
-#  0 = no prelimiting
-#  1 = standard prelimiting
-#  2 = minmod prelimiting
 iprelimiting = 0
 
 
@@ -197,10 +196,8 @@ iprelimiting = 0
 
 # type of spatial stabilization
 #  0 = no stabilization (Galerkin)
-#  2 = discrete maximum principle preservation
-# 32 = nonlinear symmetric limiting
-# 42 = nonlinear symmetric FEM-LPT
-# 52 = linearised symmetric FEM-LPT
+#  2 = maximum principle preservation
+# 30 = symmetric limiting
 istabilisation = 0
 
 
@@ -219,10 +216,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/sinusoidal
+sucdsolution = outdebug/step1
 
 # file for UCD output of error
-sucderror = out/sinusoidal_error
+sucderror = outdebug/step_error
 
 
 ################################################################################
@@ -254,13 +251,13 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 0
+multisteps = 1
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.5
+dfinalTime = 0.4
 
 # initial time step size
 dinitialStep = 0.001
@@ -310,10 +307,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -439,7 +436,7 @@ ioutputlevel = 3
 iresNorm = 0
 
 # minimum number of nonlinear steps
-nminIterations = 1
+nminIterations = 100
 
 # maximum number of nonlinear steps
 nmaxIterations = 100
@@ -640,7 +637,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
