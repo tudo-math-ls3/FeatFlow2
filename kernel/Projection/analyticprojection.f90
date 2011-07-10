@@ -1108,17 +1108,19 @@ contains
     ! Initialise the stabilisation structure
     rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
     rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
-    rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+    rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
     call gfsc_initStabilisation(rmatrixMass, rafcstab)
     call afcstab_generateVerticesAtEdge(rmatrixMass, rafcstab)
 
     ! Compute the fluxes for the raw mass antidiffusion
     call gfsc_buildFluxFCT(rafcstab, rvectorAux,&
-        0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass, rvectorAux)
+        0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
+        AFCSTAB_FCTFLUX_EXPLICIT, rmatrixMass, rvectorAux)
 
     ! Apply flux correction to improve the low-order L2-projection
-    call gfsc_buildConvectionVectorFCT(rafcstab, p_rmatrixMassLumped, rvector, 1._DP,&
-        .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
+    call gfsc_buildConvectionVectorFCT(rafcstab,&
+        p_rmatrixMassLumped, rvector, 1._DP, .false.,&
+        AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
     ! Release stabilisation structure
     call afcstab_releaseStabilisation(rafcstab)
