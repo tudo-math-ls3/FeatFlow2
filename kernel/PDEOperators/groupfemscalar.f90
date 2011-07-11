@@ -5516,12 +5516,12 @@ contains
       ! Compute sums of antidiffusive increments based on the
       ! raw-antidiffusive fluxes ...
       select case(rafcstab%ctypeLimiting)
-      case (AFCSTAB_LIMITING_SYMMETRIC)!, AFCSTAB_LIMITING_UPWINDBIASED)
+      case (AFCSTAB_LIMITING_SYMMETRIC)
         ! ... in a symmetric fashion
         call doADIncrementsSymmDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
         
-      case (AFCSTAB_LIMITING_UPWINDBIASED)!+4711)
+      case (AFCSTAB_LIMITING_UPWINDBIASED)
         ! ... in an upwind-biased fashion
         call doADIncrementsUpwDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
@@ -5609,12 +5609,12 @@ contains
 
       ! Compute edgewise correction factors ...
       select case(rafcstab%ctypeLimiting)
-      case (AFCSTAB_LIMITING_SYMMETRIC)!, AFCSTAB_LIMITING_UPWINDBIASED)
+      case (AFCSTAB_LIMITING_SYMMETRIC)
         ! ... in a symmetric fashion
         call doLimitEdgewiseSymmDble(p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
         
-      case (AFCSTAB_LIMITING_UPWINDBIASED)! + 4711)
+      case (AFCSTAB_LIMITING_UPWINDBIASED)
         ! ... in an upwind-biased fashion
         call doLimitEdgewiseUpwDble(p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
