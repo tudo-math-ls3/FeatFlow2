@@ -585,6 +585,10 @@ module afcstabilisation
   ! Correct raw antidiffusive fluxes and apply them
   integer(I32), parameter, public :: AFCSTAB_LPTALGO_CORRECT      = 2_I32**5
 
+  ! Scale corrected antidiffusive fluxes by the inverse of the
+  ! lumped mass matrix prior to applying it to the residual/solution
+  integer(I32), parameter, public :: AFCSTAB_LPTALGO_SCALEBYMASS  = 2_I32**6
+
   ! FEM-LPT algorithm without application of the corrected fluxes
   integer(I32), parameter, public :: AFCSTAB_LPTALGO_PREPARE  = AFCSTAB_LPTALGO_INITALPHA +&
                                                                 AFCSTAB_LPTALGO_ADINCREMENTS +&
