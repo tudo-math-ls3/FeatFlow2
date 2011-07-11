@@ -3835,7 +3835,8 @@ contains
 
       ! Perform linearised FEM-LPT post-processing
       call transp_calcLinearisedLPT(p_rproblemLevel, rtimestep, rsolver,&
-          rsolution, ssectionName, rcollection, rvector1)
+          rsolution, ssectionName, rcollection, rmatrix=rmatrix1,&
+          rvector1=rvector1, rvector2=rvector2, rvector3=rvector3)
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)

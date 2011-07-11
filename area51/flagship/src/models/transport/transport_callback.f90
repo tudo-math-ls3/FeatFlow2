@@ -106,6 +106,9 @@
 !# 22.) transp_calcTransportOperator
 !#      -> Calculates the discrete transport operator.
 !#
+!# 23.) transp_calcTimeDerivative
+!#      -> Cacluates the approximate time derivative
+!#
 !#
 !# Frequently asked questions?
 !#
@@ -3390,7 +3393,6 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
-    type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearform) :: rform
     integer, dimension(:), pointer :: p_IbdrCondType
     integer :: ivelocitytype, velocityfield
@@ -4040,7 +4042,6 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
-    type(t_boundaryRegion) :: rboundaryRegion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondType
     integer, dimension(:), pointer :: p_IbdrCompPeriodic
@@ -4866,35 +4867,17 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    type(t_matrixScalar), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rvector1, p_rvector2, p_rvector3
-    character(LEN=SYS_STRLEN) :: smode
-    real(DP) :: dnorm0, dnorm
-    real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
-    integer :: massAFC,convectionAFC,diffusionAFC,ivelocitytype
-    integer :: imassantidiffusiontype,iapproxtimederivativetype
+    type(t_vectorBlock), pointer :: p_rvector1
+    integer :: convectionAFC,imassantidiffusiontype
     integer :: lumpedMassMatrix,consistentMassMatrix
-    integer :: ctypeAFCstabilisationMass
-    integer :: ctypeAFCstabilisationConvection
-    integer :: ctypeAFCstabilisationDiffusion
-    integer :: ite,nmaxIterationsApproxTimeDerivative
-    integer(I32) :: istabilisationSpecMass
-    integer(I32) :: istabilisationSpecConvection
-    integer(I32) :: istabilisationSpecDiffusion
-    logical :: bcompatible, bforceUpdate
 
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
-        'rparlist', ssectionName=ssectionName)
-    
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'massAFC', massAFC, 0)
+        'rparlist', ssectionName=ssectionName)   
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'convectionAFC', convectionAFC, 0)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'diffusionAFC', diffusionAFC, 0)
-        
+    
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm for the convective term (if any)
     !---------------------------------------------------------------------------
@@ -4907,327 +4890,32 @@ contains
       case (AFCSTAB_LINFCT)
         ! Get parameters from parameter list
         call parlst_getvalue_int(p_rparlist,&
-            ssectionName, 'lumpedmassmatrix', lumpedmassmatrix)
-        call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'consistentmassmatrix', consistentmassmatrix)
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'lumpedmassmatrix', lumpedmassmatrix)
         
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           
-          ! Get more parameters from parameter list
-          call parlst_getvalue_int(p_rparlist,&
-              ssectionName, 'consistentmassmatrix', consistentmassmatrix)
-          call parlst_getvalue_int(p_rparlist,&
-              ssectionName, 'iapproxtimederivativetype', iapproxtimederivativetype)
-          call parlst_getvalue_int(p_rparlist,&
-              ssectionName, 'ivelocitytype', ivelocitytype)
-          call parlst_getvalue_string(p_rparlist,&
-              ssectionName, 'mode', smode)
-          
-          ! Set up matrix for discrete transport operator
-          if (present(rmatrix)) then
-            p_rmatrix => rmatrix
-          else
-            allocate(p_rmatrix)
-          end if
-          
-          ! Check if matrix is compatible to consistent mass matrix;
-          ! otherwise create matrix as a duplicate of the consistent mass matrix
-          call lsyssc_isMatrixCompatible(p_rmatrix,&
-              rproblemLevel%Rmatrix(consistentMassMatrix), bcompatible)
-          if (.not.bcompatible) then
-            call lsyssc_duplicateMatrix(&
-                rproblemLevel%Rmatrix(consistentMassMatrix),&
-                p_rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-            bforceUpdate = .true.
-          else
-            bforceUpdate = .false.
-          end if
-          
-          ! Set up vector1 for computing the approximate time derivative
+          ! Set up vector for computing the approximate time derivative
           if (present(rvector1)) then
             p_rvector1 => rvector1
           else
             allocate(p_rvector1)
           end if
+
+          ! Compute approximate time derivative
+          call transp_calcTimeDerivative(rproblemLevel, rtimestep, rsolver,&
+              rsolution, ssectionName, rcollection, p_rvector1, rsource,&
+              fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+              fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+              fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim,&
+              rmatrix, rvector2, rvector3)
           
-          ! Check if rvector1 is compatible to the solution vector;
-          ! otherwise create new vector as a duplicate of the solution vector
-          call lsysbl_isVectorCompatible(p_rvector1, rsolution, bcompatible)
-          if (.not.bcompatible)&
-              call lsysbl_duplicateVector(rsolution, p_rvector1,&
-              LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-          
-          !---------------------------------------------------------------------
-          
-          ! How should we compute the approximate time derivative?
-          select case(iapproxtimederivativetype)
-            
-          case(AFCSTAB_GALERKIN)
-            
-            ! Get more parameters from parameter list
-            call parlst_getvalue_double(p_rparlist,&
-                ssectionName, 'depsAbsApproxTimeDerivative',&
-                depsAbsApproxTimeDerivative, 1e-4_DP)
-            call parlst_getvalue_double(p_rparlist,&
-                ssectionName, 'depsRelApproxTimeDerivative',&
-                depsRelApproxTimeDerivative, 1e-2_DP)
-            call parlst_getvalue_int(p_rparlist,&
-                ssectionName, 'nmaxIterationsApproxTimeDerivative',&
-                nmaxIterationsApproxTimeDerivative, 5)
-            
-            ! Set up vector2 for computing the approximate time derivative
-            if (present(rvector2)) then
-              p_rvector2 => rvector2
-            else
-              allocate(p_rvector2)
-            end if
-            
-            ! Check if rvector2 is compatible to the solution vector;
-            ! otherwise create new vector as a duplicate of the solution vector
-            call lsysbl_isVectorCompatible(p_rvector2, rsolution, bcompatible)
-            if (.not.bcompatible)&
-                call lsysbl_duplicateVector(rsolution, p_rvector2,&
-                LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-            
-            ! Set up vector3 for computing the approximate time derivative
-            if (present(rvector3)) then
-              p_rvector3 => rvector3
-            else
-              allocate(p_rvector3)
-            end if
-            
-            ! Check if rvector3 is compatible to the solution vector;
-            ! otherwise create new vector as a duplicate of the solution vector
-            call lsysbl_isVectorCompatible(p_rvector3, rsolution, bcompatible)
-            if (.not.bcompatible)&
-                call lsysbl_duplicateVector(rsolution, p_rvector3,&
-                LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-            
-            
-            ! Make a backup copy of the stabilisation types because we
-            ! have to overwrite them to enforce using the standard
-            ! Galerkin scheme; this implies that their specification flags
-            ! are changed, so make a backup copy of them, too
-            if (massAFC > 0) then
-              ctypeAFCstabilisationMass&
-                  = rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation
-              istabilisationSpecMass&
-                  = rproblemLevel%Rafcstab(massAFC)%istabilisationSpec
-              rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation&
-                  = AFCSTAB_GALERKIN
-            end if
-
-            if (convectionAFC > 0) then
-              ctypeAFCstabilisationConvection&
-                  = rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-              istabilisationSpecConvection&
-                  = rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-                  = AFCSTAB_GALERKIN
-            end if
-
-            if (diffusionAFC > 0) then
-              ctypeAFCstabilisationDiffusion&
-                  = rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
-              istabilisationSpecDiffusion&
-                  = rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
-              rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
-                  = AFCSTAB_GALERKIN
-            end if
-            
-            ! Create discrete transport operator of high-order (Galerkin method)
-            call transp_calcTransportOperator(rproblemLevel,&
-                rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
-                1.0_DP, p_rmatrix, ssectionName, rcollection,&
-                bforceUpdate=bforceUpdate)
-            
-            ! Reset stabilisation structures to their original configuration
-            if (massAFC > 0) then
-              rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation&
-                  = ctypeAFCstabilisationMass
-              rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
-                  = istabilisationSpecMass
-            end if
-
-            if (convectionAFC > 0) then
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-                  = ctypeAFCstabilisationConvection
-              rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
-                  = istabilisationSpecConvection
-            end if
-
-            if (diffusionAFC > 0) then
-              rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
-                  = ctypeAFCstabilisationDiffusion
-              rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
-                  = istabilisationSpecDiffusion
-            end if
-            
-            ! Compute $K(u^L)*u^L$ and store the result in rvector2
-            call lsyssc_scalarMatVec(p_rmatrix,&
-                rsolution%rvectorBlock(1),&
-                p_rvector2%RvectorBlock(1), 1.0_DP, 0.0_DP)
-            
-            ! Evaluate linear form for the boundary integral (if any)
-            call transp_calcLinfBdrCondQuick( rproblemLevel,&
-                rsolver%rboundaryCondition, rsolution, smode,&
-                ivelocitytype, rtimestep%dTime, 1.0_DP,&
-                p_rvector2%RvectorBlock(1), ssectionName, rcollection,&
-                fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
-                fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
-                fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
-            
-            ! Build the geometric source term (if any)
-            call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
-                rproblemLevel, rsolution, 1.0_DP, .false., p_rvector2, rcollection)
-            
-            ! Apply the source vector to the residual (if any)
-            if (present(rsource)) then
-              if (rsource%NEQ .gt. 0)&
-                  call lsysbl_vectorLinearComb(rsource, p_rvector2, 1.0_DP, 1.0_DP)
-            end if
-            
-            ! Scale rvector2 by the inverse of the lumped mass matrix and store
-            ! the result in rvector1; this is the solution of the lumped version
-            call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                p_rvector2, 1.0_DP, p_rvector1)
-            
-            ! Store norm of the initial guess from the lumped version
-            dnorm0 = lsyssc_vectorNorm(p_rvector1%RvectorBlock(1), LINALG_NORML2)
-            
-            richardson: do ite = 1, nmaxIterationsApproxTimeDerivative
-              ! Initialise rvector3 by the constant right-hand side
-              call lsysbl_copyVector(p_rvector2, p_rvector3)
-              
-              ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
-              call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                  p_rvector1%RvectorBlock(1), p_rvector3%RvectorBlock(1), -1.0_DP, 1.0_DP)
-              
-              ! Scale rvector3 by the inverse of the lumped mass matrix
-              call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                  p_rvector3, 1.0_DP, p_rvector3)
-              
-              ! Apply solution increment (rvector3) to the previous solution iterate
-              call lsysbl_vectorLinearComb(p_rvector3, p_rvector1, 1.0_DP, 1.0_DP)
-              
-              ! Check for convergence
-              dnorm = lsyssc_vectorNorm(p_rvector3%RvectorBlock(1), LINALG_NORML2)
-              if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
-                  (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson
-            end do richardson
-            
-            ! Release temporal memory
-            if (.not.present(rvector2)) then
-              call lsysbl_releaseVector(p_rvector2)
-              deallocate(p_rvector2)
-            end if
-            if (.not.present(rvector3)) then
-              call lsysbl_releaseVector(p_rvector3)
-              deallocate(p_rvector3)
-            end if
-            
-            !-------------------------------------------------------------------
-            
-          case(AFCSTAB_UPWIND)
-            
-            ! Make a backup copy of the stabilisation types because we
-            ! have to overwrite them to enforce using the standard
-            ! Galerkin scheme; this implies that their specification flags
-            ! are changed, so make a backup copy of them, too
-            if (massAFC > 0) then
-              ctypeAFCstabilisationMass&
-                  = rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation
-              istabilisationSpecMass&
-                  = rproblemLevel%Rafcstab(massAFC)%istabilisationSpec
-              rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation&
-                  = AFCSTAB_UPWIND
-            end if
-
-            if (convectionAFC > 0) then
-              ctypeAFCstabilisationConvection&
-                  = rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-              istabilisationSpecConvection&
-                  = rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-                  = AFCSTAB_UPWIND
-            end if
-
-            if (diffusionAFC > 0) then
-              ctypeAFCstabilisationDiffusion&
-                  = rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
-              istabilisationSpecDiffusion&
-                  = rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
-              rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
-                  = AFCSTAB_DMP
-            end if
-            
-            ! Create discrete transport operator of low-order
-            call transp_calcTransportOperator(rproblemLevel,&
-                rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
-                1.0_DP, p_rmatrix, ssectionName, rcollection,&
-                bforceUpdate=bforceUpdate)
-            
-            ! Reset stabilisation structures for further usage
-            if (massAFC > 0) then
-              rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation&
-                  = ctypeAFCstabilisationMass
-              rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
-                  = istabilisationSpecMass
-            end if
-
-            if (convectionAFC > 0) then
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-                  = ctypeAFCstabilisationConvection
-              rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
-                  = istabilisationSpecConvection
-            end if
-
-            if (diffusionAFC > 0) then
-              rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
-                  = ctypeAFCstabilisationDiffusion
-              rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
-                  = istabilisationSpecDiffusion
-            end if
-            
-            ! Compute $L(u^L)*u^L$ and store the result in rvector1
-            call lsyssc_scalarMatVec(p_rmatrix,&
-                rsolution%rvectorBlock(1),&
-                p_rvector1%RvectorBlock(1), 1.0_DP, 0.0_DP)
-            
-            ! Evaluate linear form for the boundary integral (if any)
-            call transp_calcLinfBdrCondQuick(rproblemLevel,&
-                rsolver%rboundaryCondition, rsolution, smode,&
-                ivelocitytype, rtimestep%dTime, 1.0_DP,&
-                p_rvector1%RvectorBlock(1), ssectionName, rcollection,&
-                fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
-                fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
-                fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
-            
-            ! Build the geometric source term (if any)
-            call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
-                rproblemLevel, rsolution, 1.0_DP, .false., p_rvector1, rcollection)
-            
-            ! Apply the source vector to the residual (if any)
-            if (present(rsource)) then
-              if (rsource%NEQ .gt. 0)&
-                  call lsysbl_vectorLinearComb(rsource, p_rvector2, 1.0_DP, 1.0_DP)
-            end if
-            
-            ! Scale it by the inverse of the lumped mass matrix
-            call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                p_rvector1, 1.0_DP, p_rvector1)
-            
-          case default
-            call output_line('Unsupported type of transport operator!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinearisedFCT')
-            call sys_halt()
-          end select
-          
-          !---------------------------------------------------------------------
-          
-          ! Build the raw antidiffusive fluxes with contribution from
-          ! consistent mass matrix
+          ! Build the raw antidiffusive fluxes and include
+          ! contribution from the consistent mass matrix
           call gfsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, 0.0_DP, 1.0_DP, 1.0_DP,&
@@ -5236,10 +4924,6 @@ contains
               rxTimeDeriv=p_rvector1)
           
           ! Release temporal memory
-          if (.not.present(rmatrix)) then
-            call lsyssc_releaseMatrix(rmatrix)
-            deallocate(p_rmatrix)
-          end if
           if (.not.present(rvector1)) then
             call lsysbl_releaseVector(p_rvector1)
             deallocate(p_rvector1)
@@ -5247,10 +4931,8 @@ contains
           
         else
           
-          !---------------------------------------------------------------------
-          
-          ! Build the raw antidiffusive fluxes without including the
-          ! contribution from consistent mass matrix
+          ! Build the raw antidiffusive fluxes without including 
+          ! the contribution from consistent mass matrix
           call gfsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, 0.0_DP, 1.0_DP, 1.0_DP,&
@@ -5264,14 +4946,14 @@ contains
             rsolution, rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, rsolution)
-    
+        
       end select
     end if
     
     ! Impose boundary conditions for the solution vector
     call bdrf_filterVectorExplicit(rsolver%rboundaryCondition,&
         rsolution, rtimestep%dTime)
-
+    
   end subroutine transp_calcLinearisedFCT
 
   !*****************************************************************************
@@ -5279,7 +4961,11 @@ contains
 !<subroutine>
 
   subroutine transp_calcLinearisedLPT(rproblemLevel, rtimestep,&
-      rsolver, rsolution, ssectionName, rcollection, rvector)
+      rsolver, rsolution, ssectionName, rcollection, rsource,&
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim,&
+      rmatrix, rvector1, rvector2, rvector3)
 
 !<description>
     ! This subroutine calculates the linearised correction from
@@ -5295,6 +4981,18 @@ contains
 
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
 !</input>
 
 !<inputoutput>
@@ -5307,17 +5005,24 @@ contains
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
 
-    ! OPTIONAL: vector to store the nodal bounds (if not present, then
-    ! temporal memory is allocated)
-    type(t_vectorBlock), intent(inout), target, optional :: rvector
+    ! OPTIONAL: matrix to store the discrete transport operator used
+    ! to compute the approximation to the time derivative (if not
+    ! present, then temporal memory is allocated)
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrix
+
+    ! OPTIONAL: auxiliary vectors used to compute the approximation to
+    ! the time derivative (if not present, then temporal memory is allocated)
+    type(t_vectorBlock), intent(inout), target, optional :: rvector1
+    type(t_vectorBlock), intent(inout), target, optional :: rvector2
+    type(t_vectorBlock), intent(inout), target, optional :: rvector3
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorBlock), pointer :: p_rvector1
     integer :: massAFC,convectionAFC,diffusionAFC
-    integer :: consistentMassMatrix
+    integer :: lumpedMassMatrix,consistentMassMatrix
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -5329,41 +5034,15 @@ contains
         ssectionName, 'convectionAFC', convectionAFC, 0)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'diffusionAFC', diffusionAFC, 0)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedMassMatrix', lumpedMassMatrix)
 
-    !---------------------------------------------------------------------------
-    ! Linearised FEM-LPT algorithm for the mass term (if any)
-    !---------------------------------------------------------------------------
-
-    if (massAFC > 0) then
-      
-      ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
-        
-      case (AFCSTAB_LINLPT_MASS)
-        
-        ! Check if slope-based local-extremum diminishing bounds
-        ! at edges are available and compute them otherwise
-        if (iand(rproblemLevel%Rafcstab(massAFC)%istabilisationSpec,&
-            AFCSTAB_HAS_EDGEBOUNDS) .eq. 0)&
-            call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
-            rproblemLevel, rproblemLevel%Rafcstab(massAFC))
-        
-        call parlst_getvalue_int(p_rparlist,&
-            ssectionName, 'consistentMassMatrix', consistentMassMatrix)
-
-        ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, 1.0_DP, .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-            rproblemLevel%Rmatrix(consistentMassMatrix))
-      end select
-    end if
-    
     !---------------------------------------------------------------------------
     ! Linearised FEM-LPT algorithm for the convective term (if any)
     !---------------------------------------------------------------------------
     
     if (convectionAFC > 0) then
-      
+
       ! What type of stabilisation are we?
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
         
@@ -5379,12 +5058,13 @@ contains
         ! Build the raw antidiffusive fluxes 
         call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
-          
+        
         ! Apply linearised FEM-LPT correction
         call gfsc_buildVectorLPT(&
-            rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_LPTALGO_STANDARD, rsolution)
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolution, rtimestep%dStep, .false.,&
+          AFCSTAB_LPTALGO_STANDARD + AFCSTAB_LPTALGO_SCALEBYMASS,&
+          rsolution, rproblemLevel%Rmatrix(lumpedMassMatrix))
       end select
     end if
     
@@ -5407,11 +5087,75 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, 1.0_DP, .true., AFCSTAB_FCTFLUX_EXPLICIT)
+        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
+            rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
+        
+        ! Apply linearised FEM-LPT correction
+        call gfsc_buildVectorLPT(&
+            rproblemLevel%Rafcstab(diffusionAFC),&
+            rsolution, rtimestep%dStep, .false.,&
+            AFCSTAB_LPTALGO_STANDARD + AFCSTAB_LPTALGO_SCALEBYMASS,&
+            rsolution, rproblemLevel%Rmatrix(lumpedMassMatrix))
       end select
     end if
 
+    !---------------------------------------------------------------------------
+    ! Linearised FEM-LPT algorithm for the mass term (if any)
+    !---------------------------------------------------------------------------
+
+    if (massAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+        
+      case (AFCSTAB_LINLPT_MASS)
+        
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'consistentMassMatrix', consistentMassMatrix)
+        
+        ! Check if slope-based local-extremum diminishing bounds
+        ! at edges are available and compute them otherwise
+        if (iand(rproblemLevel%Rafcstab(massAFC)%istabilisationSpec,&
+            AFCSTAB_HAS_EDGEBOUNDS) .eq. 0)&
+            call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
+            rproblemLevel, rproblemLevel%Rafcstab(massAFC))
+        
+        ! Set up vector for computing the approximate time derivative
+        if (present(rvector1)) then
+          p_rvector1 => rvector1
+        else
+          allocate(p_rvector1)
+        end if
+        
+        ! Compute approximate time derivative
+        call transp_calcTimeDerivative(rproblemLevel, rtimestep, rsolver,&
+            rsolution, ssectionName, rcollection, p_rvector1, rsource,&
+            fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+            fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+            fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim,&
+            rmatrix, rvector2, rvector3)
+
+        ! Build the raw antidiffusive fluxes based on the approximate
+        ! time derivative stored in vector p_rvector1
+        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
+            p_rvector1, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS,&
+            rproblemLevel%Rmatrix(consistentMassMatrix))
+
+        ! Apply linearised FEM-LPT correction
+        call gfsc_buildVectorLPT(&
+          rproblemLevel%Rafcstab(massAFC),&
+          p_rvector1, rtimestep%dStep, .false.,&
+          AFCSTAB_LPTALGO_STANDARD + AFCSTAB_LPTALGO_SCALEBYMASS,&
+          rsolution, rproblemLevel%Rmatrix(lumpedMassMatrix))
+      
+        ! Release temporal memory
+        if (.not.present(rvector1)) then
+          call lsysbl_releaseVector(p_rvector1)
+          deallocate(p_rvector1)
+        end if
+      end select
+    end if
+    
     ! Impose boundary conditions for the solution vector
     call bdrf_filterVectorExplicit(rsolver%rboundaryCondition,&
         rsolution, rtimestep%dTime)
@@ -6516,7 +6260,7 @@ contains
     character(LEN=SYS_STRLEN) :: smode
     logical :: bbuildStabilisation
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
-    integer :: imasstype, ivelocitytype, idiffusiontype
+    integer :: ivelocitytype, idiffusiontype
     integer :: convectionAFC, diffusionAFC, velocityfield
     logical :: breturn
     
@@ -7155,5 +6899,377 @@ contains
     end if
 
   end subroutine transp_calcTransportOperator
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcTimeDerivative(rproblemLevel, rtimestep,&
+      rsolver, rsolution, ssectionName, rcollection, rvector, rsource,&
+      fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+      fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim,&
+      rmatrix, rvector1, rvector2)
+
+!<description>
+    ! This subroutine calculates the approximate time derivative
+!</description>
+
+!<input>
+    ! time-stepping structure
+    type(t_timestep), intent(in) :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal1d_sim
+    optional :: fcb_coeffVecBdrPrimal2d_sim
+    optional :: fcb_coeffVecBdrPrimal3d_sim
+    optional :: fcb_coeffVecBdrDual1d_sim
+    optional :: fcb_coeffVecBdrDual2d_sim
+    optional :: fcb_coeffVecBdrDual3d_sim
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+
+    ! destination vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! OPTIONAL: matrix to store the discrete transport operator used
+    ! to compute the approximation to the time derivative (if not
+    ! present, then temporal memory is allocated)
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrix
+
+    ! OPTIONAL: auxiliary vectors used to compute the approximation to
+    ! the time derivative (if not present, then temporal memory is allocated)
+    type(t_vectorBlock), intent(inout), target, optional :: rvector1
+    type(t_vectorBlock), intent(inout), target, optional :: rvector2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_vectorBlock), pointer :: p_rvector1, p_rvector2
+    character(LEN=SYS_STRLEN) :: smode
+    real(DP) :: dnorm0, dnorm
+    real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
+    integer :: convectionAFC,diffusionAFC,ivelocitytype
+    integer :: iapproxtimederivativetype
+    integer :: lumpedMassMatrix,consistentMassMatrix
+    integer :: ctypeAFCstabilisationConvection
+    integer :: ctypeAFCstabilisationDiffusion
+    integer :: ite,nmaxIterationsApproxTimeDerivative
+    integer(I32) :: istabilisationSpecConvection
+    integer(I32) :: istabilisationSpecDiffusion
+    logical :: bcompatible, bforceUpdate
+
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'convectionAFC', convectionAFC, 0)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC, 0)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'iapproxtimederivativetype', iapproxtimederivativetype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_string(p_rparlist,&
+        ssectionName, 'mode', smode)
+
+    ! Check if rvector is compatible to the solution vector;
+    ! otherwise create new vector as a duplicate of the solution vector
+    call lsysbl_isVectorCompatible(rvector, rsolution, bcompatible)
+    if (.not.bcompatible)&
+        call lsysbl_duplicateVector(rsolution, rvector,&
+        LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+    
+    ! Set up matrix for discrete transport operator
+    if (present(rmatrix)) then
+      p_rmatrix => rmatrix
+    else
+      allocate(p_rmatrix)
+    end if
+
+    ! Check if matrix is compatible to consistent mass matrix;
+    ! otherwise create matrix as a duplicate of the consistent mass matrix
+    call lsyssc_isMatrixCompatible(p_rmatrix,&
+        rproblemLevel%Rmatrix(consistentMassMatrix), bcompatible)
+    if (.not.bcompatible) then
+      call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(consistentMassMatrix),&
+          p_rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      bforceUpdate = .true.
+    else
+      bforceUpdate = .false.
+    end if
+    
+    !---------------------------------------------------------------------------
+    
+    ! How should we compute the approximate time derivative?
+    select case(iapproxtimederivativetype)
+      
+    case(AFCSTAB_GALERKIN)
+      
+      ! Get more parameters from parameter list
+      call parlst_getvalue_double(p_rparlist,&
+          ssectionName, 'depsAbsApproxTimeDerivative',&
+          depsAbsApproxTimeDerivative, 1e-4_DP)
+      call parlst_getvalue_double(p_rparlist,&
+          ssectionName, 'depsRelApproxTimeDerivative',&
+          depsRelApproxTimeDerivative, 1e-2_DP)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'nmaxIterationsApproxTimeDerivative',&
+          nmaxIterationsApproxTimeDerivative, 5)
+      
+
+      ! Set up vector1 for computing the approximate time derivative
+      if (present(rvector1)) then
+        p_rvector1 => rvector1
+      else
+        allocate(p_rvector1)
+      end if
+
+      
+      ! Check if rvector1 is compatible to the solution vector;
+      ! otherwise create new vector as a duplicate of the solution vector
+      call lsysbl_isVectorCompatible(p_rvector1, rsolution, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(rsolution, p_rvector1,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      
+      ! Set up vector2 for computing the approximate time derivative
+      if (present(rvector2)) then
+        p_rvector2 => rvector2
+      else
+        allocate(p_rvector2)
+      end if
+
+      
+      ! Check if rvector2 is compatible to the solution vector;
+      ! otherwise create new vector as a duplicate of the solution vector
+      call lsysbl_isVectorCompatible(p_rvector2, rsolution, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(rsolution, p_rvector2,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      
+      
+      ! Make a backup copy of the stabilisation types because we
+      ! have to overwrite them to enforce using the standard
+      ! Galerkin scheme; this implies that their specification flags
+      ! are changed, so make a backup copy of them, too
+      if (convectionAFC > 0) then
+        ctypeAFCstabilisationConvection&
+            = rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        istabilisationSpecConvection&
+            = rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_GALERKIN
+      end if
+      
+      if (diffusionAFC > 0) then
+        ctypeAFCstabilisationDiffusion&
+            = rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+        istabilisationSpecDiffusion&
+            = rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_GALERKIN
+      end if
+      
+      ! Create discrete transport operator of high-order (Galerkin method)
+      call transp_calcTransportOperator(rproblemLevel,&
+          rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
+          1.0_DP, p_rmatrix, ssectionName, rcollection,&
+          bforceUpdate=bforceUpdate)
+      
+      ! Reset stabilisation structures to their original configuration
+      if (convectionAFC > 0) then
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
+            = istabilisationSpecConvection
+      end if
+      
+      if (diffusionAFC > 0) then
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationDiffusion
+        rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
+            = istabilisationSpecDiffusion
+      end if
+      
+      ! Compute $K(u^L)*u^L$ and store the result in rvector1
+      call lsyssc_scalarMatVec(p_rmatrix,&
+          rsolution%rvectorBlock(1),&
+          p_rvector1%RvectorBlock(1), 1.0_DP, 0.0_DP)
+      
+      ! Evaluate linear form for the boundary integral (if any)
+      call transp_calcLinfBdrCondQuick( rproblemLevel,&
+          rsolver%rboundaryCondition, rsolution, smode,&
+          ivelocitytype, rtimestep%dTime, 1.0_DP,&
+          p_rvector1%RvectorBlock(1), ssectionName, rcollection,&
+          fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+          fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+          fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+      
+      ! Build the geometric source term (if any)
+      call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+          rproblemLevel, rsolution, 1.0_DP, .false., p_rvector1, rcollection)
+      
+      ! Apply the source vector to the residual (if any)
+      if (present(rsource)) then
+        if (rsource%NEQ .gt. 0)&
+            call lsysbl_vectorLinearComb(rsource, p_rvector1, 1.0_DP, 1.0_DP)
+      end if
+      
+      ! Scale rvector1 by the inverse of the lumped mass matrix and store
+      ! the result in rvector; this is the solution of the lumped version
+      call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rvector1, 1.0_DP, rvector)
+      
+      ! Store norm of the initial guess from the lumped version
+      dnorm0 = lsyssc_vectorNorm(rvector%RvectorBlock(1), LINALG_NORML2)
+      
+      richardson: do ite = 1, nmaxIterationsApproxTimeDerivative
+        ! Initialise rvector2 by the constant right-hand side
+        call lsysbl_copyVector(p_rvector1, p_rvector2)
+        
+        ! Compute the residual $rhs-M_C*u$ and store the result in rvector2
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
+            rvector%RvectorBlock(1), p_rvector2%RvectorBlock(1), -1.0_DP, 1.0_DP)
+        
+        ! Scale rvector2 by the inverse of the lumped mass matrix
+        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            p_rvector2, 1.0_DP, p_rvector2)
+        
+        ! Apply solution increment (rvector2) to the previous solution iterate
+        call lsysbl_vectorLinearComb(p_rvector2, rvector, 1.0_DP, 1.0_DP)
+        
+        ! Check for convergence
+        dnorm = lsyssc_vectorNorm(p_rvector2%RvectorBlock(1), LINALG_NORML2)
+        if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
+            (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson
+      end do richardson
+      
+      ! Release temporal memory
+      if (.not.present(rvector1)) then
+        call lsysbl_releaseVector(p_rvector1)
+        deallocate(p_rvector1)
+      end if
+      if (.not.present(rvector2)) then
+        call lsysbl_releaseVector(p_rvector2)
+        deallocate(p_rvector2)
+      end if
+
+      !-------------------------------------------------------------------------
+      
+    case(AFCSTAB_UPWIND)
+      
+      ! Make a backup copy of the stabilisation types because we
+      ! have to overwrite them to enforce using the standard
+      ! Galerkin scheme; this implies that their specification flags
+      ! are changed, so make a backup copy of them, too
+      if (convectionAFC > 0) then
+        ctypeAFCstabilisationConvection&
+            = rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        istabilisationSpecConvection&
+            = rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_UPWIND
+      end if
+      
+      if (diffusionAFC > 0) then
+        ctypeAFCstabilisationDiffusion&
+            = rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+        istabilisationSpecDiffusion&
+            = rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_DMP
+      end if
+      
+      ! Create discrete transport operator of low-order
+      call transp_calcTransportOperator(rproblemLevel,&
+          rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
+          1.0_DP, p_rmatrix, ssectionName, rcollection,&
+          bforceUpdate=bforceUpdate)
+      
+      ! Reset stabilisation structures for further usage
+      if (convectionAFC > 0) then
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
+            = istabilisationSpecConvection
+      end if
+      
+      if (diffusionAFC > 0) then
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationDiffusion
+        rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
+            = istabilisationSpecDiffusion
+      end if
+      
+      ! Compute $L(u^L)*u^L$ and store the result in rvector
+      call lsyssc_scalarMatVec(p_rmatrix,&
+          rsolution%rvectorBlock(1),&
+          rvector%RvectorBlock(1), 1.0_DP, 0.0_DP)
+      
+      ! Evaluate linear form for the boundary integral (if any)
+      call transp_calcLinfBdrCondQuick(rproblemLevel,&
+          rsolver%rboundaryCondition, rsolution, smode,&
+          ivelocitytype, rtimestep%dTime, 1.0_DP,&
+          rvector%RvectorBlock(1), ssectionName, rcollection,&
+          fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
+          fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
+          fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
+      
+      ! Build the geometric source term (if any)
+      call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
+          rproblemLevel, rsolution, 1.0_DP, .false., rvector, rcollection)
+      
+      ! Apply the source vector to the residual (if any)
+      if (present(rsource)) then
+        if (rsource%NEQ .gt. 0)&
+            call lsysbl_vectorLinearComb(rsource, rvector, 1.0_DP, 1.0_DP)
+      end if
+      
+      ! Scale it by the inverse of the lumped mass matrix
+      call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rvector, 1.0_DP, rvector)
+      
+    case default
+      call output_line('Unsupported type of transport operator!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcTimeDerivative')
+      call sys_halt()
+    end select
+       
+    ! Release temporal memory
+    if (.not.present(rmatrix)) then
+      call lsyssc_releaseMatrix(rmatrix)
+      deallocate(p_rmatrix)
+    end if
+    
+  end subroutine transp_calcTimeDerivative
 
 end module transport_callback
