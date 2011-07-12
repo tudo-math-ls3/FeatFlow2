@@ -2077,7 +2077,7 @@ contains
     ! This subroutine computes the right-hand side vector
     ! used in the explicit Runge-Kutta scheme
     !
-    !  $$ rhs = dweight * \Delta t T^n * u^n + s^n + b.c.`s$$
+    !  $$ rhs = dscale * \Delta t T^n * u^n + s^n + b.c.`s$$
     !
     ! where the (scaled) source term is optional.
     !</description>
@@ -2131,7 +2131,7 @@ contains
     type(t_timer), pointer :: p_rtimer
     type(t_vectorBlock), pointer :: p_rpredictor
     character(LEN=SYS_STRLEN) :: smode
-    real(DP) :: dweight
+    real(DP) :: dscale
     integer :: transportMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: massAFC, convectionAFC, diffusionAFC
@@ -2164,14 +2164,14 @@ contains
     !---------------------------------------------------------------------------
 
     ! Compute scaling parameter
-    dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
+    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
     
     call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-        rsolution%rvectorBlock(1), rrhs%RvectorBlock(1), dweight, 0.0_DP)
+        rsolution%rvectorBlock(1), rrhs%RvectorBlock(1), dscale, 0.0_DP)
 
     ! Evaluate linear form for the boundary integral (if any)
     call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver%rboundaryCondition,&
-        rsolution, smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dweight,&
+        rsolution, smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep, dscale,&
         rrhs%RvectorBlock(1), ssectionName, rcollection,&
         fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
         fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
@@ -2179,12 +2179,12 @@ contains
     
     ! Build the geometric source term (if any)
     call transp_calcGeometricSourceterm(p_rparlist, ssectionName,&
-        rproblemLevel, rsolution, dweight, .false., rrhs, rcollection)
+        rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
     
     !---------------------------------------------------------------------------
     ! Perform algebraic flux correction for the mass term (if required)
     !
-    !   $$ rhs = rhs + weight*dt*fmass(u^n+1,u^n) $$
+    !   $$ rhs := rhs + weight*dt*fmass(u^n+1,u^n) $$
     !--------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
@@ -2230,7 +2230,7 @@ contains
     !---------------------------------------------------------------------------
     ! Perform algebraic flux correction for the convective term (if required)
     !
-    !   $$ rhs = rhs + weight*dt*fconv(u^n+1,u^n) $$
+    !   $$ rhs := rhs + weight*dt*fconv(u^n+1,u^n) $$
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
@@ -2283,7 +2283,7 @@ contains
           call gfsc_buildConvectionVectorFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              p_rpredictor, dweight, .false.,&
+              p_rpredictor, dscale, .false.,&
               AFCSTAB_FCTALGO_STANDARD, rrhs)
         end if
         
@@ -2292,7 +2292,7 @@ contains
       case (AFCSTAB_TVD)
         call gfsc_buildConvectionVectorTVD(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, dweight, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
+            rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         
         !-----------------------------------------------------------------------
 
@@ -2308,13 +2308,13 @@ contains
           call gfsc_buildConvectionVectorGP(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rsolution, rsolution0, rtimestep%theta, dweight,&
+              rsolution, rsolution0, rtimestep%theta, dscale,&
               .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         else
           ! Apply flux limiting of TVD-type without mass-antidiffusion
           call gfsc_buildConvectionVectorTVD(&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, dweight, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
+              rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         end if
 
         !-----------------------------------------------------------------------
@@ -2335,7 +2335,7 @@ contains
         ! Apply FEM-LPT correction to the residual vector
         call gfsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rsolution, dweight, .false.,&
+            rsolution, dscale, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rrhs)
 
       end select
@@ -2345,7 +2345,7 @@ contains
     !---------------------------------------------------------------------------
     ! Perform algebraic flux correction for the diffusive term (if required)
     !
-    !   $$ rhs = rhs + weight*dt*fdiff(u^n+1,u^n) $$
+    !   $$ rhs := rhs + weight*dt*fdiff(u^n+1,u^n) $$
     !---------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
@@ -2358,7 +2358,7 @@ contains
         
       case (AFCSTAB_SYMMETRIC)
         call gfsc_buildConvectionVectorSymm(&
-            rproblemLevel%Rafcstab(diffusionAFC), rsolution, dweight, rrhs)
+            rproblemLevel%Rafcstab(diffusionAFC), rsolution, dscale, rrhs)
         
         !-----------------------------------------------------------------------
 
@@ -2378,7 +2378,7 @@ contains
         ! Apply explicit part of the FEM-LPT correction to right-hand side
         call gfsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(diffusionAFC),&
-            rsolution, dweight, .false.,&
+            rsolution, dscale, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rrhs)
 
       end select
@@ -2506,7 +2506,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Do we have an explicit part?
-      if (rtimestep%theta .lt. 1.0_DP) then
+      if (rtimestep%theta .ne. 1.0_DP) then
 
         ! Compute scaling parameter
         dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
@@ -2886,6 +2886,13 @@ contains
     call parlst_getvalue_string(p_rparlist,&
         ssectionName, 'mode', smode)
 
+    !---------------------------------------------------------------------------
+    ! Initialize the residual by the constant right-hand side
+    !
+    !   $$ res := rhs $$
+    !---------------------------------------------------------------------------
+    call lsysbl_copyVector(rrhs, rres)
+
     ! Do we have some kind of mass matrix?
     select case(imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
@@ -2893,14 +2900,11 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the residual for transient flows
       !
-      !   $$ res^{(m)} = rhs - [M - dt*theta*K(u^{(m)})]*u^{(m)} + b.c.`s $$
+      !   $$ res := res - [M - dt*theta*K(u^{(m)})]*u^{(m)} + b.c.`s $$
       !-------------------------------------------------------------------------
 
-      ! Apply constant right-hand side
-      call lsysbl_copyVector(rrhs, rres)
-
       ! Do we have an implicit part?
-      if (rtimestep%theta .gt. 0.0_DP) then
+      if (rtimestep%theta .ne. 0.0_DP) then
         
         ! Compute scaling parameter
         dscale = rtimestep%theta*rtimestep%dStep
@@ -2942,14 +2946,11 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the residual for stationary flows
       !
-      !   $$ res^{(m)} = rhs + K(u^{(m)})*u^{(m)} + b.c.`s $$
+      !   $$ res := res + K(u^{(m)})*u^{(m)} + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Set scaling parameter
       dscale = 1.0_DP
-
-      ! Apply constant right-hand side
-      call lsysbl_copyVector(rrhs, rres)
 
       ! Apply transport operator to the solution vector
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
@@ -2972,7 +2973,7 @@ contains
     !-------------------------------------------------------------------------
     ! Perform algebraic flux correction for the mass term (if required)
     !
-    !   $$ res = res + dscale*fmass(u^(m),u^n) $$
+    !   $$ res := res + dscale*fmass(u^(m),u^n) $$
     !-------------------------------------------------------------------------
 
     call parlst_getvalue_int(p_rparlist,&
