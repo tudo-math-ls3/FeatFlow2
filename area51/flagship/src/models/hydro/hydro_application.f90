@@ -1447,28 +1447,46 @@ contains
       if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
 
-        ! Get number of expressions for limiting variables
-        nvariable = max(1,&
-            parlst_querysubstrings(rparlist,&
-            ssectionName, 'slimitingvariable'))
-        
-        ! Initialise number of limiting variables
-        nvartransformed = 1
+        ! Determine the number of transformed variables
+        select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
-        ! Determine maximum number of limiting variables in a single set
-        do ivariable = 1, nvariable
-          call parlst_getvalue_string(rparlist,&
-              ssectionName, 'slimitingvariable',&
-              slimitingvariable, isubstring=ivariable)
-          nvartransformed = max(nvartransformed,&
-              hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
-        end do
+        case (AFCSTAB_GALERKIN,&
+              AFCSTAB_UPWIND)
+          
+          ! No variable transformation needs to be performed
+          NVARtransformed = 0
+
+        case (AFCSTAB_TVD,&
+              AFCSTAB_GP)
+
+          ! Transformation to characteristic variables
+          NVARtransformed = hydro_getNVAR(rproblemLevel)
+
+        case default
+
+          ! Get number of expressions for limiting variables
+          nvariable = max(1,&
+              parlst_querysubstrings(rparlist,&
+              ssectionName, 'slimitingvariable'))
+          
+          ! Initialise number of limiting variables
+          NVARtransformed = 1
+          
+          ! Determine maximum number of limiting variables in a single set
+          do ivariable = 1, nvariable
+            call parlst_getvalue_string(rparlist,&
+                ssectionName, 'slimitingvariable',&
+                slimitingvariable, isubstring=ivariable)
+            NVARtransformed = max(NVARtransformed,&
+                hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
+          end do
+        end select
 
         ! Initialise stabilisation structure
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
-            nvartransformed, p_rdiscretisation)
+            NVARtransformed, p_rdiscretisation)
 
         ! Compute number of matrices to by copied
         nmatrices = 0
