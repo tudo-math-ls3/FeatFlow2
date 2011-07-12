@@ -9089,7 +9089,7 @@ contains
 !<description>
   ! Scales a quad precision vector by a constant qx := qa * qx
   !
-  ! REMARK: This subroutin is a port of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DSCAL from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9156,7 +9156,7 @@ contains
 !<description>
   ! Copies a quad precision vector to another vector qy := qx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9228,7 +9228,7 @@ contains
 !<description>
   ! Computes constant times a quad precision vector plus a vector.
   !
-  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9301,7 +9301,7 @@ contains
 !<description>
   ! Takes the sum of the absolute values.
   !
-  ! REMARK: This subroutin is a port of subroutine DASUM from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DASUM from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9366,7 +9366,7 @@ contains
 !<description>
   ! Computes the euclidean norm of quad precision vector
   !
-  ! REMARK: This subroutin is a port of subroutine DNRM2 from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DNRM2 from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9427,7 +9427,7 @@ contains
 !<description>
   ! Finds the index of element having max. absolute value.
   !
-  ! REMARK: This subroutin is a port of subroutine IDAMAX from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine IDAMAX from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9493,7 +9493,7 @@ contains
 !<description>
   ! Copies a single precision vector to a double precision vector dy := sx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9565,7 +9565,7 @@ contains
 !<description>
   ! Copies a single precision vector to a double precision vector sy := dx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9637,7 +9637,7 @@ end subroutine dscopy
 !<description>
   ! Copies a single precision vector to a quad precision vector qy := sx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9709,7 +9709,7 @@ end subroutine dscopy
 !<description>
   ! Copies a quad precision vector to a single precision vector sy := qx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9781,7 +9781,7 @@ end subroutine qscopy
 !<description>
   ! Copies a double precision vector to a quad precision vector qy := dx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9853,7 +9853,7 @@ end subroutine qscopy
 !<description>
   ! Copies a quad precision vector to a double precision vector dy := qx
   !
-  ! REMARK: This subroutin is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9925,7 +9925,7 @@ end subroutine qscopy
 !<description>
   ! Computes constant times a single vector plus a double precision vector.
   !
-  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9998,7 +9998,7 @@ end subroutine qscopy
 !<description>
   ! Computes constant times a single vector plus a quad precision vector.
   !
-  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10071,7 +10071,7 @@ end subroutine qscopy
 !<description>
   ! Computes constant times a double vector plus a quad precision vector.
   !
-  ! REMARK: This subroutin is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10139,12 +10139,12 @@ end subroutine qscopy
 ! ***************************************************************************
 
 !<subroutine>
-  subroutine sset(n,sa,sx,incx)
+  pure subroutine sset(n,sa,sx,incx)
 
 !<description>
   ! Sets a single precision vector equal to a constant sx := sa
   !
-  ! REMARK: This subroutin is an adaptation of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10172,35 +10172,36 @@ end subroutine qscopy
   ! local variables
   integer :: i,m,mp1,nincx
   
-  if( n.le.0 .or. incx.le.0 )return
-  if(incx.eq.1)go to 20
+  if (n.le.0 .or. incx.le.0) return
+  if (incx .eq. 1) then
+    ! code for increment equal to 1
+    m = mod(n,5)
+    if (m .ne. 0) then
+      do i = 1,m
+        sx(i) = sa
+      end do
+      if (n .lt. 5) return
+    end if
+    mp1 = m + 1
+    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    do i = mp1,n,5
+      sx(i) = sa
+      sx(i + 1) = sa
+      sx(i + 2) = sa
+      sx(i + 3) = sa
+      sx(i + 4) = sa
+    end do
+    !$omp end parallel do
+  else
+    ! code for increment not equal to 1
+    nincx = n*incx
+    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    do i = 1,nincx,incx
+      sx(i) = sa
+    end do
+    !$omp end parallel do
+  end if
 
-  ! code for increment not equal to 1
-  nincx = n*incx
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
-  do i = 1,nincx,incx
-    sx(i) = sa
-  end do
-  !$omp end parallel do
-  return
-  
-  ! code for increment equal to 1
-20 m = mod(n,5)
-  if( m .eq. 0 ) go to 40
-  do i = 1,m
-    sx(i) = sa
-  end do
-  if( n .lt. 5 ) return
-40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
-  do i = mp1,n,5
-    sx(i) = sa
-    sx(i + 1) = sa
-    sx(i + 2) = sa
-    sx(i + 3) = sa
-    sx(i + 4) = sa
-  end do
-  !$omp end parallel do
   end subroutine sset
 
 ! ***************************************************************************
@@ -10211,7 +10212,7 @@ end subroutine qscopy
 !<description>
   ! Sets a double precision vector equal to a constant dx := da
   !
-  ! REMARK: This subroutin is an adaptation of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10239,46 +10240,47 @@ end subroutine qscopy
   ! local variables
   integer :: i,m,mp1,nincx
   
-  if( n.le.0 .or. incx.le.0 )return
-  if(incx.eq.1)go to 20
+  if (n.le.0 .or. incx.le.0) return
+  if (incx .eq. 1) then
+    ! code for increment equal to 1
+    m = mod(n,5)
+    if (m .ne. 0) then
+      do i = 1,m
+        dx(i) = da
+      end do
+      if (n .lt. 5) return
+    end if
+    mp1 = m + 1
+    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    do i = mp1,n,5
+      dx(i) = da
+      dx(i + 1) = da
+      dx(i + 2) = da
+      dx(i + 3) = da
+      dx(i + 4) = da
+    end do
+    !$omp end parallel do
+  else
+    ! code for increment not equal to 1
+    nincx = n*incx
+    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    do i = 1,nincx,incx
+      dx(i) = da
+    end do
+    !$omp end parallel do
+  end if
 
-  ! code for increment not equal to 1
-  nincx = n*incx
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
-  do i = 1,nincx,incx
-    dx(i) = da
-  end do
-  !$omp end parallel do
-  return
-  
-  ! code for increment equal to 1
-20 m = mod(n,5)
-  if( m .eq. 0 ) go to 40
-  do i = 1,m
-    dx(i) = da
-  end do
-  if( n .lt. 5 ) return
-40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
-  do i = mp1,n,5
-    dx(i) = da
-    dx(i + 1) = da
-    dx(i + 2) = da
-    dx(i + 3) = da
-    dx(i + 4) = da
-  end do
-  !$omp end parallel do
   end subroutine dset
  
 ! ***************************************************************************
 
 !<subroutine>
-  subroutine qset(n,qa,qx,incx)
+  pure subroutine qset(n,qa,qx,incx)
 
 !<description>
   ! Sets a quad precision vector equal to a constant qx := qa
   !
-  ! REMARK: This subroutin is an adaptation of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS 
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10306,35 +10308,36 @@ end subroutine qscopy
   ! local variables
   integer :: i,m,mp1,nincx
   
-  if( n.le.0 .or. incx.le.0 )return
-  if(incx.eq.1)go to 20
+  if (n.le.0 .or. incx.le.0) return
+  if (incx .eq. 1) then
+    ! code for increment equal to 1
+    m = mod(n,5)
+    if (m .ne. 0) then
+      do i = 1,m
+        qx(i) = qa
+      end do
+      if (n .lt. 5) return
+    end if
+    mp1 = m + 1
+    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    do i = mp1,n,5
+      qx(i) = qa
+      qx(i + 1) = qa
+      qx(i + 2) = qa
+      qx(i + 3) = qa
+      qx(i + 4) = qa
+    end do
+    !$omp end parallel do
+  else
+    ! code for increment not equal to 1
+    nincx = n*incx
+    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    do i = 1,nincx,incx
+      qx(i) = qa
+    end do
+    !$omp end parallel do
+  end if
 
-  ! code for increment not equal to 1
-  nincx = n*incx
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
-  do i = 1,nincx,incx
-    qx(i) = qa
-  end do
-  !$omp end parallel do
-  return
-  
-  ! code for increment equal to 1
-20 m = mod(n,5)
-  if( m .eq. 0 ) go to 40
-  do i = 1,m
-    qx(i) = qa
-  end do
-  if( n .lt. 5 ) return
-40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
-  do i = mp1,n,5
-    qx(i) = qa
-    qx(i + 1) = qa
-    qx(i + 2) = qa
-    qx(i + 3) = qa
-    qx(i + 4) = qa
-  end do
-  !$omp end parallel do
   end subroutine qset
 
 end module
