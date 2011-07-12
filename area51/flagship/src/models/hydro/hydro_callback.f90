@@ -361,8 +361,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
     real(DP) :: dscale
-    integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, inviscidAFC
+    integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix, inviscidAFC
     integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar
 
     ! Start time measurement for matrix evaluation
@@ -370,33 +369,25 @@ contains
         'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Get parameters from parameter list which are required unconditionally
+    ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'systemmatrix', systemMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
-
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'systemmatrix', systemMatrix)
+    
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
-    if (rtimestep%theta .le. SYS_EPSREAL_DP) then
+    if (rtimestep%theta .eq. 0.0_DP) then
 
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'isystemformat', isystemFormat)
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'imasstype', imasstype)
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'lumpedmassmatrix', lumpedMassMatrix)
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'consistentmassmatrix', consistentMassMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'isystemformat', isystemFormat)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'imasstype', imasstype)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -495,6 +486,8 @@ contains
         ssectionName, 'isystemformat', isystemFormat)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC)
 
     ! Compute scaling parameter
     select case (imasstype)
@@ -1065,12 +1058,12 @@ contains
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'imasstype', imasstype)
 
     ! Do we have some kind of mass matrix?
     select case(imasstype)
@@ -1225,7 +1218,7 @@ contains
     real(DP) :: dscale
     integer(I32) :: ioperationSpec
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
-    integer :: inviscidAFC, imasstype, iblock
+    integer :: massafc, inviscidAFC, viscousAFC, imasstype, iblock
 
 
     ! Start time measurement for residual/rhs evaluation
@@ -1236,15 +1229,14 @@ contains
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'imasstype', imasstype)
     
     !-------------------------------------------------------------------------
     ! Initialize the residual by the constant right-hand side
@@ -1309,17 +1301,37 @@ contains
     end if
 
     !-------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the inviscid term
+    ! Perform algebraic flux correction for the mass term (if required)
     !
-    !   $$ res = res + f^*(u^(m),u^n) $$
+    !   $$ res := res + dscale*fmass(u^(m),u^n) $$
     !-------------------------------------------------------------------------
 
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'massAFC', massAFC, 0)
+
+    if (massAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+
+      case (AFCSTAB_NLINLPT_MASS)
+        print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
+        stop
+
+      end select
+    end if
+
+    !-------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the inviscid term (if required)
+    !
+    !   $$ res := res + dscale*finviscid(u^(m),u^n) $$
+    !-------------------------------------------------------------------------
+    
     ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
           AFCSTAB_NLINFCT_IMPLICIT)
-
 
       ! Set pointer to the predictor vector
       p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
@@ -1349,10 +1361,8 @@ contains
           rtimestep%dStep, 1.0_DP, (ite .eq. 0), ssectionName, rcollection,&
           rsolutionPredictor=p_rpredictor)
 
-      !-------------------------------------------------------------------------
+      
       ! Set operation specifier
-      !-------------------------------------------------------------------------
-
       if (ite .eq. 0) then
         ! Perform standard flux correction in zeroth iteration
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
@@ -1376,21 +1386,56 @@ contains
         end select
       end if
 
-      ! Apply FEM-FCT algorithm
+      ! Perform flux correction
       call hydro_calcCorrectionFCT(rproblemLevel, rsolution,&
           rtimestep%dStep, .false., ioperationSpec, rres,&
           ssectionName, rcollection)
 
-      ! Subtract corrected antidiffusion from right-hand side
-      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-          .eq. AFCSTAB_NLINFCT_ITERATIVE) then
+      ! Special treatment for iterative FCT-algorithm
+      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation .eq.&
+          AFCSTAB_NLINFCT_ITERATIVE) then
+        ! Subtract corrected antidiffusion from right-hand side
         call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_CORRECT, rrhs, rcollection=rcollection)
+            AFCSTAB_FCTALGO_CORRECT, rrhs,&
+            rcollection=rcollection)
+
+        ! Recompute the low-order predictor for the next limiting step
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rrhs, 1.0_DP, p_rpredictor)
       end if
+
+      !-------------------------------------------------------------------------
+      ! Remark: Some other algebraic flux correction algorithms which
+      ! are not based on the computation of an auxiliary low-order
+      ! predictor are implemented in subroutine hydro_calcDivergenceVector
+      !-------------------------------------------------------------------------
+
     end select
+
+    !-------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the viscous term (if required)
+    !
+    !   $$ res = res + dscale*fviscous(u^{(m)},u^n) $$
+    !-------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'viscousAFC', viscousAFC, 0)
+
+    if (viscousAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation)
+        
+      case (AFCSTAB_NLINLPT_SYMMETRIC)
+        print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
+        stop
+
+      end select
+    end if
 
     ! Apply the source vector to the residual  (if any)
     if (present(rsource)) then
@@ -1456,7 +1501,7 @@ contains
     type(t_timer), pointer :: p_rtimer
     real(DP) :: dscale
     integer :: lumpedMassMatrix, consistentMassMatrix, massMatrix
-    integer :: imasstype, iblock
+    integer :: imasstype, iblock, massAFC, inviscidAFC, viscousAFC
     
     
     ! Start time measurement for residual/rhs evaluation
@@ -1477,11 +1522,10 @@ contains
     !---------------------------------------------------------------------------
     ! Compute the scaling parameter
     !
-    !   $ dscale = weight * (1-\theta) * \Delta t $
+    !   $ dscale = weight * \Delta t $
     !---------------------------------------------------------------------------
     
-    dscale = rtimestep%DmultistepWeights(istep)*&
-             (1.0_DP-rtimestep%theta)*rtimestep%dStep
+    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
 
     !---------------------------------------------------------------------------
     ! Compute the divergence operator for the right-hand side
@@ -1498,7 +1542,7 @@ contains
           rtimestep%dTime-rtimestep%dStep, dscale, .true.,&
           rrhs, ssectionName, rcollection)
 
-      ! Compute the explicit part of the geometric source term (if any)
+      ! Build the geometric source term (if any)
       call hydro_calcGeometricSourceterm(p_rparlist, ssectionName,&
           rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
     end if
@@ -1524,6 +1568,68 @@ contains
             rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
       end do
     end select
+
+    !---------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the mass term (if required)
+    !
+    !   $$ rhs := rhs + weight*dt*fmass(u^n+1,u^n) $$
+    !--------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'massAFC', massAFC, 0)
+    
+    if (massAFC > 0) then
+
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+
+      case (AFCSTAB_NLINLPT_MASS)
+        print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
+        stop
+      end select
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the inviscid term (if required)
+    !
+    !   $$ rhs := rhs + weight*dt*finviscid(u^n+1,u^n) $$
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC, 0)
+
+    if (inviscidAFC > 0) then
+
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        
+      case (AFCSTAB_NLINFCT_EXPLICIT,&
+            AFCSTAB_NLINFCT_IMPLICIT,&
+            AFCSTAB_NLINFCT_ITERATIVE)
+        print *, "AFCSTAN_NLINFCT_EXPLITIC, etc. not implemented yet"
+        stop
+      end select
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the viscous term (if required)
+    !
+    !   $$ rhs := rhs + weight*dt*fviscous(u^n+1,u^n) $$
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'viscousAFC', viscousAFC, 0)
+
+    if (viscousAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation)
+
+      case (AFCSTAB_NLINLPT_SYMMETRIC)
+        print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
+        stop
+      end select
+    end if
 
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource)) then
@@ -5321,7 +5427,6 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC, idissipationtype
 
 
@@ -5329,24 +5434,17 @@ contains
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
 
-    ! Get positions of coefficient matrices from parameter list
+    ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
-
-    ! Get more parameters from parameter list
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'idissipationtype', idissipationtype)
+        ssectionName, 'inviscidAFC', inviscidAFC, 0)
     
     ! Do we have a zero scling parameter?
     if (dscale .eq. 0.0_DP) then
       if (bclear) call lsysbl_clearVector(rvector)
     else
+
+      ! Check if stabilisation structure is available
+      if (inviscidAFC .le. 0) return
       
       ! What type if stabilisation is applied?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
@@ -5376,8 +5474,14 @@ contains
             AFCSTAB_NLINFCT_EXPLICIT,&
             AFCSTAB_NLINFCT_ITERATIVE,&
             AFCSTAB_NLINFCT_IMPLICIT,&
-            AFCSTAB_LINFCT)
-        
+            AFCSTAB_LINFCT,&
+            AFCSTAB_NLINLPT_UPWINDBIASED,&
+            AFCSTAB_LINLPT_UPWINDBIASED)
+
+        ! Get parameter from parameter list
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'idissipationtype', idissipationtype)
+    
         ! What type of dissipation is applied?
         select case(idissipationtype)
           
