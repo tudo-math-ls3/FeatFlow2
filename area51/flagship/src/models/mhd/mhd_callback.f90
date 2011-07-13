@@ -84,6 +84,9 @@
 !# 18.) mhd_calcDivergenceVector
 !#      -> Calculates the divergence vector.
 !#
+!# 19.) hydro_calcTimeDerivative
+!#      -> Cacluates the approximate time derivative
+!#
 !# Frequently asked questions?
 !#
 !# 1.) What is the magic behind subroutine 'mhd_nlsolverCallback'?
@@ -152,6 +155,7 @@ module mhd_callback
   public :: mhd_calcFluxFCT
   public :: mhd_calcCorrectionFCT
   public :: mhd_calcDivergenceVector
+  public :: mhd_calcTimeDerivative
   public :: mhd_limitEdgewiseVelocity
   public :: mhd_limitEdgewiseMomentum
   public :: mhd_limitEdgewiseMagfield
@@ -322,8 +326,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
     real(DP) :: dscale
-    integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, inviscidAFC
+    integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix, inviscidAFC
     integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar
 
     ! Start time measurement for matrix evaluation
@@ -331,33 +334,25 @@ contains
         'rtimerAssemblyMatrix', ssectionName=ssectionName)
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Get parameters from parameter list which are required unconditionally
+    ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
           'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'systemmatrix', systemMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'systemmatrix', systemMatrix)
 
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
-    if (rtimestep%theta .le. SYS_EPSREAL_DP) then
+    if (rtimestep%theta .eq. 0.0_DP) then
 
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'isystemformat', isystemFormat)
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'imasstype', imasstype)
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'lumpedmassmatrix', lumpedMassMatrix)
-      call parlst_getvalue_int(p_rparlist, ssectionName,&
-          'consistentmassmatrix', consistentMassMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'isystemformat', isystemFormat)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'imasstype', imasstype)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -456,6 +451,8 @@ contains
         ssectionName, 'isystemformat', isystemFormat)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC)
 
     ! Compute scaling parameter
     select case (imasstype)
@@ -618,7 +615,7 @@ contains
     case (SYSTEM_ALLCOUPLED)
 
       !-------------------------------------------------------------------------
-      ! Assemble full block transport operator
+      ! Assemble full block divergence operator
       !-------------------------------------------------------------------------
 
       ! What kind of preconditioner is applied?
@@ -1013,9 +1010,10 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_vectorBlock), pointer :: p_rpredictor
     real(DP) :: dscale
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
-    integer :: imasstype, iblock
+    integer :: imasstype, iblock, inviscidAFC
 
 
     ! Start time measurement for residual/rhs evaluation
@@ -1026,12 +1024,12 @@ contains
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
           'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'imasstype', imasstype)
 
     ! Do we have some kind of mass matrix?
     select case(imasstype)
@@ -1076,6 +1074,47 @@ contains
               rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
         end do
 
+        !-----------------------------------------------------------------------
+        ! Perform preparation tasks for algebraic flux correction schemes
+        ! of FCT-type which are based on a low-order predictor
+        !-----------------------------------------------------------------------
+
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'inviscidAFC', inviscidAFC, 0)
+
+        if (inviscidAFC > 0) then
+
+          ! What type of stabilisation are we?
+          select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+
+          case (AFCSTAB_NLINFCT_EXPLICIT,&
+                AFCSTAB_NLINFCT_ITERATIVE,&
+                AFCSTAB_NLINFCT_IMPLICIT)
+
+            ! Compute the low-order predictor based on the right-hand side
+            ! and assemble the explicit part of the raw-antidiffusive fluxes
+
+            ! Set pointer to predictor
+            p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+
+            ! Compute $\tilde u = (M_L)^{-1}*b^n$
+            call lsysbl_invertedDiagMatVec(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rrhs, 1.0_DP, p_rpredictor)
+
+            ! Set specifier
+            rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
+                ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
+                    AFCSTAB_HAS_PREDICTOR)
+
+            ! Assemble explicit part of the raw-antidiffusive fluxes
+            call mhd_calcFluxFCT(rproblemLevel, rsolution,&
+                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+                AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
+                rsolutionPredictor=p_rpredictor)
+          end select
+        end if
+
       else ! theta = 1
 
         !-----------------------------------------------------------------------
@@ -1096,6 +1135,45 @@ contains
               rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
         end do
 
+        !-----------------------------------------------------------------------
+        ! Perform preparation tasks for algebraic flux correction schemes
+        ! of FCT-type which are based on a low-order predictor
+        !-----------------------------------------------------------------------
+
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'inviscidAFC', inviscidAFC, 0)
+
+        if (inviscidAFC > 0) then
+
+          ! What type of stabilisation are we?
+          select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+
+          case (AFCSTAB_NLINFCT_EXPLICIT,&
+                AFCSTAB_NLINFCT_ITERATIVE,&
+                AFCSTAB_NLINFCT_IMPLICIT)
+
+            ! Compute the low-order predictor based on the right-hand side
+            ! and assemble the explicit part of the raw-antidiffusive fluxes
+
+            ! Set pointer to predictor
+            p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+
+            ! Compute $\tilde u = (M_L)^{-1}*b^n = u^n$
+            call lsysbl_copyVector(rsolution, p_rpredictor)
+
+            ! Set specifier
+            rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
+                ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
+                    AFCSTAB_HAS_PREDICTOR)
+
+            ! Assemble explicit part of the raw-antidiffusive fluxes
+            call mhd_calcFluxFCT(rproblemLevel, rsolution,&
+                rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+                AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
+                rsolutionPredictor=p_rpredictor)
+          end select
+        end if
+
       end if ! theta
       
     case default
@@ -1104,8 +1182,11 @@ contains
       ! Initialize the constant right-hand side by zeros
       !
       !   $$ rhs = 0 $$
+      !
+      ! Note that there is no explicit part from algebraic flux corretion 
       !-------------------------------------------------------------------------
 
+      ! Clear right-hand side vector
       call lsysbl_clearVector(rrhs)
     end select
 
@@ -1186,7 +1267,7 @@ contains
     real(DP) :: dscale
     integer(I32) :: ioperationSpec
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
-    integer :: inviscidAFC, imasstype, iblock
+    integer :: massafc, inviscidAFC, viscousAFC, imasstype, iblock
 
 
     ! Start time measurement for residual/rhs evaluation
@@ -1197,15 +1278,15 @@ contains
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
           'rparlist', ssectionName=ssectionName)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'imasstype', imasstype)
+
     !-------------------------------------------------------------------------
     ! Initialize the residual by the constant right-hand side
     !
@@ -1240,7 +1321,7 @@ contains
       
     case default
       
-      ! Compute scaling parameter
+      ! Set scaling parameter
       dscale = 1.0_DP
       
     end select
@@ -1269,9 +1350,30 @@ contains
     end if
 
     !-------------------------------------------------------------------------
-    ! Perform algebraic flux correction for the inviscid term
+    ! Perform algebraic flux correction for the mass term (if required)
     !
-    !   $$ res = res + f^*(u^(m),u^n) $$
+    !   $$ res := res + dscale*fmass(u^(m),u^n) $$
+    !-------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'massAFC', massAFC, 0)
+
+    if (massAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+
+      case (AFCSTAB_NLINLPT_MASS)
+        print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
+        stop
+
+      end select
+    end if
+
+    !-------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the inviscid term (if required)
+    !
+    !   $$ res := res + dscale*finviscid(u^(m),u^n) $$
     !-------------------------------------------------------------------------
 
     ! What type if stabilisation is applied?
@@ -1281,36 +1383,21 @@ contains
           AFCSTAB_NLINFCT_IMPLICIT)
 
 
-      ! Set pointer to predictor
+      ! Set pointer to the predictor vector
       p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
-      ! Compute low-order predictor ...
-      if (ite .eq. 0) then
-        ! ... only in the zeroth iteration
-        if (rtimestep%theta .ne. 1.0_DP) then
-          call lsysbl_invertedDiagMatVec(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rrhs, 1.0_DP, p_rpredictor)
-        else
-          call lsysbl_copyVector(rsolution, p_rpredictor)
-        end if
-      elseif (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-              .eq. AFCSTAB_NLINFCT_ITERATIVE) then
-        ! ... in each iteration for iterative limiting
-        call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rrhs, 1.0_DP, p_rpredictor)
-      end if
-
-      ! Assemble the raw antidiffusive fluxes
-      call mhd_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
-          rtimestep%dStep, 1.0_DP, (ite .eq. 0), ssectionName, rcollection,&
-          rsolutionPredictor=rsolution)
-
-      !-------------------------------------------------------------------------
       ! Set operation specifier
-      !-------------------------------------------------------------------------
+      ioperationSpec = AFCSTAB_FCTFLUX_IMPLICIT
+      if (ite .gt. 0)&
+          ! This has only influence on iterative FCT algorithm
+          ioperationSpec = ioperationSpec + AFCSTAB_FCTFLUX_REJECTED
 
+      ! Assemble implicit part of the raw-antidiffusive fluxes
+      call mhd_calcFluxFCT(rproblemLevel, rsolution, rtimestep%theta,&
+          rtimestep%dStep, 1.0_DP, .true., .true., ioperationSpec,&
+          ssectionName, rcollection, rsolutionPredictor=p_rpredictor)
+      
+      ! Set operation specifier
       if (ite .eq. 0) then
         ! Perform standard flux correction in zeroth iteration
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
@@ -1334,21 +1421,56 @@ contains
         end select
       end if
 
-      ! Apply FEM-FCT algorithm
+      ! Perform flux correction
       call mhd_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
           rtimestep%dStep, .false., ioperationSpec, rres,&
           ssectionName, rcollection)
 
-      ! Subtract corrected antidiffusion from right-hand side
-      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-          .eq. AFCSTAB_NLINFCT_ITERATIVE) then
+      ! Special treatment for iterative FCT-algorithm
+      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation .eq.&
+          AFCSTAB_NLINFCT_ITERATIVE) then
+        ! Subtract corrected antidiffusion from right-hand side
         call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_CORRECT, rrhs, rcollection=rcollection)
+            AFCSTAB_FCTALGO_CORRECT, rrhs,&
+            rcollection=rcollection)
+
+        ! Recompute the low-order predictor for the next limiting step
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rrhs, 1.0_DP, p_rpredictor)
       end if
+
+      !-------------------------------------------------------------------------
+      ! Remark: Some other algebraic flux correction algorithms which
+      ! are not based on the computation of an auxiliary low-order
+      ! predictor are implemented in subroutine hydro_calcDivergenceVector
+      !-------------------------------------------------------------------------
+
     end select
+
+    !-------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the viscous term (if required)
+    !
+    !   $$ res = res + dscale*fviscous(u^{(m)},u^n) $$
+    !-------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'viscousAFC', viscousAFC, 0)
+
+    if (viscousAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation)
+        
+      case (AFCSTAB_NLINLPT_SYMMETRIC)
+        print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
+        stop
+
+      end select
+    end if
 
     ! Apply the source vector to the residual  (if any)
     if (present(rsource)) then
@@ -1412,9 +1534,10 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_vectorBlock), pointer :: p_rpredictor
     real(DP) :: dscale
     integer :: lumpedMassMatrix, consistentMassMatrix, massMatrix
-    integer :: imasstype, iblock
+    integer :: imasstype, iblock, massAFC, inviscidAFC, viscousAFC
 
 
     ! Start time measurement for residual/rhs evaluation
@@ -1435,11 +1558,10 @@ contains
     !---------------------------------------------------------------------------
     ! Compute the scaling parameter
     !
-    !   $ dscale = weight * (1-\theta) * \Delta t $
+    !   $ dscale = weight * \Delta t $
     !---------------------------------------------------------------------------
     
-    dscale = rtimestep%DmultistepWeights(istep)*&
-             (1.0_DP-rtimestep%theta)*rtimestep%dStep
+    dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
 
     !---------------------------------------------------------------------------
     ! Compute the divergence operator for the right-hand side
@@ -1456,7 +1578,7 @@ contains
           rtimestep%dTime-rtimestep%dStep, dscale, .true.,&
           rrhs, ssectionName, rcollection)
 
-      ! Compute the explicit part of the geometric source term (if any)
+      ! Build the geometric source term (if any)
 !!$      call mhd_calcGeometricSourceterm(p_rparlist, ssectionName,&
 !!$          rproblemLevel, rsolution, dscale, .false., rrhs, rcollection)
     end if
@@ -1482,6 +1604,90 @@ contains
             rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
       end do
     end select
+
+    !---------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the mass term (if required)
+    !
+    !   $$ rhs := rhs + weight*dt*fmass(u^n+1,u^n) $$
+    !--------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'massAFC', massAFC, 0)
+    
+    if (massAFC > 0) then
+
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+
+      case (AFCSTAB_NLINLPT_MASS)
+        print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
+        stop
+      end select
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the inviscid term (if required)
+    !
+    !   $$ rhs := rhs + weight*dt*finviscid(u^n+1,u^n) $$
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC, 0)
+
+    if (inviscidAFC > 0) then
+
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        
+      case (AFCSTAB_NLINFCT_EXPLICIT,&
+            AFCSTAB_NLINFCT_IMPLICIT,&
+            AFCSTAB_NLINFCT_ITERATIVE)
+
+        ! Set pointer to predictor
+        p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+        
+        ! Compute $\tilde u = (M_L)^{-1}*b^n$
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rrhs, 1.0_DP, p_rpredictor)
+        
+        ! Set specifier
+        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
+            ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
+            AFCSTAB_HAS_PREDICTOR)
+
+        ! Assemble explicit part of the raw-antidiffusive fluxes
+        call mhd_calcFluxFCT(rproblemLevel, rsolution,&
+            rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
+            AFCSTAB_FCTFLUX_EXPLICIT, ssectionName, rcollection,&
+            rsolutionPredictor=p_rpredictor)
+
+        ! Perform flux correction
+        call mhd_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD, rrhs,&
+            ssectionName, rcollection)
+      end select
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the viscous term (if required)
+    !
+    !   $$ rhs := rhs + weight*dt*fviscous(u^n+1,u^n) $$
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'viscousAFC', viscousAFC, 0)
+
+    if (viscousAFC > 0) then
+      
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation)
+
+      case (AFCSTAB_NLINLPT_SYMMETRIC)
+        print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
+        stop
+      end select
+    end if
 
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource)) then
@@ -1645,320 +1851,140 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rvector1, p_rvector2, p_rvector3
+    type(t_vectorBlock), pointer :: p_rvector1
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    real(DP) :: dnorm0, dnorm
-    real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
-    integer :: inviscidAFC,nfailsafe,ivariable,nvariable,iblock
-    integer :: imassantidiffusiontype, iapproxtimederivativetype
-    integer :: lumpedMassMatrix,consistentMassMatrix
-    integer :: ctypeAFCstabilisation
-    integer :: ite,nmaxIterationsApproxTimeDerivative
-    integer(I32) :: istabilisationSpec
-    logical :: bcompatible 
+    integer :: inviscidAFC,nfailsafe,ivariable,nvariable
+    integer :: imassantidiffusiontype,lumpedMassMatrix
 
 
-    ! Set pointer to parameter list
+    ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'inviscidAFC', inviscidAFC, 0)
 
-    ! Get parameters from parameter list
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
-
-    ! Do we have to apply linearised FEM-FCT?
-    if (inviscidAFC .le. 0) return
-    if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-        .ne. AFCSTAB_LINFCT) return
-
-    ! Get more parameters from parameter list
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'imassantidiffusiontype', imassantidiffusiontype)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'nfailsafe', nfailsafe)
-    
     !---------------------------------------------------------------------------
-    ! Linearised FEM-FCT algorithm
-    !---------------------------------------------------------------------------
+    ! Linearised FEM-FCT algorithm for the inviscid term (if any)
 
-    ! Should we apply consistent mass antidiffusion?
-    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-      
-      ! Get more parameters from parameter list
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'consistentmassmatrix', consistentmassmatrix)
-      call parlst_getvalue_int(p_rparlist,&
-          ssectionName, 'iapproxtimederivativetype', iapproxtimederivativetype)
+    if (inviscidAFC > 0) then
 
-      ! Set up vector1 for computing the approximate time derivative
-      if (present(rvector1)) then
-        p_rvector1 => rvector1
-      else
-        allocate(p_rvector1)
-      end if
-
-      ! Check if rvector1 is compatible to the solution vector; otherwise
-      ! create new vector as a duplicate of the solution vector
-      call lsysbl_isVectorCompatible(p_rvector1, rsolution, bcompatible)
-      if (.not.bcompatible)&
-          call lsysbl_duplicateVector(rsolution, p_rvector1,&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      !-------------------------------------------------------------------------
-  
-      ! How should we compute the approximate time derivative?
-      select case(iapproxtimederivativetype)
-
-      case(AFCSTAB_GALERKIN)
+      ! What type of stabilisation are we?
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
         
-        ! Get more parameters from parameter list
-        call parlst_getvalue_double(p_rparlist,&
-            ssectionName, 'depsAbsApproxTimeDerivative',&
-            depsAbsApproxTimeDerivative, 1e-4_DP)
-        call parlst_getvalue_double(p_rparlist,&
-            ssectionName, 'depsRelApproxTimeDerivative',&
-            depsRelApproxTimeDerivative, 1e-2_DP)
+        case (AFCSTAB_LINFCT)
+        ! Get parameters from parameter list
         call parlst_getvalue_int(p_rparlist,&
-            ssectionName, 'nmaxIterationsApproxTimeDerivative',&
-            nmaxIterationsApproxTimeDerivative, 5)
-
-        ! Set up vector2 for computing the approximate time derivative
-        if (present(rvector2)) then
-          p_rvector2 => rvector2
-        else
-          allocate(p_rvector2)
-        end if
+            ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'lumpedmassmatrix', lumpedmassmatrix)
+        call parlst_getvalue_int(p_rparlist, ssectionName,&
+            'nfailsafe', nfailsafe)
         
-        ! Check if rvector2 is compatible to the solution vector; otherwise
-        ! create new vector as a duplicate of the solution vector
-        call lsysbl_isVectorCompatible(p_rvector2, rsolution, bcompatible)
-        if (.not.bcompatible)&
-            call lsysbl_duplicateVector(rsolution, p_rvector2,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-        ! Set up vector3 for computing the approximate time derivative
-        if (present(rvector3)) then
-          p_rvector3 => rvector3
-        else
-          allocate(p_rvector3)
-        end if
-        
-        ! Check if rvector3 is compatible to the solution vector; otherwise
-        ! create new vector as a duplicate of the solution vector
-        call lsysbl_isVectorCompatible(p_rvector3, rsolution, bcompatible)
-        if (.not.bcompatible)&
-            call lsysbl_duplicateVector(rsolution, p_rvector3,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-        ! Make a backup copy of the stabilisation type because we have
-        ! to overwrite it to enforce using the standard Galerkin
-        ! scheme; this implies that the specification flag is changed,
-        ! so make a backup copy of it, too
-        ctypeAFCstabilisation =&
-            rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
-        istabilisationSpec =&
-            rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
-
-        ! Enforce using the standard Galerkin method without any stabilisation
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
-
-        ! Compute $K(u^L)*u^L$ and store the result in rvector2
-        call mhd_calcDivergenceVector(rproblemLevel,&
-            rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
-            1.0_DP, .true., p_rvector2, ssectionName, rcollection)
-
-        ! Build the geometric source term (if any)
-!!$        call mhd_calcGeometricSourceterm(p_rparlist, ssectionName,&
-!!$            rproblemLevel, rsolution, 1.0_DP, .false., p_rvector2, rcollection)
-
-        ! Apply the source vector to the residual (if any)
-        if (present(rsource)) then
-          if (rsource%NEQ .gt. 0)&
-              call lsysbl_vectorLinearComb(rsource, p_rvector2, 1.0_DP, 1.0_DP)
-        end if
-
-        ! Reset stabilisation structure to its original configuration
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = ctypeAFCstabilisation
-        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpec
-
-        ! Scale rvector2 by the inverse of the lumped mass matrix and store
-        ! the result in rvector1; this is the solution of the lumped version
-        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            p_rvector2, 1.0_DP, p_rvector1)
-
-        ! Store norm of the initial guess from the lumped version
-        dnorm0 = lsysbl_vectorNorm(p_rvector1, LINALG_NORML2)
-
-        richardson: do ite = 1, nmaxIterationsApproxTimeDerivative
-          ! Initialise rvector3 by the constant right-hand side
-          call lsysbl_copyVector(p_rvector2, p_rvector3)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           
-          ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
-          do iblock = 1,rsolution%nblocks
-            call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                p_rvector1%RvectorBlock(iblock), p_rvector3%RvectorBlock(iblock),&
-                -1.0_DP, 1.0_DP)
+          ! Set up vector for computing the approximate time derivative
+          if (present(rvector1)) then
+            p_rvector1 => rvector1
+          else
+            allocate(p_rvector1)
+          end if
+          
+          ! Compute approximate time derivative
+          call mhd_calcTimeDerivative(rproblemLevel, rtimestep,&
+              rsolver, rsolution, ssectionName, rcollection, p_rvector1,&
+              rsource, rvector2, rvector3)
+          
+          ! Build the raw antidiffusive fluxes and include
+          ! contribution from the consistent mass matrix
+          call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+              1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+              ssectionName, rcollection, rsolutionTimeDeriv=p_rvector1)
+          
+          ! Release temporal memory
+          if (.not.present(rvector1) .and. nfailsafe .eq. 0) then
+            call lsysbl_releaseVector(p_rvector1)
+            deallocate(p_rvector1)
+          end if
+      
+        else
+          
+          ! Build the raw antidiffusive fluxes without including 
+          ! the contribution from consistent mass matrix
+          call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
+              1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+              ssectionName, rcollection)
+        end if
+    
+        !-----------------------------------------------------------------------
+        ! Perform failsafe flux correction (if required)
+        !-----------------------------------------------------------------------
+        
+        if (nfailsafe .gt. 0) then
+          
+          ! Get number of failsafe variables
+          nvariable = max(1,&
+              parlst_querysubstrings(p_rparlist,&
+              ssectionName, 'sfailsafevariable'))
+          
+          ! Allocate character array that stores all failsafe variable names
+          allocate(SfailsafeVariables(nvariable))
+          
+          ! Initialize character array with failsafe variable names
+          do ivariable = 1, nvariable
+            call parlst_getvalue_string(p_rparlist,&
+                ssectionName, 'sfailsafevariable',&
+                Sfailsafevariables(ivariable), isubstring=ivariable)
           end do
           
-          ! Scale rvector3 by the inverse of the lumped mass matrix
-          call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              p_rvector3, 1.0_DP, p_rvector3)
-
-          ! Apply solution increment (rvector3) to the previous solution iterate
-          call lsysbl_vectorLinearComb(p_rvector3, p_rvector1, 1.0_DP, 1.0_DP)
-
-          ! Check for convergence
-          dnorm = lsysbl_vectorNorm(p_rvector3, LINALG_NORML2)
-          if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
-              (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson
-        end do richardson
-
-        ! Release temporal memory
-        if (.not.present(rvector2)) then
-          call lsysbl_releaseVector(p_rvector2)
-          deallocate(p_rvector2)
-        end if
-        if (.not.present(rvector3)) then
-          call lsysbl_releaseVector(p_rvector3)
-          deallocate(p_rvector3)
-        end if
-
-        !-------------------------------------------------------------------------
-
-      case(AFCSTAB_UPWIND)
-
-        ! Make a backup copy of the stabilisation type because we have
-        ! to overwrite it to enforce using the standard Galerkin
-        ! scheme; this implies that the specification flag is changed,
-        ! so make a backup copy of it, too
-        ctypeAFCstabilisation =&
-            rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
-        istabilisationSpec =&
-            rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
-
-        ! Enforce using the standard Galerkin method without any stabilisation
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = AFCSTAB_UPWIND
-
-        ! Compute $L(u^L)*u^L$ and store the result in rvector1
-        call mhd_calcDivergenceVector(rproblemLevel,&
-            rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
-            1.0_DP, .true., p_rvector1, ssectionName, rcollection)
-
-        ! Build the geometric source term (if any)
-!!$        call mhd_calcGeometricSourceterm(p_rparlist, ssectionName,&
-!!$            rproblemLevel, rsolution, 1.0_DP, .false., p_rvector1, rcollection)
-
-        ! Apply the source vector to the residual (if any)
-        if (present(rsource)) then
-          if (rsource%NEQ .gt. 0)&
-              call lsysbl_vectorLinearComb(rsource, p_rvector1, 1.0_DP, 1.0_DP)
+          ! Compute FEM-FCT correction
+          call mhd_calcCorrectionFCT(rproblemLevel,&
+              rsolution, rtimestep%dStep, .false.,&
+              AFCSTAB_FCTALGO_STANDARD-&
+              AFCSTAB_FCTALGO_CORRECT,&
+              rsolution, ssectionName, rcollection)
+          
+          ! Apply failsafe flux correction
+          if (associated(p_rvector1)) then
+            ! ... reusing vector1 as temporal memory so the failsafe
+            ! procedure does not allocate new memoey internally
+            call afcstab_failsafeLimiting(&
+                rproblemLevel%Rafcstab(inviscidAFC),&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+                mhd_getVariable, rsolution, p_rvector1)
+            
+            ! Release temporal memory
+            if (.not.present(rvector1)) then
+              call lsysbl_releaseVector(p_rvector1)
+              deallocate(p_rvector1)
+            end if
+          else
+            ! ... without providing temporal memory so the failsafe
+            ! procdure allocates new memory internally
+            call afcstab_failsafeLimiting(&
+                rproblemLevel%Rafcstab(inviscidAFC),&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+                mhd_getVariable, rsolution)
+          end if
+          
+          ! Deallocate temporal memory
+          deallocate(SfailsafeVariables)
+          
+        else
+          
+          ! Apply linearised FEM-FCT correction
+          call mhd_calcCorrectionFCT(rproblemLevel,&
+              rsolution, rtimestep%dStep, .false.,&
+              AFCSTAB_FCTALGO_STANDARD+&
+              AFCSTAB_FCTALGO_SCALEBYMASS,&
+              rsolution, ssectionName, rcollection)
         end if
 
-        ! Reset stabilisation structures to their original configuration
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = ctypeAFCstabilisation
-        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpec
-
-        ! Scale it by the inverse of the lumped mass matrix
-        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            p_rvector1, 1.0_DP, p_rvector1)
-
-      case default
-        call output_line('Unsupported type of transport operator!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcLinearisedFCT')
-        call sys_halt()
       end select
-
-      !-------------------------------------------------------------------------
-      
-      ! Build the raw antidiffusive fluxes with contribution from
-      ! consistent mass matrix
-      call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., ssectionName, rcollection,&
-          rsolutionTimeDeriv=p_rvector1)
-
-      ! Release temporal memory
-      if (.not.present(rvector1) .and. nfailsafe .eq. 0) then
-        call lsysbl_releaseVector(p_rvector1)
-        deallocate(p_rvector1)
-      end if
-      
-    else
-      
-      !-------------------------------------------------------------------------
-      
-      ! Build the raw antidiffusive fluxes without including the
-      ! contribution from consistent mass matrix
-      call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., ssectionName, rcollection)
     end if
-    
-    !---------------------------------------------------------------------------
-    ! Perform failsafe flux correction (if required)
-    !---------------------------------------------------------------------------
 
-    if (nfailsafe .gt. 0) then
-
-      ! Get number of failsafe variables
-      nvariable = max(1,&
-          parlst_querysubstrings(p_rparlist,&
-          ssectionName, 'sfailsafevariable'))
-
-      ! Allocate character array that stores all failsafe variable names
-      allocate(SfailsafeVariables(nvariable))
-      
-      ! Initialize character array with failsafe variable names
-      do ivariable = 1, nvariable
-        call parlst_getvalue_string(p_rparlist,&
-            ssectionName, 'sfailsafevariable',&
-            Sfailsafevariables(ivariable), isubstring=ivariable)
-      end do
-
-      ! Compute FEM-FCT correction
-      call mhd_calcCorrectionFCT(rproblemLevel,&
-          rsolution, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT,&
-          rsolution, ssectionName, rcollection)
-      
-      ! Apply failsafe flux correction
-      if (associated(p_rvector1)) then
-        ! ... reusing vector1 as temporal memory so the failsafe
-        ! procedure does not allocate new memoey internally
-        call afcstab_failsafeLimiting(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            mhd_getVariable, rsolution, p_rvector1)
-
-        ! Release temporal memory
-        if (.not.present(rvector1)) then
-          call lsysbl_releaseVector(p_rvector1)
-          deallocate(p_rvector1)
-        end if
-      else
-        ! ... without providing temporal memory so the failsafe
-        ! procdure allocates new memory internally
-        call afcstab_failsafeLimiting(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            mhd_getVariable, rsolution)
-      end if
-
-      ! Deallocate temporal memory
-      deallocate(SfailsafeVariables)
-
-    else
-      
-      ! Apply linearised FEM-FCT correction
-      call mhd_calcCorrectionFCT(rproblemLevel,&
-          rsolution, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolution, ssectionName, rcollection)
-    end if
 
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
@@ -1981,8 +2007,8 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_calcFluxFCT(rproblemLevel, rsolution,&
-      theta, tstep, dscale, binit, ssectionName, rcollection,&
+  subroutine mhd_calcFluxFCT(rproblemLevel, rsolution, theta, tstep, dscale,&
+      bclear, bquickAssembly, ioperationSpec, ssectionName, rcollection,&
       rsolutionTimeDeriv, rsolutionPredictor)
 
 !<description>
@@ -2004,9 +2030,21 @@ contains
     real(DP), intent(in) :: dscale
 
     ! Switch for flux assembly
-    ! TRUE  : assemble the initial antidiffusive flux
-    ! FALSE : assemble the antidiffusive flux using some initial values
-    logical, intent(in) :: binit
+    ! TRUE  : destination flux is cleared before assembly
+    ! FALSE : destination flux is no cleared before assembly
+    logical, intent(in) :: bclear
+
+    ! Switch for flux assembly
+    ! TRUE  : fluxes are not modified externally so that 
+    !         quicker assembly procedures may be feasible
+    ! FALSE : fluxes are truely assembled even if this
+    !         leads to an expensive addition of zeros
+    logical, intent(in) :: bquickAssembly
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCTFLUX_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
 
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
@@ -2063,7 +2101,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTScDiss1d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2072,7 +2110,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTScDiss1d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2083,7 +2121,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTScDiss2d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2092,7 +2130,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTScDiss2d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2103,7 +2141,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTScDiss3d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2112,7 +2150,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTScDiss3d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2130,7 +2168,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRoeDiss1d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2139,7 +2177,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRoeDiss1d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2150,7 +2188,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRoeDiss2d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2159,7 +2197,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRoeDiss2d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2170,7 +2208,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRoeDiss3d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2179,7 +2217,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRoeDiss3d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2197,7 +2235,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRusDiss1d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2206,7 +2244,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRusDiss1d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         end if
@@ -2217,7 +2255,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRusDiss2d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2226,7 +2264,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRusDiss2d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         end if
@@ -2237,7 +2275,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRusDiss3d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
@@ -2246,7 +2284,7 @@ contains
           call gfsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, mhd_calcFluxFCTRusDiss3d_sim,&
-              theta, tstep, dscale, binit,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         end if
@@ -2384,17 +2422,20 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDensity1d_sim, mhd_trafoDiffDensity1d_sim)
+              mhd_trafoFluxDensity1d_sim, mhd_trafoDiffDensity1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDensity2d_sim, mhd_trafoDiffDensity2d_sim)
+              mhd_trafoFluxDensity2d_sim, mhd_trafoDiffDensity2d_sim,&
+              rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDensity3d_sim, mhd_trafoDiffDensity3d_sim)
+              mhd_trafoFluxDensity3d_sim, mhd_trafoDiffDensity3d_sim,&
+              rcollection=rcollection)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'energy') then
@@ -2405,17 +2446,20 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxEnergy1d_sim, mhd_trafoDiffEnergy1d_sim)
+              mhd_trafoFluxEnergy1d_sim, mhd_trafoDiffEnergy1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxEnergy2d_sim, mhd_trafoDiffEnergy2d_sim)
+              mhd_trafoFluxEnergy2d_sim, mhd_trafoDiffEnergy2d_sim,&
+              rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxEnergy3d_sim, mhd_trafoDiffEnergy3d_sim)
+              mhd_trafoFluxEnergy3d_sim, mhd_trafoDiffEnergy3d_sim,&
+              rcollection=rcollection)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'pressure') then
@@ -2426,17 +2470,20 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxPressure1d_sim, mhd_trafoDiffPressure1d_sim)
+              mhd_trafoFluxPressure1d_sim, mhd_trafoDiffPressure1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxPressure2d_sim, mhd_trafoDiffPressure2d_sim)
+              mhd_trafoFluxPressure2d_sim, mhd_trafoDiffPressure2d_sim,&
+              rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxPressure3d_sim, mhd_trafoDiffPressure3d_sim)
+              mhd_trafoFluxPressure3d_sim, mhd_trafoDiffPressure3d_sim,&
+              rcollection=rcollection)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'velocity') then
@@ -2447,18 +2494,21 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxVelocity1d_sim, mhd_trafoDiffVelocity1d_sim)
+              mhd_trafoFluxVelocity1d_sim, mhd_trafoDiffVelocity1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxVelocity2d_sim, mhd_trafoDiffVelocity2d_sim,&
+              rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseVelocity)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxVelocity3d_sim, mhd_trafoDiffVelocity3d_sim,&
+              rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseVelocity)
         end select
 
@@ -2470,18 +2520,21 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxMomentum1d_sim, mhd_trafoDiffMomentum1d_sim)
+              mhd_trafoFluxMomentum1d_sim, mhd_trafoDiffMomentum1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMomentum2d_sim, mhd_trafoDiffMomentum2d_sim,&
+              rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMomentum3d_sim, mhd_trafoDiffMomentum3d_sim,&
+	      rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         end select
 
@@ -2493,18 +2546,21 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxMagfield1d_sim, mhd_trafoDiffMagfield1d_sim)
+              mhd_trafoFluxMagfield1d_sim, mhd_trafoDiffMagfield1d_sim,&
+	      rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMagfield2d_sim, mhd_trafoDiffMagfield2d_sim,&
+	      rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMagfield3d_sim, mhd_trafoDiffMagfield3d_sim,&
+	      rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         end select
         
@@ -2516,17 +2572,20 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenEng1d_sim, mhd_trafoDiffDenEng1d_sim)
+              mhd_trafoFluxDenEng1d_sim, mhd_trafoDiffDenEng1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenEng2d_sim, mhd_trafoDiffDenEng2d_sim)
+              mhd_trafoFluxDenEng2d_sim, mhd_trafoDiffDenEng2d_sim,&
+              rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenEng3d_sim, mhd_trafoDiffDenEng3d_sim)
+              mhd_trafoFluxDenEng3d_sim, mhd_trafoDiffDenEng3d_sim,&
+              rcollection=rcollection)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure') then
@@ -2537,17 +2596,20 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenPre1d_sim, mhd_trafoDiffDenPre1d_sim)
+              mhd_trafoFluxDenPre1d_sim, mhd_trafoDiffDenPre1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenPre2d_sim, mhd_trafoDiffDenPre2d_sim)
+              mhd_trafoFluxDenPre2d_sim, mhd_trafoDiffDenPre2d_sim,&
+              rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenPre3d_sim, mhd_trafoDiffDenPre3d_sim)
+              mhd_trafoFluxDenPre3d_sim, mhd_trafoDiffDenPre3d_sim,&
+              rcollection=rcollection)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
@@ -2557,7 +2619,7 @@ contains
         ! Apply FEM-FCT algorithm for full conservative fluxes
         call gfsys_buildDivVectorFCT(&
             p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rsolution, dscale, bclear, iopSpec, rresidual)
+            rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
 
@@ -2569,17 +2631,20 @@ contains
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenPreVel1d_sim, mhd_trafoDiffDenPreVel1d_sim)
+              mhd_trafoFluxDenPreVel1d_sim, mhd_trafoDiffDenPreVel1d_sim,&
+              rcollection=rcollection)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenPreVel2d_sim, mhd_trafoDiffDenPreVel2d_sim)
+              mhd_trafoFluxDenPreVel2d_sim, mhd_trafoDiffDenPreVel2d_sim,&
+              rcollection=rcollection)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              mhd_trafoFluxDenPreVel3d_sim, mhd_trafoDiffDenPreVel3d_sim)
+              mhd_trafoFluxDenPreVel3d_sim, mhd_trafoDiffDenPreVel3d_sim,&
+              rcollection=rcollection)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'none') then
@@ -4122,32 +4187,23 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC, idissipationtype
 
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
 
-    ! Get positions of coefficient matrices from parameter list
+    ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
-
-    ! Get more parameters from parameter list
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist, ssectionName,&
-        'idissipationtype', idissipationtype)
+            ssectionName, 'inviscidAFC', inviscidAFC, 0)
     
     ! Do we have a zero scling parameter?
     if (dscale .eq. 0.0_DP) then
       if (bclear) call lsysbl_clearVector(rvector)
     else
 
+      ! Check if stabilisation structure is available
+      if (inviscidAFC .le. 0) return
       ! What type if stabilisation is applied?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
         
@@ -4176,7 +4232,13 @@ contains
             AFCSTAB_NLINFCT_EXPLICIT,&
             AFCSTAB_NLINFCT_ITERATIVE,&
             AFCSTAB_NLINFCT_IMPLICIT,&
-            AFCSTAB_LINFCT)
+            AFCSTAB_LINFCT,&
+            AFCSTAB_NLINLPT_UPWINDBIASED,&
+            AFCSTAB_LINLPT_UPWINDBIASED)
+
+        ! Get parameter from parameter list
+        call parlst_getvalue_int(p_rparlist,&
+            ssectionName, 'idissipationtype', idissipationtype)
         
         ! What type of dissipation is applied?
         select case(idissipationtype)
@@ -4400,7 +4462,6 @@ contains
 !!$        call mhd_calcLinfBdrCond3D(rproblemLevel, rboundaryCondition,&
 !!$            rsolution, dtime, -dscale, mhd_coeffVectorBdr3d_sim,&
 !!$            rvector, ssectionName, rcollection)
-        
         print *, "Boundary conditions in 3D have not been implemented yet!"
         stop
       end select
@@ -4408,5 +4469,297 @@ contains
     end if
 
   end subroutine mhd_calcDivergenceVector
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mhd_calcTimeDerivative(rproblemLevel, rtimestep,&
+      rsolver, rsolution, ssectionName, rcollection, rvector,&
+      rsource, rvector1, rvector2)
+
+!<description>
+    ! This subroutine calculates the approximate time derivative
+!</description>
+
+!<input>
+    ! time-stepping structure
+    type(t_timestep), intent(in) :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource   
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+
+    ! destination vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! OPTIONAL: auxiliary vectors used to compute the approximation to
+    ! the time derivative (if not present, then temporal memory is allocated)
+    type(t_vectorBlock), intent(inout), target, optional :: rvector1
+    type(t_vectorBlock), intent(inout), target, optional :: rvector2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_vectorBlock), pointer :: p_rvector1, p_rvector2
+    real(DP) :: dnorm0, dnorm
+    real(DP) :: depsAbsApproxTimeDerivative,depsRelApproxTimeDerivative
+    integer :: inviscidAFC,viscousAFC
+    integer :: iblock,iapproxtimederivativetype
+    integer :: lumpedMassMatrix,consistentMassMatrix
+    integer :: ctypeAFCstabilisationInviscid
+    integer :: ctypeAFCstabilisationViscous
+    integer :: ite,nmaxIterationsApproxTimeDerivative
+    integer(I32) :: istabilisationSpecInviscid
+    integer(I32) :: istabilisationSpecViscous
+    logical :: bcompatible
+
+    ! Set pointer to parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'inviscidAFC', inviscidAFC, 0)
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'viscousAFC', viscousAFC, 0)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'iapproxtimederivativetype', iapproxtimederivativetype)
+
+    ! Check if rvector is compatible to the solution vector;
+    ! otherwise create new vector as a duplicate of the solution vector
+    call lsysbl_isVectorCompatible(rvector, rsolution, bcompatible)
+    if (.not.bcompatible)&
+        call lsysbl_duplicateVector(rsolution, rvector,&
+        LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+    !---------------------------------------------------------------------------
+    
+    ! How should we compute the approximate time derivative?
+    select case(iapproxtimederivativetype)
+      
+    case(AFCSTAB_GALERKIN)
+      
+      ! Get more parameters from parameter list
+      call parlst_getvalue_double(p_rparlist,&
+          ssectionName, 'depsAbsApproxTimeDerivative',&
+          depsAbsApproxTimeDerivative, 1e-4_DP)
+      call parlst_getvalue_double(p_rparlist,&
+          ssectionName, 'depsRelApproxTimeDerivative',&
+          depsRelApproxTimeDerivative, 1e-2_DP)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'nmaxIterationsApproxTimeDerivative',&
+          nmaxIterationsApproxTimeDerivative, 5)
+
+      ! Set up vector1 for computing the approximate time derivative
+      if (present(rvector1)) then
+        p_rvector1 => rvector1
+      else
+        allocate(p_rvector1)
+      end if
+      
+      ! Check if rvector1 is compatible to the solution vector;
+      ! otherwise create new vector as a duplicate of the solution vector
+      call lsysbl_isVectorCompatible(p_rvector1, rsolution, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(rsolution, p_rvector1,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      
+      ! Set up vector2 for computing the approximate time derivative
+      if (present(rvector2)) then
+        p_rvector2 => rvector2
+      else
+        allocate(p_rvector2)
+      end if
+      
+      ! Check if rvector2 is compatible to the solution vector;
+      ! otherwise create new vector as a duplicate of the solution vector
+      call lsysbl_isVectorCompatible(p_rvector2, rsolution, bcompatible)
+      if (.not.bcompatible)&
+          call lsysbl_duplicateVector(rsolution, p_rvector2,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+
+      ! Make a backup copy of the stabilisation types because we
+      ! have to overwrite them to enforce using the standard
+      ! Galerkin scheme; this implies that their specification flags
+      ! are changed, so make a backup copy of them, too
+      if (inviscidAFC > 0) then
+        ctypeAFCstabilisationInviscid&
+            = rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        istabilisationSpecInviscid&
+            = rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_GALERKIN
+      end if
+
+      if (viscousAFC > 0) then
+        ctypeAFCstabilisationViscous&
+            = rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation
+        istabilisationSpecViscous&
+            = rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_GALERKIN
+      end if
+
+      ! Compute $K(u^L)*u^L$ and store the result in rvector1
+      call mhd_calcDivergenceVector(rproblemLevel,&
+          rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
+          1.0_DP, .true., p_rvector1, ssectionName, rcollection)
+      
+      ! Build the geometric source term (if any)
+!!$      call mhd_calcGeometricSourceterm(p_rparlist, ssectionName,&
+!!$          rproblemLevel, rsolution, 1.0_DP, .false., p_rvector1, rcollection)
+      
+      ! Apply the source vector to the residual (if any)
+      if (present(rsource)) then
+        if (rsource%NEQ .gt. 0)&
+            call lsysbl_vectorLinearComb(rsource, p_rvector1, 1.0_DP, 1.0_DP)
+      end if
+      
+      ! Reset stabilisation structures to their original configuration
+      if (inviscidAFC > 0) then
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
+            = istabilisationSpecInviscid
+      end if
+
+      if (viscousAFC > 0) then
+        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationViscous
+        rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
+            = istabilisationSpecViscous
+      end if
+
+      ! Scale rvector1 by the inverse of the lumped mass matrix and store
+      ! the result in rvector; this is the solution of the lumped version
+      call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rvector1, 1.0_DP, rvector)
+
+      ! Store norm of the initial guess from the lumped version
+      dnorm0 = lsysbl_vectorNorm(rvector1, LINALG_NORML2)
+      
+      richardson: do ite = 1, nmaxIterationsApproxTimeDerivative
+        ! Initialise rvector2 by the constant right-hand side
+        call lsysbl_copyVector(p_rvector1, p_rvector2)
+        
+        ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
+        do iblock = 1,rsolution%nblocks
+          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rvector%RvectorBlock(iblock), p_rvector2%RvectorBlock(iblock),&
+              -1.0_DP, 1.0_DP)
+        end do
+          
+        ! Scale rvector2 by the inverse of the lumped mass matrix
+        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            p_rvector2, 1.0_DP, p_rvector2)
+        
+        ! Apply solution increment (rvector2) to the previous solution iterate
+        call lsysbl_vectorLinearComb(p_rvector2, rvector, 1.0_DP, 1.0_DP)
+        
+        ! Check for convergence
+        dnorm = lsysbl_vectorNorm(p_rvector2, LINALG_NORML2)
+        if ((dnorm .le. depsAbsApproxTimeDerivative) .or.&
+            (dnorm .le. depsRelApproxTimeDerivative*dnorm0)) exit richardson
+      end do richardson
+      
+      ! Release temporal memory
+      if (.not.present(rvector1)) then
+        call lsysbl_releaseVector(p_rvector1)
+        deallocate(p_rvector1)
+      end if
+      if (.not.present(rvector2)) then
+        call lsysbl_releaseVector(p_rvector2)
+        deallocate(p_rvector2)
+      end if
+      
+      !-----------------------------------------------------------------------
+      
+    case(AFCSTAB_UPWIND)
+
+      ! Make a backup copy of the stabilisation types because we
+      ! have to overwrite them to enforce using the standard
+      ! Galerkin scheme; this implies that their specification flags
+      ! are changed, so make a backup copy of them, too
+      if (inviscidAFC > 0) then
+        ctypeAFCstabilisationInviscid&
+            = rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        istabilisationSpecInviscid&
+            = rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_UPWIND
+      end if
+
+      if (viscousAFC > 0) then
+        ctypeAFCstabilisationViscous&
+            = rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation
+        istabilisationSpecViscous&
+            = rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec
+        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
+            = AFCSTAB_DMP
+      end if
+
+      ! Compute $L(u^L)*u^L$ and store the result in rvector
+      call mhd_calcDivergenceVector(rproblemLevel,&
+          rsolver%rboundaryCondition, rsolution, rtimestep%dTime,&
+          1.0_DP, .true., rvector, ssectionName, rcollection)
+      
+      ! Build the geometric source term (if any)
+!!$      call mhd_calcGeometricSourceterm(p_rparlist, ssectionName,&
+!!$          rproblemLevel, rsolution, 1.0_DP, .false., rvector, rcollection)
+      
+      ! Apply the source vector to the residual (if any)
+      if (present(rsource)) then
+        if (rsource%NEQ .gt. 0)&
+            call lsysbl_vectorLinearComb(rsource, rvector, 1.0_DP, 1.0_DP)
+      end if
+
+      ! Reset stabilisation structures to their original configuration
+      if (inviscidAFC > 0) then
+        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
+            = istabilisationSpecInviscid
+      end if
+
+      if (viscousAFC > 0) then
+        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
+            = ctypeAFCstabilisationViscous
+        rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
+            = istabilisationSpecViscous
+      end if
+
+      ! Scale it by the inverse of the lumped mass matrix
+      call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rvector, 1.0_DP, rvector)
+
+    case default
+      call output_line('Unsupported type of divergence term!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcTimeDerivative')
+      call sys_halt()
+    end select
+
+  end subroutine mhd_calcTimeDerivative
 
 end module mhd_callback

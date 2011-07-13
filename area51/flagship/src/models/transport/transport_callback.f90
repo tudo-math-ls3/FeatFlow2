@@ -190,6 +190,7 @@ module transport_callback
   public :: transp_calcLinearisedLPT
   public :: transp_calcGeometricSourceterm
   public :: transp_calcTransportOperator
+  public :: transp_calcTimeDerivative
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic

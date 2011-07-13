@@ -1976,7 +1976,8 @@ contains
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
         call gfsys_buildFluxFCT(rafcstab, rvectorHigh,&
-            mhd_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP, .true.,&
+            mhd_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP,&
+            .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
             p_rconsistentMassMatrix, rcollection=rcollection)
         
         if (nsolutionfailsafe .gt. 0) then

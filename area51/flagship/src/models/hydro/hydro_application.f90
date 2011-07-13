@@ -362,7 +362,7 @@ contains
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
+    if (rtimestep%dfinalTime .ge. rtimestep%dinitialTime) then
 
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
@@ -2078,7 +2078,8 @@ contains
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
         call gfsys_buildFluxFCT(rafcstab, rvectorHigh,&
-            hydro_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP, .true.,&
+            hydro_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP,&
+            .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
             p_rconsistentMassMatrix, rcollection=rcollection)
         
         if (nsolutionfailsafe .gt. 0) then

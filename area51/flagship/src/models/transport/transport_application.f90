@@ -438,7 +438,7 @@ contains
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
+    if (rtimestep%dfinalTime .ge. rtimestep%dinitialTime) then
 
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&

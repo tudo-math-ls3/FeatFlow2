@@ -2078,8 +2078,8 @@ contains
       ! Build the raw antidiffusive fluxes with contribution from
       ! consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection,&
-          rsolutionTimeDeriv=p_Rvector1(1))
+          1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+          ssectionNameHydro, rcollection, rsolutionTimeDeriv=p_Rvector1(1))
 
       ! Release temporal memory
       if (.not.present(Rvector1)) call lsysbl_releaseVector(Rvector1Tmp(1))
@@ -2091,53 +2091,9 @@ contains
       ! Build the raw antidiffusive fluxes without including the
       ! contribution from consistent mass matrix
       call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection)
+          1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
+          ssectionNameHydro, rcollection)
     end if
-
-!!$      ! Initialize dummy timestep
-!!$      rtimestepAux%dStep = 1.0_DP
-!!$      rtimestepAux%theta = 0.0_DP
-!!$          
-!!$      ! Set pointer to predictor
-!!$      p_rpredictorHydro => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-!!$
-!!$      ! Compute low-order "right-hand side" without theta parameter
-!!$      if (present(Rsource)) then
-!!$        if (Rsource(1)%NEQ .eq. 0) then
-!!$          ! ... without source term
-!!$          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-!!$              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
-!!$              ssectionNameHydro,rcollection)
-!!$        else
-!!$          ! ... with source term
-!!$          call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-!!$              rsolverHydro, Rsolution(1), p_rpredictorHydro,&
-!!$              ssectionNameHydro, rcollection, Rsource(1))
-!!$        end if
-!!$      else
-!!$        ! ... without source term
-!!$        call hydro_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-!!$            rsolverHydro, Rsolution(1), p_rpredictorHydro,&
-!!$            ssectionNameHydro, rcollection)
-!!$      end if
-!!$
-!!$      ! Compute low-order predictor
-!!$      call lsysbl_invertedDiagMatVec(&
-!!$          rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-!!$          p_rpredictorHydro, 1.0_DP, p_rpredictorHydro)
-!!$
-!!$      ! Build the raw antidiffusive fluxes with contribution from
-!!$      ! consistent mass matrix
-!!$      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-!!$          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection,&
-!!$          rsolutionTimeDeriv=p_rpredictorHydro)
-!!$
-!!$    else
-!!$      ! Build the raw antidiffusive fluxes without contribution from
-!!$      ! consistent mass matrix
-!!$      call hydro_calcFluxFCT(rproblemLevel, Rsolution(1), 0.0_DP,&
-!!$          1.0_DP, 1.0_DP, .true., ssectionNameHydro, rcollection)
-!!$    end if
 
     !--- transport model -------------------------------------------------------
 
