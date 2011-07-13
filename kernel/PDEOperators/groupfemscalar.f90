@@ -184,6 +184,7 @@ module groupfemscalar
   public :: gfsc_buildJacobianTVD
   public :: gfsc_buildJacobianGP
   public :: gfsc_buildJacobianSymm
+  public :: gfsc_combineFluxes
  
 !<constants>
 
@@ -1924,10 +1925,7 @@ contains
         !-----------------------------------------------------------------------
         ! Assemble explicit part of raw-antidiffive fluxes
         !-----------------------------------------------------------------------
-        
-        ! Set pointers
-        call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
-        
+                
         if (theta .ne. 1.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
           ! $$ f_{ij}^n = (1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
@@ -2043,7 +2041,7 @@ contains
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
           call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
-              p_DcoefficientsAtEdge, p_Dx, theta*dscale, bclear, p_Dflux)
+              p_DcoefficientsAtEdge, p_Dx, dscale*theta, bclear, p_Dflux)
         end if
         
         if (bquickAssembly) then
@@ -2084,7 +2082,6 @@ contains
         end if
 
       end if
-
 
       ! Set specifiers for raw antidiffusive fluxes
       rafcstab%istabilisationSpec =&
@@ -2438,7 +2435,7 @@ contains
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(inout) :: Dflux
+      real(DP), dimension(:), intent(out) :: Dflux
 
       ! local variables
       integer :: iedge,i,j
@@ -2756,13 +2753,13 @@ contains
         ! Set additional pointer
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
         
-        ! Compute sums of antidiffusive increments based on the
-        ! prelimiting fluxes
+        ! Compute sums of antidiffusive increments
+        ! based on the prelimiting fluxes
         call doADIncrementsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
       else
-        ! Compute sums of antidiffusive increments based on the
-        ! raw-antidiffusive fluxes
+        ! Compute sums of antidiffusive increments
+        ! based on the raw-antidiffusive fluxes
         call doADIncrementsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
       end if
@@ -3013,7 +3010,8 @@ contains
       real(DP) :: f_ij,fp_ij,fm_ij
       integer :: i,iedge,igroup,j
       
-      !$omp parallel default(shared) private(i,j,f_ij,fp_ij,fm_ij)
+      !$omp parallel default(shared) private(i,j,f_ij,fp_ij,fm_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
       ! Clear P`s
       !$omp sections
@@ -3074,8 +3072,8 @@ contains
       ! local variables
       integer :: i,iedge,igroup,j
 
-      
-      !$omp parallel default(shared) private(i,j)
+      !$omp parallel default(shared) private(i,j)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
       ! Initialise Q`s by solution
       !$omp sections
@@ -3134,7 +3132,7 @@ contains
       !$omp parallel sections default(shared) private(ieq,diff)
       
       !$omp section
-      ! Loop over all vertices
+
       !$omp parallel do default(shared) private(ieq,diff)
       do ieq = 1, NEQ
         diff = Dqp(ieq)-Dx(ieq)
@@ -3147,7 +3145,7 @@ contains
       !$omp end parallel do
 
       !$omp section
-      ! Loop over all vertices
+
       !$omp parallel do default(shared) private(ieq,diff)
       do ieq = 1, NEQ
         diff = Dqm(ieq)-Dx(ieq)
@@ -13890,7 +13888,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine gfsc_combineFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine gfsc_combineFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -13999,7 +14000,10 @@ contains
 
 !<subroutine>
 
-  pure subroutine gfsc_combineFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha)
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine gfsc_combineFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha)
 
 !<description>
     ! This subroutine combines the two fluxes:
