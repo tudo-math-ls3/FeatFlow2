@@ -1219,6 +1219,37 @@ contains
     aLambda(4,4) = abs(ve)
 
   end function Euler_buildMixedaLambdacfromRoe
+  
+  
+  function Euler_buildMixedalambda (Q,a,b) result(aLambda)
+
+    ! Absolute of max eigenvalue
+    real(DP):: alambda
+
+    ! The solution components
+    real(DP), dimension(4), intent(IN)		:: Q
+
+    ! Components of the normal vector
+    real(dp), intent(IN)                     :: a,b
+
+    ! Local variables
+    real(dp) :: u, v, c, ve, rho, E
+
+    ! Constant Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    rho = Q(1)
+    u = Q(2)/rho
+    v = Q(3)/rho
+    E = Q(4)/rho
+    ve = a*u+b*v
+    c = sqrt(max(1.4_dp*0.4_dp*(E-0.5_dp*(u*u+v*v)),0.0_dp))
+
+    ! Build absolute value of largest eigenvalue
+    alambda = abs(ve) + c
+    !alambda = sqrt(u*u+v*v) + c
+    
+  end function
 
 
   ! This routine builds the left eigenvectors for the mixed jacobian

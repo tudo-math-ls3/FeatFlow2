@@ -207,6 +207,8 @@ contains
     real(dp) , dimension(:), pointer :: p_DiMCdata, p_DMCdata
 
     integer :: i, j
+    
+    integer :: inumSolverCalls = 0, iiterations =0
 
     ! Start time measurement
     call cpu_time(dtime1)
@@ -418,7 +420,7 @@ contains
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
     call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
     if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D))&
-         call dg_invertMassMatrix(rmatrixiMC)  
+    call dg_invertMassMatrix(rmatrixiMC)  
 
     !    ! Output MC and iMC
     !    call matio_writeMatrixHR (rmatrixiMC, 'iMC',&
@@ -508,8 +510,8 @@ contains
     !
     ! Create a UMFPACK-solver.
     nullify(p_rpreconditioner)
-    !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
-    call linsol_initUMFPACK4 (p_rsolverNode)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    !call linsol_initUMFPACK4 (p_rsolverNode)
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -771,11 +773,15 @@ contains
 
                 call profiler_measure(rprofiler,4)
                 ! Solve for solution update
-                !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
                 !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
+                if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
                    call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
                 end do
+                else
+                   call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+                end if
+                
 
                 call profiler_measure(rprofiler,1)
                 ! Get new temp solution
@@ -801,8 +807,8 @@ contains
 
                 !       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
                 !       call lsysbl_copyVector (rsoltempBlock,rsolBlock)
-
-
+                  
+                  
                 ! Step 2/3
 
                 ! Create RHS-Vector
@@ -850,9 +856,13 @@ contains
                 call profiler_measure(rprofiler,4)
                 !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
                 !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
+                if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
                    call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
                 end do
+                else
+                   call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+                end if
 
                 call profiler_measure(rprofiler,1)
                 ! Get new temp solution
@@ -922,9 +932,13 @@ contains
                 call profiler_measure(rprofiler,4)
                 !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
                 !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)      
+                if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
                    call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
                 end do
+                else
+                   call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+                end if
 
                 !       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
                 !       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
@@ -3198,14 +3212,17 @@ contains
                 ! Calculate the preconditioner matrix
                 !        call lsysbl_clearMatrix(rmatrixBlock)
                 !call lsysbl_copyMatrix (rmatrixABlock,rmatrixBlock)
-                call lsysbl_duplicateMatrix (rmatrixABlock,rmatrixBlock,&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+!                call lsysbl_duplicateMatrix (rmatrixABlock,rmatrixBlock,&
+!                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+
+               
                 do i = 1, nvar2d
 
                    call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
                         .false.,.false.,.true.,.false.)
-
+                        
                 end do
+
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
                 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
@@ -3244,9 +3261,15 @@ contains
 
                 ! Create a BiCGStab-solver.
                 nullify(p_rpreconditioner)
-                call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+                !call linsol_initGMRES (p_rpreconditioner,1)
+                !call linsol_initBiCGStab (p_rpreconditioner)
+                !call linsol_initJacobi (p_rpreconditioner)
+                !call linsol_initSOR (p_rpreconditioner, 0.15_dp)
+                !call linsol_initILU0(p_rpreconditioner)
+                call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
+                !call linsol_initGMRES (p_rsolverNode,10,p_rpreconditioner)
                 !call linsol_initUMFPACK4 (p_rsolverNode)
-                !    call linsol_initJacobi (p_rsolverNode)
+                
 
                 ! Set the output level of the solver to 2 for some output
                 p_rsolverNode%ioutputLevel = 2
@@ -3255,7 +3278,10 @@ contains
                 ! the residual is reached.
                 p_rsolverNode%depsRel = 1.0e-4
                 p_rsolverNode%depsAbs = 1.0e-6
-
+                
+                ! Set the maximum number of iteratons
+                p_rsolverNode%nmaxIterations = 5000
+                
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
                 ! only have one level here), then call the initialisation 
@@ -3264,7 +3290,7 @@ contains
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
                 ! This does not work on all compilers, since the compiler would have
                 ! to create a temp array on the stack - which does not always work!
-                Rmatrices = (/rmatrixBlock/)
+                Rmatrices = (/rmatrixABlock/)
                 call linsol_setMatrices(p_RsolverNode,Rmatrices)
 
                 ! Initialise structure/data of the solver. This allows the
@@ -3293,6 +3319,9 @@ contains
                 
                 ! Solve for solution update
                 call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+                
+                iiterations=iiterations+p_rsolverNode%iiterations
+                inumSolverCalls = inumSolverCalls + 1
 
 
                 ! Update the solution
@@ -3473,8 +3502,22 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
          getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )   
+    
+    
+    
+!    call pperr_scalarDefault (PPERR_L1ERROR, derror, rsolBlock%Rvectorblock(1),&
+!                           getReferenceFunction_2D, ffunctionWeight = getWeightFunction) 
 
+    call dg_pperr_scalar2d_conf (PPERR_L1ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
+                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+    
+    call dg_pperr_scalar2d_conf (PPERR_L2ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
+                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    
+    write(*,*) 'Average number of iterations:', real(iiterations)/real(inumSolverCalls)
 
 
     !    call calc_error(rsolBlock%Rvectorblock(1), derror, raddtriadata)

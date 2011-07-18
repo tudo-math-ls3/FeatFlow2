@@ -63,7 +63,8 @@
 		<File RelativePath="..\src\intf_flux_dg_buildMatrixScEdge2D.inc"/>
 		<File RelativePath="..\src\intf_flux_dg_buildMatrixScEdge2D_ss.inc"/>
 		<File RelativePath="..\src\intf_flux_dg_buildVectorBlEdge2D.inc"/>
-		<File RelativePath="..\src\intf_flux_dg_buildVectorScEdge2D.inc"/></Filter>
+		<File RelativePath="..\src\intf_flux_dg_buildVectorScEdge2D.inc"/>
+		<File RelativePath="..\src\intf_refFunctionSc.inc"/></Filter>
 		<Filter Name="3D"/>
 		<Filter Name="main">
 		<File RelativePath="..\src\dg.f90"/></Filter></Filter></Files>

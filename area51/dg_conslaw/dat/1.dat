@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 7
+nlmax = 5
 
 
 # Name of the parametrisation file
@@ -10,7 +10,7 @@ nlmax = 7
 #prmname = ./pre/QUAD.prm
 #prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
-prmname = ./pre/isentrvort.prm
+#prmname = ./pre/isentrvort.prm
 #prmname = ./pre/zehnm.prm
 #prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
@@ -19,7 +19,8 @@ prmname = ./pre/isentrvort.prm
 #prmname = ./pre/dedeobstacle.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/ramp_5deg_inlet_quads.prm
-#prmname = ./pre/ramp_5deg_quads.prm
+prmname = ./pre/ramp_5deg_quads.prm
+#prmname = ./pre/gammchannel_quads.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
@@ -27,7 +28,7 @@ prmname = ./pre/isentrvort.prm
 #triname = ./pre/QUAD.tri
 #triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
-triname = ./pre/isentrvort.tri
+#triname = ./pre/isentrvort.tri
 #triname = ./pre/zehnm.tri
 #triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
@@ -36,7 +37,8 @@ triname = ./pre/isentrvort.tri
 #triname = ./pre/dedeobstacle.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/ramp_5deg_inlet_quads.tri
-#triname = ./pre/ramp_5deg_quads.tri
+triname = ./pre/ramp_5deg_quads.tri
+#triname = ./pre/gammchannel_quads.tri
 
 # What kind of finite elements do we use?
 # 0: DG T0
@@ -44,16 +46,16 @@ triname = ./pre/isentrvort.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 1
+FEkind = 2
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.05
 
 # Final time
-ttfinal = 1.0
+ttfinal = 3.0
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
@@ -80,7 +82,7 @@ limiter = 0
 #  8: Implicit Euler equations
 #  9: Implicit linear convection Newton-like implementation
 # 10: Implicit Euler equations Newton-like implementation
-timestepping = 1
+timestepping = 10
 
 # What type to build the RHS
 rhstype = 1

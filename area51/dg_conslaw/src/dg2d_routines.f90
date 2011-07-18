@@ -14817,6 +14817,844 @@ contains
     !$omp end parallel
 
   end subroutine dg_bilf_assembleSubmeshMat9Bdr2D_ss
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine dg_pperr_scalar2d_conf (cerrortype, derror, rdiscretisation,&
+                                  rvectorScalar, ffunctionReference,&
+                                  rcollection, relementError, ffunctionWeight)
+
+!<description>
+  ! This routine calculates the error of a given finite element function
+  ! in rvector to a given analytical callback function ffunctionReference.
+  ! 2D version for double-precision vectors.
+!</description>
+
+!<input> 
+  ! Type of error to compute. Bitfield. This is a combination of the
+  ! PPERR_xxxx-constants, which specifies what to compute.
+  ! Example: PPERR_L2ERROR computes the $L_2$-error.
+  integer, intent(in) :: cerrortype
+  
+  ! A discretisation structure specifying how to compute the error.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+  ! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
+
+  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! function to which the error should be computed.
+  ! If not specified, the reference function is assumed to be zero!
+  include 'intf_refFunctionSc.inc'
+  optional :: ffunctionReference
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be =1!
+  optional :: ffunctionWeight
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional 
+  ! information for callback routines.
+  type(t_collection), intent(inout), optional :: rcollection
+
+  ! OPTIONAL: A scalar vector which holds the calculated error per element
+  type(t_vectorScalar), intent(inout), optional :: relementError
+!</inputoutput>
+
+!<output>
+  ! Array receiving the calculated error.
+  real(DP), intent(out) :: derror
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ielementDistr, ICUBP, NVE, NCOEFF
+    integer :: IEL, IELmax, IELset, IELGlobal
+    real(DP) :: OM
+    
+    ! Array to tell the element which derivatives to calculate
+    logical, dimension(EL_MAXNDER) :: Bder
+    
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    real(DP), dimension(:), allocatable :: Domega
+    
+    ! number of cubature points on the reference element
+    integer :: ncubp
+    
+    ! Number of local degees of freedom for test functions
+    integer :: indofTrial
+    
+    ! The triangulation structure - to shorten some things...
+    type(t_triangulation), pointer :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    integer, dimension(:), pointer :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
+
+    ! Arrays for saving Jacobian determinants and matrices
+    real(DP), dimension(:,:), pointer :: p_Ddetj
+    
+    ! Current element distribution
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    
+    ! Number of elements in the current element distribution
+    integer :: NEL, ielement1, ipoint1
+    
+    real(dp) :: dx
+
+    ! Pointer to the values of the function that are computed by the callback routine.
+    real(DP), dimension(:,:,:), allocatable :: Dcoefficients
+    
+    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    integer :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    type(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
+    
+    ! An allocateable array accepting the DOF`s of a set of elements.
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
+  
+    ! Type of transformation from the reference to the real element 
+    integer(I32) :: ctrafoType
+    
+    ! Element evaluation tag; collects some information necessary for evaluating
+    ! the elements.
+    integer(I32) :: cevaluationTag
+
+    ! Pointer to the element-wise error
+    real(DP), dimension(:), pointer :: p_Derror
+
+
+    ! Which derivatives of basis functions are needed?
+    ! Check the descriptors of the bilinear form and set BDER
+    ! according to these.
+
+    Bder = .false.
+    select case (cerrortype)
+    case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR)
+      Bder(DER_FUNC) = .true.
+      NCOEFF = 3
+    case (PPERR_H1ERROR) 
+      Bder(DER_DERIV_X) = .true.
+      Bder(DER_DERIV_Y) = .true.
+      NCOEFF = 5
+    case default
+      NCOEFF = 2
+    end select
+        
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => rdiscretisation%p_rtriangulation
+    
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it is at most
+    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
+    
+    ! Set the current error to 0 and add the error contributions of each element
+    ! to that.
+    derror = 0.0_DP
+
+    ! Set pointer to element-wise error
+    if (present(relementError)) then
+      call lsyssc_getbase_double(relementError, p_Derror)
+    end if
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    do ielementDistr = 1, rdiscretisation%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_relementDistribution => rdiscretisation%RelementDistr(ielementDistr)
+    
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+
+      ! Get the number of local DOF`s for trial functions
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_relementDistribution%celement)
+      
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+
+      ! Get the number of cubature points for the cubature formula
+      ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
+      
+      ! Allocate two arrays for the points and the weights
+      allocate(Domega(ncubp))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType), ncubp))
+      
+      ! Get the cubature formula
+      call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
+      
+      ! Allocate memory for the DOF`s of all the elements.
+      allocate(IdofsTrial(indofTrial, nelementsPerBlock))
+
+      ! Allocate memory for the coefficients
+      allocate(Dcoefficients(ncubp, nelementsPerBlock, NCOEFF))
+    
+      ! Initialisation of the element set.
+      call elprep_init(revalElementSet)
+
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+                      
+      if (present(ffunctionReference) .or.&
+          present(ffunctionWeight)) then
+        ! Evaluate real coordinates if necessary.
+        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_REALPOINTS)
+      end if
+                      
+      ! Make sure that we have determinants.
+      cevaluationTag = ior(cevaluationTag, EL_EVLTAG_DETJ)
+
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call storage_getbase_int (p_relementDistribution%h_IelementList, &
+                                p_IelementList)
+                     
+      ! Get the number of elements there.
+      NEL = p_relementDistribution%NEL
+    
+      ! Loop over the elements - blockwise.
+      do IELset = 1, NEL, PPERR_NELEMSIM
+      
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        
+        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+      
+        ! Calculate the global DOF`s into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     IdofsTrial)
+                                     
+        ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+        rintSubset%ielementDistribution = ielementDistr
+        rintSubset%ielementStartIdx = IELset
+        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
+        rintSubset%celement = p_relementDistribution%celement
+    
+        ! Calculate all information that is necessary to evaluate the finite element
+        ! on all cells of our subset. This includes the coordinates of the points
+        ! on the cells.
+        call elprep_prepareSetForEvaluation (revalElementSet,&
+            cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
+            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+        p_Ddetj => revalElementSet%p_Ddetj
+
+        ! In the next loop, we do not have to evaluate the coordinates
+        ! on the reference elements anymore.
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+        ! At this point, we must select the correct domain integration and coefficient
+        ! calculation routine, depending which type of error we should compute!
+        
+        select case (cerrortype)
+        
+        case (PPERR_L2ERROR)
+          
+          ! L2-error uses only the values of the function.
+          
+          if (present(ffunctionReference)) then
+            ! It is time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            call ffunctionReference (DER_FUNC, rdiscretisation, &
+                        int(IELmax-IELset+1), ncubp,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                        IdofsTrial, rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
+          end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+!            call ffunctionWeight (rdiscretisation,&
+!                int(IELmax-IELset+1), ncubp, &
+!                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+!                IdofsTrial, rintSubset, &
+!                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          else
+            
+            do ielement1 = 1,IELmax-IELset+1
+            do ipoint1 = 1,size(revalElementSet%p_DpointsReal,2)
+            dx = revalElementSet%p_DpointsReal(1,1,ielement1)
+            if ((dx <0.45_dp).and.(dx>0.25)) then
+               Dcoefficients(ipoint1,ielement1,3) = 1.0_DP
+            else
+               Dcoefficients(ipoint1,ielement1,3) = 0.0_DP
+            end if
+            end do
+            end do
+            
+          end if
+
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
+          ! and multiplication by Dcoefficients(:,:,3) yields
+          ! the error "w*[u-u_h](cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF`s and cubature points to calculate the
+          ! integral: int_Omega w*(u-u_h,u-u_h) dx
+          
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+          
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+
+                IELGlobal = p_IelementList(IELset+IEL-1)
+                
+                p_Derror(IELGlobal) = OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
+
+            do IEL=1,IELmax-IELset+1
+          
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
+                
+                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
+                
+                derror = derror + &
+                         OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          end if
+
+        case (PPERR_L1ERROR)
+          
+          ! L1-error uses only the values of the function.
+          
+          if (present(ffunctionReference)) then
+            ! It is time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            call ffunctionReference (DER_FUNC, rdiscretisation, &
+                        int(IELmax-IELset+1), ncubp,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                        IdofsTrial, rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
+          end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+          
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+!            call ffunctionWeight (rdiscretisation,&
+!                int(IELmax-IELset+1), ncubp, &
+!                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+!                IdofsTrial, rintSubset, &
+!                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          else
+            do ielement1 = 1,IELmax-IELset+1
+            do ipoint1 = 1,size(revalElementSet%p_DpointsReal,2)
+            dx = revalElementSet%p_DpointsReal(1,1,ielement1)
+            if ((dx <0.45_dp).and.(dx>0.25)) then
+               Dcoefficients(ipoint1,ielement1,3) = 1.0_DP
+            else
+               Dcoefficients(ipoint1,ielement1,3) = 0.0_DP
+            end if
+            end do
+            end do
+          end if
+
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
+          ! and multiplication by Dcoefficients(:,:,3) yields
+          ! the error "w*[u-u_h](cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF`s and cubature points to calculate the
+          ! integral: int_Omega w*abs(u-u_h) dx
+          
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                
+                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)*Dcoefficients(icubp,IEL,3)
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
+            
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                
+                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)*Dcoefficients(icubp,IEL,3)
+                
+                ! L1-error is:   int_... abs(u-u_h) dx
+                
+                derror = derror + &
+                         OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          end if
+
+        case (PPERR_H1ERROR)
+
+          ! H1-error uses only 1st derivative of the function.
+
+          if (present(ffunctionReference)) then          
+            ! It is time to call our coefficient function to calculate the
+            ! X-derivative values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            call ffunctionReference (DER_DERIV_X, rdiscretisation, &
+                        int(IELmax-IELset+1), ncubp,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                        IdofsTrial, rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+                        
+            ! Calculate the Y-derivative to Dcoefficients(:,:,2)
+            call ffunctionReference (DER_DERIV_Y,rdiscretisation, &
+                        int(IELmax-IELset+1), ncubp,&
+                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                        IdofsTrial, rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1,2), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,1:2) = 0.0_DP
+          end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the X/Y-derivative of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,3..4)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
+                    Dcoefficients(:,1:IELmax-IELset+1,3))
+
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
+                    Dcoefficients(:,1:IELmax-IELset+1,4))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,3:4) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,5)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,5), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,5) = 1.0_DP
+          end if
+
+          ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) 
+          ! and multiplication by Dcoefficients(:,:,5) yields
+          ! the error "w*grad(u-u_h)(cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF`s and cubature points to calculate the
+          ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+          
+          if (present(relementError)) then
+
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+
+                p_Derror(IELGlobal) = OM * ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
+                                            (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
+
+                derror = derror + p_Derror(IELGlobal)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          else
+            
+            do IEL=1,IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
+                
+                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
+                
+                derror = derror + OM * &
+                         ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
+                          (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
+
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          end if
+
+        case (PPERR_MEANERROR)
+
+          ! The integral mean value uses only the values of the function
+          
+          if (present(ffunctionReference)) then
+            ! Calculate the values of the coefficient function in the
+            ! cubature points: u(x).
+            ! Save the result to Dcoefficients(:,:,1)
+            call ffunctionReference(DER_FUNC, rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
+          end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
+                Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+          
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,3) = 1.0_DP
+          end if
+
+          ! Subtraction of Dcoefficients(:,:,2) from Dcoefficients(:,:,1)
+          ! and multiplication by Dcoefficients(:,:,3) yields
+          ! the error "w*[u-u_h] (cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF`s and cubature points to calculate the
+          ! integral: int_Omega w*(u-u_h) dx
+
+          if (present(relementError)) then
+            
+            do IEL = 1, IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+                
+                p_Derror(IELGlobal) = OM * ( Dcoefficients(icubp,IEL,1) - &
+                                             Dcoefficients(icubp,IEL,2) )
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+            
+          else
+            
+            do IEL = 1, IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
+                
+                derror = derror + &
+                         OM * ( Dcoefficients(icubp,IEL,1) - &
+                                Dcoefficients(icubp,IEL,2) )
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          end if
+        
+        case default
+
+          ! This case realises
+          !
+          !  int (w u) dx
+          !  
+          ! with w being the weight and u the analytical function given by
+          ! ffunctionReference. This function must be present such that it can
+          ! be evaluated -- otherwise the user made a mistake in calling
+          ! this routine.
+
+          ! Evaluate the error with aid of the callback function
+          if (present(ffunctionReference)) then
+            ! Calculate the values of the coefficient function in the
+            ! cubature points: u(x).
+            ! Save the result to Dcoefficients(:,:,1)
+            call ffunctionReference(DER_FUNC, rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal,&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+          else
+            call output_line('Reference function missing in user-defined error type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
+            call sys_halt()
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,2)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,2), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 1.0_DP
+          end if
+
+          ! Multiplication of Dcoefficients(:,:,1) by Dcoefficients(:,:,2) yields
+          ! the error "w*f(u)(cubature pt.)"!
+          !
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF`s and cubature points to calculate the
+          ! integral: int_Omega w*f(u) dx
+
+          if (present(relementError)) then
+            
+            do IEL = 1, IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
+                
+                IELGlobal = p_IelementList(IELset+IEL-1)
+                
+                p_Derror(IELGlobal) = OM * Dcoefficients(icubp,IEL,1)
+
+                derror = derror + p_Derror(IELGlobal)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+            
+          else
+            
+            do IEL = 1, IELmax-IELset+1
+              
+              ! Loop over all cubature points on the current element
+              do icubp = 1, ncubp
+                
+                ! calculate the current weighting factor in the cubature formula
+                ! in that cubature point.
+                !
+                ! Take the absolut value of the determinant of the mapping.
+                ! In 2D, the determinant is always positive, whereas in 3D,
+                ! the determinant might be negative -- that is normal!
+                
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
+                
+                derror = derror + OM * Dcoefficients(icubp,IEL,1)
+                
+              end do ! ICUBP 
+              
+            end do ! IEL
+
+          end if
+
+        end select
+        
+        ! Release the temporary domain integration structure again
+        call domint_doneIntegration (rintSubset)
+    
+      end do ! IELset
+      
+      ! Release memory
+      call elprep_releaseElementSet(revalElementSet)
+
+      deallocate(p_DcubPtsRef)
+      deallocate(Dcoefficients)
+      deallocate(IdofsTrial)
+      deallocate(Domega)
+
+    end do ! ielementDistr
+
+    ! derror is ||error||^2, so take the square root at last.
+    if ((cerrortype .eq. PPERR_L2ERROR) .or.&
+        (cerrortype .eq. PPERR_H1ERROR)) then
+      derror = sqrt(derror)
+      if (present(relementError)) then
+        do IEL = 1, size(p_Derror,1)
+          p_Derror(IEL) = sqrt(p_Derror(IEL))
+        end do
+      end if
+    end if
+
+  end subroutine dg_pperr_scalar2d_conf
+  
+  
+  
 
 
 end module dg2d_routines
