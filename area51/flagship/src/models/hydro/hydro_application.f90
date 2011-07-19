@@ -1749,6 +1749,7 @@ contains
     type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
     type(t_vectorBlock) :: rvectorBlock, rvectorHigh, rvectorAux
+    type(t_vectorScalar) :: rvectorScalar
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_fparser), pointer :: p_rfparser
@@ -1757,7 +1758,7 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP), dimension(:), pointer :: Dnorm0
-    real(DP) :: depsAbsSolution, depsRelSolution, dnorm
+    real(DP) :: depsAbsSolution, depsRelSolution, dnorm, dmin, dmax
     character(len=SYS_STRLEN), dimension(:), pointer :: SsolutionFailsafeVariables
     character(LEN=SYS_STRLEN) :: ssolutionName
     integer :: isolutiontype, nexpression, nsolutionfailsafe
@@ -2143,6 +2144,59 @@ contains
           OU_CLASS_ERROR, OU_MODE_STD, 'hydro_initSolution')
       call sys_halt()
     end select
+
+    ! Output statistics
+    call output_lbrk()
+    call output_separator(OU_SEP_AT)
+    call output_line('Initial solution')
+    call output_separator(OU_SEP_AT)
+
+    ! Density
+    call hydro_getVariable(rvector, 'density', rvectorScalar)
+    call pperr_scalar(PPERR_L1ERROR, dnorm, rvectorScalar)
+    call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+    dmin = SYS_MAXREAL_DP; dmax = -SYS_MAXREAL_DP
+    
+    do ieq = 1, rvectorScalar%NEQ
+      dmin = min(dmin, p_Ddata(ieq))
+      dmax = max(dmax, p_Ddata(ieq))
+    end do
+
+    call output_line('Total mass:       '//trim(sys_sdEL(dnorm,5)))
+    call output_line('min/max density:  '//trim(sys_sdEL(dmin,5))//' / '&
+                                         //trim(sys_sdEL(dmax,5)))
+    
+    ! Total energy
+    call hydro_getVariable(rvector, 'total_energy', rvectorScalar)
+    call pperr_scalar(PPERR_L1ERROR, dnorm, rvectorScalar)
+    call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+    dmin = SYS_MAXREAL_DP; dmax = -SYS_MAXREAL_DP
+    
+    do ieq = 1, rvectorScalar%NEQ
+      dmin = min(dmin, p_Ddata(ieq))
+      dmax = max(dmax, p_Ddata(ieq))
+    end do
+
+    call output_line('Total energy:     '//trim(sys_sdEL(dnorm,5)))
+    call output_line('min/max density:  '//trim(sys_sdEL(dmin,5))//' / '&
+                                         //trim(sys_sdEL(dmax,5)))
+    
+    ! Pressure
+    call hydro_getVariable(rvector, 'pressure', rvectorScalar)
+    call pperr_scalar(PPERR_L1ERROR, dnorm, rvectorScalar)
+    call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+    dmin = SYS_MAXREAL_DP; dmax = -SYS_MAXREAL_DP
+    
+    do ieq = 1, rvectorScalar%NEQ
+      dmin = min(dmin, p_Ddata(ieq))
+      dmax = max(dmax, p_Ddata(ieq))
+    end do
+
+    call output_line('min/max pressure: '//trim(sys_sdEL(dmin,5))//' / '&
+                                         //trim(sys_sdEL(dmax,5)))
+
+    call output_separator(OU_SEP_AT)
+    call output_lbrk()
     
   end subroutine hydro_initSolution
 
@@ -3243,7 +3297,6 @@ contains
     !---------------------------------------------------------------------------
 
     timeloop: do
-
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call hydro_outputSolution(rparlist, ssectionName,&
