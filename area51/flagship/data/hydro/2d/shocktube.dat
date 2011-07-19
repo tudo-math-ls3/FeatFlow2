@@ -196,7 +196,7 @@ errorestimator = ErrorEstimator
 # 31 = FEM-GP
 # 41 = nonlinear upwind-biased FEM-LPT
 # 51 = linearised upwind-biased FEM-LPT
-istabilisation = 12
+istabilisation = 20
 
 # perform prelimiting
 #  0 = no prelimiting

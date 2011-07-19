@@ -1,30 +1,33 @@
 # -*- mode: any-ini; -*-
+
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                          Solid body rotation (LeVeque)                       #
+#                             Double Mach Reflection                           #
+# From:  K. Takayama and O. Inoue, "Shock wave diffraction over a 90 degree    #
+#        sharp corner - Posters presented at 18th ISSW", Shock Waves Vol. 1    #
+#        pages 301-312, 1991.                                                  #
 #                                                                              #
-# 1) Constant velocity and final time T=2*pi=6.2831853                         #
 #                                                                              #
 ################################################################################
 
 simportdatafiles(2) =
-  'data/transport/2d/default.dat'
+  'data/fct_book/2d/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = transport
+application = hydro
 
 ################################################################################
-[Transport]
+[Hydro]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/transport/2d/leveque.indat
+indatfile = data/fct_book/2d/dmr.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_weak_primal
+sprimalbdrcondname = bdrcond_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -53,48 +56,54 @@ imassantidiffusiontype = 1
 # 1 = low-order method
 iapproxtimederivativetype = 1
 
-# type of flow velocity
-# 0 = zero velocity v=0
-# 1 = linear constant velocity v=v(x)
-# 2 = linear time-dependent velocity v=v(x,t)
-# 3 = Burgers equation in space-time
-# 4 = Buckley Leverett equation in space-time
-# 5 = Burgers' equation in 1D
-# 6 = Burgers' equation in 2D
-# 7 = Burgers' equation in 3D
-# 8 = Buckley Leverett equation in 1D
-ivelocitytype = 1
+# type of dissipation
+# 0 = no dissipation
+# 1 = scalar dissipation (-1 = dimensional splitting)
+# 2 = tensorial dissipation (-2 = dimensional splitting)
+# 3 = Rusanov type (-3 = dimensional splitting)
+idissipationtype = $idissipationtype
 
-# section name of velocity field
-svelocityname(2) = 
-  @velocity_x
-  @velocity_y
+# type of system coupling
+# 0 = segregated approach
+# 1 = fully-coupled approach
+isystemcoupling = 0
 
-# type of flow diffusion
-# 0 = zero diffusion
-# 1 = isotropic diffusion
-# 2 = anisotropic diffusion
-# 3 = variable diffusion
-idiffusiontype = 0
+# type of preconditioner
+# 0 = Galerkin scheme
+# 1 = low-order scheme with scalar dissipation
+# 2 = low-order scheme with tensorial dissipation
+# 3 = low-order schemes of Rusanov type
+isystemPrecond = 1
 
-# section name of diffusion tensor
-sdiffusionname = 
+#-------------------------------------------------------------------------------
 
-# type of flow reaction
-# 0 = zero reactive term
-# 1 = analytical initial solution
-ireactiontype = 0
+# variables for flux correction
+# (i)  for synchronized flux correction list 
+#      all variables in alphabetical(!) order, e.g.
+#
+# slimitingvariable = density,pressure,velocity
+#
+# (ii) for sequential/multiplicative flux correction list
+#      all variables one by one, e.g.
+#
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+slimitingvariable(1) = 
+  none
 
-# section name of reactive term
-sreactionname = 
+# number of failsafe steps
+nfailsafe = 4
 
-# type of right-hand side vector
-# 0 = zero right-hand side
-# 1 = analytical right-hand side
-irhstype = 0
+# variables for failsafe flux correction
+sfailsafevariable(4) =
+  density
+  pressure
+  velocity_x
+  velocity_y
 
-# section name of right-hand side vector
-srhsname = 
+#-------------------------------------------------------------------------------
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -102,41 +111,55 @@ srhsname =
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 1
+isolutiontype = 3
+
+# absolute tolerance for Richardson iteration
+depsAbsSolution = 1e-4
+
+# relative tolerance for Richardson iteration
+depsRelSolution = 1e-3
+
+# maximum number of Richardson iterations
+nmaxIterationsSolution = 100
 
 # section name of initial solution
-ssolutionname = @initsol
+ssolutionname(4) = 
+  @initsol_rho
+  @initsol_vel_x
+  @initsol_vel_y
+  @initsol_Etot
 
 # type of exact solution profile
 # 0 = no exact solution available
-# 1 = analytical exact solution
-# 2 = PGM image
-iexactsolutiontype = 1
+# 1 = analytical initial solution
+iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = @exactsol
+sexactsolutionname =
 
-# type of target functional
-# 0 = zero target functional
-# 1 = volume integral
-# 2 = surface integral
-# 3 = mixed volume/surface integral
-itargetfunctype = 0
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
 
-# section name of target functional
-stargetfuncname = 
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
 
-# section name of exacttarget functional
-sexacttargetfuncname = 
-
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
 
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/rect_4x1.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_quads.tri
+trifile = grids/2d/rect_4x1.tri
 
 # type of finite element space(s)
 celement = EL_Q1_2D
@@ -149,18 +172,20 @@ iconvToTria = 0
 # 9 = matrix format 9
 imatrixformat = 9
 
-# type of Jacobian matrix
-# 0 = standard sparsity pattern
-# 1 = extended sparsity pattern
-ijacobianformat = 0
+# type of system format
+# 0 = interleave scalar format
+# 1 = block system
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
-# section name of the convection stabilization
-convection = Convection
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = $nsumcubRefLinForm
 
-# section name of the diffusion stabilization
-diffusion = Diffusion
+#-------------------------------------------------------------------------------
+
+# section name of the inviscid stabilization
+inviscid = Inviscid
 
 # section name of the time-stepping algorithm
 timestep = Timestepping
@@ -179,34 +204,27 @@ errorestimator = ErrorEstimator
 
 
 ################################################################################
-[Convection]
+[Inviscid]
 ################################################################################
 
 # type of spatial stabilization:
 #  0 = no stabilization (Galerkin)
 #  1 = discrete upwinding
-# 10 = semi-impl. FEM-FCT (iprelimiting =0, =2)
-# 11 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
-# 12 = linearised FEM-FCT (iprelimiting =0, =2)
-# 13 = iterative FEM-FCT (iprelimiting =0, =1, =2)
-# 14 = characteristic FEM-FCT
-# 20 = FEM-TVD
-# 21 = FEM-GP
-istabilisation = 12
+# 10 = semi-expl. FEM-FCT (iprelimiting =0, =1, =2)
+# 11 = semi-impl. FEM-FCT (iprelimiting =0, =2)
+# 12 = iterative FEM-FCT (iprelimiting =0, =1, =2)
+# 20 = linearised FEM-FCT (iprelimiting =0, =1, =2)
+# 30 = FEM-TVD
+# 31 = FEM-GP
+# 41 = nonlinear upwind-biased FEM-LPT
+# 51 = linearised upwind-biased FEM-LPT
+istabilisation = 20
 
 # perform prelimiting
+#  0 = no prelimiting
+#  1 = standard prelimiting
+#  2 = minmod prelimiting
 iprelimiting = 0
-
-
-################################################################################
-[Diffusion]
-################################################################################
-
-# type of spatial stabilization
-#  0 = no stabilization (Galerkin)
-#  2 = maximum principle preservation
-# 30 = symmetric limiting
-istabilisation = 0
 
 
 ################################################################################
@@ -224,10 +242,18 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/leveque
+sucdsolution = $outputdir/dmr-FailsafeAll$idissipationtype-WithMass-Nlev$nlev
 
 # file for UCD output of error
-sucderror = out/leveque_error
+sucderror = 
+
+# variables for ucd output
+sucdvariable(5) =
+ density
+ velocity
+ energy
+ pressure
+ machnumber
 
 
 ################################################################################
@@ -240,7 +266,7 @@ sucderror = out/leveque_error
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 1
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -259,22 +285,22 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 6.2831853
+dfinalTime = 0.2
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = $dstep
 
 # lower bound for the admissible time step
-dminStep = 0.001
+dminStep = $dstep
 
 # upper bound for the admissible time step
-dmaxStep = 0.001
+dmaxStep = $dstep
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -283,13 +309,13 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.1
+ddecreaseFactor = 1.0
 
 # maximum factor by which time step may change
-dincreaseFactor = 2.0
+dincreaseFactor = 1.0
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 0.8
+dstepReductionFactor = 1.0
 
 # target tolerace for relative changes
 depsRel = 0.0
@@ -312,13 +338,13 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 1
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = $nlev
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = $nlev
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -434,7 +460,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 1
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -464,7 +490,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 2
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -472,7 +498,7 @@ dperturbationStrategy = 2
 # 3 = choice by Brown/Saad
 # 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingStrategy = 1e-1
+dforcingStrategy = 1
 
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
@@ -489,7 +515,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -576,7 +602,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-8
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -594,7 +620,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 5
+isolver = 4
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -623,7 +649,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 1
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -645,7 +671,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -654,10 +680,10 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-1
+depsRel = 1e-2
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -712,10 +738,10 @@ nsubdividemax = 0
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.01
+drefinementTolerance = 0.0
 
 # coarsening tolerance
-dcoarseningTolerance = 0.001
+dcoarseningTolerance = 0.0
 
 
 ################################################################################
@@ -729,25 +755,22 @@ dcoarseningTolerance = 0.001
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 6
+ierrorestimator = 7
 
 # type or grid indicator
 # 0 = as is
 # 1 = equidistribution
 # 2 = logarithmic equidistribution
-# 3 = fixed-rate strategy
-# 4 = RMS automatic treshold
-# 5 = balancing strategy
-igridindicator = 1
+igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.2
+dnoisefilter = 0.05
 
 # absolute filter
 dabsfilter = 0.001
 
 # number of protection layers
-nprotectLayers = 2
+nprotectLayers = 0
 
 # tolerance for protection layers
-dprotectLayerTolerance = 0.01
+dprotectLayerTolerance = 0.0
