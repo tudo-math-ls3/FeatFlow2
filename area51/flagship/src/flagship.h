@@ -45,4 +45,13 @@
 #define REAL_PREC DOUBLE_PREC
 #undef  INT_PREC
 
+#if 0
+!##############################################################################
+! Constants for entropy fixes
+!##############################################################################
+#endif
+
+#define HARTEN_HYMAN_ENTROPYFIX 1001
+#define HARTEN_ENTROPYFIX       1002
+
 #endif

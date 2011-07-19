@@ -677,7 +677,10 @@ contains
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3,w1,w2,w3
     integer :: idx
-    
+#if defined(HYDRO_USE_ENTROPYFIX) && (HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX)
+    real(DP) :: dtol,ci,cj
+#endif
+
     
     do idx = 1, nedges
           
@@ -747,6 +750,43 @@ contains
         l1 = abs(u_ij-c_ij)
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
+
+#if defined(HYDRO_USE_ENTROPYFIX) 
+
+#if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
+
+        ! Entropy-fix by Harten and Hyman
+        ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,0,0,0)
+        cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        dtol = max(0.0_DP, (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        
+        if (l1 .lt. dtol)&
+            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+        
+        dtol = max(0.0_DP, (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+
+        if (l3 .lt. dtol)&
+            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+
+#elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
+
+#ifndef HYDRO_HARTEN_ENTROPYFIX
+#error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
+#else
+        ! Entropy-fix by Harten
+        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+
+        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+#endif
+#else
+#error "Invalid type of entropy fix!"
+#endif
+#endif
         
         ! Compute solution difference U_j-U_i
         Diff = IDX3(DdataAtEdge,:,2,idx,0,0,0)-&
@@ -1759,7 +1799,9 @@ contains
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3
     integer :: idx
-    
+#if defined(HYDRO_USE_ENTROPYFIX) && (HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX)
+    real(DP) :: dtol,ci,cj
+#endif 
 
     do idx = 1, nedges
 
@@ -1834,16 +1876,53 @@ contains
 
         ! Compute speed of sound
         cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
-        c_ij = sqrt(cPow2_ij)
+        c_ij     = sqrt(cPow2_ij)
         
-        b2   = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
-        b1   = b2*q_ij
+        b2 = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
+        b1 = b2*q_ij
 
         ! Diagonal matrix of eigenvalues
         l1 = abs(u_ij-c_ij)
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
+
+#if defined(HYDRO_USE_ENTROPYFIX) 
+
+#if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
+
+        ! Entropy-fix by Harten and Hyman  
+        ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,0,0,0)
+        cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        dtol = max(0.0_DP, (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
+        if (l1 .lt. dtol)&
+            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+        
+        dtol = max(0.0_DP, (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+
+        if (l3 .lt. dtol)&
+            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+
+#elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
+
+#ifndef HYDRO_HARTEN_ENTROPYFIX
+#error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
+#else
+        ! Entropy-fix by Harten
+        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+
+        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+#endif
+#else
+#error "Invalid type of entropy fix!"
+#endif
+#endif
+
         ! Matrix of right eigenvectors
         R_ij(1,1) =  l1
         R_ij(2,1) =  l1*(u_ij-c_ij)
@@ -1943,7 +2022,9 @@ contains
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3
     integer :: idx,i,j,k
-
+#if defined(HYDRO_USE_ENTROPYFIX) && (HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX)
+    real(DP) :: dtol,ci,cj
+#endif
 
     do idx = 1, nedges
 
@@ -2075,16 +2156,53 @@ contains
         ! Compute auxiliary values
         q_ij = 0.5_DP*u_ij*u_ij
         cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
-        c_ij = sqrt(cPow2_ij)
+        c_ij     = sqrt(cPow2_ij)
 
-        b2   = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
-        b1   = b2*q_ij
+        b2 = ((HYDRO_GAMMA)-1.0_DP)/cPow2_ij
+        b1 = b2*q_ij
         
         ! Diagonal matrix of eigenvalues
         l1 = abs(u_ij-c_ij)
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
         
+#if defined(HYDRO_USE_ENTROPYFIX) 
+
+#if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
+
+        ! Entropy-fix by Harten and Hyman
+        ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,0,0,0)
+        cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        dtol = max(0.0_DP, (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        
+        if (l1 .lt. dtol)&
+            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+        
+        dtol = max(0.0_DP, (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+
+        if (l3 .lt. dtol)&
+            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+
+#elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
+
+#ifndef HYDRO_HARTEN_ENTROPYFIX
+#error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
+#else
+        ! Entropy-fix by Harten
+        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+
+        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+#endif
+#else
+#error "Invalid type of entropy fix!"
+#endif
+#endif
+
         ! Matrix of right eigenvectors
         R_ij(1,1) =  l1
         R_ij(2,1) =  l1*(u_ij-c_ij)
@@ -2835,7 +2953,9 @@ contains
     real(DP) :: H_ij,anorm,aux,b1,b2,cPow2_ij,c_ij,q_ij,u_ij
     real(DP) :: l1,l2,l3,w1,w2,w3
     integer :: idx
-
+#if defined(HYDRO_USE_ENTROPYFIX) && (HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX)
+    real(DP) :: dtol,ci,cj
+#endif
 
     do idx = 1, nedges
 
@@ -2872,13 +2992,50 @@ contains
 
         ! Compute the speed of sound
         cPow2_ij = max(((HYDRO_GAMMA)-1.0_DP)*(H_ij-q_ij), SYS_EPSREAL_DP)
-        c_ij = sqrt(cPow2_ij)
+        c_ij     = sqrt(cPow2_ij)
         
         ! Compute eigenvalues
         l1 = abs(u_ij-c_ij)
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
         
+#if defined(HYDRO_USE_ENTROPYFIX) 
+
+#if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
+
+        ! Entropy-fix by Harten and Hyman
+        ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,0,0,0)
+        cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+        dtol = max(0.0_DP, (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        
+        if (l1 .lt. dtol)&
+            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+        
+        dtol = max(0.0_DP, (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+
+        if (l3 .lt. dtol)&
+            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+
+#elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
+
+#ifndef HYDRO_HARTEN_ENTROPYFIX
+#error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
+#else
+        ! Entropy-fix by Harten
+        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+
+        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
+            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
+#endif
+#else
+#error "Invalid type of entropy fix!"
+#endif
+#endif
+
         ! Compute solution difference U_i-U_j
         Diff = IDX3(DdataAtEdge,:,1,idx,0,0,0)-&
                IDX3(DdataAtEdge,:,2,idx,0,0,0)
