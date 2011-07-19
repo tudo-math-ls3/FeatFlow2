@@ -5403,9 +5403,6 @@ contains
     real(DP) :: anorm,aux,aux1,aux2
     real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4
     integer :: idx
-#if defined(HYDRO_USE_ENTROPYFIX) && (HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX)
-    real(DP) :: dtol,ci,cj,veli,velj
-#endif
 
 
     do idx = 1, nedges
@@ -5459,45 +5456,6 @@ contains
         l3 = abs(vel_ij+c_ij)
         l4 = abs(vel_ij)
         
-#if defined(HYDRO_USE_ENTROPYFIX) 
-
-#if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
-
-        ! Entropy-fix by Harten and Hyman
-        ci = SOUNDSPEED3_2D(DdataAtEdge,IDX3,1,idx,0,0,0)
-        cj = SOUNDSPEED3_2D(DdataAtEdge,IDX3,2,idx,0,0,0)
-        veli = ui*a(1) + vi*a(2)
-        velj = uj*a(1) + vj*a(2)
-
-        dtol = max(0.0_DP, (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
-        
-        if (l1 .lt. dtol)&
-            l1 = 0.5_DP*((l1**2)/dtol + dtol)
-        
-        dtol = max(0.0_DP, (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
-
-        if (l3 .lt. dtol)&
-            l3 = 0.5_DP*((l3**2)/dtol + dtol)
-
-#elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
-
-#ifndef HYDRO_HARTEN_ENTROPYFIX
-#error "Value HYDRO_HARTEN_ENTROPYFIX is required!"
-#else
-        ! Entropy-fix by Harten
-        if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
-
-        if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
-               + RCONST(HYDRO_HARTEN_ENTROPYFIX))
-#endif
-#else
-#error "Invalid type of entropy fix!"
-#endif
-#endif
-
         ! Compute solution difference U_i-U_j
         Diff = IDX3(DdataAtEdge,:,1,idx,0,0,0)-&
                IDX3(DdataAtEdge,:,2,idx,0,0,0)
