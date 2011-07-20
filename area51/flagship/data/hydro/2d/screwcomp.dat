@@ -56,7 +56,7 @@ iapproxtimederivativetype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -68,7 +68,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 2
+isystemPrecond = 1
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -83,10 +83,12 @@ isystemPrecond = 2
 #      density
 #      pressure
 #      velocity
-slimitingvariable = density,energy,momentum
+slimitingvariable(2) =
+  density
+  pressure
 
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
@@ -116,6 +118,22 @@ iexactsolutiontype = 0
 
 # section name of exact solution
 sexactsolutionname =
+
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
 
 #-------------------------------------------------------------------------------
 
@@ -198,20 +216,22 @@ iprelimiting = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.5
 
 # file for UCD output of solution
 sucdsolution = out/screwcomp
 
 # file for UCD output of error
-sucderror = out/screwcomp_error
+sucderror = 
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(6) =
  density
  velocity
  energy
  pressure
+ internal_energy
+ machnumber
 
 
 ################################################################################
@@ -243,13 +263,13 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001
+dfinalTime = 100.0
 
 # initial time step size
 dinitialStep = 0.001
@@ -418,7 +438,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 4
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -431,7 +451,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10
+nmaxIterations = 15
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -607,7 +627,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -629,7 +649,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -732,3 +752,15 @@ nprotectLayers = 2
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0
+
+# type of error variables
+#   density
+#   velocity_x
+#   velocity_y
+#   velocity_z
+#   energy
+#   pressure
+#   machnumber
+serrorvariable(2) =
+  density
+  pressure

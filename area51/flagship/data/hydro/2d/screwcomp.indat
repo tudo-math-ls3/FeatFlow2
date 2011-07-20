@@ -4,16 +4,24 @@
 #
 # Initial conditions:
 # 
-# compressible density (ideal gas laW)
-# viscosity nu = 1.82*10^5 kg/m s
-# spec. heat at const. pressure Cp = 1006.43 J/kg K
-# spec. heat conductivity lambda = 0.0242 W/m K
-# p_in = 2 bar = 2*10^5 N/m^2
-# T_in = 300 K
-# p_out = 1 bar = 2*10^5 N/m^2
+# Density:                 compressible (ideal gas laW)
+# Dynamic viscosity:       nu = 1.82*10^5 kg/m s
+# Spec. heat capacity:     Cp = 1006.43 J/kg K
+# spec. heat conductivity: lambda = 0.0242 W/m K
 #
-# primitive variables
-# rho = p/(R T) (ideal gas law)
+# Inlet pressure:           p_in = 2 bar = 200,000 Pascal
+# Inlet temperature:        T_in = 300 K
+#
+# Outlet pressure:          p_out = 1 bar = 100,000 Pascal
+# Outlet temperature:       T_out = 300 K
+#
+# Primitive variables
+#
+# 1) Density from the ideal gas law: rho = p/(R T)
+#
+#    rho_in = 200,000[ N/m^]2/(287 [Nm/kg K] * 300 [K]) = 2.3228803716609 kg/m^3
+#
+
 #     2*10^5 N/m^2/(287 Nm/kg K * 300 K) = 2.3228804 kg/m^3
 # p   = 2*10^5 N/m^2
 # u=v = 0 (medium at rest)
@@ -21,7 +29,7 @@
 # Specify the initial solution
 deffunc: @initsol_rho  = 200000/287/300 ; x,y,z,t
 deffunc: @initsol_vel  = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = 500000 ; x,y,z,t
+deffunc: @initsol_Etot = max(min(2.0,-0.05*x+1.5),1.0)/0.4 ; x,y,z,t
 
 # Specify the boundary conditions
 [bdrcond_weak_primal]
@@ -34,7 +42,7 @@ IBCT
 NCOMP
 4
 PARAMETERS
-66.0  1  'FREESLIP_WEAK'
-67.0  0  'SUBOUTLET_WEAK'  '100000'
-68.0  1  'FREESLIP_WEAK'
-69.0  0  'SUBINLET_WEAK'   '200000/287/300'  '0.0'  '500000'
+66.0  T  'FREESLIP_WEAK'
+67.0  F  'SUBOUTLET_WEAK'  '1.0'
+68.0  T  'FREESLIP_WEAK'
+69.0  F  'SUBINLET_WEAK'   '200000/287/300'  '2.0'  '0.0'
