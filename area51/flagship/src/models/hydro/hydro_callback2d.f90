@@ -1330,15 +1330,15 @@ contains
         veli = ui*a(1) + vi*a(2)
         velj = uj*a(1) + vj*a(2)
 
-        dtol = max(0.0_DP, (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
+        dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
         
-        dtol = max(0.0_DP, (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
+        dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1347,11 +1347,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -1731,15 +1731,15 @@ contains
         ci = SOUNDSPEED3_2D(DdataAtEdge,IDX3,1,idx,0,0,0)
         cj = SOUNDSPEED3_2D(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-        dtol = max(0.0_DP, (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
+        dtol = max(RCONST(0.0), (u_ij-c_ij) - (ui-ci), (uj-cj) - (u_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
         
-        dtol = max(0.0_DP, (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
+        dtol = max(RCONST(0.0), (u_ij+c_ij) - (ui+ci), (uj+cj) - (u_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1748,11 +1748,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -1804,15 +1804,15 @@ contains
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
         ! Entropy-fix by Harten and Hyman
-        dtol = max(0.0_DP, (v_ij-c_ij) - (vi-ci), (vj-cj) - (v_ij-c_ij) )
+        dtol = max(RCONST(0.0), (v_ij-c_ij) - (vi-ci), (vj-cj) - (v_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
         
-        dtol = max(0.0_DP, (v_ij+c_ij) - (vi+ci), (vj+cj) - (v_ij+c_ij) )
+        dtol = max(RCONST(0.0), (v_ij+c_ij) - (vi+ci), (vj+cj) - (v_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -1821,11 +1821,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -2154,8 +2154,10 @@ contains
       Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
@@ -2463,8 +2465,10 @@ contains
       Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
 
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation with dimensional splitting based on
@@ -3960,15 +3964,15 @@ contains
         veli = ui*a(1) + vi*a(2)
         velj = uj*a(1) + vj*a(2)
 
-        dtol = max(0.0_DP, (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
+        dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
         
-        dtol = max(0.0_DP, (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
+        dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -3977,11 +3981,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -4399,15 +4403,15 @@ contains
         veli = ui*a(1) + vi*a(2)
         velj = uj*a(1) + vj*a(2)
 
-        dtol = max(0.0_DP, (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
+        dtol = max(RCONST(0.0), (vel_ij-c_ij) - (veli-ci), (velj-cj) - (vel_ij-c_ij) )
         
         if (l1 .lt. dtol)&
-            l1 = 0.5_DP*((l1**2)/dtol + dtol)
+            l1 = RCONST(0.5)*((l1**2)/dtol + dtol)
         
-        dtol = max(0.0_DP, (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
+        dtol = max(RCONST(0.0), (vel_ij+c_ij) - (veli+ci), (velj+cj) - (vel_ij+c_ij) )
 
         if (l3 .lt. dtol)&
-            l3 = 0.5_DP*((l3**2)/dtol + dtol)
+            l3 = RCONST(0.5)*((l3**2)/dtol + dtol)
 
 #elif HYDRO_USE_ENTROPYFIX == HARTEN_ENTROPYFIX
 
@@ -4416,11 +4420,11 @@ contains
 #else
         ! Entropy-fix by Harten
         if (l1 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l1 = 0.5_DP*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l1 = RCONST(0.5)*((l1**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 
         if (l3 .lt. RCONST(HYDRO_HARTEN_ENTROPYFIX))&
-            l3 = 0.5_DP*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
+            l3 = RCONST(0.5)*((l3**2)/RCONST(HYDRO_HARTEN_ENTROPYFIX)&
                + RCONST(HYDRO_HARTEN_ENTROPYFIX))
 #endif
 #else
@@ -4618,8 +4622,10 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
       IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = dscale *&
@@ -4914,8 +4920,10 @@ contains
       !---------------------------------------------------------------------------
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
       aux = dscale *&
@@ -5569,8 +5577,10 @@ contains
       Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute the speed of sound
-      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
-      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*(Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
+      ci = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ei-RCONST(0.5)*(ui*ui+vi*vi)), SYS_EPSREAL_DP))
+      cj = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(HYDRO_GAMMA)*&
+          (Ej-RCONST(0.5)*(uj*uj+vj*vj)), SYS_EPSREAL_DP))
       
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
@@ -8078,7 +8088,7 @@ contains
           
           ! Compute the first Riemann invariant based on the fourth Riemann
           ! invariant and the prescribed boundary values
-          w1 = w4-4.0*cM/((HYDRO_GAMMA)-RCONST(1.0))
+          w1 = w4-RCONST(4.0)*cM/((HYDRO_GAMMA)-RCONST(1.0))
           
           ! Compute the normal velocity based on the first and fourth Riemann
           ! invarient
@@ -8142,7 +8152,7 @@ contains
           
           ! Compute first Riemann invariant based on fourth Riemann invariant,
           ! the computed density and pressure and the prescribed exit pressure
-          w1 = w4-4.0/((HYDRO_GAMMA)-RCONST(1.0))*sqrt((HYDRO_GAMMA)*pM/&
+          w1 = w4-RCONST(4.0)/((HYDRO_GAMMA)-RCONST(1.0))*sqrt((HYDRO_GAMMA)*pM/&
                DENSITY3(DstateI,IDX3,ipoint,iel,0,0,0)*(pI/pM)**(RCONST(1.0)/(HYDRO_GAMMA)))
           
           ! Convert Riemann invariants into conservative state variables
