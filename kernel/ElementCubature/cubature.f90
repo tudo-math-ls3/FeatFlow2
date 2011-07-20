@@ -550,7 +550,7 @@ contains
   else
     bchk = .false.
     if (present(bcheck)) bchk = bcheck
-    if (.not. bcheck) then
+    if (.not. bchk) then
       call output_line('Unknown cubature formula: '//scubname,&
                       OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
       call sys_halt()
