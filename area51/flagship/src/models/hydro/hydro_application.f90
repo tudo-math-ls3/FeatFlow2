@@ -2197,6 +2197,9 @@ contains
 
     call output_separator(OU_SEP_AT)
     call output_lbrk()
+
+    ! Release temporal memory
+    call lsyssc_releaseVector(rvectorScalar)
     
   end subroutine hydro_initSolution
 
