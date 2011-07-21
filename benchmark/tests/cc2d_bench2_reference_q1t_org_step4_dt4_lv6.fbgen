@@ -49,6 +49,11 @@ testinclude = "cc2d_bench1.defaults"
 DISCRETISATION_IELEMENTTYPE = 3
 DISCRETISATION_CWRITEFINALSOLUTION. = 2
 
+# Special smoother
+
+LINEARSOLVER_ISMOOTHERTYPE = 6
+SMOOTHER_DOMEGA = 1.0
+
 # Special settings for this subtest
 #
 # STEP 4
