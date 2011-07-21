@@ -73,3 +73,4 @@ collect_results 2   ./logs/cc2d_bench2_reference_q2_step4_dt4-lv2-DTMIN bdforces
 collect_results 4   ./logs/cc2d_bench2_reference_q2_step4_dt4-lv3-DTMIN bdforces_lv3 pointvalues ./results_cc2d_bench2_reference/bdforces_q2_lv3_dt4 ./results_cc2d_bench2_reference/pointvalues_q2_lv3_dt4
 collect_results 10  ./logs/cc2d_bench2_reference_q2_step4_dt4-lv4-DTMIN bdforces_lv4 pointvalues ./results_cc2d_bench2_reference/bdforces_q2_lv4_dt4 ./results_cc2d_bench2_reference/pointvalues_q2_lv4_dt4
 collect_results 40  ./logs/cc2d_bench2_reference_q2_step4_dt4-lv5-DTMIN bdforces_lv5 pointvalues ./results_cc2d_bench2_reference/bdforces_q2_lv5_dt4 ./results_cc2d_bench2_reference/pointvalues_q2_lv5_dt4
+
