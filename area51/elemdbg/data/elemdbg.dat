@@ -105,10 +105,16 @@ DBETA3 = 4
 # 0 -> no stabilisation
 # 1 -> Streamline-Diffusion (2D only)
 # 2 -> Jump-Stabilisation (2D / 3D only)
+# 3 -> Streamline-Diffusion (kernel implementation, 2D only)
 ISTABIL = 0
 
 # Stabilisation parameter for Streamline-Diffusion (default: 1.0)
 DUPSAM = 1.0
+
+# For Streamline diffusion: Method to determine the local h.
+# =0: sqrt(cell size)
+# =1: raytracing
+CLOCALH = 1
 
 # Stabilisation parameter for Jump-Stabilisation (default: 0.01)
 DGAMMA = 0.01

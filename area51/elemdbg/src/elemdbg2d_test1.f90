@@ -88,12 +88,14 @@ contains
   type(t_ucdexport) :: rexport
   real(DP), dimension(:), pointer :: p_Ddata
   real(DP) :: dnu,dbeta1,dbeta2,dupsam,dgamma
-  integer :: istabil, isolution, ifillin
+  integer :: istabil, isolution, ifillin, clocalh
   type(t_convStreamlineDiffusion) :: rconfigSD
   type(t_jumpStabilisation) :: rconfigEOJ
   type(t_collection) :: rcollect
   integer, dimension(:), allocatable :: p_Iedges, p_Itemp
   integer :: iedge,ibc,nedgecount
+  type(t_vectorBlock) :: rvelocityVector
+  type(t_blockDiscretisation) :: rdiscretisationVel
   
     h_Ipermute = ST_NOHANDLE
 
@@ -144,6 +146,7 @@ contains
     
     ! Fetch stabilisation parameters
     call parlst_getvalue_int(rparam, sConfigSection, 'ISTABIL', istabil, 0)
+    call parlst_getvalue_int(rparam, sConfigSection, 'CLOCALH', clocalh, 0)
     call parlst_getvalue_double(rparam, sConfigSection, 'DUPSAM', dupsam, 1.0_DP)
     call parlst_getvalue_double(rparam, sConfigSection, 'DGAMMA', dgamma, 0.01_DP)
     
@@ -196,6 +199,10 @@ contains
       case(2)
         call output_line('Stabilisation......: Jump-Stabilisation')
         call output_line('DGAMMA.............: ' // trim(sys_sdEP(dgamma,20,12)))
+      case(3)
+        call output_line('Stabilisation......: Streamline-Diffusion (kernel)')
+        call output_line('DUPSAM.............: ' // trim(sys_sdEP(dupsam,20,12)))
+        call output_line('CLOCALH............: ' // trim(sys_si(clocalh,4)))
       case default
         call output_line('Invalid ISTABIL parameter', &
           OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg2d_1')
@@ -479,6 +486,31 @@ contains
           deallocate (p_Iedges,p_Itemp)
 
           rconfigEOJ%dtheta = 1.0_DP 
+          
+        case (3)
+          ! Prepare a velocity field resembling our convection
+          call spdiscr_initBlockDiscr (rdiscretisationVel,2,rtriangulation, rboundary)
+          call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+              rdiscretisationVel%RspatialDiscr(1), .true.)
+          call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
+              rdiscretisationVel%RspatialDiscr(2), .true.)
+          
+          ! Create the velocity vector
+          call lsysbl_createVectorBlock (rdiscretisationVel,rvelocityVector)
+          call lsyssc_clearVector (rvelocityVector%RvectorBlock(1),dbeta1)
+          call lsyssc_clearVector (rvelocityVector%RvectorBlock(2),dbeta2)
+        
+          ! Assemble the convection using the kernel stabilisation
+          rconfigSD%dupsam = dupsam
+          rconfigSD%dnu = dnu
+          rconfigSD%clocalh = clocalh
+          call conv_streamlineDiffusionBlk2d ( &
+              rvelocityVector, rvelocityVector, 1.0_DP, 0.0_DP,&
+              rconfigSD, CONV_MODMATRIX,rmatrix)
+          
+          ! Release all that temporary stuff.
+          call lsysbl_releaseVector (rvelocityVector)
+          call spdiscr_releaseBlockDiscr (rdiscretisationVel)
           
         end select
       
