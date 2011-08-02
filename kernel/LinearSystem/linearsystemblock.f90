@@ -5153,6 +5153,11 @@ contains
       bispresent = .false.
       return
     end if
+    
+    if ((irow .gt. rmatrix%nblocksPerCol) .or. (icolumn .gt. rmatrix%nblocksPerRow)) then
+      bispresent = .false.
+      return
+    end if
 
     bispresent = &
       (rmatrix%RmatrixBlock(irow,icolumn)%cmatrixFormat .ne. LSYSSC_MATRIXUNDEFINED) &

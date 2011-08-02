@@ -3694,27 +3694,31 @@ contains
       call sys_halt()
     end if
 
-    if ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
-        (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      call output_line ("Unsupported matrix format!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
-      call sys_halt()
-    end if
+    if ((rmatrix%nblocksPerRow .ne. 1) .or. (rmatrix%nblocksPerCol .ne. 1)) then
 
-    if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .and. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      call output_line ("Unsupported matrix format!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
-      call sys_halt()
-    end if
+      if ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+          (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+        call output_line ("Unsupported matrix format!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
+        call sys_halt()
+      end if
 
-    if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .and. &
-        (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
-        (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      call output_line ("Unsupported matrix format!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
-      call sys_halt()
+      if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .and. &
+          (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+          (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+        call output_line ("Unsupported matrix format!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
+        call sys_halt()
+      end if
+
+      if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .and. &
+          (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+          (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+        call output_line ("Unsupported matrix format!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"conv_streamlineDiffusionBlk2d")
+        call sys_halt()
+      end if
+      
     end if
 
     ! If Newton must be calculated, make sure A12 and A21 exists and that
@@ -4167,7 +4171,14 @@ contains
     if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
       ! Get matrix arrays
       call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
-      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
+      if (lsysbl_isSubmatrixPresent(rmatrix,2,2)) then
+        call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
+      else
+        ! Take A22=A11. In case there is only one block,
+        ! a later check ensures that A22 is not modified if
+        ! p_Da22 == p_Da11, so that's ok here.
+        p_Da22 => p_Da11
+      end if
 
       if (lsysbl_isSubmatrixPresent(rmatrix,1,2)) then
         call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
