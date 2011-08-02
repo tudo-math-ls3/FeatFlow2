@@ -10515,6 +10515,14 @@ contains
 !</subroutine>
 
     type(t_collection) :: rincorporateCollection
+    logical :: bsimpleAij
+
+    ! If there is only one block, specify the matrix as being 'simple'.
+    ! Otherwise, the matrix is simple if the two diagonal blocks are the same.
+    bsimpleAij = (rmatrix%nblocksPerCol .eq. 1) .and. (rmatrix%nblocksPerRow .eq. 1)
+    if (.not. bsimpleAij) &
+      bsimpleAij = lsyssc_isMatrixContentShared(&
+            rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2))
 
     ! Calculate the operator with conv_streamDiff2Blk2dCalc.
     ! Use the callback routine conv_sdIncorpToMatrix2D to incorporate
@@ -10523,8 +10531,7 @@ contains
     rincorporateCollection%p_rmatrixQuickAccess1 => rmatrix
 
     call conv_streamDiff2Blk2dCalc (rconfig,rmatrix%p_rblockDiscrTrial,&
-        lsyssc_isMatrixContentShared(&
-            rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)),&
+        bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToMatrix2D,rincorporateCollection,&
         ffunctionCoefficient,rcollection)
@@ -10595,6 +10602,7 @@ contains
 !</subroutine>
 
     type(t_collection) :: rincorporateCollection
+    logical :: bsimpleAij
 
     ! Calculate the operator with conv_streamDiff2Blk2dCalc.
     ! Use the callback routine conv_sdIncorpToMatrix2D to incorporate
@@ -10603,9 +10611,15 @@ contains
     rincorporateCollection%p_rvectorQuickAccess1 => rx
     rincorporateCollection%p_rvectorQuickAccess2 => rd
 
+    ! If there is only one block, specify the matrix as being 'simple'.
+    ! Otherwise, the matrix is simple if the two diagonal blocks are the same.
+    bsimpleAij = (rmatrix%nblocksPerCol .eq. 1) .and. (rmatrix%nblocksPerRow .eq. 1)
+    if (.not. bsimpleAij) &
+      bsimpleAij = lsyssc_isMatrixContentShared(&
+            rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2))
+    
     call conv_streamDiff2Blk2dCalc (rconfig,rmatrix%p_rblockDiscrTrial,&
-        lsyssc_isMatrixContentShared(&
-            rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)),&
+        bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToDefect2D,rincorporateCollection,&
         ffunctionCoefficient,rcollection)
