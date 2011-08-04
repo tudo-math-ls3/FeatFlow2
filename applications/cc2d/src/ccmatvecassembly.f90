@@ -1104,7 +1104,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = 1.0_DP
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
             
             ! Prepare the collection. The "next" collection points to the user defined 
             ! collection.
@@ -1128,8 +1128,8 @@ contains
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP
-            rstreamlineDiffusion2%dbetaT = 0.5_DP
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
           end if
           
           ! Initialise the user defined collection for the assembly.
@@ -1336,7 +1336,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = 1.0_DP
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
 
             ! Prepare the collection. The "next" collection points to the user defined 
             ! collection.
@@ -1357,8 +1357,8 @@ contains
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP
-            rstreamlineDiffusion2%dbetaT = 0.5_DP
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
           end if
 
           ! Initialise the user defined collection for the assembly.
@@ -1989,7 +1989,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = 1.0_DP
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
 
             ! Prepare the collection. The "next" collection points to the user defined 
             ! collection.
@@ -2016,8 +2016,8 @@ contains
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP
-            rstreamlineDiffusion2%dbetaT = 0.5_DP
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
           end if
 
           ! Initialise the user defined collection for the assembly.
@@ -2165,7 +2165,7 @@ contains
             ! Assemble at least the Stokes matrix.
             ! For a more complicated formulation, dbeta/dbetaT
             ! may be changed later.
-            rstreamlineDiffusion2%dbeta = 1.0_DP
+            rstreamlineDiffusion2%dbeta = rnonlinearCCMatrix%dtheta
 
             ! Prepare the collection. The "next" collection points to the user defined 
             ! collection.
@@ -2189,8 +2189,8 @@ contains
           
           ! Assemble the deformation tensor?
           if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
-            rstreamlineDiffusion2%dbeta = 0.5_DP
-            rstreamlineDiffusion2%dbetaT = 0.5_DP
+            rstreamlineDiffusion2%dbeta = 0.5_DP * rnonlinearCCMatrix%dtheta
+            rstreamlineDiffusion2%dbetaT = 0.5_DP * rnonlinearCCMatrix%dtheta
           end if
 
           if ((rnonlinearCCMatrix%dnewton .eq. 0.0_DP) .and. &
