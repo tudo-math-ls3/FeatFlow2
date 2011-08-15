@@ -87,7 +87,7 @@
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density
 !#
-!# 22. hydro_trafoNodalDensity1d_sim
+!# 22.) hydro_trafoNodalDensity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         values to nodal density values
 !#
@@ -99,7 +99,7 @@
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the energy
 !#
-!# 25. hydro_trafoNodalEnergy1d_sim
+!# 25.) hydro_trafoNodalEnergy1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         values to nodal energy values
 !#
@@ -359,7 +359,7 @@ contains
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
           (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
            IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi )
-      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -DfluxesAtEdge(:,1,idx)
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       ! Compute flux difference for x-direction
       F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
@@ -371,7 +371,7 @@ contains
                  
       ! Assemble fluxes
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale * IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij
-      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale * IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij      
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale * IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij
 #endif
     end do
 
@@ -451,7 +451,7 @@ contains
       
       ! Compute flux difference for x-direction
       F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
-                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
                 INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
@@ -555,7 +555,7 @@ contains
 #else
       ! Compute flux difference for x-direction
       F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
-                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
                 INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
@@ -565,7 +565,7 @@ contains
       !-------------------------------------------------------------------------
       ! Evaluate the scalar dissipation proportional to the spectral
       ! radius (largest eigenvalue) of the Roe-matrix
-      ! -------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
       a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
@@ -2854,7 +2854,7 @@ contains
     ! local variables
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj
-    real(DP) :: H_ij,anorm,aux,c_ij,d_ij,q_ij,u_ij,vel_ij
+    real(DP) :: H_ij,aux,c_ij,d_ij,q_ij,u_ij,vel_ij
     integer :: idx
 
 
@@ -2863,7 +2863,6 @@ contains
       ! Compute skew-symmetric coefficient and its norm
       a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
                        IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
-      anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       ! Compute velocities
       ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
@@ -2894,7 +2893,7 @@ contains
       c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
       
       ! Compute scalar dissipation
-      d_ij = abs(vel_ij) + anorm*c_ij
+      d_ij = abs(vel_ij) + abs(a(1))*c_ij
 
       ! Compute conservative fluxes
       IDX2(DfluxesAtEdge,:,idx,0,0) = dscale*&
@@ -3130,7 +3129,6 @@ contains
       IDX2(DfluxesAtEdge,:,idx,0,0) = dscale*&
           d_ij*(IDX3(DdataAtEdge,:,1,idx,0,0,0)-&
                 IDX3(DdataAtEdge,:,2,idx,0,0,0))
-
     end do
 
   end subroutine hydro_calcFluxFCTRusDiss1d_sim
@@ -3656,12 +3654,12 @@ contains
       ! Transformed velocity fluxes in x-direction
       IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
           (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
-           ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
-           DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+          ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
          -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
-           uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
-           DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+          uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
     end do
     
   end subroutine hydro_trafoFluxVelocity1d_sim
@@ -4575,21 +4573,21 @@ contains
 
           ! Guess pressure from the Two-Rarefaction Riemann solver
           vm    = RCONST(0.5)*(vn+vn_b)
-          ptl   = RCONST(1.0)+((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP*(vn-vm)/c
-          ptr   = RCONST(1.0)+((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP*(vm-vn_b)/c
-          pstar = RCONST(0.5)*(p*ptl + p*ptr)**(2.0_DP*(HYDRO_GAMMA)/((HYDRO_GAMMA)-RCONST(1.0)))
+          ptl   = RCONST(1.0)+((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)*(vn-vm)/c
+          ptr   = RCONST(1.0)+((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)*(vm-vn_b)/c
+          pstar = RCONST(0.5)*(p*ptl + p*ptr)**(RCONST(2.0)*(HYDRO_GAMMA)/((HYDRO_GAMMA)-RCONST(1.0)))
         else
 
           ! Guess pressure from the Two-Shock Riemann solver
           ! with PVRS as estimated pressure value
-          ge    = sqrt((2.0_DP/((HYDRO_GAMMA)+RCONST(1.0))/rho)/&
+          ge    = sqrt((RCONST(2.0)/((HYDRO_GAMMA)+RCONST(1.0))/rho)/&
               (((HYDRO_GAMMA)-RCONST(1.0))/((HYDRO_GAMMA)+RCONST(1.0))*p+ppv))
           pstar = p - RCONST(0.5)*(vn_b-vn)/ge
         end if
       end if
 
       ! Initialize solution difference and pressure
-      vdiff = (vn_b-vn)/2.0_DP
+      vdiff = (vn_b-vn)/RCONST(2.0)
       pold  = pstar
 
       newton: do ite = 1, 100
@@ -4600,13 +4598,13 @@ contains
           ! Rarefaction wave
           prat = pold/p
 
-          f  = 2.0_DP/((HYDRO_GAMMA)-RCONST(1.0))*c*&
-              (prat**(((HYDRO_GAMMA)-RCONST(1.0))/(2.0_DP*(HYDRO_GAMMA)))-RCONST(1.0))
-          fd = (RCONST(1.0)/(rho*c))*prat**(-((HYDRO_GAMMA)+RCONST(1.0))/(2.0_DP*(HYDRO_GAMMA)))
+          f  = RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0))*c*&
+              (prat**(((HYDRO_GAMMA)-RCONST(1.0))/(RCONST(2.0)*(HYDRO_GAMMA)))-RCONST(1.0))
+          fd = (RCONST(1.0)/(rho*c))*prat**(-((HYDRO_GAMMA)+RCONST(1.0))/(RCONST(2.0)*(HYDRO_GAMMA)))
         else
 
           ! Shock wave
-          auxA = 2.0_DP/((HYDRO_GAMMA)+RCONST(1.0))/rho
+          auxA = RCONST(2.0)/((HYDRO_GAMMA)+RCONST(1.0))/rho
           auxB = ((HYDRO_GAMMA)-RCONST(1.0))/((HYDRO_GAMMA)+RCONST(1.0))*p
           qrt  = sqrt(auxA/(auxB + pold))
 
@@ -4620,8 +4618,8 @@ contains
           cycle newton
         end if
 
-        aux = 2.0_DP*abs((pstar-pold)/(pstar+pold))
-        if (aux .le. 1.0E-6)  exit newton
+        aux = RCONST(2.0)*abs((pstar-pold)/(pstar+pold))
+        if (aux .le. RCONST(1.0E-6))  exit newton
 
         pold = pstar
 
@@ -4717,8 +4715,8 @@ contains
       vn  = DbdrNormal(1)*DbdrValue(2)
 
       ! Compute Riemann invariants based on the free stream values
-      Winf(1) = vn-2.0_DP*c/((HYDRO_GAMMA)-RCONST(1.0))
-      Winf(2) = vn+2.0_DP*c/((HYDRO_GAMMA)-RCONST(1.0))
+      Winf(1) = vn-RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
+      Winf(2) = vn+RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
       Winf(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Compute primitive variables
@@ -4731,8 +4729,8 @@ contains
       vn  = DbdrNormal(1)*v1
 
       ! Compute Riemann invariants based on the solution values
-      Wu(1) = vn-2.0_DP*c/((HYDRO_GAMMA)-RCONST(1.0))
-      Wu(2) = vn+2.0_DP*c/((HYDRO_GAMMA)-RCONST(1.0))
+      Wu(1) = vn-RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
+      Wu(2) = vn+RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
       Wu(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Adopt free stream/computed values depending on the sign of the eigenvalue
@@ -4769,8 +4767,8 @@ contains
       p   = DbdrValue(2)
 
       ! Compute Riemann invariants
-      W(1) = vn-2.0_DP*c/((HYDRO_GAMMA)-RCONST(1.0))
-      W(2) = vn+2.0_DP*c/((HYDRO_GAMMA)-RCONST(1.0))
+      W(1) = vn-RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
+      W(2) = vn+RCONST(2.0)*c/((HYDRO_GAMMA)-RCONST(1.0))
       W(3) = p/(rho**(HYDRO_GAMMA))
 
       ! Transform back into conservative variables
@@ -5025,9 +5023,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(1) = dvnM-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
             else
-              DstateM(1) = dvnI-(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(1) = dvnI-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL_DP) then
@@ -5037,9 +5035,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(3) = dvnM+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(3) = dvnM+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
             else
-              DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
             end if
             
             ! Convert Riemann invariants into conservative state variables
@@ -5217,11 +5215,11 @@ contains
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux1((ipoint-1)*NVAR1D+1,iel), SYS_EPSREAL_DP))
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w3 = dvnI+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            w3 = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
 
             ! Compute the first Riemann invariant based on the third Riemann
             ! invariant and the prescribed boundary values
-            w1 = w3-2*(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+            w1 = w3-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
@@ -5278,11 +5276,11 @@ contains
             
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux1((ipoint-1)*NVAR1D+1,iel)**(HYDRO_GAMMA))
-            DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
             
             ! Compute first Riemann invariant based on third Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(3)-2*(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
+            DstateM(1) = DstateM(3)-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
                 (HYDRO_GAMMA)*pM/Daux1((ipoint-1)*NVAR1D+1,iel)*(pI/pM)**(RCONST(1.0)/(HYDRO_GAMMA))))
 
             ! Convert Riemann invariants into conservative state variables
@@ -5387,9 +5385,9 @@ contains
             ! Select free stream or computed Riemann invariant depending
             ! on the sign of the corresponding eigenvalue
             if (dvnI .lt. cI) then
-              DstateM(1) = dvnM-(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(1) = dvnM-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
             else
-              DstateM(1) = dvnI-(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(1) = dvnI-(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
             end if
 
             if (dvnI .lt. SYS_EPSREAL_DP) then
@@ -5399,9 +5397,9 @@ contains
             end if
 
             if (dvnI .lt. -cI) then
-              DstateM(3) = dvnM+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+              DstateM(3) = dvnM+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
             else
-              DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+              DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
             end if
             
             ! Convert Riemann invariants into conservative state variables
@@ -5579,11 +5577,11 @@ contains
             cI = sqrt(max((HYDRO_GAMMA)*pI/Daux2(ipoint,iel,1), SYS_EPSREAL_DP))
 
             ! Compute fourth Riemann invariant based on the internal state vector
-            w3 = dvnI+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            w3 = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
 
             ! Compute the first Riemann invariant based on the third Riemann
             ! invariant and the prescribed boundary values
-            w1 = w3-2*(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cM
+            w1 = w3-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cM
 
             ! Setup the state vector based on Rimann invariants
             DstateM(1) = rM
@@ -5639,11 +5637,11 @@ contains
             
             ! Compute three Riemann invariants based on internal state vector
             DstateM(2) = pI/(Daux2(ipoint,iel,1)**(HYDRO_GAMMA))
-            DstateM(3) = dvnI+(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*cI
+            DstateM(3) = dvnI+(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*cI
             
             ! Compute first Riemann invariant based on third Riemann invariant,
             ! the computed density and pressure and the prescribed exit pressure
-            DstateM(1) = DstateM(3)-2*(2.0_DP/((HYDRO_GAMMA)-RCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
+            DstateM(1) = DstateM(3)-2*(RCONST(2.0)/((HYDRO_GAMMA)-RCONST(1.0)))*sqrt(max(SYS_EPSREAL_DP,&
                 (HYDRO_GAMMA)*pM/Daux2(ipoint,iel,1)*(pI/pM)**(RCONST(1.0)/(HYDRO_GAMMA))))
 
             ! Convert Riemann invariants into conservative state variables

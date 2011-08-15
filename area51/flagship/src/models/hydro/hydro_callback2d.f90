@@ -855,7 +855,6 @@ contains
   pure subroutine hydro_calcFluxScDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
       IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
     
-
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
     ! 2D using scalar artificial viscosities proportional to the
@@ -973,6 +972,7 @@ contains
       Fy_ij(4) = INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,vi,pi)-&
                  INVISCIDFLUX4_YDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,vj,pj)
 #endif
+
       !-------------------------------------------------------------------------
       ! Evaluate the scalar dissipation proportional to the spectral
       ! radius (largest eigenvalue) of the Roe-matrix

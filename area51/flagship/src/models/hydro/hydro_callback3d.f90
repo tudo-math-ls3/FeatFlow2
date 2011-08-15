@@ -1286,15 +1286,15 @@ contains
                IDX3(DdataAtEdge,:,1,idx,0,0,0)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP/c2_ij*(q_ij*Diff(1)&
-                                                        -u_ij*Diff(2)&
-                                                        -v_ij*Diff(3)&
-                                                        -w_ij*Diff(4)&
-                                                             +Diff(5))
+        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*Diff(1)&
+                                                             -u_ij*Diff(2)&
+                                                             -v_ij*Diff(3)&
+                                                             -w_ij*Diff(4)&
+                                                                  +Diff(5))
         aux2 = (vel_ij*Diff(1)&
                  -a(1)*Diff(2)&
                  -a(2)*Diff(3)&
-                 -a(3)*Diff(4))/2.0_DP/c_ij
+                 -a(3)*Diff(4))/RCONST(2.0)/c_ij
 
         ! Get the dimension with largest coefficient
         select case(maxloc(a,1))
@@ -1688,12 +1688,12 @@ contains
                 IDX3(DdataAtEdge,:,1,idx,0,0,0)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP/c2_ij*(q_ij*DiffX(1)&
-                                                        -u_ij*DiffX(2)&
-                                                        -v_ij*DiffX(3)&
-                                                        -w_ij*DiffX(4)&
-                                                             +DiffX(5))
-        aux2 = (u_ij*DiffX(1)-DiffX(2))/2.0_DP/c_ij
+        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*DiffX(1)&
+                                                             -u_ij*DiffX(2)&
+                                                             -v_ij*DiffX(3)&
+                                                             -w_ij*DiffX(4)&
+                                                                  +DiffX(5))
+        aux2 = (u_ij*DiffX(1)-DiffX(2))/RCONST(2.0)/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
@@ -1764,12 +1764,12 @@ contains
                 IDX3(DdataAtEdge,:,1,idx,0,0,0)
 
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP/c2_ij*(q_ij*DiffY(1)&
-                                                        -u_ij*DiffY(2)&
-                                                        -v_ij*DiffY(3)&
-                                                        -w_ij*DiffY(4)&
-                                                             +DiffY(5))
-        aux2 = (v_ij*DiffY(1)-DiffY(3))/2.0_DP/c_ij
+        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*DiffY(1)&
+                                                             -u_ij*DiffY(2)&
+                                                             -v_ij*DiffY(3)&
+                                                             -w_ij*DiffY(4)&
+                                                                  +DiffY(5))
+        aux2 = (v_ij*DiffY(1)-DiffY(3))/RCONST(2.0)/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
@@ -1840,12 +1840,12 @@ contains
                 IDX3(DdataAtEdge,:,1,idx,0,0,0)
 
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP/c2_ij*(q_ij*DiffZ(1)&
-                                                        -u_ij*DiffZ(2)&
-                                                        -v_ij*DiffZ(3)&
-                                                        -w_ij*DiffZ(4)&
-                                                             +DiffZ(5))
-        aux2 = (w_ij*DiffZ(1)-DiffZ(3))/2.0_DP/c_ij
+        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*DiffZ(1)&
+                                                             -u_ij*DiffZ(2)&
+                                                             -v_ij*DiffZ(3)&
+                                                             -w_ij*DiffZ(4)&
+                                                                  +DiffZ(5))
+        aux2 = (w_ij*DiffZ(1)-DiffZ(3))/RCONST(2.0)/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
@@ -6428,15 +6428,15 @@ contains
                IDX3(DdataAtEdge,:,2,idx,0,0,0)
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/2.0_DP/c2_ij*(q_ij*Diff(1)&
-                                                       -u_ij*Diff(2)&
-                                                       -v_ij*Diff(3)&
-                                                       -w_ij*Diff(4)&
-                                                            +Diff(5))
+        aux1 = ((HYDRO_GAMMA)-RCONST(1.0))/RCONST(2.0)/c2_ij*(q_ij*Diff(1)&
+                                                             -u_ij*Diff(2)&
+                                                             -v_ij*Diff(3)&
+                                                             -w_ij*Diff(4)&
+                                                                  +Diff(5))
         aux2 = (vel_ij*Diff(1)&
                  -a(1)*Diff(2)&
                  -a(2)*Diff(3)&
-                 -a(3)*Diff(4))/2.0_DP/c_ij
+                 -a(3)*Diff(4))/RCONST(2.0)/c_ij
 
         ! Get the dimension with largest coefficient
         select case(maxloc(a,1))

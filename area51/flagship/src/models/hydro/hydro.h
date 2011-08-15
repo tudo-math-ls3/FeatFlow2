@@ -34,15 +34,19 @@
 #if 0
 !##############################################################################
 ! Position of variables in vector of conservative variables
+!
+! By setting HYDRO_VARPOS_EXTERNAL it is possible to define the position of
+! the conservative variables externally, e.g., in a larger solution vector.
 !##############################################################################
 #endif
 
+#ifndef HYDRO_VARPOS_EXTERNAL
 #if HYDRO_NDIM == 1
 
 #define _HYDRO_DENSITY_     1
 #define _HYDRO_XMOMENTUM_   2
-#undef _HYDRO_YMOMENTUM_
-#undef _HYDRO_ZMOMENTUM_
+#undef  _HYDRO_YMOMENTUM_
+#undef  _HYDRO_ZMOMENTUM_
 #define _HYDRO_TOTALENERGY_ 3
 
 #elif HYDRO_NDIM == 2
@@ -50,7 +54,7 @@
 #define _HYDRO_DENSITY_     1
 #define _HYDRO_XMOMENTUM_   2
 #define _HYDRO_YMOMENTUM_   3
-#undef _HYDRO_ZMOMENTUM_
+#undef  _HYDRO_ZMOMENTUM_
 #define _HYDRO_TOTALENERGY_ 4
 
 #elif HYDRO_NDIM == 3 || !defined(HYDRO_NDIM)
@@ -66,7 +70,7 @@
 #error "Invalid spatial dimension specified!"
 
 #endif
-
+#endif
 
 #if 0
 !##############################################################################
@@ -74,21 +78,21 @@
 !##############################################################################
 #endif
 
-#define DENSITY1(U,IDX)              IDX(U,_HYDRO_DENSITY_)
-#define DENSITY2(U,IDX,i,n1,n2)      IDX(U,_HYDRO_DENSITY_,i,n1,n2)
-#define DENSITY3(U,IDX,i,j,n1,n2,n3) IDX(U,_HYDRO_DENSITY_,i,j,n1,n2,n3)
+#define DENSITY1(U,IDX)                  IDX(U,_HYDRO_DENSITY_)
+#define DENSITY2(U,IDX,i,n1,n2)          IDX(U,_HYDRO_DENSITY_,i,n1,n2)
+#define DENSITY3(U,IDX,i,j,n1,n2,n3)     IDX(U,_HYDRO_DENSITY_,i,j,n1,n2,n3)
 
-#define XMOMENTUM1(U,IDX)              IDX(U,_HYDRO_XMOMENTUM_)
-#define XMOMENTUM2(U,IDX,i,n1,n2)      IDX(U,_HYDRO_XMOMENTUM_,i,n1,n2)
-#define XMOMENTUM3(U,IDX,i,j,n1,n2,n3) IDX(U,_HYDRO_XMOMENTUM_,i,j,n1,n2,n3)
+#define XMOMENTUM1(U,IDX)                IDX(U,_HYDRO_XMOMENTUM_)
+#define XMOMENTUM2(U,IDX,i,n1,n2)        IDX(U,_HYDRO_XMOMENTUM_,i,n1,n2)
+#define XMOMENTUM3(U,IDX,i,j,n1,n2,n3)   IDX(U,_HYDRO_XMOMENTUM_,i,j,n1,n2,n3)
 
-#define YMOMENTUM1(U,IDX)              IDX(U,_HYDRO_YMOMENTUM_)
-#define YMOMENTUM2(U,IDX,i,n1,n2)      IDX(U,_HYDRO_YMOMENTUM_,i,n1,n2)
-#define YMOMENTUM3(U,IDX,i,j,n1,n2,n3) IDX(U,_HYDRO_YMOMENTUM_,i,j,n1,n2,n3)
+#define YMOMENTUM1(U,IDX)                IDX(U,_HYDRO_YMOMENTUM_)
+#define YMOMENTUM2(U,IDX,i,n1,n2)        IDX(U,_HYDRO_YMOMENTUM_,i,n1,n2)
+#define YMOMENTUM3(U,IDX,i,j,n1,n2,n3)   IDX(U,_HYDRO_YMOMENTUM_,i,j,n1,n2,n3)
 
-#define ZMOMENTUM1(U,IDX)              IDX(U,_HYDRO_ZMOMENTUM_)
-#define ZMOMENTUM2(U,IDX,i,n1,n2)      IDX(U,_HYDRO_ZMOMENTUM_,i,n1,n2)
-#define ZMOMENTUM3(U,IDX,i,j,n1,n2,n3) IDX(U,_HYDRO_ZMOMENTUM_,i,j,n1,n2,n3)
+#define ZMOMENTUM1(U,IDX)                IDX(U,_HYDRO_ZMOMENTUM_)
+#define ZMOMENTUM2(U,IDX,i,n1,n2)        IDX(U,_HYDRO_ZMOMENTUM_,i,n1,n2)
+#define ZMOMENTUM3(U,IDX,i,j,n1,n2,n3)   IDX(U,_HYDRO_ZMOMENTUM_,i,j,n1,n2,n3)
 
 #define TOTALENERGY1(U,IDX)              IDX(U,_HYDRO_TOTALENERGY_)
 #define TOTALENERGY2(U,IDX,i,n1,n2)      IDX(U,_HYDRO_TOTALENERGY_,i,n1,n2)

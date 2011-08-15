@@ -19,15 +19,7 @@
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in interleave or block format
 !#
-!# 4.) hydro_getVarInterleaveFormat
-!#     -> Extracts a single variable from the scalar vector of
-!#        conservative variables stored in interleave format
-!#
-!# 5.) hydro_getVarBlockFormat
-!#     -> Extracts a single variable from the vector of conservative
-!#        variables stored in block format
-!#
-!# 6.) hydro_setVariables
+!# 4.) hydro_setVariables
 !#     -> Sets the conservative variables from an UCD import
 !#
 !# </purpose>
@@ -36,15 +28,14 @@
 module hydro_basic
 
 #include "hydro.h"
-#ifdef _HYDRO_TOTALENERGY_
-#undef _HYDRO_TOTALENERGY_
-#endif
-#define _HYDRO_TOTALENERGY_ nvar
 
   use basicgeometry
   use boundarycondaux
   use fparser
   use fsystem
+  use hydro_basic1d
+  use hydro_basic2d
+  use hydro_basic3d
   use genoutput
   use linearsystemblock
   use linearsystemscalar
@@ -59,8 +50,6 @@ module hydro_basic
   public :: hydro_getNVAR
   public :: hydro_getNVARtransformed
   public :: hydro_getVariable
-  public :: hydro_getVarInterleaveFormat
-  public :: hydro_getVarBlockFormat
   public :: hydro_setVariables
 
 !<constants>
@@ -432,8 +421,17 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call hydro_getVarInterleaveFormat(neq, nvar, cvariable,&
-          p_Ddata, p_Dvalue)
+      select case(rvectorBlock%p_rblockDiscr%ndimension)
+      case(NDIM1D)
+        call hydro_getVarInterleaveFormat1d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM2D)
+        call hydro_getVarInterleaveFormat2d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM3D)
+        call hydro_getVarInterleaveFormat3d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      end select
 
     else
 
@@ -453,9 +451,18 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call hydro_getVarBlockFormat(neq, nvar, cvariable,&
-          p_Ddata, p_Dvalue)
-
+      select case(rvectorBlock%p_rblockDiscr%ndimension)
+      case(NDIM1D)
+        call hydro_getVarBlockFormat1d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM2D)
+        call hydro_getVarBlockFormat2d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM3D)
+        call hydro_getVarBlockFormat3d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      end select
+      
     end if
 
     ! Attach spatial discretisation from first subvector
@@ -463,378 +470,6 @@ contains
         rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
 
   end subroutine hydro_getVariable
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
-
-!<description>
-    ! This subroutine extracs a single variable from the vector of
-    ! conservative variabels which is stored in interleave format
-!</description>
-
-!<input>
-    ! Number of equations
-    integer, intent(in) :: neq
-
-    ! Number of variables
-    integer, intent(in) :: nvar
-
-    ! Identifier for the variable
-    character(LEN=*), intent(in) :: cvariable
-
-    ! Vector of conservative variables
-    real(DP), dimension(nvar,neq), intent(in) :: Ddata
-!</input>
-
-!<output>
-    ! Extracted single variable
-    real(DP), dimension(:), intent(out) :: Dvalue
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: ieq
-
-
-    if (trim(cvariable) .eq. 'density') then
-      do ieq = 1, neq
-        Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_magnitude') then
-      select case(nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2_1D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2_2D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2_3D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'velocity_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'total_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-        
-    elseif (trim(cvariable) .eq. 'internal_energy') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2_1D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2_2D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2_3D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'kinetic_energy') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2_1D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2_2D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2_3D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'pressure') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2_1D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2_2D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2_3D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'machnumber') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2_1D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2_2D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2_3D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'speedofsound') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2_1D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2_2D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2_3D(Ddata,IDX2_FORWARD,ieq,0,0)
-        end do
-      end select
-
-    else
-      
-      call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_getVarInterleaveFormat')
-      call sys_halt()
-
-    end if
-
-  end subroutine hydro_getVarInterleaveFormat
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
-
-!<description>
-    ! This subroutine extracs a single variable from the vector of
-    ! conservative variabels which is stored in block format
-!</description>
-
-!<input>
-    ! Number of equations
-    integer, intent(in) :: neq
-
-    ! Number of variables
-    integer, intent(in) :: nvar
-
-    ! Identifier for the variable
-    character(LEN=*), intent(in) :: cvariable
-
-    ! Vector of conservative variables
-    real(DP), dimension(neq,nvar), intent(in) :: Ddata
-!</input>
-
-!<output>
-    ! Extracted single variable
-    real(DP), dimension(:), intent(out) :: Dvalue
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: ieq
-
-
-    if (trim(cvariable) .eq. 'density') then
-      do ieq = 1, neq
-        Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_magnitude') then
-      select case(nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2_1D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2_2D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = VELMAGNITUDE2_3D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'velocity_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'total_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-        
-    elseif (trim(cvariable) .eq. 'internal_energy') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2_1D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2_2D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNALENERGY2_3D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'kinetic_energy') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2_1D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2_2D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = KINETICENERGY2_3D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'pressure') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2_1D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2_2D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE2_3D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'machnumber') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2_1D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2_2D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = MACHNUMBER2_3D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      end select
-
-    elseif (trim(cvariable) .eq. 'speedofsound') then
-      select case (nvar)
-      case (NVAR1D)
-        do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2_1D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR2D)
-        do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2_2D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      case (NVAR3D)
-        do ieq = 1, neq
-          Dvalue(ieq) = SOUNDSPEED2_3D(Ddata,IDX2_REVERSE,ieq,0,0)
-        end do
-      end select
-
-    else
-   
-      call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_getVarBlockformat')
-      call sys_halt()
-      
-    end if
-
-  end subroutine hydro_getVarBlockformat
 
   !*****************************************************************************
 

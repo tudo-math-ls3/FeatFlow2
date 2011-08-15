@@ -112,6 +112,9 @@ module hydro_application
   use derivatives
   use element
   use hydro_basic
+  use hydro_basic1d
+  use hydro_basic2d
+  use hydro_basic3d
   use hydro_callback
   use hydro_callback1d
   use hydro_callback2d
@@ -2325,25 +2328,25 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1)
               
             case (NDIM2D)
-              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -2354,24 +2357,24 @@ contains
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
               
             case (NDIM2D)
-              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call hydro_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
-              call hydro_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
                   'momentum_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -2380,9 +2383,19 @@ contains
           else
 
             ! Standard treatment for scalar quantity
-            call hydro_getVarInterleaveFormat(rvector1%NEQ,  nvar,&
-                cvariable, p_Dsolution, p_Ddata1)
-            call ucd_addVariableVertexBased (rexport, cvariable,&
+            select case(ndim)
+            case (NDIM1D)
+              call hydro_getVarInterleaveFormat1d(rvector1%NEQ,  nvar,&
+                  cvariable, p_Dsolution, p_Ddata1)
+            case (NDIM2D)
+              call hydro_getVarInterleaveFormat2d(rvector1%NEQ,  nvar,&
+                  cvariable, p_Dsolution, p_Ddata1)
+            case (NDIM3D)
+              call hydro_getVarInterleaveFormat3d(rvector1%NEQ,  nvar,&
+                  cvariable, p_Dsolution, p_Ddata1)
+            end select
+            
+            call ucd_addVariableVertexBased(rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
             
           end if
@@ -2402,25 +2415,25 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1)
               
             case (NDIM2D)
-              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
-              call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -2431,24 +2444,24 @@ contains
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+              call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
 
             case (NDIM2D)
-              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+              call hydro_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
-              call hydro_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
                   'momentum_x', p_Dsolution, p_Ddata1)
-              call hydro_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
                   'momentum_y', p_Dsolution, p_Ddata2)
-              call hydro_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+              call hydro_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
                   'momentum_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
@@ -2457,9 +2470,18 @@ contains
           else
             
             ! Standard treatment for scalar quantity
-            call hydro_getVarBlockFormat(rvector1%NEQ, nvar,&
-                cvariable, p_Dsolution, p_Ddata1)
-            call ucd_addVariableVertexBased (rexport, cvariable,&
+            select case(ndim)
+            case (NDIM1D)
+              call hydro_getVarBlockFormat1d(rvector1%NEQ, nvar,&
+                  cvariable, p_Dsolution, p_Ddata1)
+            case (NDIM2D)
+              call hydro_getVarBlockFormat2d(rvector1%NEQ, nvar,&
+                  cvariable, p_Dsolution, p_Ddata1)
+            case (NDIM3D)
+              call hydro_getVarBlockFormat3d(rvector1%NEQ, nvar,&
+                  cvariable, p_Dsolution, p_Ddata1)
+            end select
+            call ucd_addVariableVertexBased(rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
             
           end if
