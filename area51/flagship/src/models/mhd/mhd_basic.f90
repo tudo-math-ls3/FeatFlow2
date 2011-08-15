@@ -19,15 +19,7 @@
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in interleave or block format
 !#
-!# 4.) mhd_getVarInterleaveFormat
-!#     -> Extracts a single variable from the scalar vector of
-!#        conservative variables stored in interleave format
-!#
-!# 5.) mhd_getVarBlockFormat
-!#     -> Extracts a single variable from the vector of conservative
-!#        variables stored in block format
-!#
-!# 6.) mhd_setVariables
+!# 4.) mhd_setVariables
 !#     -> Sets the conservative variables from an UCD import
 !#
 !# </purpose>
@@ -44,6 +36,9 @@ module mhd_basic
   use genoutput
   use linearsystemblock
   use linearsystemscalar
+  use mhd_basic1d
+  use mhd_basic2d
+  use mhd_basic3d
   use problem
   use statistics
   use triangulation
@@ -55,8 +50,6 @@ module mhd_basic
   public :: mhd_getNVAR
   public :: mhd_getNVARtransformed
   public :: mhd_getVariable
-  public :: mhd_getVarInterleaveFormat
-  public :: mhd_getVarBlockFormat
   public :: mhd_setVariables
 
 !<constants>
@@ -162,20 +155,6 @@ module mhd_basic
 
   ! Perturbation parameter is chosen as SQRT(machine precision)
   integer, parameter, public :: PERTURB_SQRTEPS = 2
-
-!</constantblock>
-
-
-!<constantblock description="Global constants for number of variables">
-
-  ! number of solution components in 1D
-  integer, parameter, public :: NVAR1D = 7
-
-  ! number of solution components in 2D
-  integer, parameter, public :: NVAR2D = 8
-
-  ! number of solution components in 3D
-  integer, parameter, public :: NVAR3D = 8
 
 !</constantblock>
 
@@ -329,9 +308,18 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call mhd_getVarInterleaveFormat(neq, nvar, cvariable,&
-          p_Ddata, p_Dvalue)
-
+      select case(rvectorBlock%p_rblockDiscr%ndimension)
+      case(NDIM1D)
+        call mhd_getVarInterleaveFormat1d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM2D)
+        call mhd_getVarInterleaveFormat2d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM3D)
+        call mhd_getVarInterleaveFormat3d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      end select
+      
     else
 
       ! Set dimensions
@@ -350,9 +338,18 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call mhd_getVarBlockFormat(neq, nvar, cvariable,&
-          p_Ddata, p_Dvalue)
-
+      select case(rvectorBlock%p_rblockDiscr%ndimension)
+      case(NDIM1D)
+        call mhd_getVarBlockFormat1d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM2D)
+        call mhd_getVarBlockFormat2d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      case(NDIM3D)
+        call mhd_getVarBlockFormat3d(neq, nvar, cvariable,&
+            p_Ddata, p_Dvalue)
+      end select
+      
     end if
 
     ! Attach spatial discretisation from first subvector
@@ -360,406 +357,6 @@ contains
         rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
 
   end subroutine mhd_getVariable
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine mhd_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
-
-!<description>
-    ! This subroutine extracs a single variable from the vector of
-    ! conservative variabels which is stored in interleave format
-!</description>
-
-!<input>
-    ! Number of equations
-    integer, intent(in) :: neq
-
-    ! Number of variables
-    integer, intent(in) :: nvar
-
-    ! Identifier for the variable
-    character(LEN=*), intent(in) :: cvariable
-
-    ! Vector of conservative variables
-    real(DP), dimension(nvar,neq), intent(in) :: Ddata
-!</input>
-
-!<output>
-    ! Extracted single variable
-    real(DP), dimension(:), intent(out) :: Dvalue
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: ieq
-
-
-    if (trim(cvariable) .eq. 'density') then
-      do ieq = 1, neq
-        Dvalue(ieq) = DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_magnitude') then
-      do ieq = 1, neq
-        Dvalue(ieq) = VELOCITY_MAGNITUDE_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'magneticfield_magnitude') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = MAGNETICFIELD_MAGNITUDE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = MAGNETICFIELD_MAGNITUDE_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'velocity_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = X_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Y_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Z_VELOCITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = X_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Y_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Z_MOMENTUM_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'magneticfield_x') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = X_MAGNETICFIELD_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'magneticfield_y') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = Y_MAGNETICFIELD_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-      
-    elseif (trim(cvariable) .eq. 'magneticfield_z') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = Z_MAGNETICFIELD_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)/&
-                      DENSITY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'total_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-        
-    elseif (trim(cvariable) .eq. 'internal_energy') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'kinetic_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = KINETIC_ENERGY_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'total_pressure') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = TOTAL_PRESSURE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = TOTAL_PRESSURE_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'pressure') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'machnumber') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'speedofsound') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1T_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    else
-      
-      call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_getVarInterleaveFormat')
-      call sys_halt()
-
-    end if
-
-  end subroutine mhd_getVarInterleaveFormat
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine mhd_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
-
-!<description>
-    ! This subroutine extracs a single variable from the vector of
-    ! conservative variabels which is stored in block format
-!</description>
-
-!<input>
-    ! Number of equations
-    integer, intent(in) :: neq
-
-    ! Number of variables
-    integer, intent(in) :: nvar
-
-    ! Identifier for the variable
-    character(LEN=*), intent(in) :: cvariable
-
-    ! Vector of conservative variables
-    real(DP), dimension(neq,nvar), intent(in) :: Ddata
-!</input>
-
-!<output>
-    ! Extracted single variable
-    real(DP), dimension(:), intent(out) :: Dvalue
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: ieq
-
-    
-    if (trim(cvariable) .eq. 'density') then
-      do ieq = 1, neq
-        Dvalue(ieq) = DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_magnitude') then
-      do ieq = 1, neq
-        Dvalue(ieq) = VELOCITY_MAGNITUDE_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'magneticfield_magnitude') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = MAGNETICFIELD_MAGNITUDE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = MAGNETICFIELD_MAGNITUDE_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'velocity_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = X_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Y_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'velocity_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Z_VELOCITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = X_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Y_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'momentum_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = Z_MOMENTUM_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'magneticfield_x') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = X_MAGNETICFIELD_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = X_MAGNETICFIELD_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'magneticfield_y') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = Y_MAGNETICFIELD_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = Y_MAGNETICFIELD_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'magneticfield_z') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = Z_MAGNETICFIELD_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = Z_MAGNETICFIELD_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)/&
-                      DENSITY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'total_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'internal_energy') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = INTERNAL_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'kinetic_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = KINETIC_ENERGY_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-      end do
-
-    elseif (trim(cvariable) .eq. 'total_pressure') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = TOTAL_PRESSURE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = TOTAL_PRESSURE_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'pressure') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = PRESSURE_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'machnumber') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = MACH_NUMBER_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    elseif (trim(cvariable) .eq. 'speedofsound') then
-      if (nvar .eq. NVAR1D) then
-        do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR_1D(Ddata, nvar, ieq)
-        end do
-      else
-        do ieq = 1, neq
-          Dvalue(ieq) = SPEED_OF_SOUND_1L_FROM_CONSVAR(Ddata, nvar, ieq)
-        end do
-      end if
-
-    else
-
-      call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_getVarBlockformat')
-      call sys_halt()
-      
-    end if
-
-  end subroutine mhd_getVarBlockformat
 
   !*****************************************************************************
 

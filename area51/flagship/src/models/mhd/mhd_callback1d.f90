@@ -87,83 +87,119 @@
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density
 !#
-!# 22.) mhd_trafoFluxEnergy1d_sim
+!# 22.) mhd_trafoNodalDensity1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density values
+!#
+!# 23.) mhd_trafoFluxEnergy1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 23.) mhd_trafoDiffEnergy1d_sim
+!# 24.) mhd_trafoDiffEnergy1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the energy
 !#
-!# 24.) mhd_trafoFluxPressure1d_sim
+!# 25.) mhd_trafoNodalEnergy1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal energy values
+!#
+!# 26.) mhd_trafoFluxPressure1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 25.) mhd_trafoDiffPressure1d_sim
+!# 27.) mhd_trafoDiffPressure1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the pressure
 !#
-!# 26.) mhd_trafoFluxVelocity1d_sim
+!# 28.) mhd_trafoNodalPressure1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal pressure values
+!#
+!# 29.) mhd_trafoFluxVelocity1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the velocity
 !#
-!# 27.) mhd_trafoDiffVelocity1d_sim
+!# 30.) mhd_trafoDiffVelocity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the velocity
 !#
-!# 28.) mhd_trafoFluxMomentum1d_sim
+!# 31.) mhd_trafoNodalVelocity1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal velocity values
+!#
+!# 32.) mhd_trafoFluxMomentum1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the momentum
 !#
-!# 29.) mhd_trafoDiffMomentum1d_sim
+!# 33.) mhd_trafoDiffMomentum1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the momentum
 !#
-!# 30.) mhd_trafoFluxDenEng1d_sim
+!# 34.) mhd_trafoNodalMomentum1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal momentum values
+!#
+!# 35.) mhd_trafoFluxDenEng1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 31.) mhd_trafoDiffDenEng1d_sim
+!# 36.) mhd_trafoDiffDenEng1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and energy
 !#
-!# 32.) mhd_trafoFluxDenPre1d_sim
+!# 37.) mhd_trafoNodalDenEng1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density and energy values
+!#
+!# 38.) mhd_trafoFluxDenPre1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 33.) mhd_trafoDiffDenPre1d_sim
+!# 39.) mhd_trafoDiffDenPre1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and the pessure
 !#
-!# 34.) mhd_trafoFluxDenPreVel1d_sim
+!# 40.) mhd_trafoNodalDenPre1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density and pressure values
+!#
+!# 41.) mhd_trafoFluxDenPreVel1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 35.) mhd_trafoDiffDenPreVel1d_sim
+!# 42.) mhd_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density, the pressure 
 !#         and the velocity
 !#
-!# 36.) mhd_trafoDiffMagfield1d_sim
+!# 43.) mhd_trafoNodalDenPreVel1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal density, pressure and velocity values
+!#
+!# 44.) mhd_trafoDiffMagfield1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the magnetic field
 !#
-!# 37.) mhd_trafoFluxMagfield1d_sim
+!# 45.) mhd_trafoFluxMagfield1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the magnetic field
 !#
-!# 38.) mhd_calcBoundaryvalues1d
+!# 46.) mhd_trafoNodalMagfield1d_sim
+!#      -> Computes the transformation from conservative solution
+!#         values to nodal values for the magnetic field
+!#
+!# 47.) mhd_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 39.) mhd_hadaptCallbackScalar1d
+!# 48.) mhd_hadaptCallbackScalar1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in interleave format
 !#
-!# 40.) mhd_hadaptCallbackBlock1d
+!# 49.) mhd_hadaptCallbackBlock1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
-!# 41.) mhd_coeffVectorBdr1d_sim
+!# 50.) mhd_coeffVectorBdr1d_sim
 !#      -> Calculates the coefficients for the linear form in 1D
 !#
 !# </purpose>
@@ -171,6 +207,7 @@
 
 module mhd_callback1d
 
+#define MHD_NDIM 1
 #include "mhd.h"
 
   use boundarycondaux
@@ -234,6 +271,15 @@ module mhd_callback1d
   public :: mhd_trafoDiffDenPre1d_sim
   public :: mhd_trafoDiffDenPreVel1d_sim
   public :: mhd_trafoDiffMagfield1d_sim
+  public :: mhd_trafoNodalDensity1d_sim
+  public :: mhd_trafoNodalEnergy1d_sim
+  public :: mhd_trafoNodalPressure1d_sim
+  public :: mhd_trafoNodalVelocity1d_sim
+  public :: mhd_trafoNodalMomentum1d_sim
+  public :: mhd_trafoNodalDenEng1d_sim
+  public :: mhd_trafoNodalDenPre1d_sim
+  public :: mhd_trafoNodalDenPreVel1d_sim
+  public :: mhd_trafoNodalMagfield1d_sim
   public :: mhd_calcBoundaryvalues1d
   public :: mhd_coeffVectorBdr1d_sim
   public :: mhd_hadaptCallbackScalar1d
@@ -307,41 +353,64 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute total pressures
-      pi = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      qi = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      qj = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
+      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi)
+      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj)
       
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
-      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
-      
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*Fi )
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi )
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
                  
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*F_ij
-      DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*F_ij      
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale * IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale * IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij
 #endif
     end do
 
@@ -412,32 +481,42 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute total pressures
-      pi = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      qi = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      qj = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
+      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi)
+      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj)
       
       ! Compute flux difference for x-direction
-      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
       
       ! Assemble symmetric fluxes
-      DfluxesAtEdge(:,1,idx) = dscale *&
-          0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))*F_ij
-      DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+          RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*F_ij
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
     end do
 
   end subroutine mhd_calcFluxGalNoBdr1d_sim
@@ -500,8 +579,8 @@ contains
 #endif
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
-    real(DP) :: H_ij,X_ij,anorm,aux,cf_ij,d_ij,q_ij,rho_ij,u_ij
+    real(DP) :: hi,hj,pi,pj,qi,qj,ri,rj,ui,uj,vi,vj,wi,wj
+    real(DP) :: H_ij,X_ij,aux,cf_ij,d_ij,q_ij,rho_ij,u_ij
     real(DP) :: aPow2_ij,astPow2_ij,bPow2_ij,bxPow2_ij
     integer :: idx
 
@@ -513,32 +592,54 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute total pressures
-      pi = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      qi = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      qj = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
+      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi)
+      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
-      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -555,99 +656,87 @@ contains
       ! The largest in magnitude eigenvalue is |u|+cf
       !-------------------------------------------------------------------------
 
-      ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
-      anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
+      ! Compute skew-symmetric coefficient
+      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+
+      ! Compute densities
+      ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute enthalpies
+      hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+      hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
 
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+      aux  = ROE_MEAN_RATIO(ri,rj)
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
-     
+      H_ij = ROE_MEAN_VALUE(hi,hj,aux)
+
       ! Compute the Roe-averaged density with left and right states interchanged!
-      rho_ij = ROE_MEAN_VALUE(\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+      rho_ij = ROE_MEAN_VALUE(rj,ri,aux)
    
       ! Compute the square of the Roe-averaged speed of the Alfven waves.
       ! Note that left and right states are interchanged!
-      bxPow2_ij = ((ROE_MEAN_VALUE(\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
-                     aux))**2)/rho_ij
+      bxPow2_ij = (POW(ROE_MEAN_VALUE(\
+                       XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                       XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
     
       ! Compute the density-averaged magnetic field
-      X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-               X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-              (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-               Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-              (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-               Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-              (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
-                       sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
+      X_ij = (POW(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+              POW(YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+              POW(ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2))/&
+              RCONST(2.0)*POW(sqrt(ri)+sqrt(rj),2)
 
       ! Compute the square of the Roe-averaged magnetic field.
       ! Note that left and right states are interchanged!
-      bPow2_ij = (ROE_MEAN_VALUE(\
-                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                  ROE_MEAN_VALUE(\
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                  ROE_MEAN_VALUE(\
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
+      bPow2_ij = (POW(ROE_MEAN_VALUE(\
+                      XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
 
       ! Compute the magnitude of the Roe-averaged velocity
-      q_ij = (ROE_MEAN_VALUE(\
-               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-              ROE_MEAN_VALUE(\
-               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-              ROE_MEAN_VALUE(\
-               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
+      q_ij = (POW(ROE_MEAN_VALUE(ui,uj,aux),2)+&
+              POW(ROE_MEAN_VALUE(vi,vj,aux),2)+&
+              POW(ROE_MEAN_VALUE(wi,wj,aux),2))*RCONST(0.5)
 
       ! Compute the Roe-averaged speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      aPow2_ij = (2.0_DP-(GAMMA))*X_ij + (GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      aPow2_ij = (RCONST(2.0)-(MAGNETOHYDRODYN_GAMMA))*X_ij +&
+          (MAGNETOHYDRODYN_GAMMA-RCONST(1.0))*(H_ij-q_ij-bPow2_ij)
       
       ! Compute auxiliary variables
       astPow2_ij = aPow2_ij+bPow2_ij
-      aux        = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
+      aux        = sqrt(POW(astPow2_ij,2)-RCONST(4.0)*aPow2_ij*bxPow2_ij)
             
       ! Compute the Roe-averagred speed of the fast waves
-      cf_ij = sqrt(0.5_DP*(astPow2_ij+aux))
+      cf_ij = sqrt(RCONST(0.5)*(astPow2_ij+aux))
 
       ! Scalar dissipation
-      d_ij = abs(u_ij*a(1)) + anorm*cf_ij
+      d_ij = abs(u_ij*a(1)) + abs(a(1))*cf_ij
       
-      ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      ! Multiply the solution difference by the scalar dissipation
+      Diff = d_ij*(IDX3(DdataAtEdge,:,2,idx,0,0,0)-&
+                   IDX3(DdataAtEdge,:,1,idx,0,0,0))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
       
 #ifdef MHD_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
 #endif
     end do
 
@@ -711,13 +800,12 @@ contains
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
     real(DP), dimension(7,7) :: Reig
-    real(DP) :: pi,pj,qi,qj,ui,uj,vi,vj,wi,wj
+    real(DP) :: hi,hj,pi,pj,qi,qj,ri,rj,ui,uj,vi,vj,wi,wj
     real(DP) :: caPow2_ij,ca_ij,cfPow2_ij,cf_ij,csPow2_ij,cs_ij
-    real(DP) :: S,aux,auxf,auxs,auxsqr,auxy,auxz
+    real(DP) :: S,aux,auxf,auxs,auxsqr,auxy,auxz,anorm
     real(DP) :: H_ij,X_ij,q_ij,rho_ij,u_ij,v_ij,w_ij
     real(DP) :: aPow2_ij,astPow2_ij,bPow2_ij,bxPow2_ij
     real(DP) :: l1,l2,l3,l4,l5,l6,l7,w1,w2,w3,w4,w5,w6,w7
-    real(DP) :: anorm
     integer, dimension(7) :: Ipiv
     integer :: idx,info
 
@@ -729,32 +817,54 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute total pressures
-      pi = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      qi = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      qj = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
+      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi)
+      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
-      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -769,84 +879,71 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
 
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
         v_ij = ROE_MEAN_VALUE(vi,vj,aux)
         w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+pi)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+pj)/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
 
         ! Compute the Roe-averaged density with left and right states interchanged!
-        rho_ij = ROE_MEAN_VALUE(\
-                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+        rho_ij = ROE_MEAN_VALUE(rj,ri,aux)
         
         ! Compute the square of the Roe-averaged speed of the Alfven waves.
         ! Note that left and right states are interchanged!
-        bxPow2_ij = ((ROE_MEAN_VALUE(\
-                       X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                       X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
-                       aux))**2)/rho_ij
+        bxPow2_ij = (POW(ROE_MEAN_VALUE(\
+                       XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                       XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
         ca_ij = sqrt(bxPow2_ij)
     
         ! Compute the density-averaged magnetic field
-        X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-                (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
-                         sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
+        X_ij = (POW(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+                POW(YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+                POW(ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2))/&
+                RCONST(2.0)*POW(sqrt(ri)+sqrt(rj),2)
 
         ! Compute the square of the Roe-averaged magnetic field.
         ! Note that left and right states are interchanged!
-        bPow2_ij = (ROE_MEAN_VALUE(\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                    ROE_MEAN_VALUE(\
-                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                    ROE_MEAN_VALUE(\
-                     Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
+        bPow2_ij = (POW(ROE_MEAN_VALUE(\
+                      XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
 
         ! Compute the magnitude of the Roe-averaged velocity
-        q_ij = (ROE_MEAN_VALUE(\
-                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-                ROE_MEAN_VALUE(\
-                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-                ROE_MEAN_VALUE(\
-                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
+        q_ij = (POW(ROE_MEAN_VALUE(ui,uj,aux),2)+&
+              POW(ROE_MEAN_VALUE(vi,vj,aux),2)+&
+              POW(ROE_MEAN_VALUE(wi,wj,aux),2))*RCONST(0.5)
 
         ! Compute the Roe-averaged speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        aPow2_ij = (2.0_DP-(GAMMA))*X_ij+(GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        aPow2_ij = (RCONST(2.0)-(MAGNETOHYDRODYN_GAMMA))*X_ij +&
+            (MAGNETOHYDRODYN_GAMMA-RCONST(1.0))*(H_ij-q_ij-bPow2_ij)
 
         ! Compute auxiliary quantities
         astPow2_ij = aPow2_ij+bPow2_ij
-        auxsqr     = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
+        auxsqr     = sqrt(POW(astPow2_ij,2)-RCONST(4.0)*aPow2_ij*bxPow2_ij)
 
         ! Compute the Roe-averagred speed of the slow and fast waves
-        cfPow2_ij = 0.5_DP*(astPow2_ij+auxsqr); cf_ij=sqrt(cfPow2_ij)
-        csPow2_ij = 0.5_DP*(astPow2_ij-auxsqr); cs_ij=sqrt(csPow2_ij)
+        cfPow2_ij = RCONST(0.5)*(astPow2_ij+auxsqr); cf_ij=sqrt(cfPow2_ij)
+        csPow2_ij = RCONST(0.5)*(astPow2_ij-auxsqr); cs_ij=sqrt(csPow2_ij)
 
         ! Compute eigenvalues
         l1 = abs(u_ij-cf_ij)
@@ -858,7 +955,8 @@ contains
         l7 = abs(u_ij+cf_ij)
         
         ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
+        Diff = IDX3(DdataAtEdge,:,2,idx,0,0,0)-&
+               IDX3(DdataAtEdge,:,1,idx,0,0,0)
 
         ! The variable names are adopted from J.M. Stone, T.A. Gardiner,
         ! P. Teuben, J.F. Hawlay and J.B. Simon ATHENA: A New Code for
@@ -871,36 +969,36 @@ contains
 
         ! Compute the "beta_"y,z" values (with left and right states interchanged!)
         auxy = ROE_MEAN_VALUE(\
-                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)
+                YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux)
         auxz = ROE_MEAN_VALUE(\
-                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)
-        aux  = sqrt(auxy**2+auxz**2)
+                ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux)
+        aux  = sqrt(POW(auxy,2)+POW(auxz,2))
         auxy = auxy/aux
         auxz = auxz/aux
         
         ! Compute the sign if the magnetic field
-        S = sign(1.0_DP, X_MAGNETICFIELD_CONSTANT_1D)
+        S = sign(RCONST(1.0), RCONST(MHD_XMAGFIELD_CONST))
 
         ! Compute auxiliary square root
         auxsqr = sqrt(rho_ij*aPow2_ij)
 
         ! Compute matrix of right eigenvectors       
-        Reig(1,1) =   auxf/aPow2_ij
-        Reig(1,2) = 0.0_DP
-        Reig(1,3) =   auxs/aPow2_ij
-        Reig(1,4) = 1.0_DP/aPow2_ij
+        Reig(1,1) = auxf/aPow2_ij
+        Reig(1,2) = RCONST(0.0)
+        Reig(1,3) = auxs/aPow2_ij
+        Reig(1,4) = RCONST(1.0)/aPow2_ij
         Reig(1,5) = Reig(1,3)
-        Reig(1,6) = 0.0_DP
+        Reig(1,6) = RCONST(0.0)
         Reig(1,7) = Reig(1,1)
 
         Reig(2,1) = auxf*(u_ij-cf_ij)/aPow2_ij
-        Reig(2,2) = 0.0_DP
+        Reig(2,2) = RCONST(0.0)
         Reig(2,3) = auxs*(u_ij-cs_ij)/aPow2_ij
         Reig(2,4) =              u_ij/aPow2_ij
         Reig(2,5) = auxs*(u_ij+cs_ij)/aPow2_ij
-        Reig(2,6) = 0.0_DP
+        Reig(2,6) = RCONST(0.0)
         Reig(2,7) = auxf*(u_ij+cf_ij)/aPow2_ij
 
         Reig(3,1) = (auxf*v_ij+auxs*cs_ij*auxy*S)/aPow2_ij
@@ -922,7 +1020,7 @@ contains
         Reig(5,1) =  auxs*auxy/auxsqr
         Reig(5,2) = -S*sqrt(rho_ij)*auxz
         Reig(5,3) = -auxf*auxy/auxsqr
-        Reig(5,4) =  0.0_DP
+        Reig(5,4) =  RCONST(0.0)
         Reig(5,5) =  Reig(5,3)
         Reig(5,6) =  Reig(5,2)
         Reig(5,7) =  Reig(5,1)
@@ -930,7 +1028,7 @@ contains
         Reig(6,1) =  auxs*auxz/auxsqr
         Reig(6,2) =  S*sqrt(rho_ij)*auxy
         Reig(6,3) = -auxf*auxz/auxsqr
-        Reig(6,4) =  0.0_DP
+        Reig(6,4) =  RCONST(0.0)
         Reig(6,5) =  Reig(6,3)
         Reig(6,6) =  Reig(6,2)
         Reig(6,7) =  Reig(6,1)
@@ -940,7 +1038,8 @@ contains
         Reig(7,2) = -rho_ij*(v_ij*auxz-w_ij*auxy)
         Reig(7,3) = (auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-&
                            auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
-        Reig(7,4) =  (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)/aPow2_ij
+        Reig(7,4) =  (q_ij+(RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(2.0))/&
+                           (RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*X_ij)/aPow2_ij
         Reig(7,5) = (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+&
                            auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
         Reig(7,6) = -Reig(7,2)
@@ -981,36 +1080,47 @@ contains
         Diff(6) = anorm * ( (auxs*auxz*(w1+w7) -&
                              auxf*auxz*(w3+w5))/sqrt(rho_ij*aPow2_ij) +&
                             S*sqrt(rho_ij)*auxy*(w2+w6) )
-        Diff(7) = anorm * ( ((auxf*(H_ij-bPow2_ij-u_ij*cf_ij)+auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w1 +&
-                             (auxf*(H_ij-bPow2_ij+u_ij*cf_ij)-auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w7)/aPow2_ij -&
+        Diff(7) = anorm * ( ((auxf*(H_ij-bPow2_ij-u_ij*cf_ij)+&
+                              auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w1 +&
+                             (auxf*(H_ij-bPow2_ij+u_ij*cf_ij)-&
+                              auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w7)/aPow2_ij -&
                              auxs*aux*(w1+w7)/sqrt(rho_ij*aPow2_ij) +&
                              rho_ij*(v_ij*auxz-w_ij*auxy)*(-w2+w6) +&
-                            ((auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w3 +&
-                             (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w5)/aPow2_ij -&
+                            ((auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-&
+                              auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w3 +&
+                             (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+&
+                              auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w5)/aPow2_ij -&
                              auxf*aux*(w3+w5)/sqrt(rho_ij*aPow2_ij) +&
-                             (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)*w4/aPow2_ij )
+                             (q_ij+(RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(2.0))/&
+                                   (RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*X_ij)*w4/aPow2_ij )
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
         !-------------------------------------------------------------------------
 
 #ifdef MHD_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
-        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+        IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
+        IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else        
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
+        IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
+        IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
+            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
 #endif
       else
 
 #ifdef MHD_USE_IBP
-        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                           DmatrixCoeffsAtEdge(1,1,idx)*Fi )
-        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+        IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi )
+        IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
-        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij)
-        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij)
+        IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij)
+        IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
+            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij)
 #endif
       end if
     end do
@@ -1087,32 +1197,54 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Compute total pressures
-      pi = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
-      pj = TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)
+      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      qi = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*ui +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*vi +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*wi
-      qj = X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*uj +&
-           Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*vj +&
-           Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*wj
+      qi = MAG_DOT_VEL3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi)
+      qj = MAG_DOT_VEL3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj)
 
 #ifdef MHD_USE_IBP
       ! Compute fluxes for x-direction
-      FLUX_MHD_2T_XDIR_1D(Fi,DdataAtEdge,1,idx,ui,vi,wi,pi,qi)
-      FLUX_MHD_2T_XDIR_1D(Fj,DdataAtEdge,2,idx,uj,vj,wj,pj,qj)
+      Fi(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+      Fi(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)
+
+      Fj(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      Fj(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
 #else
       ! Compute flux difference for x-direction
-      FLUXDIFF_MHD_2T_XDIR_1D(F_ij,DdataAtEdge,1,2,idx,ui,uj,vi,vj,wi,wj,pi,pj,qi,qj)
+      F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(4) = INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX4_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(5) = INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX5_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(6) = INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX6_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
+      F_ij(7) = INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,vi,wi,pi,qi)-&
+                INVISCIDFLUX7_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
 #endif
 
       !-------------------------------------------------------------------------
@@ -1135,49 +1267,66 @@ contains
       ! -------------------------------------------------------------------------
       
       ! Compute the speed of the Alfven waves
-      cai = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))
-      caj = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
+      cai = abs(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0))
+      caj = abs(XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0))
 
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      aPow2i = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/&
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      aPow2j = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/&
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+               PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)/&
+               DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+               PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)/&
+               DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      astPow2i = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/&
-                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + aPow2i
-      astPow2j = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/&
-                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + aPow2j
+      astPow2i = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,1,idx,0,0,0)/&
+                 DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0) + aPow2i
+      astPow2j = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,2,idx,0,0,0)/&
+                 DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0) + aPow2j
 
       ! Compute the speed of the fast waves
-      cfi = sqrt(0.5_DP*(astPow2i + sqrt(astPow2i**2 - 4.0_DP*aPow2i*cai**2)))
-      cfj = sqrt(0.5_DP*(astPow2j + sqrt(astPow2j**2 - 4.0_DP*aPow2j*caj**2)))
+      cfi = sqrt(RCONST(0.5)*(astPow2i+&
+                 sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(cai,2))))
+      cfj = sqrt(RCONST(0.5)*(astPow2j+&
+                 sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(caj,2))))
             
-      ! Scalar dissipation for the Rusanov flux
-      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cfj,&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx))*cfi )
-
+#ifdef MHD_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
+                 RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-\
+                                      IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),2))*cfj,&
+                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
+                 RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-\
+                                      IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),2))*cfi )
+#else   
+      ! Compute scalar dissipation
+      d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+                  abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cfj,&
+                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*cfi )
+#endif
+      
       ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
+      Diff = d_ij*(IDX3(DdataAtEdge,:,2,idx,0,0,0)-&
+                   IDX3(DdataAtEdge,:,1,idx,0,0,0))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
 #ifdef MHD_USE_IBP
-      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
-                                         DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
-      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
-      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
-      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
 #endif
     end do
 
@@ -1840,104 +1989,94 @@ contains
 
     ! local variables
     real(DP), dimension(NDIM1D) :: a
-    real(DP) :: ui,uj,vi,vj,wi,wj
+    real(DP) :: hi,hj,pi,pj,ri,rj,ui,uj,vi,vj,wi,wj
     real(DP) :: H_ij,X_ij,aux,cf_ij,d_ij,q_ij,rho_ij,u_ij
-    real(DP) :: aPow2_ij,anorm,astPow2_ij,bPow2_ij,bxPow2_ij
+    real(DP) :: aPow2_ij,astPow2_ij,bPow2_ij,bxPow2_ij
     integer :: idx
 
 
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
-      anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
+      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+
+      ! Compute densities
+      ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute total pressures
+      pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
+      ! Compute enthalpies
+      hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+      hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
 
       ! Compute Roe mean values
-      aux  = ROE_MEAN_RATIO(\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+      aux  = ROE_MEAN_RATIO(ri,rj)
       u_ij = ROE_MEAN_VALUE(ui,uj,aux)
-      H_ij = ROE_MEAN_VALUE(\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-             (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-              TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-              DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+      H_ij = ROE_MEAN_VALUE(hi,hj,aux)
     
       ! Compute the Roe-averaged density with left and right states interchanged!
-      rho_ij = ROE_MEAN_VALUE(\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+      rho_ij = ROE_MEAN_VALUE(rj,ri,aux)
 
       ! Compute the square of the Roe-averaged speed of the Alfven waves.
       ! Note that left and right states are interchanged!
-      bxPow2_ij = ((ROE_MEAN_VALUE(\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
-                     aux))**2)/rho_ij
+      bxPow2_ij = (POW(ROE_MEAN_VALUE(\
+                       XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                       XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
     
       ! Compute the density-averaged magnetic field
-      X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-               X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-              (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-               Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-              (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-               Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-              (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
-                       sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
+      X_ij = (POW(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+              POW(YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+              POW(ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2))/&
+              RCONST(2.0)*POW(sqrt(ri)+sqrt(rj),2)
 
       ! Compute the square of the Roe-averaged magnetic field.
       ! Note that left and right states are interchanged!
-      bPow2_ij = (ROE_MEAN_VALUE(\
-                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                  ROE_MEAN_VALUE(\
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                  ROE_MEAN_VALUE(\
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                   Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
+      bPow2_ij = (POW(ROE_MEAN_VALUE(\
+                      XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
 
       ! Compute the magnitude of the Roe-averaged velocity
-      q_ij = (ROE_MEAN_VALUE(\
-               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-              ROE_MEAN_VALUE(\
-               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-              ROE_MEAN_VALUE(\
-               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
+      q_ij = (POW(ROE_MEAN_VALUE(ui,uj,aux),2)+&
+              POW(ROE_MEAN_VALUE(vi,vj,aux),2)+&
+              POW(ROE_MEAN_VALUE(wi,wj,aux),2))*RCONST(0.5)
 
 
       ! Compute the Roe-averaged speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      aPow2_ij = (2.0_DP-(GAMMA))*X_ij + (GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      aPow2_ij = (RCONST(2.0)-(MAGNETOHYDRODYN_GAMMA))*X_ij +&
+          (MAGNETOHYDRODYN_GAMMA-RCONST(1.0))*(H_ij-q_ij-bPow2_ij)
       
       ! Compute auxiliary variables
       astPow2_ij = aPow2_ij+bPow2_ij
-      aux        = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
+      aux        = sqrt(POW(astPow2_ij,2)-RCONST(4.0)*aPow2_ij*bxPow2_ij)
             
       ! Compute the Roe-averagred speed of the fast waves
-      cf_ij = sqrt(0.5_DP*(astPow2_ij+aux))
+      cf_ij = sqrt(RCONST(0.5)*(astPow2_ij+aux))
 
       ! Scalar dissipation
-      d_ij = abs(u_ij*a(1)) + anorm*cf_ij
+      d_ij = abs(u_ij*a(1)) + abs(a(1))*cf_ij
       
       ! Compute conservative fluxes
-      DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
+      IDX2(DfluxesAtEdge,:,idx,0,0) = dscale*&
+          d_ij*(IDX3(DdataAtEdge,:,1,idx,0,0,0)-&
+                IDX3(DdataAtEdge,:,2,idx,0,0,0))
     end do
 
   end subroutine mhd_calcFluxFCTScDiss1d_sim
@@ -1995,7 +2134,7 @@ contains
     real(DP), dimension(NVAR1D) :: Diff
     real(DP), dimension(NDIM1D) :: a
     real(DP), dimension(7,7) :: Reig
-    real(DP) :: ui,uj,vi,vj,wi,wj
+    real(DP) :: hi,hj,pi,pj,qi,qj,ri,rj,ui,uj,vi,vj,wi,wj
     real(DP) :: caPow2_ij,ca_ij,cfPow2_ij,cf_ij,csPow2_ij,cs_ij
     real(DP) :: S,aux,auxf,auxs,auxsqr,auxy,auxz
     real(DP) :: H_ij,X_ij,q_ij,rho_ij,u_ij,v_ij,w_ij
@@ -2009,12 +2148,12 @@ contains
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       !-------------------------------------------------------------------------
       ! Evaluate the dissipation tensor of Roe-type
@@ -2028,86 +2167,70 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
 
+        ! Compute densities
+        ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
+        ! Compute enthalpies
+        hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
+        hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
+        
         ! Compute Roe mean values
-        aux  = ROE_MEAN_RATIO(\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx))
+        aux  = ROE_MEAN_RATIO(ri,rj)
         u_ij = ROE_MEAN_VALUE(ui,uj,aux)
         v_ij = ROE_MEAN_VALUE(vi,vj,aux)
         w_ij = ROE_MEAN_VALUE(wi,wj,aux)
-        H_ij = ROE_MEAN_VALUE(\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)+\
-                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-               (TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)+\
-                TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))/\
-                DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)
+        H_ij = ROE_MEAN_VALUE(hi,hj,aux)
 
         ! Compute the Roe-averaged density with left and right states interchanged!
-        rho_ij = ROE_MEAN_VALUE(\
-                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),\
-                  DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),aux)
+        rho_ij = ROE_MEAN_VALUE(rj,ri,aux)
         
         ! Compute the square of the Roe-averaged speed of the Alfven waves.
         ! Note that left and right states are interchanged!
-        bxPow2_ij = ((ROE_MEAN_VALUE(\
-                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                      X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),\
-                      aux))**2)/rho_ij
+        bxPow2_ij = (POW(ROE_MEAN_VALUE(\
+                       XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                       XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
         ca_ij = sqrt(bxPow2_ij)
     
         ! Compute the density-averaged magnetic field
-        X_ij = ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-                 X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-                (Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-                 Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2+&
-                (Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)-&
-                 Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))**2)/&
-                (2.0_DP*(sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx))+&
-                         sqrt(DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)))**2)
+        X_ij = (POW(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+                POW(YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2)+&
+                POW(ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)-ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),2))/&
+                RCONST(2.0)*POW(sqrt(ri)+sqrt(rj),2)
 
         ! Compute the square of the Roe-averaged magnetic field.
-        ! Note that left and right states are interchanged!
-        bPow2_ij = (ROE_MEAN_VALUE(\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                    ROE_MEAN_VALUE(\
-                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2+\
-                    ROE_MEAN_VALUE(\
-                     Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                     Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)**2)/rho_ij
+        bPow2_ij = (POW(ROE_MEAN_VALUE(\
+                      XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2)+\
+                  POW(ROE_MEAN_VALUE(\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                      ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux),2))/rho_ij
 
         ! Compute the magnitude of the Roe-averaged velocity
-        q_ij = (ROE_MEAN_VALUE(\
-                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                 X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-                ROE_MEAN_VALUE(\
-                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                 Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2+\
-                ROE_MEAN_VALUE(\
-                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx),\
-                 Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx),aux)**2)/2.0_DP
+        q_ij = (POW(ROE_MEAN_VALUE(ui,uj,aux),2)+&
+              POW(ROE_MEAN_VALUE(vi,vj,aux),2)+&
+              POW(ROE_MEAN_VALUE(wi,wj,aux),2))*RCONST(0.5)
 
         ! Compute the Roe-averaged speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-        aPow2_ij = (2.0_DP-(GAMMA))*X_ij+(GAMMA-1.0_DP)*(H_ij-q_ij-bPow2_ij)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+        aPow2_ij = (RCONST(2.0)-(MAGNETOHYDRODYN_GAMMA))*X_ij +&
+            (MAGNETOHYDRODYN_GAMMA-RCONST(1.0))*(H_ij-q_ij-bPow2_ij)
 
         ! Compute auxiliary quantities
         astPow2_ij = aPow2_ij+bPow2_ij
-        auxsqr     = sqrt(astPow2_ij**2-4.0_DP*aPow2_ij*bxPow2_ij)
+        auxsqr     = sqrt(POW(astPow2_ij,2)-RCONST(4.0)*aPow2_ij*bxPow2_ij)
 
         ! Compute the Roe-averagred speed of the slow and fast waves
-        cfPow2_ij = 0.5_DP*(astPow2_ij+auxsqr); cf_ij=sqrt(cfPow2_ij)
-        csPow2_ij = 0.5_DP*(astPow2_ij-auxsqr); cs_ij=sqrt(csPow2_ij)
+        cfPow2_ij = RCONST(0.5)*(astPow2_ij+auxsqr); cf_ij=sqrt(cfPow2_ij)
+        csPow2_ij = RCONST(0.5)*(astPow2_ij-auxsqr); cs_ij=sqrt(csPow2_ij)
 
         ! Compute eigenvalues
         l1 = abs(u_ij-cf_ij)
@@ -2119,7 +2242,8 @@ contains
         l7 = abs(u_ij+cf_ij)
         
         ! Compute solution difference U_i-U_j
-        Diff = DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx)
+        Diff = IDX3(DdataAtEdge,:,1,idx,0,0,0)-&
+               IDX3(DdataAtEdge,:,2,idx,0,0,0)
 
         ! The variable names are adopted from J.M. Stone, T.A. Gardiner,
         ! P. Teuben, J.F. Hawlay and J.B. Simon ATHENA: A New Code for
@@ -2132,36 +2256,36 @@ contains
 
         ! Compute the "beta_"y,z" values (with left and right states interchanged!)
         auxy = ROE_MEAN_VALUE(\
-                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)
+                YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux)
         auxz = ROE_MEAN_VALUE(\
-                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx),\
-                Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx),aux)
-        aux  = sqrt(auxy**2+auxz**2)
+                ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0),\
+                ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0),aux)
+        aux  = sqrt(POW(auxy,2)+POW(auxz,2))
         auxy = auxy/aux
         auxz = auxz/aux
         
         ! Compute the sign if the magnetic field
-        S = sign(1.0_DP, X_MAGNETICFIELD_CONSTANT_1D)
+        S = sign(RCONST(1.0), RCONST(MHD_XMAGFIELD_CONST))
 
         ! Compute auxiliary square root
         auxsqr = sqrt(rho_ij*aPow2_ij)
 
         ! Compute matrix of right eigenvectors       
-        Reig(1,1) =   auxf/aPow2_ij
-        Reig(1,2) = 0.0_DP
-        Reig(1,3) =   auxs/aPow2_ij
-        Reig(1,4) = 1.0_DP/aPow2_ij
+        Reig(1,1) = auxf/aPow2_ij
+        Reig(1,2) = RCONST(0.0)
+        Reig(1,3) = auxs/aPow2_ij
+        Reig(1,4) = RCONST(1.0)/aPow2_ij
         Reig(1,5) = Reig(1,3)
-        Reig(1,6) = 0.0_DP
+        Reig(1,6) = RCONST(0.0)
         Reig(1,7) = Reig(1,1)
 
         Reig(2,1) = auxf*(u_ij-cf_ij)/aPow2_ij
-        Reig(2,2) = 0.0_DP
+        Reig(2,2) = RCONST(0.0)
         Reig(2,3) = auxs*(u_ij-cs_ij)/aPow2_ij
         Reig(2,4) =              u_ij/aPow2_ij
         Reig(2,5) = auxs*(u_ij+cs_ij)/aPow2_ij
-        Reig(2,6) = 0.0_DP
+        Reig(2,6) = RCONST(0.0)
         Reig(2,7) = auxf*(u_ij+cf_ij)/aPow2_ij
 
         Reig(3,1) = (auxf*v_ij+auxs*cs_ij*auxy*S)/aPow2_ij
@@ -2183,7 +2307,7 @@ contains
         Reig(5,1) =  auxs*auxy/auxsqr
         Reig(5,2) = -S*sqrt(rho_ij)*auxz
         Reig(5,3) = -auxf*auxy/auxsqr
-        Reig(5,4) =  0.0_DP
+        Reig(5,4) =  RCONST(0.0)
         Reig(5,5) =  Reig(5,3)
         Reig(5,6) =  Reig(5,2)
         Reig(5,7) =  Reig(5,1)
@@ -2191,7 +2315,7 @@ contains
         Reig(6,1) =  auxs*auxz/auxsqr
         Reig(6,2) =  S*sqrt(rho_ij)*auxy
         Reig(6,3) = -auxf*auxz/auxsqr
-        Reig(6,4) =  0.0_DP
+        Reig(6,4) =  RCONST(0.0)
         Reig(6,5) =  Reig(6,3)
         Reig(6,6) =  Reig(6,2)
         Reig(6,7) =  Reig(6,1)
@@ -2201,7 +2325,8 @@ contains
         Reig(7,2) = -rho_ij*(v_ij*auxz-w_ij*auxy)
         Reig(7,3) = (auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-&
                            auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
-        Reig(7,4) =  (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)/aPow2_ij
+        Reig(7,4) =  (q_ij+(RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(2.0))/&
+                           (RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*X_ij)/aPow2_ij
         Reig(7,5) = (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+&
                            auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))/aPow2_ij-auxf*aux/auxsqr
         Reig(7,6) = -Reig(7,2)
@@ -2242,20 +2367,25 @@ contains
         Diff(6) = anorm * ( (auxs*auxz*(w1+w7) -&
                              auxf*auxz*(w3+w5))/sqrt(rho_ij*aPow2_ij) +&
                             S*sqrt(rho_ij)*auxy*(w2+w6) )
-        Diff(7) = anorm * ( ((auxf*(H_ij-bPow2_ij-u_ij*cf_ij)+auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w1 +&
-                             (auxf*(H_ij-bPow2_ij+u_ij*cf_ij)-auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w7)/aPow2_ij -&
+        Diff(7) = anorm * ( ((auxf*(H_ij-bPow2_ij-u_ij*cf_ij)+&
+                              auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w1 +&
+                             (auxf*(H_ij-bPow2_ij+u_ij*cf_ij)-&
+                              auxs*cs_ij*S*(v_ij*auxy+w_ij*auxz))*w7)/aPow2_ij -&
                              auxs*aux*(w1+w7)/sqrt(rho_ij*aPow2_ij) +&
                              rho_ij*(v_ij*auxz-w_ij*auxy)*(-w2+w6) +&
-                            ((auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w3 +&
-                             (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w5)/aPow2_ij -&
+                            ((auxs*(H_ij-bPow2_ij-u_ij*cs_ij)-&
+                              auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w3 +&
+                             (auxs*(H_ij-bPow2_ij+u_ij*cs_ij)+&
+                              auxf*cf_ij*S*(v_ij*auxy+w_ij*auxz))*w5)/aPow2_ij -&
                              auxf*aux*(w3+w5)/sqrt(rho_ij*aPow2_ij) +&
-                             (q_ij+(GAMMA-2.0_DP)/(GAMMA-1.0_DP)*X_ij)*w4/aPow2_ij )
+                             (q_ij+(RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(2.0))/&
+                                   (RCONST(MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*X_ij)*w4/aPow2_ij )
 
         ! Compute antidiffusive flux
-        DfluxesAtEdge(:,idx) = dscale*Diff
+        IDX2(DfluxesAtEdge,:,idx,0,0) = dscale*Diff
       else
         ! Clear antidiffusive flux
-        DfluxesAtEdge(:,idx) = 0
+        IDX2(DfluxesAtEdge,:,idx,0,0) = 0
       end if
     end do
 
@@ -2320,12 +2450,12 @@ contains
     do idx = 1, nedges
 
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       !-------------------------------------------------------------------------
       ! Evaluate the scalar dissipation of Rusanov-type
@@ -2347,37 +2477,52 @@ contains
       ! -------------------------------------------------------------------------
 
       ! Compute the speed of the Alfven waves
-      cai = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx))
-      caj = abs(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx))
+      cai = abs(XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0))
+      caj = abs(XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0))
 
       ! Compute the speed of sound
-#ifdef THERMALLY_IDEAL_GAS
-      aPow2i = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/&
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      aPow2j = GAMMA*PRESSURE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/&
-               DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-#else
-#error "Speed of sound must be implemented!"
-#endif
+      aPow2i = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+               PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)/&
+               DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      aPow2j = RCONST(MAGNETOHYDRODYN_GAMMA)*&
+               PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)/&
+               DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Compute auxiliary quantities
-      astPow2i = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)/&
-                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx) + aPow2i
-      astPow2j = MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)/&
-                 DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx) + aPow2j
+      astPow2i = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,1,idx,0,0,0)/&
+                 DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0) + aPow2i
+      astPow2j = MAGFIELDMAGNITUDE3(DdataAtEdge,IDX3,2,idx,0,0,0)/&
+                 DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0) + aPow2j
 
       ! Compute the speed of the fast waves
-      cfi = sqrt(0.5_DP*(astPow2i + sqrt(astPow2i**2 - 4.0_DP*aPow2i*cai**2)))
-      cfj = sqrt(0.5_DP*(astPow2j + sqrt(astPow2j**2 - 4.0_DP*aPow2j*caj**2)))
+      cfi = sqrt(RCONST(0.5)*(astPow2i+&
+                 sqrt(POW(astPow2i,2)-RCONST(4.0)*aPow2i*POW(cai,2))))
+      cfj = sqrt(RCONST(0.5)*(astPow2j+&
+                 sqrt(POW(astPow2j,2)-RCONST(4.0)*aPow2j*POW(caj,2))))
             
-      ! Scalar dissipation for the Rusanov flux
-      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
-                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cfj,&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
-                  abs(DmatrixCoeffsAtEdge(1,2,idx))*cfi )
+#ifdef MHD_USE_IBP
+      ! Compute scalar dissipation based on the skew-symmetric part
+      ! which does not include the symmetric boundary contribution
+      d_ij = max( abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
+                 RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-\
+                                      IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),2))*cfj,&
+                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
+                 RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-\
+                                      IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),2))*cfi )
+#else   
+      ! Compute scalar dissipation
+      d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+                  abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cfj,&
+                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*cfi )
+#endif
 
       ! Compute conservative fluxes
-      DfluxesAtEdge(:,idx) = dscale*d_ij*(DdataAtEdge(:,1,idx)-DdataAtEdge(:,2,idx))
+      IDX2(DfluxesAtEdge,:,idx,0,0) = dscale*&
+          d_ij*(IDX3(DdataAtEdge,:,1,idx,0,0,0)-&
+                IDX3(DdataAtEdge,:,2,idx,0,0,0))
     end do
 
   end subroutine mhd_calcFluxFCTRusDiss1d_sim
@@ -2429,10 +2574,10 @@ contains
     do idx = 1, nedges
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine mhd_trafoFluxDensity1d_sim
@@ -2479,12 +2624,60 @@ contains
     do idx = 1, nedges
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) =&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffDensity1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalDensity1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalDensity1d_sim
 
   !*****************************************************************************
 
@@ -2533,10 +2726,10 @@ contains
     do idx = 1, nedges
       
       ! Transformed total energy fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine mhd_trafoFluxEnergy1d_sim
@@ -2583,12 +2776,60 @@ contains
     do idx = 1, nedges
       
       ! Transformed total density difference
-      DtransformedDataAtEdge(1,idx) =&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffEnergy1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalEnergy1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the energy in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed energy values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          TOTALENERGY2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalEnergy1d_sim
 
   !*****************************************************************************
 
@@ -2638,43 +2879,40 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-      
       ! Transformed pressure fluxes
-#ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(1,1,idx) = (GAMMA-1.0_DP)*&
-          (0.5_DP*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(1,2,idx) =-(GAMMA-1.0_DP)*&
-          (0.5_DP*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-#else
-#error "Pressure for nonperfect gas must be implemented!"
-#endif
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          ((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          (ui*ui+vi*vi+wi*wi)*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         vi*YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         wi*ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            XMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+          -((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          (uj*uj+vj*vj+wj*wj)*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         vj*YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         wj*ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            XMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
     end do
     
   end subroutine mhd_trafoFluxPressure1d_sim
@@ -2721,12 +2959,60 @@ contains
     do idx = 1, nedges
       
       ! Transformed pressure difference
-      DtransformedDataAtEdge(1,idx) =&
-          PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffPressure1d_sim
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalPressure1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the pressure in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed pressure values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          PRESSURE2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalPressure1d_sim
 
   !*****************************************************************************
 
@@ -2776,43 +3062,42 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed velocity fluxes in x-direction
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          (X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -(X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed velocity fluxes in y-direction
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          (Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           vi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -(Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           vj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      IDX3(DtransformedFluxesAtEdge,2,1,idx,0,0,0) =&
+          (YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          vi*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      IDX3(DtransformedFluxesAtEdge,2,2,idx,0,0,0) =&
+         -(YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          vj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed velocity fluxes in z-direction
-      DtransformedFluxesAtEdge(3,1,idx) =&
-          (Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           wi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(3,2,idx) =&
-         -(Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           wj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      IDX3(DtransformedFluxesAtEdge,3,1,idx,0,0,0) =&
+          (ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          wi*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      IDX3(DtransformedFluxesAtEdge,3,2,idx,0,0,0) =&
+         -(ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          wj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
     end do
     
   end subroutine mhd_trafoFluxVelocity1d_sim
@@ -2859,22 +3144,78 @@ contains
     do idx = 1, nedges
 
       ! Transformed velocity difference in x-direction
-      DtransformedDataAtEdge(1,idx) =&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed velocity difference in y-direction
-      DtransformedDataAtEdge(2,idx) =&
-          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,2,idx,0,0) =&
+          YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed velocity difference in z-direction
-      DtransformedDataAtEdge(3,idx) =&
-          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,3,idx,0,0) =&
+          ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffVelocity1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalVelocity1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the velocity in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed x-velocity values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          XVELOCITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed y-velocity values
+      IDX2(DtransformedDataAtNode,2,idx,0,0) =&
+          YVELOCITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed z-velocity values
+      IDX2(DtransformedDataAtNode,3,idx,0,0) =&
+          ZVELOCITY2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalVelocity1d_sim
 
   !*****************************************************************************
 
@@ -2923,22 +3264,22 @@ contains
     do idx = 1, nedges
       
       ! Transformed momentum fluxes in x-direction
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed momentum fluxes in y-direction
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,2,1,idx,0,0,0) =&
+          YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,2,2,idx,0,0,0) =&
+         -YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed momentum fluxes in z-direction
-      DtransformedFluxesAtEdge(3,1,idx) =&
-          Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(3,2,idx) =&
-         -Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,3,1,idx,0,0,0) =&
+          ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,3,2,idx,0,0,0) =&
+         -ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
     
   end subroutine mhd_trafoFluxMomentum1d_sim
@@ -2985,22 +3326,78 @@ contains
     do idx = 1, nedges
       
       ! Transformed momentum difference in x-direction
-      DtransformedDataAtEdge(1,idx) =&
-          X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          X_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          XMOMENTUM3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          XMOMENTUM3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed momentum difference in y-direction
-      DtransformedDataAtEdge(2,idx) =&
-          Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          Y_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,2,idx,0,0) =&
+          YMOMENTUM3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          YMOMENTUM3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed momentum difference in z-direction
-      DtransformedDataAtEdge(3,idx) =&
-          Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          Z_MOMENTUM_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,3,idx,0,0) =&
+          ZMOMENTUM3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          ZMOMENTUM3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
     
   end subroutine mhd_trafoDiffMomentum1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalMomentum1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the momentum in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed x-momentum values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          XMOMENTUM2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed y-momentum values
+      IDX2(DtransformedDataAtNode,2,idx,0,0) =&
+          YMOMENTUM2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed z-momentum values
+      IDX2(DtransformedDataAtNode,3,idx,0,0) =&
+          ZMOMENTUM2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalMomentum1d_sim
 
   !*****************************************************************************
 
@@ -3049,16 +3446,16 @@ contains
     do idx = 1, nedges
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed total energy fluxes
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,2,1,idx,0,0,0) =&
+          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,2,2,idx,0,0,0) =&
+         -TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine mhd_trafoFluxDenEng1d_sim
@@ -3105,17 +3502,70 @@ contains
     do idx = 1, nedges
 
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) =&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed total energy difference
-      DtransformedDataAtEdge(2,idx) =&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,2,idx,0,0) =&
+          TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffDenEng1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalDenEng1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density and
+    ! energy in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed energy values
+      IDX2(DtransformedDataAtNode,2,idx,0,0) =&
+          TOTALENERGY2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalDenEng1d_sim
 
   !*****************************************************************************
 
@@ -3165,48 +3615,46 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-           
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed pressure fluxes
-#ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(2,1,idx) = (GAMMA-1.0_DP)*&
-          (0.5_DP*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(2,2,idx) =-(GAMMA-1.0_DP)*&
-          (0.5_DP*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-#else
-#error "Pressure for nonperfect gas must be implemented!"
-#endif
+      IDX3(DtransformedFluxesAtEdge,2,1,idx,0,0,0) =&
+          ((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          (ui*ui+vi*vi+wi*wi)*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         vi*YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         wi*ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            XMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
+      IDX3(DtransformedFluxesAtEdge,2,2,idx,0,0,0) =&
+          -((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          (uj*uj+vj*vj+wj*wj)*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         vj*YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         wj*ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            XMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
     end do
 
   end subroutine mhd_trafoFluxDenPre1d_sim
@@ -3253,17 +3701,70 @@ contains
     do idx = 1, nedges
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) = &
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) = &
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       
       ! Transformed pressure difference
-      DtransformedDataAtEdge(2,idx) =&
-          PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,2,idx,0,0) =&
+          PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffDenPre1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalDenPre1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density and
+    ! pressure in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed pressure values
+      IDX2(DtransformedDataAtNode,2,idx,0,0) =&
+          PRESSURE2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalDenPre1d_sim
   
   !*****************************************************************************
 
@@ -3314,78 +3815,76 @@ contains
     do idx = 1, nedges
       
       ! Compute velocities
-      ui = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      vi = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
-      wi = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      wj = Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      vi = YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
+      wi = ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       
       ! Transformed density fluxes
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed velocity fluxes in x-direction
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          (X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           ui*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -(X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           uj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      IDX3(DtransformedFluxesAtEdge,2,1,idx,0,0,0) =&
+          (XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          ui*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      IDX3(DtransformedFluxesAtEdge,2,2,idx,0,0,0) =&
+         -(XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          uj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed velocity fluxes in y-direction
-      DtransformedFluxesAtEdge(3,1,idx) =&
-          (Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           vi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(3,2,idx) =&
-         -(Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           vj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      IDX3(DtransformedFluxesAtEdge,3,1,idx,0,0,0) =&
+          (YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          vi*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      IDX3(DtransformedFluxesAtEdge,3,2,idx,0,0,0) =&
+         -(YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          vj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed velocity fluxes in z-direction
-      DtransformedFluxesAtEdge(4,1,idx) =&
-          (Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           wi*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      DtransformedFluxesAtEdge(4,2,idx) =&
-         -(Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-           wj*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))/&
-           DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)
+      IDX3(DtransformedFluxesAtEdge,4,1,idx,0,0,0) =&
+          (ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          wi*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+      IDX3(DtransformedFluxesAtEdge,4,2,idx,0,0,0) =&
+         -(ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+          wj*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0))/&
+             DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
       ! Transformed pressure fluxes
-#ifdef PERFECT_GAS
-      DtransformedFluxesAtEdge(5,1,idx) = (GAMMA-1.0_DP)*&
-          (0.5_DP*(ui*ui+vi*vi+wi*wi)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          ui*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          vi*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          wi*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)*&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-      DtransformedFluxesAtEdge(5,2,idx) =-(GAMMA-1.0_DP)*&
-          (0.5_DP*(uj*uj+vj*vj+wj*wj)*DENSITY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          uj*X_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          vj*Y_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          wj*Z_MOMENTUM_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx)-&
-          X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)*&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)-&
-          TOTAL_ENERGY_1T_FROM_CONSVAR(DfluxesAtEdge,NVAR1D,idx))
-#else
-#error "Pressure for nonperfect gas must be implemented!"
-#endif
+      IDX3(DtransformedFluxesAtEdge,5,1,idx,0,0,0) =&
+          ((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          (ui*ui+vi*vi+wi*wi)*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         ui*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         vi*YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         wi*ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            XMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            XMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)*&
+                            ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
+      IDX3(DtransformedFluxesAtEdge,5,2,idx,0,0,0) =&
+          -((MAGNETOHYDRODYN_GAMMA)-RCONST(1.0))*(RCONST(0.5)*&
+          (uj*uj+vj*vj+wj*wj)*DENSITY2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         uj*XMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         vj*YMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                         wj*ZMOMENTUM2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            XMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            XMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                            ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)*&
+                            ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)-&
+                          TOTALENERGY2(DfluxesAtEdge,IDX2,idx,0,0))
     end do
       
   end subroutine mhd_trafoFluxDenPreVel1d_sim
@@ -3433,32 +3932,97 @@ contains
     do idx = 1, nedges
       
       ! Transformed density difference
-      DtransformedDataAtEdge(1,idx) =&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          DENSITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+
       ! Transformed velocity difference in x-direction
-      DtransformedDataAtEdge(2,idx) =&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,2,idx,0,0) =&
+          XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed velocity difference in y-direction
-      DtransformedDataAtEdge(3,idx) =&
-          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,3,idx,0,0) =&
+          YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          YVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed velocity difference in z-direction
-      DtransformedDataAtEdge(4,idx) =&
-          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          Z_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
-      
+      IDX2(DtransformedDataAtEdge,4,idx,0,0) =&
+          ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          ZVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
+
       ! Transformed pressure difference
-      DtransformedDataAtEdge(5,idx) =&
-          PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,2,idx)-&
-          PRESSURE_2T_FROM_CONSVAR(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,5,idx,0,0) =&
+          PRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          PRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffDenPreVel1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalDenPreVel1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the density,
+    ! pressure and velocity in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed density values
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          DENSITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed x-velocity values
+      IDX2(DtransformedDataAtNode,2,idx,0,0) =&
+          XVELOCITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed y-velocity values
+      IDX2(DtransformedDataAtNode,3,idx,0,0) =&
+          YVELOCITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed z-velocity values
+      IDX2(DtransformedDataAtNode,4,idx,0,0) =&
+          ZVELOCITY2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed pressure values
+      IDX2(DtransformedDataAtNode,5,idx,0,0) =&
+          PRESSURE2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalDenPreVel1d_sim
 
   !*****************************************************************************
 
@@ -3507,16 +4071,16 @@ contains
     do idx = 1, nedges
 
       ! Transformed magnetic field fluxes in y-direction
-      DtransformedFluxesAtEdge(1,1,idx) =&
-          Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(1,2,idx) =&
-         -Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,1,1,idx,0,0,0) =&
+          YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,1,2,idx,0,0,0) =&
+         -YMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)
 
       ! Transformed magnetic field fluxes in z-direction
-      DtransformedFluxesAtEdge(2,1,idx) =&
-          Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)
-      DtransformedFluxesAtEdge(2,2,idx) =&
-         -Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(DfluxesAtEdge,NVAR1D,idx)
+      IDX3(DtransformedFluxesAtEdge,2,1,idx,0,0,0) =&
+          ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)
+      IDX3(DtransformedFluxesAtEdge,2,2,idx,0,0,0) =&
+         -ZMAGFIELD2(DfluxesAtEdge,IDX2,idx,0,0)
     end do
 
   end subroutine mhd_trafoFluxMagfield1d_sim
@@ -3564,17 +4128,69 @@ contains
     do idx = 1, nedges
       
       ! Transformed magnetic field difference in y-direction
-      DtransformedDataAtEdge(1,idx) =&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)-&
-          Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,1,idx,0,0) =&
+          YMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          YMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)
 
       ! Transformed magnetic field difference in z-direction
-      DtransformedDataAtEdge(2,idx) =&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,2,idx)-&
-          Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(DdataAtEdge,NVAR1D,1,idx)
+      IDX2(DtransformedDataAtEdge,2,idx,0,0) =&
+          ZMAGFIELD3(DdataAtEdge,IDX3,2,idx,0,0,0)-&
+          ZMAGFIELD3(DdataAtEdge,IDX3,1,idx,0,0,0)
     end do
 
   end subroutine mhd_trafoDiffMagfield1d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine mhd_trafoNodalMagfield1d_sim(DdataAtNode,&
+      nnodes, DtransformedDataAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the transformation of the given
+    ! conservative variables to nodal values for the magnetic field in 1D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DdataAtNode
+
+    ! Number of nodes
+    integer, intent(in) :: nnodes
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Transformed solution values for all nodes under consideration
+    !   DIMENSION(nvar,nnodes)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtNode
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, nnodes
+      
+      ! Transformed y-component of the magnetic field
+      IDX2(DtransformedDataAtNode,1,idx,0,0) =&
+          YMAGFIELD2(DdataAtNode,IDX2,idx,0,0)
+
+      ! Transformed z-component of the magnetic field
+      IDX2(DtransformedDataAtNode,2,idx,0,0) =&
+          ZMAGFIELD2(DdataAtNode,IDX2,idx,0,0)
+    end do
+
+  end subroutine mhd_trafoNodalMagfield1d_sim
 
   !*****************************************************************************
 
@@ -3708,7 +4324,7 @@ contains
 
 #ifndef MHD_USE_IBP
     call output_line('Application must be compiled with flag &
-        &-DHYDRO_USE_IBP if boundary conditions are imposed in weak sense',&
+        &-DMHD_USE_IBP if boundary conditions are imposed in weak sense',&
         OU_CLASS_ERROR, OU_MODE_STD, 'mhd_coeffVectorBdr1d_sim')
     call sys_halt()
 #endif
@@ -3899,29 +4515,27 @@ contains
       
       
       ! Compute auxiliary quantities
-      u = X_VELOCITY_FROM_CONSVAR(Dstate,NVAR1D)
-      v = Y_VELOCITY_FROM_CONSVAR(Dstate,NVAR1D)
-      w = Z_VELOCITY_FROM_CONSVAR(Dstate,NVAR1D)
-      p = TOTAL_PRESSURE_FROM_CONSVAR_1D(Dstate,NVAR1D)
-      q = X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*u +&
-          Y_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*v +&
-          Z_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*w
+      u = XVELOCITY1(Dstate,IDX1)
+      v = YVELOCITY1(Dstate,IDX1)
+      w = ZVELOCITY1(Dstate,IDX1)
+      p = TOTALPRESSURE1(Dstate,IDX1)
+      q = MAG_DOT_VEL1(Dstate,IDX1,u,v,w)
       
       ! Calculate ${\bf n}\cdot{\bf F}(U)$
-      Dflux(1) = dnx*(X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D))
-      Dflux(2) = dnx*(X_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D)*u+p)
-      Dflux(3) = dnx*(Y_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D)*u-&
-                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*&
-                      Y_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D))
-      Dflux(4) = dnx*(Z_MOMENTUM_FROM_CONSVAR(Dstate,NVAR1D)*u-&
-                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*&
-                      Z_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D))
-      Dflux(5) = dnx*(Y_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*u-&
-                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*v)
-      Dflux(6) = dnx*(Z_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*u-&
-                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*w)
-      Dflux(7) = dnx*((TOTAL_ENERGY_FROM_CONSVAR(Dstate,NVAR1D)+p)*u-&
-                      X_MAGNETICFIELD_FROM_CONSVAR_1D(Dstate,NVAR1D)*q)
+      Dflux(1) = dnx*(XMOMENTUM1(Dstate,IDX1))
+      Dflux(2) = dnx*(XMOMENTUM1(Dstate,IDX1)*u+p)
+      Dflux(3) = dnx*(YMOMENTUM1(Dstate,IDX1)*u-&
+                      XMAGFIELD1(Dstate,IDX1)*&
+                      YMAGFIELD1(Dstate,IDX1))
+      Dflux(4) = dnx*(ZMOMENTUM1(Dstate,IDX1)*u-&
+                      XMAGFIELD1(Dstate,IDX1)*&
+                      ZMAGFIELD1(Dstate,IDX1))
+      Dflux(5) = dnx*(YMAGFIELD1(Dstate,IDX1)*u-&
+                      XMAGFIELD1(Dstate,IDX1)*v)
+      Dflux(6) = dnx*(ZMAGFIELD1(Dstate,IDX1)*u-&
+                      XMAGFIELD1(Dstate,IDX1)*w)
+      Dflux(7) = dnx*((TOTALENERGY1(Dstate,IDX1)+p)*u-&
+                      XMAGFIELD1(Dstate,IDX1)*q)
 
     end subroutine doGalerkinFlux
 

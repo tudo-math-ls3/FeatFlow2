@@ -1,6 +1,22 @@
 #ifndef _MAGNETOHYDRODYNAMICS_OLD_H_
 #define _MAGNETOHYDRODYNAMICS_OLD_H_
 
+#if 0
+!-*- mode: f90; -*-
+!##############################################################################
+!# ****************************************************************************
+!# <name> magnetohydrodynamics </name>
+!# ****************************************************************************
+!#
+!# <purpose>
+!# This is the magnetohydrodynamic header file
+!#
+!# </purpose>
+!##############################################################################
+#endif
+
+#include "../../../../kernel/System/feat2constants.h"
+#include "../../../../kernel/System/fmath.h"
 #include "../flagship.h"
 
 
@@ -11,43 +27,17 @@
 #endif
 
 #if 0
-! Universal gas constant
+! Speficy ratio of specific heats (if required)
 #endif
-#define UNIVERSAL_GAS_CONSTANT   8.3145_DP
-
-
-#if 0
-!##############################################################################
-! Equations of state
-!##############################################################################
+#ifndef MAGNETOHYDRODYN_GAMMA
+#define MAGNETOHYDRODYN_GAMMA 1.4
 #endif
 
 #if 0
-! Constants for equations of state
+! Vacuum permittivity (if required)
 #endif
-#define EOS_PERFECT_GAS   1
-#define EOS_TAMMANN       2
-#define EOS_VANDERWAALS   3
-
-#if 0
-! Constants for types of gases
-#endif
-#ifdef PERFECT_GAS
-#define THERMALLY_IDEAL_GAS
-#define CALORICALLY_IDEAL_GAS
-#define POLYTROPIC_GAS
-#define HAS_HOMOGENEITY_PROPERTY
-#endif
-
-#if 0
-! Set equation of state (if required)
-#endif
-#ifndef EOS
-#ifdef PERFECT_GAS
-#define EOS  EOS_PERFECT_GAS
-#else
-#error "Equation of state must be specified!"
-#endif
+#ifndef MAGNETOHYDRODYN_VACUUM_PERM
+#define MAGNETOHYDRODYN_VACUUM_PERM 1.0
 #endif
 
 
@@ -60,420 +50,143 @@
 #if 0
 ! Compute x-velocity from conservative variables in 1D, 2D, and 3D
 #endif
-#define X_VELOCITY_FROM_CONSVAR(U,nvar) \
-  (X_MOMENTUM_FROM_CONSVAR(U,nvar)/MYNEWLINE\
-   DENSITY_FROM_CONSVAR(U,nvar))
-#define X_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1) \
-  (X_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1T_FROM_CONSVAR(U,nvar,i1))
-#define X_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1) \
-  (X_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1L_FROM_CONSVAR(U,nvar,i1))
-#define X_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (X_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define X_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (X_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define XVELOCITY1(U,IDX)              (XMOMENTUM1(U,IDX)/DENSITY1(U,IDX))
+#define XVELOCITY2(U,IDX,i,n1,n2)      (XMOMENTUM2(U,IDX,i,n1,n2)/DENSITY2(U,IDX,i,n1,n2))
+#define XVELOCITY3(U,IDX,i,j,n1,n2,n3) (XMOMENTUM3(U,IDX,i,j,n1,n2,n3)/DENSITY3(U,IDX,i,j,n1,n2,n3))
 
 #if 0
-! Compute y-velocity from conservative variables in 2D, and 3D
+! Compute y-velocity from conservative variables in 1D, 2D, and 3D
 #endif
-#define Y_VELOCITY_FROM_CONSVAR(U,nvar) \
-  (Y_MOMENTUM_FROM_CONSVAR(U,nvar)/MYNEWLINE\
-   DENSITY_FROM_CONSVAR(U,nvar))
-#define Y_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1) \
-  (Y_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1T_FROM_CONSVAR(U,nvar,i1))
-#define Y_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1) \
-  (Y_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1L_FROM_CONSVAR(U,nvar,i1))
-#define Y_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (Y_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define Y_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (Y_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define YVELOCITY1(U,IDX)              (YMOMENTUM1(U,IDX)/DENSITY1(U,IDX))
+#define YVELOCITY2(U,IDX,i,n1,n2)      (YMOMENTUM2(U,IDX,i,n1,n2)/DENSITY2(U,IDX,i,n1,n2))
+#define YVELOCITY3(U,IDX,i,j,n1,n2,n3) (YMOMENTUM3(U,IDX,i,j,n1,n2,n3)/DENSITY3(U,IDX,i,j,n1,n2,n3))
 
 #if 0
-! Compute z-velocity from conservative variables in 3D
+! Compute z-velocity from conservative variables in 1D, 2D, and 3D
 #endif
-#define Z_VELOCITY_FROM_CONSVAR(U,nvar) \
-  (Z_MOMENTUM_FROM_CONSVAR(U,nvar)/MYNEWLINE\
-   DENSITY_FROM_CONSVAR(U,nvar))
-#define Z_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1) \
-  (Z_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1T_FROM_CONSVAR(U,nvar,i1))
-#define Z_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1) \
-  (Z_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1L_FROM_CONSVAR(U,nvar,i1))
-#define Z_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (Z_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define Z_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (Z_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define ZVELOCITY1(U,IDX)              (ZMOMENTUM1(U,IDX)/DENSITY1(U,IDX))
+#define ZVELOCITY2(U,IDX,i,n1,n2)      (ZMOMENTUM2(U,IDX,i,n1,n2)/DENSITY2(U,IDX,i,n1,n2))
+#define ZVELOCITY3(U,IDX,i,j,n1,n2,n3) (ZMOMENTUM3(U,IDX,i,j,n1,n2,n3)/DENSITY3(U,IDX,i,j,n1,n2,n3))
 
 
 #if 0
 !##############################################################################
 ! Magnitude of velocity field
-!
-! There are always three momentum/velocity components.
 !##############################################################################
 #endif
 
 #if 0
-  ! Compute magnitude of velocity field in 1D, 2D, and 3D
+! Compute magnitude of velocity field in 1D, 2D, and 3D
 #endif
-#define VELOCITY_MAGNITUDE_FROM_CONSVAR(U,nvar) \
-  (sqrt(X_VELOCITY_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Y_VELOCITY_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Z_VELOCITY_FROM_CONSVAR(U,nvar)**2))
-#define VELOCITY_MAGNITUDE_1T_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt(X_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2))
-#define VELOCITY_MAGNITUDE_1L_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt(X_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2))
-#define VELOCITY_MAGNITUDE_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt(X_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2))
-#define VELOCITY_MAGNITUDE_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt(X_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2))
+#define VELMAGNITUDE1(U,IDX)              (sqrt(POW(XVELOCITY1(U,IDX),2)+MYNEWLINE POW(YVELOCITY1(U,IDX),2)+MYNEWLINE POW(ZVELOCITY1(U,IDX),2)))
+#define VELMAGNITUDE2(U,IDX,i,n1,n2)      (sqrt(POW(XVELOCITY2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(YVELOCITY2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(ZVELOCITY2(U,IDX,i,n1,n2),2)))
+#define VELMAGNITUDE3(U,IDX,i,j,n1,n2,n3) (sqrt(POW(XVELOCITY3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(YVELOCITY3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(ZVELOCITY3(U,IDX,i,j,n1,n2,n3),2)))
 
 
 #if 0
 !##############################################################################
 ! Magnitude of magnetic field
-!
-! There are two components in 1D and three components in 2D and 3D
 !##############################################################################
 #endif
 
 #if 0
-! Compute magnitude of magnetic field in 1D
+! Compute magnitude of magnetic field in 1D, 2D, and 3D
 #endif
-#define MAGNETICFIELD_MAGNITUDE_FROM_CONSVAR_1D(U,nvar) \
-  (sqrt(X_MAGNETICFIELD_FROM_CONSVAR_1D(U,nvar)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_FROM_CONSVAR_1D(U,nvar)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_FROM_CONSVAR_1D(U,nvar)**2))
-#define MAGNETICFIELD_MAGNITUDE_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  (sqrt(X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(U,nvar,i1)**2))
-#define MAGNETICFIELD_MAGNITUDE_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  (sqrt(X_MAGNETICFIELD_1L_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_1L_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_1L_FROM_CONSVAR_1D(U,nvar,i1)**2))
-#define MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)**2))
-#define MAGNETICFIELD_MAGNITUDE_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (sqrt(X_MAGNETICFIELD_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)**2))
-
-#if 0
-! Compute magnitude of magnetic field in 2D and 3D
-#endif
-#define MAGNETICFIELD_MAGNITUDE_FROM_CONSVAR(U,nvar) \
-  (sqrt(X_MAGNETICFIELD_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_FROM_CONSVAR(U,nvar)**2))
-#define MAGNETICFIELD_MAGNITUDE_1T_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt(X_MAGNETICFIELD_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_1T_FROM_CONSVAR(U,nvar,i1)**2))
-#define MAGNETICFIELD_MAGNITUDE_1L_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt(X_MAGNETICFIELD_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_1L_FROM_CONSVAR(U,nvar,i1)**2))
-#define MAGNETICFIELD_MAGNITUDE_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt(X_MAGNETICFIELD_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_2T_FROM_CONSVAR(U,nvar,i1,i2)**2))
-#define MAGNETICFIELD_MAGNITUDE_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt(X_MAGNETICFIELD_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_MAGNETICFIELD_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_MAGNETICFIELD_2L_FROM_CONSVAR(U,nvar,i1,i2)**2))
+#define MAGFIELDMAGNITUDE1(U,IDX)              (sqrt(POW(XMAGFIELD1(U,IDX),2)+MYNEWLINE POW(YMAGFIELD1(U,IDX),2)+MYNEWLINE POW(ZMAGFIELD1(U,IDX),2)))
+#define MAGFIELDMAGNITUDE2(U,IDX,i,n1,n2)      (sqrt(POW(XMAGFIELD2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(YMAGFIELD2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(ZMAGFIELD2(U,IDX,i,n1,n2),2)))
+#define MAGFIELDMAGNITUDE3(U,IDX,i,j,n1,n2,n3) (sqrt(POW(XMAGFIELD3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(YMAGFIELD3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(ZMAGFIELD3(U,IDX,i,j,n1,n2,n3),2)))
 
 
 #if 0
 !##############################################################################
 ! Pressure
-!
-! The total pressure involves the magnitic field so that we
-! have to distinguish between 1D and multiple dimensions
 !##############################################################################
 #endif
 
-#if (EOS == EOS_PERFECT_GAS)
-
 #if 0
-! Use equation of state for perfect gases
+! Compute pressure from conservative variables in 1D, 2D, and 3D
 #endif
-
-#if 0
-  ! Compute pressure from conservative variables in 1D
-#endif
-#define PRESSURE_FROM_CONSVAR_1D(U,nvar) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_FROM_CONSVAR_1D(U,nvar))
-#define PRESSURE_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(U,nvar,i1))
-#define PRESSURE_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(U,nvar,i1))
-#define PRESSURE_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_2T_FROM_CONSVAR_1D(U,nvar,i1,i2))
-#define PRESSURE_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_2L_FROM_CONSVAR_1D(U,nvar,i1,i2))
-
-#if 0
-  ! Compute pressure from conservative variables in 2D and 3D
-#endif
-#define PRESSURE_FROM_CONSVAR(U,nvar) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_FROM_CONSVAR(U,nvar))
-#define PRESSURE_1T_FROM_CONSVAR(U,nvar,i1) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1))
-#define PRESSURE_1L_FROM_CONSVAR(U,nvar,i1) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1))
-#define PRESSURE_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define PRESSURE_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (((GAMMA)-1.0_DP)*INTERNAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2))
-
-#else
-#error "Invalid equation of state"
-#endif
+#define PRESSURE1(U,IDX)              (((RCONST(MAGNETOHYDRODYN_GAMMA))-RCONST(1.0))*INTERNALENERGY1(U,IDX))
+#define PRESSURE2(U,IDX,i,n1,n2)      (((RCONST(MAGNETOHYDRODYN_GAMMA))-RCONST(1.0))*INTERNALENERGY2(U,IDX,i,n1,n2))
+#define PRESSURE3(U,IDX,i,j,n1,n2,n3) (((RCONST(MAGNETOHYDRODYN_GAMMA))-RCONST(1.0))*INTERNALENERGY3(U,IDX,i,j,n1,n2,n3))
 
 
 #if 0
 !##############################################################################
 ! Magnetic pressure
-!
-! The magnetic pressure involves the magnitic field so that we
-! have to distinguish between 1D and multiple dimensions
 !##############################################################################
 #endif
 
-#define MAGNETIC_PRESSURE_FROM_CONSVAR_1D    MAGNETIC_ENERGY_FROM_CONSVAR_1D
-#define MAGNETIC_PRESSURE_1T_FROM_CONSVAR_1D MAGNETIC_ENERGY_1T_FROM_CONSVAR_1D
-#define MAGNETIC_PRESSURE_1L_FROM_CONSVAR_1D MAGNETIC_ENERGY_1L_FROM_CONSVAR_1D
-#define MAGNETIC_PRESSURE_2T_FROM_CONSVAR_1D MAGNETIC_ENERGY_2T_FROM_CONSVAR_1D
-#define MAGNETIC_PRESSURE_2L_FROM_CONSVAR_1D MAGNETIC_ENERGY_2L_FROM_CONSVAR_1D
-
-#define MAGNETIC_PRESSURE_FROM_CONSVAR    MAGNETIC_ENERGY_FROM_CONSVAR
-#define MAGNETIC_PRESSURE_1T_FROM_CONSVAR MAGNETIC_ENERGY_1T_FROM_CONSVAR
-#define MAGNETIC_PRESSURE_1L_FROM_CONSVAR MAGNETIC_ENERGY_1L_FROM_CONSVAR
-#define MAGNETIC_PRESSURE_2T_FROM_CONSVAR MAGNETIC_ENERGY_2T_FROM_CONSVAR
-#define MAGNETIC_PRESSURE_2L_FROM_CONSVAR MAGNETIC_ENERGY_2L_FROM_CONSVAR
+#define MAGNETICPRESSURE1    MAGNETICENERGY1
+#define MAGNETICPRESSURE2    MAGNETICENERGY2
+#define MAGNETICPRESSURE3    MAGNETICENERGY3
 
 
 #if 0
 !##############################################################################
 ! Total pressure
-!
-! The total pressure involves the magnitic field so that we
-! have to distinguish between 1D and multiple dimensions
 !##############################################################################
 #endif
 
 #if 0
-! Compute total pressure from conservative variables in 1D
+! Compute total pressure from conservative variables in 1D, 2D, and 3D
 #endif
-#define TOTAL_PRESSURE_FROM_CONSVAR_1D(U,nvar) \
-  (PRESSURE_FROM_CONSVAR_1D(U,nvar)+MYNEWLINE\
-   MAGNETIC_PRESSURE_FROM_CONSVAR_1D(U,nvar))
-#define TOTAL_PRESSURE_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  (PRESSURE_1T_FROM_CONSVAR_1D(U,nvar,i1)+MYNEWLINE\
-   MAGNETIC_PRESSURE_1T_FROM_CONSVAR_1D(U,nvar,i1))
-#define TOTAL_PRESSURE_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  (PRESSURE_1L_FROM_CONSVAR_1D(U,nvar,i1)+MYNEWLINE\
-   MAGNETIC_PRESSURE_1L_FROM_CONSVAR_1D(U,nvar,i1))
-#define TOTAL_PRESSURE_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (PRESSURE_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)+MYNEWLINE\
-   MAGNETIC_PRESSURE_2T_FROM_CONSVAR_1D(U,nvar,i1,i2))
-#define TOTAL_PRESSURE_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (PRESSURE_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)+MYNEWLINE\
-   MAGNETIC_PRESSURE_2L_FROM_CONSVAR_1D(U,nvar,i1,i2))
-
-#if 0
-! Compute total pressure from conservative variables in 2D and 3D
-#endif
-#define TOTAL_PRESSURE_FROM_CONSVAR(U,nvar) \
-  (PRESSURE_FROM_CONSVAR(U,nvar)+MYNEWLINE\
-   MAGNETIC_PRESSURE_FROM_CONSVAR(U,nvar))
-#define TOTAL_PRESSURE_1T_FROM_CONSVAR(U,nvar,i1) \
-  (PRESSURE_1T_FROM_CONSVAR(U,nvar,i1)+MYNEWLINE\
-   MAGNETIC_PRESSURE_1T_FROM_CONSVAR(U,nvar,i1))
-#define TOTAL_PRESSURE_1L_FROM_CONSVAR(U,nvar,i1) \
-  (PRESSURE_1L_FROM_CONSVAR(U,nvar,i1)+MYNEWLINE\
-   MAGNETIC_PRESSURE_1L_FROM_CONSVAR(U,nvar,i1))
-#define TOTAL_PRESSURE_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (PRESSURE_2T_FROM_CONSVAR(U,nvar,i1,i2)+MYNEWLINE\
-   MAGNETIC_PRESSURE_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define TOTAL_PRESSURE_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (PRESSURE_2L_FROM_CONSVAR(U,nvar,i1,i2)+MYNEWLINE\
-   MAGNETIC_PRESSURE_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define TOTALPRESSURE1(U,IDX)              PRESSURE1(U,IDX)+MYNEWLINE MAGNETICPRESSURE1(U,IDX)
+#define TOTALPRESSURE2(U,IDX,i,n1,n2)      PRESSURE2(U,IDX,i,n1,n2)+MYNEWLINE MAGNETICPRESSURE2(U,IDX,i,n1,n2)
+#define TOTALPRESSURE3(U,IDX,i,j,n1,n2,n3) PRESSURE3(U,IDX,i,j,n1,n2,n3)+MYNEWLINE MAGNETICPRESSURE3(U,IDX,i,j,n1,n2,n3)
 
 
 #if 0
 !##############################################################################
 ! Kinetic Energy
-!
-! There are always three momentum/velocity components.
 !##############################################################################
 #endif
 
 #if 0
-  ! Compute kinetic energy from conservative variables in 1D, 2D, and 3D
+! Compute kinetic energy from conservative variables in 1D, 2D, and 3D
 #endif
-#define KINETIC_ENERGY_FROM_CONSVAR(U,nvar) \
-  (0.5_DP*(X_MOMENTUM_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-           Y_MOMENTUM_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-           Z_MOMENTUM_FROM_CONSVAR(U,nvar)**2)/MYNEWLINE\
-          DENSITY_FROM_CONSVAR(U,nvar))
-#define KINETIC_ENERGY_1T_FROM_CONSVAR(U,nvar,i1) \
-  (0.5_DP*(X_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-           Y_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-           Z_MOMENTUM_1T_FROM_CONSVAR(U,nvar,i1)**2)/MYNEWLINE\
-          DENSITY_1T_FROM_CONSVAR(U,nvar,i1))
-#define KINETIC_ENERGY_1L_FROM_CONSVAR(U,nvar,i1) \
-  (0.5_DP*(X_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-           Y_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-           Z_MOMENTUM_1L_FROM_CONSVAR(U,nvar,i1)**2)/MYNEWLINE\
-          DENSITY_1L_FROM_CONSVAR(U,nvar,i1))
-#define KINETIC_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (0.5_DP*(X_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-           Y_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-           Z_MOMENTUM_2T_FROM_CONSVAR(U,nvar,i1,2)**2)/MYNEWLINE\
-          DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define KINETIC_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (0.5_DP*(X_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-           Y_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-           Z_MOMENTUM_2L_FROM_CONSVAR(U,nvar,i1,i2)**2)/MYNEWLINE\
-          DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define KINETICENERGY1(U,IDX)              (RCONST(0.5)*(POW(XMOMENTUM1(U,IDX),2)+MYNEWLINE POW(YMOMENTUM1(U,IDX),2)+MYNEWLINE POW(ZMOMENTUM1(U,IDX),2))/MYNEWLINE DENSITY1(U,IDX))
+#define KINETICENERGY2(U,IDX,i,n1,n2)      (RCONST(0.5)*(POW(XMOMENTUM2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(YMOMENTUM2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(ZMOMENTUM2(U,IDX,i,n1,n2),2))/MYNEWLINE DENSITY2(U,IDX,i,n1,n2))
+#define KINETICENERGY3(U,IDX,i,j,n1,n2,n3) (RCONST(0.5)*(POW(XMOMENTUM3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(YMOMENTUM3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(ZMOMENTUM3(U,IDX,i,j,n1,n2,n3),2))/MYNEWLINE DENSITY3(U,IDX,i,j,n1,n2,n3))
+
+
+#if 0
+!##############################################################################
+! Specific total energy, aka, total energy per unit mass
+!##############################################################################
+#endif
+
+#define SPECIFICTOTALENERGY1(U,IDX)              (TOTALENERGY1(U,IDX)/DENSITY1(U,IDX))
+#define SPECIFICTOTALENERGY2(U,IDX,i,n1,n2)      (TOTALENERGY2(U,IDX,i,n1,n2)/DENSITY2(U,IDX,i,n1,n2))
+#define SPECIFICTOTALENERGY3(U,IDX,i,j,n1,n2,n3) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)/DENSITY3(U,IDX,i,j,n1,n2,n3))
 
 
 #if 0
 !##############################################################################
 ! Internal Energy
-!
-! The internal energy involves the magnitic field so that we
-! have to distinguish between 1D and multiple dimensions
 !##############################################################################
 #endif
 
 #if 0
-! Compute internal energy from conservative variables in 1D
+! Compute internal energy from conservative variables in 1D, 2D, and 3D
 #endif
-#define INTERNAL_ENERGY_FROM_CONSVAR_1D(U,nvar) \
-  (TOTAL_ENERGY_FROM_CONSVAR(U,nvar)-MYNEWLINE\
-   KINETIC_ENERGY_FROM_CONSVAR(U,nvar)-MYNEWLINE\
-   MAGNETIC_ENERGY_FROM_CONSVAR_1D(U,nvar))
-#define INTERNAL_ENERGY_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  (TOTAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   KINETIC_ENERGY_1T_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   MAGNETIC_ENERGY_1T_FROM_CONSVAR_1D(U,nvar,i1))
-#define INTERNAL_ENERGY_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  (TOTAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   KINETIC_ENERGY_1L_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   MAGNETIC_ENERGY_1L_FROM_CONSVAR_1D(U,nvar,i1))
-#define INTERNAL_ENERGY_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (TOTAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   KINETIC_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   MAGNETIC_ENERGY_2T_FROM_CONSVAR_1D(U,nvar,i1,i2))
-#define INTERNAL_ENERGY_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (TOTAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   KINETIC_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   MAGNETIC_ENERGY_2L_FROM_CONSVAR_1D(U,nvar,i1,i2))
-
-#if 0
-! Compute internal energy from conservative variables in 2D and 3D
-#endif
-#define INTERNAL_ENERGY_FROM_CONSVAR(U,nvar) \
-  (TOTAL_ENERGY_FROM_CONSVAR(U,nvar)-MYNEWLINE\
-   KINETIC_ENERGY_FROM_CONSVAR(U,nvar)-MYNEWLINE\
-   MAGNETIC_ENERGY_FROM_CONSVAR(U,nvar))
-#define INTERNAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1) \
-  (TOTAL_ENERGY_1T_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   KINETIC_ENERGY_1T_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   MAGNETIC_ENERGY_1T_FROM_CONSVAR(U,nvar,i1))
-#define INTERNAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1) \
-  (TOTAL_ENERGY_1L_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   KINETIC_ENERGY_1L_FROM_CONSVAR(U,nvar,i1)-MYNEWLINE\
-   MAGNETIC_ENERGY_1L_FROM_CONSVAR(U,nvar,i1))
-#define INTERNAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (TOTAL_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   KINETIC_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   MAGNETIC_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define INTERNAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (TOTAL_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   KINETIC_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2)-MYNEWLINE\
-   MAGNETIC_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define INTERNALENERGY1(U,IDX)              (TOTALENERGY1(U,IDX)-MYNEWLINE KINETICENERGY1(U,IDX)-MYNEWLINE MAGNETICENERGY1(U,IDX))
+#define INTERNALENERGY2(U,IDX,i,n1,n2)      (TOTALENERGY2(U,IDX,i,n1,n2)-MYNEWLINE KINETICENERGY2(U,IDX,i,n1,n2)-MYNEWLINE MAGNETICENERGY2(U,IDX,i,n1,n2))
+#define INTERNALENERGY3(U,IDX,i,j,n1,n2,n3) (TOTALENERGY3(U,IDX,i,j,n1,n2,n3)-MYNEWLINE KINETICENERGY3(U,IDX,i,j,n1,n2,n3)-MYNEWLINE MAGNETICENERGY3(U,IDX,i,j,n1,n2,n3))
 
 
 #if 0
 !##############################################################################
 ! Magnetic energy
-!
-! There are two components in 1D and three components in 2D and 3D
 !##############################################################################
 #endif
 
 #if 0
-! Compute magnetic energy in 1D
+  ! Compute magnitude energy in 1D, 2D, and 3D
 #endif
-#define MAGNETIC_ENERGY_FROM_CONSVAR_1D(U,nvar) \
-  ((X_MAGNETICFIELD_FROM_CONSVAR_1D(U,nvar)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_FROM_CONSVAR_1D(U,nvar)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_FROM_CONSVAR_1D(U,nvar)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  ((X_MAGNETICFIELD_1T_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_1T_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_1T_FROM_CONSVAR_1D(U,nvar,i1)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  ((X_MAGNETICFIELD_1L_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_1L_FROM_CONSVAR_1D(U,nvar,i1)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_1L_FROM_CONSVAR_1D(U,nvar,i1)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  ((X_MAGNETICFIELD_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  ((X_MAGNETICFIELD_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)**2)/(2.0_DP*VACUUM_PERM))
-
-#if 0
-! Compute magnitude energy in 2D and 3D
-#endif
-#define MAGNETIC_ENERGY_FROM_CONSVAR(U,nvar) \
-  ((X_MAGNETICFIELD_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_FROM_CONSVAR(U,nvar)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_1T_FROM_CONSVAR(U,nvar,i1) \
-  ((X_MAGNETICFIELD_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_1T_FROM_CONSVAR(U,nvar,i1)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_1L_FROM_CONSVAR(U,nvar,i1) \
-  ((X_MAGNETICFIELD_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_1L_FROM_CONSVAR(U,nvar,i1)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  ((X_MAGNETICFIELD_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_2T_FROM_CONSVAR(U,nvar,i1,i2)**2)/(2.0_DP*VACUUM_PERM))
-#define MAGNETIC_ENERGY_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  ((X_MAGNETICFIELD_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-    Y_MAGNETICFIELD_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-    Z_MAGNETICFIELD_2L_FROM_CONSVAR(U,nvar,i1,i2)**2)/(2.0_DP*VACUUM_PERM))
+#define MAGNETICENERGY1(U,IDX)              (POW(XMAGFIELD1(U,IDX),2)+MYNEWLINE POW(YMAGFIELD1(U,IDX),2)+MYNEWLINE POW(ZMAGFIELD1(U,IDX),2))/(RCONST(2.0)*MAGNETOHYDRODYN_VACUUM_PERM)
+#define MAGNETICENERGY2(U,IDX,i,n1,n2)      (POW(XMAGFIELD2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(YMAGFIELD2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(ZMAGFIELD2(U,IDX,i,n1,n2),2))/(RCONST(2.0)*MAGNETOHYDRODYN_VACUUM_PERM)
+#define MAGNETICENERGY3(U,IDX,i,j,n1,n2,n3) (POW(XMAGFIELD3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(YMAGFIELD3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(ZMAGFIELD3(U,IDX,i,j,n1,n2,n3),2))/(RCONST(2.0)*MAGNETOHYDRODYN_VACUUM_PERM)
 
 
 #if 0
@@ -484,57 +197,13 @@
 !##############################################################################
 #endif
 
-#ifdef THERMALLY_IDEAL_GAS
-
 #if 0
-! Compute speed of sound for a thermally perfect gas in 1D
+  ! Compute speed of sound for a thermally perfect gas in 1D, 2D, and 3D
 #endif
-#define SPEED_OF_SOUND_FROM_CONSVAR_1D(U,nvar) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_FROM_CONSVAR_1D(U,nvar)/MYNEWLINE\
-   DENSITY_FROM_CONSVAR(U,nvar)))
-#define SPEED_OF_SOUND_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_1T_FROM_CONSVAR_1D(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1T_FROM_CONSVAR(U,nvar,i1)))
-#define SPEED_OF_SOUND_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_1L_FROM_CONSVAR_1D(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1L_FROM_CONSVAR(U,nvar,i1)))
-#define SPEED_OF_SOUND_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_2T_FROM_CONSVAR_1D(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2)))
-#define SPEED_OF_SOUND_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_2L_FROM_CONSVAR_1D(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2)))
+#define SOUNDSPEED1(U,IDX)              (sqrt((RCONST(MAGNETOHYDRODYN_GAMMA))*MYNEWLINE PRESSURE1(U,IDX)/MYNEWLINE DENSITY1(U,IDX)))
+#define SOUNDSPEED2(U,IDX,i,n1,n2)      (sqrt((RCONST(MAGNETOHYDRODYN_GAMMA))*MYNEWLINE PRESSURE2(U,IDX,i,n1,n2)/MYNEWLINE DENSITY2(U,IDX,i,n1,n2)))
+#define SOUNDSPEED3(U,IDX,i,j,n1,n2,n3) (sqrt((RCONST(MAGNETOHYDRODYN_GAMMA))*MYNEWLINE PRESSURE3(U,IDX,i,j,n1,n2,n3)/MYNEWLINE DENSITY3(U,IDX,i,j,n1,n2,n3)))
 
-#if 0
-! Compute speed of sound for a thermally perfect gas in 2D and 3D
-#endif
-#define SPEED_OF_SOUND_FROM_CONSVAR(U,nvar) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_FROM_CONSVAR(U,nvar)/MYNEWLINE\
-   DENSITY_FROM_CONSVAR(U,nvar)))
-#define SPEED_OF_SOUND_1T_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_1T_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1T_FROM_CONSVAR(U,nvar,i1)))
-#define SPEED_OF_SOUND_1L_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_1L_FROM_CONSVAR(U,nvar,i1)/MYNEWLINE\
-   DENSITY_1L_FROM_CONSVAR(U,nvar,i1)))
-#define SPEED_OF_SOUND_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_2T_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2T_FROM_CONSVAR(U,nvar,i1,i2)))
-#define SPEED_OF_SOUND_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt((GAMMA)*MYNEWLINE\
-   PRESSURE_2L_FROM_CONSVAR(U,nvar,i1,i2)/MYNEWLINE\
-   DENSITY_2L_FROM_CONSVAR(U,nvar,i1,i2)))
-
-#endif
 
 #if 0
 !##############################################################################
@@ -545,61 +214,10 @@
 #endif
 
 #if 0
-! Compute the Mach number in 1D
+  ! Compute the Mach number in 1D, 2D, and 3D
 #endif
-#define MACH_NUMBER_FROM_CONSVAR_1D(U,nvar) \
-  (sqrt(X_VELOCITY_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Y_VELOCITY_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Z_VELOCITY_FROM_CONSVAR(U,nvar)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_FROM_CONSVAR_1D(U,nvar))
-#define MACH_NUMBER_1T_FROM_CONSVAR_1D(U,nvar,i1) \
-  (sqrt(X_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_1T_FROM_CONSVAR_1D(U,nvar,i1))
-#define MACH_NUMBER_1L_FROM_CONSVAR_1D(U,nvar,i1) \
-  (sqrt(X_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_1L_FROM_CONSVAR_1D(U,nvar,i1))
-#define MACH_NUMBER_2T_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (sqrt(X_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_2T_FROM_CONSVAR_1D(U,nvar,i1,i2))
-#define MACH_NUMBER_2L_FROM_CONSVAR_1D(U,nvar,i1,i2) \
-  (sqrt(X_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_2L_FROM_CONSVAR_1D(U,nvar,i1,i2))
-
-#if 0
-! Compute the Mach number in 2D and 3D
-#endif
-#define MACH_NUMBER_FROM_CONSVAR(U,nvar) \
-  (sqrt(X_VELOCITY_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Y_VELOCITY_FROM_CONSVAR(U,nvar)**2+MYNEWLINE\
-        Z_VELOCITY_FROM_CONSVAR(U,nvar)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_FROM_CONSVAR(U,nvar))
-#define MACH_NUMBER_1T_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt(X_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_VELOCITY_1T_FROM_CONSVAR(U,nvar,i1)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_1T_FROM_CONSVAR(U,nvar,i1))
-#define MACH_NUMBER_1L_FROM_CONSVAR(U,nvar,i1) \
-  (sqrt(X_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Y_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2+MYNEWLINE\
-        Z_VELOCITY_1L_FROM_CONSVAR(U,nvar,i1)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_1L_FROM_CONSVAR(U,nvar,i1))
-#define MACH_NUMBER_2T_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt(X_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_VELOCITY_2T_FROM_CONSVAR(U,nvar,i1,i2)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_2T_FROM_CONSVAR(U,nvar,i1,i2))
-#define MACH_NUMBER_2L_FROM_CONSVAR(U,nvar,i1,i2) \
-  (sqrt(X_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Y_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2+MYNEWLINE\
-        Z_VELOCITY_2L_FROM_CONSVAR(U,nvar,i1,i2)**2)/MYNEWLINE\
-        SPEED_OF_SOUND_2L_FROM_CONSVAR(U,nvar,i1,i2))
+#define MACHNUMBER1(U,IDX)              (sqrt(POW(XVELOCITY1(U,IDX),2)+MYNEWLINE POW(YVELOCITY1(U,IDX),2)+MYNEWLINE POW(ZVELOCITY1(U,IDX),2))/MYNEWLINE	SOUNDSPEED1(U,IDX))
+#define MACHNUMBER2(U,IDX,i,n1,n2)      (sqrt(POW(XVELOCITY2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(YVELOCITY2(U,IDX,i,n1,n2),2)+MYNEWLINE POW(ZVELOCITY2(U,IDX,i,n1,n2),2))/MYNEWLINE SOUNDSPEED2(U,IDX,i,n1,n2))
+#define MACHNUMBER3(U,IDX,i,j,n1,n2,n3) (sqrt(POW(XVELOCITY3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(YVELOCITY3(U,IDX,i,j,n1,n2,n3),2)+MYNEWLINE POW(ZVELOCITY3(U,IDX,i,j,n1,n2,n3),2))/MYNEWLINE SOUNDSPEED3(U,IDX,i,j,n1,n2,n3))
 
 #endif
