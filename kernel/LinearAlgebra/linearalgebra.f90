@@ -10139,7 +10139,11 @@ end subroutine qscopy
 ! ***************************************************************************
 
 !<subroutine>
-  pure subroutine sset(n,sa,sx,incx)
+
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine sset(n,sa,sx,incx)
 
 !<description>
   ! Sets a single precision vector equal to a constant sx := sa
@@ -10207,6 +10211,10 @@ end subroutine qscopy
 ! ***************************************************************************
 
 !<subroutine>
+
+#ifndef USE_OPENMP
+  pure&
+#endif
   subroutine dset(n,da,dx,incx)
 
 !<description>
@@ -10275,7 +10283,11 @@ end subroutine qscopy
 ! ***************************************************************************
 
 !<subroutine>
-  pure subroutine qset(n,qa,qx,incx)
+
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine qset(n,qa,qx,incx)
 
 !<description>
   ! Sets a quad precision vector equal to a constant qx := qa
