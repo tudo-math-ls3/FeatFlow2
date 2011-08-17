@@ -360,66 +360,66 @@ contains
 !    end do
 !    end do
 
-!! Linear convection
-!  do i = 1, size(Dvalues,1)
-!    do j = 1, size(Dvalues,2)
-!       dx = Dpoints(1,i,j)
-!       dy = Dpoints(2,i,j)
-!       drad = sqrt(dx*dx+dy*dy)
-!       Dvalues(i,j) = drad**3.0_dp !min(drad,1.0_dp)
-!    end do
-!    end do
-
-
-
-
-
-    ! Euler: SODs shock tube
-    
-    iunit1 = sys_getFreeUnit()
-    open(iunit1, file='./SODx.out')
-    iunit2 = sys_getFreeUnit()
-    open(iunit2, file='./SODrho.out')
-    
-    do i = 1, 1601
-      read(iunit1,*) Drefx(i)
-      read(iunit2,*) Dreference(i)
+! Linear convection
+  do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+       dx = Dpoints(1,i,j)
+       dy = Dpoints(2,i,j)
+       drad = sqrt(dx*dx+dy*dy)
+       Dvalues(i,j) = drad**3.0_dp !min(drad,1.0_dp)
     end do
-    
-    close(iunit1)
-    close(iunit2)
-    
-    
-      select case (cderivative)
-      case (DER_FUNC)
-        
-                        
-        do ielement = 1, nelements
-        do ipoint = 1, npointsPerElement
-          dx = Dpoints(1,ipoint,ielement)
-          do i = 1, 1601
-            if (dx < Drefx(i)) then
-              exit
-            end if
-          end do
-          
-          dh = (dx-Drefx(i-1))/(Drefx(i)-Drefx(i-1))
-                
-          Dvalues(ipoint,ielement) =(1.0_dp-dh)* Dreference(i-1) +(dh)* Dreference(i)
-          
-        end do
-        end do
-                                  
-      case (DER_DERIV_X)
-      write(*,*) 'Error in calculating L2-error'
-        
-      case (DER_DERIV_Y)
-      write(*,*) 'Error in calculating L2-error'
-        
-      case DEFAULT
-        ! Unknown. Set the result to 0.0.
-        Dvalues = 0.0_DP
-      end select
+    end do
+
+
+
+
+
+!    ! Euler: SODs shock tube
+!    
+!    iunit1 = sys_getFreeUnit()
+!    open(iunit1, file='./SODx.out')
+!    iunit2 = sys_getFreeUnit()
+!    open(iunit2, file='./SODrho.out')
+!    
+!    do i = 1, 1601
+!      read(iunit1,*) Drefx(i)
+!      read(iunit2,*) Dreference(i)
+!    end do
+!    
+!    close(iunit1)
+!    close(iunit2)
+!    
+!    
+!      select case (cderivative)
+!      case (DER_FUNC)
+!        
+!                        
+!        do ielement = 1, nelements
+!        do ipoint = 1, npointsPerElement
+!          dx = Dpoints(1,ipoint,ielement)
+!          do i = 1, 1601
+!            if (dx < Drefx(i)) then
+!              exit
+!            end if
+!          end do
+!          
+!          dh = (dx-Drefx(i-1))/(Drefx(i)-Drefx(i-1))
+!                
+!          Dvalues(ipoint,ielement) =(1.0_dp-dh)* Dreference(i-1) +(dh)* Dreference(i)
+!          
+!        end do
+!        end do
+!                                  
+!      case (DER_DERIV_X)
+!      write(*,*) 'Error in calculating L2-error'
+!        
+!      case (DER_DERIV_Y)
+!      write(*,*) 'Error in calculating L2-error'
+!        
+!      case DEFAULT
+!        ! Unknown. Set the result to 0.0.
+!        Dvalues = 0.0_DP
+!      end select
 
 
 
@@ -2340,8 +2340,8 @@ contains
 
 
              ! Constant
-             Dcoefficients (1,ipoint,iel) = 1.0_dp
-!             Dcoefficients (1,ipoint,iel) = 0.0_dp
+             !Dcoefficients (1,ipoint,iel) = 1.0_dp
+             Dcoefficients (1,ipoint,iel) = 0.0_dp
 
 
              !          ! For scalar problem
@@ -8172,6 +8172,7 @@ contains
 
           dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
 
+          ! Boundary conditions
           if (IelementList(iel)==0) then
           
             if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp

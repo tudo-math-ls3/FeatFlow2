@@ -7,7 +7,7 @@ nlmax = 5
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-#prmname = ./pre/QUAD.prm
+prmname = ./pre/QUAD.prm
 #prmname = ./pre/rect_01x0.1_quads.prm
 #prmname = ./pre/quadm5t5.prm
 #prmname = ./pre/isentrvort.prm
@@ -19,13 +19,13 @@ nlmax = 5
 #prmname = ./pre/dedeobstacle.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/ramp_5deg_inlet_quads.prm
-prmname = ./pre/ramp_5deg_quads.prm
+#prmname = ./pre/ramp_5deg_quads.prm
 #prmname = ./pre/gammchannel_quads.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-#triname = ./pre/QUAD.tri
+triname = ./pre/QUAD.tri
 #triname = ./pre/rect_01x0.1_quads.tri
 #triname = ./pre/quadm5t5.tri
 #triname = ./pre/isentrvort.tri
@@ -37,7 +37,7 @@ prmname = ./pre/ramp_5deg_quads.prm
 #triname = ./pre/dedeobstacle.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/ramp_5deg_inlet_quads.tri
-triname = ./pre/ramp_5deg_quads.tri
+#triname = ./pre/ramp_5deg_quads.tri
 #triname = ./pre/gammchannel_quads.tri
 
 # What kind of finite elements do we use?
@@ -46,13 +46,13 @@ triname = ./pre/ramp_5deg_quads.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 2
+FEkind = 4
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.05
+dt = 1000000.0
 
 # Final time
 ttfinal = 3.0
@@ -82,7 +82,7 @@ limiter = 0
 #  8: Implicit Euler equations
 #  9: Implicit linear convection Newton-like implementation
 # 10: Implicit Euler equations Newton-like implementation
-timestepping = 10
+timestepping = 9
 
 # What type to build the RHS
 rhstype = 1

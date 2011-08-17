@@ -78,7 +78,7 @@ contains
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
-    integer, parameter :: nvar2d = 4
+    integer, parameter :: nvar2d = 1
 
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -3471,12 +3471,12 @@ contains
     ! Output solution to vtk file
     sofile = './gmv/u2d_rho'
     call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-    sofile = './gmv/u2d_rhou'
-    call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
-    sofile = './gmv/u2d_rhov'
-    call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
-    sofile = './gmv/u2d_rhoE'
-    call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
+!    sofile = './gmv/u2d_rhou'
+!    call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
+!    sofile = './gmv/u2d_rhov'
+!    call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
+!    sofile = './gmv/u2d_rhoE'
+!    call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
 
 
 
@@ -3509,13 +3509,13 @@ contains
 !    call pperr_scalarDefault (PPERR_L1ERROR, derror, rsolBlock%Rvectorblock(1),&
 !                           getReferenceFunction_2D, ffunctionWeight = getWeightFunction) 
 
-    call dg_pperr_scalar2d_conf (PPERR_L1ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
-                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
-    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-    
-    call dg_pperr_scalar2d_conf (PPERR_L2ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
-                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+!    call dg_pperr_scalar2d_conf (PPERR_L1ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
+!                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!    
+!    call dg_pperr_scalar2d_conf (PPERR_L2ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
+!                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
     
     write(*,*) 'Average number of iterations:', real(iiterations)/real(inumSolverCalls)
 
