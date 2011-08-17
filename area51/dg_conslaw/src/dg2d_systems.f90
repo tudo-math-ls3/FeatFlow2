@@ -567,7 +567,7 @@ contains
        !rcollection%SquickAccess(2) = cvariables
        rcollection%SquickAccess(1) = sic
 
-
+     write(*,*) 'Projecting initial condition'
 
        do ivar = 1, nvar2d
 
@@ -606,6 +606,10 @@ contains
        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
        if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
+
+       write(*,*) ''
+       write(*,*) 'Starting timestepping'
+       write(*,*) ''
 
        ! Write first video file (the initial conditions)
        ! If we want to make a video
