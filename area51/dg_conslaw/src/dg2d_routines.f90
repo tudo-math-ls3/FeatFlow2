@@ -33,6 +33,9 @@ module dg2d_routines
   use bcassembly
   use pprocerror
   use genoutput
+  
+  use linearsystemblock
+  use linearsystemscalar
 
 
   use ucd

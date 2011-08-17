@@ -26,6 +26,7 @@
     use domainintegration
     use spatialdiscretisation
     use collection
+    use linearsystemscalar
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
