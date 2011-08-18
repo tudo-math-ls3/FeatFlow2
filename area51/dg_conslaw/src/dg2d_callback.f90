@@ -3530,7 +3530,7 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -3554,12 +3554,13 @@ contains
     real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
     real(dp), dimension(3) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
+    type(t_domainIntSubset)              :: rdIS
 
     ! nvar2d = 3
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
-
+    rdIS = rdomainIntSubset
+    rdIS%ielementDistribution = 1
 
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
@@ -3570,7 +3571,7 @@ contains
     ! First evaluate the solution in each point
     do ivar = 1, nvar2d
        call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
-            rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+            rdIS, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
     end do
 
 
@@ -4542,73 +4543,78 @@ contains
 
   !<subroutine>
 
-  subroutine Euler_flux_sys_block (rdiscretisation,rform, &
-       nelements,npointsPerElement,Dpoints, &
-       IdofsTest,rdomainIntSubset,&
-       Dcoefficients,rcollection)
-
+  subroutine Euler_flux_sys_block (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, &
+                  IdofsTest, rdomainIntSubset, &
+                  Dcoefficients, rcollection)
+    
     use basicgeometry
-    use triangulation
     use collection
-    use scalarpde
     use domainintegration
-
-    !<description>
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+  !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form.
     !
     ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
+    ! elements (cubature points) in in real coordinates.
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points and all the terms in the linear form
     ! the corresponding coefficients in front of the terms.
-    !</description>
-
-    !<input>
+  !</description>
+    
+  !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
     ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(in)                              :: rform
-
+    type(t_linearForm), intent(in) :: rform
+    
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(in)                                         :: nelements
-
+    integer, intent(in) :: nelements
+    
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(in)                                         :: npointsPerElement
-
+    integer, intent(in) :: npointsPerElement
+    
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(#local DOF`s in test space,nelements)
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
-
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+    
+  !<inputoutput>
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional      :: rcollection
-
-    !</input>
-
-    !<output>
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+  
+  !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
-    !   DIMENSION(nvar,itermCount,npointsPerElement,nelements)
+    !   DIMENSION(nblocks,itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:,:), intent(out)                      :: Dcoefficients
-    !</output>
-
-    !</subroutine>
+    real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    
 
     integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
     real(DP) :: dvx, dvy, dx, dy, dsol
@@ -4616,11 +4622,13 @@ contains
     real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
     real(dp), dimension(4) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
+    type(t_domainIntSubset) :: rdIS
 
     ! nvar2d = 4
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    rdIS = rdomainIntSubset
+    rdIS%ielementDistribution = 1
 
 
     ! rform%itermCount gives the number of additional terms, here 2
@@ -4632,7 +4640,7 @@ contains
     ! First evaluate the solution in each point
     do ivar = 1, nvar2d
        call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
-            rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+            rdIS, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
     end do
 
     ! Loop over all elements and all points   
@@ -5272,7 +5280,7 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -5296,11 +5304,13 @@ contains
     real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
     real(dp), dimension(4) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
+    type(t_domainIntSubset) :: rdIS
 
     !nvar2d = 1
     nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
 
-    rdomainIntSubset%ielementDistribution = 1
+    rdIS = rdomainIntSubset
+    rdIS%ielementDistribution = 1
 
     ! Which variable (of the system) we are at
     currentvar = rcollection%IquickAccess(1)
@@ -5314,7 +5324,7 @@ contains
     ! First evaluate the solution in each point
     do ivar = 1, nvar2d
        call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
-            rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+            rdIS, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
     end do
 
     !call    lsyssc_getbase_double(rcollection%p_rvectorQuickAccess1%RvectorBlock(3),p_ddata)
@@ -8261,7 +8271,7 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -8287,10 +8297,12 @@ contains
     real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
     real(dp), dimension(3) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
+    type(t_domainIntSubset)             :: rdIS
 
     nvar2d = 1
 
-    rdomainIntSubset%ielementDistribution = 1
+    rdIS = rdomainIntSubset
+    rdIS%ielementDistribution = 1
 
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
@@ -8301,7 +8313,7 @@ contains
     ! First evaluate the solution in each point
     do ivar = 1, nvar2d
        call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
-            rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+            rdIS, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
     end do
 
     !call    lsyssc_getbase_double(rcollection%p_rvectorQuickAccess1%RvectorBlock(3),p_ddata)

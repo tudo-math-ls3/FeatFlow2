@@ -3521,7 +3521,7 @@ contains
 !                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
 !    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
     
-    write(*,*) 'Average number of iterations:', real(iiterations)/real(inumSolverCalls)
+    write(*,*) 'Average number of iterations:', real(iiterations)/real(max(1,inumSolverCalls))
 
 
     !    call calc_error(rsolBlock%Rvectorblock(1), derror, raddtriadata)
