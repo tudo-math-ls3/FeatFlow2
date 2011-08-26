@@ -1855,6 +1855,7 @@ contains
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
     integer :: inviscidAFC,nfailsafe,ivariable,nvariable
     integer :: imassantidiffusiontype,lumpedMassMatrix
+    logical :: bisAccepted
 
 
     ! Get parameter list
@@ -1902,7 +1903,7 @@ contains
               ssectionName, rcollection, rsolutionTimeDeriv=p_rvector1)
           
           ! Release temporal memory
-          if (.not.present(rvector1) .and. nfailsafe .eq. 0) then
+          if (.not.present(rvector1)) then
             call lsysbl_releaseVector(p_rvector1)
             deallocate(p_rvector1)
           end if
@@ -1945,29 +1946,14 @@ contains
               rsolution, ssectionName, rcollection)
           
           ! Apply failsafe flux correction
-          if (associated(p_rvector1)) then
-            ! ... reusing vector1 as temporal memory so the failsafe
-            ! procedure does not allocate new memoey internally
-            call afcstab_failsafeLimiting(&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-                mhd_getVariable, rsolution, p_rvector1)
-            
-            ! Release temporal memory
-            if (.not.present(rvector1)) then
-              call lsysbl_releaseVector(p_rvector1)
-              deallocate(p_rvector1)
-            end if
-          else
-            ! ... without providing temporal memory so the failsafe
-            ! procdure allocates new memory internally
-            call afcstab_failsafeLimiting(&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-                mhd_getVariable, rsolution)
-          end if
+          call gfsys_failsafeFCT(&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rsolution, rtimestep%dStep, 1e-8_DP,&
+              AFCSTAB_FAILSAFEALGO_STANDARD, bisAccepted,&
+              nsteps=nfailsafe, CvariableNames=SfailsafeVariables,&
+              fcb_extractVariable=mhd_getVariable,&
+              rcollection=rcollection)
           
           ! Deallocate temporal memory
           deallocate(SfailsafeVariables)

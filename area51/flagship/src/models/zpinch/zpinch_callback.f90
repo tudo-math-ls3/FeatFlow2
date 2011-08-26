@@ -48,6 +48,7 @@ module zpinch_callback
   use fsystem
   use genoutput
   use groupfemscalar
+  use groupfemsystem
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
@@ -1836,7 +1837,7 @@ contains
     integer :: nmaxIterationsApproxTimeDerivative,iblock
     integer(I32) :: istabilisationSpecConvection
     integer(I32) :: istabilisationSpecInviscid
-    logical :: bcompatible
+    logical :: bcompatible,bisAccepted
 
 
     ! Set pointer to parameter list
@@ -2483,11 +2484,14 @@ contains
             Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply failsafe flux correction for the hydrodynamic model
-        call afcstab_failsafeLimiting(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            hydro_getVariable, Rsolution(1), p_rvector1(1))
+        call gfsys_failsafeFCT(&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+              Rsolution(1), rtimestep%dStep, 1e-8_DP,&
+              AFCSTAB_FAILSAFEALGO_STANDARD, bisAccepted,&
+              nsteps=nfailsafe, CvariableNames=SfailsafeVariables,&
+              fcb_extractVariable=hydro_getVariable,&
+              rcollection=rcollection)
 
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model

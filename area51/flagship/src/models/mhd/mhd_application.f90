@@ -1665,6 +1665,8 @@ contains
     integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, iter
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
     integer :: nmaxIterationsSolution, ivariable, nvariable
+    logical :: bisAccepted
+
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -2007,9 +2009,12 @@ contains
               rafcstab, 'ssolutionconstrainvariable')
           
           ! Apply failsafe flux correction
-          call afcstab_failsafeLimiting(rafcstab, p_rlumpedMassMatrix,&
-              SsolutionFailsafeVariables, 1.0_DP,&
-              nsolutionfailsafe, mhd_getVariable, rvector)
+          call gfsys_failsafeFCT(rafcstab, p_rlumpedMassMatrix,&
+              rvector, 1.0_DP, 1e-8_DP, AFCSTAB_FAILSAFEALGO_STANDARD,&
+              bisAccepted, nsteps=nsolutionfailsafe,&
+              CvariableNames=SsolutionFailsafeVariables,&
+              fcb_extractVariable=mhd_getVariable,&
+              rcollection=rcollection)
           
           ! Deallocate temporal memory
           deallocate(SsolutionFailsafeVariables)
