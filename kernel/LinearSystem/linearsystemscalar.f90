@@ -621,8 +621,7 @@ module linearsystemscalar
     integer, dimension(LSYSSC_MAXTAGS) :: ITags = 0
 
     ! Real tags. This array of real values can be used to store
-    ! auxiliary
-    ! tags which depend on the application.
+    ! auxiliary tags which depend on the application.
     real(DP), dimension(LSYSSC_MAXTAGS) :: DTags = 0._DP
 
     ! Is set to true, if the handle h_Ddata belongs to another vector,
