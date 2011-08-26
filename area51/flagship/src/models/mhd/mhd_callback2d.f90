@@ -468,8 +468,12 @@ contains
                  INVISCIDFLUX8_YDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,vj,wj,pj,qj)
            
       ! Assemble fluxes
-      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale * IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij
-      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale * IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
+          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
 #endif
     end do
 
