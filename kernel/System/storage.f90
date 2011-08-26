@@ -1024,7 +1024,7 @@ contains
     ! OpenMP-Extension: It is important that no two threads generate a
     ! new handle at the same time, thus the entire routine is 'critical'
 
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
 
     if (rheap%nhandlesTotal .le. 0) then
       call output_line ('Heap not initialised!', &
@@ -1080,7 +1080,7 @@ contains
     
     rheap%nhandlesInUseMax = max(rheap%nhandlesInUseMax,rheap%ihandlesInUse)
     
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
 
   end function storage_newhandle
 
@@ -1112,7 +1112,7 @@ contains
     ! OpenMP-Extension: It is important that no two threads release
     ! handle at the same time, thus the entire routine is 'critical'
 
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
 
     ! Where is the descriptor of the handle?
     p_rnode => rheap%p_Rdescriptors(ihandle)
@@ -1163,7 +1163,7 @@ contains
     
     rheap%ihandlesInUse = rheap%ihandlesInUse - 1
 
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
 
   end subroutine storage_releasehandle
 
@@ -1801,11 +1801,11 @@ contains
       call sys_halt()
     end select
 
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
         p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
     
     ! Initialise the memory block
     call storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
@@ -1940,11 +1940,11 @@ contains
       call sys_halt()
     end select
     
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
         p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
     
     ! Initialise the memory block
     call storage_initialiseBlock (ihandle, cinitNewBlock, rheap, ilbound)
@@ -2076,11 +2076,11 @@ contains
       call sys_halt()
     end select
     
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
         p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
     
     ! Initialise the storage block
     call storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
@@ -2217,11 +2217,11 @@ contains
       call sys_halt()
     end select
     
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
         p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
     
     ! Initialise the storage block
     call storage_initialiseBlock (ihandle, cinitNewBlock, rheap, Ilbound(2))
@@ -2363,11 +2363,11 @@ contains
       call sys_halt()
     end select
     
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
         p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
     
     ! Initialise the storage block
     call storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
@@ -2524,11 +2524,11 @@ contains
       call sys_halt()
     end select
     
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
         p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
     
     ! Initialise the storage block
     call storage_initialiseBlock (ihandle, cinitNewBlock, rheap, Ilbound(2))
@@ -14770,10 +14770,10 @@ contains
     end select
 
     ! Respect also the temporary memory in the total amount of memory used.
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     if ((p_rheap%itotalMem + rstorageNode%imemBytes) .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem + rstorageNode%imemBytes
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
 
     ! Release old data
     if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
@@ -14810,12 +14810,12 @@ contains
     if (associated(p_rnode%p_Schar3D))    deallocate(p_rnode%p_Schar3D)
 
     ! Correct the memory statistics
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem &
                       - p_rnode%imemBytes + rstorageNode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
 
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
@@ -15574,10 +15574,10 @@ contains
     end select
 
     ! Respect also the temporary memory in the total amount of memory used.
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     if ((p_rheap%itotalMem + rstorageNode%imemBytes) .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem + rstorageNode%imemBytes
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
 
     ! Release old data
     if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
@@ -15614,12 +15614,12 @@ contains
     if (associated(p_rnode%p_Schar3D))    deallocate(p_rnode%p_Schar3D)
 
     ! Correct the memory statistics
-    !$omp critical
+    !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem &
                       - p_rnode%imemBytes + rstorageNode%imemBytes
     if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical
+    !$omp end critical(storage_global_heap_modify)
 
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
