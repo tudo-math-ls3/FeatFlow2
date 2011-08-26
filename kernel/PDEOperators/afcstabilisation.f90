@@ -90,59 +90,49 @@
 !# 22.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 23.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
-!#                                 afcstab_failsafeLimitingArray
-!#      -> Perform failsafe flux correction
-!#
-!# 24.) afcstab_copyH2D_IverticesAtEdge
+!# 23.) afcstab_copyH2D_IverticesAtEdge
 !#      -> Copies the vertices at edge structure from the host memory
 !#         to the device memory.
 !#
-!# 25.) afcstab_copyD2H_IverticesAtEdge
+!# 24.) afcstab_copyD2H_IverticesAtEdge
 !#      -> Copies the vertices at edge structure from the device memory
 !#         to the host memory.
 !#
-!# 26.) afcstab_copyH2D_DmatCoeffAtEdge
+!# 25.) afcstab_copyH2D_DmatCoeffAtEdge
 !# -> Copies the off-diagonal entries of the auxiliary constant matrix
 !#         coefficients from the host memory to the device memory.
 !#
-!# 27.) afcstab_copyD2H_DmatCoeffAtEdge
+!# 26.) afcstab_copyD2H_DmatCoeffAtEdge
 !#      -> Copies the off-diagonal entries of the auxiliary constant matrix
 !#         coefficients from the device memory to the host memory.
 !#
-!# 28.) afcstab_allocEdgeStructure
+!# 27.) afcstab_allocEdgeStructure
 !#      -> Allocates the edge data structure
 !#
-!# 29.) afcstab_allocCoeffsAtEdge
+!# 28.) afcstab_allocCoeffsAtEdge
 !#      -> Allocates the coefficients at edge data structure
 !#
-!# 30.) afcstab_allocVectorsPQR
+!# 29.) afcstab_allocVectorsPQR
 !#      -> Allocates the nodal vectors P, Q, and R each for '+' and '-'
 !#
-!# 31.) afcstab_allocFlux
+!# 30.) afcstab_allocFlux
 !#      -> Allocates the edge-wise flux vector flux
 !#
-!# 32.) afcstab_allocFlux0
+!# 31.) afcstab_allocFlux0
 !#      -> Allocates the edge-wise flux vector flux0
 !#
-!# 33.) afcstab_allocFluxPrel
+!# 32.) afcstab_allocFluxPrel
 !#      -> Allocates the edge-wise flux vector fluxPrel
 !#
-!# 34.) afcstab_allocAlpha
+!# 33.) afcstab_allocAlpha
 !#      -> Allocates the edge-wise correction factors alpha
 !#
-!# 35.) afcstab_allocBoundsAtEdge
+!# 33.) afcstab_allocBoundsAtEdge
 !#      -> Allocates the bounds at edge data structure
 !#
-!# 36.) afcstab_limit = afcstab_limit_unbounded/
-!#                      afcstab_limit_bounded
-!#      -> Compute the nodal correction factors, i.e., the ratio of
-!#         admissible solution increments and raw antidiffusion
-!#
-!# 37.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
+!# 34.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
 !#                               afcstab_buildBoundsLPT2D /
 !#                               afcstab_buildBoundsLPT3D
-!#          
 !#
 !# </purpose>
 !##############################################################################
@@ -194,7 +184,6 @@ module afcstabilisation
   public :: afcstab_copyH2D_IverticesAtEdge
   public :: afcstab_copyH2D_DmatCoeffAtEdge
 
-  public :: afcstab_failsafeLimiting
   public :: afcstab_buildBoundsLPT
 
   public :: afcstab_allocEdgeStructure
@@ -205,9 +194,7 @@ module afcstabilisation
   public :: afcstab_allocFlux0
   public :: afcstab_allocFlux
   public :: afcstab_allocAlpha
-  
-  public :: afcstab_limit
- 
+   
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
@@ -603,6 +590,29 @@ module afcstabilisation
 !</constantblock>
 
 
+!<constantblock description="Bitfield identifiers for failsafe algorithm">
+
+  ! Initialize the edgewise correction factors by unity
+  integer(I32), parameter, public :: AFCSTAB_FAILSAFEALGO_INITBETA = 2_I32**0
+
+  ! Compute the distances to a local extremum
+  integer(I32), parameter, public :: AFCSTAB_FAILSAFEALGO_BOUNDS   = 2_I32**1
+
+  ! Perform failsafe correction of antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_FAILSAFEALGO_LIMIT    = 2_I32**2
+
+  ! Apply the failsafe correction
+  integer(I32), parameter, public :: AFCSTAB_FAILSAFEALGO_CORRECT  = 2_I32**3
+
+  ! Standard failsafe FCT algorithm
+  integer(I32), parameter, public :: AFCSTAB_FAILSAFEALGO_STANDARD = AFCSTAB_FAILSAFEALGO_INITBETA +&
+                                                                     AFCSTAB_FAILSAFEALGO_BOUNDS +&
+                                                                     AFCSTAB_FAILSAFEALGO_LIMIT +&
+                                                                     AFCSTAB_FAILSAFEALGO_CORRECT
+
+!</constantblock>
+
+
 !<constantblock description="Default tolerances for stabilisation">
   
   ! Absolute tolerance for prelimiting of antidiffusive fluxes
@@ -829,16 +839,6 @@ module afcstabilisation
     module procedure afcstab_isVectorCompatibleBl
   end interface
 
-  interface afcstab_failsafeLimiting
-    module procedure afcstab_failsafeLimitingBlock
-    module procedure afcstab_failsafeLimitingArray
-  end interface
-
-  interface afcstab_limit
-    module procedure afcstab_limit_unbounded
-    module procedure afcstab_limit_bounded
-  end interface
-
   interface afcstab_getbase_array
     module procedure afcstab_getbase_arrayScalar
     module procedure afcstab_getbase_arrayBlock
@@ -897,8 +897,6 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! local variable
-    integer :: istabilisation,iprelimiting
 
     ! First, we retrieve all information of the stabilisation
     ! structure specified in the parameter file. 
@@ -3884,582 +3882,6 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_failsafeLimitingBlock(rafcstab, rlumpedMassMatrix,&
-      Cvariables, dscale, nsteps, fcb_extractVariableBlock, rvector, rvectorTmp)
-
-!<description>
-    ! This subroutine performs failsafe flux limiting as described in
-    ! the paper by Kuzmin, Moeller, Shadid, and Shashkov: "Failsafe
-    ! flux limiting and constrained data projection for equations of
-    ! gas dynamics" Journal of Computational Physics, vol. 229,
-    ! Nov. 2010, p. 8766-8779.
-!</description>
-
-!<input>
-    ! stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
-    ! control variable names
-    character(len=*), dimension(:), intent(in) :: Cvariables
-    
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
-
-    ! number of failsafe steps to be performed
-    integer, intent(in) :: nsteps
-
-    ! callback function to extract variables
-    include 'intf_extractVariableBlock.inc'
-!</input>
-
-!<inputoutput>
-    ! vector to be corrected
-    type(t_vectorBlock), intent(inout) :: rvector
-
-    ! temporal vector
-    type(t_vectorBlock), intent(inout), target, optional :: rvectorTmp
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock) :: rvectorLbound, rvectorUbound, rvectorControl
-    type(t_vectorBlock), pointer :: p_rvectorTmp
-    type(t_vectorScalar) :: rbeta
-    real(DP), dimension(:), pointer :: p_Dlbound, p_Dubound, p_Dcontrol, p_Dflux
-    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_Dalpha, p_Dbeta
-    real(DP), dimension(:), pointer :: p_Ddata, p_DdataTmp
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
-    integer :: istep,ivariable, nvariable
-
-    ! Get number of control variables
-    nvariable = size(Cvariables)
-    
-    ! Create temporal block vectors
-    call lsysbl_createVectorBlock(rvectorControl, rafcstab%NEQ, nvariable, .false.)
-    call lsysbl_createVectorBlock(rvectorLbound, rafcstab%NEQ, nvariable, .false.)
-    call lsysbl_createVectorBlock(rvectorUbound, rafcstab%NEQ, nvariable, .false.)
-    call lsyssc_createVector(rbeta, rafcstab%NEDGE, .false.)
-
-    ! Set pointer to temporal vector or create new one
-    if (present(rvectorTmp)) then
-      p_rvectorTmp => rvectorTmp
-    else
-      allocate(p_rvectorTmp)
-    end if
-
-    ! Make a copy of the initial vector
-    call lsysbl_copyVector(rvector, p_rvectorTmp)
-    
-    ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call lsyssc_getbase_double(rlumpedMassMatrix, p_DlumpedMassMatrix)
-    call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-    call lsysbl_getbase_double(rvectorControl, p_Dcontrol)
-    call lsysbl_getbase_double(rvectorLbound, p_Dlbound)
-    call lsysbl_getbase_double(rvectorUbound, p_Dubound)
-    call lsysbl_getbase_double(p_rvectorTmp, p_DdataTmp)
-    call lsysbl_getbase_double(rvector, p_Ddata)
-    call lsyssc_getbase_double(rbeta, p_Dbeta)
-    
-    ! Initialise the nodal vectors by the given solution
-    do ivariable = 1, nvariable
-      call fcb_extractVariableBlock(rvector, trim(Cvariables(ivariable)),&
-          rvectorControl%RvectorBlock(ivariable))
-    end do
-    
-    ! Compute upper and lower nodal bounds
-    call afcstab_computeBounds(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-        rafcstab%NEQ, nvariable, p_Dcontrol, p_Dlbound, p_Dubound)
-
-    ! Initialize correction factors to "one time dscale"
-    call lalg_setVector(p_Dbeta, dscale)
-    
-    ! Perform prescribed failsafe steps
-    do istep = 1, nsteps+1
-
-      ! Restore the initial vector
-      call lalg_copyVector(p_DdataTmp, p_Ddata)
-
-      ! Apply correction factors to solution vector
-      if (rvector%nblocks .eq. 1) then
-        call afcstab_applyCorrectionDim2(p_IverticesAtEdgeIdx,&
-            p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            p_DlumpedMassMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
-      else
-        call afcstab_applyCorrectionDim1(p_IverticesAtEdgeIdx,&
-            p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            p_DlumpedMassMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
-      end if
-
-      ! For the last step, no failsafe checks are required
-      if (istep .gt. nsteps) exit
-
-      ! Convert solution to control variables
-      do ivariable = 1, nvariable
-        call fcb_extractVariableBlock(rvector, trim(Cvariables(ivariable)),&
-            rvectorControl%RvectorBlock(ivariable))
-      end do
-
-      ! Compute failsafe correction factors and  exit if no further
-      ! failsafe correction is required
-      if (afcstab_computeFailsafeFactors(p_IverticesAtEdge, rafcstab%NEQ,&
-          nvariable, dscale*real(nsteps-istep, DP)/real(nsteps, DP),&
-          p_Dcontrol, p_Dlbound, p_Dubound, 1e-8_DP, p_Dbeta)) exit      
-      
-    end do
-
-    ! Release temporal block vectors
-    call lsysbl_releaseVector(rvectorControl)
-    call lsysbl_releaseVector(rvectorLbound)
-    call lsysbl_releaseVector(rvectorUbound)
-    call lsyssc_releaseVector(rbeta)
-
-    ! Release temporal vector
-    if (.not.present(rvectorTmp)) then
-      call lsysbl_releaseVector(p_rvectorTmp)
-      deallocate(p_rvectorTmp)
-    end if
-
-  end subroutine afcstab_failsafeLimitingBlock
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_failsafeLimitingArray(Rafcstab, rlumpedMassMatrix,&
-      Cvariables, dscale, nsteps, fcb_extractVariableArray, Rvector, RvectorTmp)
-
-!<description>
-    ! This subroutine performs failsafe flux limiting as described in
-    ! the paper by Kuzmin, Moeller, Shadid, and Shashkov: "Failsafe
-    ! flux limiting and constrained data projection for equations of
-    ! gas dynamics" Journal of Computational Physics, vol. 229,
-    ! Nov. 2010, p. 8766-8779.
-    !
-    ! This subroutine works for arrays of block vectors, that is, is
-    ! handles coupled problems consisting of individual subproblems
-!</description>
-
-!<input>
-    ! array of stabilisation structures
-    type(t_afcstab), dimension(:), intent(in) :: Rafcstab
-
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
-    ! control variable names
-    character(len=*), dimension(:), intent(in) :: Cvariables
-    
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
-
-    ! number of failsafe steps to be performed
-    integer, intent(in) :: nsteps
-
-    ! callback function to extract variables
-    include 'intf_extractVariableArray.inc'
-!</input>
-
-!<inputoutput>
-    ! array of vectors to be corrected
-    type(t_vectorBlock), dimension(:), intent(inout) :: Rvector
-
-    ! array of temporal vectors
-    type(t_vectorBlock), dimension(:), intent(inout), target, optional :: rvectorTmp
-!</inputoutput>
-!</subroutine>
-
-  end subroutine afcstab_failsafeLimitingArray
-  
-  !*****************************************************************************
-
-!<function>
-  
-  elemental function afcstab_limit_unbounded(p, q, default) result(r)
-
-!<description>
-    ! This function computes the ratio Q/P. If the denominator is
-    ! too small, then the default value is applied.
-!</description>
-
-!<input>
-    ! (de)nominator
-    real(DP), intent(in) :: p,q
-
-    ! default value
-    real(DP), intent(in) :: default
-!</input>
-
-!<result>
-    ! limited ratio
-    real(DP) :: r
-!</result>
-!</function>
-
-    if (abs(p) > 1e-12_DP) then
-      r = q/p
-    else
-      r = default
-    end if
-  end function afcstab_limit_unbounded
-
-  !*****************************************************************************
-
-!<function>
-  
-  elemental function afcstab_limit_bounded(p, q, default, dbound) result(r)
-
-!<description>
-    ! This function computes the limited ratio Q/P and bounds the
-    ! result by the size of dbound. If the denominator is too small
-    ! then the default value is applied.
-!</description>
-
-!<input>
-    ! (de)nominator
-    real(DP), intent(in) :: p,q
-    
-    ! default value
-    real(DP), intent(in) :: default
-
-    ! upper bound
-    real(DP), intent(in) :: dbound
-!</input>
-
-!<result>
-    ! limited ratio
-    real(DP) :: r
-!</result>
-!</function>
-    
-    if (abs(p) > 1e-12_DP) then
-      r = min(q/p, dbound)
-    else
-      r = default
-    end if
-  end function afcstab_limit_bounded
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_computeBounds(IverticesAtEdgeIdx, IverticesAtEdge,&
-      neq, nvar, Dx, Dlbound, Dubound)
-      
-!<description>
-    ! This subroutine computes the local upper and lower bounds based on
-    ! the solution vector Dx evaluated at the neighbouring nodes
-!</description>
-
-!<input>
-    ! Index pointer to the edge structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
-
-    ! Nodal numbers of edge-neighbours
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
-
-    ! Solution vector
-    real(DP), dimension(neq,nvar), intent(in) :: Dx
-
-    ! Number of equations
-    integer, intent(in) :: neq
-
-    ! Number of variables
-    integer, intent(in) :: nvar
-!</input>
-
-!<inputoutput>
-    ! Vector of upper and lower bounds
-    real(DP), dimension(neq,nvar), intent(inout) :: Dlbound, Dubound
-!</inputoutput>
-!</subroutine>
-    
-    ! local variables
-    integer :: i,iedge,igroup,j
-    
-    call lalg_copyVector(Dx, Dlbound)
-    call lalg_copyVector(Dx, Dubound)
-
-    !$omp parallel default(shared) private(i,j)&
-    !$omp if (IverticesAtEdgeIdx(size(IverticesAtEdgeIdx)) > AFCSTAB_NEDGEMIN_OMP)
-    
-    ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(IverticesAtEdgeIdx)-1
-      
-      ! Do nothing for empty groups
-      if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-      
-      ! Loop over all edges
-      !$omp do
-      do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-          
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Compute minimum/maximum value of neighboring nodes
-        Dlbound(i,:) = min(Dlbound(i,:), Dx(j,:))
-        Dlbound(j,:) = min(Dlbound(j,:), Dx(i,:))
-        Dubound(i,:) = max(Dubound(i,:), Dx(j,:))
-        Dubound(j,:) = max(Dubound(j,:), Dx(i,:))
-      end do
-      !$omp end do
-
-    end do ! igroup
-    !$omp end parallel
-    
-  end subroutine afcstab_computeBounds
-
-  !*****************************************************************************
-
-!<function>
-
-  function afcstab_computeFailsafeFactors(IverticesAtEdge, neq, nvar,&
-      dscale, Dx, Dlbound, Dubound, dtolerance, Dbeta) result(baccept)
-
-!<description>
-    ! This function computes the failsafe correction factors
-!</description>
-
-!<input>
-    ! Nodal numbers of edge-neighbours
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
-    
-    ! Solution vector
-    real(DP), dimension(neq,nvar), intent(in) :: Dx
-
-    ! Vectors of upper and lower bounds
-    real(DP), dimension(neq,nvar), intent(in) :: Dlbound, Dubound
-    
-    ! Scaling parameter
-    real(DP), intent(in) :: dscale
-
-    ! Tolerance parameter
-    real(DP), intent(in) :: dtolerance
-
-    ! Number of equations
-    integer, intent(in) :: neq
-
-    ! Number of variables
-    integer, intent(in) :: nvar
-!</input>
-
-!<inputoutput>
-    ! Failsafe correction factors
-    real(DP), dimension(:), intent(inout) :: Dbeta
-!</inputoutput>
-
-!<result>
-    ! TRUE if no additional failsafe correction step is required
-    logical :: baccept
-!</result>
-!</function>
-      
-    ! local variables
-    integer :: iedge,i,j,ivar
-    
-    ! Initialisation
-    baccept = .true.
-    
-    ! Loop over all edges
-    !$omp parallel do default(shared) private(i,j,ivar)&
-    !$omp if(size(IverticesAtEdge,2) > AFCSTAB_NEDGEMIN_OMP)&
-    !$omp reduction(.and.:baccept)
-    do iedge = 1, size(IverticesAtEdge,2)
-      
-      ! Get node numbers
-      i  = IverticesAtEdge(1, iedge)
-      j  = IverticesAtEdge(2, iedge)
-      
-      ! Loop over all variables
-      do ivar = 1, nvar
-        
-        if ((Dx(i,ivar) .lt. Dlbound(i,ivar)-dtolerance) .or.&
-            (Dx(j,ivar) .lt. Dlbound(j,ivar)-dtolerance) .or.&
-            (Dx(i,ivar) .gt. Dubound(i,ivar)+dtolerance) .or.&
-            (Dx(j,ivar) .gt. Dubound(j,ivar)+dtolerance)) then
-          Dbeta(iedge) = dscale
-          baccept = .false.
-        end if
-      end do
-    end do
-    !$omp end parallel do
-    
-  end function afcstab_computeFailsafeFactors
-  
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_applyCorrectionDim1(IverticesAtEdgeIdx, IverticesAtEdge,&
-      NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
-
-!<description>
-    ! This subroutine applies the failsafe correction factors Dbeta and 
-    ! the regular correction factors Dalpha to the raw antidiffusive
-    ! fluxes Dflux and adds the result to the solution vectors Dx
-    ! scaled by the lumped mass matrix ML.
-    ! Solution vector is stored with leading dimension.
-!</description>
-   
-!<input>
-    ! Index pointer to the edge structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
-
-    ! Nodal numbers of edge-neighbours
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
-    
-    ! Lumped mass matrix
-    real(DP), dimension(:), intent(in) :: ML
-
-    ! Regular correction factors
-    real(DP), dimension(:), intent(in) :: Dalpha
-    
-    ! Failsafe correction factors
-    real(DP), dimension(:), intent(in) :: Dbeta
-
-    ! Raw antidiffusive fluxes
-    real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
-
-    ! Number of edges, euqations, and variables
-    integer, intent(in) :: NEDGE, NEQ, NVAR
-!</input>
-
-!<inputoutput>
-    ! Solution vector to be corrected
-    real(DP), dimension(NEQ,NVAR), intent(inout) :: Dx
-!</inputoutput>
-!</subroutine>
-    
-    ! local variables
-    real(DP), dimension(NVAR) :: F_ij
-    integer :: i,iedge,igroup,j
-
-    !$omp parallel default(shared) private(i,j,F_ij)&
-    !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
-
-    ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(IverticesAtEdgeIdx)-1
-      
-      ! Do nothing for empty groups
-      if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-      
-      ! Loop over all edges
-      !$omp do
-      do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Compute portion of corrected antidiffusive flux
-        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-        
-        ! Remove flux from solution
-        Dx(i,:) = Dx(i,:) + F_ij/ML(i)
-        Dx(j,:) = Dx(j,:) - F_ij/ML(j)
-      end do
-      !$omp end do
-
-    end do ! igroup
-    !$omp end parallel
-    
-  end subroutine afcstab_applyCorrectionDim1
-
-   !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_applyCorrectionDim2(IverticesAtEdgeIdx, IverticesAtEdge,&
-      NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
-
-!<description>
-    ! This subroutine applies the failsafe correction factors Dbeta and 
-    ! the regular correction factors Dalpha to the raw antidiffusive
-    ! fluxes Dflux and adds the result to the solution vectors Dx
-    ! scaled by the lumped mass matrix ML.
-    ! Solution vector is stored with trailing dimension.
-!</description>
-   
-!<input>
-    ! Index pointer to the edge structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
-
-    ! Nodal numbers of edge-neighbours
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
-    
-    ! Lumped mass matrix
-    real(DP), dimension(:), intent(in) :: ML
-
-    ! Regular correction factors
-    real(DP), dimension(:), intent(in) :: Dalpha
-    
-    ! Failsafe correction factors
-    real(DP), dimension(:), intent(in) :: Dbeta
-
-    ! Raw antidiffusive fluxes
-    real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
-
-    ! Number of edges, euqations, and variables
-    integer, intent(in) :: NEDGE, NEQ, NVAR
-!</input>
-
-!<inputoutput>
-    ! Solution vector to be corrected
-    real(DP), dimension(NVAR,NEQ), intent(inout) :: Dx
-!</inputoutput>
-!</subroutine> 
-
-    ! local variables
-    real(DP), dimension(NVAR) :: F_ij
-    integer :: i,iedge,igroup,j
-
-    !$omp parallel default(shared) private(i,j,F_ij)&
-    !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
-
-    ! Loop over the edge groups and process all edges of one group
-    ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(IverticesAtEdgeIdx)-1
-      
-      ! Do nothing for empty groups
-      if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
-      
-      ! Loop over all edges
-      !$omp do
-      do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Compute portion of corrected antidiffusive flux
-        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-        
-        ! Remove flux from solution
-        Dx(:,i) = Dx(:,i) + F_ij/ML(i)
-        Dx(:,j) = Dx(:,j) - F_ij/ML(j)
-      end do
-      !$omp end do
-
-    end do ! igroup
-    !$omp end parallel
-
-  end subroutine afcstab_applyCorrectionDim2
-
-  
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine afcstab_copyH2D_IverticesAtEdge(rafcstab, btranspose)
 
 !<description>
@@ -4484,7 +3906,7 @@ contains
 
   end subroutine afcstab_copyH2D_IverticesAtEdge
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -5028,7 +4450,7 @@ contains
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx
     real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld, p_Kcol
+    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
 
     ! Check spatial discretisation structure
     if (.not. rmatrixCx%bidenticalTrialAndTest) then
@@ -5448,7 +4870,7 @@ contains
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy
     real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx, p_FdataCy
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld, p_Kcol
+    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
 
     ! Check spatial discretisation structure
     if (.not. rmatrixCx%bidenticalTrialAndTest) then
@@ -5895,7 +5317,7 @@ contains
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy, p_DdataCz
     real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx, p_FdataCy, p_FdataCz
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld, p_Kcol
+    integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
 
     ! Check spatial discretisation structure
     if (.not. rmatrixCx%bidenticalTrialAndTest) then
