@@ -147,6 +147,20 @@
 !#      -> Assembles the Jacobian matrix for the stabilisation part of symmetric
 !#         flux limiting for diffusion operators
 !#
+!#
+!# The following auxiliary routines are available:
+!#
+!#  1.) gfsc_combineFluxes = gfsc_combineFluxesDble /
+!#                           gfsc_combineFluxesSngl
+!#      -> Linear combination of fluxes
+!#
+!#  2.) gfsc_limit = gfsc_limitUnboundedDble /
+!#                   gfsc_limitUnboundedSngl /
+!#                   gfsc_limitBoundedDble /
+!#                   gfsc_limitBoundedSngl
+!#      -> Compute the nodal correction factors, i.e., the ratio of
+!#         admissible solution increments and raw antidiffusion
+!#
 !# </purpose>
 !##############################################################################
 
@@ -184,7 +198,6 @@ module groupfemscalar
   public :: gfsc_buildJacobianTVD
   public :: gfsc_buildJacobianGP
   public :: gfsc_buildJacobianSymm
-  public :: gfsc_combineFluxes
  
 !<constants>
 
@@ -309,6 +322,13 @@ module groupfemscalar
   interface gfsc_combineFluxes
     module procedure gfsc_combineFluxesDble
     module procedure gfsc_combineFluxesSngl
+  end interface
+
+  interface gfsc_limit
+    module procedure gfsc_limitUnboundedDble
+    module procedure gfsc_limitUnboundedSngl
+    module procedure gfsc_limitBoundedDble
+    module procedure gfsc_limitBoundedSngl
   end interface
 
   ! *****************************************************************************
@@ -3789,10 +3809,10 @@ contains
         
         !$omp parallel sections
         !$omp section
-        Drp = afcstab_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
+        Drp = gfsc_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
 
         !$omp section
-        Drm = afcstab_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
+        Drm = gfsc_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
         !$omp end parallel sections
 
         ! Set specifier
@@ -4137,8 +4157,8 @@ contains
 
       ! Apply nodal limiter
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
+      Drp = gfsc_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
+      Drm = gfsc_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
@@ -4388,8 +4408,8 @@ contains
       
       ! Apply the nodal limiter
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
+      Drp = gfsc_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
+      Drm = gfsc_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
       !$omp end single
 
       ! Loop over the edge groups and process all edges of one group
@@ -8619,8 +8639,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -9290,8 +9310,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -11291,8 +11311,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11438,8 +11458,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -11581,8 +11601,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
         ! Now we have all required information, the local fluxes, the
         ! nodal correction factors, etc. for assembling the k-th
@@ -12413,8 +12433,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -12568,8 +12588,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -12723,8 +12743,8 @@ contains
         
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -13551,8 +13571,8 @@ contains
 
         ! Compute nodal correction factors for node k and all other
         ! nodes l_1,l_2,...,l_|k| which are direct neighbors to k
-        Drploc(:,0:nloc) = afcstab_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
-        Drmloc(:,0:nloc) = afcstab_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drploc(:,0:nloc) = gfsc_limit(Dpploc(:,0:nloc), Dqploc(:,0:nloc), 0.0_DP, 1.0_DP)
+        Drmloc(:,0:nloc) = gfsc_limit(Dpmloc(:,0:nloc), Dqmloc(:,0:nloc), 0.0_DP, 1.0_DP)
 
 
         ! Now we have all required information, the local fluxes, the
@@ -14107,5 +14127,142 @@ contains
     end if
 
   end subroutine gfsc_combineFluxesSngl
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsc_limitUnboundedDble(p, q, dval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(DP), intent(in) :: p,q
+
+    ! default value
+    real(DP), intent(in) :: dval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = dval
+    end if
+  end function gfsc_limitUnboundedDble
+  
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsc_limitUnboundedSngl(p, q, fval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value fval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(SP), intent(in) :: p,q
+
+    ! default value
+    real(SP), intent(in) :: fval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(SP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = fval
+    end if
+  end function gfsc_limitUnboundedSngl
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsc_limitBoundedDble(p, q, dval, dbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(DP), intent(in) :: p,q
+    
+    ! default value
+    real(DP), intent(in) :: dval
+
+    ! upper bound
+    real(DP), intent(in) :: dbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+    
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, dbound)
+    else
+      r = dval
+    end if
+  end function gfsc_limitBoundedDble
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsc_limitBoundedSngl(p, q, fval, fbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+    ! Single valued version
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(SP), intent(in) :: p,q
+    
+    ! default value
+    real(SP), intent(in) :: fval
+
+    ! upper bound
+    real(SP), intent(in) :: fbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(SP) :: r
+!</result>
+!</function>
+    
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, fbound)
+    else
+      r = fval
+    end if
+  end function gfsc_limitBoundedSngl
 
 end module groupfemscalar
