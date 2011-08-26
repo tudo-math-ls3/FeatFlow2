@@ -2706,9 +2706,9 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_limitEdgewiseVelocity(IverticesAtEdge, NEDGE, NEQ,&
-      NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
+  subroutine mhd_limitEdgewiseVelocity(IverticesAtEdgeIdx, IverticesAtEdge,&
+      NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
+      Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
@@ -2743,6 +2743,9 @@ contains
     ! Nodal correction factors
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
@@ -2751,7 +2754,7 @@ contains
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
-    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: DfluxConstr
 !</intput>
 
 !<inputoutput>
@@ -2773,7 +2776,7 @@ contains
     integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
-    if (present(Dflux0)) then
+    if (present(DfluxConstr)) then
       print *, "Not implemented yet"
       stop
       
@@ -2942,9 +2945,9 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_limitEdgewiseMomentum(IverticesAtEdge, NEDGE, NEQ,&
-      NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
+  subroutine mhd_limitEdgewiseMomentum(IverticesAtEdgeIdx, IverticesAtEdge,&
+      NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
+      Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
@@ -2979,6 +2982,9 @@ contains
     ! Nodal correction factors
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
@@ -2987,7 +2993,7 @@ contains
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
-    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: DfluxConstr
 !</intput>
 
 !<inputoutput>
@@ -3009,7 +3015,7 @@ contains
     integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
-    if (present(Dflux0)) then
+    if (present(DfluxConstr)) then
       print *, "Not implemented yet"
       stop
       
@@ -3178,9 +3184,9 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_limitEdgewiseMagfield(IverticesAtEdge, NEDGE, NEQ,&
-      NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
+  subroutine mhd_limitEdgewiseMagfield(IverticesAtEdgeIdx, IverticesAtEdge,&
+      NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
+      Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
@@ -3215,6 +3221,9 @@ contains
     ! Nodal correction factors
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
@@ -3223,7 +3232,7 @@ contains
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
-    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: DfluxConstr
 !</intput>
 
 !<inputoutput>
@@ -3245,7 +3254,7 @@ contains
     integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
-    if (present(Dflux0)) then
+    if (present(DfluxConstr)) then
       print *, "Not implemented yet"
       stop
       

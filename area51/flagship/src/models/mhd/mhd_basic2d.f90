@@ -43,7 +43,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_getVarInterleaveFormat2d(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine mhd_getVarInterleaveFormat2d(neq, nvar, cvariable, Ddata, Dvalue, Imask)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -62,6 +62,11 @@ contains
 
     ! Vector of conservative variables
     real(DP), dimension(nvar,neq), intent(in) :: Ddata
+    
+    ! OPTIONAL: integer mask array
+    ! If present only those entries of the destination vector are
+    ! computed which are given by the integer mask.
+    integer, dimension(:), intent(in), optional :: Imask
 !</input>
 
 !<output>
@@ -71,109 +76,249 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieq
+    integer :: ieq,idx
 
     
     if (trim(cvariable) .eq. 'density') then
-      do ieq = 1, neq
-        Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
       
     elseif (trim(cvariable) .eq. 'velocity_magnitude') then
-      do ieq = 1, neq
-        Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'magneticfield_magnitude') then
-      do ieq = 1, neq
-        Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'velocity_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'velocity_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-      
-    elseif (trim(cvariable) .eq. 'velocity_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
+    elseif (trim(cvariable) .eq. 'velocity_z') then
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
+      
     elseif (trim(cvariable) .eq. 'momentum_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'momentum_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'momentum_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
       
     elseif (trim(cvariable) .eq. 'magneticfield_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'magneticfield_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'magneticfield_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-      
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
+
     elseif (trim(cvariable) .eq. 'energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-      
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
+
     elseif (trim(cvariable) .eq. 'total_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'internal_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
       
     elseif (trim(cvariable) .eq. 'kinetic_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'total_pressure') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'pressure') then
-      do ieq = 1, neq
-        Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'machnumber') then
-      do ieq = 1, neq
-        Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
-
-    elseif (trim(cvariable) .eq. 'speedofsound') then
-      do ieq = 1, neq
-        Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
       
+    elseif (trim(cvariable) .eq. 'speedofsound') then
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_FORWARD,ieq,0,0)
+        end do
+      end if
+
     else
       
       call output_line('Invalid variable name!',&
@@ -188,7 +333,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_getVarBlockformat2d(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine mhd_getVarBlockformat2d(neq, nvar, cvariable, Ddata, Dvalue, Imask)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -207,6 +352,11 @@ contains
 
     ! Vector of conservative variables
     real(DP), dimension(neq,nvar), intent(in) :: Ddata
+    
+    ! OPTIONAL: integer mask array
+    ! If present only those entries of the destination vector are
+    ! computed which are given by the integer mask.
+    integer, dimension(:), intent(in), optional :: Imask
 !</input>
 
 !<output>
@@ -216,108 +366,248 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieq
+    integer :: ieq,idx
 
 
     if (trim(cvariable) .eq. 'density') then
-      do ieq = 1, neq
-        Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = DENSITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
       
     elseif (trim(cvariable) .eq. 'velocity_magnitude') then
-      do ieq = 1, neq
-        Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = VELMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'magneticfield_magnitude') then
-      do ieq = 1, neq
-        Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = MAGFIELDMAGNITUDE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'velocity_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = XVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'velocity_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = YVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
       
     elseif (trim(cvariable) .eq. 'velocity_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = ZVELOCITY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'momentum_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = XMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'momentum_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = YMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'momentum_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-      
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = ZMOMENTUM2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
+
     elseif (trim(cvariable) .eq. 'magneticfield_x') then
-      do ieq = 1, neq
-        Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = XMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'magneticfield_y') then
-      do ieq = 1, neq
-        Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = YMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'magneticfield_z') then
-      do ieq = 1, neq
-        Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-      
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = ZMAGFIELD2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
+
     elseif (trim(cvariable) .eq. 'energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-      
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = SPECIFICTOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
+
     elseif (trim(cvariable) .eq. 'total_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = TOTALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'internal_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = INTERNALENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
       
     elseif (trim(cvariable) .eq. 'kinetic_energy') then
-      do ieq = 1, neq
-        Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = KINETICENERGY2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'total_pressure') then
-      do ieq = 1, neq
-        Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = TOTALPRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'pressure') then
-      do ieq = 1, neq
-        Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = PRESSURE2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
 
     elseif (trim(cvariable) .eq. 'machnumber') then
-      do ieq = 1, neq
-        Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
-
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = MACHNUMBER2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
+      
     elseif (trim(cvariable) .eq. 'speedofsound') then
-      do ieq = 1, neq
-        Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,0,0)
-      end do
+      if (present(Imask)) then
+        do idx = 1, size(Imask)
+          ieq = Imask(idx)
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      else
+        do ieq = 1, neq
+          Dvalue(ieq) = SOUNDSPEED2(Ddata,IDX2_REVERSE,ieq,0,0)
+        end do
+      end if
       
     else
       

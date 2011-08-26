@@ -376,7 +376,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_getVariable(rvectorBlock, cvariable, rvectorScalar)
+  subroutine hydro_getVariable(rvectorBlock, cvariable, rvectorScalar, Imask)
 
 !<description>
     ! This subroutine extracts a single variable from the vector of
@@ -389,6 +389,11 @@ contains
 
     ! Identifier for the variable
     character(LEN=*), intent(in) :: cvariable
+
+    ! OPTIONAL: integer mask array
+    ! If present only those entries of the destination vector are
+    ! computed which are given by the integer mask.
+    integer, dimension(:), intent(in), optional :: Imask
 !</input>
 
 !<inputoutput>
@@ -424,13 +429,13 @@ contains
       select case(rvectorBlock%p_rblockDiscr%ndimension)
       case(NDIM1D)
         call hydro_getVarInterleaveFormat1d(neq, nvar, cvariable,&
-            p_Ddata, p_Dvalue)
+            p_Ddata, p_Dvalue, Imask)
       case(NDIM2D)
         call hydro_getVarInterleaveFormat2d(neq, nvar, cvariable,&
-            p_Ddata, p_Dvalue)
+            p_Ddata, p_Dvalue, Imask)
       case(NDIM3D)
         call hydro_getVarInterleaveFormat3d(neq, nvar, cvariable,&
-            p_Ddata, p_Dvalue)
+            p_Ddata, p_Dvalue, Imask)
       end select
 
     else
@@ -454,13 +459,13 @@ contains
       select case(rvectorBlock%p_rblockDiscr%ndimension)
       case(NDIM1D)
         call hydro_getVarBlockFormat1d(neq, nvar, cvariable,&
-            p_Ddata, p_Dvalue)
+            p_Ddata, p_Dvalue, Imask)
       case(NDIM2D)
         call hydro_getVarBlockFormat2d(neq, nvar, cvariable,&
-            p_Ddata, p_Dvalue)
+            p_Ddata, p_Dvalue, Imask)
       case(NDIM3D)
         call hydro_getVarBlockFormat3d(neq, nvar, cvariable,&
-            p_Ddata, p_Dvalue)
+            p_Ddata, p_Dvalue, Imask)
       end select
       
     end if

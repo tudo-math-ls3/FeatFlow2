@@ -2558,11 +2558,11 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Apply failsafe flux correction for both models
-        call afcstab_failsafeLimiting(&
-            rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rvector1)
+!!$        call afcstab_failsafeLimiting(&
+!!$            rproblemLevel%Rafcstab(IposAFC),&
+!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+!!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
 !!$        ! Deallocate temporal memory
 !!$        call lsysbl_releaseVector(p_Rpredictor(1))
@@ -2620,10 +2620,10 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Apply failsafe flux correction for both models
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rvector1)
+!!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+!!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
 !!$        ! Deallocate temporal memory
 !!$        call lsysbl_releaseVector(p_Rpredictor(1))
@@ -2681,10 +2681,10 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Apply failsafe flux correction for both models
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rvector1)
+!!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+!!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
 !!$        ! Deallocate temporal memory
 !!$        call lsysbl_releaseVector(p_Rpredictor(1))
@@ -2728,10 +2728,10 @@ contains
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
 
         ! Apply failsafe flux correction for both models
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rvector1)
+!!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+!!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
 !!$        ! Deallocate temporal memory
 !!$        call lsysbl_releaseVector(p_Rpredictor(1))
@@ -2781,11 +2781,11 @@ contains
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
 
-        ! Apply failsafe flux correction for both models
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
-            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rvector1)
+!!$        ! Apply failsafe flux correction for both models
+!!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+!!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
 !!$        ! Deallocate temporal memory
 !!$        call lsysbl_releaseVector(p_Rpredictor(1))
