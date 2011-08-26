@@ -92,6 +92,10 @@
 !#                          gfsys_buildFluxFCTBlock
 !#     -> assembles the raw antidiffusive flux for FEM-FCT stabilisation
 !#
+!# 7.) gfsys_failsafeFCT = gfsys_failsafeFCTScalar /
+!#                         gfsys_failsafeFCTBlock
+!#     -> perform failsafe limiting of FCT type
+!#
 !# </purpose>
 !##############################################################################
 
@@ -120,7 +124,7 @@ module groupfemsystem
   public :: gfsys_buildDivVectorTVD
   public :: gfsys_buildDivVectorFCT
   public :: gfsys_buildFluxFCT
-  public :: gfsys_combineFluxes
+  public :: gfsys_failsafeFCT
 
 !<constants>
 
@@ -229,9 +233,21 @@ module groupfemsystem
     module procedure gfsys_buildFluxFCTBlock
   end interface
 
+  interface gfsys_failsafeFCT
+    module procedure gfsys_failsafeFCTScalar
+    module procedure gfsys_failsafeFCTBlock
+  end interface
+
   interface gfsys_combineFluxes
     module procedure gfsys_combineFluxesDble
     module procedure gfsys_combineFluxesSngl
+  end interface
+
+  interface gfsys_limit
+    module procedure gfsys_limitUnboundedDble
+    module procedure gfsys_limitUnboundedSngl
+    module procedure gfsys_limitBoundedDble
+    module procedure gfsys_limitBoundedSngl
   end interface
 
   ! *****************************************************************************
@@ -655,7 +671,7 @@ contains
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
       call sys_halt()
     end if
@@ -663,7 +679,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorBlock')
       call sys_halt()
     end if
@@ -1290,7 +1306,7 @@ contains
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
       call sys_halt()
     end if
@@ -1298,7 +1314,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivOperatorScalar')
       call sys_halt()
     end if
@@ -1651,7 +1667,7 @@ contains
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVectorBlock')
       call sys_halt()
     end if
@@ -1659,7 +1675,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVectorBlock')
       call sys_halt()
     end if
@@ -1844,7 +1860,7 @@ contains
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVectorScalar')
       call sys_halt()
     end if
@@ -1852,7 +1868,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVectorScalar')
       call sys_halt()
     end if
@@ -2054,7 +2070,7 @@ contains
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDBlock')
       call sys_halt()
     end if
@@ -2062,7 +2078,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDBlock')
       call sys_halt()
     end if
@@ -2248,8 +2264,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       !$omp end single
       
       ! Allocate some temporal memory
@@ -2465,8 +2481,8 @@ contains
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
       
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
@@ -2559,8 +2575,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
@@ -2773,8 +2789,8 @@ contains
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
@@ -2867,8 +2883,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's (Z-direction)
       call lalg_clearVector(Dpp)
@@ -2961,8 +2977,8 @@ contains
       !-------------------------------------------------------------------------
       
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
@@ -3242,7 +3258,7 @@ contains
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDScalar')
       call sys_halt()
     end if
@@ -3250,7 +3266,7 @@ contains
     ! Check if stabilisation provides edge-based data structures structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDScalar')
       call sys_halt()
     end if
@@ -3435,8 +3451,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       !$omp end single
       
       ! Allocate some temporal memory
@@ -3652,8 +3668,8 @@ contains
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
@@ -3746,8 +3762,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
@@ -3960,8 +3976,8 @@ contains
       allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,GFSYS_NEDGESIM))
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       
       ! Clear P's and Q's (Y-direction)
       call lalg_clearVector(Dpp)
@@ -4054,8 +4070,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
 
       ! Clear P's and Q's (Z-direction)
       call lalg_clearVector(Dpp)
@@ -4148,8 +4164,8 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp single
-      Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
-      Drm = afcstab_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
+      Drp = gfsys_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
+      Drm = gfsys_limit(Dpm, Dqm, 1.0_DP, 1.0_DP)
       !$omp end single
       
       ! Loop over the edge groups and process all edges of one group
@@ -4471,7 +4487,7 @@ contains
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBLock')
       call sys_halt()
     end if
@@ -4583,7 +4599,7 @@ contains
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
-        call output_line('Stabilisation does not provide antidiffusive fluxes',&
+        call output_line('Stabilisation does not provide antidiffusive fluxes!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4591,7 +4607,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4608,8 +4624,8 @@ contains
           ! User-defined callback routine
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp,&
-              p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_DfluxPrel, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Standard routine with flux transformation
@@ -4632,8 +4648,8 @@ contains
           ! User-defined callback routine
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha, p_Dpp,&
-              p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Compute antidiffusive incrementswith flux transformation
@@ -4664,7 +4680,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -4701,7 +4717,7 @@ contains
       ! Check if stabilisation provides antidiffusive increments and local bounds
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
-        call output_line('Stabilisation does not provide increments and/or bounds',&
+        call output_line('Stabilisation does not provide increments and/or bounds!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4737,7 +4753,7 @@ contains
 
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provides nodal correction factors',&
+        call output_line('Stabilisation does not provides nodal correction factors!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4745,7 +4761,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4758,10 +4774,10 @@ contains
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
-          call fcb_limitEdgewise(p_IverticesAtEdge,&
+          call fcb_limitEdgewise(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrTransfDble(p_IverticesAtEdge,&
@@ -4778,10 +4794,10 @@ contains
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
-          call fcb_limitEdgewise(p_IverticesAtEdge,&
+          call fcb_limitEdgewise(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseTransformedDble(p_IverticesAtEdge,&
@@ -4808,14 +4824,14 @@ contains
 
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provides edgewise correction factors',&
+        call output_line('Stabilisation does not provides edgewise correction factors!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
-        call output_line('Stabilisation does not provide antidiffusive fluxes',&
+        call output_line('Stabilisation does not provide antidiffusive fluxes!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4823,7 +4839,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
@@ -4837,8 +4853,8 @@ contains
         if (present(fcb_calcCorrection)) then
           ! User-supplied callback routine
           call fcb_calcCorrection(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha,&
-              p_Dflux, rafcstab%NVAR, rafcstab%NEQ, p_Dy, p_ML,rcollection)
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NEQ,&
+              rafcstab%NVAR, dscale, p_Dx, p_Dalpha, p_Dflux, p_Dy, p_ML, rcollection)
         else
           ! Standard routine
           call doCorrectScaleByMassDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
@@ -4851,8 +4867,9 @@ contains
         if (present(fcb_calcCorrection)) then
           ! User-supplied callback routine
           call fcb_calcCorrection(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha,&
-              p_Dflux, rafcstab%NVAR, rafcstab%NEQ, p_Dy, rcollection=rcollection)
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NEQ,&
+              rafcstab%NVAR, dscale, p_Dx, p_Dalpha, p_Dflux, p_Dy,&
+              rcollection=rcollection)
         else
           ! Standard routine
           call doCorrectDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
@@ -6015,7 +6032,7 @@ contains
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
       call sys_halt()
     end if
@@ -6127,7 +6144,7 @@ contains
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
-        call output_line('Stabilisation does not provide antidiffusive fluxes',&
+        call output_line('Stabilisation does not provide antidiffusive fluxes!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6135,7 +6152,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6152,8 +6169,8 @@ contains
           ! User-defined callback routine
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp,&
-              p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_DfluxPrel, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Standard routine with flux transformation
@@ -6176,8 +6193,8 @@ contains
           ! User-defined callback routine
           call fcb_calcADIncrements(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha, p_Dpp,&
-              p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Compute antidiffusive incrementswith flux transformation
@@ -6208,7 +6225,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6245,7 +6262,7 @@ contains
       ! Check if stabilisation provides antidiffusive increments and local bounds
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
-        call output_line('Stabilisation does not provide increments and/or bounds',&
+        call output_line('Stabilisation does not provide increments and/or bounds!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6281,7 +6298,7 @@ contains
 
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provides nodal correction factors',&
+        call output_line('Stabilisation does not provides nodal correction factors!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6289,7 +6306,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6302,10 +6319,10 @@ contains
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
-          call fcb_limitEdgewise(p_IverticesAtEdge,&
+          call fcb_limitEdgewise(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrTransfDble(p_IverticesAtEdge,&
@@ -6322,10 +6339,10 @@ contains
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
-          call fcb_limitEdgewise(p_IverticesAtEdge,&
+          call fcb_limitEdgewise(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseTransformedDble(p_IverticesAtEdge,&
@@ -6352,14 +6369,14 @@ contains
 
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provides edgewise correction factors',&
+        call output_line('Stabilisation does not provides edgewise correction factors!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
-        call output_line('Stabilisation does not provide antidiffusive fluxes',&
+        call output_line('Stabilisation does not provide antidiffusive fluxes!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6367,7 +6384,7 @@ contains
       ! Check if stabilisation provides edge-based structure
       if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-        call output_line('Stabilisation does not provide edge structure',&
+        call output_line('Stabilisation does not provide edge structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
@@ -6381,8 +6398,8 @@ contains
         if (present(fcb_calcCorrection)) then
           ! User-supplied callback routine
           call fcb_calcCorrection(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha,&
-              p_Dflux, rafcstab%NVAR, rafcstab%NEQ, p_Dy, p_ML,rcollection)
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NVAR,&
+              rafcstab%NEQ, dscale, p_Dx, p_Dalpha, p_Dflux, p_Dy, p_ML, rcollection)
         else
           ! Standard routine
           call doCorrectScaleByMassDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
@@ -6395,8 +6412,9 @@ contains
         if (present(fcb_calcCorrection)) then
           ! User-supplied callback routine
           call fcb_calcCorrection(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha,&
-              p_Dflux, rafcstab%NVAR, rafcstab%NEQ, p_Dy, rcollection=rcollection)
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NVAR,&
+              rafcstab%NEQ, dscale, p_Dx, p_Dalpha, p_Dflux, p_Dy,&
+              rcollection=rcollection)
         else
           ! Standard routine
           call doCorrectDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
@@ -7550,7 +7568,7 @@ contains
     
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
       call sys_halt()
     end if
@@ -7559,7 +7577,7 @@ contains
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0) .and.&
         (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_LINFCT_MASS)) then
-      call output_line('Stabilisation does not provide edge data structures',&
+      call output_line('Stabilisation does not provide edge data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
       call sys_halt()
     end if
@@ -8012,7 +8030,7 @@ contains
       integer :: iedge,i,j
 
       !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -8235,7 +8253,7 @@ contains
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
       call sys_halt()
     end if
@@ -8244,7 +8262,7 @@ contains
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0) .and.&
         (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_LINFCT_MASS)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
+      call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
       call sys_halt()
     end if
@@ -8701,7 +8719,7 @@ contains
       integer :: iedge,i,j
 
       !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -8847,6 +8865,1173 @@ contains
     end subroutine doFluxesByMatrixDble
 
   end subroutine gfsys_buildFluxFCTScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsys_failsafeFCTBlock(rafcstab, rmatrix, rx, dscale, dtol,&
+      ioperationSpec, bisAccepted, dfactor, nsteps, CvariableNames,&
+      fcb_extractVariable, fcb_calcFailsafe, rxBackup, rvectorCorr,&
+      rvectorTmp, rcollection)
+
+!<description>
+    ! This subroutine performs failsafe flux limiting as described in
+    ! the paper by Kuzmin, Moeller, Shadid, and Shashkov: "Failsafe
+    ! flux limiting and constrained data projection for equations of
+    ! gas dynamics" Journal of Computational Physics, vol. 229,
+    ! Nov. 2010, p. 8766-8779.
+    !
+    ! Note that vector rx must provide the low-order solution and the
+    ! stabilisation structure rafcstab must provide the edgewise
+    ! limiting factors and the raw-antidiffusive fluxes. That is, the
+    ! standard FCT algorithm must have been evoked before except for
+    ! the last correction step which applied the limited antidiffusive
+    ! fluxes to the solution vector.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! Lumped mass matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Tolerance parameter
+    real(DP), intent(in) :: dtol
+
+    ! Operation specification tag. This is a bitfield coming from an
+    ! OR combination of different AFCSTAB_FAILSAFE_xxxx constants and
+    ! specifies which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: Failsafe correction factor
+    ! If not present then the correction factor is computed as follows
+    ! dfactor = istep/nsteps
+    ! If nsteps is also not present, then dfactor=0 is used.
+    real(DP), intent(in), optional :: dfactor
+
+    ! OPTIONAL: Number of failsafe correction steps
+    ! If not present then a single step is performed using the value
+    ! dfactor as failsafe correction factor.
+    integer, intent(in), optional :: nsteps
+    
+    ! OPTIONAL: Array containing the names of control variables
+    character(len=*), dimension(:), intent(in), optional :: CvariableNames
+
+    ! OPTIONAL: Callback function to extract variables
+    include 'intf_extractVariable.inc'
+    optional :: fcb_extractVariable
+    
+    ! OPTIONAL: Callback function to calculate the failsafe
+    ! correction. If present, then most tasks of this subroutine are
+    ! skipped and deligated to the user-defined callback function
+    include 'intf_calcFailsafe.inc'
+    optional :: fcb_calcFailsafe
+!</input>
+
+!<inputoutput>
+    ! Solution vector
+    ! On input:  This vector must provide the low-order solution to
+    !            which failsafe correction resorts in the worst case
+    ! On Output: This vector is the corrected solution vector after
+    !            failsafe correction has been applied. By explicitly
+    !            unspecifying AFCSTAB_FAILSAFEALGO_CORRECT this vector
+    !            will be the original low-order solution without any
+    !            failsafe correction being applied to it.
+    type(t_vectorBlock), intent(inout) :: rx
+
+    ! OPTIONAL: Collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: Auxiliary vector storing a backup of rx
+    type(t_vectorBlock), intent(inout), target, optional :: rxBackup
+
+    ! OPTIONAL: Scalar vector of length equal to the number of edges
+    ! which contains the correction factors resulting from the
+    ! failsafe limiter. If not present, then the failsafe correction
+    ! is directly applied to the correction factors provided by the
+    ! stabilisation structure rafcstab.
+    type(t_vectorScalar), intent(inout), target, optional :: rvectorCorr
+
+    ! OPTIONAL: Auxiliary block vector storing internal data. If not
+    ! present, then internal memory is allocated.
+    type(t_vectorBlock), intent(inout), target, optional :: rvectorTmp
+!</inputoutput>
+
+!<output>
+    ! Flag which is TRUE if the computed solution vector
+    ! is accepted by the failsafe correction procedure
+    logical, intent(out) :: bisAccepted
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rxBackup,p_rvectorTmp
+    type(t_vectorScalar), pointer :: p_rvectorCorr
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dbeta,p_Dx,p_DxBackup
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataLbound,p_DdataUbound
+    real(DP), dimension(:), pointer :: p_DdataMatrix,p_Dflux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    real(DP) :: dcorr
+    integer :: ivariable,nvariables,istep
+    logical :: bextractVariables
+
+    ! Check if block vector contains only one block.
+    if (rx%nblocks .eq. 1) then
+      if (present(rxBackup)) then
+        call gfsys_failsafeFCTScalar(&
+            rafcstab, rmatrix, rx%RvectorBlock(1), dscale, dtol,&
+            ioperationSpec, bisAccepted, dfactor, nsteps,&
+            CvariableNames, fcb_extractVariable, fcb_calcFailsafe,&
+            rxBackup%RvectorBlock(1),&
+            rvectorCorr, rvectorTmp, rcollection)
+      else
+        call gfsys_failsafeFCTScalar(&
+            rafcstab, rmatrix, rx%RvectorBlock(1), dscale, dtol,&
+            ioperationSpec, bisAccepted, dfactor, nsteps,&
+            CvariableNames, fcb_extractVariable, fcb_calcFailsafe,&
+            rvectorCorr=rvectorCorr, rvectorTmp=rvectorTmp,&
+            rcollection=rcollection)
+      end if
+      return
+    end if
+    
+    
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)     .eq. 0)) then
+      call output_line('Stabilisation does not provide required structures!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_failsafeFCTBlock')
+      call sys_halt()
+    else
+      ! Set pointers
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      call lsyssc_getbase_double(rmatrix, p_DdataMatrix)
+      call lsysbl_getbase_double(rx, p_Dx)
+    end if
+    
+    ! Determine strategy for failsafe correction
+    if (present(fcb_calcFailsafe)) then
+
+      ! Call user-defined callback function
+      if (present(rvectorCorr)) then
+        call lsyssc_getbase_double(rvectorCorr, p_Dbeta)
+        call fcb_calcFailsafe(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NEQ,&
+            rafcstab%NVAR, ioperationSpec, dscale, dtol, p_DdataMatrix,&
+            p_Dx, p_Dalpha, p_Dflux, bisAccepted, p_Dbeta, rcollection)
+      else
+        call fcb_calcFailsafe(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NEQ,&
+            rafcstab%NVAR, ioperationSpec, dscale, dtol, p_DdataMatrix,&
+            p_Dx, p_Dalpha, p_Dflux, bisAccepted, rcollection=rcollection)
+      end if
+
+      ! That's it return
+      return
+    end if
+
+
+    ! Failsafe correction is performed internally.
+    if (present(CvariableNames) .and. present(fcb_extractVariable)) then
+      ! Failsafe correction is performed in terms of user-defined
+      ! variables which are extracted from the given solution vector
+      nvariables = size(CvariableNames)
+      bextractVariables = .true.
+    else
+      ! Failsafe correction is performed in terms of the solution
+      ! variables so that no variable extraction is required
+      nvariables = rx%nblocks
+      bextractVariables = .false.
+    end if
+    
+    ! Set pointer to given vector rvectorCorr or create new one
+    if (present(rvectorCorr)) then
+      p_rvectorCorr => rvectorCorr
+    else
+      allocate(p_rvectorCorr)
+      call lsyssc_createVector(p_rvectorCorr, rafcstab%NEDGE, .false.)
+    end if
+    call lsyssc_getbase_double(p_rvectorCorr, p_Dbeta)
+    
+    ! Set pointer to given vector rxBackup or create new one
+    if (present(rxBackup)) then
+      p_rxBackup => rxBackup
+    else
+      allocate(p_rxBackup)
+      call lsysbl_createVectorBlock(rx, p_rxBackup, .false.)
+    end if
+    call lsysbl_getbase_double(p_rxBackup, p_DxBackup)
+    call lalg_copyVector(p_Dx, p_DxBackup)
+    
+    ! Set pointer to given vector rvectorTmp or create new one (if
+    ! required). The dimension of the temporal vector depends on the
+    ! failsafe correction strategy. If the vector is provided then
+    ! it is tacidly assumed that it has the correct dimension
+    if (present(rvectorTmp)) then
+      p_rvectorTmp => rvectorTmp
+    else
+      allocate(p_rvectorTmp)
+      if (bextractVariables) then
+        call lsysbl_createVectorBlock(p_rvectorTmp, rafcstab%NEQ,&
+            3*nvariables, .false.)
+      else
+        call lsysbl_createVectorBlock(p_rvectorTmp, rafcstab%NEQ,&
+            2*nvariables, .false.)
+      end if
+    end if
+    
+    ! Set pointers to subvectors
+    if (bextractVariables) then
+      call lsysbl_getbase_double(p_rvectorTmp, p_Ddata, 1, nvariables)
+      call lsysbl_getbase_double(&
+          p_rvectorTmp, p_DdataLbound, nvariables+1, 2*nvariables)
+      call lsysbl_getbase_double(&
+          p_rvectorTmp, p_DdataUbound, 2*nvariables+1, 3*nvariables)
+    else
+      call lsysbl_getbase_double(rx, p_Ddata)
+      call lsysbl_getbase_double(p_rvectorTmp, p_DdataLbound, 1, nvariables)
+      call lsysbl_getbase_double(&
+          p_rvectorTmp, p_DdataUbound, nvariables+1, 2*nvariables)
+    end if
+    
+    
+    !---------------------------------------------------------------------------
+    ! The failsafe FCT algorithm is split into the following steps
+    ! which can be skipped and performed externally by the user.
+    !
+    ! 1) Initialise the edgewise correction factors by unity
+    !
+    ! 2) Initialise the upper and lower bounds (if required)
+    !
+    ! 3) Perform failsafe correction
+    !
+    ! 4) Reject solution of required
+    !---------------------------------------------------------------------------
+
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_INITBETA) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 1) Initialise the edgewise correction factors by unity
+      !-------------------------------------------------------------------------
+      call lalg_setVector(p_Dbeta, 1.0_DP)
+    end if
+
+    
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_BOUNDS) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 2) Initialise the upper and lower bounds
+      !-------------------------------------------------------------------------
+      if (bextractVariables) then
+        ! Extract variables by user-defined callback function
+        do ivariable = 1, nvariables
+          call fcb_extractVariable(rx, trim(CvariableNames(ivariable)),&
+              p_rvectorTmp%RvectorBlock(ivariable))
+        end do
+      end if
+      
+      ! Compute the upper and lower solution bounds
+      call doBoundsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          rafcstab%NEDGE, rafcstab%NEQ, nvariables,&
+          p_Ddata, p_DdataLbound, p_DdataUbound)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_LIMIT) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 3) Perform failsafe limiting
+      !-------------------------------------------------------------------------
+      
+      if (present(nsteps)) then
+
+        ! Perform prescribed number of failsafe steps
+        failsafe: do istep = 1, nsteps
+          
+          ! Determine correction factor for this step
+          dcorr = 1.0_DP-real(istep,DP)/real(nsteps,DP)
+          
+          ! Apply the corrected fluxes to the low-order solution
+          call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
+              p_DdataMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Dx)
+
+          ! Recompute the control variables (if required)
+          if (bextractVariables) then
+            ! Extract variables by user-defined callback function
+            do ivariable = 1, nvariables
+              call fcb_extractVariable(rx, trim(CvariableNames(ivariable)),&
+                  p_rvectorTmp%RvectorBlock(ivariable))
+            end do
+          end if
+          
+          ! Compute failsafe correction factors
+          call doFailsafeLimitDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              rafcstab%NEQ, nvariables, p_Ddata, p_DdataLbound,&
+              p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
+
+          if (bisAccepted) exit failsafe
+
+          ! Solution is not acceptable. Another failsafe correction
+          ! step starting from the low-order solution is performed
+          call lalg_copyVector(p_DxBackup, p_Dx)
+        end do failsafe
+
+        ! If failsafe correction did not lead to an acceptable
+        ! solution then we have to recompute it using zero as failsafe
+        ! correction factor which was set in the very last step
+        if (.not.bisAccepted)&
+            call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
+            p_DdataMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Dx)
+
+      else ! nsteps not present
+
+        ! Perform exactly one failsafe correction step with
+        if (present(dfactor)) then
+          dcorr = dfactor
+        else
+          dcorr = 0.0_DP
+        end if
+
+        ! Apply the corrected fluxes to the low-order solution
+        call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
+            p_DdataMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Dx)
+        
+        ! Recompute the control variables (if required)
+        if (bextractVariables) then
+          ! Extract variables by user-defined callback function
+          do ivariable = 1, nvariables
+            call fcb_extractVariable(rx, trim(CvariableNames(ivariable)),&
+                p_rvectorTmp%RvectorBlock(ivariable))
+          end do
+        end if
+        
+        ! Compute failsafe correction factor
+        call doFailsafeLimitDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+            rafcstab%NEQ, rafcstab%NVAR, p_Ddata, p_DdataLbound,&
+            p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
+      end if
+    end if
+
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_CORRECT) .eq. 0) then
+      !-------------------------------------------------------------------------
+      ! 4) Apply failsafe correction. In the current implementation
+      !    the correciton term has already been applied to the
+      !    low-order solution. Therefe, we have to overwrite the 
+      !    solution vector rx by the low-order backup rxBackup if
+      !    this routine is enforced NOT to apply the correction.
+      !-------------------------------------------------------------------------
+      call lalg_copyVector(p_DxBackup, p_Dx)
+    end if
+
+
+    ! Release temporal vectors
+    if (.not.present(rvectorCorr)) then
+      call lsyssc_releaseVector(p_rvectorCorr); deallocate(p_rvectorCorr)
+    end if
+
+    if (.not.present(rxBackup)) then
+      call lsysbl_releaseVector(p_rxBackup); deallocate(p_rxBackup)
+    end if
+
+    if (.not.present(rvectorTmp)) then
+      call lsysbl_releaseVector(p_rvectorTmp); deallocate(p_rvectorTmp)
+    end if
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Compute the local upper and lower bounds based on the double
+    ! values array Dx evaluated at the neighbouring nodes
+    
+    subroutine doBoundsDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, NVARfailsafe, Dx, Dlbound, Dubound)
+      
+      ! input parameters
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(NEQ,NVARfailsafe), intent(in) :: Dx
+      integer, intent(in) :: NEDGE,NEQ,NVARfailsafe
+      
+      ! output parameters
+      real(DP), dimension(NEQ,NVARfailsafe), intent(out) :: Dlbound, Dubound
+
+      ! local variables
+      integer :: i,iedge,igroup,j
+      
+      !$omp parallel sections
+      !$omp section
+      call lalg_copyVector(Dx, Dlbound)
+      !$omp section
+      call lalg_copyVector(Dx, Dubound)
+      !$omp end parallel sections
+
+      !$omp parallel default(shared) private(i,j)&
+      !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
+   
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          
+          ! Compute minimum/maximum value of neighboring nodes
+          Dlbound(i,:) = min(Dlbound(i,:), Dx(j,:))
+          Dlbound(j,:) = min(Dlbound(j,:), Dx(i,:))
+          Dubound(i,:) = max(Dubound(i,:), Dx(j,:))
+          Dubound(j,:) = max(Dubound(j,:), Dx(i,:))
+        end do
+        !$omp end do
+        
+      end do ! igroup
+      !$omp end parallel
+      
+    end subroutine doBoundsDble
+
+    !**************************************************************
+    ! Premultiply the correction factor Dalpha by the failsafe factor
+    ! Dbeta and limit the raw antidiffusive fluxes Dflux by the
+    ! resulting net correction factor Dcorr = Dalpha*Dbeta. Apply the
+    ! corrected antidiffusive fluxes to the low-order solution Dx and
+    ! scale each entry by the entry of the lumped mass matrix.
+
+    subroutine doCorrectScaleByMass(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dbeta, Dflux, Dx)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: ML,Dalpha,Dbeta
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      ! input/output parameters
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dx
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: i,iedge,igroup,j
+
+      if (dscale .eq. 0.0_DP) then
+        ! Do nothing
+        return
+
+      elseif (dscale .eq. 1.0_DP) then
+
+        !$omp parallel default(shared) private(i,j,F_ij)&
+        !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IverticesAtEdgeIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          
+          ! Loop over all edges
+          !$omp do
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Get node numbers
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute portion of corrected antidiffusive flux
+            F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+            
+            ! Remove flux from solution
+            Dx(i,:) = Dx(i,:) + F_ij/ML(i)
+            Dx(j,:) = Dx(j,:) - F_ij/ML(j)
+          end do
+          !$omp end do
+          
+        end do ! igroup
+        !$omp end parallel
+
+      else ! dscale /= 1.0
+
+        !$omp parallel default(shared) private(i,j,F_ij)&
+        !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IverticesAtEdgeIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          
+          ! Loop over all edges
+          !$omp do
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Get node numbers
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute portion of corrected antidiffusive flux
+            F_ij = dscale * Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+            
+            ! Remove flux from solution
+            Dx(i,:) = Dx(i,:) + F_ij/ML(i)
+            Dx(j,:) = Dx(j,:) - F_ij/ML(j)
+          end do
+          !$omp end do
+          
+        end do ! igroup
+        !$omp end parallel
+
+      end if
+      
+    end subroutine doCorrectScaleByMass
+
+    !**************************************************************
+    ! Compute the edgewise failsafe correction factors
+    
+    subroutine doFailsafeLimitDble(IverticesAtEdge, NEDGE, NEQ, NVARfailsafe,&
+        Dx, Dlbound, Dubound, dcorr, dtol, Dbeta, baccept)
+
+      ! input parameters
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(NEQ,NVARfailsafe), intent(in) :: Dx,Dlbound,Dubound
+      real(DP), intent(in) :: dcorr,dtol
+      integer, intent(in) :: NEDGE,NEQ,NVARfailsafe
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Dbeta
+
+      ! output parameters
+      logical, intent(out) :: baccept
+      
+      ! local variables
+      integer :: iedge,i,j,ivar
+
+      ! Initialisation
+      baccept = .true.
+
+      ! Loop over all variables
+      !$omp parallel do default(shared) private(i,j,iedge)&
+      !$omp reduction(.and.:baccept) schedule(static,1)
+      do ivar = 1, NVARfailsafe
+
+        do iedge = 1, NEDGE
+        
+          ! Get node numbers
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          
+          ! Check if solution exceeds 
+          if ((Dx(i,ivar) .lt. Dlbound(i,ivar)-dtol) .or.&
+              (Dx(j,ivar) .lt. Dlbound(j,ivar)-dtol) .or.&
+              (Dx(i,ivar) .gt. Dubound(i,ivar)+dtol) .or.&
+              (Dx(j,ivar) .gt. Dubound(j,ivar)+dtol)) then
+            Dbeta(iedge) = dcorr
+            baccept = .false.
+          end if
+        end do
+      end do
+      !$omp end parallel do
+
+    end subroutine doFailsafeLimitDble
+      
+  end subroutine gfsys_failsafeFCTBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsys_failsafeFCTScalar(rafcstab, rmatrix, rx, dscale, dtol,&
+      ioperationSpec, bisAccepted, dfactor, nsteps, CvariableNames,&
+      fcb_extractVariable, fcb_calcFailsafe, rxBackup, rvectorCorr,&
+      rvectorTmp, rcollection)
+
+!<description>
+    ! This subroutine performs failsafe flux limiting as described in
+    ! the paper by Kuzmin, Moeller, Shadid, and Shashkov: "Failsafe
+    ! flux limiting and constrained data projection for equations of
+    ! gas dynamics" Journal of Computational Physics, vol. 229,
+    ! Nov. 2010, p. 8766-8779.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! Lumped mass matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Tolerance parameter
+    real(DP), intent(in) :: dtol
+
+    ! Operation specification tag. This is a bitfield coming from an
+    ! OR combination of different AFCSTAB_FAILSAFE_xxxx constants and
+    ! specifies which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: Failsafe correction factor
+    ! If not present then the correction factor is computed as follows
+    ! dfactor = istep/nsteps
+    ! If nsteps is also not present, then dfactor=0 is used.
+    real(DP), intent(in), optional :: dfactor
+
+    ! OPTIONAL: Number of failsafe correction steps
+    ! If not present then a single step is performed using the value
+    ! dfactor as failsafe correction factor.
+    integer, intent(in), optional :: nsteps
+
+    ! OPTIONAL: Array containing the names of control variables
+    character(len=*), dimension(:), intent(in), optional :: CvariableNames
+
+    ! OPTIONAL: Callback function to extract variables
+    include 'intf_extractVariable.inc'
+    optional :: fcb_extractVariable
+    
+    ! OPTIONAL: Callback function to calculate the failsafe correction
+    include 'intf_calcFailsafe.inc'
+    optional :: fcb_calcFailsafe
+!</input>
+
+!<inputoutput>
+    ! Solution vector
+    ! On input:  This vector must provide the low-order solution to
+    !            which failsafe correction resorts in the worst case
+    ! On Output: This vector is the corrected solution vector after
+    !            failsafe correction has been applied. By explicitly
+    !            unspecifying AFCSTAB_FAILSAFEALGO_CORRECT this vector
+    !            will be the original low-order solution without any
+    !            failsafe correction being applied to it.
+    type(t_vectorScalar), intent(inout) :: rx
+
+    ! OPTIONAL: Collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: Auxiliary vector storing a backup of rx
+    type(t_vectorScalar), intent(inout), target, optional :: rxBackup
+
+    ! OPTIONAL: Scalar vector of length equal to the number of edges
+    ! which contains the correction factors resulting from the
+    ! failsafe limiter. If not present, then the failsafe correction
+    ! is directly applied to the correction factors provided by the
+    ! stabilisation structure rafcstab.
+    type(t_vectorScalar), intent(inout), target, optional :: rvectorCorr
+
+    ! OPTIONAL: Auxiliary block vector storing internal data. If not
+    ! present, then internal memory is allocated.
+    type(t_vectorBlock), intent(inout), target, optional :: rvectorTmp
+!</inputoutput>
+
+!<output>
+    ! Flag which is TRUE if the computed solution vector
+    ! is accepted by the failsafe correction procedure
+    logical, intent(out) :: bisAccepted
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_blockDiscretisation) :: rblockDiscr
+    type(t_vectorBlock) :: rxBlock
+    type(t_vectorBlock), pointer :: p_rvectorTmp
+    type(t_vectorScalar), pointer :: p_rvectorCorr,p_rxBackup
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dbeta,p_Dx,p_DxBackup
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataLbound,p_DdataUbound
+    real(DP), dimension(:), pointer :: p_DdataMatrix,p_Dflux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    real(DP) :: dcorr
+    integer :: ivariable,nvariables,istep,ivar,ieq
+    logical :: bextractVariables
+
+    ! Check if stabilisation provides edge-based structure
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0) .or.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)     .eq. 0)) then
+      call output_line('Stabilisation does not provide required structures!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_failsafeFCTScalar')
+      call sys_halt()
+    else
+      ! Set pointers
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+      call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      call lsyssc_getbase_double(rmatrix, p_DdataMatrix)
+      call lsyssc_getbase_double(rx, p_Dx)
+    end if
+
+    ! Determine strategy for failsafe correction
+    if (present(fcb_calcFailsafe)) then
+      
+      ! Call user-defined callback function
+      if (present(rvectorCorr)) then
+        call lsyssc_getbase_double(rvectorCorr, p_Dbeta)
+        call fcb_calcFailsafe(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NVAR,&
+            rafcstab%NEQ, ioperationSpec, dscale, dtol, p_DdataMatrix,&
+            p_Dx, p_Dalpha, p_Dflux, bisAccepted, p_Dbeta, rcollection)
+      else
+        call fcb_calcFailsafe(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, rafcstab%NVAR,&
+            rafcstab%NEQ, ioperationSpec, dscale, dtol, p_DdataMatrix,&
+            p_Dx, p_Dalpha, p_Dflux, bisAccepted, rcollection=rcollection)
+      end if
+
+      ! That's it return
+      return
+    end if
+   
+
+    ! Failsafe correction is performed internally.
+    if (present(CvariableNames) .and. present(fcb_extractVariable)) then
+      ! Failsafe correction is performed in terms of user-defined
+      ! variables which are extracted from the given solution vector
+      nvariables = size(CvariableNames)
+      bextractVariables = .true.
+
+      ! Create temporal 1-block vector required as argument for the
+      ! callback function which extracts variables from the solution
+      if (associated(rx%p_rspatialDiscr)) then
+        call spdiscr_createBlockDiscrInd(rx%p_rspatialDiscr, rblockDiscr)
+        call lsysbl_createVecFromScalar(rx, rxBlock, rblockDiscr)
+      else
+        call lsysbl_createVecFromScalar(rx, rxBlock)
+      end if
+    else
+      ! Failsafe correction is performed in terms of the solution
+      ! variables so that no variable extraction is required
+      nvariables = rx%NVAR
+      bextractVariables = .false.
+    end if
+
+    ! Set pointer to given vector rvectorCorr or create new one
+    if (present(rvectorCorr)) then
+      p_rvectorCorr => rvectorCorr
+    else
+      allocate(p_rvectorCorr)
+      call lsyssc_createVector(p_rvectorCorr, rafcstab%NEDGE, .false.)
+    end if
+    call lsyssc_getbase_double(p_rvectorCorr, p_Dbeta)
+    
+    ! Set pointer to given vector rxBackup or create new one
+    if (present(rxBackup)) then
+      p_rxBackup => rxBackup
+      call lsyssc_getbase_double(p_rxBackup, p_DxBackup)
+      call lalg_copyVector(p_Dx, p_DxBackup)
+    else
+      allocate(p_rxBackup)
+      call lsyssc_copyVector(rx, p_rxBackup)
+      call lsyssc_getbase_double(p_rxBackup, p_DxBackup)
+    end if
+    
+
+    ! Set pointer to given vector rvectorTmp or create new one (if
+    ! required). The dimension of the temporal vector depends on the
+    ! failsafe correction strategy. If the vector is provided then
+    ! it is tacidly assumed that it has the correct dimension
+    if (present(rvectorTmp)) then
+      p_rvectorTmp => rvectorTmp
+    else
+      allocate(p_rvectorTmp)
+      call lsysbl_createVectorBlock(p_rvectorTmp, rafcstab%NEQ,&
+          3*nvariables, .false.)
+    end if
+    
+    ! Set pointers to subvectors
+    call lsysbl_getbase_double(p_rvectorTmp, p_Ddata, 1, nvariables)
+    call lsysbl_getbase_double(&
+        p_rvectorTmp, p_DdataLbound, nvariables+1, 2*nvariables)
+    call lsysbl_getbase_double(&
+        p_rvectorTmp, p_DdataUbound, 2*nvariables+1, 3*nvariables)
+
+
+    !---------------------------------------------------------------------------
+    ! The failsafe FCT algorithm is split into the following steps
+    ! which can be skipped and performed externally by the user.
+    !
+    ! 1) Initialise the edgewise correction factors by unity
+    !
+    ! 2) Initialise the upper and lower bounds (if required)
+    !
+    ! 3) Perform failsafe correction
+    !
+    ! 4) Reject solution of required
+    !---------------------------------------------------------------------------
+
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_INITBETA) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 1) Initialise the edgewise correction factors by unity
+      !-------------------------------------------------------------------------
+      call lalg_setVector(p_Dbeta, 1.0_DP)
+    end if
+
+    
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_BOUNDS) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 2) Initialise the upper and lower bounds
+      !-------------------------------------------------------------------------
+      if (bextractVariables) then
+        ! Extract variables by user-defined callback function
+        do ivariable = 1, nvariables
+          call fcb_extractVariable(rxBlock, trim(CvariableNames(ivariable)),&
+              p_rvectorTmp%RvectorBlock(ivariable))
+        end do
+      else
+        ! The solution vector is store in interleaved format whereas
+        ! the upper and lower bounds are stored in block format.
+        ! Therefore, we have to convert the solution vector.
+        do ivar = 1,rafcstab%NVAR
+          do ieq = 1,rafcstab%NEQ
+            p_Ddata((ivar-1)*rafcstab%NVAR+ieq) = p_Dx((ieq-1)*rafcstab%NEQ+ivar)
+          end do
+        end do
+      end if
+      
+      ! Compute the upper and lower solution bounds
+      call doBoundsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          rafcstab%NEDGE, rafcstab%NEQ, nvariables,&
+          p_Ddata, p_DdataLbound, p_DdataUbound)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_LIMIT) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 3) Perform failsafe limiting
+      !-------------------------------------------------------------------------
+      
+      if (present(nsteps)) then
+
+        ! Perform prescribed number of failsafe steps
+        failsafe: do istep = 1, nsteps
+          
+          ! Determine correction factor for this step
+          dcorr = 1.0_DP-real(istep,DP)/real(nsteps,DP)
+          
+          ! Apply the corrected fluxes to the low-order solution
+          call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
+              p_DdataMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Dx)
+
+          ! Recompute the control variables (if required)
+          if (bextractVariables) then
+            ! Extract variables by user-defined callback function
+            do ivariable = 1, nvariables
+              call fcb_extractVariable(rxBlock, trim(CvariableNames(ivariable)),&
+                  p_rvectorTmp%RvectorBlock(ivariable))
+            end do
+          end if
+          
+          ! Compute failsafe correction factors
+          call doFailsafeLimitDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              rafcstab%NEQ, nvariables, p_Ddata, p_DdataLbound,&
+              p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
+
+          if (bisAccepted) exit failsafe
+
+          ! Solution is not acceptable. Another failsafe correction
+          ! step starting from the low-order solution is performed
+          call lalg_copyVector(p_DxBackup, p_Dx)
+        end do failsafe
+
+        ! If failsafe correction did not lead to an acceptable
+        ! solution then we have to recompute it using zero as failsafe
+        ! correction factor which was set in the very last step
+        if (.not.bisAccepted)&
+            call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
+            p_DdataMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Dx)
+
+      else ! nsteps not present
+
+        ! Perform exactly one failsafe correction step with
+        if (present(dfactor)) then
+          dcorr = dfactor
+        else
+          dcorr = 0.0_DP
+        end if
+
+        ! Apply the corrected fluxes to the low-order solution
+        call doCorrectScaleByMass(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
+            p_DdataMatrix, p_Dalpha, p_Dbeta, p_Dflux, p_Dx)
+        
+        ! Recompute the control variables (if required)
+        if (bextractVariables) then
+          ! Extract variables by user-defined callback function
+          do ivariable = 1, nvariables
+            call fcb_extractVariable(rxBlock, trim(CvariableNames(ivariable)),&
+                p_rvectorTmp%RvectorBlock(ivariable))
+          end do
+        end if
+        
+        ! Compute failsafe correction factor
+        call doFailsafeLimitDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+            rafcstab%NEQ, rafcstab%NVAR, p_Ddata, p_DdataLbound,&
+            p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
+      end if
+    end if
+
+    if (iand(ioperationSpec, AFCSTAB_FAILSAFEALGO_CORRECT) .eq. 0) then
+      !-------------------------------------------------------------------------
+      ! 4) Apply failsafe correction. In the current implementation
+      !    the correciton term has already been applied to the
+      !    low-order solution. Therefe, we have to overwrite the 
+      !    solution vector rx by the low-order backup rxBackup if
+      !    this routine is enforced NOT to apply the correction.
+      !-------------------------------------------------------------------------
+      call lalg_copyVector(p_DxBackup, p_Dx)
+    end if
+
+
+    ! Release temporal vectors
+    if (.not.present(rvectorCorr)) then
+      call lsyssc_releaseVector(p_rvectorCorr); deallocate(p_rvectorCorr)
+    end if
+
+    if (.not.present(rxBackup)) then
+      call lsyssc_releaseVector(p_rxBackup); deallocate(p_rxBackup)
+    end if
+
+    if (.not.present(rvectorTmp)) then
+      call lsysbl_releaseVector(p_rvectorTmp); deallocate(p_rvectorTmp)
+    end if
+
+    ! Release temporal 1-block vector
+    call lsysbl_releaseVector(rxBlock)
+    if (associated(rx%p_rspatialDiscr))&
+        call spdiscr_releaseBlockDiscr(rblockDiscr)
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Compute the local upper and lower bounds based on the double
+    ! values array Dx evaluated at the neighbouring nodes
+    
+    subroutine doBoundsDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, NVARfailsafe, Dx, Dlbound, Dubound)
+      
+      ! input parameters
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(NEQ,NVARfailsafe), intent(in) :: Dx
+      integer, intent(in) :: NEDGE,NEQ,NVARfailsafe
+      
+      ! output parameters
+      real(DP), dimension(NEQ,NVARfailsafe), intent(out) :: Dlbound, Dubound
+
+      ! local variables
+      integer :: i,iedge,igroup,j
+      
+      !$omp parallel sections
+      !$omp section
+      call lalg_copyVector(Dx, Dlbound)
+      !$omp section
+      call lalg_copyVector(Dx, Dubound)
+      !$omp end parallel sections
+
+      !$omp parallel default(shared) private(i,j)&
+      !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
+   
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IverticesAtEdgeIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        
+        ! Loop over all edges
+        !$omp do
+        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          
+          ! Compute minimum/maximum value of neighboring nodes
+          Dlbound(i,:) = min(Dlbound(i,:), Dx(j,:))
+          Dlbound(j,:) = min(Dlbound(j,:), Dx(i,:))
+          Dubound(i,:) = max(Dubound(i,:), Dx(j,:))
+          Dubound(j,:) = max(Dubound(j,:), Dx(i,:))
+        end do
+        !$omp end do
+        
+      end do ! igroup
+      !$omp end parallel
+      
+    end subroutine doBoundsDble
+
+    !**************************************************************
+    ! Premultiply the correction factor Dalpha by the failsafe factor
+    ! Dbeta and limit the raw antidiffusive fluxes Dflux by the
+    ! resulting net correction factor Dcorr = Dalpha*Dbeta. Apply the
+    ! corrected antidiffusive fluxes to the low-order solution Dx and
+    ! scale each entry by the entry of the lumped mass matrix.
+
+    subroutine doCorrectScaleByMass(IverticesAtEdgeIdx, IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dbeta, Dflux, Dx)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: ML,Dalpha,Dbeta
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dx
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: i,iedge,igroup,j
+
+      if (dscale .eq. 0.0_DP) then
+        ! Do nothing
+        return
+
+      elseif (dscale .eq. 1.0_DP) then
+
+        !$omp parallel default(shared) private(i,j,F_ij)&
+        !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IverticesAtEdgeIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          
+          ! Loop over all edges
+          !$omp do
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Get node numbers
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute portion of corrected antidiffusive flux
+            F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+            
+            ! Remove flux from solution
+            Dx(:,i) = Dx(:,i) + F_ij/ML(i)
+            Dx(:,j) = Dx(:,j) - F_ij/ML(j)
+          end do
+          !$omp end do
+          
+        end do ! igroup
+        !$omp end parallel
+
+      else ! dscale /= 1.0
+
+        !$omp parallel default(shared) private(i,j,F_ij)&
+        !$omp if (NEDGE > GFSYS_NEDGEMIN_OMP)
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IverticesAtEdgeIdx)-1
+          
+          ! Do nothing for empty groups
+          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          
+          ! Loop over all edges
+          !$omp do
+          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            
+            ! Get node numbers
+            i  = IverticesAtEdge(1,iedge)
+            j  = IverticesAtEdge(2,iedge)
+            
+            ! Compute portion of corrected antidiffusive flux
+            F_ij = dscale * Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+            
+            ! Remove flux from solution
+            Dx(:,i) = Dx(:,i) + F_ij/ML(i)
+            Dx(:,j) = Dx(:,j) - F_ij/ML(j)
+          end do
+          !$omp end do
+          
+        end do ! igroup
+        !$omp end parallel
+
+      end if
+      
+    end subroutine doCorrectScaleByMass
+
+    !**************************************************************
+    ! Compute the edgewise failsafe correction factors
+    
+    subroutine doFailsafeLimitDble(IverticesAtEdge, NEDGE, NEQ, NVARfailsafe,&
+        Dx, Dlbound, Dubound, dcorr, dtol, Dbeta, baccept)
+
+      ! input parameters
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(NEQ,NVARfailsafe), intent(in) :: Dx,Dlbound,Dubound
+      real(DP), intent(in) :: dcorr,dtol
+      integer, intent(in) :: NEDGE,NEQ,NVARfailsafe
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Dbeta
+
+      ! output parameters
+      logical, intent(out) :: baccept
+      
+      ! local variables
+      integer :: iedge,i,j,ivar
+
+      ! Initialisation
+      baccept = .true.
+
+      ! Loop over all variables
+      !$omp parallel do default(shared) private(i,j,iedge)&
+      !$omp reduction(.and.:baccept) schedule(static,1)
+      do ivar = 1, NVARfailsafe
+
+        do iedge = 1, NEDGE
+        
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Check if solution exceeds 
+          if ((Dx(i,ivar) .lt. Dlbound(i,ivar)-dtol) .or.&
+              (Dx(j,ivar) .lt. Dlbound(j,ivar)-dtol) .or.&
+              (Dx(i,ivar) .gt. Dubound(i,ivar)+dtol) .or.&
+              (Dx(j,ivar) .gt. Dubound(j,ivar)+dtol)) then
+            Dbeta(iedge) = dcorr
+            baccept = .false.
+          end if
+        end do
+      end do
+      !$omp end parallel do
+
+    end subroutine doFailsafeLimitDble
+
+  end subroutine gfsys_failsafeFCTScalar
 
   ! ****************************************************************************
   ! Here, some private auxiliary subroutine follow
@@ -9085,5 +10270,142 @@ contains
     end if
 
   end subroutine gfsys_combineFluxesSngl
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsys_limitUnboundedDble(p, q, dval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(DP), intent(in) :: p,q
+
+    ! default value
+    real(DP), intent(in) :: dval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = dval
+    end if
+  end function gfsys_limitUnboundedDble
+  
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsys_limitUnboundedSngl(p, q, fval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value fval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(SP), intent(in) :: p,q
+
+    ! default value
+    real(SP), intent(in) :: fval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(SP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = fval
+    end if
+  end function gfsys_limitUnboundedSngl
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsys_limitBoundedDble(p, q, dval, dbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(DP), intent(in) :: p,q
+    
+    ! default value
+    real(DP), intent(in) :: dval
+
+    ! upper bound
+    real(DP), intent(in) :: dbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+    
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, dbound)
+    else
+      r = dval
+    end if
+  end function gfsys_limitBoundedDble
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function gfsys_limitBoundedSngl(p, q, fval, fbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+    ! Single valued version
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(SP), intent(in) :: p,q
+    
+    ! default value
+    real(SP), intent(in) :: fval
+
+    ! upper bound
+    real(SP), intent(in) :: fbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(SP) :: r
+!</result>
+!</function>
+    
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, fbound)
+    else
+      r = fval
+    end if
+  end function gfsys_limitBoundedSngl
 
 end module groupfemsystem
