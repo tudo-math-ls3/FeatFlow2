@@ -490,6 +490,27 @@ module linearsystemblock
     module procedure lsysbl_invertedDiagBlockMatVec
   end interface
 
+  interface lsysbl_getbase_double
+    module procedure lsysbl_getbase_double
+    module procedure lsysbl_getbase_doubleFixed
+  end interface
+
+  public :: lsysbl_getbase_double
+
+  interface lsysbl_getbase_single
+    module procedure lsysbl_getbase_single
+    module procedure lsysbl_getbase_singleFixed
+  end interface
+
+  public :: lsysbl_getbase_single
+
+  interface lsysbl_getbase_int
+    module procedure lsysbl_getbase_int
+    module procedure lsysbl_getbase_intFixed
+  end interface
+
+  public :: lsysbl_getbase_int
+
   public :: lsysbl_invertedDiagMatVec
   public :: lsysbl_createMatFromScalar
   public :: lsysbl_createVecFromScalar
@@ -520,8 +541,6 @@ module linearsystemblock
   public :: lsysbl_isMatrixCompatible
   public :: lsysbl_isMatrixSorted
   public :: lsysbl_isVectorSorted
-  public :: lsysbl_getbase_double
-  public :: lsysbl_getbase_single
   public :: lsysbl_vectorNorm
   public :: lsysbl_vectorNormBlock
   public :: lsysbl_swapVectors
@@ -906,6 +925,59 @@ contains
   
 !<subroutine>
 
+  subroutine lsysbl_getbase_doubleFixed (rvector,p_Ddata,ifirstBlock,ilastBlock)
+  
+!<description>
+  ! Returns a pointer to the double precision data array of the vector.
+  ! An error is thrown if the vector is not double precision.
+  ! This subroutine can be used to address only some part of the block
+  ! vector by specifying the first and last block.
+!</description>
+
+!<input>
+  ! The vector
+  type(t_vectorBlock), intent(in) :: rvector
+
+  ! Number of the first and last block
+  integer, intent(in) :: ifirstBlock, ilastBlock
+!</input>
+
+!<output>
+  ! Pointer to the double precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  real(DP), dimension(:), pointer :: p_Ddata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE) .or.&
+     (ifirstBlock .lt. 1) .or. (ilastBlock .gt. rvector%nblocks)) then
+   nullify(p_Ddata)
+   return
+ end if
+
+  ! Check that the vector is really double precision
+  if (rvector%cdataType .ne. ST_DOUBLE) then
+    print *,'lsysbl_getbase_doubleFixed: Vector is of wrong precision!'
+    call sys_halt()
+  end if
+
+  ! Get the data array
+  call storage_getbase_double (rvector%h_Ddata,p_Ddata)
+
+  ! Modify the starting address/length to get the real array.
+  p_Ddata => p_Ddata(&
+      rvector%RvectorBlock(ifirstBlock)%iidxFirstEntry:&
+      rvector%RvectorBlock(ilastBlock)%iidxFirstEntry+&
+      rvector%RvectorBlock(ilastBlock)%NEQ-1)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine lsysbl_getbase_single (rvector,p_Fdata)
   
 !<description>
@@ -950,6 +1022,59 @@ contains
   
 !<subroutine>
 
+  subroutine lsysbl_getbase_singleFixed (rvector,p_Fdata,ifirstBlock,ilastBlock)
+  
+!<description>
+  ! Returns a pointer to the single precision data array of the vector.
+  ! An error is thrown if the vector is not single precision.
+  ! This subroutine can be used to address only some part of the block
+  ! vector by specifying the first and last block.
+!</description>
+
+!<input>
+  ! The vector
+  type(t_vectorBlock), intent(in) :: rvector
+
+  ! Number of the first and last block
+  integer, intent(in) :: ifirstBlock, ilastBlock
+!</input>
+
+!<output>
+  ! Pointer to the double precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  real(SP), dimension(:), pointer :: p_Fdata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE) .or.&
+     (ifirstBlock .lt. 1) .or. (ilastBlock .gt. rvector%nblocks)) then
+   nullify(p_Fdata)
+   return
+ end if
+
+  ! Check that the vector is really double precision
+  if (rvector%cdataType .ne. ST_SINGLE) then
+    print *,'lsysbl_getbase_singleFixed: Vector is of wrong precision!'
+    call sys_halt()
+  end if
+
+  ! Get the data array
+  call storage_getbase_single (rvector%h_Ddata,p_Fdata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Fdata => p_Fdata(&
+      rvector%RvectorBlock(ifirstBlock)%iidxFirstEntry:&
+      rvector%RvectorBlock(ilastBlock)%iidxFirstEntry+&
+      rvector%RvectorBlock(ilastBlock)%NEQ-1)
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine lsysbl_getbase_int (rvector,p_Idata)
   
 !<description>
@@ -971,10 +1096,10 @@ contains
 !</subroutine>
 
   ! Do we have data at all?
- if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE)) then
-   nullify(p_Idata)
-   return
- end if
+  if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE)) then
+    nullify(p_Idata)
+    return
+  end if
 
   ! Check that the vector is really integer
   if (rvector%cdataType .ne. ST_INT) then
@@ -987,6 +1112,59 @@ contains
   
   ! Modify the starting address/length to get the real array.
   p_Idata => p_Idata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsysbl_getbase_intFixed (rvector,p_Idata,ifirstBlock,ilastBlock)
+  
+!<description>
+  ! Returns a pointer to the integer data array of the vector.
+  ! An error is thrown if the vector is not integer.
+  ! This subroutine can be used to address only some part of the block
+  ! vector by specifying the first and last block.
+!</description>
+
+!<input>
+  ! The vector
+  type(t_vectorBlock), intent(in) :: rvector
+
+  ! Number of the first and last block
+  integer, intent(in) :: ifirstBlock, ilastBlock
+!</input>
+
+!<output>
+  ! Pointer to the integer data array of the vector.
+  ! NULL() if the vector has no data array.
+  integer, dimension(:), pointer :: p_Idata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE) .or.&
+     (ifirstBlock .lt. 1) .or. (ilastBlock .gt. rvector%nblocks)) then
+   nullify(p_Idata)
+   return
+ end if
+
+  ! Check that the vector is really integer
+  if (rvector%cdataType .ne. ST_INT) then
+    print *,'lsysbl_getbase_intFixed: Vector is of wrong precision!'
+    call sys_halt()
+  end if
+
+  ! Get the data array
+  call storage_getbase_int (rvector%h_Ddata,p_Idata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Idata => p_Idata(&
+      rvector%RvectorBlock(ifirstBlock)%iidxFirstEntry:&
+      rvector%RvectorBlock(ilastBlock)%iidxFirstEntry+&
+      rvector%RvectorBlock(ilastBlock)%NEQ-1)
   
   end subroutine
 
