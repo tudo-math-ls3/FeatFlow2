@@ -6,7 +6,7 @@
 
   subroutine fcb_calcADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
-        Dpp, Dpm, fcb_calcFluxTransformation_sim, Dflux0, rcollection)
+        Dpp, Dpm, fcb_calcFluxTransformation_sim, DfluxPrel, rcollection)
 
     use fsystem
     use collection
@@ -51,7 +51,7 @@
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for prelimiting
-    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: DfluxPrel
 !</input>
 
 !<inputoutput>

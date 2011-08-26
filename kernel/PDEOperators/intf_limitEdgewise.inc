@@ -4,9 +4,9 @@
 
 !<subroutine>
 
-  subroutine fcb_limitEdgewise(IverticesAtEdge, NEDGE, NEQ, NVAR,&
-      NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm,&
-      Dalpha, fcb_calcFluxTransformation_sim, Dflux0, rcollection)
+  subroutine fcb_limitEdgewise(IverticesAtEdgeIdx, IverticesAtEdge,&
+      NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
+      Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
     use fsystem
     use collection
@@ -40,6 +40,9 @@
     ! Nodal correction factors
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
+    ! Index pointer for edge data structure
+    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+
     ! Edge data structure
     integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
@@ -48,7 +51,7 @@
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
-    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: DfluxConstr
 !</intput>
 
 !<inputoutput>

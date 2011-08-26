@@ -5,7 +5,7 @@
 !<subroutine>
 
   subroutine fcb_calcCorrection(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE,&
-      NEQ, NVAR, dscale, Dalpha, Dflux, ndim1, ndim2, Dy, ML, rcollection)
+      NEQ, NVAR, ndim1, ndim2, dscale, Dx, Dalpha, Dflux, Dy, ML, rcollection)
 
     use fsystem
     use collection
@@ -26,6 +26,9 @@
 
     ! Dimensions of the solution vector
     integer, intent(in) :: ndim1, ndim2
+
+    ! Solution vector
+    real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
 
     ! Edgewise correction factors
     real(DP), dimension(:), intent(in) :: Dalpha
