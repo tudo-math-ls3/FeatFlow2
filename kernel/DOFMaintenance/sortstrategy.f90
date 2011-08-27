@@ -32,7 +32,7 @@
 !#     -> Calculates FEAST rowwise renumbering based cell adjacencies
 !#
 !# 5.) sstrat_calcStochastic
-!#     -> Calculates stoastic renumbering (i.e. a random permutation)
+!#     -> Calculates stochastic renumbering (i.e. a random permutation)
 !#
 !# 6.) sstrat_calcHierarchical
 !#     -> Calculates a renumbering strategy based on element patches
