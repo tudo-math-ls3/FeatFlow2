@@ -220,7 +220,7 @@ use constant SRCLIST_KERNEL =>
     "Postprocessing/boundaryintegral.f90 Postprocessing/mapleio.f90 Postprocessing/matrixio.f90 " .
     "Postprocessing/pprocerror.f90 Postprocessing/pprocgradients.f90 Postprocessing/pprocindicator.f90 " .
     "Postprocessing/pprocnavierstokes.f90 Postprocessing/ucd.f90 Postprocessing/vectorio.f90 " .
-    "Postprocessing/geometryoutput.f90 Postprocessing/pprocintegrals.f90 " .
+    "Postprocessing/geometryoutput.f90 Postprocessing/pprocintegrals.f90 Postprocessing/lineariser.f90 " .
 
     "Preprocessing/pprocsolution.f90 " .
 
