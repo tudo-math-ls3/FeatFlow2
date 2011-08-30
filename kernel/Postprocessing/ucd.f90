@@ -112,7 +112,6 @@
 !#
 !# e) ucd_release       - Release the export structure
 !#
-
 !# ucd_startXXXX creates an export structure that identifies the output
 !# file. This is the only point, where the caller must specify the type
 !# of output. Afterwards, the ucd_setXXXX and ucd_addXXXX routines
@@ -214,7 +213,7 @@ module ucd
   ! Can be specified additionally to UCD_FLAG_USEEDGEMIDPOINTS and/or
   ! UCD_FLAG_USEELEMENTMIDPOINTS. Prevents a warning if missing nodes are
   ! not specified.
-  integer(I32), parameter, public :: UCD_FLAG_IGNOREDEADNODES = 2**4
+  integer(I32), parameter, public :: UCD_FLAG_IGNOREDEADNODES     = 2**4
 
 !</constantblock>
 
@@ -370,10 +369,10 @@ module ucd
     ! Number of currently attached variables
     integer :: nvariables        = 0
     
-    ! Number of curently attached polygons
+    ! Number of currently attached polygons
     integer :: npolygons         = 0
 
-    ! Number of curently attached surface triangulations
+    ! Number of currently attached surface triangulations
     integer :: nsurfTri          = 0
     
     ! Number of currently attached tracer data fields
@@ -878,7 +877,7 @@ contains
     rexport%sfilename = sfilename
     rexport%p_rtriangulation => rtriangulation
     
-    ! How many vertices do we have in the trangulation that have to be 
+    ! How many vertices do we have in the triangulation that have to be 
     ! filled with values?
     rexport%nvertices = rtriangulation%NVT
     rexport%ncells = rtriangulation%NEL
