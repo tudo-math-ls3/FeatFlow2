@@ -174,6 +174,7 @@
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionScVec.inc"/></Filter>
 		<File RelativePath="..\..\..\kernel\Postprocessing\boundaryintegral.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\geometryoutput.f90"/>
+		<File RelativePath="..\..\..\kernel\Postprocessing\lineariser.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\mapleio.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\matrixio.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocerror.f90"/>
