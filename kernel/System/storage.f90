@@ -429,8 +429,8 @@ module storage
 !</publicvars>
 
   interface storage_new
-    module procedure storage_new
-    module procedure storage_newFixed
+    module procedure storage_newWrap
+    module procedure storage_newWrapFixed
     module procedure storage_new1D
     module procedure storage_new1DFixed
     module procedure storage_newIndirect
@@ -816,7 +816,7 @@ module storage
   public :: storage_getbase
 
   interface storage_getsize
-    module procedure storage_getsize
+    module procedure storage_getsizeWrap
     module procedure storage_getsize1D
   end interface
   
@@ -1538,7 +1538,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_new (scall, sname, Isize, ctype, ihandle, &
+  subroutine storage_newWrap (scall, sname, Isize, ctype, ihandle, &
                           cinitNewBlock, rheap)
 
 !<description>
@@ -1598,13 +1598,13 @@ contains
       ihandle = 0
     end select
 
-  end subroutine storage_new
+  end subroutine storage_newWrap
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine storage_newfixed (scall, sname, Ilbound, Iubound, ctype,&
+  subroutine storage_newWrapFixed (scall, sname, Ilbound, Iubound, ctype,&
                                ihandle, cinitNewBlock, rheap)
 
 !<description>
@@ -1674,7 +1674,7 @@ contains
       ihandle = 0
     end select
 
-  end subroutine storage_newfixed
+  end subroutine storage_newWrapfixed
 
 !************************************************************************
 
@@ -3117,7 +3117,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getsize (ihandle, Isize, rheap)
+  subroutine storage_getsizeWrap (ihandle, Isize, rheap)
 
 !<description>
   ! Returns the length of a multidimensional array identified by ihandle.
@@ -3280,7 +3280,7 @@ contains
       call sys_halt()
     end select
         
-  end subroutine storage_getsize
+  end subroutine storage_getsizeWrap
 
 !************************************************************************
 
@@ -18657,6 +18657,11 @@ contains
     call output_line ('Application must be compiled with coprocessor support enabled!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemoryAddress')
     call sys_halt()
+
+    ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
+    ! however, this supresses the following warning from the IFC v12 compiler:
+    ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
+    p_memAddress = 0_I64
 
 #endif
 
