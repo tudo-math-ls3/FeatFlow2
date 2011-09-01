@@ -174,6 +174,10 @@ module afcstabilisation
   public :: afcstab_getbase_DmatCoeffAtNode
   public :: afcstab_getbase_DmatCoeffAtEdge
   public :: afcstab_getbase_DboundsAtEdge
+  public :: afcstab_getbase_FcoeffsAtEdge
+  public :: afcstab_getbase_FmatCoeffAtNode
+  public :: afcstab_getbase_FmatCoeffAtEdge
+  public :: afcstab_getbase_FboundsAtEdge
 
   public :: afcstab_generateVerticesAtEdge
   public :: afcstab_generateOffdiagEdges
@@ -848,26 +852,6 @@ module afcstabilisation
     module procedure afcstab_buildBoundsLPT1D
     module procedure afcstab_buildBoundsLPT2D
     module procedure afcstab_buildBoundsLPT3D
-  end interface
-
-  interface afcstab_getbase_DcoeffsAtEdge
-    module procedure afcstab_getbase_DcoeffsAtEdge
-    module procedure afcstab_getbase_FcoeffsAtEdge
-  end interface
-
-  interface afcstab_getbase_DmatCoeffAtNode
-    module procedure afcstab_getbase_DmatCoeffAtNode
-    module procedure afcstab_getbase_FmatCoeffAtNode
-  end interface
-
-  interface afcstab_getbase_DmatCoeffAtEdge
-    module procedure afcstab_getbase_DmatCoeffAtEdge
-    module procedure afcstab_getbase_FmatCoeffAtEdge
-  end interface
-
-  interface afcstab_getbase_DboundsAtEdge
-    module procedure afcstab_getbase_DboundsAtEdge
-    module procedure afcstab_getbase_FboundsAtEdge
   end interface
 
 contains
@@ -4532,7 +4516,7 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
-        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+        call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
             p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
@@ -4560,7 +4544,7 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
-        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+        call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
@@ -4958,7 +4942,7 @@ contains
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
-        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+        call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
@@ -4990,7 +4974,7 @@ contains
         call lsyssc_getbase_single (rmatrixM, p_FdataM)
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
-        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+        call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
@@ -5408,7 +5392,7 @@ contains
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
         call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
-        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+        call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
@@ -5442,7 +5426,7 @@ contains
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
         call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
-        call afcstab_getbase_DboundsAtEdge(rafcstab, p_FboundsAtEdge)
+        call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
         call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
