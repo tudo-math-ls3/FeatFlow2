@@ -14,7 +14,8 @@
 !#
 !# The module contains the following subroutines:
 !#
-!# 1.) lin_lineariseVectorGlobal
+!# 1.) lin_lineariseVectorGlobal = lin_lineariseVecScalarGlobal /
+!#                                 lin_lineariseVecBlockGlobal
 !#     -> Linearises an FE-vector by performing global refinement
 !#        of the underlying triangulation structure
 !#
