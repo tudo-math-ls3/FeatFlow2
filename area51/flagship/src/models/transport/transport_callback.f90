@@ -4715,7 +4715,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_problemLevel), pointer :: p_rproblemLevel
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:,:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: svelocityname
@@ -4765,10 +4765,9 @@ contains
             p_rproblemLevel%rvectorBlock(velocityfield), neq, .true.)
       end if
 
-      ! Get vertex coordinates of the current problem level
+      ! Get coordinates of the DOF`s of the current problem level
       call storage_getbase_double2d(&
-          p_rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
+          p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
 
       ! Loop over all spatial dimensions
       do idim = 1, ndim
@@ -4789,7 +4788,7 @@ contains
 
         ! Loop over all equations of scalar subvector
         do ieq = 1, neq
-          Dvalue(1:ndim) = p_DvertexCoords(:,ieq)
+          Dvalue(1:ndim) = p_DdofCoords(:,ieq)
           call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
         end do
       end do
@@ -5316,9 +5315,8 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime
-    integer :: itermCount, ipoint, iel, ndim, icomp
+    real(DP), dimension(1) :: dtime
+    integer :: itermCount, iel, icomp
     
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
@@ -5329,7 +5327,7 @@ contains
     
     ! This subroutine assumes that the first quick access double
     ! value holds the simulation time
-    dtime = rcollection%DquickAccess(1)
+    dtime(1) = rcollection%DquickAccess(1)
 
     ! Loop over all components of the linear form
     do itermCount = 1, ubound(Dcoefficients,1)
@@ -5338,34 +5336,25 @@ contains
       ! 'itermCount' holds the number of the function to be evaluated
       icomp = rcollection%IquickAccess(itermCount)
 
-      if (dtime < 0.0) then
+      if (dtime(1) < 0.0) then
 
         ! Evaluate all coefficients using the function parser
+        !omp do parallel
         do iel = 1, nelements
           call fparser_evalFunction(p_rfparser, icomp, 2,&
               Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel))
         end do
+        !$omp end do parallel
 
       else
 
-        ! Initialize values
-        Dvalue = 0.0_DP
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Set number of spatial dimensions
-        ndim = size(Dpoints, 1)
-
+        ! Evaluate all coefficients using the function parser
+        !$omp do parallel
         do iel = 1, nelements
-          do ipoint = 1, npointsPerElement
-
-            ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-            ! Evaluate function parser
-            call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
-                Dcoefficients(itermCount,ipoint,iel))
-          end do
+          call fparser_evalFunction(p_rfparser, icomp, 2,&
+              Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel), dtime)
         end do
+        !$omp end do parallel
 
       end if
 
@@ -5448,13 +5437,8 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime
-    integer :: ipoint, iel, ndim, icomp
-
-
-    ! Initialize values
-    Dvalue = 0.0_DP
+    real(DP), dimension(1) :: dtime
+    integer :: iel, icomp
 
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
@@ -5465,30 +5449,19 @@ contains
 
     ! This subroutine assumes that the first quick access double
     ! value holds the simulation time
-    dtime  = rcollection%DquickAccess(1)
+    dtime(1) = rcollection%DquickAccess(1)
 
     ! Get number of the analytic reference function
-!!$    icomp = collct_getvalue_int(rcollection, 'irefFuncAnalytic',&
-!!$        ssectionName=trim(rcollection%SquickAccess(1)))
     icomp = rcollection%IquickAccess(1)
 
-    ! Set simulation time
-    Dvalue(NDIM3D+1) = dtime
-
-    ! Set number of spatial dimensions
-    ndim = size(Dpoints, 1)
-
+    ! Evaluate all values using the function parser
+    !omp do parallel
     do iel = 1, nelements
-      do ipoint = 1, npointsPerElement
-
-        ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-        ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,iel))
-      end do
+      call fparser_evalFunction(p_rfparser, icomp, 2,&
+          Dpoints(:,:,iel), Dvalues(:,iel))
     end do
-
+    !$omp end do parallel
+    
   end subroutine transp_refFuncAnalytic
 
   !*****************************************************************************
@@ -5560,13 +5533,9 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime
-    integer :: ipoint, iel, ndim, icomp
+    real(DP), dimension(1) :: dtime
+    integer :: iel, icomp
 
-
-    ! Initialize values
-    Dvalue = 0.0_DP
 
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
@@ -5577,29 +5546,18 @@ contains
 
     ! This subroutine assumes that the first quick access double
     ! value holds the simulation time
-    dtime  = rcollection%DquickAccess(1)
+    dtime(1)  = rcollection%DquickAccess(1)
 
     ! Get number of the analytic reference function
-!!$    icomp = collct_getvalue_int(rcollection, 'iweightFuncAnalytic',&
-!!$        ssectionName=trim(rcollection%SquickAccess(1)))
     icomp = rcollection%IquickAccess(2)
 
-    ! Set simulation time
-    Dvalue(NDIM3D+1) = dtime
-
-    ! Set number of spatial dimensions
-    ndim = size(Dpoints, 1)
-
+    ! Evaluate all values by the function parser    
+    !$omp parallel do
     do iel = 1, nelements
-      do ipoint = 1, npointsPerElement
-
-        ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-        ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,iel))
-      end do
+      call fparser_evalFunction(p_rfparser, icomp, 2,&
+          Dpoints(:,:,iel), Dvalues(:,iel))
     end do
+    !$omp end parallel do
 
   end subroutine transp_weightFuncAnalytic
 
@@ -5748,7 +5706,8 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_Dcoords
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    real(DP), dimension(:,:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_DdataSolution
     real(DP), dimension(:), pointer :: p_DdataVelocity
     real(DP), dimension(:), pointer :: p_DdataSource
@@ -5809,13 +5768,10 @@ contains
         call lsysbl_getbase_double(&
             rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
         
-        ! Get coordinates of the triangulation
-        ! NOTE: This implementation only works for linear and bilinear finite
-        !       elements where the nodal degrees of freedom are located at the
-        !       vertices of the triangulation. For higher-order finite elements
-        !       the linearform needs to be assembled by numerical integration
+        ! Get coordinates of the global DOF`s
+        p_rspatialDiscr => rsolution%p_rblockDiscr%RspatialDiscr(1)
         call storage_getbase_double2d(&
-            rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
+            p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
         
         ! What type of coordinate system are we?
         select case(icoordsystem)
@@ -5835,7 +5791,7 @@ contains
             call lsyssc_getbase_double(&
                 rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
             call doSourceVelocityLumped(dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataVelocity, p_DdataSolution, p_DdataSource)
             
           case (MASS_CONSISTENT)
@@ -5846,7 +5802,7 @@ contains
             call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
             call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
             call doSourceVelocityConsistent(dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
                 p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
             
           case default
@@ -5866,7 +5822,7 @@ contains
             call lsyssc_getbase_double(&
                 rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
             call doSourceVelocityLumped(2*dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataVelocity, p_DdataSolution, p_DdataSource)
             
           case (MASS_CONSISTENT)
@@ -5877,7 +5833,7 @@ contains
             call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
             call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
             call doSourceVelocityConsistent(2*dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
+                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
                 p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
             
           case default
@@ -5937,13 +5893,10 @@ contains
         call lsysbl_getbase_double(&
             rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
         
-        ! Get coordinates of the triangulation
-        ! NOTE: This implementation only works for linear and bilinear finite
-        !       elements where the nodal degrees of freedom are located at the
-        !       vertices of the triangulation. For higher-order finite elements
-        !       the linearform needs to be assembled by numerical integration
+        ! Get coordinates of the global DOF`s
+        p_rspatialDiscr => rsolution%p_rblockDiscr%RspatialDiscr(1)
         call storage_getbase_double2d(&
-            rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
+            p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
         
         ! What type of coordinate system are we?
         select case(icoordsystem)

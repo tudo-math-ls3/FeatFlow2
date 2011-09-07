@@ -191,6 +191,8 @@ module transport_application
   use collection
   use cubature
   use derivatives
+  use dofmapping
+  use elementbase
   use element
   use flagship_basic
   use fparser
@@ -201,6 +203,7 @@ module transport_application
   use hadaptaux
   use hadaptivity
   use linearformevaluation
+  use lineariser
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -222,6 +225,7 @@ module transport_application
   use transport_callback1d
   use transport_callback2d
   use transport_callback3d
+  use triangulation
   use ucd
 
   implicit none
@@ -469,7 +473,6 @@ contains
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
-
 
       elseif (trim(algorithm) .eq. 'transient_primaldual') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -844,16 +847,16 @@ contains
     integer :: ijacobianFormat
     integer :: imatrixFormat
 
+    
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
-
     integer, dimension(:), allocatable :: Celement
-    character(len=SYS_STRLEN) :: selemName
-
+    integer, dimension(2) :: Isize
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
-    integer :: i,j,nmatrices,nsubstrings,ccubType
+    integer :: i,j,iel,nmatrices,nsubstrings,ccubType
+    character(len=SYS_STRLEN) :: selemName
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1031,6 +1034,9 @@ contains
         end do
       end do
     end if
+
+    ! Calculate coordinates of the global DOF`s
+    call dof_calcDofCoordsBlock(p_rdiscretisation)
 
 
     ! If the template matrix has no structure data then generate the
@@ -1673,24 +1679,22 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_pgm) :: rpgm
     type(t_afcstab) :: rafcstab
-    type(t_linearForm) :: rform
-    type(t_vectorBlock) :: rvectorHigh, rvectorAux
-    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
-    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
-    type(t_fparser), pointer :: p_rfparser
     type(t_collection) :: rcollectionTmp
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    type(t_fparser), pointer :: p_rfparser
+    type(t_linearForm) :: rform
+    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
+    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_pgm) :: rpgm
+    type(t_vectorBlock) :: rvectorHigh, rvectorAux
     real(DP), dimension(:), pointer :: p_Ddata
-    real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: depsAbsSolution, depsRelSolution, dnorm0, dnorm
+    real(DP), dimension(:,:), pointer :: p_DdofCoords
+    real(DP) :: depsAbsSolution,depsRelSolution,dnorm0,dnorm
     character(LEN=SYS_STRLEN) :: ssolutionname
-    integer :: isolutiontype
-    integer :: ieq, neq, ndim, icomp, iter
-    integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
-    integer :: nmaxIterationsSolution
-    
+    integer :: icomp,iter,isolutiontype,nmaxIterationsSolution
+    integer :: lumpedMassMatrix,consistentMassMatrix,systemMatrix
+
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isolutiontype', isolutiontype)
@@ -1704,7 +1708,7 @@ contains
       !-------------------------------------------------------------------------
 
       call lsysbl_clearVector(rvector)
-      
+
       
     case (SOLUTION_GRAYMAP)
       
@@ -1720,12 +1724,13 @@ contains
       call ppsol_readPGM(0, ssolutionName, rpgm)
 
       ! Set pointers
+      p_rspatialDiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
       call storage_getbase_double2D(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+          p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
       call storage_getbase_double(rvector%h_Ddata, p_Ddata)
 
       ! Initialize the solution by the image data
-      call ppsol_initArrayPGM_Dble(rpgm, p_DvertexCoords, p_Ddata)
+      call ppsol_initArrayPGM_Dble(rpgm, p_DdofCoords, p_Ddata)
 
       ! Release portable graymap image
       call ppsol_releasePGM(rpgm)
@@ -1745,35 +1750,17 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
 
-      ! Set pointer to vertex coordinates
-      call storage_getbase_double2D(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
-      ! Get number of spatial dimensions
-      ndim = rproblemLevel%rtriangulation%ndim
-
-      ! Initialize variable values
-      Dvalue = 0.0_DP
-
-      ! Set pointer to data array
-      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
-
-      ! Get number of equations of scalar subvector
-      neq = rvector%RvectorBlock(1)%NEQ
-
       ! Get the number of the component used for evaluating the initial solution
       icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+      
+      ! Set pointers
+      p_rspatialDiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
+      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
+      call storage_getbase_double2d(p_rspatialDiscr%h_DDofCoords, p_DDofCoords)
 
-      ! Loop over all equations of scalar subvector
-      do ieq = 1, neq
-
-        ! Set coordinates and evalution time
-        Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
-        Dvalue(NDIM3D+1) = dtime
-
-        ! Evaluate the function parser
-        call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
-      end do
+      ! Evaluate solution values in the positions of the degrees of freedom
+      call fparser_evalFunction(p_rfparser, icomp, 2,&
+          p_DdofCoords, p_Ddata, (/dtime/))
 
       
     case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
@@ -1932,7 +1919,7 @@ contains
       call lsyssc_releaseMatrix(rconsistentMassMatrix)
       call lsyssc_releaseMatrix(rlumpedMassMatrix)
 
-      
+
     case default
       call output_line('Invalid type of solution profile!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'transp_initSolution')
@@ -2193,10 +2180,21 @@ contains
     integer, save :: ifilenumber = 1
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
     type(t_ucdExport) :: rexport
-    integer :: iformatUCD
+    type(t_triangulation) :: rtriangulationPrimal,rtriangulationDual
+    type(t_blockDiscretisation) :: rdiscretisationPrimal
+    type(t_blockDiscretisation) :: rdiscretisationDual
+    type(t_vectorBlock) :: rvectorPrimal,rvectorDual
+    integer :: iformatUCD,ilineariseUCD,nrefineUCD
+    logical :: bexportMeshOnly,bdiscontinuous
 
+    ! Initialisation
+    bexportMeshOnly = .true.
+    if (present(rsolutionPrimal) .or.&
+        present(rsolutionDual)) bexportMeshOnly=.false.
+
+    nullify(p_DdataPrimal, p_DdataDual)
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName,&
@@ -2205,10 +2203,57 @@ contains
                                 'sucdsolution', sucdsolution)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'iformatucd', iformatUCD)
-
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'ilineariseucd', ilineariseUCD, 0)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'nrefineucd', nrefineUCD, 0)
+    
     ! Initialize the UCD exporter
-    call flagship_initUCDexport(rproblemLevel, sucdsolution,&
-                                iformatUCD, rexport, ifilenumber)
+    select case(ilineariseUCD)
+    case (0)
+      call flagship_initUCDexport(rproblemLevel,&
+          sucdsolution, iformatUCD, rexport, ifilenumber)
+      
+      ! Set pointers to solution(s)
+      if (present(rsolutionPrimal))&
+          call lsysbl_getbase_double(rsolutionPrimal, p_DdataPrimal)
+      if (present(rsolutionDual))&
+          call lsysbl_getbase_double(rsolutionDual, p_DdataDual)
+      
+    case (1,2)
+      bdiscontinuous = (ilineariseUCD .eq. 1)
+      
+      if (present(rsolutionPrimal)) then
+        call lin_lineariseVectorGlobal(rsolutionPrimal, rdiscretisationPrimal,&
+            rtriangulationPrimal, rvectorPrimal, nrefineUCD, 0, bdiscontinuous)
+        call lsysbl_getbase_double(rvectorPrimal, p_DdataPrimal)
+        
+        if (present(rsolutionDual)) then
+          call lin_lineariseVectorGlobal(rsolutionDual, rdiscretisationDual,&
+              rtriangulationDual, rvectorDual, nrefineUCD, 0, bdiscontinuous)
+          call lsysbl_getbase_double(rvectorDual, p_DdataDual)
+        end if
+        
+        ! We assume that both primal and dual solutions are based on
+        ! the same triangulation, thus both vectors can be exported
+        ! using the same triangulation.       
+        call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+            iformatUCD, rexport, ifilenumber, rtriangulationPrimal)
+
+      elseif (present(rsolutionDual)) then
+        call lin_lineariseVectorGlobal(rsolutionDual, rdiscretisationDual,&
+            rtriangulationDual, rvectorDual, nrefineUCD, 0, bdiscontinuous)
+        call lsysbl_getbase_double(rvectorDual, p_DdataDual)
+        
+        call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+            iformatUCD, rexport, ifilenumber, rtriangulationDual)
+      end if
+
+    case default
+      call output_line('Unsupported type of solution output!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_outputSolution')
+      call sys_halt()
+    end select
 
     ! Increase filenumber by one
     ifilenumber = ifilenumber+1
@@ -2216,23 +2261,25 @@ contains
     ! Set simulation time
     if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
 
-    ! Add primal solution vector
-    if (present(rsolutionPrimal)) then
-      call lsysbl_getbase_double(rsolutionPrimal, p_Ddata)
-      call ucd_addVariableVertexBased (rexport, 'u',&
-          UCD_VAR_STANDARD, p_Ddata)
-    end if
-
-    ! Add dual solution vector
-    if (present(rsolutionDual)) then
-      call lsysbl_getbase_double(rsolutionDual, p_Ddata)
-      call ucd_addVariableVertexBased (rexport, 'z',&
-          UCD_VAR_STANDARD, p_Ddata)
-    end if
+    ! Add primal/dual solution vectors
+    if (associated(p_DdataPrimal))&
+        call ucd_addVariableVertexBased (rexport, 'u',&
+        UCD_VAR_STANDARD, p_DdataPrimal)
+    if (associated(p_DdataDual))&
+        call ucd_addVariableVertexBased (rexport, 'z',&
+        UCD_VAR_STANDARD, p_DdataDual)
 
     ! Write UCD file
     call ucd_write  (rexport)
     call ucd_release(rexport)
+
+    ! Release temporal memory
+    call lsysbl_releaseVector(rvectorPrimal)
+    call lsysbl_releaseVector(rvectorDual)
+    call spdiscr_releaseBlockDiscr(rdiscretisationPrimal)
+    call spdiscr_releaseBlockDiscr(rdiscretisationDual)
+    call tria_done(rtriangulationPrimal)
+    call tria_done(rtriangulationDual)
 
   end subroutine transp_outputSolution
 
