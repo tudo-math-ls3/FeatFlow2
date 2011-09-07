@@ -33,6 +33,14 @@
 !# 7.) dof_precomputeDofMapping
 !#     -> Precompute the DOF-mapping into a discretisation structure
 !#
+!# 8.) dof_calcDofCoords
+!#     -> Calculate the coordinates of the global DOF`s of a block
+!#        discretisation structure
+!#
+!# 9.) dof_calcDofCoordsBlock
+!#     -> Calculate the coordinates of the global DOF`s of a (scalar)
+!#        discretisation structure
+!#
 !# </purpose>
 !##############################################################################
 
@@ -45,6 +53,8 @@ module dofmapping
   use spatialdiscretisation
   use triangulation
   use element
+  use elementpreprocessing
+  use transformation
   
   implicit none
   
@@ -69,6 +79,8 @@ module dofmapping
   public :: dof_infoDiscr
   public :: dof_infoDiscrBlock
   public :: dof_precomputeDofMapping
+  public :: dof_calcDofCoords
+  public :: dof_calcDofCoordsBlock
 
 contains
 
@@ -446,7 +458,7 @@ contains
 
 !</output>
 
-! </subroutine>
+!</subroutine>
 
   ! local variables
   integer, dimension(1) :: ielIdx_array
@@ -462,6 +474,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
+
 !<subroutine>
 
   subroutine dof_locGlobMapping_mult(rdiscretisation, IelIdx, IdofGlob)
@@ -499,7 +512,7 @@ contains
 
 !</output>
 
-! </subroutine>
+!</subroutine>
 
     ! local variables
     integer, dimension(:,:), pointer :: p_2darray,p_2darray2,p_2darray3
@@ -2656,6 +2669,129 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputeDofMapping')  
       call sys_halt()
     end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine dof_calcDofCoords(rdiscretisation)
+
+!<description>
+    ! This subroutine computes the coordinates of the global DOF`s
+    ! of the given discretisation structure rdiscretisation
+!</description>
+
+!<inputoutput>
+    ! discretisation structure
+    type(t_spatialdiscretisation), intent(inout) :: rdiscretisation
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_evalElementSet) :: revalElementSet
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    real(DP), dimension(:,:), allocatable :: DcubPtsRef    
+    real(DP), dimension(:,:), pointer :: p_DDofCoords
+    integer, dimension(:,:), allocatable :: Idofs
+    integer, dimension(:), pointer :: p_IelementList
+    integer, dimension(2) :: Isize
+    integer :: icurrentElementDistr,idof,ndofLoc
+    integer(I32) :: cevaluationTag,ctrafoType
+    integer :: i,iel
+
+    ! Initialize coordinates of the global DOF`s
+    Isize =(/ rdiscretisation%ndimension,&
+              dof_igetNDofGlob(rdiscretisation) /)
+    call storage_new('dof_calcDofCoords', 'DDofCoords', Isize,&
+        ST_DOUBLE, rdiscretisation%h_DDofCoords, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_double2D(rdiscretisation%h_DDofCoords, p_DDofCoords)
+
+    ! Prepare element evaluation set
+    call elprep_init(revalElementSet)
+    
+    ! Set the element evaluation tag of all FE spaces.
+    cevaluationTag = EL_EVLTAG_COORDS
+    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
+    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+    
+    ! Loop over the different element distributions
+    do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+        
+      ! Set pointer to current element distribution
+      p_relementDistribution =>&
+          rdiscretisation%RelementDistr(icurrentElementDistr)
+      
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+      
+      ! Set pointer to the list of elements in the discretisation
+      call storage_getbase_int(&
+          p_relementDistribution%h_IelementList, p_IelementList)
+      
+      ! Get the type of coordinate system
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      
+      ! Get the number of local degrees of freedom for the element
+      ndofLoc = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Allocate temporal array for the coordinates of the local
+      ! degrees of freedom on the reference element
+      allocate(DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ndofLoc))
+      call elem_getNDofLoc(p_relementDistribution%celement,DcubPtsRef)
+      
+      ! Calculate the global DOF`s into Idofs.
+      allocate(Idofs(ndofLoc,size(p_IelementList)))
+      call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, Idofs)
+        
+      ! Calculate all information that is necessary to evaluate the
+      ! finite element on all cells of our subset. This includes the
+      ! coordinates of the points on the cells.
+      call elprep_prepareSetForEvaluation(revalElementSet,&
+          cevaluationTag, rdiscretisation%p_rtriangulation,&
+          p_IelementList, ctrafoType, DcubPtsRef)
+      
+      ! Distribute data global degrees of freedom
+      do iel = 1,size(p_IelementList)
+        do idof = 1, ndofLoc
+          p_DDofCoords(:,Idofs(idof,iel)) =&
+              revalElementSet%p_DpointsReal(:,idof,iel)
+        end do
+      end do
+      
+      ! Release memory
+      deallocate(DcubPtsRef,Idofs)
+      
+      call elprep_releaseElementSet(revalElementSet)  
+    end do ! icurrentElementDistribution
+        
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine dof_calcDofCoordsBlock(rdiscretisation)
+
+!<description>
+    ! This subroutine computes the coordinates of the global DOF`s
+    ! of the given block discretisation structure rdiscretisation
+!</description>
+
+!<inputoutput>
+    ! block discretisation structure
+    type(t_blockdiscretisation), intent(inout) :: rdiscretisation
+!</inputoutput>
+!</subroutine>
+  
+    ! local variables
+    integer :: i
+
+    ! Loop over all scalar spatial discretisation structures
+    do i = 1, rdiscretisation%ncomponents
+      call dof_calcDofCoords(rdiscretisation%RspatialDiscr(i))
+    end do
 
   end subroutine
 
