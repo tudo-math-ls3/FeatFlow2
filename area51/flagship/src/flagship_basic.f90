@@ -27,6 +27,7 @@ module flagship_basic
   use io
   use problem
   use solveraux
+  use triangulation
   use ucd
 
   implicit none
@@ -230,7 +231,7 @@ contains
 !<subroutine>
 
   subroutine flagship_initUCDexport(rproblemLevel, sfilename, ioutputUCD,&
-                                    rexport, ifilenumber)
+                                    rexport, ifilenumber, rtriangulation)
 
 !<description>
     ! This subroutine initializes the UCD exporter structure. If the
@@ -241,7 +242,7 @@ contains
 
 !<input>
     ! multigrid structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
+    type(t_problemLevel), intent(in), target :: rproblemLevel
 
     ! name of the output file
     character(LEN=*), intent(in) :: sfilename
@@ -251,6 +252,10 @@ contains
 
     ! OPTIONAL: number of the output file
     integer, intent(in), optional :: ifilenumber
+
+    ! OPTIONAL: triangulation which overwrites the triangulation
+    ! associated with the problem level structure
+    type(t_triangulation), target, optional :: rtriangulation
 !</input>
 
 !<output>
@@ -259,49 +264,51 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! Set pointer to triangulation
+    if (present(rtriangulation)) then
+      p_rtriangulation => rtriangulation
+    else
+      p_rtriangulation => rproblemLevel%rtriangulation
+    end if
+
     select case(ioutputUCD)
     case (UCD_FORMAT_GMV)
       if (present(ifilenumber)) then
-        call ucd_startGMV(rexport, UCD_FLAG_STANDARD,&
-                          rproblemLevel%rtriangulation,&
-                          trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.gmv')
+        call ucd_startGMV(rexport, UCD_FLAG_STANDARD, p_rtriangulation,&
+            trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.gmv')
       else
         call ucd_startGMV(rexport, UCD_FLAG_STANDARD,&
-                          rproblemLevel%rtriangulation,&
-                          trim(adjustl(sfilename))//'.gmv')
+            p_rtriangulation, trim(adjustl(sfilename))//'.gmv')
       end if
 
     case (UCD_FORMAT_BGMV)
       if (present(ifilenumber)) then
-        call ucd_startBGMV(rexport, UCD_FLAG_STANDARD,&
-                           rproblemLevel%rtriangulation,&
-                           trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.gmv')
+        call ucd_startBGMV(rexport, UCD_FLAG_STANDARD, p_rtriangulation,&
+            trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.gmv')
       else
         call ucd_startBGMV(rexport, UCD_FLAG_STANDARD,&
-                           rproblemLevel%rtriangulation,&
-                           trim(adjustl(sfilename))//'.gmv')
+            p_rtriangulation, trim(adjustl(sfilename))//'.gmv')
       end if
 
     case (UCD_FORMAT_AVS)
       if (present(ifilenumber)) then
-        call ucd_startAVS(rexport, UCD_FLAG_STANDARD,&
-                          rproblemLevel%rtriangulation,&
-                          trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.avs')
+        call ucd_startAVS(rexport, UCD_FLAG_STANDARD, p_rtriangulation,&
+            trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.avs')
       else
         call ucd_startAVS(rexport, UCD_FLAG_STANDARD,&
-                          rproblemLevel%rtriangulation,&
-                          trim(adjustl(sfilename))//'.avs')
+            p_rtriangulation, trim(adjustl(sfilename))//'.avs')
       end if
 
     case (UCD_FORMAT_VTK)
       if (present(ifilenumber)) then
-        call ucd_startVTK(rexport, UCD_FLAG_STANDARD,&
-                          rproblemLevel%rtriangulation,&
-                          trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.vtu')
+        call ucd_startVTK(rexport, UCD_FLAG_STANDARD, p_rtriangulation,&
+            trim(adjustl(sfilename))//'.'//trim(sys_si0(ifilenumber,5))//'.vtu')
       else
         call ucd_startVTK(rexport, UCD_FLAG_STANDARD,&
-                          rproblemLevel%rtriangulation,&
-                          trim(adjustl(sfilename))//'.vtu')
+            p_rtriangulation, trim(adjustl(sfilename))//'.vtu')
       end if
 
     case default
