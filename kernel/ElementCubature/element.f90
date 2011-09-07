@@ -80,6 +80,9 @@
 !# 13.) elem_isLinearTrafoType
 !#      -> Check whether transformation is (multi-) linear or not
 !#
+!# 14.) elem_getNDofLoc
+!#      -> Returns the points of the nodal degrees of freedom for a finite element
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) What is an element and what are Degrees Of Freedoms (DOF`s)?
@@ -299,6 +302,7 @@ module element
   public :: elem_generic_sim2
   public :: elem_generic
   public :: elem_generic_sim
+  public :: elem_getNDofLoc
   
   ! Public entities imported from elementbase.f90
   public :: t_evalElement
@@ -3003,5 +3007,320 @@ contains
     blinearTrafo = trafo_isLinearTrafo(elem_igetTrafoType(celement))
   
   end function
-   
+  
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine elem_getNDofLoc(celement,Dpoints)
+
+!<description>
+  ! This subroutine returns the point coordinates of the 
+  ! local degrees of freedom for a given element type
+!</description>
+
+!<input>    
+  ! The element type identifier.
+  integer(I32), intent(in) :: celement
+!</input>
+
+!<output>
+  ! Coordinates of the local degrees of freedom
+  real(DP), dimension(:,:), intent(out) :: Dpoints
+!</output>
+
+!</subroutine>
+
+    select case (elem_getPrimaryElement(celement))
+    
+    ! -= 1D Line Elements =-
+    case (EL_P0_1D,EL_DG_T0_1D)
+      Dpoints(1,1) =  0.0_DP
+    case (EL_P1_1D,EL_DG_T1_1D)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(1,2) =  1.0_DP
+    case (EL_P2_1D,EL_DG_T2_1D)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(1,3) =  0.0_DP
+    case (EL_S31_1D)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(1,3) = -1.0_DP
+      Dpoints(1,4) =  1.0_DP
+      
+    ! -= 2D Triangle Elements =-
+    case (EL_P0)
+      Dpoints(1,1) = 1.0_DP/3.0_DP
+      Dpoints(2,1) = 1.0_DP/3.0_DP
+      Dpoints(3,1) = 1.0_DP/3.0_DP
+    case (EL_P1)
+      Dpoints(1,1) = 1.0_DP
+      Dpoints(2,1) = 0.0_DP
+      Dpoints(3,1) = 0.0_DP
+
+      Dpoints(1,2) = 0.0_DP
+      Dpoints(2,2) = 1.0_DP
+      Dpoints(3,2) = 0.0_DP
+
+      Dpoints(1,3) = 0.0_DP
+      Dpoints(2,3) = 0.0_DP
+      Dpoints(3,3) = 1.0_DP
+    case (EL_P2)
+      Dpoints(1,1) = 1.0_DP
+      Dpoints(2,1) = 0.0_DP
+      Dpoints(3,1) = 0.0_DP
+
+      Dpoints(1,2) = 0.0_DP
+      Dpoints(2,2) = 1.0_DP
+      Dpoints(3,2) = 0.0_DP
+
+      Dpoints(1,3) = 0.0_DP
+      Dpoints(2,3) = 0.0_DP
+      Dpoints(3,3) = 1.0_DP
+      
+      Dpoints(1,4) = 0.5_DP
+      Dpoints(2,4) = 0.5_DP
+      Dpoints(3,4) = 0.0_DP
+
+      Dpoints(1,5) = 0.0_DP
+      Dpoints(2,5) = 0.5_DP
+      Dpoints(3,5) = 0.5_DP
+      
+      Dpoints(1,6) = 0.5_DP
+      Dpoints(2,6) = 0.0_DP
+      Dpoints(3,6) = 0.5_DP
+    case (EL_P3)
+      Dpoints(1,1) = 1.0_DP
+      Dpoints(2,1) = 0.0_DP
+      Dpoints(3,1) = 0.0_DP
+
+      Dpoints(1,2) = 0.0_DP
+      Dpoints(2,2) = 1.0_DP
+      Dpoints(3,2) = 0.0_DP
+
+      Dpoints(1,3) = 0.0_DP
+      Dpoints(2,3) = 0.0_DP
+      Dpoints(3,3) = 1.0_DP
+      
+      Dpoints(1,4) = 0.5_DP
+      Dpoints(2,4) = 0.5_DP
+      Dpoints(3,4) = 0.0_DP
+
+      Dpoints(1,5) = 0.0_DP
+      Dpoints(2,5) = 0.5_DP
+      Dpoints(3,5) = 0.5_DP
+      
+      Dpoints(1,6) = 0.5_DP
+      Dpoints(2,6) = 0.0_DP
+      Dpoints(3,6) = 0.5_DP
+
+      Dpoints(1,7) = 0.5_DP
+      Dpoints(2,7) = 0.5_DP
+      Dpoints(3,7) = 0.0_DP
+
+      Dpoints(1,8) = 0.0_DP
+      Dpoints(2,8) = 0.5_DP
+      Dpoints(3,8) = 0.5_DP
+      
+      Dpoints(1,9) = 0.5_DP
+      Dpoints(2,9) = 0.0_DP
+      Dpoints(3,9) = 0.5_DP
+      
+    case (EL_P1T)
+      Dpoints(1,1) = 0.5_DP
+      Dpoints(2,1) = 0.5_DP
+      Dpoints(3,1) = 0.0_DP
+
+      Dpoints(1,2) = 0.0_DP
+      Dpoints(2,2) = 0.5_DP
+      Dpoints(3,2) = 0.5_DP
+      
+      Dpoints(1,3) = 0.5_DP
+      Dpoints(2,3) = 0.0_DP
+      Dpoints(3,3) = 0.5_DP    
+
+    ! -= 2D Quadrilateral Elements =-
+    case (EL_Q0)
+      Dpoints(1,1) = 0.0_DP
+      Dpoints(2,1) = 0.0_DP
+    case (EL_Q1,EL_DG_Q1_2D)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) = -1.0_DP
+
+      Dpoints(1,3) =  1.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  1.0_DP
+    case (EL_Q2,EL_DG_Q2_2D,EL_Q2T)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) = -1.0_DP
+
+      Dpoints(1,3) =  1.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  1.0_DP
+
+      Dpoints(1,5) =  0.0_DP
+      Dpoints(2,5) = -1.0_DP
+
+      Dpoints(1,6) =  1.0_DP
+      Dpoints(2,6) =  0.0_DP
+
+      Dpoints(1,7) =  0.0_DP
+      Dpoints(2,7) =  1.0_DP
+
+      Dpoints(1,8) = -1.0_DP
+      Dpoints(2,8) =  0.0_DP
+
+      Dpoints(1,9) =  0.0_DP
+      Dpoints(2,9) =  0.0_DP
+    case (EL_QP1)
+      Dpoints      = 0.0_DP
+    case (EL_Q1T)
+      Dpoints(1,1) =  0.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) =  0.0_DP
+
+      Dpoints(1,3) =  0.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  0.0_DP
+      
+    case (EL_Q1TB)
+      Dpoints(1,1) =  0.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) =  0.0_DP
+
+      Dpoints(1,3) =  0.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  0.0_DP
+
+      Dpoints(1,5) =  0.0_DP
+      Dpoints(2,5) =  0.0_DP
+
+    case (EL_Q2TB)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) = -1.0_DP
+
+      Dpoints(1,3) =  1.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  1.0_DP
+
+      Dpoints(1,5) =  0.0_DP
+      Dpoints(2,5) = -1.0_DP
+
+      Dpoints(1,6) =  1.0_DP
+      Dpoints(2,6) =  0.0_DP
+
+      Dpoints(1,7) =  0.0_DP
+      Dpoints(2,7) =  1.0_DP
+
+      Dpoints(1,8) = -1.0_DP
+      Dpoints(2,8) =  0.0_DP
+
+      Dpoints(1,9) =  0.0_DP
+      Dpoints(2,9) =  0.0_DP
+      
+      Dpoints(1,10) =  0.0_DP
+      Dpoints(2,10) =  0.0_DP
+      
+    
+    ! -= 3D Tetrahedron Elements =-
+    case (EL_P0_3D)
+      Dpoints(1,1) = 1.0_DP/3.0_DP
+      Dpoints(2,1) = 1.0_DP/3.0_DP
+      Dpoints(3,1) = 1.0_DP/3.0_DP
+      Dpoints(4,1) = 1.0_DP/3.0_DP
+    case (EL_P1_3D)
+      Dpoints(1,1) = 1.0_DP
+      Dpoints(2,1) = 0.0_DP
+      Dpoints(3,1) = 0.0_DP
+      Dpoints(4,1) = 0.0_DP
+
+      Dpoints(1,2) = 0.0_DP
+      Dpoints(2,2) = 1.0_DP
+      Dpoints(3,2) = 0.0_DP
+      Dpoints(4,2) = 0.0_DP
+
+      Dpoints(1,3) = 0.0_DP
+      Dpoints(2,3) = 0.0_DP
+      Dpoints(3,3) = 1.0_DP
+      Dpoints(4,3) = 0.0_DP
+      
+      Dpoints(1,4) = 0.0_DP
+      Dpoints(2,4) = 0.0_DP
+      Dpoints(3,4) = 0.0_DP
+      Dpoints(4,4) = 1.0_DP
+          
+    ! -= 3D Hexahedron Elements =-
+    case (EL_Q0_3D)
+      Dpoints(1,1) = 0.0_DP
+      Dpoints(2,1) = 0.0_DP
+      Dpoints(3,1) = 0.0_DP
+    case (EL_Q1_3D)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(2,1) = -1.0_DP
+      Dpoints(3,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) = -1.0_DP
+      Dpoints(3,2) = -1.0_DP
+
+      Dpoints(1,3) =  1.0_DP
+      Dpoints(2,3) =  1.0_DP
+      Dpoints(3,3) = -1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  1.0_DP
+      Dpoints(3,4) = -1.0_DP
+
+      Dpoints(1,5) = -1.0_DP
+      Dpoints(2,5) = -1.0_DP
+      Dpoints(3,5) =  1.0_DP
+
+      Dpoints(1,6) =  1.0_DP
+      Dpoints(2,6) = -1.0_DP
+      Dpoints(3,6) =  1.0_DP
+
+      Dpoints(1,7) =  1.0_DP
+      Dpoints(2,7) =  1.0_DP
+      Dpoints(3,7) =  1.0_DP
+
+      Dpoints(1,8) = -1.0_DP
+      Dpoints(2,8) =  1.0_DP
+      Dpoints(3,8) =  1.0_DP
+
+    ! -= 3D Pyramid Elements =-
+    
+    ! -= 3D Prism Elements =-
+      
+    case default
+      call output_line ('Unsupported element.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'elem_getNDofLoc')
+        call sys_halt()
+    end select
+
+  end subroutine
+
 end module 
