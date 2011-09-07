@@ -14,7 +14,8 @@
 !# 2.) ppsol_releasePGM
 !#     -> Releases a Portable Graymap.
 !#
-!# 3.) ppsol_initArrayPGM_Dble
+!# 3.) ppsol_initArrayPGM = ppsol_initArrayPGM_Dble /
+!#                          ppsol_initArrayPGM_Sngl
 !#     -> Initialises a 2D double array from a Portable Graymap image
 !# </purpose>
 !#########################################################################
@@ -59,10 +60,17 @@ module pprocsolution
 
 !</typeblock>
 !</types>
+
+  interface ppsol_initArrayPGM
+    module procedure ppsol_initArrayPGM_Dble
+    module procedure ppsol_initArrayPGM_Sngl
+  end interface ppsol_initArrayPGM
   
   public :: ppsol_readPGM
   public :: ppsol_releasePGM
+  public :: ppsol_initArrayPGM
   public :: ppsol_initArrayPGM_Dble
+  public :: ppsol_initArrayPGM_Sngl
   
 contains
   
@@ -230,7 +238,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGM_Dble(rpgm, DvertexCoords, Ddata)
+  subroutine ppsol_initArrayPGM_Dble(rpgm, Dpoints, Ddata, Dbounds)
 
 !<description>
     ! Initialises a 2D double array by a Portable Graymap image
@@ -240,8 +248,13 @@ contains
     ! portable graymap image
     type(t_pgm), intent(in)              :: rpgm
 
-    ! vertex coordinates of 2D array
-    real(DP), dimension(:,:), intent(in) :: DvertexCoords
+    ! coordinates of 2D array
+    real(DP), dimension(:,:), intent(in) :: Dpoints
+
+    ! OPTIONAL: coordinates of the bounding box
+    ! If not present, then the bounding box is calculated internally
+    ! DIMENSION(2,2) Dpoints(X:Y,MIN:MAX)
+    real(DP), dimension(:,:), intent(in), optional :: Dbounds
 !</input>
 
 !<output>
@@ -253,30 +266,39 @@ contains
     ! local variables
     integer, dimension(:,:), pointer :: p_Idata
     real(DP) :: x,y,xmin,ymin,xmax,ymax
-    integer :: ivt,nvt,ix,iy
+    integer :: ipoint,npoints,ix,iy
 
     ! Set pointer for image data
     call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
 
-    ! Determine minimum/maximum values of array
-    xmin = huge(DP); xmax = -huge(DP)
-    ymin = huge(DP); ymax = -huge(DP)
+    ! Set number of points
+    npoints = size(Ddata)
 
-    nvt = size(Ddata)
-    do ivt = 1, nvt
-      xmin = min(xmin, DvertexCoords(1,ivt))
-      xmax = max(xmax, DvertexCoords(1,ivt))
-      ymin = min(ymin, DvertexCoords(2,ivt))
-      ymax = max(ymax, DvertexCoords(2,ivt))
-    end do
+    if (present(Dbounds)) then
+      xmin = Dbounds(1,1)
+      ymin = Dbounds(2,1)
+      xmax = Dbounds(1,2)
+      ymax = Dbounds(2,2)
+    else
+      ! Determine minimum/maximum values of array
+      xmin = huge(DP); xmax = -huge(DP)
+      ymin = huge(DP); ymax = -huge(DP)
+      
+      do ipoint = 1, npoints
+        xmin = min(xmin, Dpoints(1,ipoint))
+        xmax = max(xmax, Dpoints(1,ipoint))
+        ymin = min(ymin, Dpoints(2,ipoint))
+        ymax = max(ymax, Dpoints(2,ipoint))
+      end do
+    end if
 
     ! Clear array
     call lalg_clearVectorDble(Ddata)
 
     ! Fill array with scaled image data
-    do ivt = 1, nvt
-      x = DvertexCoords(1,ivt)
-      y = DvertexCoords(2,ivt)
+    do ipoint = 1, npoints
+      x = Dpoints(1,ipoint)
+      y = Dpoints(2,ipoint)
       
       ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
       if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
@@ -284,7 +306,7 @@ contains
       iy = rpgm%height-(rpgm%height-1)*(y-ymin)/(ymax-ymin)
       if (iy .lt. 1 .or. iy .gt. rpgm%height) cycle
 
-      Ddata(ivt) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
+      Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
     end do
   end subroutine ppsol_initArrayPGM_Dble
 
@@ -292,7 +314,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGM_Sngl(rpgm, DvertexCoords, Fdata)
+  subroutine ppsol_initArrayPGM_Sngl(rpgm, Dpoints, Fdata, Dbounds)
 
 !<description>
     ! Initialises a 2D single array by a Portable Graymap image
@@ -302,8 +324,13 @@ contains
     ! portable graymap image
     type(t_pgm), intent(in)              :: rpgm
 
-    ! vertex coordinates of 2D array
-    real(DP), dimension(:,:), intent(in) :: DvertexCoords
+    ! coordinates of 2D array
+    real(DP), dimension(:,:), intent(in) :: Dpoints
+
+    ! OPTIONAL: coordinates of the bounding box
+    ! If not present, then the bounding box is calculated internally
+    ! DIMENSION(2,2) Dpoints(X:Y,MIN:MAX)
+    real(DP), dimension(:,:), intent(in), optional :: Dbounds
 !</input>
 
 !<output>
@@ -315,30 +342,39 @@ contains
     ! local variables
     integer, dimension(:,:), pointer :: p_Idata
     real(DP) :: x,y,xmin,ymin,xmax,ymax
-    integer :: ivt,nvt,ix,iy
+    integer :: ipoint,npoints,ix,iy
 
     ! Set pointer for image data
     call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
 
-    ! Determine minimum/maximum values of array
-    xmin = huge(DP); xmax = -huge(DP)
-    ymin = huge(DP); ymax = -huge(DP)
+    ! Set number of points
+    npoints = size(Fdata)
 
-    nvt = size(Fdata)
-    do ivt = 1, nvt
-      xmin = min(xmin, DvertexCoords(1,ivt))
-      xmax = max(xmax, DvertexCoords(1,ivt))
-      ymin = min(ymin, DvertexCoords(2,ivt))
-      ymax = max(ymax, DvertexCoords(2,ivt))
-    end do
+    if (present(Dbounds)) then
+      xmin = Dbounds(1,1)
+      ymin = Dbounds(2,1)
+      xmax = Dbounds(1,2)
+      ymax = Dbounds(2,2)
+    else
+      ! Determine minimum/maximum values of array
+      xmin = huge(DP); xmax = -huge(DP)
+      ymin = huge(DP); ymax = -huge(DP)
+      
+      do ipoint = 1, npoints
+        xmin = min(xmin, Dpoints(1,ipoint))
+        xmax = max(xmax, Dpoints(1,ipoint))
+        ymin = min(ymin, Dpoints(2,ipoint))
+        ymax = max(ymax, Dpoints(2,ipoint))
+      end do
+    end if
 
     ! Clear array
     call lalg_clearVectorSngl(Fdata)
 
     ! Fill array with scaled image data
-    do ivt = 1, nvt
-      x = DvertexCoords(1,ivt)
-      y = DvertexCoords(2,ivt)
+    do ipoint = 1, npoints
+      x = Dpoints(1,ipoint)
+      y = Dpoints(2,ipoint)
       
       ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
       if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
@@ -346,7 +382,7 @@ contains
       iy = rpgm%height-(rpgm%height-1)*(y-ymin)/(ymax-ymin)
       if (iy .lt. 1 .or. iy .gt. rpgm%height) cycle
 
-      Fdata(ivt) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
+      Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
   end subroutine ppsol_initArrayPGM_Sngl
 end module pprocsolution
