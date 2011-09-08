@@ -27,7 +27,7 @@
 !# </purpose>
 !##############################################################################
 
-module mprimitives
+module random
 
 use fsystem
 
