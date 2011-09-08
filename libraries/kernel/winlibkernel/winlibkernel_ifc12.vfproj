@@ -147,7 +147,8 @@
 		<File RelativePath="..\..\..\kernel\LinearSystem\matrixmodification.f90"/></Filter>
 		<Filter Name="Mathematics">
 		<File RelativePath="..\..\..\kernel\Mathematics\adjacency.f90"/>
-		<File RelativePath="..\..\..\kernel\Mathematics\mprimitives.f90"/></Filter>
+		<File RelativePath="..\..\..\kernel\Mathematics\mprimitives.f90"/>
+		<File RelativePath="..\..\..\kernel\Mathematics\random.f90"/></Filter>
 		<Filter Name="NonlinearSolver">
 		<Filter Name="Interfaces">
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\intf_nlsolcallback.inc"/></Filter>
