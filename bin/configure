@@ -209,7 +209,7 @@ use constant SRCLIST_KERNEL =>
     "LinearSystem/globalsystem.f90 LinearSystem/linearsystemblock.f90 " .
     "LinearSystem/linearsystemscalar.f90 LinearSystem/matrixmodification.f90 " .
 
-    "Mathematics/adjacency.f90 Mathematics/mprimitives.f90 " .
+    "Mathematics/adjacency.f90 Mathematics/mprimitives.f90 Mathematics/random.f90 " .
 
     "NonlinearSolver/nonlinearsolver.f90 " .
 
