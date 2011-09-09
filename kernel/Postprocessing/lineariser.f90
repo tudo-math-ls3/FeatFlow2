@@ -234,6 +234,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rblockDiscrSrc
     type(t_triangulation), pointer :: p_rtriangulationSrc
     integer, dimension(:), pointer :: p_ImacroElements
+    integer, dimension(:), allocatable :: Invar
     integer :: iblock
 
     ! Get block discretization of source vector
@@ -277,14 +278,24 @@ contains
       call sys_halt()
     end select
 
+    ! Duplicate spatial discretisation structure
     do iblock = 2, p_rblockDiscrSrc%ncomponents
       call spdiscr_duplicateDiscrSc(rblockDiscrDest%RspatialDiscr(1),&
           rblockDiscrDest%RspatialDiscr(iblock), .true.)
     end do
 
+    ! Allocate temporal memory
+    allocate(Invar(p_rblockDiscrSrc%ncomponents))
+    do iblock = 1,  p_rblockDiscrSrc%ncomponents
+      Invar(iblock) = rvectorSrc%RvectorBlock(iblock)%NVAR
+    end do
+
     ! Create block vector
-    call lsysbl_createVectorBlock(rblockDiscrDest, rvectorDest,&
-        .false., rvectorSrc%cdataType)
+    call lsysbl_createVectorBlock(rblockDiscrDest, Invar,&
+        rvectorDest, .false., rvectorSrc%cdataType)
+
+    ! Deallocat temporal memory
+    deallocate(Invar)
 
     ! Linearise source vector
     select case(clintype)
@@ -609,9 +620,9 @@ contains
         ! Hence, each quadrilateral gives rise to one new edge
         rtriangulationDest%NMT = rtriangulationDest%NMT +&
                                  rtriangulationSrc%InelOfType(TRIA_NVEQUAD2D)
-        rtriangulationDest%NEL = rtriangulationSrc%InelOfType(TRIA_NVETRI2D) +&
-                                 rtriangulationSrc%InelOfType(TRIA_NVEQUAD2D)*2
-        
+        rtriangulationDest%NEL = rtriangulationDest%NEL +&
+                                 rtriangulationSrc%InelOfType(TRIA_NVEQUAD2D)
+
         ! Compute number of vertices/elements after global refinement
         do istep = 1, nrefsteps
           ! New vertices are inserted at edge midpoints
@@ -1121,7 +1132,7 @@ contains
     real(DP), dimension(:), allocatable :: Dvalues
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:), pointer :: Icount
-    integer :: iel,ive,ivt
+    integer :: iel,ive,ivt,ivar
     
     ! Allocate temporal memory
     allocate(Dpoints(rtriangulationDest%ndim,rtriangulationDest%NNVE))
@@ -1135,6 +1146,9 @@ contains
     call storage_getbase_int2d(&
         rtriangulationDest%h_IverticesAtElement, p_IverticesAtElement)
     
+    ! Initialise destination vector
+    call lalg_clearVector(p_Ddata)
+
     ! Loop over all elements
     do iel = 1, rtriangulationDest%NEL
 
@@ -1142,23 +1156,30 @@ contains
       do ive = 1, rtriangulationDest%NNVE
         Dpoints(:,ive) = p_DvertexCoords(:,p_IverticesAtElement(ive,iel))
       end do
-      
+
       ! Evaluet FE-solution
       call fevl_evaluate_mult(DER_FUNC, Dvalues, rvectorSrc,&
           ImacroElements(iel), Dpoints=Dpoints)
-      
+
       ! Store points in destination vector
       do ive = 1, rtriangulationDest%NNVE
         ivt = p_IverticesAtElement(ive,iel)
-        p_Ddata(ivt) = p_Ddata(ivt) + Dvalues(ive)
+        do ivar = 1, rvectorDest%NVAR
+          p_Ddata((ivt-1)*rvectorDest%NVAR+ivar) =&
+              p_Ddata((ivt-1)*rvectorDest%NVAR+ivar)+&
+              Dvalues((ive-1)*rvectorDest%NVAR+ivar)
+        end do
         Icount(ivt)  = Icount(ivt) + 1
       end do
     end do
 
     ! Average nodal values
     do ivt = 1, rtriangulationDest%NVT
-      p_Ddata(ivt) = p_Ddata(ivt)/real(Icount(ivt),DP)
-    end do
+        do ivar = 1, rvectorDest%NVAR
+          p_Ddata((ivt-1)*rvectordest%NVAR+ivar) =&
+              p_Ddata((ivt-1)*rvectorDest%NVAR+ivar)/real(Icount(ivt),DP)
+        end do
+      end do
       
     ! Deallocate temporal memory
     deallocate(Dpoints, Dvalues, Icount)
@@ -1213,7 +1234,7 @@ contains
     ! duplicated. Thus, we can multiply them by two and substract
     ! those located at the boundary which are not duplicated
     if (NMT .gt. 0) NMT = 2*NMT-NVBD
-    
+
     ! Get number of vertices per element
     NNVE  = size(IverticesAtElement,1)
     
@@ -1238,7 +1259,7 @@ contains
         NVT = NVT+1
       end do
     end do element
-    
+
   end subroutine lin_prepareUnshareVertices
 
   !*****************************************************************************
