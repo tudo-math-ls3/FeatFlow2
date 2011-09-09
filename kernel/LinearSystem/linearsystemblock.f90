@@ -448,17 +448,22 @@ module linearsystemblock
 
   interface lsysbl_createVectorBlock
     module procedure lsysbl_createVecBlockDirect 
+    module procedure lsysbl_createVecBlockDirectIntl
     module procedure lsysbl_createVecBlockDirectDims
     module procedure lsysbl_createVecBlockIndirect 
     module procedure lsysbl_createVecBlockIndMat
     module procedure lsysbl_createVecBlockByDiscr
+    module procedure lsysbl_createVecBlockByDiscrIntl
   end interface
 
   public :: lsysbl_createVectorBlock
   public :: lsysbl_createVecBlockDirect
+  public :: lsysbl_createVecBlockDirectIntl
+  public :: lsysbl_createVecBlockDirectDims
   public :: lsysbl_createVecBlockIndirect
   public :: lsysbl_createVecBlockIndMat
   public :: lsysbl_createVecBlockByDiscr
+  public :: lsysbl_createVecBlockByDiscrIntl
 
   interface lsysbl_resizeVectorBlock
     module procedure lsysbl_resizeVecBlockDirect
@@ -1216,7 +1221,7 @@ contains
   !
   ! Allocate one large vector holding all data.
   call storage_new ('lsysbl_createVecBlockDirect', 'Vector', sum(Isize), cdata, &
-                      rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+                    rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
@@ -1234,6 +1239,107 @@ contains
       rx%RvectorBlock(i)%cdataType = rx%cdataType
       rx%RvectorBlock(i)%bisCopy = .true.
       n = n+Isize(i)
+    else
+      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%iidxFirstEntry = 0
+      rx%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
+    end if
+  end do
+  
+  rx%NEQ = n-1
+  rx%nblocks = size(Isize)
+  
+  ! The data of the vector belongs to us (we created the handle), 
+  ! not to somebody else.
+  rx%bisCopy = .false.
+  
+  ! Warning: do not reformulate the following check into one IF command
+  ! as this might give problems with some compilers!
+  if (present(bclear)) then
+    if (bclear) then
+      call lsysbl_clearVector (rx)
+    end if
+  end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createVecBlockDirectIntl (rx, Isize, Invar, bclear, cdataType)
+  
+!<description>
+  ! Initialises the vector block structure rx. Isize and Invar are
+  ! arrays of integers containing the length of the individual blocks.
+  ! Memory is allocated on the heap to hold vectors of the size
+  ! according to Isize*Invar.
+  !
+  ! Remark: There is no block discretisation structure attached to the vector!
+!</description>
+
+!<input>
+  ! An array with length-tags for the different blocks
+  integer, dimension(:), intent(in)         :: Isize
+  
+  ! An array with the number of local variables for the different blocks
+  integer, dimension(:), intent(in)         :: Invar
+
+  ! Optional: If set to YES, the vector will be filled with zero initially.
+  logical, intent(in), optional             :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+  integer, intent(in),optional              :: cdataType
+!</input>
+
+!<output>
+  
+  ! Destination structure. Memory is allocated for each of the blocks.
+  type(t_vectorBlock),intent(out) :: rx
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,n
+  integer :: cdata
+  
+  cdata = ST_DOUBLE
+  if (present(cdataType)) cdata = cdataType
+
+  ! Both length arrays must have the same dimension
+  if (size(Isize) .ne. size(Invar)) then
+    call output_line('Length arrays must have the same size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createVecBlockDirectIntl')
+    call sys_halt()
+  end if
+  
+  ! rx is initialised by INTENT(out) with the most common data.
+  ! What is missing is the data array.
+  !
+  ! Allocate one large vector holding all data.
+  call storage_new ('lsysbl_createVecBlockDirectIntl', 'Vector', sum(Isize*Invar),&
+                    cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+  rx%cdataType = cdata
+  
+  ! Initialise the sub-blocks. Save a pointer to the starting address of
+  ! each sub-block.
+  ! Denote in the subvector that the handle belongs to us - not to
+  ! the subvector.
+  allocate(rx%RvectorBlock(size(Isize)))
+  
+  n=1
+  do i = 1,size(Isize)
+    if (Isize(i) .gt. 0) then
+      rx%RvectorBlock(i)%NEQ = Isize(i)
+      rx%RvectorBlock(i)%NVAR = Invar(i)
+      rx%RvectorBlock(i)%iidxFirstEntry = n
+      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy = .true.
+      n = n+Isize(i)*Invar(i)
     else
       rx%RvectorBlock(i)%NEQ = 0
       rx%RvectorBlock(i)%iidxFirstEntry = 0
@@ -1502,6 +1608,78 @@ contains
   
   ! Create a new vector with that block structure
   call lsysbl_createVecBlockDirect (rx, Isize(:), bclear, cdataType)
+  
+  ! Initialise further data of the block vector
+  rx%p_rblockDiscr => rblockDiscretisation
+  
+  ! Initialise further data in the subblocks
+  do i=1,rblockDiscretisation%ncomponents
+    rx%RvectorBlock(i)%p_rspatialDiscr=> &
+      rblockDiscretisation%RspatialDiscr(i)
+  end do
+  
+  deallocate(Isize)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createVecBlockByDiscrIntl (rblockDiscretisation,Invar,rx,&
+                                               bclear, cdataType)
+  
+!<description>
+  ! Initialises the vector block structure rx based on a block discretisation
+  ! structure rblockDiscretisation. 
+  !
+  ! Memory is allocated on the heap for rx. The size of the subvectors in rx
+  ! is calculated according to the number of DOF`s indicated by the
+  ! spatial discretisation structures in rblockDiscretisation.
+!</description>
+  
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  type(t_blockDiscretisation),intent(in), target :: rblockDiscretisation
+  
+  ! An array with the number of local variables for the different blocks
+  integer, dimension(:), intent(in)         :: Invar
+
+  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! Otherwise the content of rx is undefined.
+  logical, intent(in), optional             :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
+  integer, intent(in),optional              :: cdataType
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated for each of the blocks.
+  ! A pointer to rblockDiscretisation is saved to rx.
+  type(t_vectorBlock),intent(out) :: rx
+!</output>
+  
+!</subroutine>
+
+  integer :: cdata,i
+  integer, dimension(:), allocatable :: Isize
+  
+  cdata = ST_DOUBLE
+  if (present(cdataType)) cdata = cdataType
+  
+  allocate(Isize(max(1,rblockDiscretisation%ncomponents)))
+  
+  ! Loop to the blocks in the block discretisation. Calculate size (#DOF`s)
+  ! of all the subblocks.
+  Isize(1) = 0             ! Initialisation in case ncomponents=0
+  do i=1,rblockDiscretisation%ncomponents
+    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscr(i))
+  end do
+  
+  ! Create a new vector with that block structure
+  call lsysbl_createVecBlockDirectIntl (rx, Isize(:), Invar, bclear, cdataType)
   
   ! Initialise further data of the block vector
   rx%p_rblockDiscr => rblockDiscretisation
@@ -4256,7 +4434,7 @@ contains
     ! not changed.
     type(t_vectorBlock), intent(inout) :: ry
 
-      integer :: ioffset,i
+      integer :: i
 
       ! Allocate memory   
       ry%cdataType = rx%cdataType 
@@ -4287,7 +4465,7 @@ contains
     ! New first position of the first subvector in the global data array.
     integer, intent(in) :: iidxFirstEntry
 
-      integer :: ioffset,i
+      integer :: i
 
       ! Create the starting positions of the subvectors.
       ry%iidxFirstEntry = iidxFirstEntry
