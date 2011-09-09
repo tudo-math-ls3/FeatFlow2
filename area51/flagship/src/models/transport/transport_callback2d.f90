@@ -738,7 +738,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    integer :: ipoint, iel, ndim, icomp
+    integer :: ipoint, iel, icomp
 
 
     ! Initialize values

@@ -853,9 +853,8 @@ contains
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
     integer, dimension(:), allocatable :: Celement
-    integer, dimension(2) :: Isize
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
-    integer :: i,j,iel,nmatrices,nsubstrings,ccubType
+    integer :: i,j,nmatrices,nsubstrings,ccubType
     character(len=SYS_STRLEN) :: selemName
 
     ! Retrieve application specific parameters from the parameter list
@@ -1695,6 +1694,7 @@ contains
     integer :: icomp,iter,isolutiontype,nmaxIterationsSolution
     integer :: lumpedMassMatrix,consistentMassMatrix,systemMatrix
 
+
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isolutiontype', isolutiontype)
@@ -2180,12 +2180,12 @@ contains
     integer, save :: ifilenumber = 1
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
     type(t_ucdExport) :: rexport
     type(t_triangulation) :: rtriangulationPrimal,rtriangulationDual
     type(t_blockDiscretisation) :: rdiscretisationPrimal
     type(t_blockDiscretisation) :: rdiscretisationDual
     type(t_vectorBlock) :: rvectorPrimal,rvectorDual
+    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
     integer :: iformatUCD,ilineariseUCD,nrefineUCD
     logical :: bexportMeshOnly,bdiscontinuous
 
