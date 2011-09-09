@@ -260,9 +260,9 @@ contains
 
     ! transform into desired range
     if(imin .lt. imax) then
-      ix = imin + imod(t, imax-imin+1)
+      ix = imin + mod(t, imax-imin+1)
     else if(imax .lt. imin) then
-      ix = imax + imod(t, imin-imax+1)
+      ix = imax + mod(t, imin-imax+1)
     else
       ix = imin
     end if
