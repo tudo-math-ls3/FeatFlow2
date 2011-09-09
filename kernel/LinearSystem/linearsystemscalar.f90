@@ -24783,7 +24783,7 @@ contains
           j2 = p_IrowPtr(i+1)-1
           do j = j1, j2
             it = p_IcolIdx(j)
-            dt = p_Fdata(j)
+            dt = p_Ddata(j)
             do k = j-1, j1, -1
               if(p_IcolIdx(k) .le. it) exit
               p_IcolIdx(k+1) = p_IcolIdx(k)
