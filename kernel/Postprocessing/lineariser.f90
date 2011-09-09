@@ -338,7 +338,7 @@ contains
     ! OPTIONAL: Mapping of element numbers to macro elements
     ! If present, this pointer will by allocated with correct size
     ! and the mapping will be returned by this subroutine
-    integer, dimension(:), intent(out), pointer, optional :: p_ImacroElements
+    integer, dimension(:), pointer, optional :: p_ImacroElements
 !</output>
 
     ! local variables
