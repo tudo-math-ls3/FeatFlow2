@@ -128,6 +128,7 @@ module hydro_application
   use hadaptaux
   use hadaptivity
   use linearformevaluation
+  use lineariser
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -1756,8 +1757,9 @@ contains
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_fparser), pointer :: p_rfparser
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_collection) :: rcollectionTmp
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:,:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP), dimension(:), pointer :: Dnorm0
@@ -1823,10 +1825,6 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
 
-      ! Set pointers
-      call storage_getbase_double2D(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
       ! Get number of spatial dimensions
       ndim = rproblemLevel%rtriangulation%ndim
 
@@ -1837,36 +1835,45 @@ contains
       ! Loop over all blocks of the global solution vector
       do iblock = 1, rvector%nblocks
 
-        ! Set pointer to data array
+        ! Set pointers
+        p_rspatialDiscr => rvector%p_rblockDiscr%RspatialDiscr(iblock)
+        call storage_getbase_double2D(&
+            p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
         call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
 
         ! Initialisation for scalar subvector
         neq  = rvector%RvectorBlock(iblock)%NEQ
         nvar = rvector%RvectorBlock(iblock)%NVAR
 
-        ! Loop over all equations of the scalar subvector
-        do ieq = 1, neq
+        ! Loop over all variables of the solution vector
+        do ivar = 1, nvar
 
-          ! Set coordinates and evalution time
-          Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
-          Dvalue(NDIM3D+1) = dtime
+          ! Get the function name of the component used for evaluating the initial solution.
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
+          
+          ! Get the number of the component used for evaluating the initial solution
+          icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+          
+          if (ivar .eq. 1) then
+            ! Evaluate the function parser for all coordinates
+            call fparser_evalFunction(p_rfparser, icomp, 2,&
+                  p_DdofCoords, p_Ddata, (/dtime/))
+          else
+            ! Loop over all equations of the scalar subvector
+            do ieq = 1, neq
+              
+              ! Set coordinates and evalution time
+              Dvalue(1:ndim)   = p_DdofCoords(:,ieq)
+              Dvalue(NDIM3D+1) = dtime
+              
+              ! Evaluate the function parser
+              call fparser_evalFunction(p_rfparser, icomp,&
+                  Dvalue, p_Ddata((ieq-1)*nvar+ivar))
+            end do   ! ieq
+          end if
 
-          ! Loop over all variables of the solution vector
-          do ivar = 1, nvar
-
-            ! Get the function name of the component used for evaluating the initial solution.
-            call parlst_getvalue_string(rparlist, ssectionName,&
-                'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
-
-            ! Get the number of the component used for evaluating the initial solution
-            icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
-
-            ! Evaluate the function parser
-            call fparser_evalFunction(p_rfparser, icomp,&
-                Dvalue, p_Ddata((ieq-1)*nvar+ivar))
-
-          end do   ! ivar
-        end do   ! ieq
+        end do   ! ivar
 
         ! Increase number of processed expressions
         nexpression = nexpression + nvar
@@ -2252,11 +2259,24 @@ contains
 
     ! local variables
     type(t_ucdExport) :: rexport
-    type(t_vectorScalar) :: rvector1, rvector2, rvector3
-    real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
+    type(t_vectorScalar) :: rvector1,rvector2,rvector3
+    type(t_triangulation) :: rtriangulationPrimal,rtriangulationDual
+    type(t_blockDiscretisation) :: rdiscretisationPrimal
+    type(t_blockDiscretisation) :: rdiscretisationDual
+    type(t_vectorBlock) :: rvectorPrimal,rvectorDual
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
+    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
     character(len=SYS_NAMELEN) :: cvariable
-    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
+    integer :: isystemFormat,isize,ndim,nvar,ivariable,nvariable
+    integer :: iformatUCD,ilineariseUCD,nrefineUCD
+    logical :: bexportMeshOnly,bdiscontinuous
 
+    ! Initialisation
+    bexportMeshOnly = .true.
+    if (present(rsolutionPrimal) .or.&
+        present(rsolutionDual)) bexportMeshOnly=.false.
+
+    nullify(p_DdataPrimal, p_DdataDual)
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -2267,10 +2287,57 @@ contains
         trim(soutputName), 'iformatucd', iformatUCD)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isystemformat', isystemformat)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'ilineariseucd', ilineariseUCD, 0)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'nrefineucd', nrefineUCD, 0)
 
     ! Initialize the UCD exporter
-    call flagship_initUCDexport(rproblemLevel, sucdsolution,&
-        iformatUCD, rexport, ifilenumber)
+    select case(ilineariseUCD)
+    case (0)
+      call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+          iformatUCD, rexport, ifilenumber)
+
+      ! Set pointers to solution(s)
+      if (present(rsolutionPrimal))&
+          call lsysbl_getbase_double(rsolutionPrimal, p_DdataPrimal)
+      if (present(rsolutionDual))&
+          call lsysbl_getbase_double(rsolutionDual, p_DdataDual)
+      
+    case (1,2)
+      bdiscontinuous = (ilineariseUCD .eq. 1)
+      
+      if (present(rsolutionPrimal)) then
+        call lin_lineariseVectorGlobal(rsolutionPrimal, rdiscretisationPrimal,&
+            rtriangulationPrimal, rvectorPrimal, nrefineUCD, 0, bdiscontinuous)
+        call lsysbl_getbase_double(rvectorPrimal, p_DdataPrimal)
+        
+        if (present(rsolutionDual)) then
+          call lin_lineariseVectorGlobal(rsolutionDual, rdiscretisationDual,&
+              rtriangulationDual, rvectorDual, nrefineUCD, 0, bdiscontinuous)
+          call lsysbl_getbase_double(rvectorDual, p_DdataDual)
+        end if
+        
+        ! We assume that both primal and dual solutions are based on
+        ! the same triangulation, thus both vectors can be exported
+        ! using the same triangulation.       
+        call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+            iformatUCD, rexport, ifilenumber, rtriangulationPrimal)
+
+      elseif (present(rsolutionDual)) then
+        call lin_lineariseVectorGlobal(rsolutionDual, rdiscretisationDual,&
+            rtriangulationDual, rvectorDual, nrefineUCD, 0, bdiscontinuous)
+        call lsysbl_getbase_double(rvectorDual, p_DdataDual)
+        
+        call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+            iformatUCD, rexport, ifilenumber, rtriangulationDual)
+      end if
+
+    case default
+      call output_line('Unsupported type of solution output!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_outputSolution')
+      call sys_halt()
+    end select
 
     ! Increase filenumber by one
     ifilenumber = ifilenumber+1
@@ -2279,12 +2346,11 @@ contains
     if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
 
     ! Add primal solution vector
-    if (present(rsolutionPrimal)) then
+    if (associated(p_DdataPrimal)) then
       
       ! Set pointers
-      call lsysbl_getbase_double(rsolutionPrimal, p_Dsolution)
       nvar  = hydro_getNVAR(rproblemLevel)
-      isize = size(p_Dsolution)/nvar
+      isize = size(p_DdataPrimal)/nvar
       ndim  = rproblemLevel%rtriangulation%ndim
 
       ! Create auxiliary vectors
@@ -2334,25 +2400,25 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
+                  'velocity_x', p_DdataPrimal, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1)
               
             case (NDIM2D)
               call hydro_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
+                  'velocity_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
+                  'velocity_y', p_DdataPrimal, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
               call hydro_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
+                  'velocity_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
+                  'velocity_y', p_DdataPrimal, p_Ddata2)
               call hydro_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
+                  'velocity_z', p_DdataPrimal, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
@@ -2363,24 +2429,24 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
+                  'momentum_x', p_DdataPrimal, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
               
             case (NDIM2D)
               call hydro_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
+                  'momentum_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
+                  'momentum_y', p_DdataPrimal, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
               call hydro_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
+                  'momentum_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
+                  'momentum_y', p_DdataPrimal, p_Ddata2)
               call hydro_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+                  'momentum_z', p_DdataPrimal, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
@@ -2391,13 +2457,13 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ,  nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+                  cvariable, p_DdataPrimal, p_Ddata1)
             case (NDIM2D)
               call hydro_getVarInterleaveFormat2d(rvector1%NEQ,  nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+                  cvariable, p_DdataPrimal, p_Ddata1)
             case (NDIM3D)
               call hydro_getVarInterleaveFormat3d(rvector1%NEQ,  nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+                  cvariable, p_DdataPrimal, p_Ddata1)
             end select
             
             call ucd_addVariableVertexBased(rexport, cvariable,&
@@ -2421,25 +2487,25 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
+                  'velocity_x', p_DdataPrimal, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1)
               
             case (NDIM2D)
               call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
+                  'velocity_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
+                  'velocity_y', p_DdataPrimal, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
+                  'velocity_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
+                  'velocity_y', p_DdataPrimal, p_Ddata2)
               call hydro_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
+                  'velocity_z', p_DdataPrimal, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
@@ -2450,24 +2516,24 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
+                  'momentum_x', p_DdataPrimal, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
 
             case (NDIM2D)
               call hydro_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
+                  'momentum_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
+                  'momentum_y', p_DdataPrimal, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
+                  'momentum_x', p_DdataPrimal, p_Ddata1)
               call hydro_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
+                  'momentum_y', p_DdataPrimal, p_Ddata2)
               call hydro_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+                  'momentum_z', p_DdataPrimal, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'momentum',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
@@ -2478,13 +2544,13 @@ contains
             select case(ndim)
             case (NDIM1D)
               call hydro_getVarBlockFormat1d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+                  cvariable, p_DdataPrimal, p_Ddata1)
             case (NDIM2D)
               call hydro_getVarBlockFormat2d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+                  cvariable, p_DdataPrimal, p_Ddata1)
             case (NDIM3D)
               call hydro_getVarBlockFormat3d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+                  cvariable, p_DdataPrimal, p_Ddata1)
             end select
             call ucd_addVariableVertexBased(rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -2508,6 +2574,14 @@ contains
     ! Write UCD file
     call ucd_write(rexport)
     call ucd_release(rexport)
+
+    ! Release temporal memory
+    call lsysbl_releaseVector(rvectorPrimal)
+    call lsysbl_releaseVector(rvectorDual)
+    call spdiscr_releaseBlockDiscr(rdiscretisationPrimal)
+    call spdiscr_releaseBlockDiscr(rdiscretisationDual)
+    call tria_done(rtriangulationPrimal)
+    call tria_done(rtriangulationDual)
 
   end subroutine hydro_outputSolution
 
