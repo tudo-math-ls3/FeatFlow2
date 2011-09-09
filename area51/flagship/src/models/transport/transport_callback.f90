@@ -4717,9 +4717,8 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     real(DP), dimension(:,:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_Ddata
-    real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: svelocityname
-    integer :: ieq, neq, idim, ndim, nlmin, icomp
+    integer :: neq, idim, ndim, nlmin, icomp
     integer :: ivelocitytype, velocityfield, discretisation
 
 
@@ -4743,9 +4742,9 @@ contains
     nlmin = rproblemLevel%ilev
     if (present(nlminOpt)) nlmin = nlminOpt
 
-    ! Initialize variable values
-    Dvalue           = 0.0_DP
-    Dvalue(NDIM3D+1) = dtime
+!    ! Initialize variable values
+!    Dvalue           = 0.0_DP
+!    Dvalue(NDIM3D+1) = dtime
 
     ! Loop over all problem levels
     p_rproblemLevel => rproblemLevel
@@ -4786,12 +4785,10 @@ contains
         ! Determine corresponding component number from the function parser
         icomp = fparser_getFunctionNumber(p_rfparser, svelocityname)
 
-        ! Loop over all equations of scalar subvector
-        do ieq = 1, neq
-          Dvalue(1:ndim) = p_DdofCoords(:,ieq)
-          call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
+        ! Evaluate all coefficients of the scalar subvector
+        call fparser_evalFunction(p_rfparser, icomp, 2,&
+            p_DdofCoords, p_Ddata, (/dtime/))
         end do
-      end do
 
       ! Set update notifier for transport operator in problem level structure
       p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&

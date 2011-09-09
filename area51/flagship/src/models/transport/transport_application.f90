@@ -2204,13 +2204,13 @@ contains
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'iformatucd', iformatUCD)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
-                             'ilineariseucd', ilineariseUCD, 0)
+                             'ilineariseucd', ilineariseUCD, UCDEXPORT_STD)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'nrefineucd', nrefineUCD, 0)
     
     ! Initialize the UCD exporter
     select case(ilineariseUCD)
-    case (0)
+    case (UCDEXPORT_STD)
       call flagship_initUCDexport(rproblemLevel,&
           sucdsolution, iformatUCD, rexport, ifilenumber)
       
@@ -2220,7 +2220,8 @@ contains
       if (present(rsolutionDual))&
           call lsysbl_getbase_double(rsolutionDual, p_DdataDual)
       
-    case (1,2)
+    case (UCDEXPORT_P1CONTINUOUS,&
+          UCDEXPORT_P1DISCONTINUOUS)
       bdiscontinuous = (ilineariseUCD .eq. 1)
       
       if (present(rsolutionPrimal)) then
