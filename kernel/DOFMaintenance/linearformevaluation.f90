@@ -333,6 +333,7 @@ module linearformevaluation
   public :: linf_assembleSubmeshVecBlBdr2D
   public :: linf_allocAssemblyData
   public :: linf_releaseAssemblyData
+  public :: linf_buildSimpleVector
 
 contains
 
@@ -5705,5 +5706,63 @@ contains
     end if
  
   end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_buildSimpleVector(rvector, fcoeff_buildVectorSc_sim, &
+                                    bclear, cderiv, rcollection)
   
+!<description>
+!</description>
+
+!<input>
+  ! A callback routine for the function to be discretised.
+  include 'intf_coefficientVectorSc.inc'
+
+  ! OPTIONAL: Whether to clear the vector before calculating the entries.
+  ! If not given, .TRUE. is used.
+  logical, optional, intent(in) :: bclear
+
+  ! OPTIONAL: A derivative specifier for the test functions. If not given,
+  ! DER_FUNC is used.
+  integer, optional, intent(in) :: cderiv
+!</input>
+
+!<inputoutput>
+  ! The scalar vector which is to be assembled.
+  type(t_vectorScalar), intent(inout) :: rvector
+
+  ! OPTIONAL: A collection structure.
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+  logical :: bclear2
+  type(t_linearForm) :: rform
+
+    ! set up linear form
+    rform%itermCount = 1
+    if(present(cderiv)) then
+      rform%Idescriptors(1) = cderiv
+    else
+      rform%Idescriptors(1) = DER_FUNC
+    end if
+
+    bclear2 = .true.
+    if(present(bclear)) bclear2 = bclear
+
+    ! assemble
+    if(present(rcollection)) then
+      call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
+          rvector, fcoeff_buildVectorSc_sim, rcollection)
+    else
+      call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
+          rvector, fcoeff_buildVectorSc_sim)
+    end if
+
+  end subroutine
+
 end module linearformevaluation
