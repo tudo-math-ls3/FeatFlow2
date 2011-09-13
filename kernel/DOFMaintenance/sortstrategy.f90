@@ -33,8 +33,12 @@
 !#
 !# 5.) sstrat_calcStochastic
 !#     -> Calculates stochastic renumbering (i.e. a random permutation)
+!#        Deprecated; use sstrat_calcRandom instead.
 !#
-!# 6.) sstrat_calcHierarchical
+!# 6.) sstrat_calcRandom
+!#     -> Calculates a random permutation.
+!#
+!# 7.) sstrat_calcHierarchical
 !#     -> Calculates a renumbering strategy based on element patches
 !#        in a level hierarchy
 !#
@@ -83,6 +87,7 @@ module sortstrategy
   use adjacency
   use dofmapping
   use sort
+  use random
 
   implicit none
   
@@ -128,6 +133,10 @@ module sortstrategy
   ! Hierarchical renumbering: The permutation is calculated by a sequence of meshes,
   ! regularly refined.
   integer, parameter, public :: SSTRAT_HIERARCHICAL = 7
+
+  ! Random permutation.
+  ! The permutation is completely random.
+  integer, parameter, public :: SSTRAT_RANDOM       = 8
   
 !</constantblock>
 
@@ -173,6 +182,7 @@ module sortstrategy
   public :: sstrat_calcXYZsorting
   public :: sstrat_calcFEASTsorting
   public :: sstrat_calcStochastic
+  public :: sstrat_calcRandom
   public :: sstrat_calcHierarchical
   public :: sstrat_calcColNumberingCM7
   public :: sstrat_calcColNumberingCM9
@@ -189,6 +199,7 @@ contains
   
   !<description>
     ! Generates a random permutation.
+    ! DEPRECATED: use sstrat_calcRandom instead.
     !
     ! The used algorithm is Knuth shuffle.
     ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed., 
@@ -228,6 +239,70 @@ contains
 
     ! Calculate the inverse permutation, that is it.
     call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_calcRandom (Ipermutation, iseed)
+
+!<description>
+  ! Generates a random permutation.
+  !
+  ! This routine has two major advantages over sstrat_calcStochastic:
+  ! 1. It uses the FEAT2 pseudo-random number generator implemented in the
+  !    random module, which generates the same random number sequence
+  !    independent of the compiler and platform being used.
+  ! 2. This routine can generate different permutations by specifying
+  !    different seed values. Each seed yields a unique permutation.
+!</description>
+
+!<output>
+  ! The permutation vector for sorting and its inverse.
+  ! With NEQ=NEQ(matrix):
+  !   Ipermutation(1:NEQ)       = permutation,
+  !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+  integer, dimension(:), intent(out) :: Ipermutation
+!</output>
+
+!<input>
+  ! OPTIONAL: A seed for the random number generator.
+  ! If not given, the value RNG_DEFAULT_S from random.f90 is used.
+  integer(I32), optional, intent(in) :: iseed
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  type(t_random) :: rrng
+  integer :: i,j,k,n
+
+    ! initialise the array with 1,2,3,...
+    n = size(Ipermutation) / 2
+    do i = 1,n
+      Ipermutation(i) = i
+    end do
+
+    ! initialise RNG
+    if(present(iseed)) &
+      call rng_init(rrng, iseed)
+
+    do i = 1, n-1
+
+      ! get a random number in range {i,...,n}
+      call rng_get(rrng, k, i, n)
+
+      ! exchange p(i) and p(k)
+      j = Ipermutation(i)
+      Ipermutation(i) = Ipermutation(k)
+      Ipermutation(k) = j
+
+    end do
+
+    ! Calculate the inverse permutation.
+    call sstrat_calcInversePermutation (Ipermutation(1:n), Ipermutation(n+1:) )
 
   end subroutine
 
