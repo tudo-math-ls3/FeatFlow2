@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !# <purpose>
 !# This module implements a pseudo-random number generator (rng).
-!# The intention of this module is to provide an rng which generates a
+!# The intention of this module is to provide a rng which generates a
 !# (warning: paradoxon ahead) reproducible random number stream independent of
 !# the platform and compiler in use.
 !#
@@ -255,7 +255,7 @@ contains
     ! Note: It is intentional that we first get an int from the rng - and thus
     !       advance the rng - and check for imin = imax later.
 
-    ! calculate a non-negative integer
+    ! get a non-negative integer
     call rng_get_int32(rrng, t)
 
     ! transform into desired range
@@ -294,14 +294,11 @@ contains
 
   integer(I32) :: t
 
-  ! calculate scaling factor: [0,2^31-1] -> [0,1]
-  real(DP), parameter :: scl = 1.0_DP / real(huge(0_I32),DP)
-
     ! get a 32bit int
     call rng_get_int32(rrng, t)
 
     ! and scale it
-    dx = scl * real(t,DP) 
+    dx = real(t,DP) / real(huge(0_I32),DP)
 
   end subroutine
 
