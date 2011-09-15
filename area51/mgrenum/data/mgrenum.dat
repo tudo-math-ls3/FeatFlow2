@@ -1,0 +1,83 @@
+# path of log file
+SLOGILE = ./log/output.log
+
+# paths of PRM and TRI files
+SPRMFILE = ./pre/heat_v77.prm
+STRIFILE = ./pre/heat_v77.tri
+
+# minimum and maximum MG levels
+NLMIN = 2
+NLMAX = 5
+
+# element and cubature to be used
+SELEMENT = EL_EM30_NEW
+SCUBATURE = G3_2D
+
+# sorting strategy identifier
+# 0: 2-level-ordering (default)
+# 1: Cuthill-McKee
+# 2: XYZ-order
+# 3: stochastical
+# 4: hierarchical
+# 5: random
+ISORT = 0
+
+# seed for sorting strategy 5
+ISEED = 7435782
+
+# averaging type for prolongation matrix assembly
+# 1: arithmetic averaging (default)
+# 2: L2-mass averaging
+# 3: inverse L2-mass averaging
+CAVRGTYPE = 1
+
+# filter projection matrices?
+# 0: do not filter (default)
+# 1: impose Dirichlet BCs
+CFILTERPRJMAT = 0
+
+# Smoother
+# 0: Jacobi (default)
+# 1: SOR
+# 2: ILU(0)
+CSMOOTHER = 0
+
+# Smoothing type:
+# 1: pre-smoothing only
+# 2: post-smoothing only
+# 3: pre- and post-smoothing (default)
+CSMOOTHTYPE = 3
+
+# Number of smoothing steps (default: 4)
+NSMOOTHSTEPS = 4
+
+# damping parameter for smoother (default: 0.7)
+DDAMPING = 0.7
+
+# Dump system matrices?
+# 0: no
+# 1: text file
+# 2: matlab format 
+# 3: text file and matlab format
+CDUMPSYSMAT = 1
+
+# Dump projection matrices?
+# 0: no
+# 1: text file
+# 2: matlab format 
+# 3: text file and matlab format
+CDUMPPRJMAT = 1
+
+# Dump rhs vector?
+# 0: no
+# 1: text file
+# 2: matlab format 
+# 3: text file and matlab format
+CDUMPRHSVEC = 1
+
+# Dump solution vector?
+# 0: no
+# 1: text file
+# 2: matlab format 
+# 3: text file and matlab format
+CDUMPSOLVEC = 1
