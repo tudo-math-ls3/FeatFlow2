@@ -59,25 +59,25 @@ DDAMPING = 0.7
 # 1: text file
 # 2: matlab format 
 # 3: text file and matlab format
-CDUMPSYSMAT = 1
+CDUMPSYSMAT = 0
 
 # Dump projection matrices?
 # 0: no
 # 1: text file
 # 2: matlab format 
 # 3: text file and matlab format
-CDUMPPRJMAT = 1
+CDUMPPRJMAT = 0
 
 # Dump rhs vector?
 # 0: no
 # 1: text file
 # 2: matlab format 
 # 3: text file and matlab format
-CDUMPRHSVEC = 1
+CDUMPRHSVEC = 0
 
 # Dump solution vector?
 # 0: no
 # 1: text file
 # 2: matlab format 
 # 3: text file and matlab format
-CDUMPSOLVEC = 1
+CDUMPSOLVEC = 0
