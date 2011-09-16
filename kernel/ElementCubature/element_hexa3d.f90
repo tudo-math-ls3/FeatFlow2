@@ -44,9 +44,9 @@ module element_hexa3d
   public :: elem_eval_QP1NP_3D
   public :: elem_eval_E030_3D 
   public :: elem_eval_E031_3D 
-  public :: elem_eval_EM30_3D 
+  public :: elem_eval_EN30_3D 
   public :: elem_eval_E050_3D 
-  public :: elem_eval_EM50_3D 
+  public :: elem_eval_EN50_3D 
 
 contains
 
@@ -4841,7 +4841,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EM30_3D (celement, reval, Bder, Dbas)
+  pure subroutine elem_eval_EN30_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -4882,7 +4882,7 @@ contains
 
   ! Element Description
   ! -------------------
-  ! The EM30_3D element is specified by nineteen polynomials per element.
+  ! The EN30_3D element is specified by nineteen polynomials per element.
   !
   ! The basis polynomials are constructed from the following set of monomials:
   ! { 1, x, y, z, x^2 - y^2, y^2 - z^2 }
@@ -5587,7 +5587,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EM50_3D (celement, reval, Bder, Dbas)
+  pure subroutine elem_eval_EN50_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -5628,7 +5628,7 @@ contains
 
   ! Element Description
   ! -------------------
-  ! The EM50_3D element is specified by nineteen polynomials per element.
+  ! The EN50_3D element is specified by nineteen polynomials per element.
   !
   ! The basis polynomials are constructed from the following set of monomials:
   ! { 1, x, y, z, x*y, y*z, z*x, x^2, y^2, z^2, x*y^2, y*z^2, z*x^2,

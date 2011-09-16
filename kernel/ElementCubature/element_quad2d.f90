@@ -62,12 +62,13 @@ module element_quad2d
   public :: elem_eval_QP1_2D 
   public :: elem_eval_E030_2D 
   public :: elem_eval_EB30_2D 
-  public :: elem_eval_EM30_2D 
-  public :: elem_eval_EM31_2D 
+  public :: elem_eval_Q1TBNP_2D 
+  public :: elem_eval_EN30_2D 
+  public :: elem_eval_EN31_2D 
   public :: elem_eval_E032_2D
   public :: elem_eval_E050_2D 
   public :: elem_eval_EB50_2D 
-  public :: elem_eval_EM50_2D
+  public :: elem_eval_EN50_2D
   public :: elem_DG_T0_2D 
   public :: elem_DG_T0_2D_mult 
   public :: elem_DG_T0_2D_sim 
@@ -8557,7 +8558,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EM30_2D (celement, reval, Bder, Dbas)
+  pure subroutine elem_eval_Q1TBNP_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -8598,7 +8599,370 @@ contains
 
   ! Element Description
   ! -------------------
-  ! The EM30_2D element is specified by four polynomials per element.
+  ! The Q1TBNP_2D element is specified by five polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, y, x*y, x^2 - y^2 }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,5:
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Int_[-1,1] (|DEj(t)|*Pi(Ej(t))) d(t) = kronecker(i,j) * |ej|
+  !     <==>
+  !     Int_ej (Pi(t)) d(t) = kronecker(i,j) * |ej|
+  !   }
+  !   Int_T (Pi(x,y)*L1(x)*L1(y)) d(x,y) = kronecker(i,5) * |T|
+  ! }
+  !
+  ! With:
+  ! ej being the j-th local edge of the quadrilateral
+  ! |ej| being the length of the edge ej
+  ! Ej: [-1,1] -> ej being the parametrisation of the edge ej
+  ! |DEj(t)| being the determinant of the Jacobi-Matrix of Ej in the point t
+
+    
+
+  ! Parameter: Number of local basis functions
+  integer, parameter :: NBAS = 5
+  
+  ! Parameter: Number of cubature points for 1D edge integration
+  integer, parameter :: NCUB1D = 2
+  !integer, parameter :: NCUB1D = 5
+  
+  ! Parameter: Number of cubature points for 2D quad integration
+  integer, parameter :: NCUB2D = NCUB1D**2
+  
+  ! 1D edge cubature rule point coordinates and weights
+  real(DP), dimension(NCUB1D) :: DcubPts1D
+  real(DP), dimension(NCUB1D) :: DcubOmega1D
+  
+  ! 2D quad cubature rule point coordinates and weights
+  real(DP), dimension(NDIM2D, NCUB2D) :: DcubPts2D
+  real(DP), dimension(NCUB2D) :: DcubOmega2D
+  
+  ! Corner vertice and edge midpoint coordinates
+  real(DP), dimension(NDIM2D, 4) :: Dvert
+
+  ! Local mapped 1D cubature point coordinates and integration weights
+  real(DP), dimension(NDIM2D, NCUB1D, 4) :: DedgePoints
+  real(DP), dimension(NCUB1D, 4) :: DedgeWeights
+  real(DP), dimension(4) :: DedgeLen
+  
+  ! Local mapped 2D cubature point coordinates and jacobian determinants
+  real(DP), dimension(NDIM2D, NCUB2D) :: DquadPoints
+  real(DP), dimension(NCUB2D) :: DquadWeights
+  real(DP) :: dquadArea
+
+  ! temporary variables for trafo call (will be removed later)
+  real(DP), dimension(8) :: DjacPrep
+  real(DP), dimension(4) :: DjacTrafo
+  
+  ! Coefficients for inverse affine transformation
+  real(DP), dimension(NDIM2D,NDIM2D) :: Ds
+  real(DP), dimension(NDIM2D) :: Dr
+  real(DP) :: ddets
+
+  ! other local variables
+  integer :: i,j,k,iel, ipt
+  real(DP), dimension(NBAS,NBAS) :: Da, Dc
+  real(DP) :: dx,dy,dt,derx,dery
+  logical :: bsuccess
+  
+  
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Step 0: Set up 1D and 2D cubature rules
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    ! Set up a 2-point Gauss rule for 1D
+    DcubPts1D(1) = -sqrt(1.0_DP / 3.0_DP)
+    DcubPts1D(2) =  sqrt(1.0_DP / 3.0_DP)
+    DcubOmega1D(1) = 1.0_DP
+    DcubOmega1D(2) = 1.0_DP
+
+!    ! !!! DEBUG: 5-point Gauss rule !!!
+!    dt = 2.0_DP*sqrt(10.0_DP / 7.0_DP)
+!    DcubPts1D(1) = -sqrt(5.0_DP + dt) / 3.0_DP
+!    DcubPts1D(2) = -sqrt(5.0_DP - dt) / 3.0_DP
+!    DcubPts1D(3) = 0.0_DP
+!    DcubPts1D(4) =  sqrt(5.0_DP - dt) / 3.0_DP
+!    DcubPts1D(5) =  sqrt(5.0_DP + dt) / 3.0_DP
+!    dt = 13.0_DP*sqrt(70.0_DP)
+!    DcubOmega1D(1) = (322.0_DP - dt) / 900.0_DP
+!    DcubOmega1D(2) = (322.0_DP + dt) / 900.0_DP
+!    DcubOmega1D(3) = 128.0_DP / 225.0_DP
+!    DcubOmega1D(4) = (322.0_DP + dt) / 900.0_DP
+!    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
+    
+    ! Set up a 3x3-point Gauss rule for 2D
+    ! Remark: We will use the 1D rule to create the 2D rule here
+    k = 1
+    do i = 1, NCUB1D
+      do j = 1, NCUB1D
+        DcubPts2D(1,k) = DcubPts1D(i)
+        DcubPts2D(2,k) = DcubPts1D(j)
+        DcubOmega2D(k) = DcubOmega1D(i)*DcubOmega1D(j)
+        k = k+1
+      end do
+    end do
+    
+
+    ! Loop over all elements
+    do iel = 1, reval%nelements
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 1: Calculate vertice and edge midpoint coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+      ! Fetch the four corner vertices for that element
+      Dvert(1:2,1:4) = reval%p_Dcoords(1:2,1:4,iel)
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 2: Calculate inverse affine transformation
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! This is a P1 transformation from the real element onto our
+      ! 'reference' element.
+      Dr(1) = 0.25_DP * (Dvert(1,1) + Dvert(1,2) + Dvert(1,3) + Dvert(1,4))
+      Dr(2) = 0.25_DP * (Dvert(2,1) + Dvert(2,2) + Dvert(2,3) + Dvert(2,4))
+      Ds(1,1) =   0.5_DP * (Dvert(2,3) + Dvert(2,4)) - Dr(2)
+      Ds(1,2) = -(0.5_DP * (Dvert(1,3) + Dvert(1,4)) - Dr(1))
+      Ds(2,1) = -(0.5_DP * (Dvert(2,2) + Dvert(2,3)) - Dr(2))
+      Ds(2,2) =   0.5_DP * (Dvert(1,2) + Dvert(1,3)) - Dr(1)
+      ddets = 1.0_DP / (Ds(1,1)*Ds(2,2) - Ds(1,2)*Ds(2,1))
+      Ds(1,1) = ddets*Ds(1,1)
+      Ds(1,2) = ddets*Ds(1,2)
+      Ds(2,1) = ddets*Ds(2,1)
+      Ds(2,2) = ddets*Ds(2,2)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 3: Map 1D cubature points onto the real edges
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! Map the 1D cubature points onto the real edges and calculate the
+      ! integration weighting factors in this step.
+      do j = 1, 4
+        ! jacobi determinant of the mapping
+        dt = 0.5_DP * sqrt((Dvert(1,mod(j,4)+1)-Dvert(1,j))**2 &
+                          +(Dvert(2,mod(j,4)+1)-Dvert(2,j))**2)
+        do i = 1, NCUB1D
+          DedgePoints(1,i,j) = Dvert(1,j)*0.5_DP*(1.0_DP - DcubPts1D(i)) &
+                    + Dvert(1,mod(j,4)+1)*0.5_DP*(1.0_DP + DcubPts1D(i))
+          DedgePoints(2,i,j) = Dvert(2,j)*0.5_DP*(1.0_DP - DcubPts1D(i)) &
+                    + Dvert(2,mod(j,4)+1)*0.5_DP*(1.0_DP + DcubPts1D(i))
+          DedgeWeights(i,j) = dt * DcubOmega1D(i)
+        end do
+      end do
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 4: Map 2D cubature points onto the real element
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Map the 2D cubature points onto the real element and calculate the
+      ! integration weighting factors in this step.
+      ! TODO: Replace by Q2-mapping later.
+      call trafo_prepJac_quad2D(Dvert, DjacPrep)
+      do i = 1, NCUB2D
+        call trafo_calcTrafo_quad2d(DjacPrep, DjacTrafo, dt, &
+            DcubPts2D(1,i), DcubPts2D(2,i), DquadPoints(1,i), DquadPoints(2,i))
+        DquadWeights(i) = dt * DcubOmega2D(i)
+      end do
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 5: Calculate edge lengths and quad area
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Calculate the inverse of the edge lengths - we will need them for
+      ! scaling later...
+      do j = 1, 4
+        dt = 0.0_DP
+        do i = 1, NCUB1D
+          dt = dt + DedgeWeights(i,j)
+        end do
+        DedgeLen(j) = 1.0_DP / dt
+      end do
+      
+      ! ...and also calculate the inverse of the element`s area.
+      dt = 0.0_DP
+      do i = 1, NCUB2D
+        dt = dt + DquadWeights(i)
+      end do
+      dquadArea = 1.0_DP / dt
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 6: Build coefficient matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! Clear coefficient matrix
+      Da = 0.0_DP
+
+      ! Loop over all edges of the quad
+      do j = 1, 4
+      
+        ! Loop over all cubature points on the current edge
+        do i = 1, NCUB1D
+        
+          ! Apply inverse affine trafo to get (x,y)
+          dx = Ds(1,1)*(DedgePoints(1,i,j)-Dr(1)) &
+             + Ds(1,2)*(DedgePoints(2,i,j)-Dr(2))
+          dy = Ds(2,1)*(DedgePoints(1,i,j)-Dr(1)) &
+             + Ds(2,2)*(DedgePoints(2,i,j)-Dr(2))
+          
+          ! Integral-Mean over the edges
+          ! ----------------------------
+          dt = DedgeWeights(i,j) * DedgeLen(j)
+
+          Da(1,j) = Da(1,j) + dt
+          Da(2,j) = Da(2,j) + dx*dt
+          Da(3,j) = Da(3,j) + dy*dt
+          Da(4,j) = Da(4,j) + dx*dy*dt
+          Da(5,j) = Da(5,j) + (dx**2 - dy**2)*dt
+
+        end do ! i
+      
+      end do ! j
+      
+      ! Loop over all 2D cubature points
+      do i = 1, NCUB2D
+
+        ! Apply inverse affine trafo to get (x,y)
+        dx = Ds(1,1)*(DquadPoints(1,i)-Dr(1)) &
+           + Ds(1,2)*(DquadPoints(2,i)-Dr(2))
+        dy = Ds(2,1)*(DquadPoints(1,i)-Dr(1)) &
+           + Ds(2,2)*(DquadPoints(2,i)-Dr(2))
+        
+        ! Integral-Mean over the element
+        ! ------------------------------
+        dt = DquadWeights(i) * dquadArea *dx * dy
+      
+        Da(1,5) = Da(1,5) + dt
+        Da(2,5) = Da(2,5) + dx*dt
+        Da(3,5) = Da(3,5) + dy*dt
+        Da(4,5) = Da(4,5) + dx*dy*dt
+        Da(5,5) = Da(5,5) + (dx**2 - dy**2)*dt
+
+      end do ! i
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 7: Invert coefficient matrix
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! Call the 'direct' inversion routine for 5x5 systems
+      call mprim_invert5x5MatrixDirectDble(Da, Dc, bsuccess)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 8: Evaluate function values
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_FUNC2D)) then
+      
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+        
+          ! Apply inverse affine trafo to get (x,y)
+          dx = Ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-Dr(1)) &
+             + Ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-Dr(2))
+          dy = Ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-Dr(1)) &
+             + Ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-Dr(2))
+        
+          ! Evaluate basis functions
+          do i = 1, NBAS
+
+            Dbas(i,DER_FUNC2D,ipt,iel) = Dc(i,1) + dx*(Dc(i,2) + dx*Dc(i,5)) &
+                                 + dx*dy*Dc(i,4) + dy*(Dc(i,3) - dy*Dc(i,5))
+
+          end do ! i
+              
+        end do ! ipt
+      
+      end if ! function values evaluation
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 9: Evaluate derivatives
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+        
+          ! Apply inverse affine trafo to get (x,y)
+          dx = Ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-Dr(1)) &
+             + Ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-Dr(2))
+          dy = Ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-Dr(1)) &
+             + Ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-Dr(2))
+          
+          ! Evaluate derivatives
+          do i = 1, NBAS
+          
+            ! Calculate 'reference' derivatives
+            derx = Dc(i,2) + dy*Dc(i,4) + 2.0_DP*dx*Dc(i,5)
+            dery = Dc(i,3) + dx*Dc(i,4) - 2.0_DP*dy*Dc(i,5)
+
+            ! Calculate 'real' derivatives
+            Dbas(i,DER_DERIV2D_X,ipt,iel) = Ds(1,1)*derx + Ds(2,1)*dery
+            Dbas(i,DER_DERIV2D_Y,ipt,iel) = Ds(1,2)*derx + Ds(2,2)*dery
+            
+          end do ! i
+          
+        end do ! ipt
+        
+      end if ! derivatives evaluation
+
+    end do ! iel
+    
+    ! That is it
+
+  end subroutine
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_EN30_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The EN30_2D element is specified by four polynomials per element.
   !
   ! The basis polynomials are constructed from the following set of monomials:
   !
@@ -8830,7 +9194,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EM31_2D (celement, reval, Bder, Dbas)
+  pure subroutine elem_eval_EN31_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9691,7 +10055,7 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EM50_2D (celement, reval, Bder, Dbas)
+  pure subroutine elem_eval_EN50_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9700,7 +10064,7 @@ contains
 !</description>
 
 !<input>
-  ! The element specifier, must be EL_EM50_2D.
+  ! The element specifier, must be EL_EN50_2D.
   integer(I32), intent(in)                       :: celement
   
   ! t_evalElementSet-structure that contains cell-specific information and
@@ -9732,7 +10096,7 @@ contains
 
   ! Element Description
   ! -------------------
-  ! The EM50_2D element is specified by nine polynomials per element.
+  ! The EN50_2D element is specified by nine polynomials per element.
   !
   ! The basis polynomials are constructed from the following set of monomials:
   !

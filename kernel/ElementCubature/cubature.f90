@@ -25,40 +25,43 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) cub_igetID
-!#     -> Interpret a string as cubature type identifier. This is typically
-!#        used for parsing INI files.
+!#  1.) cub_igetID
+!#      -> Interpret a string as cubature type identifier. This is typically
+!#         used for parsing INI files.
 !#
-!# 2.) cub_igetNumPts
-!#     -> Returns the number of points for a given cubature type identifier.
+!#  2.) cub_igetNumPts
+!#      -> Returns the number of points for a given cubature type identifier.
 !#
-!# 3.) cub_igetShape
-!#     -> Returns the element shape identifier on which a cubature formula
-!#        is defined.
+!#  3.) cub_igetShape
+!#      -> Returns the element shape identifier on which a cubature formula
+!#         is defined.
 !#
-!# 4.) cub_igetCoordDim
-!#     -> Returns the dimension of the coordinates for a given cubature
-!#        type identifier.
+!#  4.) cub_igetCoordDim
+!#      -> Returns the dimension of the coordinates for a given cubature
+!#         type identifier.
 !#
-!# 5.) cub_getCubature
-!#     -> Returns the cubature points and weights for a given cubature type
-!#        identifier.
+!#  5.) cub_getCubature
+!#      -> Returns the cubature points and weights for a given cubature type
+!#         identifier.
 !#
-!# 6.) cub_getCubPoints
-!#     => DEPRECATED: See note below.
-!#     -> Get information about cubature points for a specific cubature
-!#        formula: Coordinates, number and weights.
+!#  6.) cub_getCubPoints
+!#      => DEPRECATED: See note below.
+!#      -> Get information about cubature points for a specific cubature
+!#         formula: Coordinates, number and weights.
 !#
-!# 7.) cub_getStdCubType
-!#     -> For summed cubature formulas: Determine the underlying standard
-!#        cubature formula
+!#  7.) cub_getStdCubType
+!#      -> For summed cubature formulas: Determine the underlying standard
+!#         cubature formula
 !#
-!# 8.) cub_getRefLevels
-!#     -> Determine the number of refinements of the reference element
-!#        for summed cubature formulas.
+!#  8.) cub_getRefLevels
+!#      -> Determine the number of refinements of the reference element
+!#         for summed cubature formulas.
 !#
-!# 9.) cub_getSummedCubType
-!#     -> Get the ID of a summed cubature formula.
+!#  9.) cub_getSummedCubType
+!#      -> Get the ID of a summed cubature formula.
+!#
+!# 10.) cub_getName
+!#      -> Returns the name of the cubature formula as a string.
 !#
 !#
 !# A note on cub_getCubPoints and cub_getCubature
@@ -390,12 +393,14 @@ module cubature
   public :: cub_getStdCubType
   public :: cub_getRefLevels
   public :: cub_getSummedCubType
+  public :: cub_getName
   
 contains
 
   !****************************************************************************
 
-!<function>  
+!<function>
+
   integer(I32) function cub_igetID(scubName, bcheck)
   
 !<description>
@@ -407,7 +412,7 @@ contains
   ! id of the cubature formula
 !</result>
 
-  !<input>
+!<input>
 
   !cubature formula name - one of the CUB_xxxx constants.
   character (LEN=*) :: scubName
@@ -416,7 +421,7 @@ contains
   ! name is invalid, the program is not stopped, but 0 is returned.
   logical, intent(in), optional :: bcheck
 
-  !</input>
+!</input>
   
 !</function>
 
@@ -560,6 +565,168 @@ contains
   end if
     
   end function cub_igetID
+
+  ! ***************************************************************************
+
+!<function>
+
+  character(len=32) function cub_getName(ccubature) result(sname)
+
+!<description>
+  ! This function returns a string which represents the cubature formula name.
+  !
+  ! This function is constructed in a way such that for any valid cubature
+  ! rule identifier ccubature, the equation 
+  ! <verb>
+  !   cub_igetID(cub_getName(ccubature)) = ccubature
+  ! </verb>
+  ! holds.
+  !
+  ! However, please note that for a string scubature representing a valid
+  ! cubature rule name, the equation
+  ! <verb>
+  !   cub_getName(cub_igetID(scubature)) = scubature
+  ! </verb>
+  ! does *not* hold in the general case as some cubature rules have multiple
+  ! valid names, e.g. G2_2D and G2X2.
+!</description>
+
+!<input> 
+  ! The cubature formula whose name is to be returned.
+  integer(I32), intent(in) :: ccubature
+!</input>
+
+!<result>
+  ! A string representing the name of the element.
+!</result>
+
+!</function>
+
+    select case(ccubature)
+    ! 1D formulas, line
+    case (CUB_G1_1D)
+      sname = 'G1_1D'
+    case (CUB_G2_1D)
+      sname = 'G2_1D'
+    case (CUB_G3_1D)
+      sname = 'G3_1D'
+    case (CUB_G4_1D)
+      sname = 'G4_1D'
+    case (CUB_G5_1D)
+      sname = 'G5_1D'
+    case (CUB_G6_1D)
+      sname = 'G6_1D'
+    case (CUB_TRZ_1D)
+      sname = 'TRZ_1D'
+    case (CUB_SIMPSON_1D)
+      sname = 'SIMPSON_1D'
+    case (CUB_PULCHERIMA_1D)
+      sname = 'PULCHERIMA_1D'
+    case (CUB_MILNE_1D)
+      sname = 'MILNE_1D'
+    case (CUB_6POINT_1D)
+      sname = '6POINT_1D'
+    case (CUB_WEDDLE_1D)
+      sname = 'WEDDLE_1D'
+
+    ! 2D formulas, quadrilateral
+    case (CUB_G1_2D)      ! alias: CUB_G1X1
+      sname = 'G1_2D'
+    case (CUB_G2_2D)      ! alias: CUB_G2X2
+      sname = 'G2_2D'
+    case (CUB_G3_2D)      ! alias: CUB_G3X3
+      sname = 'G3_2D'
+    case (CUB_G4_2D)      ! alias: CUB_G4X4
+      sname = 'G4_2D'
+    case (CUB_G5_2D)      ! alias: CUB_G5X5
+      sname = 'G5_2D'
+    case (CUB_G6_2D)
+      sname = 'G6_2D'
+    case (CUB_TRZ_2D)     ! alias: CUB_TRZ
+      sname = 'TRZ_2D'
+    case (CUB_MID_2D)     ! alias: CUB_MID
+      sname = 'MID_2D'
+    case (CUB_SIMPSON_2D) ! alias: CUB_SIMPSON
+      sname = 'SIMPSON_2D'
+    case (CUB_NS1)
+      sname = 'NS1'
+    case (CUB_NS2)
+      sname = 'NS2'
+    case (CUB_NS3)
+      sname = 'NS3'
+    case (CUB_G)
+      sname = 'G'
+    case (CUB_PG1X1)
+      sname = 'PG1X1'
+    case (CUB_PG2X2)
+      sname = 'PG2X2'
+    case (CUB_PG3X3)
+      sname = 'PG3X3'
+    case (CUB_PTRZ)
+      sname = 'PTRZ'
+
+    ! 2D formulas, triangle
+    case (CUB_G1_T)
+      sname = 'G1_T'
+    case (CUB_G3_T)
+      sname = 'G3_T'
+    case (CUB_TRZ_T)
+      sname = 'TRZ_T'
+    case (CUB_COLLATZ)
+      sname = 'COLLATZ'
+    case (CUB_VMC)
+      sname = 'VMC'
+
+    ! 3D formulas, hexahedron
+    case (CUB_G1_3D)
+      sname = 'G1_3D'
+    case (CUB_G2_3D)
+      sname = 'G2_3D'
+    case (CUB_G3_3D)
+      sname = 'G3_3D'
+    case (CUB_G4_3D)
+      sname = 'G4_3D'
+    case (CUB_G5_3D)
+      sname = 'G5_3D'
+    case (CUB_G6_3D)
+      sname = 'G6_3D'
+    case (CUB_MIDAREA_3D)
+      sname = 'MIDAREA_3D'
+    case (CUB_TRZ_3D)
+      sname = 'TRZ_3D'
+
+    ! 3D formulas, tetrahedron
+    case (CUB_G1_3D_T)
+      sname = 'G1_3D_T'
+    case (CUB_TRZ_3D_T)
+      sname = 'TRZ_3D_T'
+    case (CUB_S2_3D_T)
+      sname = 'S2_3D_T'
+    case (CUB_S3_3D_T)
+      sname = 'S3_3D_T'
+    case (CUB_S5_3D_T)
+      sname = 'S5_3D_T'
+
+    ! 3D formulas, pyramid
+    case (CUB_G1_3D_Y)
+      sname = 'G1_3D_Y'
+    case (CUB_TRZ_3D_Y)
+      sname = 'TRZ_3D_Y'
+
+    ! 3D formulas, prism
+    case (CUB_G1_3D_R)
+      sname = 'G1_3D_R'
+    case (CUB_G2_3D_R)
+      sname = 'G2_3D_R'
+    case (CUB_TRZ_3D_R)
+      sname = 'TRZ_3D_R'
+
+    case default
+      sname = '-unknown-'
+
+    end select
+
+  end function
 
   !****************************************************************************
 

@@ -83,6 +83,9 @@
 !# 14.) elem_getNDofLoc
 !#      -> Returns the points of the nodal degrees of freedom for a finite element
 !#
+!# 15.) elem_getName
+!#      -> Returns the name of an element as a string.
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) What is an element and what are Degrees Of Freedoms (DOF`s)?
@@ -303,6 +306,7 @@ module element
   public :: elem_generic
   public :: elem_generic_sim
   public :: elem_getNDofLoc
+  public :: elem_getName
   
   ! Public entities imported from elementbase.f90
   public :: t_evalElement
@@ -444,6 +448,8 @@ module element
   ! all variants (conformal, nonconformal, parametric, nonparametric).
   integer(I32), parameter, public :: EL_Q1TB    = EL_2D + 31
   integer(I32), parameter, public :: EL_Q1TB_2D = EL_Q1TB
+  integer(I32), parameter, public :: EL_Q1TBNP_2D = EL_Q1TB_2D + EL_NONPARAMETRIC
+  integer(I32), parameter, public :: EL_Q1TBNP = EL_Q1TBNP_2D
 
   ! General rotated biquadratic <tex>$\tilde Q_2$</tex> element, all variants.
   integer(I32), parameter, public :: EL_Q2T     = EL_2D + 35
@@ -530,6 +536,7 @@ module element
   ! non-parametric, integral mean value based, new implementation
   integer(I32), parameter, public :: EL_EM30_NEW_3D = EL_Q1T_3D + EL_NONPARAMETRIC &
                                                       + 2**16 + 2**19
+  integer(I32), parameter, public :: EL_EN30_3D = EL_EM30_NEW_3D
 
   ! ID of nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_Q2T_3D  = EL_3D + 50
@@ -537,6 +544,7 @@ module element
 
   ! ID of nonconforming quadrilateral FE, Q2~, non-parametric
   integer(I32), parameter, public :: EL_EM50_3D = EL_Q2T_3D + EL_NONPARAMETRIC
+  integer(I32), parameter, public :: EL_EN50_3D = EL_EM50_3D
 
   ! ID of discontinous parametric linear hexahedron FE, P1
   integer(I32), parameter, public :: EL_QP1_3D  = EL_3D + 21
@@ -588,6 +596,7 @@ module element
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based; new interface implementations
   integer(I32), parameter, public :: EL_EM30_NEW = EL_Q1T + EL_NONPARAMETRIC + 2**19 + 2**16
+  integer(I32), parameter, public :: EL_EN30_2D = EL_EM30_NEW
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   integer(I32), parameter, public :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
@@ -596,6 +605,7 @@ module element
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   ! new interface implementations
   integer(I32), parameter, public :: EL_EM31_NEW = EL_Q1T + EL_NONPARAMETRIC + 2**19
+  integer(I32), parameter, public :: EL_EN31_2D  = EL_EM31_NEW
   
   ! ID of 'rotated bilinear enhanced' nonconforming quarilateral FE
   integer(I32), parameter, public :: EL_E032    = EL_Q1TB + 2**17
@@ -609,6 +619,7 @@ module element
   ! non-parametric version
   integer(I32), parameter, public :: EL_EM50    = EL_Q2T + EL_NONPARAMETRIC
   integer(I32), parameter, public :: EL_EM50_2D = EL_EM50
+  integer(I32), parameter, public :: EL_EN50_2D = EL_EM50_2D
 
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~ with bubble.
   integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
@@ -806,13 +817,15 @@ contains
       elem_igetID = EL_EM30_UNPIVOTED
     else if (selem .eq. "EL_EM30_UNSCALED") then
       elem_igetID = EL_EM30_UNSCALED
-    else if (selem .eq. "EL_EM30_NEW") then
+    else if (selem .eq. "EL_EM30_NEW" .or. selem .eq. "EL_EN30_2D") then
       elem_igetID = EL_EM30_NEW
-    else if (selem .eq. "EL_EM31_NEW") then
+    else if (selem .eq. "EL_EM31_NEW" .or. selem .eq. "EL_EN31_2D") then
       elem_igetID = EL_EM31_NEW
     else if (selem .eq. "EL_Q1TB" .or. selem .eq. "EL_Q1TB_2D" .or. &
              selem .eq. "EL_EB30" .or. selem .eq. "EL_EB30_2D") then
       elem_igetID = EL_Q1TB_2D
+    else if (selem .eq. "EL_Q1TBNP" .or. selem .eq. "EL_Q1TBNP_2D") then
+      elem_igetID = EL_Q1TBNP_2D
     else if (selem .eq. "EL_E032" .or. selem .eq. "EL_E032_2D") then
       elem_igetID = EL_E032_2D
     else if (selem .eq. "EL_Q2T" .or. selem .eq. "EL_Q2T_2D" .or. &
@@ -853,7 +866,7 @@ contains
       elem_igetID = EL_E030_3D
     else if (selem .eq. "EL_EM30_3D") then
       elem_igetID = EL_EM30_3D
-    else if (selem .eq. "EL_EM30_NEW_3D") then
+    else if (selem .eq. "EL_EM30_NEW_3D" .or. selem .eq. "EL_EN30_3D") then
       elem_igetID = EL_EM30_NEW_3D
     else if (selem .eq. "EL_Q2T_3D" .or. selem .eq. "EL_E050_3D") then
       elem_igetID = EL_E050_3D
@@ -887,7 +900,180 @@ contains
     end if
   
   end function
-  
+
+  ! ***************************************************************************
+
+!<function>
+
+  character(len=32) function elem_getName(celement) result(sname)
+
+!<description>
+  ! This function returns a string which represents the elements name.
+  !
+  ! This function is constructed in a way such that for any valid element
+  ! identifier celement, the equation 
+  ! <verb>
+  !   elem_igetID(elem_getName(celement)) = celement
+  ! </verb>
+  ! holds.
+  !
+  ! However, please note that for a string selement representing a valid
+  ! element name, the equation
+  ! <verb>
+  !   elem_getName(elem_igetID(selement)) = selement
+  ! </verb>
+  ! does *not* hold in the general case as some elements have multiple
+  ! valid names, e.g. EL_Q1T_2D and EL_E030_2D.
+!</description>
+
+!<input> 
+  ! The element whose name is to be returned.
+  integer(I32), intent(in) :: celement
+!</input>
+
+!<result>
+  ! A string representing the name of the element.
+!</result>
+
+!</function>
+
+    select case(celement)
+    ! -= 1D Line Elements =-
+    case (EL_P0_1D)
+      sname = 'EL_P0_1D'
+    case (EL_P1_1D)
+      sname = 'EL_P1_1D'
+    case (EL_P2_1D)
+      sname = 'EL_P2_1D'
+    case (EL_S31_1D)  ! cubic Hermite element
+      sname = 'EL_S31_1D'
+    case (EL_DG_T0_1D)
+      sname = 'EL_DG_T0_1D'
+    case (EL_DG_T1_1D)
+      sname = 'EL_DG_T1_1D'
+    case (EL_DG_T2_1D)
+      sname = 'EL_DG_T2_1D'
+
+    ! -= 2D Triangle Elements =-
+    case (EL_P0_2D)
+      sname = 'EL_P0_2D'
+    case (EL_P1_2D)
+      sname = 'EL_P1_2D'
+    case (EL_P2_2D)
+      sname = 'EL_P2_2D'
+    case (EL_P3_2D)   ! not implemented
+      sname = 'EL_P3_2D'
+    case (EL_P1T_2D)
+      sname = 'EL_P1T_2D'
+
+    ! -= 2D Quadrilateral Elements =-
+    ! H1-conforming elements
+    case (EL_Q1_2D)
+      sname = 'EL_Q1_2D'
+    case (EL_EM11_2D)       ! non-parametric variant of EL_Q1_2D; does not work!
+      sname = 'EL_EM11_2D'
+    case (EL_Q2_2D)
+      sname = 'EL_Q2_2D'
+    case (EL_Q2H_2D)
+      sname = 'EL_Q2H_2D'
+    case (EL_Q3_2D)         ! not implemented
+      sname = 'EL_Q3_2D'
+    ! discontinous elements
+    case (EL_Q0_2D)
+      sname = 'EL_Q0_2D'
+    case (EL_QP1_2D)
+      sname = 'EL_QP1_2D'
+    case (EL_QP1NP_2D)      ! non-parametric variant of EL_QP1_2D
+      sname = 'EL_QP1NP_2D'
+    case (EL_QP1NPD_2D)
+      sname = 'EL_QP1NPD_2D'
+    ! H1-nonconforming elements
+    case (EL_E030_2D)       ! alias: EL_Q1T_2D
+      sname = 'EL_E030_2D'
+    case (EL_EM30_2D)       ! non-parametric variant of EL_E030_2D
+      sname = 'EL_EM30_2D'
+    case (EL_EN30_2D)       ! alias: EL_EM30_NEW
+      sname = 'EL_EN30_2D'
+    case (EL_EM30_UNPIVOTED)
+      sname = 'EL_EM30_UNPIVOTED'
+    case (EL_EM30_UNSCALED)
+      sname = 'EL_EM30_UNSCALED'
+    case (EL_E031_2D)
+      sname = 'EL_E031_2D'
+    case (EL_EM31_2D)       ! non-parametric variant of EL_E031_2D
+      sname = 'EL_EM31_2D'
+    case (EL_EN31_2D)       ! alias: EL_EM31_NEW
+      sname = 'EL_EN31_2D'
+    case (EL_EB30_2D)       ! alias: EL_Q1TB_2D
+      sname = 'EL_EB30_2D'
+    case (EL_Q1TBNP_2D)     ! non-parametric variant of EL_EB30_2D
+      sname = 'EL_Q1TBNP_2D'
+    case (EL_E032_2D)
+      sname = 'EL_E032_2D'
+    case (EL_E050_2D)       ! alias: EL_Q2T_2D
+      sname = 'EL_E050_2D'
+    case (EL_EN50_2D)
+      sname = 'EL_EN50_2D'  ! non-parametric variant of EL_E050_2D
+    case (EL_EB50_2D)
+      sname = 'EL_EB50_2D'  ! alias: EL_Q2TB_2D
+    ! discontinous Galerkin elements
+    case (EL_DG_T0_2D)
+      sname = 'EL_DG_T0_2D'
+    case (EL_DG_T1_2D)
+      sname = 'EL_DG_T1_2D'
+    case (EL_DG_T2_2D)
+      sname = 'EL_DG_T2_2D'
+
+    ! -= 3D Tetrahedron Elements =-
+    case (EL_P0_3D)
+      sname = 'EL_P0_3D'
+    case (EL_P1_3D)
+      sname = 'EL_P1_3D'
+
+    ! -= 3D Hexahedron Elements =-
+    case (EL_Q0_3D)
+      sname = 'EL_Q0_3D'
+    case (EL_Q1_3D)
+      sname = 'EL_Q1_3D'
+    case (EL_Q2_3D)
+      sname = 'EL_Q2_3D'
+    case (EL_QP1_3D)
+      sname = 'EL_QP1_3D'
+    case (EL_QP1NP_3D)      ! non-parametric variant of EL_QP1_3D
+      sname = 'EL_QP1NP_3D'
+    case (EL_E030_3D)
+      sname = 'EL_E030_3D'
+    case (EL_EM30_3D)       ! non-parametric variant of EL_E030_3D
+      sname = 'EL_EM30_3D'
+    case (EL_EN30_3D)       ! alias: EL_EM30_NEW_3D
+      sname = 'EL_EN30_3D'
+    case (EL_E031_3D)       ! alias: EL_Q1T_3D
+      sname = 'EL_E031_3D'
+    case (EL_E050_3D)       ! alias: EL_Q2T_3D
+      sname = 'EL_E050_3D'
+    case (EL_EN50_3D)       ! non-parametric variant of EL_E050_3D
+      sname = 'EL_EN50_3D'
+
+    ! -= 3D Pyramid Elements =-
+    case (EL_Y0_3D)
+      sname = 'EL_Y0_3D'
+    case (EL_Y1_3D)
+      sname = 'EL_Y1_3D'
+
+    ! -= 3D Prism Elements =-
+    case (EL_R0_3D)
+      sname = 'EL_R0_3D'
+    case (EL_R1_3D)
+      sname = 'EL_R1_3D'
+
+    case default
+      ! unknown element id
+      sname = '-unknown-'
+
+    end select
+
+  end function
+
   ! ***************************************************************************
 
 !<function>  
@@ -1325,6 +1511,7 @@ contains
       elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
     case (EL_Q1 +EL_NONPARAMETRIC, &
           EL_Q1T+EL_NONPARAMETRIC, &
+          EL_Q1TB+EL_NONPARAMETRIC,&
           EL_Q2T+EL_NONPARAMETRIC)
       ! EM11, EM30, EM31, EM50; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
@@ -1929,15 +2116,17 @@ contains
         call elem_QP1NP (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
         call elem_EM30 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_EM30_NEW)
+      case (EL_EN30_2D)
         bwrapSim2 = .true.
       case (EL_E030)
         call elem_E030 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EB30)
         call elem_EB30 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_Q1TBNP)
+        bwrapSim2 = .true.
       case (EL_EM31)
         call elem_EM31 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_EM31_NEW)
+      case (EL_EN31_2D)
         bwrapSim2 = .true.
       case (EL_E031)
         call elem_E031 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -1947,7 +2136,7 @@ contains
         call elem_E050 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EB50)
         call elem_EB50 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_EM50)
+      case (EL_EN50_2D)
         bwrapSim2 = .true.
       case (EL_DG_T0_2D)
         call elem_DG_T0_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -2767,9 +2956,9 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
     
-    case (EL_EM30_NEW)
+    case (EL_EN30_2D)
       ! new implementation of 2D EM30
-      call elem_eval_EM30_2D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_EN30_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E030)
       call elem_E030_sim (celement, revalElementSet%p_Dcoords, &
@@ -2782,6 +2971,10 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+    
+    case (EL_Q1TBNP)
+      ! non-parametric variant of EB30
+      call elem_eval_Q1TBNP_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_EM31)
       call elem_EM31_sim (celement, revalElementSet%p_Dcoords, &
@@ -2789,9 +2982,9 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
     
-    case (EL_EM31_NEW)
+    case (EL_EN31_2D)
       ! new implementation of 2D EM31
-      call elem_eval_EM31_2D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_EN31_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E031)
       call elem_E031_sim (celement, revalElementSet%p_Dcoords, &
@@ -2820,7 +3013,7 @@ contains
       call elem_eval_EB50_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_EM50)
-      call elem_eval_EM50_2D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_EN50_2D(celement, revalElementSet, Bder, Dbas)
          
     case (EL_DG_T0_2D)
       call elem_DG_T0_2D_sim (celement, revalElementSet%p_Dcoords, &
@@ -2883,9 +3076,9 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
 
-    case (EL_EM30_NEW_3D)
+    case (EL_EN30_3D)
       ! new implementation of 3D EM30
-      call elem_eval_EM30_3D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_EN30_3D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E030_3D)
       call elem_E030_3D_sim (celement, revalElementSet%p_Dcoords, &
@@ -2902,8 +3095,8 @@ contains
     case (EL_E050_3D)
       call elem_eval_E050_3D(celement, revalElementSet, Bder, Dbas)
         
-    case (EL_EM50_3D)
-      call elem_eval_EM50_3D(celement, revalElementSet, Bder, Dbas)
+    case (EL_EN50_3D)
+      call elem_eval_EN50_3D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 3D pyramid elements
