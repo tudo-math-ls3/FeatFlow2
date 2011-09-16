@@ -73,8 +73,8 @@ contains
   integer, dimension(:), pointer :: p_Isort
   integer :: NLMIN, NLMAX,ierror
   integer :: i,j,k,n,iseed,cavrgType,cfilterPrjMat,csmoother,csmoothType,nsmoothSteps,&
-      cdumpSysMat, cdumpPrjMat, cdumpRhsVec, cdumpSolVec
-  real(DP) :: ddamping
+      cdumpSysMat, cdumpPrjMat, cdumpRhsVec, cdumpSolVec, ccycle, imaxIter
+  real(DP) :: ddamping, depsRel
 
     ! Fetch all necessary parameters
     call parlst_getvalue_string(rparam, '', 'SPRMFILE', sprmfile, '')
@@ -91,6 +91,10 @@ contains
 
     call parlst_getvalue_int(rparam, '', 'CAVRGTYPE', cavrgType, 1)
     call parlst_getvalue_int(rparam, '', 'CFILTERPRJMAT', cfilterPrjMat, 0)
+
+    call parlst_getvalue_int(rparam, '', 'CCYCLE', ccycle, 0)
+    call parlst_getvalue_double(rparam, '', 'DEPSREL', depsRel, 1E-8_DP)
+    call parlst_getvalue_int(rparam, '', 'IMAXITER', imaxIter, 50)
 
     call parlst_getvalue_int(rparam, '', 'CSMOOTHER', csmoother, 1)
     call parlst_getvalue_int(rparam, '', 'CSMOOTHTYPE', csmoothType, 3)
@@ -118,6 +122,9 @@ contains
     call output_line('ISEED          = ' // trim(sys_sil(iseed,12)))
     call output_line('CARVGTYPE      = ' // trim(sys_sil(cavrgType,4)))
     call output_line('CFILTERPRJMAT  = ' // trim(sys_sil(cfilterPrjMat,4)))
+    call output_line('CCYCLE         = ' // trim(sys_sil(ccycle,4)))
+    call output_line('DEPSREL        = ' // trim(sys_sdEP(depsRel, 20, 12)))
+    call output_line('IMAXITER       = ' // trim(sys_sil(imaxIter,8)))
     call output_line('CSMOOTHER      = ' // trim(sys_sil(csmoother,4)))
     call output_line('CSMOOTHTYPE    = ' // trim(sys_sil(csmoothType,4)))
     call output_line('NSMOOTHSTEPS   = ' // trim(sys_sil(nsmoothSteps,4)))
@@ -358,6 +365,15 @@ contains
     
     ! Set the output level of the solver to 2 for some output
     p_rsolver%ioutputLevel = 2
+
+    ! set stopping criterion
+    p_rsolver%depsRel = depsRel
+
+    ! set maximum iterations
+    p_rsolver%nmaxIterations = imaxIter
+
+    ! set cycle
+    p_rsolver%p_rsubnodeMultigrid2%icycle = ccycle
     
     ! Attach the system matrices to the solver.
     allocate(Rmatrices(NLMIN:NLMAX))

@@ -10,7 +10,7 @@ NLMIN = 2
 NLMAX = 5
 
 # element and cubature to be used
-SELEMENT = EL_EM30_NEW
+SELEMENT = EL_Q1
 SCUBATURE = G3_2D
 
 # sorting strategy identifier
@@ -35,6 +35,18 @@ CAVRGTYPE = 1
 # 0: do not filter (default)
 # 1: impose Dirichlet BCs
 CFILTERPRJMAT = 0
+
+# Multigrid cycle
+# 0: F-cycle (default)
+# 1: V-cycle
+# 2: W-cycle
+CCYCLE = 0
+
+# relative stopping criterion for MG
+DEPSREL = 1E-8
+
+# Maximum number of MG iterations
+IMAXITER = 50
 
 # Smoother
 # 0: Jacobi (default)
