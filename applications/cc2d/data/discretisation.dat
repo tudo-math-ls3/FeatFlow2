@@ -253,6 +253,8 @@ drhsMultiplyY = 1.0
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
 # 13 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric, solves local system; slower than 12 but more stable)
+# 14 = Q1~(EB30) / Q1~(EB30) / QP1 (parametric, experimental)
+# 15 = Q1~(EB30) / Q1~(EB30) / QP1 (nonparametric, experimental)
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
 # 30 = P1~(E020) / P1~(E020) / P0 
 

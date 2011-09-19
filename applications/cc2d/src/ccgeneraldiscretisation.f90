@@ -499,6 +499,16 @@ contains
       ieltypeP = EL_QP1NPD
       bquadallowed = .true.
 
+    case (14)
+      ieltypeUV = EL_Q1TB_2D
+      ieltypeP = EL_QP1
+      bquadallowed = .true.
+
+    case (15)
+      ieltypeUV = EL_Q1TBNP_2D
+      ieltypeP = EL_QP1NPD
+      bquadallowed = .true.
+
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
@@ -667,6 +677,14 @@ contains
 
     case (13)
       ieltypeUV = EL_Q2
+      ieltypeP = EL_QP1NPD
+
+    case (14)
+      ieltypeUV = EL_Q1TB_2D
+      ieltypeP = EL_QP1
+
+    case (15)
+      ieltypeUV = EL_Q1TBNP_2D
       ieltypeP = EL_QP1NPD
 
     case (20)
