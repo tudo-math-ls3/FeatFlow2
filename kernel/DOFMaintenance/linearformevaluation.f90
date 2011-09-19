@@ -5720,6 +5720,7 @@ contains
 !<input>
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
+  optional :: fcoeff_buildVectorSc_sim
 
   ! OPTIONAL: Whether to clear the vector before calculating the entries.
   ! If not given, .TRUE. is used.
@@ -5755,12 +5756,17 @@ contains
     if(present(bclear)) bclear2 = bclear
 
     ! assemble
-    if(present(rcollection)) then
-      call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-          rvector, fcoeff_buildVectorSc_sim, rcollection)
+    if(present(fcoeff_buildVectorSc_sim)) then
+      if(present(rcollection)) then
+        call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
+            rvector, fcoeff_buildVectorSc_sim, rcollection)
+      else
+        call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
+            rvector, fcoeff_buildVectorSc_sim)
+      end if
     else
       call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-          rvector, fcoeff_buildVectorSc_sim)
+          rvector)
     end if
 
   end subroutine
