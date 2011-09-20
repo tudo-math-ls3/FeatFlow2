@@ -138,7 +138,8 @@
 		<File RelativePath="..\..\..\kernel\LinearSystem\matrixmodification.f90"/></Filter>
 		<Filter Name="Mathematics">
 		<File RelativePath="..\..\..\kernel\Mathematics\adjacency.f90"/>
-		<File RelativePath="..\..\..\kernel\Mathematics\mprimitives.f90"/></Filter>
+		<File RelativePath="..\..\..\kernel\Mathematics\mprimitives.f90"/>
+		<File RelativePath="..\..\..\kernel\Mathematics\random.f90"/></Filter>
 		<Filter Name="hierarchies">
 		<File RelativePath="..\..\..\kernel\Hierarchies\fespacehierarchybase.f90"/>
 		<File RelativePath="..\..\..\kernel\Hierarchies\fespacehierarchy.f90"/>
