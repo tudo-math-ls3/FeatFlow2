@@ -1103,7 +1103,7 @@ contains
               rproblemLevel%Rmatrix(templateMatrix),&
               .false., .false., .true.)
         else
-          call afcstab_generateExtSparsity(&
+          call afcstab_genExtSparsity(&
               rproblemLevel%Rmatrix(templateMatrix),&
               rproblemLevel%Rmatrix(jacobianMatrix))
         end if
@@ -1115,7 +1115,7 @@ contains
               LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
         else
-          call afcstab_generateExtSparsity(&
+          call afcstab_genExtSparsity(&
               rproblemLevel%Rmatrix(templateMatrix),&
               rproblemLevel%Rmatrix(jacobianMatrix))
 
@@ -1894,7 +1894,7 @@ contains
         rafcstab%ctypePrelimiting   = AFCSTAB_PRELIMITING_NONE
         rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
-        call afcstab_generateVerticesAtEdge(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
+        call afcstab_genEdgeList(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes
         call gfsc_buildFluxFCT(rafcstab, rvectorHigh,&

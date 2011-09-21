@@ -5,7 +5,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixSc_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DcoefficientsAtEdge, rcollection)
+      IedgeList, dscale, nedges, DcoefficientsAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -31,7 +31,7 @@
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

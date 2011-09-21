@@ -4,7 +4,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcFailsafe(IverticesAtEdgeIdx, IverticesAtEdge,&
+  subroutine fcb_calcFailsafe(IedgeListIdx, IedgeList,&
       NEDGE, NEQ, NVAR, ndim1, ndim2, ioperationSpec, dscale, dtol,&
       ML, Dx, Dalpha, Dflux, bisAccepted, Dbeta, rcollection)
       
@@ -43,10 +43,10 @@
     real(DP), dimension(:), intent(in) :: ML
 
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge   
+    integer, dimension(:,:), intent(in) :: IedgeList   
 !</input>
 
 !<inputoutput>

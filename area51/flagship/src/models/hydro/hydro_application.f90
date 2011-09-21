@@ -2084,7 +2084,7 @@ contains
         rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
-        call afcstab_generateVerticesAtEdge(&
+        call afcstab_genEdgeList(&
             p_rconsistentMassMatrix, rafcstab)
         
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any

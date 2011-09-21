@@ -4,7 +4,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcCorrection(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE,&
+  subroutine fcb_calcCorrection(IedgeListIdx, IedgeList, NEDGE,&
       NEQ, NVAR, ndim1, ndim2, dscale, Dx, Dalpha, Dflux, Dy, ML, rcollection)
 
     use fsystem
@@ -40,10 +40,10 @@
     real(DP), intent(in) :: dscale
 
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL :: Lumped mass matrix
     real(DP), dimension(:), intent(in), optional :: ML

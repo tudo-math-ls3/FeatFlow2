@@ -532,7 +532,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatRusConvIntlP2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -553,7 +553,7 @@ contains
     real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -603,21 +603,21 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient  $k_{ji} = v_i*Cx_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient  $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient  $k_{ji} = -v_i*Cx_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       !---------------------------------------------------------------------------
@@ -625,8 +625,8 @@ contains
       !---------------------------------------------------------------------------
 
       ! Compute base indices
-      idx = 4*(IverticesAtEdge(1,iedge)-1)
-      jdx = 4*(IverticesAtEdge(2,iedge)-1)
+      idx = 4*(IedgeList(1,iedge)-1)
+      jdx = 4*(IedgeList(2,iedge)-1)
       
       ! Compute auxiliary variables
       ui = p_DsolutionHydro(idx+2)/p_DsolutionHydro(idx+1)
@@ -755,7 +755,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatRusConvIntlD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -776,7 +776,7 @@ contains
     real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -826,21 +826,21 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji] = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji] = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       !-------------------------------------------------------------------------
@@ -848,8 +848,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute base indices
-      idx = 4*(IverticesAtEdge(1,iedge)-1)
-      jdx = 4*(IverticesAtEdge(2,iedge)-1)
+      idx = 4*(IedgeList(1,iedge)-1)
+      jdx = 4*(IedgeList(2,iedge)-1)
       
       ! Compute auxiliary variables
       ui = p_DsolutionHydro(idx+2)/p_DsolutionHydro(idx+1)
@@ -978,7 +978,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatRusConvBlockP2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -999,7 +999,7 @@ contains
     real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -1049,21 +1049,21 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       !---------------------------------------------------------------------------
@@ -1074,8 +1074,8 @@ contains
       neq = size(p_DvelocityX)
 
       ! Get equations i and j
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
       
       ! Compute auxiliary variables
       ui = p_DsolutionHydro(neq  +i)/p_DsolutionHydro(i)
@@ -1204,7 +1204,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatRusConvBlockD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -1225,7 +1225,7 @@ contains
     real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -1275,21 +1275,21 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute convective coefficient $k_{ji] = -v_i*C_{ij}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
-          +p_DvelocityY(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+          (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
       ! Compute convective coefficient $k_{ji] = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
-          (p_DvelocityX(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
-          +p_DvelocityY(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+          (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
 #endif
       
       !---------------------------------------------------------------------------
@@ -1300,8 +1300,8 @@ contains
       neq = size(p_DvelocityX)
       
       ! Get equations i and j
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
 
       ! Compute auxiliary variables
       ui = p_DsolutionHydro(neq  +i)/p_DsolutionHydro(i)

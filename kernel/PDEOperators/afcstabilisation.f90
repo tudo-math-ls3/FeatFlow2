@@ -45,12 +45,12 @@
 !#                              afcstab_getbase_arrayBlock
 !#      -> Returns the array of pointers to a given block matrix
 !#
-!# 11.) afcstab_getbase_IvertAtEdgeIdx
+!# 11.) afcstab_getbase_IedgeListIdx
 !#      -> Returns pointer to the index pointer for the
-!#         vertices at edge structure
+!#         edge structure
 !#
-!# 12.) afcstab_getbase_IverticesAtEdge
-!#      -> Returns pointer to the vertices at edge structure
+!# 12.) afcstab_getbase_IedgeList
+!#      -> Returns pointer to the edge structure
 !#
 !# 13.) afcstab_getbase_IsupdiagEdgeIdx
 !#      -> Returns pointer to the index pointer for the
@@ -81,21 +81,21 @@
 !#                                      afcstab_getbase_FboundsAtEdge
 !#      -> Returns pointer to the bounds at edges
 !#
-!# 20.) afcstab_generateVerticesAtEdge
+!# 20.) afcstab_genEdgeList
 !#      -> Generates the standard edge data structure
 !#
-!# 21.) afcstab_generateOffdiagEdges
+!# 21.) afcstab_genOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 22.) afcstab_generateExtSparsity
+!# 22.) afcstab_genExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 23.) afcstab_copyH2D_IverticesAtEdge
-!#      -> Copies the vertices at edge structure from the host memory
+!# 23.) afcstab_copyH2D_IedgeList
+!#      -> Copies the edge structure from the host memory
 !#         to the device memory.
 !#
-!# 24.) afcstab_copyD2H_IverticesAtEdge
-!#      -> Copies the vertices at edge structure from the device memory
+!# 24.) afcstab_copyD2H_IedgeList
+!#      -> Copies the edge structure from the device memory
 !#         to the host memory.
 !#
 !# 25.) afcstab_copyH2D_DmatCoeffAtEdge
@@ -165,8 +165,8 @@ module afcstabilisation
   public :: afcstab_isVectorCompatible
 
   public :: afcstab_getbase_array
-  public :: afcstab_getbase_IvertAtEdgeIdx
-  public :: afcstab_getbase_IverticesAtEdge
+  public :: afcstab_getbase_IedgeListIdx
+  public :: afcstab_getbase_IedgeList
   public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdge
@@ -179,13 +179,13 @@ module afcstabilisation
   public :: afcstab_getbase_FmatCoeffAtEdge
   public :: afcstab_getbase_FboundsAtEdge
 
-  public :: afcstab_generateVerticesAtEdge
-  public :: afcstab_generateOffdiagEdges
-  public :: afcstab_generateExtSparsity
+  public :: afcstab_genEdgeList
+  public :: afcstab_genOffdiagEdges
+  public :: afcstab_genExtSparsity
 
-  public :: afcstab_copyD2H_IverticesAtEdge
+  public :: afcstab_copyD2H_IedgeList
   public :: afcstab_copyD2H_DmatCoeffAtEdge
-  public :: afcstab_copyH2D_IverticesAtEdge
+  public :: afcstab_copyH2D_IedgeList
   public :: afcstab_copyH2D_DmatCoeffAtEdge
 
   public :: afcstab_buildBoundsLPT
@@ -323,10 +323,10 @@ module afcstabilisation
   ! Stabilisation has been initialised
   integer(I32), parameter, public :: AFCSTAB_INITIALISED          = 2_I32**1
 
-  ! Edge-based structure has been generated: IverticesAtEdge
+  ! Edge-based structure has been generated: IedgeList
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGESTRUCTURE    = 2_I32**2
 
-  ! Edge-based structure has been oriented: IverticesAtEdge
+  ! Edge-based structure has been oriented: IedgeList
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGEORIENTATION  = 2_I32**3
 
   ! Edge-based values have been computed from matrix: DcoefficientsAtEdge
@@ -370,7 +370,7 @@ module afcstabilisation
   ! Duplicate atomic stabilisation structure
   integer(I32), parameter, public :: AFCSTAB_DUP_STRUCTURE        = 2_I32**1
 
-  ! Duplicate edge-based structure: IverticesAtEdge
+  ! Duplicate edge-based structure: IedgeList
   integer(I32), parameter, public :: AFCSTAB_DUP_EDGESTRUCTURE    = AFCSTAB_HAS_EDGESTRUCTURE
 
   ! Duplicate edge-based values: DcoefficientsAtEdge
@@ -415,7 +415,7 @@ module afcstabilisation
   ! Duplicate atomic stabilisation structure
   integer(I32), parameter, public :: AFCSTAB_SHARE_STRUCTURE        = AFCSTAB_DUP_STRUCTURE
 
-  ! Share edge-based structure: IverticesAtEdge
+  ! Share edge-based structure: IedgeList
   integer(I32), parameter, public :: AFCSTAB_SHARE_EDGESTRUCTURE    = AFCSTAB_DUP_EDGESTRUCTURE
 
   ! Share edge-based values: DcoefficientsAtEdge
@@ -733,15 +733,15 @@ module afcstabilisation
     integer :: ncoeffs = 0
 
     ! Handle to index pointer for edge structure
-    ! The numbers IverticesAtEdgeIdx(k):IverticesAtEdgeIdx(k+1)-1
+    ! The numbers IedgeListIdx(k):IedgeListIdx(k+1)-1
     ! denote the edge numbers of the k-th group of edges.
-    integer :: h_IverticesAtEdgeIdx = ST_NOHANDLE
+    integer :: h_IedgeListIdx = ST_NOHANDLE
 
-    ! Handle to vertices at edge structure
-    ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
-    ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
+    ! Handle to edge structure
+    ! IedgeList(1:2,1:NEDGE) : the two end-points of the edge
+    ! IedgeList(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
-    integer :: h_IverticesAtEdge = ST_NOHANDLE
+    integer :: h_IedgeList = ST_NOHANDLE
 
     ! Handle to index pointer for superdiagonal edge numbers
     ! The numbers IsuperdiagEdgesIdx(i):IsuperdiagEdgesIdx(i+1)-1
@@ -972,13 +972,13 @@ contains
 
     ! Release edge structure
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) then
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdge)
-      if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IverticesAtEdgeIdx)
+      if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IedgeList)
+      if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IedgeListIdx)
     end if
-    rafcstab%h_IverticesAtEdge = ST_NOHANDLE
-    rafcstab%h_IverticesAtEdgeIdx = ST_NOHANDLE
+    rafcstab%h_IedgeList = ST_NOHANDLE
+    rafcstab%h_IedgeListIdx = ST_NOHANDLE
 
     ! Release edge values
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
@@ -1167,9 +1167,9 @@ contains
 !</subroutine>
     
     
-    ! REMARK: The handle IverticesAtEdgeIdx is not modified here due
+    ! REMARK: The handle IedgeListIdx is not modified here due
     ! to the following reasons: If the edges are not reordered into
-    ! independent groups then IverticesAtEdgeIdx(1:2)=(/1,NEDGE+1/).
+    ! independent groups then IedgeListIdx(1:2)=(/1,NEDGE+1/).
     ! Otherwise, the edge-data structure needs to be regenerated anyway.
     
     ! Resize nodal quantities
@@ -1335,13 +1335,13 @@ contains
       rafcstab%NEDGE = nedge
 
       ! Resize array of edges
-      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE) then
+      if (rafcstab%h_IedgeList .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) then
           call storage_realloc('afcstab_resizeStabDirect',&
-              rafcstab%NEDGE, rafcstab%h_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%h_IedgeList,&
               ST_NEWBLOCK_NOINIT, .false.)
         else
-          call output_line('Handle h_IverticesAtEdge '//&
+          call output_line('Handle h_IedgeList '//&
               'is shared and cannot be resized!',&
               OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
         end if
@@ -1603,10 +1603,10 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       ! Copy content from source to destination structure
-      call storage_copy(rafcstabSrc%h_IverticesAtEdgeIdx,&
-          rafcstabDest%h_IverticesAtEdgeIdx)
-      call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
-          rafcstabDest%h_IverticesAtEdge)
+      call storage_copy(rafcstabSrc%h_IedgeListIdx,&
+          rafcstabDest%h_IedgeListIdx)
+      call storage_copy(rafcstabSrc%h_IedgeList,&
+          rafcstabDest%h_IedgeList)
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
@@ -1922,12 +1922,12 @@ contains
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE))) then
-        call storage_free(rafcstabDest%h_IverticesAtEdgeIdx)
-        call storage_free(rafcstabDest%h_IverticesAtEdge)
+        call storage_free(rafcstabDest%h_IedgeListIdx)
+        call storage_free(rafcstabDest%h_IedgeList)
       end if
       ! Copy handle from source to destination structure
-      rafcstabDest%h_IverticesAtEdgeIdx = rafcstabSrc%h_IverticesAtEdgeIdx
-      rafcstabDest%h_IverticesAtEdge = rafcstabSrc%h_IverticesAtEdge
+      rafcstabDest%h_IedgeListIdx = rafcstabSrc%h_IedgeListIdx
+      rafcstabDest%h_IedgeList = rafcstabSrc%h_IedgeList
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
@@ -2263,7 +2263,7 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:), pointer :: p_Ddata
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Iposition, p_Kdiagonal
     integer, dimension(2) :: Isize2D
     integer, dimension(3) :: Isize3D
@@ -2279,7 +2279,7 @@ contains
 
     ! Check if stabilisation provides edge-based structure
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
-      call afcstab_generateVerticesAtEdge(Rmatrices(1), rafcstab)
+      call afcstab_genEdgeList(Rmatrices(1), rafcstab)
     end if
 
     ! Set number of matrices
@@ -2306,22 +2306,16 @@ contains
     end if
 
     ! Note that only double precision matrices are supported
-    if (Rmatrices(1)%cdataType .ne. ST_DOUBLE) then
-      call output_line('Only double precision matrices are supported!',&
+    if (Rmatrices(1)%cdataType .ne. rafcstab%cdataType) then
+      call output_line('Matrix precision is incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
       call sys_halt()
     end if
     
     ! Check if first matrix is compatible with the stabilisation structure
-    if ((Rmatrices(1)%NEQ .ne. rafcstab%NEQ) .or.&
-        ((Rmatrices(1)%NA-Rmatrices(1)%NEQ)/2 .ne. rafcstab%NEDGE) .or.&
-        (Rmatrices(1)%cmatrixFormat .ne. rafcstab%cmatrixFormat)) then
-      call output_line('Matrix is not compatible with stabilisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
-      call sys_halt()
-    end if
+    call afcstab_isMatrixCompatible(rafcstab, Rmatrices(1))
 
-    ! Check if all matrices are compatible to the first one
+    ! Check if other matrices are compatible to the first one
     do imatrix = 2, nmatrices
       call lsyssc_isMatrixCompatible(Rmatrices(1), Rmatrices(imatrix))
     end do
@@ -2341,7 +2335,7 @@ contains
     end if
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call storage_getbase_double2D(rafcstab%h_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtNode)
     call storage_getbase_double3D(rafcstab%h_DmatrixCoeffsAtEdge, p_DmatrixCoeffsAtEdge)
 
@@ -2375,8 +2369,8 @@ contains
         
         ! Loop over all edges and copy off-diagonal entries
         do iedge = 1, rafcstab%NEDGE
-          ij = p_IverticesAtEdge(3,iedge)
-          ji = p_IverticesAtEdge(4,iedge)
+          ij = p_IedgeList(3,iedge)
+          ji = p_IedgeList(4,iedge)
           p_DmatrixCoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
           p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
         end do
@@ -2396,8 +2390,8 @@ contains
         
         ! Loop over all edges and copy off-diagonal entries
         do iedge = 1, rafcstab%NEDGE
-          ij = p_IverticesAtEdge(3,iedge)
-          ji = p_IverticesAtEdge(4,iedge)
+          ij = p_IedgeList(3,iedge)
+          ji = p_IedgeList(4,iedge)
           p_DmatrixCoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
           p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
         end do
@@ -2763,10 +2757,10 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+  subroutine afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
 
 !<description>
-    ! Returns a pointer to the index pointer for the vertices at edge structure
+    ! Returns a pointer to the index pointer for the edge structure
 !</description>
 
 !<input>
@@ -2775,32 +2769,32 @@ contains
 !</input>
 
 !<output>
-    ! Pointer to the vertices at edge index structure
+    ! Pointer to the edge index structure
     ! NULL() if the stabilisation structure does not provide it.
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
 !</output>
 !</subroutine>
 
-    ! Do we vertices at edge structure at all?
-    if (rafcstab%h_IverticesAtEdgeIdx .eq. ST_NOHANDLE) then
-      nullify(p_IverticesAtEdgeIdx)
+    ! Do we edge structure at all?
+    if (rafcstab%h_IedgeListIdx .eq. ST_NOHANDLE) then
+      nullify(p_IedgeListIdx)
       return
     end if
     
     ! Get the array
-    call storage_getbase_int(rafcstab%h_IverticesAtEdgeIdx,&
-        p_IverticesAtEdgeIdx)
+    call storage_getbase_int(rafcstab%h_IedgeListIdx,&
+        p_IedgeListIdx)
 
-  end subroutine afcstab_getbase_IvertAtEdgeIdx
+  end subroutine afcstab_getbase_IedgeListIdx
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+  subroutine afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
 
 !<description>
-    ! Returns a pointer to the vertices at edge structure
+    ! Returns a pointer to the edge structure
 !</description>
 
 !<input>
@@ -2809,24 +2803,24 @@ contains
 !</input>
 
 !<output>
-    ! Pointer to the vertices at edge structure
+    ! Pointer to the edge structure
     ! NULL() if the stabilisation structure does not provide it.
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
 !</output>
 !</subroutine>
 
-    ! Do we vertices at edge structure at all?
-    if ((rafcstab%h_IverticesAtEdge .eq. ST_NOHANDLE) .or.&
+    ! Do we edge structure at all?
+    if ((rafcstab%h_IedgeList .eq. ST_NOHANDLE) .or.&
         (rafcstab%NEDGE             .eq. 0)) then
-      nullify(p_IverticesAtEdge)
+      nullify(p_IedgeList)
       return
     end if
     
     ! Get the array
-    call storage_getbase_int2D(rafcstab%h_IverticesAtEdge,&
-        p_IverticesAtEdge,rafcstab%NEDGE)
+    call storage_getbase_int2D(rafcstab%h_IedgeList,&
+        p_IedgeList,rafcstab%NEDGE)
 
-  end subroutine afcstab_getbase_IverticesAtEdge
+  end subroutine afcstab_getbase_IedgeList
 
   !*****************************************************************************
 
@@ -2835,7 +2829,7 @@ contains
   subroutine afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
 
 !<description>
-    ! Returns a pointer to the index pointer for vertices at edge structure
+    ! Returns a pointer to the index pointer for edge structure
 !</description>
 
 !<input>
@@ -3218,7 +3212,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_generateVerticesAtEdge(rmatrix, rafcstab)
+  subroutine afcstab_genEdgeList(rmatrix, rafcstab)
 
 !<description>
     ! This subroutine generates the list of edges which are
@@ -3244,7 +3238,7 @@ contains
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_genEdgeList')
       call sys_halt()
     end if
 
@@ -3253,7 +3247,7 @@ contains
         AFCSTAB_SHARE_EDGESTRUCTURE) then
       call output_line('Edge structure is not owned by stabilisation and '//&
           'therefore cannot be generated',&
-          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_genEdgeList')
       return
     end if
 
@@ -3268,18 +3262,24 @@ contains
       
     case default
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_genEdgeList')
       call sys_halt()
     end select
     
     ! Generate edge list for a matrix which is structurally symmetric,
     ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
     ! storing the diagonal edges (i,i).
-    call lsyssc_generateEdgeList(rmatrix, rafcstab%h_IverticesAtEdge,&
+    call lsyssc_genEdgeList(rmatrix, rafcstab%h_IedgeList,&
         LSYSSC_EDGELIST_NODESANDPOS, .true., .true.)
 
+    ! Allocate memory
+    if (rafcstab%h_IedgeListIdx .eq. ST_NOHANDLE) then
+      call storage_new('gfem_genEdgeList', 'IedgeListIdx',&
+          2, ST_INT, rafcstab%h_IedgeListIdx, ST_NEWBLOCK_ZERO)
+    end if
+
     ! Set pointer to edge structure
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IedgeListIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
 
     ! If no OpenMP is used, then all edges belong to the same
     ! group. Otherwise, the edges will be reordered below.
@@ -3288,27 +3288,27 @@ contains
 
     ! OpenMP-Extension: Perform edge-coloring to find groups of
     ! edges which can be processed in parallel, that is, the
-    ! vertices of the edges in the group are all distinct
-    !$ call afcstab_getbase_IverticesAtEdge(rafcstab, p_IedgeList)
+    ! nodes of the edges in the group are all distinct
+    !$ call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     !$ if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
     !$  call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-    !$      rafcstab%h_IverticesAtEdgeIdx, 2*(rmatrix%NEQ-1))
+    !$      rafcstab%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
     !$ else
     !$  call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-    !$      rafcstab%h_IverticesAtEdgeIdx)
+    !$      rafcstab%h_IedgeListIdx)
     !$ end if
     
     ! Set state of stabiliation
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)
         
-  end subroutine afcstab_generateVerticesAtEdge
+  end subroutine afcstab_genEdgeList
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_generateOffdiagEdges(rafcstab)
+  subroutine afcstab_genOffdiagEdges(rafcstab)
 
 !<description>
     ! This subroutine generates the edge data structure
@@ -3323,7 +3323,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer   :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer   :: p_IsubdiagEdges
     integer, dimension(:), pointer   :: p_IsubdiagEdgesIdx
@@ -3335,7 +3335,7 @@ contains
     if (iand(rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
       call output_line('Stabilisation structure does not provide required ' //&
           'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
-          'afcstab_generateOffdiagEdge')
+          'afcstab_genOffdiagEdge')
       call sys_halt()
     end if
 
@@ -3345,12 +3345,12 @@ contains
 
     ! Allocate memory (if required)
     if (rafcstab%h_IsuperdiagEdgesIdx .eq. ST_NOHANDLE) then
-      call storage_new('afcstab_generateOffdiagEdges','IsuperdiagEdgesIdx',&
+      call storage_new('afcstab_genOffdiagEdges','IsuperdiagEdgesIdx',&
           neq+1,ST_INT,rafcstab%h_IsuperdiagEdgesIdx,ST_NEWBLOCK_ZERO)
     else
       call storage_getsize(rafcstab%h_IsuperdiagEdgesIdx,isize)
       if (isize < neq+1) then
-        call storage_realloc('afcstab_generateOffdiagEdges',neq+1,&
+        call storage_realloc('afcstab_genOffdiagEdges',neq+1,&
             rafcstab%h_IsuperdiagEdgesIdx,ST_NEWBLOCK_ZERO,.false.)
       else
         call storage_clear(rafcstab%h_IsuperdiagEdgesIdx)
@@ -3359,12 +3359,12 @@ contains
 
     ! Allocate memory (if required)
     if (rafcstab%h_IsubdiagEdgesIdx .eq. ST_NOHANDLE) then
-      call storage_new('afcstab_generateOffdiagEdges','IsubdiagEdgesIdx',&
+      call storage_new('afcstab_genOffdiagEdges','IsubdiagEdgesIdx',&
           neq+1,ST_INT,rafcstab%h_IsubdiagEdgesIdx,ST_NEWBLOCK_ZERO)
     else
       call storage_getsize(rafcstab%h_IsubdiagEdgesIdx,isize)
       if (isize < neq+1) then
-        call storage_realloc('afcstab_generateOffdiagEdges',neq+1,&
+        call storage_realloc('afcstab_genOffdiagEdges',neq+1,&
             rafcstab%h_IsubdiagEdgesIdx,ST_NEWBLOCK_ZERO,.false.)
       else
         call storage_clear(rafcstab%h_IsubdiagEdgesIdx)
@@ -3373,19 +3373,19 @@ contains
 
     ! Allocate memory (if required)
     if (rafcstab%h_IsubdiagEdges .eq. ST_NOHANDLE) then
-      call storage_new('afcstab_generateOffdiagEdges','IsubdiagEdges',&
+      call storage_new('afcstab_genOffdiagEdges','IsubdiagEdges',&
           nedge,ST_INT,rafcstab%h_IsubdiagEdges,ST_NEWBLOCK_NOINIT)
     else
       call storage_getsize(rafcstab%h_IsubdiagEdges,isize)
       if (isize < nedge) then
-        call storage_realloc('afcstab_generateOffdiagEdges',nedge,&
+        call storage_realloc('afcstab_genOffdiagEdges',nedge,&
             rafcstab%h_IsubdiagEdges,ST_NEWBLOCK_NOINIT,.false.)
       end if
     end if
     
     ! Set pointers
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagEdgesIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab,p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab,p_IedgeList)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagEdges)
     
@@ -3393,12 +3393,12 @@ contains
     do iedge = 1, nedge
       
        ! Determine the start-point of the current edge
-      ieq = min(p_IverticesAtEdge(1,iedge),&
-                p_IverticesAtEdge(2,iedge))
+      ieq = min(p_IedgeList(1,iedge),&
+                p_IedgeList(2,iedge))
 
       ! Determine the end-point of the current edge
-      jeq = max(p_IverticesAtEdge(1,iedge),&
-                p_IverticesAtEdge(2,iedge))
+      jeq = max(p_IedgeList(1,iedge),&
+                p_IedgeList(2,iedge))
 
       ! Increase number of edges connected to these points by one
       p_IsuperdiagEdgesIdx(ieq+1) = p_IsuperdiagEdgesIdx(ieq+1)+1
@@ -3431,7 +3431,7 @@ contains
         
         ! Determine the end-point of the edge, i.e. 
         ! the node which is not equal to IEQ
-        jeq = p_IverticesAtEdge(1,iedge) + p_IverticesAtEdge(2,iedge) - ieq
+        jeq = p_IedgeList(1,iedge) + p_IedgeList(2,iedge) - ieq
         
         ! Get and update next free position
         istor = p_IsubdiagEdgesIdx(jeq)
@@ -3453,13 +3453,13 @@ contains
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
 
-  end subroutine afcstab_generateOffdiagEdges
+  end subroutine afcstab_genOffdiagEdges
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_generateExtSparsity(rmatrixSrc, rmatrixExtended)
+  subroutine afcstab_genExtSparsity(rmatrixSrc, rmatrixExtended)
 
 !<description>
     ! This subroutine generates the extended sparsity pattern
@@ -3497,16 +3497,16 @@ contains
     call lsyssc_multMatMat(rmatrixSrc, rmatrixSrc, rmatrixExtended,&
                            .true., .true., .false.)
 
-  end subroutine afcstab_generateExtSparsity
+  end subroutine afcstab_genExtSparsity
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_IverticesAtEdge(rafcstab, btranspose)
+  subroutine afcstab_copyH2D_IedgeList(rafcstab, btranspose)
 
 !<description>
-    ! This subroutine copies the vertices at edge structure from the
+    ! This subroutine copies the edge structure from the
     ! host memory to the memory of the coprocessor device. If no
     ! device is available, then an error is thrown.
 !</description>
@@ -3521,20 +3521,20 @@ contains
 !</subroutine>
 
 
-    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IverticesAtEdge,&
+    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IedgeList,&
         ST_SYNCBLOCK_COPY_H2D, btranspose)
 
-  end subroutine afcstab_copyH2D_IverticesAtEdge
+  end subroutine afcstab_copyH2D_IedgeList
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_copyD2H_IverticesAtEdge(rafcstab, btranspose)
+  subroutine afcstab_copyD2H_IedgeList(rafcstab, btranspose)
 
 !<description>
-    ! This subroutine copies the vertices at edge structure from the
+    ! This subroutine copies the edge structure from the
     ! memory of the coprocessor device to the host memory. If no
     ! device is available, then an error is thrown.
 !</description>
@@ -3548,11 +3548,11 @@ contains
 !</input>
 !</subroutine>
 
-    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IverticesAtEdge,&
+    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IedgeList,&
         ST_SYNCBLOCK_COPY_D2H, btranspose)
 
-  end subroutine afcstab_copyD2H_IverticesAtEdge
+  end subroutine afcstab_copyD2H_IedgeList
 
   !*****************************************************************************
 
@@ -3635,18 +3635,18 @@ contains
     ! local variables
     integer, dimension(2) :: Isize
 
-    ! Handle for IverticesAtEdgeIdx
-    if (rafcstab%h_IverticesAtEdgeIdx .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IverticesAtEdgeIdx)
-    call storage_new('afcstab_allocEdgeStructure', 'IverticesAtEdgeIdx',&
-        2, ST_INT, rafcstab%h_IverticesAtEdgeIdx, ST_NEWBLOCK_NOINIT)
+    ! Handle for IedgeListIdx
+    if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IedgeListIdx)
+    call storage_new('afcstab_allocEdgeStructure', 'IedgeListIdx',&
+        2, ST_INT, rafcstab%h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
     
-    ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
+    ! Handle for IedgeList: (/i,j,ij,ji/)
     Isize = (/ndata, rafcstab%NEDGE/)
-    if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IverticesAtEdge)
-    call storage_new('afcstab_allocEdgeStructure', 'IverticesAtEdge',&
-        Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IedgeList)
+    call storage_new('afcstab_allocEdgeStructure', 'IedgeList',&
+        Isize, ST_INT, rafcstab%h_IedgeList, ST_NEWBLOCK_NOINIT)
     
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
@@ -4070,7 +4070,7 @@ contains
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx
     real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
 
     ! Check spatial discretisation structure
@@ -4106,7 +4106,7 @@ contains
     ! Check if stabilisation provides edge-based structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-      call afcstab_generateVerticesAtEdge(rmatrixCx, rafcstab)
+      call afcstab_genEdgeList(rmatrixCx, rafcstab)
     end if
 
     ! Check if stabilisation structure provides array to store bounds;
@@ -4133,7 +4133,7 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)   
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)   
 
     ! What type of matrix are we?
     select case(rmatrixCx%cmatrixFormat)
@@ -4147,7 +4147,7 @@ contains
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
-        call doBoundsMat7Dble(p_IverticesAtEdge, p_Kld,&
+        call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataM, p_DvertexCoords, dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
@@ -4155,7 +4155,7 @@ contains
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
+        call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
 
       case default
@@ -4175,7 +4175,7 @@ contains
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
-        call doBoundsMat9Dble(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataM, p_DvertexCoords, dscale, p_DboundsAtEdge)
         
       case (ST_SINGLE)
@@ -4183,7 +4183,7 @@ contains
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataM, p_DvertexCoords, dscale, p_FboundsAtEdge)
 
       case default
@@ -4206,10 +4206,10 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Dble(IverticesAtEdge, Kld,&
+    subroutine doBoundsMat7Dble(IedgeList, Kld,&
         DdataCx, DdataM, DvertexCoords, dscale, DboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4224,11 +4224,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         diff = DvertexCoords(1,i) - DvertexCoords(1,j)
@@ -4264,10 +4264,10 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Dble(IverticesAtEdge, Kdiagonal, Kld,&
+    subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
         DdataCx, DdataM, DvertexCoords, dscale, DboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4282,11 +4282,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         diff = DvertexCoords(1,i) - DvertexCoords(1,j)
@@ -4330,10 +4330,10 @@ contains
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Sngl(IverticesAtEdge, Kld,&
+    subroutine doBoundsMat7Sngl(IedgeList, Kld,&
         FdataCx, FdataM, DvertexCoords, dscale, FboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4348,11 +4348,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         diff = DvertexCoords(1,i) - DvertexCoords(1,j)
@@ -4388,10 +4388,10 @@ contains
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Sngl(IverticesAtEdge, Kdiagonal, Kld,&
+    subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
         FdataCx, FdataM, DvertexCoords, dscale, FboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4406,11 +4406,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         diff = DvertexCoords(1,i) - DvertexCoords(1,j)
@@ -4490,7 +4490,7 @@ contains
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy
     real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx, p_FdataCy
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
 
     ! Check spatial discretisation structure
@@ -4526,7 +4526,7 @@ contains
     ! Check if stabilisation provides edge-based structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-      call afcstab_generateVerticesAtEdge(rmatrixCx, rafcstab)
+      call afcstab_genEdgeList(rmatrixCx, rafcstab)
     end if
 
     ! Check if stabilisation structure provides array to store bounds;
@@ -4556,7 +4556,7 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)   
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)   
 
     ! What type of matrix are we?
     select case(rmatrixCx%cmatrixFormat)
@@ -4571,7 +4571,7 @@ contains
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
-        call doBoundsMat7Dble(p_IverticesAtEdge, p_Kld,&
+        call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataM, p_DvertexCoords,&
             dscale, p_DboundsAtEdge)
         
@@ -4581,7 +4581,7 @@ contains
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
+        call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
             dscale, p_FboundsAtEdge)
 
@@ -4603,7 +4603,7 @@ contains
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
-        call doBoundsMat9Dble(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataM, p_DvertexCoords,&
             dscale, p_DboundsAtEdge)
         
@@ -4613,7 +4613,7 @@ contains
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataM, p_DvertexCoords,&
             dscale, p_FboundsAtEdge)
 
@@ -4637,10 +4637,10 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Dble(IverticesAtEdge, Kld,&
+    subroutine doBoundsMat7Dble(IedgeList, Kld,&
         DdataCx, DdataCy, DdataM, DvertexCoords, dscale, DboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4656,11 +4656,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
@@ -4698,10 +4698,10 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Dble(IverticesAtEdge, Kdiagonal, Kld,&
+    subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
         DdataCx, DdataCy, DdataM, DvertexCoords, dscale, DboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4717,11 +4717,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
@@ -4769,10 +4769,10 @@ contains
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Sngl(IverticesAtEdge, Kld,&
+    subroutine doBoundsMat7Sngl(IedgeList, Kld,&
         FdataCx, FdataCy, FdataM, DvertexCoords, dscale, FboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4788,11 +4788,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
@@ -4830,10 +4830,10 @@ contains
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Sngl(IverticesAtEdge, Kdiagonal, Kld,&
+    subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
         FdataCx, FdataCy, FdataM, DvertexCoords, dscale, FboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -4849,11 +4849,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:2,i) - DvertexCoords(1:2,j)
@@ -4937,7 +4937,7 @@ contains
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
     real(DP), dimension(:), pointer :: p_DdataM, p_DdataCx, p_DdataCy, p_DdataCz
     real(SP), dimension(:), pointer :: p_FdataM, p_FdataCx, p_FdataCy, p_FdataCz
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kdiagonal, p_Kld
 
     ! Check spatial discretisation structure
@@ -4973,7 +4973,7 @@ contains
     ! Check if stabilisation provides edge-based structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-      call afcstab_generateVerticesAtEdge(rmatrixCx, rafcstab)
+      call afcstab_genEdgeList(rmatrixCx, rafcstab)
     end if
 
     ! Check if stabilisation structure provides array to store bounds;
@@ -5004,7 +5004,7 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)   
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)   
 
     ! What type of matrix are we?
     select case(rmatrixCx%cmatrixFormat)
@@ -5020,7 +5020,7 @@ contains
         call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
-        call doBoundsMat7Dble(p_IverticesAtEdge, p_Kld,&
+        call doBoundsMat7Dble(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
             p_DvertexCoords, dscale, p_DboundsAtEdge)
         
@@ -5031,7 +5031,7 @@ contains
         call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat7Sngl(p_IverticesAtEdge, p_Kld,&
+        call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
             p_DvertexCoords, dscale, p_FboundsAtEdge)
 
@@ -5054,7 +5054,7 @@ contains
         call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
         
-        call doBoundsMat9Dble(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
             p_DvertexCoords, dscale, p_DboundsAtEdge)
         
@@ -5065,7 +5065,7 @@ contains
         call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat9Sngl(p_IverticesAtEdge, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
             p_DvertexCoords, dscale, p_FboundsAtEdge)
 
@@ -5089,10 +5089,10 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Dble(IverticesAtEdge, Kld,&
+    subroutine doBoundsMat7Dble(IedgeList, Kld,&
         DdataCx, DdataCy, DdataCz, DdataM, DvertexCoords, dscale, DboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataCz, DdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -5108,11 +5108,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
@@ -5152,10 +5152,10 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Dble(IverticesAtEdge, Kdiagonal, Kld,&
+    subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
         DdataCx, DdataCy, DdataCz, DdataM, DvertexCoords, dscale, DboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(DP), dimension(:), intent(in) :: DdataCx, DdataCy, DdataCz, DdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -5171,11 +5171,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
@@ -5227,10 +5227,10 @@ contains
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Sngl(IverticesAtEdge, Kld,&
+    subroutine doBoundsMat7Sngl(IedgeList, Kld,&
         FdataCx, FdataCy, FdataCz, FdataM, DvertexCoords, dscale, FboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataCz, FdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -5246,11 +5246,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)
@@ -5290,10 +5290,10 @@ contains
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Sngl(IverticesAtEdge, Kdiagonal, Kld,&
+    subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
         FdataCx, FdataCy, FdataCz, FdataM, DvertexCoords, dscale, FboundsAtEdge)
 
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal, Kld
       real(SP), dimension(:), intent(in) :: FdataCx, FdataCy, FdataCz, FdataM
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -5309,11 +5309,11 @@ contains
       ! Loop over all edges of the structure
       !$omp parallel do default(shared)&
       !$omp private(daux,diff,i,ik,j,jk)
-      edges: do iedge = 1, size(IverticesAtEdge,2)
+      edges: do iedge = 1, size(IedgeList,2)
 
         ! Get the numbers of the two endpoints
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
 
         ! Compute difference (x_i-x_j)
         Diff = DvertexCoords(1:3,i) - DvertexCoords(1:3,j)

@@ -4,7 +4,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcBounds(IverticesAtEdgeIdx, IverticesAtEdge,&
+  subroutine fcb_calcBounds(IedgeListIdx, IedgeList,&
       NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx,&
       Dqp, Dqm, fcb_calcDiffTransformation_sim, rcollection)
 
@@ -35,10 +35,10 @@
     real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
 
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_calcDiffTransformation_sim.inc'

@@ -2042,7 +2042,7 @@ module chemotaxis_blowup
 
             ! p_Kdiagonal instead of iaux(.)
             ! Cf. /home/user/rstrehl/nobackup/Featflow2/kernel/PDEOperators
-            ! afcstab_generateVerticesAtEdge
+            ! afcstab_genEdgeList
             DO ij_loc = p_Kdiagonal ( i )+1 ,p_Kld( i+1 ) - 1
             j = p_Kcol ( ij_loc )
             jj_loc = p_Kdiagonal ( j )

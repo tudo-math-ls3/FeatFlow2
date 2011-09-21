@@ -5,7 +5,7 @@
 !<subroutine>
     
   subroutine fcb_calcFluxFCT_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -32,7 +32,7 @@
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

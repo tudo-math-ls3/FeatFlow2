@@ -307,7 +307,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxGal2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the standard Galerkin
@@ -327,7 +327,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -446,7 +446,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxGalNoBdr2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the TVD discretisation
@@ -469,7 +469,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -551,7 +551,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -572,7 +572,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -781,17 +781,17 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
     ! local variables
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
     integer(I64) :: p_DmatrixCoeffsAtEdge
-    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
-    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
+        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
+    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
@@ -812,23 +812,23 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(p_IverticesAtEdgeIdx)-1
+    do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
-      if (p_IverticesAtEdgeIdx(igroup+1)-p_IverticesAtEdgeIdx(igroup) .le. 0) cycle
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
 
       ! Get position of first edge in group
-      IEDGEset = p_IverticesAtEdgeIdx(igroup)
+      IEDGEset = p_IedgeListIdx(igroup)
       
       ! Get position of last edge in group
-      IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+      call hydro_calcFluxScDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
           rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
@@ -853,7 +853,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxScDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -875,7 +875,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1084,17 +1084,17 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
     ! local variables
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
     integer(I64) :: p_DmatrixCoeffsAtEdge
-    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
-    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
+        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
+    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
@@ -1115,23 +1115,23 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(p_IverticesAtEdgeIdx)-1
+    do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
-      if (p_IverticesAtEdgeIdx(igroup+1)-p_IverticesAtEdgeIdx(igroup) .le. 0) cycle
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
 
       ! Get position of first edge in group
-      IEDGEset = p_IverticesAtEdgeIdx(igroup)
+      IEDGEset = p_IedgeListIdx(igroup)
       
       ! Get position of last edge in group
-      IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+      call hydro_calcFluxScDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
           rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
@@ -1156,7 +1156,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -1176,7 +1176,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1482,17 +1482,17 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
     ! local variables
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
     integer(I64) :: p_DmatrixCoeffsAtEdge
-    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
-    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
+        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
+    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
@@ -1513,23 +1513,23 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(p_IverticesAtEdgeIdx)-1
+    do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
-      if (p_IverticesAtEdgeIdx(igroup+1)-p_IverticesAtEdgeIdx(igroup) .le. 0) cycle
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
 
       ! Get position of first edge in group
-      IEDGEset = p_IverticesAtEdgeIdx(igroup)
+      IEDGEset = p_IedgeListIdx(igroup)
       
       ! Get position of last edge in group
-      IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRoeDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+      call hydro_calcFluxRoeDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
           rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
@@ -1554,7 +1554,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxRoeDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -1576,7 +1576,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1956,17 +1956,17 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
     ! local variables
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
     integer(I64) :: p_DmatrixCoeffsAtEdge
-    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
-    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
+        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
+    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
@@ -1987,23 +1987,23 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(p_IverticesAtEdgeIdx)-1
+    do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
-      if (p_IverticesAtEdgeIdx(igroup+1)-p_IverticesAtEdgeIdx(igroup) .le. 0) cycle
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
 
       ! Get position of first edge in group
-      IEDGEset = p_IverticesAtEdgeIdx(igroup)
+      IEDGEset = p_IedgeListIdx(igroup)
       
       ! Get position of last edge in group
-      IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRoeDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+      call hydro_calcFluxRoeDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
           rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
@@ -2028,7 +2028,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -2048,7 +2048,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2266,17 +2266,17 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
     ! local variables
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
     integer(I64) :: p_DmatrixCoeffsAtEdge
-    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
-    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
+        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
+    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
@@ -2297,23 +2297,23 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(p_IverticesAtEdgeIdx)-1
+    do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
-      if (p_IverticesAtEdgeIdx(igroup+1)-p_IverticesAtEdgeIdx(igroup) .le. 0) cycle
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
 
       ! Get position of first edge in group
-      IEDGEset = p_IverticesAtEdgeIdx(igroup)
+      IEDGEset = p_IedgeListIdx(igroup)
       
       ! Get position of last edge in group
-      IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRusDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+      call hydro_calcFluxRusDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
           rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
@@ -2338,7 +2338,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxRusDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -2359,7 +2359,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2579,17 +2579,17 @@ contains
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     
     ! local variables
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
     integer(I64) :: p_DmatrixCoeffsAtEdge
-    integer(I64) :: p_IverticesAtEdge
+    integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IverticesAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_IverticesAtEdge(rafcstab, .true.)
-    p_IverticesAtEdge = storage_getMemoryAddress(rafcstab%h_IverticesAtEdge)
+    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
+        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
+    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
     if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
@@ -2610,23 +2610,23 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
-    do igroup = 1, size(p_IverticesAtEdgeIdx)-1
+    do igroup = 1, size(p_IedgeListIdx)-1
       
       ! Do nothing for empty groups
-      if (p_IverticesAtEdgeIdx(igroup+1)-p_IverticesAtEdgeIdx(igroup) .le. 0) cycle
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
 
       ! Get position of first edge in group
-      IEDGEset = p_IverticesAtEdgeIdx(igroup)
+      IEDGEset = p_IedgeListIdx(igroup)
       
       ! Get position of last edge in group
-      IEDGEmax = p_IverticesAtEdgeIdx(igroup+1)-1
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRusDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IverticesAtEdge,&
+      call hydro_calcFluxRusDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
           p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
           rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
     end do
@@ -2895,7 +2895,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatGalMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2910,7 +2910,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -3014,7 +3014,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatGal2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -3029,7 +3029,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -3293,7 +3293,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatScDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -3310,7 +3310,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -3459,7 +3459,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatScDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -3476,7 +3476,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -3792,7 +3792,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRoeDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -3808,7 +3808,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -4071,7 +4071,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRoeDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -4087,7 +4087,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -4503,7 +4503,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRusDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -4520,7 +4520,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -4646,7 +4646,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRusDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -4662,7 +4662,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -5251,7 +5251,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxFCTScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -5272,7 +5272,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -5358,7 +5358,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxFCTRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 
 !<description>
@@ -5379,7 +5379,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -5513,7 +5513,7 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcFluxFCTRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -5534,7 +5534,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

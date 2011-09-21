@@ -171,6 +171,7 @@ module groupfemscalar
   use collection
   use fsystem
   use genoutput
+  use groupfembase
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
@@ -385,7 +386,7 @@ contains
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
 
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       !-------------------------------------------------------------------------
@@ -394,7 +395,7 @@ contains
           AFCSTAB_NLINFCT_IMPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE)
       
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
       
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
@@ -430,7 +431,7 @@ contains
     case (AFCSTAB_TVD,&
           AFCSTAB_GP)
 
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
@@ -449,7 +450,7 @@ contains
     case (AFCSTAB_LINFCT,&
           AFCSTAB_LINFCT_MASS)
       
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
@@ -471,7 +472,7 @@ contains
 
     case (AFCSTAB_SYMMETRIC)
 
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
@@ -488,7 +489,7 @@ contains
     case (AFCSTAB_NLINLPT_MASS,&
           AFCSTAB_LINLPT_MASS)
 
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
@@ -514,7 +515,7 @@ contains
     case (AFCSTAB_NLINLPT_UPWINDBIASED,&
           AFCSTAB_LINLPT_UPWINDBIASED)
 
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
@@ -533,7 +534,7 @@ contains
     case (AFCSTAB_NLINLPT_SYMMETRIC,&
           AFCSTAB_LINLPT_SYMMETRIC)
 
-      ! Handle for IverticesAtEdgeIdx and IverticesAtEdge: (/i,j,ij,ji/)
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       call afcstab_allocEdgeStructure(rafcstab,4)
 
       ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
@@ -725,8 +726,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx,p_Kdiagonal
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx,p_Kdiagonal
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -744,8 +745,8 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
     call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
     call lsyssc_getbase_double(rconvMatrix, p_ConvOp)
@@ -772,8 +773,8 @@ contains
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
         
         ! Assemble Galerkin operator with stabilisation
-        call doOperatorAFCMat79Dble(p_Kdiagonal, p_IverticesAtEdgeIdx,&
-            p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+        call doOperatorAFCMat79Dble(p_Kdiagonal, p_IedgeListIdx,&
+            p_IedgeList, rafcstab%NEDGE, rconvMatrix%NEQ,&
             p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx,&
             dscale, bclear, p_ConvOp, p_DcoefficientsAtEdge)
         
@@ -783,7 +784,7 @@ contains
         
         ! Do we need edge orientation?
         if (rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
-          call doUpwindOrientationDble(rafcstab%NEDGE, p_IverticesAtEdge,&
+          call doUpwindOrientationDble(rafcstab%NEDGE, p_IedgeList,&
               p_DcoefficientsAtEdge, p_DmatrixCoeffsAtEdge)
           rafcstab%istabilisationSpec =&
               ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
@@ -795,8 +796,8 @@ contains
       else   ! bbuildStabilisation == no
         
         ! Apply standard discretisation without stabilisation
-        call doOperatorMat79Dble(p_Kdiagonal, p_IverticesAtEdgeIdx,&
-            p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+        call doOperatorMat79Dble(p_Kdiagonal, p_IedgeListIdx,&
+            p_IedgeList, rafcstab%NEDGE, rconvMatrix%NEQ,&
             p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx,&
             dscale, bclear, p_ConvOp)
           
@@ -822,7 +823,7 @@ contains
     ! Assemble convection operator K
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorMat79Dble(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doOperatorMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
         NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, bclear, K)
       
       ! input parameters
@@ -831,8 +832,8 @@ contains
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       ! input/output parameters
@@ -939,22 +940,22 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IverticesAtEdgeIdx(igroup),&
-                      IverticesAtEdgeIdx(igroup+1)-1, GFSC_NEDGESIM
+        do IEDGEset = IedgeListIdx(igroup),&
+                      IedgeListIdx(igroup+1)-1, GFSC_NEDGESIM
 
           ! We always handle GFSC_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
           ! at most GFSC_NEDGESIM edges simultaneously.
         
-          IEDGEmax = min(IverticesAtEdgeIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -964,15 +965,15 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
-            DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
+            DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
           end do
           
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
           
@@ -985,12 +986,12 @@ contains
               iedge = idx+IEDGEset-1
               
               ! Get position of diagonal entries
-              ii = Kdiagonal(IverticesAtEdge(1,iedge))
-              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
               
               ! Get position of off-diagonal entries
-              ij = IverticesAtEdge(3,iedge)
-              ji = IverticesAtEdge(4,iedge)
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
               
               ! Update the global operator
               K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
@@ -1006,12 +1007,12 @@ contains
               iedge = idx+IEDGEset-1
               
               ! Get position of diagonal entries
-              ii = Kdiagonal(IverticesAtEdge(1,iedge))
-              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
               
               ! Get position of off-diagonal entries
-              ij = IverticesAtEdge(3,iedge)
-              ji = IverticesAtEdge(4,iedge)
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
               
               ! Update the global operator
               K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
@@ -1037,8 +1038,8 @@ contains
     ! Assemble convection operator K and AFC data.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorAFCMat79Dble(Kdiagonal, IverticesAtEdgeIdx,&
-        IverticesAtEdge, NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge,&
+    subroutine doOperatorAFCMat79Dble(Kdiagonal, IedgeListIdx,&
+        IedgeList, NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge,&
         Dx, dscale, bclear, K, DcoefficientsAtEdge)
 
       ! input parameters
@@ -1047,8 +1048,8 @@ contains
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       ! input/output parameters
@@ -1155,22 +1156,22 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = IverticesAtEdgeIdx(igroup),&
-                      IverticesAtEdgeIdx(igroup+1)-1, GFSC_NEDGESIM
+        do IEDGEset = IedgeListIdx(igroup),&
+                      IedgeListIdx(igroup+1)-1, GFSC_NEDGESIM
 
           ! We always handle GFSC_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
           ! at most GFSC_NEDGESIM edges simultaneously.
           
-          IEDGEmax = min(IverticesAtEdgeIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
           
           ! DcoefficientsAtEdge is not allocated as temporal array
           ! since it is given as global output parameter.
@@ -1183,15 +1184,15 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(1,idx) = Dx(IverticesAtEdge(1,iedge))
-            DdataAtEdge(2,idx) = Dx(IverticesAtEdge(2,iedge))
+            DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
           end do
           
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IverticesAtEdge(:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
           
@@ -1204,12 +1205,12 @@ contains
               iedge = idx+IEDGEset-1
               
               ! Get position of diagonal entries
-              ii = Kdiagonal(IverticesAtEdge(1,iedge))
-              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
               
               ! Get position of off-diagonal entries
-              ij = IverticesAtEdge(3,iedge)
-              ji = IverticesAtEdge(4,iedge)
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
               
               ! Compute entries of low-order operator
               DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
@@ -1232,12 +1233,12 @@ contains
               iedge = idx+IEDGEset-1
               
               ! Get position of diagonal entries
-              ii = Kdiagonal(IverticesAtEdge(1,iedge))
-              jj = Kdiagonal(IverticesAtEdge(2,iedge))
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
               
               ! Get position of off-diagonal entries
-              ij = IverticesAtEdge(3,iedge)
-              ji = IverticesAtEdge(4,iedge)
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
               
               ! Compute entries of low-order operator
               DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
@@ -1266,11 +1267,11 @@ contains
     
     !**************************************************************
     ! Enforce edge orientation for upwind-based AFC
-    subroutine doUpwindOrientationDble(nedge, IverticesAtEdge,&
+    subroutine doUpwindOrientationDble(nedge, IedgeList,&
         DcoefficientsAtEdge, DmatrixCoeffsAtEdge)
       
       ! inout/output parameters
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
+      integer, dimension(:,:), intent(inout) :: IedgeList
       real(DP), dimension(:,:), intent(inout) :: DcoefficientsAtEdge
       real(DP), dimension(:,:,:), intent(inout) :: DmatrixCoeffsAtEdge
       integer, intent(in) :: nedge
@@ -1287,14 +1288,14 @@ contains
         if (DcoefficientsAtEdge(2,iedge) .gt.&
             DcoefficientsAtEdge(3,iedge)) then
           ! Swap nodes i <-> j
-          iaux = IverticesAtEdge(1,iedge)
-          IverticesAtEdge(1,iedge) = IverticesAtEdge(2,iedge)
-          IverticesAtEdge(2,iedge) = iaux
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
 
           ! Swap edges ij <-> ji
-          iaux = IverticesAtEdge(3,iedge)
-          IverticesAtEdge(3,iedge) = IverticesAtEdge(4,iedge)
-          IverticesAtEdge(4,iedge) = iaux
+          iaux = IedgeList(3,iedge)
+          IedgeList(3,iedge) = IedgeList(4,iedge)
+          IedgeList(4,iedge) = iaux
 
           ! Swap edge data l_ij <-> l_ji
           daux = DcoefficientsAtEdge(2,iedge)
@@ -1382,8 +1383,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx,p_Kdiagonal
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx,p_Kdiagonal
 
 
     ! Check if stabilisation has been initialised
@@ -1402,8 +1403,8 @@ contains
     end if
     
     ! Set pointers
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
     call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
     call lsyssc_getbase_double(rdiffMatrix, p_DiffOp)
@@ -1429,8 +1430,8 @@ contains
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
         
         ! Assemble Galerkin operator with stabilisation
-        call doOperatorAFCMat79Dble(p_Kdiagonal, p_IverticesAtEdgeIdx,&
-            p_IverticesAtEdge, rafcstab%NEDGE, rdiffMatrix%NEQ,&
+        call doOperatorAFCMat79Dble(p_Kdiagonal, p_IedgeListIdx,&
+            p_IedgeList, rafcstab%NEDGE, rdiffMatrix%NEQ,&
             p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, dscale,&
             bclear, p_DiffOp, p_DcoefficientsAtEdge)
         
@@ -1441,8 +1442,8 @@ contains
       else   ! bbuildStabilisation == no
 
         ! Assemble Galerkin operator with stabilisation
-        call doOperatorMat79Dble(p_Kdiagonal, p_IverticesAtEdgeIdx, &
-            p_IverticesAtEdge, rafcstab%NEDGE, rdiffMatrix%NEQ,&
+        call doOperatorMat79Dble(p_Kdiagonal, p_IedgeListIdx, &
+            p_IedgeList, rafcstab%NEDGE, rdiffMatrix%NEQ,&
             p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, dscale,&
             bclear, p_DiffOp)
 
@@ -1466,15 +1467,15 @@ contains
     ! Assemble low-order diffusion operator S.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorMat79Dble(Kdiagonal, IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doOperatorMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
         NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, dscale, bclear, K)
       
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       real(DP), dimension(:), intent(inout) :: K
@@ -1524,17 +1525,17 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         if (bclear) then
           !$omp do
-          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
         
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = Kdiagonal(IedgeList(1,iedge))
+            jj = Kdiagonal(IedgeList(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1550,13 +1551,13 @@ contains
         else   ! do not clear matrix
           ! Loop over all edges
           !$omp do
-          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
         
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = Kdiagonal(IedgeList(1,iedge))
+            jj = Kdiagonal(IedgeList(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1579,16 +1580,16 @@ contains
     ! Assemble low-order diffusion operator S and AFC data.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorAFCMat79Dble(Kdiagonal, IverticesAtEdgeIdx,&
-        IverticesAtEdge, NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge,&
+    subroutine doOperatorAFCMat79Dble(Kdiagonal, IedgeListIdx,&
+        IedgeList, NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge,&
         dscale, bclear, K, DcoefficientsAtEdge)
 
       real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
       real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx,Kdiagonal
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
       real(DP), dimension(:), intent(inout) :: K
@@ -1639,17 +1640,17 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         if (bclear) then
           !$omp do
-          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
             
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = Kdiagonal(IedgeList(1,iedge))
+            jj = Kdiagonal(IedgeList(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1668,13 +1669,13 @@ contains
 
         else   ! do not clear matrix
           !$omp do
-          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
             
             ! Get node numbers and matrix positions
-            ij = IverticesAtEdge(3,iedge)
-            ji = IverticesAtEdge(4,iedge)
-            ii = Kdiagonal(IverticesAtEdge(1,iedge))
-            jj = Kdiagonal(IverticesAtEdge(2,iedge))
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            ii = Kdiagonal(IedgeList(1,iedge))
+            jj = Kdiagonal(IedgeList(2,iedge))
             
             ! Artificial diffusion coefficient
             d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
@@ -1872,7 +1873,7 @@ contains
     real(DP), dimension(:), pointer :: p_DxTimeDeriv, p_DxPredictor
     real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -1901,7 +1902,7 @@ contains
     end if
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rx, p_Dx)
 
@@ -1949,7 +1950,7 @@ contains
         if (theta .ne. 1.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
           ! $$ f_{ij}^n = (1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
-          call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesByCoeffDble(p_IedgeList, rafcstab%NEDGE,&
               p_DcoefficientsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
               bclear, p_Dflux0)
         elseif (.not.bquickAssembly .and. bclear) then
@@ -1972,7 +1973,7 @@ contains
           ! initial solution without contribution of the consistent
           ! mass matrix and without scaling by the implicitness parameter
           ! $$ f_{ij} = \Delta t d_{ij}^n(u_i^n-u_j^n) $$
-          call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesByCoeffDble(p_IedgeList, rafcstab%NEDGE,&
               p_DcoefficientsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
 
         elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
@@ -1987,11 +1988,11 @@ contains
             
             if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
               ! Compute solution difference for standard prelimiting
-              call doDifferencesDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
                   p_DxPredictor, p_DfluxPrel)
             elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
-              call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+              call doFluxesByCoeffDble(p_IedgeList, rafcstab%NEDGE,&
                   p_DcoefficientsAtEdge, p_DxPredictor, dscale, .true., p_DfluxPrel)
             else
               call output_line('Invalid type of prelimiting!',&
@@ -2015,7 +2016,7 @@ contains
 
           ! Assemble the explicit part of the mass-antidiffusive fluxes
           ! $$ f_{ij}^n := f_{ij}^n - m_{ij}(u_i^n-u_j^n) $$
-          call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
         end if
 
@@ -2060,7 +2061,7 @@ contains
         if (theta .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
-          call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesByCoeffDble(p_IedgeList, rafcstab%NEDGE,&
               p_DcoefficientsAtEdge, p_Dx, dscale*theta, bclear, p_Dflux)
         end if
         
@@ -2096,7 +2097,7 @@ contains
 
           ! Assemble the implicit part of the mass-antidiffusive fluxes
           ! $$ f_{ij}^m := f_{ij}^m + m_{ij}(u_i^m-u_j^m) $$
-          call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
     
         end if
@@ -2127,7 +2128,7 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       
       ! Assemble spatial part of raw-antidiffusive fluxes
-      call doFluxesByCoeffDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+      call doFluxesByCoeffDble(p_IedgeList, rafcstab%NEDGE,&
           p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
       
       !-------------------------------------------------------------------------
@@ -2136,7 +2137,7 @@ contains
         ! Compute fluxes for standard prelimiting based on the
         ! low-order solution which serves as predictor
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doDifferencesDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+        call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
             p_Dx, p_DfluxPrel)
         
       elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
@@ -2157,7 +2158,7 @@ contains
       
         ! Apply mass antidiffusion to antidiffusive fluxes based on
         ! the approximation to the time derivative
-        call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+        call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
             p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
       end if
       
@@ -2179,7 +2180,7 @@ contains
         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         
         ! Clear vector and assemble antidiffusive fluxes
-        call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+        call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
             p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
 
         ! Set specifiers for raw antidiffusive fluxes
@@ -2207,13 +2208,13 @@ contains
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the edge-by-edge array DcoefficientsAtEdge
     
-    subroutine doFluxesByCoeffDble(IverticesAtEdge, NEDGE,&
+    subroutine doFluxesByCoeffDble(IedgeList, NEDGE,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
@@ -2234,8 +2235,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -2247,8 +2248,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -2265,8 +2266,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
@@ -2278,8 +2279,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -2296,8 +2297,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -2309,8 +2310,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -2327,12 +2328,12 @@ contains
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the CSR-matrix Dmatrix
     
-    subroutine doFluxesByMatrixDble(IverticesAtEdge, NEDGE,&
+    subroutine doFluxesByMatrixDble(IedgeList, NEDGE,&
         Dmatrix, Dx, dscale, bclear, Dflux)
       
       real(DP), dimension(:), intent(in) :: Dmatrix, Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
@@ -2353,9 +2354,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dmatrix(ij) * (Dx(i)-Dx(j))
@@ -2367,9 +2368,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(i)-Dx(j))
@@ -2385,9 +2386,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dmatrix(ij) * (Dx(j)-Dx(i))
@@ -2399,9 +2400,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(j)-Dx(i))
@@ -2417,9 +2418,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
@@ -2431,9 +2432,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -2449,10 +2450,10 @@ contains
     !**************************************************************
     ! Assemble solution difference used for classical prelimiting.
 
-    subroutine doDifferencesDble(IverticesAtEdge, NEDGE, Dx, Dflux)
+    subroutine doDifferencesDble(IedgeList, NEDGE, Dx, Dflux)
       
       real(DP), dimension(:), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(out) :: Dflux
@@ -2465,8 +2466,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
+        i  = IedgeList(1,iedge)
+        j  = IedgeList(2,iedge)
         
         ! Compute solution difference; in contrast to the literature,
         ! we compute the solution difference $u_i-u_j$ and check if
@@ -2650,8 +2651,8 @@ contains
     real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_DfluxPrel
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
 
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -2664,8 +2665,8 @@ contains
     if (bclear) call lsyssc_clearVector(ry)
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
     call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
@@ -2732,11 +2733,11 @@ contains
         
         if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
           ! Perform standard prelimiting
-          call doStdPrelimitDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          call doStdPrelimitDble(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
         elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
           ! Perform minmod prelimiting
-          call doMinModPrelimitDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          call doMinModPrelimitDble(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
         else
           call output_line('Invalid type of prelimiting!',&
@@ -2775,12 +2776,12 @@ contains
         
         ! Compute sums of antidiffusive increments
         ! based on the prelimiting fluxes
-        call doADIncrementsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
       else
         ! Compute sums of antidiffusive increments
         ! based on the raw-antidiffusive fluxes
-        call doADIncrementsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
       end if
 
@@ -2804,7 +2805,7 @@ contains
       end if
       
       ! Compute bounds
-      call doBoundsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+      call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
           rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
 
       ! Set specifiers
@@ -2868,10 +2869,10 @@ contains
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doLimitEdgewiseConstrainedDble(p_IverticesAtEdge,&
+        call doLimitEdgewiseConstrainedDble(p_IedgeList,&
             rafcstab%NEDGE, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
       else
-        call doLimitEdgewiseDble(p_IverticesAtEdge,&
+        call doLimitEdgewiseDble(p_IedgeList,&
             rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
       end if
 
@@ -2911,10 +2912,10 @@ contains
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rmatrix, p_ML)
-        call doCorrectScaleByMassDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doCorrectScaleByMassDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
       else
-        call doCorrectDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
       end if
     end if
@@ -2927,12 +2928,12 @@ contains
     ! Prelimit the raw antidiffusive fluxes the standard way, as
     ! suggested by Boris and Book in their first FCT algorithm
 
-    subroutine doStdPrelimitDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doStdPrelimitDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, DfluxPrel, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
       ! On input: the edge-wise correction factor from previous
@@ -2964,12 +2965,12 @@ contains
     !**************************************************************
     ! Prelimit the raw antidiffusive fluxes using minmod limiter
 
-    subroutine doMinModPrelimitDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doMinModPrelimitDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, DfluxPrel, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
       ! On input: the edge-wise correction factor from previous
@@ -3010,12 +3011,12 @@ contains
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes without prelimiting
     
-    subroutine doADIncrementsDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doADIncrementsDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
       real(DP), dimension(:), intent(in) :: Dflux
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
       ! On input: the edge-wise correction factor from previous
@@ -3043,18 +3044,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge) * Dflux(iedge)
@@ -3079,11 +3080,11 @@ contains
     !**************************************************************
     ! Assemble the local bounds from the predicted solution
     
-    subroutine doBoundsDble(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE, Dx, Dqp, Dqm)
+    subroutine doBoundsDble(IedgeListIdx, IedgeList, NEDGE, Dx, Dqp, Dqm)
       
       real(DP), dimension(:), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       ! The local upper/lower bounds computed from Dx
@@ -3105,18 +3106,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
         
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
           
           ! Compute local upper and lower bounds
           Dqp(i) = max(Dqp(i), Dx(j))
@@ -3235,13 +3236,13 @@ contains
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of antidiffusive fluxes
     
-    subroutine doLimitEdgewiseDble(IverticesAtEdge,&
+    subroutine doLimitEdgewiseDble(IedgeList,&
         NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
       ! On input: the edge-wise correction factors from previous
@@ -3260,8 +3261,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
+        i  = IedgeList(1,iedge)
+        j  = IedgeList(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f_ij = Dflux(iedge)
@@ -3287,12 +3288,12 @@ contains
     ! nodal correction factors and the sign of a pair of explicit
     ! and implicit raw antidiffusive fluxes
     
-    subroutine doLimitEdgewiseConstrainedDble(IverticesAtEdge,&
+    subroutine doLimitEdgewiseConstrainedDble(IedgeList,&
         NEDGE, Dflux1, Dflux2, Drp, Drm, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(:), intent(in) :: Drp,Drm
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dalpha
@@ -3307,8 +3308,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
+        i  = IedgeList(1,iedge)
+        j  = IedgeList(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f1_ij = Dflux1(iedge)
@@ -3335,13 +3336,13 @@ contains
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     
-    subroutine doCorrectDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doCorrectDble(IedgeListIdx, IedgeList,&
         NEDGE, dscale, Dalpha, Dflux, Dy)
       
       real(DP), dimension(:), intent(in) :: Dalpha,Dflux
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dy
@@ -3355,18 +3356,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -3386,13 +3387,13 @@ contains
     ! Correct the antidiffusive fluxes and apply them
     ! scaled by the inverse of the lumped mass matrix
     
-    subroutine doCorrectScaleByMassDble(IverticesAtEdgeIdx,&
-        IverticesAtEdge, NEDGE, dscale, ML, Dalpha, Dflux, Dy)
+    subroutine doCorrectScaleByMassDble(IedgeListIdx,&
+        IedgeList, NEDGE, dscale, ML, Dalpha, Dflux, Dy)
       
       real(DP), dimension(:), intent(in) :: ML,Dalpha,Dflux
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dy
@@ -3407,18 +3408,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
         
           ! Get node numbers
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -3555,8 +3556,8 @@ contains
     real(DP), dimension(:), pointer :: p_Dqp,p_Dqm
     real(DP), dimension(:), pointer :: p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dx,p_Dy,p_Dflux
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
     
     
     ! Check if stabilisation is prepared
@@ -3572,8 +3573,8 @@ contains
     if (bclear) call lsyssc_clearVector(ry)
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
@@ -3586,7 +3587,7 @@ contains
     call lsyssc_getbase_double(ry, p_Dy)
     
     ! Perform flux limiting of TVD-type
-    call doLimitDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+    call doLimitDble(p_IedgeListIdx, p_IedgeList,&
         p_DcoefficientsAtEdge, p_Dx, dscale, rafcstab%NEDGE,&
         p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dflux, p_Dy)
     
@@ -3597,15 +3598,15 @@ contains
     !**************************************************************
     ! The upwind-biased FEM-TVD limiting procedure
     
-    subroutine doLimitDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doLimitDble(IedgeListIdx, IedgeList,&
         DcoefficientsAtEdge, Dx, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dy)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
@@ -3637,18 +3638,18 @@ contains
           
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronize memory access
-          do igroup = 1, size(IverticesAtEdgeIdx)-1
+          do igroup = 1, size(IedgeListIdx)-1
             
             ! Do nothing for empty groups
-            if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+            if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
             
             ! Loop over the edges
             !$omp do
-            do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
               
               ! Determine indices
-              i = IverticesAtEdge(1,iedge)
-              j = IverticesAtEdge(2,iedge)
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
               
               ! Determine coefficients
               d_ij = DcoefficientsAtEdge(1,iedge)
@@ -3708,18 +3709,18 @@ contains
           
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronize memory access
-          do igroup = 1, size(IverticesAtEdgeIdx)-1
+          do igroup = 1, size(IedgeListIdx)-1
             
             ! Do nothing for empty groups
-            if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+            if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
             
             ! Loop over the edges
             !$omp do
-            do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
               
               ! Determine indices
-              i = IverticesAtEdge(1,iedge)
-              j = IverticesAtEdge(2,iedge)
+              i = IedgeList(1,iedge)
+              j = IedgeList(2,iedge)
               
               ! Get antidiffusive flux
               f_ij = Dflux(iedge)
@@ -3756,18 +3757,18 @@ contains
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
-        do igroup = 1, size(IverticesAtEdgeIdx)-1
+        do igroup = 1, size(IedgeListIdx)-1
           
           ! Do nothing for empty groups
-          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
           
           ! Loop over the edges
           !$omp do
-          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
             
             ! Determine indices
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -3839,18 +3840,18 @@ contains
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
-        do igroup = 1, size(IverticesAtEdgeIdx)-1
+        do igroup = 1, size(IedgeListIdx)-1
           
           ! Do nothing for empty groups
-          if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
           
           ! Loop over the edges
           !$omp do
-          do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
             
             ! Determine indices
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Get precomputed raw antidiffusive flux
             f_ij = Dflux(iedge)
@@ -4012,8 +4013,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_MC,p_Dx,p_Dx0,p_Dy,p_Dflux,p_Dflux0
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
     
     
     ! Check if stabilisation is prepared
@@ -4026,8 +4027,8 @@ contains
     end if
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
@@ -4043,7 +4044,7 @@ contains
     call lsyssc_getbase_double(ry, p_Dy)
 
     ! Perform flux limiting by the general purpose limiter
-    call doLimitDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+    call doLimitDble(p_IedgeListIdx, p_IedgeList,&
         p_DcoefficientsAtEdge, p_MC, p_Dx, p_Dx0, theta, dscale,&
         rafcstab%NEDGE, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
         p_Dflux, p_Dflux0, p_Dy)
@@ -4065,15 +4066,15 @@ contains
     !**************************************************************
     ! The FEM-GP limiting procedure
     
-    subroutine doLimitDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doLimitDble(IedgeListIdx, IedgeList,&
         DcoefficientsAtEdge, MC, Dx, Dx0, theta, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dflux0, Dy)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0
       real(DP), intent(in) :: theta,dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
@@ -4098,19 +4099,19 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over the edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
+          ij = IedgeList(3,iedge)
           
           ! Determine coefficients
           d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4163,18 +4164,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
         
         ! Loop over the edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
 
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Get precomputed fluxes
           pf_ij = Dflux0(iedge); df_ij = Dflux(iedge)
@@ -4289,8 +4290,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dx,p_Dy,p_Dflux
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
     
     
     ! Check if stabilisation is prepared
@@ -4303,8 +4304,8 @@ contains
     end if
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
@@ -4317,7 +4318,7 @@ contains
     call lsyssc_getbase_double(ry, p_Dy)
     
     ! Perform symmetric flux limiting
-    call doLimitDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+    call doLimitDble(p_IedgeListIdx, p_IedgeList,&
         p_DcoefficientsAtEdge, p_Dx, dscale, rafcstab%NEDGE,&
         p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dflux, p_Dy)
 
@@ -4338,15 +4339,15 @@ contains
     !**************************************************************
     ! Perform symmetric flux limiting
     
-    subroutine doLimitDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doLimitDble(IedgeListIdx, IedgeList,&
         DcoefficientsAtEdge, Dx, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dy)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
       real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
@@ -4369,18 +4370,18 @@ contains
       
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over the edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Determine coefficients
           d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4414,18 +4415,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
         
         ! Loop over the edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
 
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Get precomputed raw antidiffusive flux
           f_ij = Dflux(iedge)
@@ -4550,8 +4551,8 @@ contains
     real(DP), dimension(:), pointer :: p_Dflux,p_Dq
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer, dimension(:,:), pointer :: p_IedgeList
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -4596,12 +4597,12 @@ contains
         if (iand(ioperationSpec, AFCSTAB_LPTFLUX) .ne. 0) then
 
           ! Set pointers
-          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
           call lsyssc_getbase_double(rx, p_Dx)
 
           ! Assemble raw antidiffusive fluxes for mass antidiffusion
-          call doFluxesByMatrixDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               p_Dmatrix, p_Dx, dscale, bclear, p_Dflux)
 
           ! Set specifiers for raw antidiffusive fluxes
@@ -4617,13 +4618,13 @@ contains
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS) .ne. 0) then
 
             ! Set pointers
-            call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-            call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+            call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+            call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
             call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
             call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
             
             ! Assemble bounds based on matrix coefficients
-            call doBoundsByMatrixDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            call doBoundsByMatrixDble(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, p_Dmatrix, p_DboundsAtEdge, p_Dq)
             
             ! Set specifiers for nodal bounds
@@ -4660,12 +4661,12 @@ contains
         if (iand(ioperationSpec, AFCSTAB_LPTFLUX) .ne. 0) then
           
           ! Set pointers
-          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
           call lsyssc_getbase_double(rx, p_Dx)
 
           ! Assemble upwind-biased raw antidiffusive fluxes
-          call doFluxesUpwindBiasedDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesUpwindBiasedDble(p_IedgeList, rafcstab%NEDGE,&
               p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
 
           ! Set specifiers for raw antidiffusive fluxes
@@ -4681,13 +4682,13 @@ contains
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS) .ne. 0) then
 
             ! Set pointers
-            call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-            call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+            call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+            call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
             call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
             call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
 
             ! Assemble bounds based on edge coefficients
-            call doBoundsByCoeffDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            call doBoundsByCoeffDble(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, p_DcoefficientsAtEdge, p_DboundsAtEdge, p_Dq)
 
             ! Set specifiers for nodal bounds
@@ -4730,12 +4731,12 @@ contains
         if (iand(ioperationSpec, AFCSTAB_LPTFLUX) .ne. 0) then
 
           ! Set pointers
-          call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+          call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
           call lsyssc_getbase_double(rx, p_Dx)
 
           ! Assemble upwind-biased raw antidiffusive fluxes
-          call doFluxesSymmetricDble(p_IverticesAtEdge, rafcstab%NEDGE,&
+          call doFluxesSymmetricDble(p_IedgeList, rafcstab%NEDGE,&
               p_DcoefficientsAtEdge, p_Dx, dscale, bclear, p_Dflux)
 
           ! Set specifiers for raw antidiffusive fluxes
@@ -4751,13 +4752,13 @@ contains
           if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS) .ne. 0) then
             
             ! Set pointers
-            call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
-            call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+            call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+            call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
             call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
             call lsyssc_getbase_double(rafcstab%p_rvectorQ, p_Dq)
             
             ! Assemble bounds based on edge coefficients
-            call doBoundsByCoeffDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+            call doBoundsByCoeffDble(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, p_DcoefficientsAtEdge, p_DboundsAtEdge, p_Dq)
 
             ! Set specifiers for nodal bounds
@@ -4792,12 +4793,12 @@ contains
     ! Assemble symmetric raw antidiffusive fluxes using the
     ! coefficients supplied by the CSR-matrix Dmatrix
     
-    subroutine doFluxesByMatrixDble(IverticesAtEdge, NEDGE,&
+    subroutine doFluxesByMatrixDble(IedgeList, NEDGE,&
         Dmatrix, Dx, dscale, bclear, Dflux)
       
       real(DP), dimension(:), intent(in) :: Dmatrix, Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
@@ -4818,9 +4819,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = Dmatrix(ij) * (Dx(i)-Dx(j))
@@ -4832,9 +4833,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(i)-Dx(j))
@@ -4850,9 +4851,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = Dmatrix(ij) * (Dx(j)-Dx(i))
@@ -4864,9 +4865,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(j)-Dx(i))
@@ -4882,9 +4883,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
@@ -4896,9 +4897,9 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
-            ij = IverticesAtEdge(3,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
+            ij = IedgeList(3,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -4915,13 +4916,13 @@ contains
     ! Assemble upwind-biased raw antidiffusive fluxes using the
     ! coefficients supplied by the edge-by-edge array DcoefficientsAtEdge
     
-    subroutine doFluxesUpwindBiasedDble(IverticesAtEdge, NEDGE,&
+    subroutine doFluxesUpwindBiasedDble(IedgeList, NEDGE,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
@@ -4943,8 +4944,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4974,8 +4975,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -5008,8 +5009,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -5038,8 +5039,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -5072,8 +5073,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -5102,8 +5103,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
 
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -5136,13 +5137,13 @@ contains
     ! Assemble symmetric raw antidiffusive fluxes using the
     ! coefficients supplied by the edge-by-edge array DcoefficientsAtEdge
     
-    subroutine doFluxesSymmetricDble(IverticesAtEdge, NEDGE,&
+    subroutine doFluxesSymmetricDble(IedgeList, NEDGE,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
@@ -5163,8 +5164,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -5176,8 +5177,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -5194,8 +5195,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
@@ -5207,8 +5208,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -5225,8 +5226,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -5238,8 +5239,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IverticesAtEdge(1,iedge)
-            j  = IverticesAtEdge(2,iedge)
+            i  = IedgeList(1,iedge)
+            j  = IedgeList(2,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -5256,13 +5257,13 @@ contains
     ! Assemble nodal bounds using the coefficients supplied by the
     ! CSR-matrix Dmatrix and the precomputed bounds at edges
 
-    subroutine doBoundsByMatrixDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doBoundsByMatrixDble(IedgeListIdx, IedgeList,&
         NEDGE, Dmatrix, DboundsAtEdge, Dq)
       
       real(DP), dimension(:,:), intent(in) :: DboundsAtEdge
       real(DP), dimension(:), intent(in) :: Dmatrix
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(out) :: Dq
@@ -5276,16 +5277,16 @@ contains
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
       !$omp parallel default(shared) private(iedge,i,j,ij,ji)
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
 
           ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Update bounds
           Dq(i) = Dq(i) + DboundsAtEdge(1,iedge)*Dmatrix(ij)
@@ -5301,13 +5302,13 @@ contains
     ! Assemble nodal bounds using the coefficients supplied by the
     !  edge-by-edge array DcoefficientsAtEdge
 
-    subroutine doBoundsByCoeffDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doBoundsByCoeffDble(IedgeListIdx, IedgeList,&
         NEDGE, DcoefficientsAtEdge, DboundsAtEdge, Dq)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:,:), intent(in) :: DboundsAtEdge
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(out) :: Dq
@@ -5321,14 +5322,14 @@ contains
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
       !$omp parallel default(shared) private(iedge,i,j)
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
 
           ! Update bounds
           Dq(i) = Dq(i) + DboundsAtEdge(1,iedge)*DcoefficientsAtEdge(1,iedge)
@@ -5463,8 +5464,8 @@ contains
     real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy,p_Dq
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
 
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -5477,8 +5478,8 @@ contains
     if (bclear) call lsyssc_clearVector(ry)
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IvertAtEdgeIdx(rafcstab, p_IverticesAtEdgeIdx)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
+    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
     call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
@@ -5542,12 +5543,12 @@ contains
       select case(rafcstab%ctypeLimiting)
       case (AFCSTAB_LIMITING_SYMMETRIC)
         ! ... in a symmetric fashion
-        call doADIncrementsSymmDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doADIncrementsSymmDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
         
       case (AFCSTAB_LIMITING_UPWINDBIASED)
         ! ... in an upwind-biased fashion
-        call doADIncrementsUpwDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doADIncrementsUpwDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
 
       case default
@@ -5576,7 +5577,7 @@ contains
       end if
       
       ! Compute bounds
-      call doBoundsDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+      call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
           rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
       
       ! Set specifiers
@@ -5635,12 +5636,12 @@ contains
       select case(rafcstab%ctypeLimiting)
       case (AFCSTAB_LIMITING_SYMMETRIC)
         ! ... in a symmetric fashion
-        call doLimitEdgewiseSymmDble(p_IverticesAtEdge,&
+        call doLimitEdgewiseSymmDble(p_IedgeList,&
             rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
         
       case (AFCSTAB_LIMITING_UPWINDBIASED)
         ! ... in an upwind-biased fashion
-        call doLimitEdgewiseUpwDble(p_IverticesAtEdge,&
+        call doLimitEdgewiseUpwDble(p_IedgeList,&
             rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
         
       case default
@@ -5687,7 +5688,7 @@ contains
         if (present(rmatrix)) then
           call lsyssc_getbase_double(rmatrix, p_ML)
 
-          call doCorrectScaleByMassDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+          call doCorrectScaleByMassDble(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
         else
           call output_line('Lumped mass matrix is not provided!',&
@@ -5696,7 +5697,7 @@ contains
         end if
       else
 
-        call doCorrectDble(p_IverticesAtEdgeIdx, p_IverticesAtEdge,&
+        call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
       end if
     end if
@@ -5709,12 +5710,12 @@ contains
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes in a symmetric fashion
     
-    subroutine doADIncrementsSymmDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doADIncrementsSymmDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
       real(DP), dimension(:), intent(in) :: Dflux
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
       ! On input: the edge-wise correction factor from previous
@@ -5741,18 +5742,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
+          i  = IedgeList(1,iedge)
+          j  = IedgeList(2,iedge)
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge) * Dflux(iedge)
@@ -5777,12 +5778,12 @@ contains
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes in an upwind-biased fashion
     
-    subroutine doADIncrementsUpwDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doADIncrementsUpwDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
       real(DP), dimension(:), intent(in) :: Dflux
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
       ! On input: the edge-wise correction factor from previous
@@ -5809,17 +5810,17 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node number of the upwind nodeee
-          i = IverticesAtEdge(1,iedge)
+          i = IedgeList(1,iedge)
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge) * Dflux(iedge)
@@ -5838,11 +5839,11 @@ contains
     !**************************************************************
     ! Assemble the local bounds from the predicted solution
     
-    subroutine doBoundsDble(IverticesAtEdgeIdx, IverticesAtEdge, NEDGE, Dx, Dqp, Dqm)
+    subroutine doBoundsDble(IedgeListIdx, IedgeList, NEDGE, Dx, Dqp, Dqm)
       
       real(DP), dimension(:), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       ! The local upper/lower bounds computed from Dx
@@ -5864,18 +5865,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
         
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
         
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Compute local upper and lower bounds
           Dqp(i) = max(Dqp(i), Dx(j))
@@ -5945,13 +5946,13 @@ contains
     ! a symmetric fashion, e.g., consider the nodal correction factors
     ! at both endpoints of the edge
     
-    subroutine doLimitEdgewiseSymmDble(IverticesAtEdge,&
+    subroutine doLimitEdgewiseSymmDble(IedgeList,&
         NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
       ! On input: the edge-wise correction factors from previous
@@ -5970,8 +5971,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f_ij = Dflux(iedge)
@@ -5998,13 +5999,13 @@ contains
     ! an upwind-biased fashion, e.g., consider the nodal correction
     ! factors only at the endpoint of the edge located upwind
     
-    subroutine doLimitEdgewiseUpwDble(IverticesAtEdge,&
+    subroutine doLimitEdgewiseUpwDble(IedgeList,&
         NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
       
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
       ! On input: the edge-wise correction factors from previous
@@ -6023,7 +6024,7 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node number of the upwind node
-        i = IverticesAtEdge(1,iedge)
+        i = IedgeList(1,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f_ij = Dflux(iedge)
@@ -6047,13 +6048,13 @@ contains
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     
-    subroutine doCorrectDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doCorrectDble(IedgeListIdx, IedgeList,&
         NEDGE, dscale, Dalpha, Dflux, Dy)
       
       real(DP), dimension(:), intent(in) :: Dalpha,Dflux
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dy
@@ -6067,18 +6068,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -6097,13 +6098,13 @@ contains
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     
-    subroutine doCorrectScaleByMassDble(IverticesAtEdgeIdx, IverticesAtEdge,&
+    subroutine doCorrectScaleByMassDble(IedgeListIdx, IedgeList,&
         NEDGE, dscale, ML, Dalpha, Dflux, Dy)
       
       real(DP), dimension(:), intent(in) :: ML,Dalpha,Dflux
       real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
       real(DP), dimension(:), intent(inout) :: Dy
@@ -6117,18 +6118,18 @@ contains
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IverticesAtEdgeIdx)-1
+      do igroup = 1, size(IedgeListIdx)-1
 
         ! Do nothing for empty groups
-        if (IverticesAtEdgeIdx(igroup+1)-IverticesAtEdgeIdx(igroup) .le. 0) cycle
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
         ! Loop over all edges
         !$omp do
-        do iedge = IverticesAtEdgeIdx(igroup), IverticesAtEdgeIdx(igroup+1)-1
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -8035,7 +8036,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dflux,p_Dflux0
@@ -8055,7 +8056,7 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
@@ -8081,11 +8082,11 @@ contains
         if (present(rmatrix)) then
           call lsyssc_getbase_double(rmatrix, p_MC)
           call doJacobian_implFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_MC, p_Dx,&
+              p_IedgeList, p_DcoefficientsAtEdge, p_Kld, p_MC, p_Dx,&
               p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         else
           call doJacobian_implFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Dx,&
+              p_IedgeList, p_DcoefficientsAtEdge, p_Kld, p_Dx,&
               p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         end if
         
@@ -8101,11 +8102,11 @@ contains
         if (present(rmatrix)) then
           call lsyssc_getbase_double(rmatrix, p_MC)
           call doJacobian_implFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_MC, p_Dx,&
+              p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal, p_MC, p_Dx,&
               p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         else
           call doJacobian_implFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Dx,&
+              p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal, p_Dx,&
               p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         end if
 
@@ -8130,13 +8131,13 @@ contains
     ! Assemble the Jacobian matrix for semi-implicit FEM-FCT,
     ! whereby no mass antidiffusion is built into the matrix
 
-    subroutine doJacobian_implFCTnoMass(IverticesAtEdge,&
+    subroutine doJacobian_implFCTnoMass(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dflux0
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -8151,12 +8152,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -8207,13 +8208,13 @@ contains
     ! Assemble the Jacobian matrix for semi-implicit FEM-FCT,
     ! whereby consistent mass antidiffusion is built into the matrix
 
-    subroutine doJacobian_implFCTconsMass(IverticesAtEdge,&
+    subroutine doJacobian_implFCTconsMass(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, MC, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dflux,Dflux0
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
@@ -8229,12 +8230,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -8390,7 +8391,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm
     real(DP), dimension(:), pointer :: p_Jac,p_Dx,p_Dflux
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
     integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
@@ -8417,10 +8418,10 @@ contains
       
     ! Check if off-diagonal edges need to be generated
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateOffdiagEdges(rafcstab)
+        call afcstab_genOffdiagEdges(rafcstab)
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
@@ -8459,7 +8460,7 @@ contains
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_TVD(&
-          p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+          p_IsuperdiagEdgesIdx, p_IedgeList,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
           p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
@@ -8485,7 +8486,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       call doJacobianMat79_TVD(&
-          p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+          p_IsuperdiagEdgesIdx, p_IedgeList,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
           p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
@@ -8567,7 +8568,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_TVD(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
         Dx, Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -8575,7 +8576,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -8616,7 +8617,7 @@ contains
           
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
-              IverticesAtEdge, DcoefficientsAtEdge, Dx,&
+              IedgeList, DcoefficientsAtEdge, Dx,&
               Dpp, Dpm, Dqp, Dqm, tstep, hstep, iedge, iloc, k,&
               Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
         end do
@@ -8629,7 +8630,7 @@ contains
                     
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
-              IverticesAtEdge, DcoefficientsAtEdge, Dx,&
+              IedgeList, DcoefficientsAtEdge, Dx,&
               Dpp, Dpm, Dqp, Dqm, tstep, hstep, iedge, iloc, k,&
               Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
         end do
@@ -8658,7 +8659,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Kloc, Drploc, Drmloc, Dfluxloc,&
                 hstep, iedge, iloc, k, l,&
                 bisExtended, Ksep, Jac)
@@ -8668,7 +8669,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Kloc, Drploc, Drmloc, Dfluxloc,&
                 hstep, iedge, iloc, k, l,&
                 bisExtended, Ksep, Jac)
@@ -8688,14 +8689,14 @@ contains
     !**************************************************************
     ! Update the local coefficients for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine updateJacobianMat79_TVD(IverticesAtEdge,&
+    subroutine updateJacobianMat79_TVD(IedgeList,&
         DcoefficientsAtEdge, Dx, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         iedge, iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: iedge,k,iloc
       
       ! We actually know, that all local quantities start at index zero
@@ -8710,8 +8711,8 @@ contains
       ! Determine indices. Obviously, either i or j must be equal to k.
       ! Otherwise, the edge ij would not be present in the list of 
       ! incident edges for node k.
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
 
       ! Determine coefficients
       d_ij = DcoefficientsAtEdge(1,iedge)
@@ -8803,14 +8804,14 @@ contains
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal,&
+    subroutine assembleJacobianMat79_TVD(IedgeList, Kdiagonal,&
         Dflux, Kloc, Drploc, Drmloc, Dfluxloc, hstep, iedge, iloc, k, l,&
         bisExtended, Ksep, Jac)
 
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), dimension(:,0:), intent(in) :: Drploc,Drmloc,Dfluxloc
       real(DP), intent(in) :: hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal,Kloc
       integer, intent(in) :: iedge,k,l,iloc
       logical, intent(in) :: bisExtended
@@ -8826,8 +8827,8 @@ contains
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
       m = (i+j)-l
       
       ! We need to find out, which kind of edge is processed
@@ -9056,7 +9057,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_MC,p_Jac,p_Dx,p_Dx0,p_Dflux,p_Dflux0
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
     integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
@@ -9081,10 +9082,10 @@ contains
     
     ! Check if off-diagonal edges need to be generated
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateOffdiagEdges(rafcstab)
+        call afcstab_genOffdiagEdges(rafcstab)
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
@@ -9128,7 +9129,7 @@ contains
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_GP(&
-          p_IsuperdiagEdgesIdx, p_IverticesAtEdge, p_IsubdiagEdgesIdx,&
+          p_IsuperdiagEdgesIdx, p_IedgeList, p_IsubdiagEdgesIdx,&
           p_IsubdiagEdges, p_DcoefficientsAtEdge, p_Kld, p_Kcol,&
           p_Kld, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta, tstep, hstep,&
@@ -9154,7 +9155,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
       
       call doJacobianMat79_GP(&
-          p_IsuperdiagEdgesIdx, p_IverticesAtEdge, p_IsubdiagEdgesIdx,&
+          p_IsuperdiagEdgesIdx, p_IedgeList, p_IsubdiagEdgesIdx,&
           p_IsubdiagEdges, p_DcoefficientsAtEdge, p_Kld, p_Kcol,&
           p_Kdiagonal, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
@@ -9234,7 +9235,7 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_GP(IsuperdiagEdgesIdx, IverticesAtEdge,&
+    subroutine doJacobianMat79_GP(IsuperdiagEdgesIdx, IedgeList,&
         IsubdiagEdgesIdx, IsubdiagEdges, DcoefficientsAtEdge, Kld,&
         Kcol, Kdiagonal, MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp,&
         Drm, theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bisExtended,&
@@ -9243,7 +9244,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -9285,7 +9286,7 @@ contains
           
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              IverticesAtEdge, DcoefficientsAtEdge, MC, Dx, Dx0,&
+              IedgeList, DcoefficientsAtEdge, MC, Dx, Dx0,&
               Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, theta, tstep,&
               hstep, iedge, iloc, k, Dpploc, Dpmloc, Dqploc,&
               Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
@@ -9299,7 +9300,7 @@ contains
                     
           ! Update local coefficients
           call updateJacobianMat79_GP(&
-              IverticesAtEdge, DcoefficientsAtEdge, MC, Dx, Dx0,&
+              IedgeList, DcoefficientsAtEdge, MC, Dx, Dx0,&
               Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, theta, tstep,&
               hstep, iedge, iloc, k, Dpploc, Dpmloc, Dqploc,&
               Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
@@ -9330,7 +9331,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux, Dflux0, Drp, Drm,&
+                IedgeList, Kdiagonal, Dflux, Dflux0, Drp, Drm,&
                 Kloc, Drploc, Drmloc, Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
           end do
@@ -9339,7 +9340,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux, Dflux0, Drp, Drm,&
+                IedgeList, Kdiagonal, Dflux, Dflux0, Drp, Drm,&
                 Kloc, Drploc, Drmloc, Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
           end do
@@ -9358,7 +9359,7 @@ contains
     !**************************************************************
     ! Update the local coefficients for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine updateJacobianMat79_GP(IverticesAtEdge,&
+    subroutine updateJacobianMat79_GP(IedgeList,&
         DcoefficientsAtEdge, MC, Dx, Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm,&
         theta, tstep, hstep, iedge, iloc, k, Dpploc, Dpmloc,&
         Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
@@ -9366,7 +9367,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: iedge,k,iloc
       
       ! We actually know, that all local quantities start at index zero
@@ -9381,9 +9382,9 @@ contains
       ! Determine indices. Obviously, either i or j must be equal
       ! to k. Otherwise, the edge ij would not be present in the
       ! list of incident edges for node k.
-      i  = IverticesAtEdge(1,iedge)
-      j  = IverticesAtEdge(2,iedge)
-      ij = IverticesAtEdge(3,iedge)
+      i  = IedgeList(1,iedge)
+      j  = IedgeList(2,iedge)
+      ij = IedgeList(3,iedge)
 
       ! Determine coefficients
       d_ij = DcoefficientsAtEdge(1,iedge)
@@ -9541,14 +9542,14 @@ contains
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal,&
+    subroutine assembleJacobianMat79_GP(IedgeList, Kdiagonal,&
         Dflux, Dflux0, Drp, Drm, Kloc, Drploc, Drmloc, Dfluxloc, Dfluxloc0,&
         hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:,0:), intent(in) :: Drploc,Drmloc,Dfluxloc,Dfluxloc0
       real(DP), dimension(:), intent(in) :: Drp,Drm,Dflux,Dflux0
       real(DP), intent(in) :: hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal,Kloc
       integer, intent(in) :: iedge,iloc,k,l
       logical, intent(in) :: bisExtended
@@ -9563,8 +9564,8 @@ contains
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
-      i=IverticesAtEdge(1,iedge)
-      j=IverticesAtEdge(2,iedge)
+      i=IedgeList(1,iedge)
+      j=IedgeList(2,iedge)
       m=(i+j)-l
       
       ! We need to find out, which kind of edge is processed
@@ -9843,7 +9844,7 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dflux,p_Dflux0,p_Dx,p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_MC,p_Jac
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer :: ndim
     
@@ -9861,7 +9862,7 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
@@ -9909,12 +9910,12 @@ contains
         case (NDIM1D)
           if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_1D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
@@ -9922,12 +9923,12 @@ contains
         case (NDIM2D)
           if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_2D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE,  p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
@@ -9935,12 +9936,12 @@ contains
         case (NDIM3D)
           if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_3D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kld,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
@@ -9960,12 +9961,12 @@ contains
         case (NDIM1D)
           if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_1D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
@@ -9973,12 +9974,12 @@ contains
         case (NDIM2D)
           if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_2D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
@@ -9986,12 +9987,12 @@ contains
         case (NDIM3D)
           if (present(rmatrix)) then
             call doJacobian_implFCTconsMass_3D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
+                p_IedgeList, p_DcoefficientsAtEdge, p_Kdiagonal,&
                 p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
@@ -10017,14 +10018,14 @@ contains
     ! Assemble the Jacobian matrix for FEM-FCT in 1D,
     ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCTnoMass_1D(IverticesAtEdge,&
+    subroutine doJacobian_implFCTnoMass_1D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
@@ -10040,12 +10041,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -10155,14 +10156,14 @@ contains
     ! Assemble the Jacobian matrix for FEM-FCT in 1D,
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCTconsMass_1D(IverticesAtEdge,&
+    subroutine doJacobian_implFCTconsMass_1D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, MC, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
@@ -10178,12 +10179,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -10292,14 +10293,14 @@ contains
     ! Assemble the Jacobian matrix for FEM-FCT in 2D,
     ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCTnoMass_2D(IverticesAtEdge,&
+    subroutine doJacobian_implFCTnoMass_2D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in)   :: Kdiagonal
       integer, intent(in) :: NEDGE
       
@@ -10315,12 +10316,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -10430,14 +10431,14 @@ contains
     ! Assemble the Jacobian matrix for FEM-FCT in 2D,
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCTconsMass_2D(IverticesAtEdge,&
+    subroutine doJacobian_implFCTconsMass_2D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in)   :: Kdiagonal
       integer, intent(in) :: NEDGE
       
@@ -10453,12 +10454,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -10568,14 +10569,14 @@ contains
     ! Assemble the Jacobian matrix for FEM-FCT in 3D
     ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCTnoMass_3D(IverticesAtEdge,&
+    subroutine doJacobian_implFCTnoMass_3D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
 
@@ -10591,12 +10592,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -10708,14 +10709,14 @@ contains
     ! Assemble the Jacobian matrix for FEM-FCT in 3D
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
-    subroutine doJacobian_implFCTconsMass_3D(IverticesAtEdge,&
+    subroutine doJacobian_implFCTconsMass_3D(IedgeList,&
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
@@ -10731,12 +10732,12 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine vertex numbers
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Determine matrix indices
-        ij = IverticesAtEdge(3,iedge)
-        ji = IverticesAtEdge(4,iedge)
+        ij = IedgeList(3,iedge)
+        ji = IedgeList(4,iedge)
         
         ! Determine diagonal indices
         ii = Kdiagonal(i); jj = Kdiagonal(j)
@@ -10976,7 +10977,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Dflux
     real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Jac,p_Dx
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
     integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
@@ -11001,7 +11002,7 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
@@ -11037,7 +11038,7 @@ contains
 
     ! Check if off-diagonal edges need to be generated
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateOffdiagEdges(rafcstab)
+        call afcstab_genOffdiagEdges(rafcstab)
     
     ! Assembled extended Jacobian matrix?
     if (present(bextendedSparsity)) then
@@ -11068,7 +11069,7 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doJacobianMat79_TVD_1D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
             p_DcoeffX, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
@@ -11076,7 +11077,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
         call doJacobianMat79_TVD_2D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
             p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
@@ -11084,7 +11085,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
         call doJacobianMat79_TVD_3D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
             p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dpp, p_Dpm,&
@@ -11115,7 +11116,7 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doJacobianMat79_TVD_1D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
             p_DcoeffX, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
@@ -11123,7 +11124,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
         call doJacobianMat79_TVD_2D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
             p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
@@ -11131,7 +11132,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
         call doJacobianMat79_TVD_3D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
             p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dpp, p_Dpm,&
@@ -11214,7 +11215,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-TVD in 1D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_TVD_1D(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
         DcoeffX, Dx, Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -11222,7 +11223,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -11263,12 +11264,12 @@ contains
           iloc = iloc+1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = DcoeffX(ij)
@@ -11288,12 +11289,12 @@ contains
           iloc = iloc+1
                     
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = DcoeffX(ij)
@@ -11330,7 +11331,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Kloc, Drploc, Drmloc, Dfluxloc,&
                 hstep, iedge, iloc, k, l,&
                 bisExtended, Ksep, Jac)
@@ -11340,7 +11341,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Kloc, Drploc, Drmloc, Dfluxloc,&
                 hstep, iedge, iloc, k, l,&
                 bisExtended, Ksep, Jac)
@@ -11361,7 +11362,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-TVD in 2D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_TVD_2D(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, Dx, Dflux,&
         Dpp, Dpm, Dqp, Dqm, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
@@ -11369,7 +11370,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -11410,12 +11411,12 @@ contains
           iloc = iloc+1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
@@ -11435,12 +11436,12 @@ contains
           iloc = iloc+1
                     
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
@@ -11477,7 +11478,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
+                IedgeList, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
                 Dfluxloc, hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
 
@@ -11485,7 +11486,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
+                IedgeList, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
                 Dfluxloc, hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
@@ -11504,7 +11505,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-TVD in 3D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_TVD_3D(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, Dx,&
         Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
@@ -11512,7 +11513,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -11553,12 +11554,12 @@ contains
           iloc = iloc+1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
@@ -11578,12 +11579,12 @@ contains
           iloc = iloc+1
                     
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
@@ -11620,7 +11621,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
+                IedgeList, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
                 Dfluxloc, hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
 
@@ -11628,7 +11629,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(&
-                IverticesAtEdge, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
+                IedgeList, Kdiagonal, Dflux, Kloc, Drploc, Drmloc,&
                 Dfluxloc, hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
         end do
@@ -11809,14 +11810,14 @@ contains
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal,&
+    subroutine assembleJacobianMat79_TVD(IedgeList, Kdiagonal,&
         Dflux, Kloc, Drploc, Drmloc, Dfluxloc, hstep, iedge, iloc, k, l,&
         bisExtended, Ksep, Jac)
 
       real(DP), dimension(:,0:), intent(in) :: Drploc,Drmloc,Dfluxloc
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), intent(in) :: hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge,Kloc
+      integer, dimension(:,:), intent(in) :: IedgeList,Kloc
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: iedge,iloc,k,l
       logical, intent(in) :: bisExtended
@@ -11831,8 +11832,8 @@ contains
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
       m = (i+j)-l
       
       ! We need to find out, which kind of edge is processed
@@ -12081,7 +12082,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm,p_Dflux,p_Dflux0
     real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_MC,p_Jac,p_Dx,p_Dx0
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
     integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
@@ -12106,7 +12107,7 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobian)
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
@@ -12147,7 +12148,7 @@ contains
 
     ! Check if off-diagonal edges need to be generated
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateOffdiagEdges(rafcstab)
+        call afcstab_genOffdiagEdges(rafcstab)
     
     ! Assembled extended Jacobian matrix?
     if (present(bextendedSparsity)) then
@@ -12178,7 +12179,7 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doJacobianMat79_GP_1D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
             p_DcoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
@@ -12187,7 +12188,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
         call doJacobianMat79_GP_2D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
             p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
@@ -12196,7 +12197,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
         call doJacobianMat79_GP_3D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
             p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
@@ -12227,7 +12228,7 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doJacobianMat79_GP_1D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
             p_DcoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
@@ -12236,7 +12237,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
         call doJacobianMat79_GP_2D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
             p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
@@ -12245,7 +12246,7 @@ contains
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
         call doJacobianMat79_GP_3D(&
-            p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+            p_IsuperdiagEdgesIdx, p_IedgeList,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
             p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
@@ -12329,7 +12330,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-GP in 1D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_1D(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, MC, Dx, Dx0,&
         Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -12338,7 +12339,7 @@ contains
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep  
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -12380,12 +12381,12 @@ contains
           iloc = iloc+1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = DcoeffX(ij)
@@ -12407,12 +12408,12 @@ contains
           iloc = iloc+1
                  
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = DcoeffX(ij)
@@ -12453,7 +12454,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Dflux0, Drp, Drm, Kloc, Drploc, Drmloc,&
                 Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
@@ -12463,7 +12464,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Dflux0, Drp, Drm, Kloc, Drploc, Drmloc,&
                 Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
@@ -12484,7 +12485,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-GP in 2D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_2D(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dx0,&
         Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -12493,7 +12494,7 @@ contains
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep  
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -12535,12 +12536,12 @@ contains
           iloc = iloc+1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
@@ -12562,12 +12563,12 @@ contains
           iloc = iloc+1
                  
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
@@ -12608,7 +12609,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Dflux0, Drp, Drm, Kloc, Drploc, Drmloc,&
                 Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
@@ -12618,7 +12619,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Dflux0, Drp, Drm, Kloc, Drploc, Drmloc,&
                 Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
@@ -12639,7 +12640,7 @@ contains
     ! Assemble the Jacobian matrix for FEM-GP in 3D,
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_3D(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx,&
         Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -12648,7 +12649,7 @@ contains
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep  
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -12690,12 +12691,12 @@ contains
           iloc = iloc+1
           
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
@@ -12717,12 +12718,12 @@ contains
           iloc = iloc+1
                  
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Determine matrix indices
-          ij = IverticesAtEdge(3,iedge)
-          ji = IverticesAtEdge(4,iedge)
+          ij = IedgeList(3,iedge)
+          ji = IedgeList(4,iedge)
 
           ! Determine matrix coefficients
           c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
@@ -12763,7 +12764,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Dflux0, Drp, Drm, Kloc, Drploc, Drmloc,&
                 Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
@@ -12773,7 +12774,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(&
-                IverticesAtEdge, Kdiagonal, Dflux,&
+                IedgeList, Kdiagonal, Dflux,&
                 Dflux0, Drp, Drm, Kloc, Drploc, Drmloc,&
                 Dfluxloc, Dfluxloc0, hstep, iedge,&
                 iloc, k, l, bisExtended, Ksep, Jac)
@@ -13030,14 +13031,14 @@ contains
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal,&
+    subroutine assembleJacobianMat79_GP(IedgeList, Kdiagonal,&
         Dflux, Dflux0, Drp, Drm, Kloc, Drploc, Drmloc, Dfluxloc, Dfluxloc0,&
         hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:,0:), intent(in) :: Drploc,Drmloc,Dfluxloc,Dfluxloc0
       real(DP), dimension(:), intent(in) :: Dflux,Dflux0,Drp,Drm
       real(DP), intent(in) :: hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge,Kloc
+      integer, dimension(:,:), intent(in) :: IedgeList,Kloc
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: iedge,iloc,k,l
       logical, intent(in) :: bisExtended
@@ -13052,8 +13053,8 @@ contains
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
       m = (i+j)-l
       
       ! We need to find out, which kind of edge is processed
@@ -13313,7 +13314,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dflux,p_Dx,p_Jac
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
     integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
@@ -13338,10 +13339,10 @@ contains
     
     ! Check if off-diagonal edges need to be generated
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateOffdiagEdges(rafcstab)
+        call afcstab_genOffdiagEdges(rafcstab)
     
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
@@ -13382,7 +13383,7 @@ contains
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_Symm(&
-          p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+          p_IsuperdiagEdgesIdx, p_IedgeList,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
           p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
@@ -13409,7 +13410,7 @@ contains
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
       call doJacobianMat79_Symm(&
-          p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+          p_IsuperdiagEdgesIdx, p_IedgeList,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
           p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
@@ -13490,7 +13491,7 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for symmetric flux limiting
     subroutine doJacobianMat79_Symm(IsuperdiagEdgesIdx,&
-        IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
+        IedgeList, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, Dx, Dflux, Dpp, Dpm,&
         Dqp, Dqm, Drp, Drm, dscale, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
@@ -13498,7 +13499,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: dscale,hstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdges
@@ -13538,8 +13539,8 @@ contains
           iloc = iloc+1
 
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Update local coefficients
           call updateJacobianMat79_Symm(&
@@ -13555,8 +13556,8 @@ contains
           iloc = iloc+1
              
           ! Determine indices
-          i = IverticesAtEdge(1,iedge)
-          j = IverticesAtEdge(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Update local coefficients
           call updateJacobianMat79_Symm(&
@@ -13591,7 +13592,7 @@ contains
             iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_Symm(&
-                IverticesAtEdge, Kld, Kcol, Dflux, Drp, Drm,&
+                IedgeList, Kld, Kcol, Dflux, Drp, Drm,&
                 Kloc, Drploc, Drmloc, Dfluxloc, dscale, hstep,&
                 iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
@@ -13600,7 +13601,7 @@ contains
           do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_Symm(&
-                IverticesAtEdge, Kld, Kcol, Dflux, Drp, Drm,&
+                IedgeList, Kld, Kcol, Dflux, Drp, Drm,&
                 Kloc, Drploc, Drmloc, Dfluxloc, dscale, hstep,&
                 iedge, iloc, k, l, bisExtended, Ksep, Jac)
           end do
@@ -13761,14 +13762,14 @@ contains
     
     !**************************************************************
     ! Assemble the given column of the Jacobian for symmetric flux limiting
-    subroutine assembleJacobianMat79_Symm(IverticesAtEdge, Kdiagonal,&
+    subroutine assembleJacobianMat79_Symm(IedgeList, Kdiagonal,&
         Kcol, Dflux, Drp, Drm, Kloc, Drploc, Drmloc, Dfluxloc, dscale,&
         hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:,0:), intent(in) :: Drploc,Drmloc,Dfluxloc
       real(DP), dimension(:), intent(in) :: Drp,Drm,Dflux
       real(DP), intent(in) :: dscale,hstep
-      integer, dimension(:,:), intent(in)  :: IverticesAtEdge,Kloc
+      integer, dimension(:,:), intent(in)  :: IedgeList,Kloc
       integer, dimension(:), intent(in) :: Kdiagonal,Kcol
       integer, intent(in) :: iedge,iloc,k,l
       logical, intent(in) :: bisExtended
@@ -13782,8 +13783,8 @@ contains
       
       ! Get global node number for edge IJ and the 
       ! number of the node m which is not l
-      i = IverticesAtEdge(1,iedge)
-      j = IverticesAtEdge(2,iedge)
+      i = IedgeList(1,iedge)
+      j = IedgeList(2,iedge)
       m = (i+j)-l
       
       ! We need to find out, which kind of edge is processed

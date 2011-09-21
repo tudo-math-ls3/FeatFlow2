@@ -308,7 +308,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxGal2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the standard Galerkin
@@ -328,7 +328,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -484,7 +484,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxGalNoBdr2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the TVD discretisation
@@ -507,7 +507,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -610,7 +610,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -631,7 +631,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -802,7 +802,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxScDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -825,7 +825,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1002,7 +1002,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -1022,7 +1022,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1221,7 +1221,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRoeDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -1243,7 +1243,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1442,7 +1442,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -1462,7 +1462,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1713,7 +1713,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxRusDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the fluxes for the low-order scheme in
@@ -1734,7 +1734,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2074,7 +2074,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatGalMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2089,7 +2089,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2118,7 +2118,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatGal2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2133,7 +2133,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2162,7 +2162,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatScDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -2179,7 +2179,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2208,7 +2208,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatScDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2225,7 +2225,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2254,7 +2254,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRoeDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2270,7 +2270,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2299,7 +2299,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRoeDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2315,7 +2315,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2344,7 +2344,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRusDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2360,7 +2360,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2389,7 +2389,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRusDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2405,7 +2405,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2491,7 +2491,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxFCTScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -2512,7 +2512,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2544,7 +2544,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxFCTRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes forFCT
@@ -2564,7 +2564,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2596,7 +2596,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcFluxFCTRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for FCT
@@ -2616,7 +2616,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

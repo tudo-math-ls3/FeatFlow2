@@ -213,8 +213,8 @@ use constant SRCLIST_KERNEL =>
 
     "NonlinearSolver/nonlinearsolver.f90 " .
 
-    "PDEOperators/afcstabilisation.f90 PDEOperators/convection.f90 PDEOperators/groupfemscalar.f90 " .
-    "PDEOperators/groupfemsystem.f90 PDEOperators/jumpstabilisation.f90 " .
+    "PDEOperators/afcstabilisation.f90 PDEOperators/convection.f90 PDEOperators/groupfembase.f90 " .
+    "PDEOperators/groupfemscalar.f90 PDEOperators/groupfemsystem.f90 PDEOperators/jumpstabilisation.f90 " .
     "PDEOperators/matrixrestriction.f90 PDEOperators/stdoperators.f90 " .
 
     "Postprocessing/boundaryintegral.f90 Postprocessing/mapleio.f90 Postprocessing/matrixio.f90 " .

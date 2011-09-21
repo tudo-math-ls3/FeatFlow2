@@ -2692,7 +2692,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_limitEdgewiseVelocity(IverticesAtEdgeIdx, IverticesAtEdge,&
+  subroutine mhd_limitEdgewiseVelocity(IedgeListIdx, IedgeList,&
       NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
       Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
@@ -2730,10 +2730,10 @@ contains
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
@@ -2796,8 +2796,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
-            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
           end do
 
           ! Use callback function to compute transformed fluxes
@@ -2814,8 +2814,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Get position of nodes
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Compute nodal correction factors
             R_ij = merge(Drp(:,i), Drm(:,i),&
@@ -2870,8 +2870,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
-            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+            DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
           end do
 
           ! Use callback function to compute transformed fluxes
@@ -2888,8 +2888,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Get position of nodes
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Compute nodal correction factors
             R_ij = merge(Drp(:,i), Drm(:,i),&
@@ -2931,7 +2931,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_limitEdgewiseMomentum(IverticesAtEdgeIdx, IverticesAtEdge,&
+  subroutine mhd_limitEdgewiseMomentum(IedgeListIdx, IedgeList,&
       NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
       Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
@@ -2969,10 +2969,10 @@ contains
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
@@ -3035,8 +3035,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
-            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
           end do
 
           ! Use callback function to compute transformed fluxes
@@ -3053,8 +3053,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Get position of nodes
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Compute nodal correction factors
             R_ij = merge(Drp(:,i), Drm(:,i),&
@@ -3109,8 +3109,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
-            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+            DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
           end do
 
           ! Use callback function to compute transformed fluxes
@@ -3127,8 +3127,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Get position of nodes
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Compute nodal correction factors
             R_ij = merge(Drp(:,i), Drm(:,i),&
@@ -3170,7 +3170,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_limitEdgewiseMagfield(IverticesAtEdgeIdx, IverticesAtEdge,&
+  subroutine mhd_limitEdgewiseMagfield(IedgeListIdx, IedgeList,&
       NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
       Drp, Drm, fcb_calcFluxTransformation_sim, DfluxConstr, rcollection)
 
@@ -3208,10 +3208,10 @@ contains
     real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
 
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
@@ -3274,8 +3274,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
-            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
           end do
 
           ! Use callback function to compute transformed fluxes
@@ -3292,8 +3292,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Get position of nodes
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Compute nodal correction factors
             R_ij = merge(Drp(:,i), Drm(:,i),&
@@ -3348,8 +3348,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
-            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+            DdataAtEdge(:,1,idx) = Dx(IedgeList(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IedgeList(2,iedge),:)
           end do
 
           ! Use callback function to compute transformed fluxes
@@ -3366,8 +3366,8 @@ contains
             iedge = idx+IEDGEset-1
             
             ! Get position of nodes
-            i = IverticesAtEdge(1,iedge)
-            j = IverticesAtEdge(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Compute nodal correction factors
             R_ij = merge(Drp(:,i), Drm(:,i),&

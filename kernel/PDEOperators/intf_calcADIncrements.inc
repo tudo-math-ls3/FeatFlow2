@@ -4,7 +4,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcADIncrements(IverticesAtEdgeIdx, IverticesAtEdge,&
+  subroutine fcb_calcADIncrements(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
         Dpp, Dpm, fcb_calcFluxTransformation_sim, DfluxPrel, rcollection)
 
@@ -41,10 +41,10 @@
     real(DP), dimension(:), intent(in) :: Dalpha
     
     ! Index pointer for edge data structure
-    integer, dimension(:), intent(in) :: IverticesAtEdgeIdx
+    integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IedgeList
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_calcFluxTransformation_sim.inc'
