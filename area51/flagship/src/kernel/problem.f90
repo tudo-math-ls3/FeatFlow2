@@ -73,6 +73,7 @@ module problem
   use fparser
   use fsystem
   use genoutput
+  use groupfembase
   use io
   use linearsystemblock
   use linearsystemscalar
@@ -157,6 +158,9 @@ module problem
     ! Number of AFC stabilisations
     integer :: nafcstab
 
+    ! Number of group finite element bocks
+    integer :: ngroupfemBlock
+
     ! Number of scalar matrices
     integer :: nmatrixScalar
 
@@ -229,6 +233,9 @@ module problem
 
     ! Array of AFC stabilisations
     type(t_afcstab), dimension(:), pointer :: Rafcstab => null()
+
+    ! Array of group finite element blocks
+    type(t_groupFEMBlock), dimension(:), pointer :: RgroupFEMBlock => null()
 
     ! Array of scalar matrices
     type(t_matrixScalar), dimension(:), pointer :: Rmatrix => null()
@@ -364,6 +371,10 @@ contains
     if (rproblemDescriptor%nafcstab .gt. 0)&
         allocate(rproblemLevel%Rafcstab(&
         rproblemDescriptor%nafcstab))
+    if (rproblemDescriptor%ngroupfemBlock .gt. 0)&
+        allocate(rproblemLevel%RgroupFEMBlock(&
+        rproblemDescriptor%ngroupfemBlock))
+    
 
     ! Append level to global problem
     call problem_appendLevel(rproblem, rproblemLevel)
@@ -404,6 +415,10 @@ contains
       if (rproblemDescriptor%nafcstab .gt. 0)&
           allocate(rproblemLevel%Rafcstab(&
           rproblemDescriptor%nafcstab))
+      if (rproblemDescriptor%ngroupfemBlock .gt. 0)&
+          allocate(rproblemLevel%RgroupFEMBlock(&
+          rproblemDescriptor%ngroupfemBlock))
+      
 
       ! Append current level to global problem
       call problem_appendLevel(rproblem, rproblemLevel)
@@ -894,6 +909,15 @@ contains
       deallocate(rproblemLevel%Rafcstab)
     end if
 
+    ! Release group finite element block
+    if (associated(rproblemLevel%RgroupFEMBlock)) then
+      do i = lbound(rproblemLevel%RgroupFEMBlock,1),&
+             ubound(rproblemLevel%RgroupFEMBlock,1)
+        call gfem_releaseGroupFEMBlock(rproblemLevel%RgroupFEMBlock(i))
+      end do
+      deallocate(rproblemLevel%RgroupFEMBlock)
+    end if
+
   end subroutine problem_releaseLevel
 
   !*****************************************************************************
@@ -1113,6 +1137,13 @@ contains
                         trim(sys_siL(size(rproblemLevel%Rafcstab),15)))
     else
       call output_line ('Rafcstab:            not associated')
+    end if
+
+    if (associated(rproblemLevel%RgroupFEMBlock)) then
+      call output_line ('RgroupFEMBlock:      '//&
+                        trim(sys_siL(size(rproblemLevel%RgroupFEMBlock),15)))
+    else
+      call output_line ('RgroupFEMBlock:      not associated')
     end if
 
     if (associated(rproblemLevel%Rmatrix)) then
