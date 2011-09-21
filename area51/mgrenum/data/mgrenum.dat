@@ -10,7 +10,7 @@ NDIM = 2
 SPRMFILE = ./pre/heat_v77.prm
 
 # path of TRI file
-STRIFILE = ./pre/QUAD.tri
+STRIFILE = ./pre/heat_v77.tri
 
 # minimum and maximum MG levels
 NLMIN = 2
