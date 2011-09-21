@@ -216,7 +216,7 @@
 !#      -> Synchrionises the sorting of a vector according to the sorting
 !#         of a matrix
 !#
-!# 64.) lsysbl_createscalarfromvec
+!# 64.) lsysbl_createScalarFromVec
 !#      -> Create a scalar vector from a block vector
 !#
 !# 65.) lsysbl_swapMatrices
@@ -574,7 +574,7 @@ module linearsystemblock
   public :: lsysbl_getVectorMagnitude
   public :: lsysbl_synchroniseSortVecVec
   public :: lsysbl_synchroniseSortMatVec
-  public :: lsysbl_createscalarfromvec
+  public :: lsysbl_createScalarFromVec
   public :: lsysbl_convertScalarBlockVector
   public :: lsysbl_convertBlockScalarVector
   public :: lsysbl_copyH2D_Vector
@@ -3757,8 +3757,7 @@ contains
       rvector%RvectorBlock(i)%NEQ = Isize(i)
       n = n + Isize(i)
     end do
-    
-    
+        
   end subroutine
 
   ! ***************************************************************************
