@@ -47,7 +47,7 @@
     ! Start index of the current element block Ielements in the current element 
     ! distribution ielementDistribution. If this is =1, the routine is called the 
     ! first time for the current element distribution.
-    integer(I32), intent(in) :: ielementStartIdx
+    integer, intent(in) :: ielementStartIdx
 
     ! Number of elements, where the coefficients must be computed.
     ! This is always a part of the element distribution.
@@ -58,7 +58,7 @@
     
     ! A list of elements of length nelements where coefficients must
     ! be computed by this routine.
-    integer(I32), dimension(nelements), intent(in) :: Ielements
+    integer, dimension(nelements), intent(in) :: Ielements
     
     ! A list of the corner vertices of all elements in Ielements
     real(DP), dimension(NDIM2D,TRIA_MAXNVE2D,nelements), intent(in) :: Dcoords
@@ -75,11 +75,11 @@
     
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(#local DOF`s in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:) :: IdofsTrial
+    integer, dimension(:,:) :: IdofsTrial
     
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(#local DOF`s in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:) :: IdofsTest
+    integer, dimension(:,:) :: IdofsTest
     
     ! The Jacobian matrix of the mapping between the reference and each
     ! real element, for all points on all elements.
