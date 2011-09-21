@@ -168,6 +168,20 @@ module mhd_basic
 
 !</constantblock>
 
+
+!<constantblock description="Global types of UCD export">
+
+  ! Standard UCD export
+  integer, parameter, public :: UCDEXPORT_STD             = 0
+
+  ! UCD export on discontinuous P1 finite elements
+  integer, parameter, public :: UCDEXPORT_P1DISCONTINUOUS = 1
+
+  ! UCD export on continuous P1 finite elements
+  integer, parameter, public :: UCDEXPORT_P1CONTINUOUS    = 2
+
+!</constantblock>
+
 !</constants>
 
 contains
