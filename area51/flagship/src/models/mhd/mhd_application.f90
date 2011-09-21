@@ -101,6 +101,8 @@
 
 module mhd_application
 
+#include "mhd.h"
+
   use afcstabilisation
   use bilinearformevaluation
   use boundary
@@ -126,6 +128,7 @@ module mhd_application
   use groupfemsystem
   use hadaptaux
   use hadaptivity
+  use lineariser
   use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
@@ -2090,14 +2093,24 @@ contains
 
     ! persistent variable
     integer, save :: ifilenumber = 1
-
+    
     ! local variables
     type(t_ucdExport) :: rexport
-    type(t_vectorScalar) :: rvector1, rvector2, rvector3
-    real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
-    character(len=SYS_NAMELEN) :: cvariable
-    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
+    
+    type(t_triangulation) :: rtriangulationPrimal,rtriangulationDual
+    type(t_blockDiscretisation) :: rdiscretisationPrimal
+    type(t_blockDiscretisation) :: rdiscretisationDual
+    type(t_vectorBlock) :: rvectorPrimal,rvectorDual
+    real(DP), dimension(:), pointer :: p_DdataPrimal, p_DdataDual
+    integer :: isystemFormat,iformatUCD,ilineariseUCD,nrefineUCD
+    logical :: bexportMeshOnly,bdiscontinuous
+    
+    ! Initialisation
+    bexportMeshOnly = .true.
+    if (present(rsolutionPrimal) .or.&
+        present(rsolutionDual)) bexportMeshOnly=.false.
 
+    nullify(p_DdataPrimal, p_DdataDual)
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -2108,10 +2121,58 @@ contains
         trim(soutputName), 'iformatucd', iformatUCD)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isystemformat', isystemformat)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'ilineariseucd', ilineariseUCD, UCDEXPORT_STD)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'nrefineucd', nrefineUCD, 0)
 
     ! Initialize the UCD exporter
-    call flagship_initUCDexport(rproblemLevel, sucdsolution,&
-        iformatUCD, rexport, ifilenumber)
+    select case(ilineariseUCD)
+    case (UCDEXPORT_STD)
+      call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+          iformatUCD, rexport, ifilenumber)
+
+      ! Set pointers to solution(s)
+      if (present(rsolutionPrimal))&
+          call lsysbl_getbase_double(rsolutionPrimal, p_DdataPrimal)
+      if (present(rsolutionDual))&
+          call lsysbl_getbase_double(rsolutionDual, p_DdataDual)
+      
+    case (UCDEXPORT_P1CONTINUOUS,&
+          UCDEXPORT_P1DISCONTINUOUS)
+      bdiscontinuous = (ilineariseUCD .eq. UCDEXPORT_P1DISCONTINUOUS)
+      
+      if (present(rsolutionPrimal)) then
+        call lin_lineariseVectorGlobal(rsolutionPrimal, rdiscretisationPrimal,&
+            rtriangulationPrimal, rvectorPrimal, nrefineUCD, 0, bdiscontinuous)
+        call lsysbl_getbase_double(rvectorPrimal, p_DdataPrimal)
+        
+        if (present(rsolutionDual)) then
+          call lin_lineariseVectorGlobal(rsolutionDual, rdiscretisationDual,&
+              rtriangulationDual, rvectorDual, nrefineUCD, 0, bdiscontinuous)
+          call lsysbl_getbase_double(rvectorDual, p_DdataDual)
+        end if
+        
+        ! We assume that both primal and dual solutions are based on
+        ! the same triangulation, thus both vectors can be exported
+        ! using the same triangulation.       
+        call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+            iformatUCD, rexport, ifilenumber, rtriangulationPrimal)
+
+      elseif (present(rsolutionDual)) then
+        call lin_lineariseVectorGlobal(rsolutionDual, rdiscretisationDual,&
+            rtriangulationDual, rvectorDual, nrefineUCD, 0, bdiscontinuous)
+        call lsysbl_getbase_double(rvectorDual, p_DdataDual)
+        
+        call flagship_initUCDexport(rproblemLevel, sucdsolution,&
+            iformatUCD, rexport, ifilenumber, rtriangulationDual)
+      end if
+
+    case default
+      call output_line('Unsupported type of solution output!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_outputSolution')
+      call sys_halt()
+    end select
 
     ! Increase filenumber by one
     ifilenumber = ifilenumber+1
@@ -2120,12 +2181,49 @@ contains
     if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
 
     ! Add primal solution vector
-    if (present(rsolutionPrimal)) then
+    if (associated(p_DdataPrimal))&
+        call outputSolution(rexport, p_DdataPrimal,'')
+
+    ! Add dual solution vector
+    if (associated(p_DdataDual))&
+        call outputSolution(rexport, p_DdataDual,'_dual')
+
+    ! Write UCD file
+    call ucd_write(rexport)
+    call ucd_release(rexport)
+
+    ! Release temporal memory
+    call lsysbl_releaseVector(rvectorPrimal)
+    call lsysbl_releaseVector(rvectorDual)
+    call spdiscr_releaseBlockDiscr(rdiscretisationPrimal)
+    call spdiscr_releaseBlockDiscr(rdiscretisationDual)
+    call tria_done(rtriangulationPrimal)
+    call tria_done(rtriangulationDual)
+
+  contains
+
+    ! Here, the working routine follows
+    
+    ! **************************************************************************
+    ! This subroutine outputs the solution given by the array Ddata
+    
+    subroutine outputSolution(rexport, Ddata, csuffix)
       
+      ! Input parameters
+      real(DP), dimension(:), intent(in) :: Ddata
+      character(len=*), intent(in) :: csuffix
+
+      ! Input/output paramters
+      type(t_ucdExport), intent(inout) :: rexport
+
+      ! local variables
+      type(t_vectorScalar) :: rvector1,rvector2,rvector3
+      real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
+      character(len=SYS_NAMELEN) :: cvariable
+      integer :: isize,ndim,ivariable,nvariable
+
       ! Set pointers
-      call lsysbl_getbase_double(rsolutionPrimal, p_Dsolution)
-      nvar  = mhd_getNVAR(rproblemLevel)
-      isize = size(p_Dsolution)/nvar
+      isize = size(Ddata)/mhd_getNVAR(rproblemLevel)
       ndim  = rproblemLevel%rtriangulation%ndim
 
       ! Create auxiliary vectors
@@ -2156,111 +2254,122 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, nvar,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat1d(rvector2%NEQ, nvar,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat1d(rvector3%NEQ, nvar,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
-
+              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
+                  'velocity_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat1d(rvector2%NEQ, NVAR1D,&
+                  'velocity_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat1d(rvector3%NEQ, NVAR1D,&
+                  'velocity_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
+                  UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
+              
             case (NDIM2D)
-              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, nvar,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat2d(rvector2%NEQ, nvar,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat2d(rvector3%NEQ, nvar,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
+                  'velocity_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
+                  'velocity_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat2d(rvector3%NEQ, NVAR2D,&
+                  'velocity_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
+                  UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM3D)
-              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, nvar,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat3d(rvector2%NEQ, nvar,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat3d(rvector3%NEQ, nvar,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
+                  'velocity_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
+                  'velocity_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
+                  'velocity_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
+                  UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
             end select
-
-            call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
-                p_Ddata1, p_Ddata2, p_Ddata3)
 
           elseif (trim(cvariable) .eq. 'momentum') then
             
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, nvar,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat1d(rvector2%NEQ, nvar,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat1d(rvector3%NEQ, nvar,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
+                  'momentum_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat1d(rvector2%NEQ, NVAR1D,&
+                  'momentum_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat1d(rvector3%NEQ, NVAR1D,&
+                  'momentum_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+              
             case (NDIM2D)
-              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, nvar,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat2d(rvector2%NEQ, nvar,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat2d(rvector3%NEQ, nvar,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
+                  'momentum_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
+                  'momentum_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat2d(rvector3%NEQ, NVAR2D,&
+                  'momentum_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+
             case (NDIM3D)
-              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, nvar,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat3d(rvector2%NEQ, nvar,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat3d(rvector3%NEQ, nvar,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
+                  'momentum_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
+                  'momentum_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
+                  'momentum_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
             end select
-
-            call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                p_Ddata1, p_Ddata2, p_Ddata3)
-
+            
           elseif (trim(cvariable) .eq. 'magneticfield') then
 
             ! Special treatment of magnetic field
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, nvar,&
-                  'magneticfield_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat1d(rvector2%NEQ, nvar,&
-                  'magneticfield_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat1d(rvector3%NEQ, nvar,&
-                  'magneticfield_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
+                  'magneticfield_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat1d(rvector2%NEQ, NVAR1D,&
+                  'magneticfield_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat1d(rvector3%NEQ, NVAR1D,&
+                  'magneticfield_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'magneticfield'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM2D)
-              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, nvar,&
-                  'magneticfield_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat2d(rvector2%NEQ, nvar,&
-                  'magneticfield_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat2d(rvector3%NEQ, nvar,&
-                  'magneticfield_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, NVAR2D,&
+                  'magneticfield_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
+                  'magneticfield_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat2d(rvector3%NEQ, NVAR2D,&
+                  'magneticfield_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'magneticfield'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM3D)
-              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, nvar,&
-                  'magneticfield_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarInterleaveFormat3d(rvector2%NEQ, nvar,&
-                  'magneticfield_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarInterleaveFormat3d(rvector3%NEQ, nvar,&
-                  'magneticfield_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, NVAR3D,&
+                  'magneticfield_x', Ddata, p_Ddata1)
+              call mhd_getVarInterleaveFormat3d(rvector2%NEQ, NVAR3D,&
+                  'magneticfield_y', Ddata, p_Ddata2)
+              call mhd_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
+                  'magneticfield_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'magneticfield'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
             end select
-
-            call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
-                p_Ddata1, p_Ddata2, p_Ddata3)
-
+                       
           else
 
             ! Standard treatment for scalar quantity
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarInterleaveFormat1d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+              call mhd_getVarInterleaveFormat1d(rvector1%NEQ,  NVAR1D,&
+                  cvariable, Ddata, p_Ddata1)
             case (NDIM2D)
-              call mhd_getVarInterleaveFormat2d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+              call mhd_getVarInterleaveFormat2d(rvector1%NEQ,  NVAR2D,&
+                  cvariable, Ddata, p_Ddata1)
             case (NDIM3D)
-              call mhd_getVarInterleaveFormat3d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+              call mhd_getVarInterleaveFormat3d(rvector1%NEQ,  NVAR3D,&
+                  cvariable, Ddata, p_Ddata1)
             end select
-
-            call ucd_addVariableVertexBased (rexport, cvariable,&
+            
+            call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
             
           end if
@@ -2280,113 +2389,121 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarBlockFormat1d(rvector1%NEQ, nvar,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat1d(rvector2%NEQ, nvar,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat1d(rvector3%NEQ, nvar,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
-
+              call mhd_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
+                  'velocity_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat1d(rvector2%NEQ, NVAR1D,&
+                  'velocity_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat1d(rvector3%NEQ, NVAR1D,&
+                  'velocity_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
+                  UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
+              
             case (NDIM2D)
-              call mhd_getVarBlockFormat2d(rvector1%NEQ, nvar,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat2d(rvector2%NEQ, nvar,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat2d(rvector3%NEQ, nvar,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
+                  'velocity_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
+                  'velocity_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat2d(rvector3%NEQ, NVAR2D,&
+                  'velocity_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
+                  UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM3D)
-              call mhd_getVarBlockFormat3d(rvector1%NEQ, nvar,&
-                  'velocity_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat3d(rvector2%NEQ, nvar,&
-                  'velocity_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat3d(rvector3%NEQ, nvar,&
-                  'velocity_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
+                  'velocity_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
+                  'velocity_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
+                  'velocity_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
+                  UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
             end select
-
-            call ucd_addVarVertBasedVec(rexport, 'velocity', UCD_VAR_VELOCITY,&
-                p_Ddata1, p_Ddata2, p_Ddata3)
             
           elseif (trim(cvariable) .eq. 'momentum') then
 
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarBlockFormat1d(rvector1%NEQ, nvar,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat1d(rvector2%NEQ, nvar,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat1d(rvector3%NEQ, nvar,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
+                  'momentum_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat1d(rvector2%NEQ, NVAR1D,&
+                  'momentum_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat1d(rvector3%NEQ, NVAR1D,&
+                  'momentum_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM2D)
-              call mhd_getVarBlockFormat2d(rvector1%NEQ, nvar,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat2d(rvector2%NEQ, nvar,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat2d(rvector3%NEQ, nvar,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
+                  'momentum_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
+                  'momentum_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat2d(rvector3%NEQ, NVAR2D,&
+                  'momentum_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM3D)
-              call mhd_getVarBlockFormat3d(rvector1%NEQ, nvar,&
-                  'momentum_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat3d(rvector2%NEQ, nvar,&
-                  'momentum_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat3d(rvector3%NEQ, nvar,&
-                  'momentum_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
+                  'momentum_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
+                  'momentum_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
+                  'momentum_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
-            call ucd_addVarVertBasedVec(rexport, 'momentum',&
-                p_Ddata1, p_Ddata2, p_Ddata3)
-
           elseif (trim(cvariable) .eq. 'magneticfield') then
-
+            
             ! Special treatment of momentum vector
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarBlockFormat1d(rvector1%NEQ, nvar,&
-                  'magneticfield_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat1d(rvector2%NEQ, nvar,&
-                  'magneticfield_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat1d(rvector3%NEQ, nvar,&
-                  'magneticfield_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
+                  'magneticfield_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat1d(rvector2%NEQ, NVAR1D,&
+                  'magneticfield_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat1d(rvector3%NEQ, NVAR1D,&
+                  'magneticfield_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'magneticfield'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM2D)
-              call mhd_getVarBlockFormat2d(rvector1%NEQ, nvar,&
-                  'magneticfield_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat2d(rvector2%NEQ, nvar,&
-                  'magneticfield_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat2d(rvector3%NEQ, nvar,&
-                  'magneticfield_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
+                  'magneticfield_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
+                  'magneticfield_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat2d(rvector3%NEQ, NVAR2D,&
+                  'magneticfield_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'magneticfield'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
 
             case (NDIM3D)
-              call mhd_getVarBlockFormat3d(rvector1%NEQ, nvar,&
-                  'magneticfield_x', p_Dsolution, p_Ddata1)
-              call mhd_getVarBlockFormat3d(rvector2%NEQ, nvar,&
-                  'magneticfield_y', p_Dsolution, p_Ddata2)
-              call mhd_getVarBlockFormat3d(rvector3%NEQ, nvar,&
-                  'magneticfield_z', p_Dsolution, p_Ddata3)
+              call mhd_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
+                  'magneticfield_x', Ddata, p_Ddata1)
+              call mhd_getVarBlockFormat3d(rvector2%NEQ, NVAR3D,&
+                  'magneticfield_y', Ddata, p_Ddata2)
+              call mhd_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
+                  'magneticfield_z', Ddata, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'magneticfield'//csuffix,&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
-            call ucd_addVarVertBasedVec(rexport, 'magneticfield',&
-                p_Ddata1, p_Ddata2, p_Ddata3)
-            
           else
             
             ! Standard treatment for scalar quantity
             select case(ndim)
             case (NDIM1D)
-              call mhd_getVarBlockFormat1d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+              call mhd_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
+                  cvariable, Ddata, p_Ddata1)
             case (NDIM2D)
-              call mhd_getVarBlockFormat2d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+              call mhd_getVarBlockFormat2d(rvector1%NEQ, NVAR2D,&
+                  cvariable, Ddata, p_Ddata1)
             case (NDIM3D)
-              call mhd_getVarBlockFormat3d(rvector1%NEQ, nvar,&
-                  cvariable, p_Dsolution, p_Ddata1)
+              call mhd_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
+                  cvariable, Ddata, p_Ddata1)
             end select
-
-            call ucd_addVariableVertexBased (rexport, cvariable,&
+            call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
             
           end if
@@ -2397,17 +2514,13 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_outputSolution')
         call sys_halt()
       end select
-      
+
       ! Release temporal memory
       call lsyssc_releaseVector(rvector1)
       call lsyssc_releaseVector(rvector2)
       call lsyssc_releaseVector(rvector3)
-
-    end if
-
-    ! Write UCD file
-    call ucd_write(rexport)
-    call ucd_release(rexport)
+      
+    end subroutine outputSolution
 
   end subroutine mhd_outputSolution
 
