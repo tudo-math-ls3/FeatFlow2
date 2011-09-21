@@ -30,6 +30,7 @@
 !# - an arraylist
 !# - a binary search tree
 !# - a graph structure
+!# - a group finite element set and block type
 !#
 !# The list supports 'level tags' and 'section tags' to group values:
 !# 
@@ -296,7 +297,8 @@ module collection
   use timescalehierarchy, only: t_timescaleHierarchy
   use fespacehierarchybase, only: t_feHierarchy, t_feSpaceLevel
   use multilevelprojection, only: t_interlevelProjectionHier
-  
+  use groupfembase, only: t_groupFEMSet, t_groupFEMBlock
+
   implicit none
   
   private
@@ -458,6 +460,12 @@ module collection
   ! multilevel projection hierarchy
   integer, parameter, public :: COLLCT_MLPRJHIERARCHY = 40
 
+  ! group finite element set
+  integer, parameter, public :: COLLCT_GROUPFEMSET    = 41
+
+  ! group finite element block
+  integer, parameter, public :: COLLCT_GROUPFEMBLOCK  = 42
+
 !</constantblock>
 
 !</constants>
@@ -598,6 +606,12 @@ module collection
 
     ! Pointer to a multilevel projection hierarchy structure
     type(t_interlevelProjectionHier), pointer   :: p_rmlprjHierarchy => null()
+
+    ! Pointer to a group finite element set
+    type(t_groupFEMSet), pointer                :: p_rgroupFEMSet => null()
+
+    ! Pointer to a group finite element block
+    type(t_groupFEMBlock), pointer              :: p_rgroupFEMBlock => null()
   end type
   
   public :: t_collctValue
@@ -774,6 +788,11 @@ module collection
     module procedure collct_queryvalue_direct 
     module procedure collct_queryvalue_indir
   end interface
+
+  interface collct_getmaxlevel
+    module procedure collct_getmaxlevel_direct
+    module procedure collct_getmaxlevel_indir
+  end interface
   
   public :: collct_init 
   public :: collct_done 
@@ -785,10 +804,6 @@ module collection
   public :: collct_printStatistics 
   public :: collct_copyQuickAccess
 
-  public :: collct_getvalue_struc 
-  public :: collct_getvalue_string 
-  public :: collct_getvalue_intarr 
-  public :: collct_getvalue_realarr 
   public :: collct_setvalue_char 
   public :: collct_setvalue_string 
   public :: collct_setvalue_int 
@@ -820,21 +835,31 @@ module collection
   public :: collct_setvalue_list 
   public :: collct_setvalue_arraylist 
   public :: collct_setvalue_btree 
-  public :: collct_setvalue_graph 
   public :: collct_setvalue_mshh
   public :: collct_setvalue_fesp
   public :: collct_setvalue_feh
   public :: collct_setvalue_tsh
   public :: collct_setvalue_mlprjh
-  public :: collct_queryvalue
+  public :: collct_setvalue_graph
+  public :: collct_setvalue_particles 
+  public :: collct_setvalue_particles3D
+  public :: collct_setvalue_gfemset
+  public :: collct_setvalue_gfemblk
 
+  public :: collct_getmaxlevel
   public :: collct_getmaxlevel_direct 
   public :: collct_getmaxlevel_indir 
+  public :: collct_queryvalue
   public :: collct_queryvalue_indir 
   public :: collct_queryvalue_direct 
   public :: collct_gettype
   public :: collct_settag
   public :: collct_gettag
+  
+  public :: collct_getvalue_struc 
+  public :: collct_getvalue_string 
+  public :: collct_getvalue_intarr 
+  public :: collct_getvalue_realarr 
   public :: collct_getvalue_char 
   public :: collct_getvalue_int 
   public :: collct_getvalue_real 
@@ -856,7 +881,8 @@ module collection
   public :: collct_getvalue_coll 
   public :: collct_getvalue_pars 
   public :: collct_getvalue_geom
-  public :: collct_getvalue_particles 
+  public :: collct_getvalue_particles
+  public :: collct_getvalue_particles3D
   public :: collct_getvalue_fchn 
   public :: collct_getvalue_hadapt 
   public :: collct_getvalue_afcstab 
@@ -870,9 +896,9 @@ module collection
   public :: collct_getvalue_feh
   public :: collct_getvalue_tsh
   public :: collct_getvalue_mlprjh
-  public :: collct_setvalue_particles 
-  public :: collct_setvalue_particles3D 
-
+  public :: collct_getvalue_gfemset
+  public :: collct_getvalue_gfemblk
+  
 contains
   
   ! ***************************************************************************
@@ -3176,7 +3202,7 @@ contains
 !<function>
 
   function collct_getvalue_tria (rcollection, sparameter, &
-                                  ilevel, ssectionName, bexists) result(value)
+                                 ilevel, ssectionName, bexists) result(value)
 !<description>
   ! Returns the the parameter sparameter as pointer to a triangulation 
   ! structure.
@@ -3748,7 +3774,7 @@ contains
 !<function>
 
   function collct_getvalue_discbc (rcollection, sparameter, &
-                                  ilevel, ssectionName, bexists) result(value)
+                                   ilevel, ssectionName, bexists) result(value)
 !<description>
   ! Returns the the parameter sparameter as pointer to a discrete boundary
   ! condition structure
@@ -3812,7 +3838,7 @@ contains
 !<function>
 
   function collct_getvalue_parlst (rcollection, sparameter, &
-                                 ilevel, ssectionName, bexists) result(value)
+                                   ilevel, ssectionName, bexists) result(value)
 !<description>
   ! Returns the the parameter sparameter as pointer to a parameter list.
   ! An error is thrown if the value is of the wrong type.
@@ -4192,7 +4218,7 @@ contains
 !<function>
 
   function collct_getvalue_particles(rcollection, sparameter, &
-                                 ilevel, ssectionName, bexists) result(value)
+                                     ilevel, ssectionName, bexists) result(value)
 !<description>
   ! Returns the the parameter sparameter as pointer to a particle collection object.
   ! An error is thrown if the value is of the wrong type.
@@ -4250,6 +4276,68 @@ contains
     
   end function collct_getvalue_particles
 
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_particles3D(rcollection, sparameter, &
+                                       ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a particle3D collection object.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_particleCollection3D), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES3D,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rparticles3D
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_particles3D
 
   ! ***************************************************************************
   
@@ -4762,7 +4850,7 @@ contains
   function collct_getvalue_mshh (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! Returns the the parameter sparameter as pointer to a mesh hierarchy.
   ! An error is thrown if the value is of the wrong type.
 !</description>  
   
@@ -4825,7 +4913,7 @@ contains
   function collct_getvalue_fesp (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! Returns the the parameter sparameter as pointer to a finite element space level.
   ! An error is thrown if the value is of the wrong type.
 !</description>  
   
@@ -4888,7 +4976,7 @@ contains
   function collct_getvalue_feh (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! Returns the the parameter sparameter as pointer to a finite element hierarchy.
   ! An error is thrown if the value is of the wrong type.
 !</description>  
   
@@ -4951,7 +5039,7 @@ contains
   function collct_getvalue_tsh (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! Returns the the parameter sparameter as pointer to a time scale hierarchy.
   ! An error is thrown if the value is of the wrong type.
 !</description>  
   
@@ -5014,7 +5102,7 @@ contains
   function collct_getvalue_mlprjh (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a graph structure.
+  ! Returns the the parameter sparameter as pointer to a multilevel projection structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>  
   
@@ -5064,6 +5152,132 @@ contains
     ! Return the quantity
     if (associated(p_rvalue)) then
       value => p_rvalue%p_rmlprjHierarchy
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_gfemset (rcollection, sparameter, &
+                                    ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a group finite element set.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_groupFEMSet), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMSET,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rgroupFEMSet
+    else
+      nullify(value)
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_gfemblk (rcollection, sparameter, &
+                                    ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a group finite element block.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_groupFEMBlock), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMBLOCK,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rgroupFEMBlock
     else
       nullify(value)
     end if
@@ -7358,7 +7572,7 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_particles(rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                       ilevel, ssectionName) 
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
@@ -7415,12 +7629,11 @@ contains
   end subroutine collct_setvalue_particles
 
 ! ***************************************************************************  
-
   
 !<subroutine>
 
   subroutine collct_setvalue_particles3D(rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                         ilevel, ssectionName) 
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
@@ -7477,7 +7690,128 @@ contains
   end subroutine collct_setvalue_particles3D
 
 ! ***************************************************************************  
+  
+!<subroutine>
 
+  subroutine collct_setvalue_gfemset(rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_groupFEMSet), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMSET,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rgroupFEMSet => value
+    
+  end subroutine collct_setvalue_gfemset
+
+! ***************************************************************************  
+  
+!<subroutine>
+
+  subroutine collct_setvalue_gfemblk(rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_groupFEMBlock), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_GROUPFEMBLOCK,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rgroupFEMBlock => value
+    
+  end subroutine collct_setvalue_gfemblk
+
+! ***************************************************************************  
   
 !<subroutine>
 
