@@ -2222,7 +2222,7 @@ contains
       
     case (UCDEXPORT_P1CONTINUOUS,&
           UCDEXPORT_P1DISCONTINUOUS)
-      bdiscontinuous = (ilineariseUCD .eq. 1)
+      bdiscontinuous = (ilineariseUCD .eq. UCDEXPORT_P1DISCONTINUOUS)
       
       if (present(rsolutionPrimal)) then
         call lin_lineariseVectorGlobal(rsolutionPrimal, rdiscretisationPrimal,&
