@@ -25,6 +25,7 @@ module mgrenum2d_test1
   use discretebc
   use bcassembly
   use triangulation
+  use meshregion
   use spatialdiscretisation
   use scalarpde
   use multileveloperators
@@ -35,6 +36,7 @@ module mgrenum2d_test1
   use random
   use matrixio
   use vectorio
+  use collection, only: t_collection
   
   implicit none
 
@@ -66,17 +68,20 @@ contains
   type(t_level), dimension(:), pointer :: Rlvl
   type(t_boundary) :: rbnd
   type(t_vectorBlock) :: rvecSol,rvecRhs,rvecTmp
-  type(t_boundaryRegion) :: rbndRegion
+  !type(t_boundaryRegion) :: rbndRegion
+  type(t_meshRegion) :: rmeshRegion
   type(t_linsolNode), pointer :: p_rsolver,p_rsmoother
   type(t_matrixBlock), dimension(:), pointer :: Rmatrices
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   integer, dimension(:), pointer :: p_Isort
   integer :: NLMIN, NLMAX,ierror
   integer :: i,j,k,n,iseed,cavrgType,cfilterPrjMat,csmoother,csmoothType,nsmoothSteps,&
-      cdumpSysMat, cdumpPrjMat, cdumpRhsVec, cdumpSolVec, ccycle, imaxIter
+      cdumpSysMat, cdumpPrjMat, cdumpRhsVec, cdumpSolVec, ccycle, imaxIter, ndim
   real(DP) :: ddamping, depsRel
 
     ! Fetch all necessary parameters
+    call parlst_getvalue_int(rparam, '', 'NDIM', ndim, 2)
+
     call parlst_getvalue_string(rparam, '', 'SPRMFILE', sprmfile, '')
     call parlst_getvalue_string(rparam, '', 'STRIFILE', strifile, '')
 
@@ -112,12 +117,13 @@ contains
 
     ! print parameters
     call output_line('Parsed Parameters:')
+    call output_line('NDIM           = ' // trim(sys_sil(ndim,4)))
     call output_line('SPRMFILE       = ' // trim(sprmfile))
     call output_line('STRIFILE       = ' // trim(strifile))
     call output_line('NLMIN          = ' // trim(sys_sil(NLMIN,4)))
     call output_line('NLMAX          = ' // trim(sys_sil(NLMAX,4)))
-    call output_line('SELEMENT       = ' // trim(selement))
-    call output_line('SCUBATURE      = ' // trim(scubature))
+    call output_line('SELEMENT       = ' // trim(elem_getName(celement))) !trim(selement))
+    call output_line('SCUBATURE      = ' // trim(cub_getName(ccubature))) !trim(scubature))
     call output_line('ISORT          = ' // trim(sys_sil(isort,4)))
     call output_line('ISEED          = ' // trim(sys_sil(iseed,12)))
     call output_line('CARVGTYPE      = ' // trim(sys_sil(cavrgType,4)))
@@ -129,48 +135,81 @@ contains
     call output_line('CSMOOTHTYPE    = ' // trim(sys_sil(csmoothType,4)))
     call output_line('NSMOOTHSTEPS   = ' // trim(sys_sil(nsmoothSteps,4)))
     call output_line('DDAMPING       = ' // trim(sys_sdP(ddamping, 8, 6)))
-    call output_separator(OU_SEP_MINUS)
+    call output_separator(OU_SEP_STAR)
 
     ! Allocate memory for all levels
     allocate(Rlvl(NLMIN:NLMAX))
+
+    call output_line('Creating meshes...')
+    if(ndim .eq. 2) then
+
+      call boundary_read_prm(rbnd, sprmfile)
+      call tria_readTriFile2D (Rlvl(NLMIN)%rtria, strifile, rbnd)
+      call tria_quickRefine2LevelOrdering (NLMIN-1, Rlvl(NLMIN)%rtria, rbnd)
+      call tria_initStandardMeshFromRaw (Rlvl(NLMIN)%rtria, rbnd)
     
-    ! read coarse mesh
-    call boundary_read_prm(rbnd, sprmfile)
-    call tria_readTriFile2D (Rlvl(NLMIN)%rtria, strifile, rbnd)
-    call tria_quickRefine2LevelOrdering (NLMIN-1,Rlvl(NLMIN)%rtria,rbnd)
-    call tria_initStandardMeshFromRaw (Rlvl(NLMIN)%rtria, rbnd)
+      do i = NLMIN+1, NLMAX
+        call tria_refine2LevelOrdering(Rlvl(i-1)%rtria, Rlvl(i)%rtria,rbnd)
+        call tria_initStandardMeshFromRaw(Rlvl(i)%rtria, rbnd)
+      end do
+
+    else if(ndim .eq. 3) then
+
+      call tria_readTriFile3D (Rlvl(NLMIN)%rtria, strifile)
+      call tria_quickRefine2LevelOrdering (NLMIN-1, Rlvl(NLMIN)%rtria)
+      call tria_initStandardMeshFromRaw (Rlvl(NLMIN)%rtria)
     
-    ! create finer meshes
-    do i = NLMIN+1, NLMAX
-      call tria_refine2LevelOrdering(Rlvl(i-1)%rtria, Rlvl(i)%rtria,rbnd)
-      call tria_initStandardMeshFromRaw(Rlvl(i)%rtria, rbnd)
-    end do
+      do i = NLMIN+1, NLMAX
+        call tria_refine2LevelOrdering(Rlvl(i-1)%rtria, Rlvl(i)%rtria)
+        call tria_initStandardMeshFromRaw(Rlvl(i)%rtria)
+      end do
+
+    else
+
+      ! invalid dimension
+      call sys_halt()
+
+    end if
 
     ! create discretisations and system matrices
+    call output_line('Creating discretisations...')
+    if(ndim .eq. 2) then
+      do i = NLMIN, NLMAX
+        call spdiscr_initBlockDiscr (Rlvl(i)%rdisc, 1, Rlvl(i)%rtria, rbnd)
+        call spdiscr_initDiscr_simple (Rlvl(i)%rdisc%RspatialDiscr(1), &
+            celement, ccubature, Rlvl(i)%rtria, rbnd)
+      end do
+    else if(ndim .eq. 3) then
+      do i = NLMIN, NLMAX
+        call spdiscr_initBlockDiscr (Rlvl(i)%rdisc, 1, Rlvl(i)%rtria)
+        call spdiscr_initDiscr_simple (Rlvl(i)%rdisc%RspatialDiscr(1), &
+            celement, ccubature, Rlvl(i)%rtria)
+      end do
+    end if
+
+    ! create system matrices
+    call output_line('Creating system matrices...')
     do i = NLMIN, NLMAX
-
-      ! create discretisation
-      call spdiscr_initBlockDiscr (Rlvl(i)%rdisc, 1, Rlvl(i)%rtria, rbnd)
-      call spdiscr_initDiscr_simple (Rlvl(i)%rdisc%RspatialDiscr(1), &
-          celement, ccubature, Rlvl(i)%rtria, rbnd)
-
-      ! create system matrix
       call lsysbl_createMatBlockByDiscr(Rlvl(i)%rdisc,Rlvl(i)%rmatSys)
       call bilf_createMatrixStructure (Rlvl(i)%rdisc%RspatialDiscr(1),&
           LSYSSC_MATRIX9, Rlvl(i)%rmatSys%RmatrixBlock(1,1))
       call stdop_assembleLaplaceMatrix(Rlvl(i)%rmatSys%RmatrixBlock(1,1))
+    end do
 
+    call output_line('Assembling boundary conditions...')
+    do i = NLMIN, NLMAX
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(Rlvl(i)%rdbc)
 
-      ! add all boundary segments to DBCs
-      do j = 1, boundary_igetNBoundComp(rbnd)
-        do k = 1, boundary_igetNsegments(rbnd,j)
-          call boundary_createRegion(rbnd,j,k,rbndRegion)
-          call bcasm_newDirichletBConRealBD (Rlvl(i)%rdisc,1,&
-              rbndRegion,Rlvl(i)%rdbc,funcBCZero)
-        end do
-      end do
+      ! create a mesh region for the whole boundary
+      call mshreg_createFromNodalProp(rmeshRegion, Rlvl(i)%rtria, MSHREG_IDX_ALL)
+
+      ! assemble BCs on the mesh region
+      call bcasm_newDirichletBConMR (Rlvl(i)%rdisc, 1, Rlvl(i)%rdbc,&
+          rmeshRegion, funcBCZeroMR)
+
+      ! release the mesh region
+      call mshreg_done(rmeshRegion)
 
       ! attach BC to matrix, filter it and detach BC structure again
       Rlvl(i)%rmatSys%p_rdiscreteBC => Rlvl(i)%rdbc
@@ -178,6 +217,23 @@ contains
       Rlvl(i)%rmatSys%p_rdiscreteBC => null()
 
     end do
+
+    ! print some statistics
+    call output_separator(OU_SEP_STAR)
+    call output_line('System Statistics:')
+    call output_line('------------------')
+                    !    012345678901-12345678901-12345678901-12345678901-12345678901-12345678901234
+    call output_line('LVL         NVT         NMT         NAT         NEL         NEQ           NNZE')
+    do i = NLMIN, NLMAX
+      call output_line(trim(sys_si(i,3)) // &
+        trim(sys_si(Rlvl(i)%rtria%NVT,12)) // &
+        trim(sys_si(Rlvl(i)%rtria%NMT,12)) // &
+        trim(sys_si(Rlvl(i)%rtria%NAT,12)) // &
+        trim(sys_si(Rlvl(i)%rtria%NEL,12)) // &
+        trim(sys_si(Rlvl(i)%rmatSys%RmatrixBlock(1,1)%NEQ,12)) // &
+        trim(sys_si(Rlvl(i)%rmatSys%RmatrixBlock(1,1)%NA,15)))
+    end do
+    call output_separator(OU_SEP_STAR)
 
     ! create vectors
     call lsysbl_createVecBlockIndMat (Rlvl(NLMAX)%rmatSys,rvecSol, .true.)
@@ -426,7 +482,9 @@ contains
     
     deallocate(Rlvl)
     
-    call boundary_release (rbnd)
+    if(ndim .eq. 2) then
+      call boundary_release (rbnd)
+    end if
 
   end subroutine
 
@@ -436,17 +494,16 @@ contains
   subroutine coeffOne (rdiscretisation,rform,nelements,npointsPerElement,Dpoints, &
                        IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
   use basicgeometry
-  use collection
   use domainintegration
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  type(t_linearForm), intent(IN)                              :: rform
-  integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
-  integer, intent(IN)                                         :: npointsPerElement
+  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+  type(t_linearForm), intent(IN) :: rform
+  integer, intent(IN) :: nelements
+  integer, intent(IN) :: npointsPerElement
   real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
   integer, dimension(:,:), intent(IN) :: IdofsTest
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-  type(t_collection), intent(INOUT), optional      :: rcollection
-  real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
+  type(t_collection), intent(INOUT), optional :: rcollection
+  real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
   
     Dcoefficients = 1.0_DP
 
@@ -454,10 +511,9 @@ contains
 
   !************************************************************************************************
 
-  ! callback function for Dirichlet BC assembly
-  subroutine funcBCZero(Icomponents,rdiscretisation,rboundaryRegion,ielement, &
-                        cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-  use collection
+  ! callback function for homogene Dirichlet BC assembly (boundary-region version)
+  subroutine funcBCZeroBR(Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+                          cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   integer, dimension(:), intent(IN)                           :: Icomponents
   type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
@@ -467,6 +523,25 @@ contains
   real(DP), intent(IN)                                        :: dwhere
   type(t_collection), intent(INOUT), optional                 :: rcollection
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
+
+    Dvalues = 0.0_DP
+
+  end subroutine
+
+  !************************************************************************************************
+
+  ! callback function for homogene Dirichlet BC assembly (mesh-region version)
+  subroutine funcBCZeroMR (Icomponents,rdiscretisation,rmeshRegion,cinfoNeeded,&
+                            Iwhere,Dwhere,Dcoords,Dvalues,rcollection)
+  integer, dimension(:), intent(in) :: Icomponents
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  type(t_meshRegion), intent(in) :: rmeshRegion
+  integer, intent(in) :: cinfoNeeded
+  integer, dimension(4), intent(in) :: Iwhere
+  real(DP), dimension(:), intent(in) :: Dwhere
+  real(DP), dimension(:), intent(in) :: Dcoords
+  type(t_collection), intent(inout), optional :: rcollection
+  real(DP), dimension(:), intent(out) :: Dvalues
 
     Dvalues = 0.0_DP
 

@@ -1,16 +1,23 @@
 # path of log file
 SLOGILE = ./log/output.log
 
-# paths of PRM and TRI files
+# dimension of the test
+# 2: 2D
+# 3: 3D
+NDIM = 2
+
+# path of PRM file (2D only; is ignored in 3D)
 SPRMFILE = ./pre/heat_v77.prm
-STRIFILE = ./pre/heat_v77.tri
+
+# path of TRI file
+STRIFILE = ./pre/QUAD.tri
 
 # minimum and maximum MG levels
 NLMIN = 2
 NLMAX = 5
 
 # element and cubature to be used
-SELEMENT = EL_Q1
+SELEMENT = EL_Q1_2D
 SCUBATURE = G3_2D
 
 # sorting strategy identifier
