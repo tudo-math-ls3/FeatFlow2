@@ -298,6 +298,13 @@
 !#
 !# 10.) lsyssc_setRowMatrix9
 !#      -> Adds or replaces a row in a format-9 matrix.
+!#
+!# 11.) lsyssc_genEdgeList
+!#      -> Generates a list of edges of a given matrix
+!#
+!# 12.) lsyssc_regroupEdgeList
+!#      -> Regroup a list of edges into independent groups which can be
+!#         processed individually, i.e. in parallel
 !# </purpose>
 !##############################################################################
 
@@ -548,6 +555,19 @@ module linearsystemscalar
 
 !</constantblock>
 
+!<constantblock description="Constants for content stored at each edge">
+
+  ! Store only the node numbers
+  integer, parameter, public :: LSYSSC_EDGELIST_NODESONLY   = 0
+
+  ! Store only the absolute matrix positions
+  integer, parameter, public :: LSYSSC_EDGELIST_POSONLY     = 1
+
+  ! Store the node numbers and the matrix positions
+  integer, parameter, public :: LSYSSC_EDGELIST_NODESANDPOS = 2
+
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -660,7 +680,7 @@ module linearsystemscalar
     
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
-    ! various details of the matrix. If it is =LSYSSC_MSPEC_STANDaRD,
+    ! various details of the matrix. If it is =LSYSSC_MSPEC_STANDARD,
     ! the matrix is a usual matrix that needs no special handling.
     integer(I32) :: imatrixSpec = LSYSSC_MSPEC_STANDARD
     
@@ -930,6 +950,8 @@ module linearsystemscalar
   public :: lsyssc_createEmptyMatrixStub
   public :: lsyssc_setRowMatrix9
   public :: lsyssc_createEmptyMatrix9
+  public :: lsyssc_genEdgeList
+  public :: lsyssc_regroupEdgeList
 
 contains
 
@@ -1880,7 +1902,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! assigned to the vector. The vector can be resised arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -1954,7 +1976,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! assigned to the vector. The vector can be resised arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -2036,7 +2058,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! assigned to the vector. The vector can be resised arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -2101,7 +2123,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! assigned to the vector. The vector can be resised arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -2160,13 +2182,13 @@ contains
   subroutine lsyssc_createVecIndMat (rtemplateMat,rx,bclear,btransposed,cdataType)
 
 !<description>
-    ! Initializes the scalar vector structure rx. rtemplateMat is an 
+    ! Initialises the scalar vector structure rx. rtemplateMat is an 
     ! existing scalar matrix structure. The vector rx will be created
     ! according to the size of the template matrix.
     !
     ! Memory is allocated on the heap for rx. The vector rx will have
     ! the same size as the number of matrix columns.
-    ! The sorting strategy of the vector is initialized with the 
+    ! The sorting strategy of the vector is initialised with the 
     ! sorting strategy of the template matrix rtemplateMat.
 !</description>
 
@@ -2280,7 +2302,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    ! OPTIONAL: Whether to copy the content of the vector to the resised one
     logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
@@ -2302,13 +2324,13 @@ contains
 
     ! Check, that vector is not a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
-      print *, "lsyssc_resizeVectorDirect: A copied vector cannot be resized!"
+      print *, "lsyssc_resizeVectorDirect: A copied vector cannot be resised!"
       call sys_halt()
     end if
     
-    ! Check, if vector has been initialized before.
+    ! Check, if vector has been initialised before.
     if (rvector%NEQ .eq. 0 .or. rvector%h_Ddata .eq. ST_NOHANDLE) then
-      print *, "lsyssc_resizeVectorDirect: A vector can only be resized " // &
+      print *, "lsyssc_resizeVectorDirect: A vector can only be resised " // &
                "if it has been created correctly!"
       call sys_halt()
     end if
@@ -2387,7 +2409,7 @@ contains
   ! Resizes the vector structure so that it exhibits the same memory layout 
   ! as the template vector. Note that this subroutine can only be used
   ! if the template vector has the same internal structure, e.g., data type, NVAR
-  ! as the vector to be resized.
+  ! as the vector to be resised.
   !
   ! If NEQ is smaller than the real memory allocated for the vector, then
   ! only NEQ is reset. Otherwise, the memory is physically reallocated.
@@ -2412,7 +2434,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    ! OPTIONAL: Whether to copy the content of the vector to the resised one
     logical, intent(in), optional              :: bcopy
 
 !</input>
@@ -2430,11 +2452,11 @@ contains
 
     ! Check, if vector is a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
-      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
+      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resised!"
       call sys_halt()
     end if
 
-    ! Check, if vector has been initialized before. If this is not
+    ! Check, if vector has been initialised before. If this is not
     ! the case, then create a new vector by duplicating the template vector.
     ! Moreover, no data is copied and the vector is cleared if bclear=.TRUE.
     if ((rvector%NEQ .eq. 0) .or.&
@@ -2485,7 +2507,7 @@ contains
     ! scalar template matrix. If the vector does not exist, then it
     ! is created according to the matrix structure.
     !
-    ! If it already exists, then it is resized accordingly so that
+    ! If it already exists, then it is resised accordingly so that
     ! its size coincides with the number of columns of the matrix.
 !</description>
 
@@ -2497,7 +2519,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    ! OPTIONAL: Whether to copy the content of the vector to the resised one
     logical, intent(in), optional              :: bcopy
 
 !</input>
@@ -2513,7 +2535,7 @@ contains
 
     ! Check, if vector is a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
-      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
+      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resised!"
       call sys_halt()
     end if
     
@@ -2568,11 +2590,11 @@ contains
   ! If the optional parameters NEQMAX, NCOLSMAX or NAMAX are specified, then 
   ! memory is allocated for these values rather than NEQ, NCOLS or NA.
   !
-  ! By default, a matrix cannot be resized, if it is copied (even partially)
+  ! By default, a matrix cannot be resised, if it is copied (even partially)
   ! from another matrix. This is to prevent inconsistent data, i.e., the
-  ! copied matrix is resized correctly but the original matrix still has
+  ! copied matrix is resised correctly but the original matrix still has
   ! old values NEQ, NCOLS, and NA. However, if the optional parameter
-  ! bforce=.TRUE. then a copied matrix is resized virtually. That means,
+  ! bforce=.TRUE. then a copied matrix is resised virtually. That means,
   ! the atomic data NEQ, NCOLS, and NA are set to the new values if the
   ! corresponding handles for the structure and data are associated
   ! to memory blocks of sufficient size.
@@ -2596,7 +2618,7 @@ contains
     ! Whether to fill the matrix with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the matrix to the resized one
+    ! OPTIONAL: Whether to copy the content of the matrix to the resised one
     logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Maximum number of equations
@@ -2635,14 +2657,14 @@ contains
     if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) .and.&
          .not.bdoresize) then
-      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if " // &
+      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resised if " // &
                "this is forced explicitely!"
       call sys_halt()
     end if
 
-    ! Check, if matrix has been initialized before.
+    ! Check, if matrix has been initialised before.
     if (rmatrix%NEQ .eq. 0 .or. rmatrix%NCOLS .eq. 0 .or. rmatrix%NA .eq. 0) then
-      print *, "lsyssc_resizeMatrixDirect: A matrix can only be resized " // &
+      print *, "lsyssc_resizeMatrixDirect: A matrix can only be resised " // &
                "if it has been created correctly!"
       call sys_halt()
     end if
@@ -2679,13 +2701,13 @@ contains
     rmatrix%NEQ   = NEQ
     rmatrix%NCOLS = NCOLS
 
-    ! Now, the matrix has been virtually resized, that is, it already states
+    ! Now, the matrix has been virtually resised, that is, it already states
     ! the new dimensions. In order to resize the matrix physically, its structure
     ! and/or data need to be (re-)allocated).
     ! Remark: If the matrix was a copy of another matrix and if resize was
     ! not forced, then this routine would have stopped earlier. Hence, we can
     ! be sure, that resize is admissible in general. In other words, the structure/
-    ! data is resized unconditionally if it is not copied from another matrix.
+    ! data is resised unconditionally if it is not copied from another matrix.
     ! If it is a copy of another matrix, then we check if corresponding handles
     ! are associated to large enough memory blocks. If not, then we stop with 
     ! an error. In any case, copied parts of the matrix are not cleared.
@@ -2695,7 +2717,7 @@ contains
       
     case (LSYSSC_MATRIX1,LSYSSC_MATRIXD)
       
-      ! For these matrices, only the data array needs to be resized since
+      ! For these matrices, only the data array needs to be resised since
       ! there is no actual matrix structure.
       
       ! Are we copy or not?
@@ -2856,7 +2878,7 @@ contains
           if (bclear) call storage_clear(rmatrix%h_Kcol)
         end if
         
-        ! If the matrix is stored in format 9, then the diagonal array must be resized.
+        ! If the matrix is stored in format 9, then the diagonal array must be resised.
         if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9) .or.&
             (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL)) then
           
@@ -2899,7 +2921,7 @@ contains
         
       end if
       
-      ! Ok, the matrix structure has been resized according to the prescribed dimensions.
+      ! Ok, the matrix structure has been resised according to the prescribed dimensions.
       ! Now, let us resize the data array of the matrix.
       
       ! Are we copy or not?
@@ -3081,7 +3103,7 @@ contains
   ! Resizes the matrix so that it exhibits the same memory layout as the
   ! template matrix. Note that this subroutine can only be used if the
   ! template matrix has the same internal structure, e.g., data type, NVAR
-  ! as the matrix to be resized.
+  ! as the matrix to be resised.
   !
   ! If the parameter bclear=.TRUE. the complete matrix is cleared.
   ! This is done both in case the matrix is reallocated physically or not.
@@ -3094,11 +3116,11 @@ contains
   ! That is, if both parameters are given, then no data is copied if the
   ! matrix shoud be cleared afterwards ;-)
   !
-  ! By default, a matrix cannot be resized, if it is copied (even partially)
+  ! By default, a matrix cannot be resised, if it is copied (even partially)
   ! from another matrix. This is to prevent inconsistent data, i.e., the
-  ! copied matrix is resized correctly but the original matrix still has
+  ! copied matrix is resised correctly but the original matrix still has
   ! old values NEQ, NCOLS, and NA. However, if the optional parameter
-  ! bforce=.TRUE. then a copied matrix is resized virtually. That means,
+  ! bforce=.TRUE. then a copied matrix is resised virtually. That means,
   ! the atomic data NEQ, NCOLS, and NA are set to the new values if the
   ! corresponding handles for the structure and data are associated
   ! to memory blocks of sufficient size.
@@ -3116,7 +3138,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    ! OPTIONAL: Whether to copy the content of the vector to the resised one
     logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Whether to enforce resize even if matrix is copied from another matrix
@@ -3145,12 +3167,12 @@ contains
     if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) .and.&
          .not.bdoresize) then
-      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if" // &
+      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resised if" // &
                "this is forced explicitely!"
       call sys_halt()
     end if
 
-    ! Check, if matrix has been initialized before.
+    ! Check, if matrix has been initialised before.
     if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIXUNDEFINED) then
 
       ! At first, copy all 'local' data.
@@ -3205,7 +3227,7 @@ contains
       
     else
 
-      ! The matrix has been initialized before.
+      ! The matrix has been initialised before.
 
       ! Check if matrices are compatible except for the dimensions
       if ((rmatrix%cmatrixFormat           .ne. rmatrixTemplate%cmatrixFormat) .or.&
@@ -21743,7 +21765,7 @@ contains
       ! Loop over all rows
       do ieq = 1,neq
 
-        ! Initialize column pointers for matrix A and B
+        ! Initialise column pointers for matrix A and B
         ildA = KldA(ieq); ildendA = KldA(ieq+1)-1
         ildB = KldB(ieq); ildendB = KldB(ieq+1)-1
 
@@ -22111,12 +22133,12 @@ contains
 !!$      ! Loop over all ROWS
 !!$      do ieq=1,neq
 !!$        
-!!$        ! Initialize column pointers for matrix A, B and C
+!!$        ! Initialise column pointers for matrix A, B and C
 !!$        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
 !!$        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
 !!$        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
 !!$
-!!$        ! Initialize pointer to diagonal entry
+!!$        ! Initialise pointer to diagonal entry
 !!$        idiagC = KdiagC(ieq)
 !!$        
 !!$        ! Since the final value of the diagonal entry
@@ -22285,12 +22307,12 @@ contains
 !!$      ! Loop over all ROWS
 !!$      do ieq=1,neq
 !!$        
-!!$        ! Initialize column pointers for matrix A, B and C
+!!$        ! Initialise column pointers for matrix A, B and C
 !!$        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
 !!$        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
 !!$        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
 !!$
-!!$        ! Initialize pointer to diagonal entry
+!!$        ! Initialise pointer to diagonal entry
 !!$        idiagC = KdiagC(ieq)
 !!$        
 !!$        ! Since the final value of the diagonal entry
@@ -22459,12 +22481,12 @@ contains
 !!$      ! Loop over all ROWS
 !!$      do ieq=1,neq
 !!$        
-!!$        ! Initialize column pointers for matrix A, B and C
+!!$        ! Initialise column pointers for matrix A, B and C
 !!$        ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
 !!$        ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
 !!$        ildC=KldC(ieq); ildendC=KldC(ieq+1)-1
 !!$
-!!$        ! Initialize pointer to diagonal entry
+!!$        ! Initialise pointer to diagonal entry
 !!$        idiagC = KdiagC(ieq)
 !!$        
 !!$        ! Since the final value of the diagonal entry
@@ -24949,4 +24971,1694 @@ contains
 
   end subroutine
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_genEdgeList(rmatrix, h_IedgeList, ccontentType,&
+      bisSymmetric, bignoreDiagonal, IdofList)
+
+!<description>
+    ! This subroutine generates a list of edges (i,j) based on all or
+    ! a subset of non-zero matrix entries ij by transversing the
+    ! matrix. Depending on the flags bisSymmetric and bignoreDiagonal
+    ! it is assumed that the matrix is symmetric so that only the
+    ! upper-right triangular part is traversed and/or the diagonal
+    ! "edges" (i,i) are ignored or included.
+!</description>
+
+!<input>
+    ! Source matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Specifier which defines the content to be stored at each edge.
+    ! Must be one of the LSYSSC_EDGELIST_xxx constants
+    integer, intent(in) :: ccontentType
+
+    ! Flag which defines whether the matrix is structurally symmetric,
+    ! that is, an edge (i,j) exists if an only if an edge (j,i) exists
+    logical, intent(in) :: bisSymmetric
+
+    ! Flag which defines whether the diagonal edges (i,i) should be
+    ! ignored or not.
+    logical, intent(in) :: bignoreDiagonal
+
+    ! OPTIONAL: a list of degress of freedoms to which the edge
+    ! structure should be restricted.
+    integer, dimension(:), intent(in), optional :: IdofList
+!</input>
+
+!<inputoutput>
+    ! Handle for the edge list
+    integer, intent(inout) :: h_IedgeList
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
+    integer, dimension(2) :: Isize
+    integer :: ncontent,nedge,h_Ksep
+
+    ! Determine the number of edges
+    select case(rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL,&
+          LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL,&
+          LSYSSC_MATRIX1)
+      nedge = (rmatrix%NA-rmatrix%NEQ)
+      if (bisSymmetric) nedge = nedge/2
+      if (.not.bignoreDiagonal) nedge = nedge+rmatrix%NEQ
+
+    case (LSYSSC_MATRIXD)
+      call output_line('Edge-bases data structure cannot be generated&
+          &from diagonal matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genEdgeList')
+      call sys_halt()
+
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genEdgeList')
+      call sys_halt()
+    end select
+
+    ! Determine the type of information stored at each edge
+    select case(ccontentType)
+    case (LSYSSC_EDGELIST_NODESONLY, LSYSSC_EDGELIST_POSONLY)
+      ncontent = 2
+    case (LSYSSC_EDGELIST_NODESANDPOS)
+      ncontent = 4
+    case default
+      call output_line('Unsupported content specifier!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genEdgeList')
+      call sys_halt()
+    end select
+
+    ! (Re-)allocate memory
+    if (h_IedgeList .eq. ST_NOHANDLE) then
+      Isize = (/ncontent, nedge/)
+      call storage_new('lsyssc_genEdgeList', 'IedgeList',&
+          Isize, ST_INT, h_IedgeList, ST_NEWBLOCK_NOINIT)
+    else
+      call storage_getsize(h_IedgeList, Isize)
+      if ((Isize(1) .ne. ncontent) .or. (Isize(2) .ne. nedge)) then
+        call storage_free(h_IedgeList)
+        Isize = (/ncontent, nedge/)
+        call storage_new('lsyssc_genEdgeList', 'IedgeList',&
+            Isize, ST_INT, h_IedgeList, ST_NEWBLOCK_NOINIT)
+      end if
+    end if
+
+    ! Set pointer
+    call storage_getbase_int2d(h_IedgeList, p_IedgeList)
+
+    ! Generate edge data structure
+    select case(rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX1)
+      if (bisSymmetric) then
+        if (present(IdofList)) then
+          call genEdgesMat1SymmSel(rmatrix%NEQ, ccontentType,&
+              bignoreDiagonal, IdofList, p_IedgeList)
+        else
+          call genEdgesMat1Symm(rmatrix%NEQ, ccontentType,&
+              bignoreDiagonal, p_IedgeList)
+        end if
+      else
+        if (present(IdofList)) then
+          call genEdgesMat1Sel(rmatrix%NEQ, rmatrix%NCOLS, ccontentType,&
+              bignoreDiagonal, IdofList, p_IedgeList)
+        else
+          call genEdgesMat1(rmatrix%NEQ, rmatrix%NCOLS, ccontentType,&
+              bignoreDiagonal, p_IedgeList)
+        end if
+      end if
+
+    case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
+      if (bisSymmetric) then
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+        
+        ! Create diagonal separator
+        h_Ksep = ST_NOHANDLE
+        call storage_copy(rmatrix%h_Kld, h_Ksep)
+        call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+
+        ! Generate edge structure
+        if (present(IdofList)) then
+          call genEdgesMat7SymmSel(p_Kld, p_Kcol, p_Ksep, ccontentType,&
+              bignoreDiagonal, IdofList, p_IedgeList)
+        else
+          call genEdgesMat7Symm(p_Kld, p_Kcol, p_Ksep, ccontentType,&
+              bignoreDiagonal, p_IedgeList)
+        end if
+        
+        ! Release diagonal separator
+        call storage_free(h_Ksep)
+      else
+        if (present(IdofList)) then
+          call genEdgesMat7Sel(p_Kld, p_Kcol, ccontentType,&
+              bignoreDiagonal, max(rmatrix%NEQ,rmatrix%NCOLS),&
+              IdofList, p_IedgeList)
+        else
+          call genEdgesMat7(p_Kld, p_Kcol, ccontentType,&
+              bignoreDiagonal, p_IedgeList)
+        end if
+      end if
+
+    case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
+      if (bisSymmetric) then
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+        call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+        
+        ! Create diagonal separator
+        h_Ksep = ST_NOHANDLE
+        call storage_copy(rmatrix%h_Kld, h_Ksep)
+        call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+        
+        ! Generate edge structure
+        if (present(IdofList)) then
+          call genEdgesMat9SymmSel(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              ccontentType, bignoreDiagonal, IdofList, p_IedgeList)
+        else
+          call genEdgesMat9Symm(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+              ccontentType, bignoreDiagonal, p_IedgeList)
+        end if
+        
+        ! Release diagonal separator
+        call storage_free(h_Ksep)
+      else
+        if (present(IdofList)) then
+          call genEdgesMat9Sel(p_Kld, p_Kcol, ccontentType,&
+              bignoreDiagonal, max(rmatrix%NEQ,rmatrix%NCOLS),&
+              IdofList, p_IedgeList)
+        else
+          call genEdgesMat9(p_Kld, p_Kcol, ccontentType,&
+              bignoreDiagonal, p_IedgeList)
+        end if
+      end if
+
+    end select
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Generate edge data structure for symmetric dense matrices 
+    ! stored in matrix format 1
+    
+    subroutine genEdgesMat1Symm(neq, ccontentType, bignoreDiagonal, IedgeList)
+      
+      integer, intent(in) :: neq,ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      integer :: i,j,iedge,ioffset
+      
+      ! Initialise edge counter
+      iedge = 0
+
+      ! Include diagonal entries?
+      ioffset = merge(1,0, bignoreDiagonal)
+      
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J such that I <= J or I < J, that  is,
+          ! the upper right triangular part of the matrix is traversed
+          do j = i+ioffset, neq
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J such that I <= J or I < J, that  is,
+          ! the upper right triangular part of the matrix is traversed
+          do j = i+ioffset, neq
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set matrix positions ij and ji
+            IedgeList(1,iedge) = neq*(i-1)+j
+            IedgeList(2,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J such that I <= J or I < J, that  is,
+          ! the upper right triangular part of the matrix is traversed
+          do j = i+ioffset, neq
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+            
+            ! Set matrix positions ij and ji
+            IedgeList(3,iedge) = neq*(i-1)+j
+            IedgeList(4,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      end select
+
+    end subroutine genEdgesMat1Symm
+
+    !**************************************************************
+    ! Generate edge data structure for symmetric dense matrices stored
+    ! in matrix format 1 restricted to a list of selected degrees of
+    ! freedom
+    
+    subroutine genEdgesMat1SymmSel(neq, ccontentType, bignoreDiagonal,&
+        IdofList, IedgeList)
+      
+      integer, dimension(:), intent(in) :: IdofList
+      integer, intent(in) :: neq,ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      logical, dimension(:), allocatable :: BisActive
+      integer :: i,j,iedge,ioffset
+      
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(neq)); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i))=.true.
+      end do
+
+      ! Initialise edge counter
+      iedge = 0
+
+      ! Include diagonal entries?
+      ioffset = merge(1,0, bignoreDiagonal)
+      
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J such that I <= J or I < J, that  is,
+          ! the upper right triangular part of the matrix is traversed
+          do j = i+ioffset, neq
+            
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J such that I <= J or I < J, that  is,
+          ! the upper right triangular part of the matrix is traversed
+          do j = i+ioffset, neq
+            
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set matrix positions ij and ji
+            IedgeList(1,iedge) = neq*(i-1)+j
+            IedgeList(2,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J such that I <= J or I < J, that  is,
+          ! the upper right triangular part of the matrix is traversed
+          do j = i+ioffset, neq
+            
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+            
+            ! Set matrix positions ij and ji
+            IedgeList(3,iedge) = neq*(i-1)+j
+            IedgeList(4,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(BisActive)
+
+    end subroutine genEdgesMat1SymmSel
+    
+    !**************************************************************
+    ! Generate edge data structure for arbitrary dense matrices 
+    ! stored in matrix format 1
+    
+    subroutine genEdgesMat1(neq, ncols, ccontentType, bignoreDiagonal, IedgeList)
+      
+      integer, intent(in) :: neq,ncols,ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      integer :: i,j,iedge
+      
+      ! Initialise edge counter
+      iedge = 0
+
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J
+          do j = 1, ncols
+
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J
+          do j = 1, ncols
+
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set matrix positions ij and ji
+            IedgeList(1,iedge) = neq*(i-1)+j
+            IedgeList(2,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J
+          do j = 1, ncols
+
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+            
+            ! Set matrix positions ij and ji
+            IedgeList(3,iedge) = neq*(i-1)+j
+            IedgeList(4,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      end select
+
+    end subroutine genEdgesMat1
+
+    !**************************************************************
+    ! Generate edge data structure for arbitrary dense matrices stored
+    ! in matrix format 1 restricted to a list of selected degrees of
+    ! freedom
+    
+    subroutine genEdgesMat1Sel(neq, ncols, ccontentType, bignoreDiagonal,&
+        IdofList, IedgeList)
+      
+      integer, dimension(:), intent(in) :: IdofList
+      integer, intent(in) :: neq,ncols,ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      logical, dimension(:), allocatable :: BisActive
+      integer :: i,j,iedge
+      
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(max(neq,ncols))); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i))=.true.
+      end do
+
+      ! Initialise edge counter
+      iedge = 0
+
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J
+          do j = 1, ncols
+
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all equations
+        do i = 1, neq
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J
+          do j = 1, ncols
+
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set matrix positions ij and ji
+            IedgeList(1,iedge) = neq*(i-1)+j
+            IedgeList(2,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+
+        ! Loop over all equations
+        do i = 1, neq
+          
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ which are
+          ! adjacent to node J
+          do j = 1, ncols
+
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+            
+            ! Set matrix positions ij and ji
+            IedgeList(3,iedge) = neq*(i-1)+j
+            IedgeList(4,iedge) = neq*(j-1)+i
+          end do
+        end do
+
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(BisActive)
+
+    end subroutine genEdgesMat1Sel
+
+    !**************************************************************
+    ! Generate edge data structure for symmetric matrix in format 7
+
+    subroutine genEdgesMat7Symm(Kld, Kcol, Ksep, ccontentType,&
+        bignoreDiagonal, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+      integer, dimension(:), intent(inout) :: Ksep
+      
+      ! local variables
+      integer :: i,j,ij,ji,iedge
+      
+      ! Initialise edge counter
+      iedge = 0
+      
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          if (.not.bignoreDiagonal) then
+            ! Increase edge counter
+            iedge = iedge+1
+
+            ! Set node numbers i and i
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = i
+          end if
+
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J, that is, the upper
+          ! right triangular part of the matrix is traversed
+          do ij = Ksep(i)+1, Kld(i+1)-1
+            
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          if (.not.bignoreDiagonal) then
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and i
+            IedgeList(1,iedge) = Kld(i)
+            IedgeList(2,iedge) = Kld(i)
+          end if
+          
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J, that is, the upper
+          ! right triangular part of the matrix is traversed
+          do ij = Ksep(i)+1, Kld(i+1)-1
+            
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set matrix positions ij and ji
+            IedgeList(1,iedge) = ij
+            IedgeList(2,iedge) = ji
+          end do
+        end do
+        
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+        
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          if (.not.bignoreDiagonal) then
+            ! Increase edge counter
+            iedge = iedge+1
+
+            ! Set node numbers i and i
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = i
+
+            ! Set node numbers i and i
+            IedgeList(3,iedge) = Kld(i)
+            IedgeList(4,iedge) = Kld(i)
+          end if
+
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J, that is, the upper
+          ! right triangular part of the matrix is traversed
+          do ij = Ksep(i)+1, Kld(i+1)-1
+            
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+
+            ! Set matrix positions ij and ji
+            IedgeList(3,iedge) = ij
+            IedgeList(4,iedge) = ji
+          end do
+        end do
+
+      end select
+
+    end subroutine genEdgesMat7Symm
+
+    !**************************************************************
+    ! Generate edge data structure for symmetric matrix in format 7
+    ! restricted to a list of selected degrees of freedom
+
+    subroutine genEdgesMat7SymmSel(Kld, Kcol, Ksep, ccontentType,&
+        bignoreDiagonal, IdofList, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol,IdofList
+      integer, intent(in) :: ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+      integer, dimension(:), intent(inout) :: Ksep
+      
+      ! local variables
+      logical, dimension(:), allocatable :: BisActive
+      integer :: i,j,ij,ji,iedge
+
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(size(Kld)-1)); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i))=.true.
+      end do
+
+      ! Initialise edge counter
+      iedge = 0
+      
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+      
+          ! Check if this row belongs to an active DOF
+          if (BisActive(i)) then
+  
+            if (.not.bignoreDiagonal) then
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and i
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = i
+            end if
+            
+            ! Loop over all off-diagonal matrix entries IJ which are
+            ! adjacent to node J such that I < J, that is, the upper
+            ! right triangular part of the matrix is traversed
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              
+              ! Get node number J, the corresponding matrix positions JI,
+              ! and let the separator point to the next entry
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+              
+              ! Check if this edge connects two DOFs which are marked active
+              if (.not.BisActive(j)) cycle
+              
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and j
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = j
+            end do
+
+          else
+
+            ! Row is not active, so just update Ksep
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1
+            end do
+            
+          end if
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) then
+
+            if (.not.bignoreDiagonal) then
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and i
+              IedgeList(1,iedge) = Kld(i)
+              IedgeList(2,iedge) = Kld(i)
+            end if
+            
+            ! Loop over all off-diagonal matrix entries IJ which are
+            ! adjacent to node J such that I < J, that is, the upper
+            ! right triangular part of the matrix is traversed
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              
+              ! Get node number J, the corresponding matrix positions JI,
+              ! and let the separator point to the next entry
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+            
+              ! Check if this edge connects two DOFs which are marked active
+              if (.not.BisActive(j)) cycle
+              
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set matrix positions ij and ji
+              IedgeList(1,iedge) = ij
+              IedgeList(2,iedge) = ji
+            end do
+
+          else
+
+            ! Row is not active, so just update Ksep
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1
+            end do
+            
+          end if
+        end do
+        
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+        
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) then
+
+            if (.not.bignoreDiagonal) then
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and i
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = i
+              
+              ! Set node numbers i and i
+              IedgeList(3,iedge) = Kld(i)
+              IedgeList(4,iedge) = Kld(i)
+            end if
+            
+            ! Loop over all off-diagonal matrix entries IJ which are
+            ! adjacent to node J such that I < J, that is, the upper
+            ! right triangular part of the matrix is traversed
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              
+              ! Get node number J, the corresponding matrix positions JI,
+              ! and let the separator point to the next entry
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+              
+              ! Check if this edge connects two DOFs which are marked active
+              if (.not.BisActive(j)) cycle
+              
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and j
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = j
+              
+              ! Set matrix positions ij and ji
+              IedgeList(3,iedge) = ij
+              IedgeList(4,iedge) = ji
+            end do
+
+          else
+
+            ! Row is not active, so just update Ksep
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1
+            end do
+            
+          end if
+        end do
+        
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(BisActive)
+
+    end subroutine genEdgesMat7SymmSel
+
+    !**************************************************************
+    ! Generate edge data structure for arbitrary matrix in format 7
+
+    subroutine genEdgesMat7(Kld, Kcol, ccontentType,&
+        bignoreDiagonal, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      integer :: i,j,ij,ji,iedge,ioffset
+      
+      ! Initialise edge counter
+      iedge = 0
+
+      ! Include diagonal entries?
+      ioffset = merge(1,0, bignoreDiagonal)
+      
+      select case(ccontentType)
+        
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          ! Loop over all (off-diagonal) matrix entries IJ
+          do ij = Kld(i)+ioffset, Kld(i+1)-1
+
+            ! Get node number j
+            j = Kcol(ij)
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY,LSYSSC_EDGELIST_NODESANDPOS)
+        call output_line('Positions are not available for unsymmetric matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'genEdgesMat7')
+        call sys_halt()
+      end select
+
+    end subroutine genEdgesMat7
+
+    !**************************************************************
+    ! Generate edge data structure for arbitrary matrix in format 7
+    ! restricted to a list of selected degrees of freedom
+
+    subroutine genEdgesMat7Sel(Kld, Kcol, ccontentType,&
+        bignoreDiagonal, ndof, IdofList, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol,IdofList
+      integer, intent(in) :: ndof,ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      logical, dimension(:), allocatable :: BisActive
+      integer :: i,j,ij,ji,iedge,ioffset
+      
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(ndof)); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i))=.true.
+      end do
+      
+      ! Initialise edge counter
+      iedge = 0
+
+      ! Include diagonal entries?
+      ioffset = merge(1,0, bignoreDiagonal)
+      
+      select case(ccontentType)
+        
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ
+          do ij = Kld(i)+ioffset, Kld(i+1)-1
+
+            ! Get node number j
+            j = Kcol(ij)
+
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY,LSYSSC_EDGELIST_NODESANDPOS)
+        call output_line('Positions are not available for unsymmetric matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'genEdgesMat7Sel')
+        call sys_halt()
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(BisActive)
+
+    end subroutine genEdgesMat7Sel
+
+    !**************************************************************
+    ! Generate edge data structure for symmetric matrix in format 9
+
+    subroutine genEdgesMat9Symm(Kld, Kcol, Kdiagonal, Ksep, ccontentType,&
+        bignoreDiagonal, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+      integer, dimension(:), intent(inout) :: Ksep
+      
+      ! local variables
+      integer :: i,j,ij,ji,iedge
+
+      ! Initialise edge counter
+      iedge = 0
+      
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          if (.not.bignoreDiagonal) then
+            ! Increase edge counter
+            iedge = iedge+1
+
+            ! Set node numbers i and i
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = i
+          end if
+
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J, that is, the upper
+          ! right triangular part of the matrix is traversed
+          do ij = Kdiagonal(i)+1, Kld(i+1)-1
+       
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          if (.not.bignoreDiagonal) then
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and i
+            IedgeList(1,iedge) = Kdiagonal(i)
+            IedgeList(2,iedge) = Kdiagonal(i)
+          end if
+          
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J. That is, explore the
+          ! upper triangular matrix
+          do ij = Kdiagonal(i)+1, Kld(i+1)-1
+            
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set matrix positions ij and ji
+            IedgeList(1,iedge) = ij
+            IedgeList(2,iedge) = ji
+          end do
+        end do
+        
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+        
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          if (.not.bignoreDiagonal) then
+            ! Increase edge counter
+            iedge = iedge+1
+
+            ! Set node numbers i and i
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = i
+
+            ! Set node numbers i and i
+            IedgeList(3,iedge) = Kdiagonal(i)
+            IedgeList(4,iedge) = Kdiagonal(i)
+          end if
+
+          ! Loop over all off-diagonal matrix entries IJ which are
+          ! adjacent to node J such that I < J. That is, explore the
+          ! upper triangular matrix
+          do ij = Kdiagonal(i)+1, Kld(i+1)-1
+            
+            ! Get node number J, the corresponding matrix positions JI,
+            ! and let the separator point to the next entry
+            j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+            
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+
+            ! Set matrix positions ij and ji
+            IedgeList(3,iedge) = ij
+            IedgeList(4,iedge) = ji
+          end do
+        end do
+
+      end select
+
+    end subroutine genEdgesMat9Symm
+
+    !**************************************************************
+    ! Generate edge data structure for symmetric matrix in format 9
+    ! restricted to a list of selected degrees of freedom
+
+    subroutine genEdgesMat9SymmSel(Kld, Kcol, Kdiagonal, Ksep, ccontentType,&
+        bignoreDiagonal, IdofList, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal,IdofList
+      integer, intent(in) :: ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+      integer, dimension(:), intent(inout) :: Ksep
+      
+      ! local variables
+      logical, dimension(:), allocatable :: BisActive
+      integer :: i,j,ij,ji,iedge
+
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(size(Kld)-1)); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i))=.true.
+      end do
+
+      ! Initialise edge counter
+      iedge = 0
+      
+      select case(ccontentType)
+
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) then
+
+            if (.not.bignoreDiagonal) then
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and i
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = i
+            end if
+            
+            ! Loop over all off-diagonal matrix entries IJ which are
+            ! adjacent to node J such that I < J, that is, the upper
+            ! right triangular part of the matrix is traversed
+            do ij = Kdiagonal(i)+1, Kld(i+1)-1
+              
+              ! Get node number J, the corresponding matrix positions JI,
+              ! and let the separator point to the next entry
+              j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+              
+              ! Check if this edge connects two DOFs which are marked active
+              if (.not.BisActive(j)) cycle
+              
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and j
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = j
+            end do
+
+          else
+
+            ! Row is not active, so just update Ksep
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1
+            end do
+            
+          end if
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) then
+
+            if (.not.bignoreDiagonal) then
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and i
+              IedgeList(1,iedge) = Kdiagonal(i)
+              IedgeList(2,iedge) = Kdiagonal(i)
+            end if
+            
+            ! Loop over all off-diagonal matrix entries IJ which are
+            ! adjacent to node J such that I < J. That is, explore the
+            ! upper triangular matrix
+            do ij = Kdiagonal(i)+1, Kld(i+1)-1
+              
+              ! Get node number J, the corresponding matrix positions JI,
+              ! and let the separator point to the next entry
+              j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+              
+              ! Check if this edge connects two DOFs which are marked active
+              if (.not.BisActive(j)) cycle
+              
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set matrix positions ij and ji
+              IedgeList(1,iedge) = ij
+              IedgeList(2,iedge) = ji
+            end do
+
+          else
+
+            ! Row is not active, so just update Ksep
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1
+            end do
+            
+          end if
+
+        end do
+        
+      case (LSYSSC_EDGELIST_NODESANDPOS)
+        
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+        
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) then
+
+            if (.not.bignoreDiagonal) then
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and i
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = i
+              
+              ! Set node numbers i and i
+              IedgeList(3,iedge) = Kdiagonal(i)
+              IedgeList(4,iedge) = Kdiagonal(i)
+            end if
+            
+            ! Loop over all off-diagonal matrix entries IJ which are
+            ! adjacent to node J such that I < J. That is, explore the
+            ! upper triangular matrix
+            do ij = Kdiagonal(i)+1, Kld(i+1)-1
+              
+              ! Get node number J, the corresponding matrix positions JI,
+              ! and let the separator point to the next entry
+              j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+              
+              ! Check if this edge connects two DOFs which are marked active
+              if (.not.BisActive(j)) cycle
+              
+              ! Increase edge counter
+              iedge = iedge+1
+              
+              ! Set node numbers i and j
+              IedgeList(1,iedge) = i
+              IedgeList(2,iedge) = j
+              
+              ! Set matrix positions ij and ji
+              IedgeList(3,iedge) = ij
+              IedgeList(4,iedge) = ji
+            end do
+
+          else
+
+            ! Row is not active, so just update Ksep
+            do ij = Ksep(i)+1, Kld(i+1)-1
+              j = Kcol(ij); Ksep(j) = Ksep(j)+1
+            end do
+            
+          end if
+        end do
+
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(BisActive)
+
+    end subroutine genEdgesMat9SymmSel
+
+    !**************************************************************
+    ! Generate edge data structure for arbitrary matrix in format 9
+
+    subroutine genEdgesMat9(Kld, Kcol, ccontentType,&
+        bignoreDiagonal, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      integer :: i,j,ij,ji,iedge
+      
+      ! Initialise edge counter
+      iedge = 0
+
+      select case(ccontentType)
+        
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          ! Loop over all (off-diagonal) matrix entries IJ
+          do ij = Kld(i), Kld(i+1)-1
+
+            ! Get node number j
+            j = Kcol(ij)
+            
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle          
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY,LSYSSC_EDGELIST_NODESANDPOS)
+        call output_line('Positions are not available for unsymmetric matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'genEdgesMat9')
+        call sys_halt()
+      end select
+
+    end subroutine genEdgesMat9
+
+    !**************************************************************
+    ! Generate edge data structure for arbitrary matrix in format 9
+    ! restricted to a list of selected degrees of freedom
+
+    subroutine genEdgesMat9Sel(Kld, Kcol, ccontentType,&
+        bignoreDiagonal, ndof, IdofList, IedgeList)
+
+      integer, dimension(:), intent(in) :: Kld,Kcol,IdofList
+      integer, intent(in) :: ndof,ccontentType
+      logical, intent(in) :: bignoreDiagonal
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local variables
+      logical, dimension(:), allocatable :: BisActive
+      integer :: i,j,ij,ji,iedge
+      
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(ndof)); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i))=.true.
+      end do
+
+      ! Initialise edge counter
+      iedge = 0
+
+      select case(ccontentType)
+        
+      case (LSYSSC_EDGELIST_NODESONLY)
+
+        ! Loop over all rows
+        do i = 1, size(Kld)-1
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(i)) cycle
+
+          ! Loop over all (off-diagonal) matrix entries IJ
+          do ij = Kld(i), Kld(i+1)-1
+
+            ! Get node number j
+            j = Kcol(ij)
+
+            ! Check if this edge connects two DOFs which are marked active
+            if (.not.BisActive(j)) cycle
+            
+            ! Ignore the diagonal entries?
+            if (bignoreDiagonal .and. i.eq.j) cycle          
+
+            ! Increase edge counter
+            iedge = iedge+1
+            
+            ! Set node numbers i and j
+            IedgeList(1,iedge) = i
+            IedgeList(2,iedge) = j
+          end do
+        end do
+
+      case (LSYSSC_EDGELIST_POSONLY,LSYSSC_EDGELIST_NODESANDPOS)
+        call output_line('Positions are not available for unsymmetric matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'genEdgesMat9')
+        call sys_halt()
+      end select
+
+    end subroutine genEdgesMat9Sel
+
+  end subroutine lsyssc_genEdgeList
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsyssc_regroupEdgeList(ndof, IedgeList, h_IedgeListIdx, ncolor)
+
+!<description>
+    ! This subroutine regroups the entries of a given list of edges
+    ! into independent groups. That is, all edges in one group can be
+    ! processed simultaneously without the need for synchronization
+!</description>
+
+!<input>
+    ! Number of degrees of freedom
+    integer, intent(in) :: ndof
+
+    ! OPTIONAL: number of colours required to separate the given edge
+    ! list into independent
+    integer, intent(in), optional :: ncolor
+!</input>
+
+!<inputoutput>
+    ! On input: ungrouped list of edges
+    ! On output: list of edges regrouped into independent groups
+    integer, dimension(:,:), intent(inout) :: IedgeList
+
+    ! Handle for the edge list separator
+    integer, intent(inout) :: h_IedgeListIdx
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: nmaxColor,isize
+    
+    if (present(ncolor)) then
+      nmaxColor = ncolor
+    else
+      ! Determine the maximum number of colours required to separate
+      ! the given edge list into independent groups
+      nmaxColor = compMaxEdgeColors(ndof, IedgeList)
+    end if
+    
+    ! (Re-)allocate memory
+    if (h_IedgeListIdx .eq. ST_NOHANDLE) then
+      call storage_new('lsyssc_regroupEdgeList','IedgeListIdx',&
+          nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
+    else
+      call storage_getsize(h_IedgeListIdx, isize)
+      if (isize < nmaxColor) then
+        call storage_free(h_IedgeListIdx)
+        call storage_new('lsyssc_regroupEdgeList','IedgeListIdx',&
+            nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
+      end if
+    end if
+
+    ! Set pointer
+    call storage_getbase_int(h_IedgeListIdx, p_IedgeListIdx)
+    
+    ! Regroup list of edges
+    call genEdgeListIdx(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Compute the maximum number of colors required to color the
+    ! edges of the matrix such that no two edges with the same color
+    ! share a common node (This is the classical edge-coloring)
+
+    function compMaxEdgeColors(ndof, IedgeList) result(ncolor)
+      
+      integer, intent(in) :: ndof
+      integer, dimension(:,:), intent(in) :: IedgeList
+
+      integer :: ncolor
+
+      integer, dimension(:), pointer :: p_IedgesAtDof
+      integer :: h_IedgesAtDof
+      integer :: i,j,iedge
+
+      ! Allocate temporal memory
+      h_IedgesAtDof = ST_NOHANDLE
+      call storage_new('compMaxEdgeColors', 'IedgesAtDof', ndof,&
+          ST_INT, h_IedgesAtDof, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(h_IedgesAtDof, p_IedgesAtDof)
+
+      ! First shuffle pass: 
+      ! Compute the number of edges at each DOF
+      do iedge = 1, size(IedgeList,2)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
+        p_IedgesAtDof(i) = p_IedgesAtDof(i)+1
+        p_IedgesAtDof(j) = p_IedgesAtDof(j)+1
+      end do
+
+      ! Second shuffle pass:
+      ! Compute the maximum number of edges at DOF
+      ncolor = 0
+      do i = 1, ndof
+        ncolor = max(ncolor, p_IedgesAtDof(i))
+      end do
+
+      ! Deallocate temporal memory
+      call storage_free(h_IedgesAtDof)
+
+      ! At the moment the greedy edge coloring algorithm is 
+      ! used which may require 2x chromatic index of colors
+      ncolor = 2*ncolor
+
+    end function compMaxEdgeColors
+
+    !**************************************************************
+    ! Generate index for edge data structure 
+
+    subroutine genEdgeListIdx(neq, nmaxColor, IedgeListIdx, IedgeList)
+
+      integer, intent(in) :: neq,nmaxColor
+      
+      integer, dimension(:), intent(inout) :: IedgeListIdx
+      integer, dimension(:,:), intent(inout) :: IedgeList
+      
+      integer, dimension(:,:), pointer :: p_IedgeListTemp
+      integer, dimension(:), pointer :: p_IdofColor
+      integer, dimension(2) :: Isize
+      integer :: h_IdofColor,h_IedgeListTemp
+      integer :: i,j,iedge,jedge,icolor
+
+      ! Allocate temporal memory
+      h_IdofColor = ST_NOHANDLE
+      call storage_new('genEdgeListIdx', 'IdofColor', neq,&
+          ST_INT, h_IdofColor, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int(h_IdofColor, p_IdofColor)
+
+      ! Make a temporal backup if the edge list
+      Isize = shape(IedgeList)
+      h_IedgeListTemp = ST_NOHANDLE
+      call storage_new('genEdgeListIdx','IedgeListTemp',&
+          Isize, ST_INT, h_IedgeListTemp, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int2d(h_IedgeListTemp, p_IedgeListTemp)
+      call lalg_copyVector(IedgeList, p_IedgeListTemp)
+
+      ! First shuffle pass: Loop over all edges and determine the
+      ! next free color to be used for that edge
+      call lalg_clearVector(IedgeListIdx)
+      call lalg_clearVector(p_IdofColor)
+
+      edge1: do iedge = 1, size(p_IedgeListTemp,2)
+        ! Get node numbers
+        i = p_IedgeListTemp(1,iedge)
+        j = p_IedgeListTemp(2,iedge)
+
+        ! Find next unused color for nodes I and J
+        color1: do icolor = 0, nmaxColor
+          
+          if (.not.btest(p_IdofColor(i), icolor) .and.&
+              .not.btest(p_IdofColor(j), icolor)) then
+
+            ! Set color marker for nodes I and J
+            p_IdofColor(i) = ibset(p_IdofColor(i), icolor)
+            p_IdofColor(j) = ibset(p_IdofColor(j), icolor)
+
+            ! Increase number of edges in this color group by one.
+            IedgeListIdx(icolor+2) = IedgeListIdx(icolor+2)+1
+
+            ! That is it
+            exit color1
+          end if
+        end do color1
+      end do edge1
+
+      ! Second shuffle pass: Compute starting position of each group
+      IedgeListIdx(1) = 1
+      do icolor = 2, size(IedgeListIdx)
+        IedgeListIdx(icolor) = IedgeListIdx(icolor)&
+                             + IedgeListIdx(icolor-1)
+      end do
+
+      ! Third shuffle pass: Reorder the edges physically
+      call lalg_clearVector(p_IdofColor)
+
+       edge2: do iedge = 1, size(p_IedgeListTemp,2)
+        ! Get node numbers
+        i = p_IedgeListTemp(1,iedge)
+        j = p_IedgeListTemp(2,iedge)
+
+        ! Find next unused color for nodes I and J
+        color2: do icolor = 0, nmaxColor
+          
+          if (.not.btest(p_IdofColor(i), icolor) .and.&
+              .not.btest(p_IdofColor(j), icolor)) then
+
+            ! Set color marker for nodes I and J
+            p_IdofColor(i) = ibset(p_IdofColor(i), icolor)
+            p_IdofColor(j) = ibset(p_IdofColor(j), icolor)
+
+            ! Get next free position
+            jedge = IedgeListIdx(icolor+1)
+            
+            ! Increase number of edges in this color group by one
+            IedgeListIdx(icolor+1) = IedgeListIdx(icolor+1)+1
+           
+            ! Copy edge data
+            IedgeList(:,jedge) = p_IedgeListTemp(:,iedge)
+
+            ! That is it
+            exit color2
+          end if
+        end do color2
+      end do edge2
+      
+      ! Fourth shuffle pass:
+      ! Adjust the starting index which was tainted in the third pass
+      do icolor = size(IedgeListIdx), 2, -1
+        IedgeListIdx(icolor) = IedgeListIdx(icolor-1)
+      end do
+      IedgeListIdx(1) = 1
+
+      ! Deallocate temporal memory
+      call storage_free(h_IdofColor)
+      call storage_free(h_IedgeListTemp)
+
+    end subroutine genEdgeListIdx
+
+  end subroutine lsyssc_regroupEdgeList
 end module
