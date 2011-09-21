@@ -4434,8 +4434,6 @@ contains
     ! not changed.
     type(t_vectorBlock), intent(inout) :: ry
 
-      integer :: i
-
       ! Allocate memory   
       ry%cdataType = rx%cdataType 
       ry%bisCopy = .false.
