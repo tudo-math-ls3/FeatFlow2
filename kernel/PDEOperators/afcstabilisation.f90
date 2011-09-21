@@ -3236,11 +3236,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge,p_IverticesAtEdgeAux
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IverticesAtEdgeIdx
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal,p_Ksep
-    integer :: h_Ksep,h_IverticesAtEdgeAux
-    !$ integer :: nmaxcolors
+    integer :: h_Ksep
+    !$ integer, dimension(:,:), pointer :: p_IverticesAtEdgeAux
+    !$ integer :: nmaxcolors,h_IverticesAtEdgeAux
 
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -3571,8 +3572,6 @@ contains
       integer, dimension(:), intent(inout) :: IverticesAtEdgeIdx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:,:), intent(inout) :: IverticesAtEdgeGrouped
-
-      integer, dimension(size(IverticesAtEdgeIdx)) :: Iaux
       
       integer, dimension(:), pointer :: p_InodeColor
       integer :: h_InodeColor
