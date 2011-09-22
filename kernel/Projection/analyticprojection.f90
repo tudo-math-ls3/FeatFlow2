@@ -812,7 +812,7 @@ contains
       
 !<description>
   ! Calculates the characteristic function of a boundary region.
-  ! rvector is a FE solution vector, discretised by P1,Q1,P2,Q2, E031 or EM31,
+  ! rvector is a FE solution vector, discretised by P1,Q1,P2,Q2 or Ex3x,
   ! rboundaryRegion a boundary region on the boundary of the underlying
   ! domain. The routine will now set the DOF's of all vertices to 1 which 
   ! belong to this boundary region. All other DOF's are ignored, so the
@@ -854,12 +854,14 @@ contains
         call charFctRealBdComp2d_P2Q2 (rboundaryRegion,rvector)
         return
 
-      else if (elem_getPrimaryElement(rvector%p_rspatialDiscr%RelementDistr(1)%celement) &
-               .eq. EL_Q1T_2D) then
-        ! Q1~
-        call charFctRealBdComp2d_Q1T (rboundaryRegion,rvector)
+      else if ((elem_getPrimaryElement(rvector%p_rspatialDiscr%RelementDistr(1)%celement) &
+               .eq. EL_Q1T_2D) .or. &
+               (elem_getPrimaryElement(rvector%p_rspatialDiscr%RelementDistr(1)%celement) &
+               .eq. EL_Q1TB_2D)) then
+        ! Q1~ or Q1~bubble
+        call charFctRealBdComp2d_Ex3x (rboundaryRegion,rvector)
         return
-        
+
       end if
       
     else if (rvector%p_rspatialDiscr%inumFESpaces .eq. 2) then
@@ -979,8 +981,8 @@ contains
   
   ! ---------------------------------------------------------------
 
-  subroutine charFctRealBdComp2d_Q1T (rboundaryRegion,rvector)
-    ! Worker routine for Q1~-space.
+  subroutine charFctRealBdComp2d_Ex3x (rboundaryRegion,rvector)
+    ! Worker routine for Ex3x~-spaces.
     type(t_boundaryRegion), intent(in), target :: rboundaryRegion
     type(t_vectorScalar), intent(inout), target :: rvector
     
