@@ -1110,7 +1110,7 @@ contains
     rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
     rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
     call gfsc_initStabilisation(rmatrixMass, rafcstab)
-    call afcstab_generateEdgeList(rmatrixMass, rafcstab)
+    call afcstab_genEdgeList(rmatrixMass, rafcstab)
 
     ! Compute the fluxes for the raw mass antidiffusion
     call gfsc_buildFluxFCT(rafcstab, rvectorAux,&
