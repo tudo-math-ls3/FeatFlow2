@@ -153,6 +153,7 @@
 		<File RelativePath="..\..\..\kernel\PDEOperators\convection.f90">
 			<FileConfiguration Name="Debug Parallel|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\PDEOperators\groupfembase.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemscalar.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemsystem.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsccallback.inc"/>

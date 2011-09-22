@@ -161,6 +161,7 @@
 		<File RelativePath="..\..\..\kernel\PDEOperators\intf_groupfemcallback.inc"/></Filter>
 		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabilisation.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\convection.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\groupfembase.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemscalar.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemsystem.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\jumpstabilisation.f90"/>
