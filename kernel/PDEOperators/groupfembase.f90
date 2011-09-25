@@ -99,9 +99,6 @@
 !#                        gfem_allocCoeffsByMatrix
 !#     -> Initialises memory for precomputed coefficients
 !#
-!# 8.) gfem_calcDimsFromMatrix
-!#     -> Calculates dimensions NA, NEQ, and NEDGE from matrix
-!#
 !# </purpose>
 !##############################################################################
 
@@ -122,6 +119,7 @@ module groupfembase
   public :: gfem_initGroupFEMBlock
   public :: gfem_releaseGroupFEMSet
   public :: gfem_releaseGroupFEMBlock
+  public :: gfem_resizeGroupFEMSet
   public :: gfem_resizeGroupFEMBlock
   public :: gfem_copyGroupFEMSet
   public :: gfem_copyGroupFEMBlock
@@ -143,7 +141,6 @@ module groupfembase
   public :: gfem_copyH2D_CoeffsAtEdge
   public :: gfem_copyD2H_CoeffsAtEdge
   public :: gfem_allocCoeffs
-  public :: gfem_calcDimsFromMatrix
 
 !<constants>
 !<constantblock description="Global format flag for group FEM assembly">
@@ -219,10 +216,6 @@ module groupfembase
     ! Format Tag: Identifies the type of assembly
     integer :: cassemblyType = GFEM_UNDEFINED
 
-    ! Format Tag: Identifies the format of the scalar template matrix
-    ! underlying the edge-based sparsity structure (if any)
-    integer :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
-
     ! Format Tag: Identifies the data type
     integer :: cdataType = ST_DOUBLE
 
@@ -236,7 +229,7 @@ module groupfembase
     ! is a bitfield coming from an OR combination of different
     ! GFEM_HAS_xxxx constants and specifies various properties of the
     ! structure.
-    integer(I32) :: isetSpec = 0
+    integer(I32) :: isetSpec = GFEM_UNDEFINED
     
     ! Number of non-zero entries of the sparsity pattern
     integer :: NA = 0
@@ -435,7 +428,7 @@ contains
     integer :: na,nedge,neq
 
     ! Calculate dimensions of matrix (possible with restriction)
-    call gfem_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
     
     ! Call initialisation routine
     call gfem_initGroupFEMSet(rgroupFEMSet, na, neq, nedge,&
@@ -555,7 +548,6 @@ contains
 
     ! Reset data
     rgroupFEMSet%cassemblyType = GFEM_UNDEFINED
-    rgroupFEMSet%cmatrixFormat = LSYSSC_MATRIXUNDEFINED
     rgroupFEMSet%cdataType     = ST_DOUBLE
     rgroupFEMSet%NA    = 0
     rgroupFEMSet%NEQ   = 0
@@ -783,7 +775,7 @@ contains
     integer :: na,neq,nedge
 
     ! Calculate dimensions of matrix (possible with restriction)
-    call gfem_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
 
     ! Call resize routine
     call gfem_resizeGroupFEMSet(rgroupFEMSet, rmatrix%NA, rmatrix%NEQ, nedge)
@@ -910,7 +902,6 @@ contains
     ! Copy structural data
     if (check(idupFlag, GFEM_DUP_STRUCTURE)) then
       rgroupFEMSetDest%cassemblyType = rgroupFEMSetSrc%cassemblyType
-      rgroupFEMSetDest%cmatrixFormat = rgroupFEMSetSrc%cmatrixFormat
       rgroupFEMSetDest%cdataType     = rgroupFEMSetSrc%cdataType
       rgroupFEMSetDest%isetSpec      = rgroupFEMSetSrc%isetSpec
       rgroupFEMSetDest%NA            = rgroupFEMSetSrc%NA
@@ -1092,7 +1083,6 @@ contains
     ! Copy structural data
     if (check(idupFlag, GFEM_DUP_STRUCTURE)) then
       rgroupFEMSetDest%cassemblyType = rgroupFEMSetSrc%cassemblyType
-      rgroupFEMSetDest%cmatrixFormat = rgroupFEMSetSrc%cmatrixFormat
       rgroupFEMSetDest%cdataType     = rgroupFEMSetSrc%cdataType
       rgroupFEMSetDest%isetSpec      = rgroupFEMSetSrc%isetSpec
       rgroupFEMSetDest%NA            = rgroupFEMSetSrc%NA
@@ -1107,7 +1097,9 @@ contains
     if (check(idupFlag, GFEM_DUP_EDGESTRUCTURE)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
-                      GFEM_SHARE_EDGESTRUCTURE))) then
+                      GFEM_SHARE_EDGESTRUCTURE))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_EDGESTRUCTURE))) then
         call storage_free(rgroupFEMSetDest%h_IedgeListIdx)
         call storage_free(rgroupFEMSetDest%h_IedgeList)
       end if
@@ -1122,14 +1114,16 @@ contains
       
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag =&
-          iand(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)
+          ior(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)
     end if
 
     ! Copy coefficients at nodes
     if (check(idupFlag, GFEM_DUP_NODEDATA)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
-                      GFEM_SHARE_NODEDATA))) then
+                      GFEM_SHARE_NODEDATA))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_NODEDATA))) then
         call storage_free(rgroupFEMSetDest%h_CoeffsAtNode)
       end if
 
@@ -1142,14 +1136,16 @@ contains
       
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag =&
-          iand(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODEDATA)
+          ior(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODEDATA)
     end if
 
     ! Copy coefficients at edges
     if (check(idupFlag, GFEM_DUP_EDGEDATA)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
-                      GFEM_SHARE_EDGEDATA))) then
+                      GFEM_SHARE_EDGEDATA))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_EDGEDATA))) then
         call storage_free(rgroupFEMSetDest%h_CoeffsAtEdge)
       end if
 
@@ -1162,7 +1158,7 @@ contains
       
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag =&
-          iand(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGEDATA)
+          ior(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGEDATA)
     end if
 
   contains
@@ -1272,6 +1268,9 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:,:,:), pointer :: p_FcoeffsAtEdge
+    real(SP), dimension(:,:), pointer :: p_FcoeffsAtNode
+    real(SP), dimension(:), pointer :: p_Fdata
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Iposition,p_Kdiagonal,p_Kld,p_Kcol
     integer, dimension(2) :: Isize2D
@@ -1333,8 +1332,7 @@ contains
     end if
     
     ! Check if first matrix is compatible with group finite element set
-    if ((rgroupFEMSet%cmatrixFormat .ne. Rmatrices(1)%cmatrixFormat) .or.&
-        (rgroupFEMSet%cdataType     .ne. Rmatrices(1)%cdataType)) then
+    if (rgroupFEMSet%cdataType .ne. Rmatrices(1)%cdataType) then
       call output_line('Matrix/group finite element set are incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
       call sys_halt()
@@ -1350,7 +1348,18 @@ contains
     case (GFEM_NODEBASED)
       ! Set pointers
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
-      call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+
+      ! What data type we we?
+      select case(rgroupFEMSet%cdataType)
+      case (ST_DOUBLE)
+        call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+      case (ST_SINGLE)
+        call gfem_getbase_FcoeffsAtNode(rgroupFEMSet, p_FcoeffsAtNode)
+      case default
+        call output_line('Unsupported data tpe!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+        call sys_halt()
+      end select
 
       ! Generate set of active degrees of freedom
       if (present(IdofList)) then
@@ -1373,76 +1382,157 @@ contains
           ! Matrix format 7 and 9
           !---------------------------------------------------------------------
           
-          ! Set pointer to matrix data
-          call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-          
           ! Set diagonal pointer
           call lsyssc_getbase_Kld(Rmatrices(imatrix), p_Kld)
           call lsyssc_getbase_Kcol(Rmatrices(imatrix), p_Kcol)
 
-          if (present(IdofList)) then
+          ! What data type are we?
+          select case(Rmatrices(imatrix)%cdataType)
+          case (ST_DOUBLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
+
+            if (present(IdofList)) then
+              
+              icount=0
+              do i = 1, rgroupFEMSet%NEQ
+                ! Check if this row belongs to an active DOF
+                if (.not.BisActive(i)) cycle
+                do ij = p_Kld(i), p_Kld(i+1)-1
+                  j = p_Kcol(ij)
+                  ! Check if this edge connects two DOFs which are marked active
+                  if (.not.BisActive(j)) cycle
+                  ! Increment counter and store data
+                  icount = icount+1
+                  p_DcoeffsAtNode(ipos,icount) = p_Ddata(ij)
+                end do
+              end do
+              
+            else
+              
+              ! Loop over all non-zero matrix entries
+              do i = 1, rgroupFEMSet%NEQ
+                do ij = p_Kld(i), p_Kld(i+1)-1
+                  p_DcoeffsAtNode(ipos,ij) = p_Ddata(ij)
+                end do
+              end do
+              
+            end if
             
-            icount=0
-            do i = 1, rgroupFEMSet%NEQ
-              ! Check if this row belongs to an active DOF
-              if (.not.BisActive(i)) cycle
-              do ij = p_Kld(i), p_Kld(i+1)-1
-                j = p_Kcol(ij)
-                ! Check if this edge connects two DOFs which are marked active
-                if (.not.BisActive(j)) cycle
-                ! Increment counter and store data
-                icount = icount+1
-                p_DcoeffsAtNode(ipos,icount) = p_Ddata(ij)
+          case (ST_SINGLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
+
+            if (present(IdofList)) then
+              
+              icount=0
+              do i = 1, rgroupFEMSet%NEQ
+                ! Check if this row belongs to an active DOF
+                if (.not.BisActive(i)) cycle
+                do ij = p_Kld(i), p_Kld(i+1)-1
+                  j = p_Kcol(ij)
+                  ! Check if this edge connects two DOFs which are marked active
+                  if (.not.BisActive(j)) cycle
+                  ! Increment counter and store data
+                  icount = icount+1
+                  p_FcoeffsAtNode(ipos,icount) = p_Fdata(ij)
+                end do
               end do
-            end do
-
-          else
-
-            ! Loop over all non-zero matrix entries
-            do i = 1, rgroupFEMSet%NEQ
-              do ij = p_Kld(i), p_Kld(i+1)-1
-                p_DcoeffsAtNode(ipos,ij) = p_Ddata(ij)
+              
+            else
+              
+              ! Loop over all non-zero matrix entries
+              do i = 1, rgroupFEMSet%NEQ
+                do ij = p_Kld(i), p_Kld(i+1)-1
+                  p_FcoeffsAtNode(ipos,ij) = p_Fdata(ij)
+                end do
               end do
-            end do
-
-          end if
-          
+              
+            end if
+            
+          case default
+            call output_line('Unsupported data tpe!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            call sys_halt()
+          end select
+                    
         case(LSYSSC_MATRIX1)
           !---------------------------------------------------------------------
           ! Matrix format 1
           !---------------------------------------------------------------------
-          
-          ! Set pointer to matrix data
-          call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
 
-          if (present(IdofList)) then
-
-            icount=0
-            do i = 1, rgroupFEMSet%NEQ
-              ! Check if this row belongs to an active DOF
-              if (.not.BisActive(i)) cycle
-              do j = 1, rgroupFEMSet%NEQ
-                ! Check if this edge connects two DOFs which are marked active
-                if (.not.BisActive(j)) cycle
-                ! Increment counter and store data
-                icount = icount+1
-                p_DcoeffsAtNode(ipos,icount) =&
-                    p_Ddata(Rmatrices(imatrix)%NCOLS*(i-1)+j)
-              end do
-            end do
-
-          else
+          ! What data type are we?
+          select case(Rmatrices(imatrix)%cdataType)
+          case (ST_DOUBLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
             
-            ! Loop over all non-zero matrix entries
-            do i = 1, rgroupFEMSet%NEQ
-              do j = 1, rgroupFEMSet%NEQ
-                p_DcoeffsAtNode(ipos,rgroupFEMSet%NEQ*(i-1)+j) =&
-                    p_Ddata(Rmatrices(imatrix)%NCOLS*(i-1)+j)
+            if (present(IdofList)) then
+              
+              icount=0
+              do i = 1, rgroupFEMSet%NEQ
+                ! Check if this row belongs to an active DOF
+                if (.not.BisActive(i)) cycle
+                do j = 1, rgroupFEMSet%NEQ
+                  ! Check if this edge connects two DOFs which are marked active
+                  if (.not.BisActive(j)) cycle
+                  ! Increment counter and store data
+                  icount = icount+1
+                  p_DcoeffsAtNode(ipos,icount) =&
+                      p_Ddata(Rmatrices(imatrix)%NCOLS*(i-1)+j)
+                end do
               end do
-            end do
+              
+            else
+              
+              ! Loop over all non-zero matrix entries
+              do i = 1, rgroupFEMSet%NEQ
+                do j = 1, rgroupFEMSet%NEQ
+                  p_DcoeffsAtNode(ipos,rgroupFEMSet%NEQ*(i-1)+j) =&
+                      p_Ddata(Rmatrices(imatrix)%NCOLS*(i-1)+j)
+                end do
+              end do
+              
+            end if
 
-          end if
+          case (ST_SINGLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
+            
+            if (present(IdofList)) then
+              
+              icount=0
+              do i = 1, rgroupFEMSet%NEQ
+                ! Check if this row belongs to an active DOF
+                if (.not.BisActive(i)) cycle
+                do j = 1, rgroupFEMSet%NEQ
+                  ! Check if this edge connects two DOFs which are marked active
+                  if (.not.BisActive(j)) cycle
+                  ! Increment counter and store data
+                  icount = icount+1
+                  p_FcoeffsAtNode(ipos,icount) =&
+                      p_Fdata(Rmatrices(imatrix)%NCOLS*(i-1)+j)
+                end do
+              end do
+              
+            else
+              
+              ! Loop over all non-zero matrix entries
+              do i = 1, rgroupFEMSet%NEQ
+                do j = 1, rgroupFEMSet%NEQ
+                  p_FcoeffsAtNode(ipos,rgroupFEMSet%NEQ*(i-1)+j) =&
+                      p_Fdata(Rmatrices(imatrix)%NCOLS*(i-1)+j)
+                end do
+              end do
+              
+            end if
 
+          case default
+            call output_line('Unsupported data tpe!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            call sys_halt()
+          end select
+          
         case default
           call output_line('Unsupported matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
@@ -1452,13 +1542,28 @@ contains
 
       ! Deallocate temporal memory
       if (present(IdofList)) deallocate(BisActive)
+
+      ! Set specifier for precomputed nodal coefficients
+      rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)
                
     case (GFEM_EDGEBASED)
 
       ! Set pointers
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
-      call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
-      call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+
+      ! What data type we we?
+      select case(rgroupFEMSet%cdataType)
+      case (ST_DOUBLE)
+        call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+      case (ST_SINGLE)
+        call gfem_getbase_FcoeffsAtNode(rgroupFEMSet, p_FcoeffsAtNode)
+        call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
+      case default
+        call output_line('Unsupported data tpe!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+        call sys_halt()
+      end select
       
       ! Associate data of each matrix separately
       do imatrix = 1, nmatrices
@@ -1473,9 +1578,6 @@ contains
           ! Matrix format 7 and 9
           !---------------------------------------------------------------------
           
-          ! Set pointer to matrix data
-          call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-          
           ! Set diagonal pointer
           if (Rmatrices(imatrix)%cmatrixFormat .eq. LSYSSC_MATRIX7) then
             call lsyssc_getbase_Kld(Rmatrices(imatrix), p_Kdiagonal)
@@ -1483,53 +1585,122 @@ contains
             call lsyssc_getbase_Kdiagonal(Rmatrices(imatrix), p_Kdiagonal)
           end if
 
-          ! Loop over all rows and copy diagonal entries
-          if (present(IdofList)) then
-            do i = 1, rgroupFEMSet%NEQ
-              p_DcoeffsAtNode(ipos,i) = p_Ddata(p_Kdiagonal(IdofList(i)))
+          ! What data type are we?
+          select case(Rmatrices(imatrix)%cdataType)
+          case (ST_DOUBLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
+            
+            ! Loop over all rows and copy diagonal entries
+            if (present(IdofList)) then
+              do i = 1, rgroupFEMSet%NEQ
+                p_DcoeffsAtNode(ipos,i) = p_Ddata(p_Kdiagonal(IdofList(i)))
+              end do
+            else
+              do i = 1, rgroupFEMSet%NEQ
+                p_DcoeffsAtNode(ipos,i) = p_Ddata(p_Kdiagonal(i))
+              end do
+            end if
+            
+            ! Loop over all edges and copy off-diagonal entries
+            do iedge = 1, rgroupFEMSet%NEDGE
+              ij = p_IedgeList(3,iedge)
+              ji = p_IedgeList(4,iedge)
+              p_DcoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
+              p_DcoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
             end do
-          else
-            do i = 1, rgroupFEMSet%NEQ
-              p_DcoeffsAtNode(ipos,i) = p_Ddata(p_Kdiagonal(i))
+
+          case (ST_SINGLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
+            
+            ! Loop over all rows and copy diagonal entries
+            if (present(IdofList)) then
+              do i = 1, rgroupFEMSet%NEQ
+                p_FcoeffsAtNode(ipos,i) = p_Fdata(p_Kdiagonal(IdofList(i)))
+              end do
+            else
+              do i = 1, rgroupFEMSet%NEQ
+                p_FcoeffsAtNode(ipos,i) = p_Fdata(p_Kdiagonal(i))
+              end do
+            end if
+            
+            ! Loop over all edges and copy off-diagonal entries
+            do iedge = 1, rgroupFEMSet%NEDGE
+              ij = p_IedgeList(3,iedge)
+              ji = p_IedgeList(4,iedge)
+              p_FcoeffsAtEdge(ipos,1,iedge) = p_Fdata(ij)
+              p_FcoeffsAtEdge(ipos,2,iedge) = p_Fdata(ji)
             end do
-          end if
-          
-          ! Loop over all edges and copy off-diagonal entries
-          do iedge = 1, rgroupFEMSet%NEDGE
-            ij = p_IedgeList(3,iedge)
-            ji = p_IedgeList(4,iedge)
-            p_DcoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
-            p_DcoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
-          end do
+
+          case default
+            call output_line('Unsupported data tpe!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            call sys_halt()
+          end select
           
         case(LSYSSC_MATRIX1)
           !---------------------------------------------------------------------
           ! Matrix format 1
           !---------------------------------------------------------------------
           
-          ! Set pointer to matrix data
-          call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-          
-          ! Loop over all rows and copy diagonal entries
-          if (present(IdofList)) then
-            do i = 1, rgroupFEMSet%NEQ
-              p_DcoeffsAtNode(ipos,i) =&
-                  p_Ddata(Rmatrices(imatrix)%NEQ*(IdofList(i)-1)+IdofList(i))
+          ! What data type are we?
+          select case(Rmatrices(imatrix)%cdataType)
+          case (ST_DOUBLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
+            
+            ! Loop over all rows and copy diagonal entries
+            if (present(IdofList)) then
+              do i = 1, rgroupFEMSet%NEQ
+                p_DcoeffsAtNode(ipos,i) =&
+                    p_Ddata(Rmatrices(imatrix)%NEQ*(IdofList(i)-1)+IdofList(i))
+              end do
+            else
+              do i = 1, rgroupFEMSet%NEQ
+                p_DcoeffsAtNode(ipos,i) =&
+                    p_Ddata(Rmatrices(imatrix)%NEQ*(i-1)+i)
+              end do
+            end if
+            
+            ! Loop over all edges and copy off-diagonal entries
+            do iedge = 1, rgroupFEMSet%NEDGE
+              ij = p_IedgeList(3,iedge)
+              ji = p_IedgeList(4,iedge)
+              p_DcoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
+              p_DcoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
             end do
-          else
-            do i = 1, rgroupFEMSet%NEQ
-              p_DcoeffsAtNode(ipos,i) =&
-                  p_Ddata(Rmatrices(imatrix)%NEQ*(i-1)+i)
+            
+          case (ST_SINGLE)
+            ! Set pointer to matrix data
+            call lsyssc_getbase_single(Rmatrices(imatrix), p_Fdata)
+            
+            ! Loop over all rows and copy diagonal entries
+            if (present(IdofList)) then
+              do i = 1, rgroupFEMSet%NEQ
+                p_FcoeffsAtNode(ipos,i) =&
+                    p_Fdata(Rmatrices(imatrix)%NEQ*(IdofList(i)-1)+IdofList(i))
+              end do
+            else
+              do i = 1, rgroupFEMSet%NEQ
+                p_FcoeffsAtNode(ipos,i) =&
+                    p_Fdata(Rmatrices(imatrix)%NEQ*(i-1)+i)
+              end do
+            end if
+            
+            ! Loop over all edges and copy off-diagonal entries
+            do iedge = 1, rgroupFEMSet%NEDGE
+              ij = p_IedgeList(3,iedge)
+              ji = p_IedgeList(4,iedge)
+              p_FcoeffsAtEdge(ipos,1,iedge) = p_Fdata(ij)
+              p_FcoeffsAtEdge(ipos,2,iedge) = p_Fdata(ji)
             end do
-          end if
-          
-          ! Loop over all edges and copy off-diagonal entries
-          do iedge = 1, rgroupFEMSet%NEDGE
-            ij = p_IedgeList(3,iedge)
-            ji = p_IedgeList(4,iedge)
-            p_DcoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
-            p_DcoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
-          end do
+            
+          case default
+            call output_line('Unsupported data tpe!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            call sys_halt()
+          end select
 
         case default
           call output_line('Unsupported matrix format!',&
@@ -1537,6 +1708,10 @@ contains
           call sys_halt()
         end select
       end do
+
+      ! Set specifier for precomputed nodal and edge-based coefficients
+      rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)
+      rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)
   
     case default
       call output_line('Unsupported type of assembly!',&
@@ -1996,7 +2171,7 @@ contains
 !<output>
     ! Pointer to the precomputed coefficients at edges
     ! NULL() if the structure rgroupFEMSet does not provide it.
-    real(SP), dimension(:,:), pointer :: p_FcoeffsAtEdge
+    real(SP), dimension(:,:,:), pointer :: p_FcoeffsAtEdge
 !</output>
 !</subroutine>
 
@@ -2008,7 +2183,7 @@ contains
     end if
     
     ! Get the array
-    call storage_getbase_single2D(rgroupFEMSet%h_CoeffsAtEdge,&
+    call storage_getbase_single3D(rgroupFEMSet%h_CoeffsAtEdge,&
         p_FcoeffsAtEdge, rgroupFEMSet%NEDGE)
 
   end subroutine gfem_getbase_FcoeffsAtEdge
@@ -2041,8 +2216,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:,:), pointer :: p_IedgeList
+    !$ integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: na,neq,nedge
 
     ! Check if edge structure is owned by the stabilisation structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE) .eq.&
@@ -2053,26 +2229,52 @@ contains
       return
     end if
 
-    ! Set matrix format
-    select case(rmatrix%cmatrixFormat)
-    case (LSYSSC_MATRIX1)
-      rgroupFEMSet%cmatrixFormat = LSYSSC_MATRIX1
-    case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
-      rgroupFEMSet%cmatrixFormat = LSYSSC_MATRIX7
-    case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
-      rgroupFEMSet%cmatrixFormat = LSYSSC_MATRIX9
-      
-    case default
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
-      call sys_halt()
-    end select
+    ! If (some of the) matrix dimensions have not been initialized then
+    ! the initialisation is done below, and thus, fixes this set
+    if ((rgroupFEMSet%NA .eq. 0) .or. (rgroupFEMSet%NEQ .eq. 0)&
+        .or. (rgroupFEMSet%NEDGE .eq. 0)) then
+      ! Calculate dimensions of matrix (possible with restriction)
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+
+      ! If the number of edges has not been set before then it is set
+      ! below; otherwise an error is thrown if the number of edges mismatch
+      if (rgroupFEMSet%NEDGE .eq. 0) then
+        rgroupFEMSet%NEDGE = nedge
+      elseif (rgroupFEMSet%NEDGE .ne. nedge) then
+        call output_line('Number of edges mismatch!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
+        call sys_halt()
+      end if
+
+      ! If the number of equations has not been set before then it is
+      ! set below; otherwise an error is thrown if the number of
+      ! equations mismatch
+      if (rgroupFEMSet%NEQ .eq. 0) then
+        rgroupFEMSet%NEQ = neq
+      elseif (rgroupFEMSet%NEQ .ne. neq) then
+        call output_line('Number of equations mismatch!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
+        call sys_halt()
+      end if
+
+      ! If the number of non-zero matrix entries has not been set
+      ! before then it is set below; otherwise an error is thrown if
+      ! the number of equations mismatch
+      if (rgroupFEMSet%NA .eq. 0) then
+        rgroupFEMSet%NA = neq
+      elseif (rgroupFEMSet%NA .ne. neq) then
+        call output_line('Number of non-zero matrix entries mismatch!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
+        call sys_halt()
+      end if
+    end if
 
     ! Generate edge list for a matrix which is structurally symmetric,
     ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
     ! storing the diagonal edges (i,i).
     call lsyssc_genEdgeList(rmatrix, rgroupFEMSet%h_IedgeList,&
-        LSYSSC_EDGELIST_NODESANDPOS, .true., .true., IdofList)
+        LSYSSC_EDGELIST_NODESANDPOS, .true., .true.,&
+        rgroupFEMSet%NEDGE, IdofList)
 
     ! Allocate memory
     if (rgroupFEMSet%h_IedgeListIdx .eq. ST_NOHANDLE) then
@@ -2091,7 +2293,7 @@ contains
     ! OpenMP-Extension: Perform edge-coloring to find groups of
     ! edges which can be processed in parallel, that is, the
     ! vertices of the edges in the group are all distinct
-    call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
+    !$ call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
     !$ if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
     !$   call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
     !$       rgroupFEMSet%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
@@ -2102,17 +2304,7 @@ contains
 
     ! Set state of structure
     rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)
-    
-    ! If the number of edges has not been set before then it is set below;
-    ! otherwise an error is thrown if the number of edges mismatch
-    if (rgroupFEMSet%NEDGE .eq. 0) then
-      rgroupFEMSet%NEDGE = size(p_IedgeList,2)
-    elseif (rgroupFEMSet%NEDGE .ne. size(p_IedgeList,2)) then
-      call output_line('Number of edges mismatch!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
-      call sys_halt()
-    end if
-
+ 
   end subroutine gfem_genEdgeList
   
   !*****************************************************************************
@@ -2285,7 +2477,7 @@ contains
 !<subroutine>
 
   subroutine gfem_allocCoeffsDirect(rgroupFEMSet, ncoeffsAtNode, ncoeffsAtEdge,&
-      NA, NEQ, NEDGE)
+      NA, NEQ, NEDGE, cdataType)
 
 !<description>
     ! This subroutine initialises memory for storing precomputed
@@ -2305,6 +2497,9 @@ contains
 
     ! OPTIONAL: Number of edges
     integer, intent(in), optional :: NEDGE
+
+    ! OPTIONAL Data type
+    integer, intent(in), optional :: cdataType
 !</input>
 
 !<inputoutput>
@@ -2328,6 +2523,8 @@ contains
     ! Set dimensions
     rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
     rgroupFEMSet%ncoeffsAtEdge = ncoeffsAtEdge
+
+    if (present(cdataType)) rgroupFEMSet%cdataType = cdataType
     
     ! Set additional dimensions with consistency check
     if (present(NA)) then
@@ -2428,115 +2625,12 @@ contains
     integer :: na,neq,nedge
 
     ! Calculate dimensions of matrix (possible with restriction)
-    call gfem_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
     
     ! Call allocation routine
     call gfem_allocCoeffs(rgroupFEMSet, ncoeffsAtNode, ncoeffsAtEdge,&
         na, neq, nedge)
 
   end subroutine gfem_allocCoeffsByMatrix
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine gfem_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
-
-!<description>
-    ! This subroutine calculates the number of non-zero matrix entries
-    ! NA, the number of equations NEQ and the number of edges for the
-    ! given matrix rmatrix. If IdofList is given, then its entries are
-    ! used as degrees of freedom to which the group finite elment set
-    ! should be restricted to.
-!</description>
-
-!<input>
-    ! Scalar matrix
-    type(t_matrixScalar), intent(in) :: rmatrix
-
-    ! OPTIONAL: a list of degress of freedoms to which the edge
-    ! structure should be restricted.
-    integer, dimension(:), intent(in), optional :: IdofList
-!</intput>
-
-!<output>
-    ! Number of non-zero matrix entries
-    integer, intent(out) :: na
-
-    ! Number of equations
-    integer, intent(out) :: neq
-
-    ! Number of edges
-    integer, intent(out) :: nedge
-!</output>
-
-    ! local variables
-    logical, dimension(:), allocatable :: BisActive
-    integer, dimension(:), pointer :: p_Kld, p_Kcol
-    integer :: i,ij,j
-
-    if (present(IdofList)) then
-
-      ! Generate set of active degrees of freedom
-      allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS))); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i)) = .true.
-      end do
-
-      ! Initialisation
-      na=0; neq=0; nedge=0
-      
-      ! What type of matrix are we?
-      select case(rmatrix%cmatrixFormat)
-      case(LSYSSC_MATRIX1)
-        
-        ! Determine number of non-zero matrix entries, equations and edges
-        do i = 1, rmatrix%NEQ
-          if (.not.BisActive(i)) cycle
-          neq = neq+1
-          do j = 1, rmatrix%NCOLS
-            if (.not.BisActive(j)) cycle
-            nedge = nedge+1
-          end do
-        end do
-        na = 2*nedge+neq
-        
-      case(LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL,&
-           LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
-        
-        ! Set pointers
-        call lsyssc_getbase_Kld(rmatrix, p_Kld)
-        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-        
-        ! Determine number of non-zero matrix entries, equations and edges
-        do i=1, rmatrix%NEQ
-          if (.not.BisActive(i)) cycle
-          neq = neq+1; na = na+1
-          do ij = p_Kld(i), p_Kld(i+1)-1
-            j = p_Kcol(ij)
-            if (.not.BisActive(j)) cycle
-            na = na+1
-          end do
-        end do
-        nedge = (na-neq)/2
-        
-      case default
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'gfem_calcDimsFromMatrix')        
-        call sys_halt()
-      end select
-      
-      ! Deallocate temporal memory
-      deallocate(BisActive)
-
-    else
-      
-      na = rmatrix%NA
-      neq = rmatrix%NEQ
-      nedge = (na-neq)/2
-
-    end if
-
-  end subroutine gfem_calcDimsFromMatrix
 
 end module groupfembase

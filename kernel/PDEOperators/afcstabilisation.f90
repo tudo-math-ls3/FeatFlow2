@@ -2399,7 +2399,7 @@ contains
       end select
     end do
 
-    ! Set specifiert for auxiliary matrix coefficients
+    ! Set specifier for auxiliary matrix coefficients
     rafcstab%istabilisationSpec =&
         ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)
 
@@ -3270,7 +3270,7 @@ contains
     ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
     ! storing the diagonal edges (i,i).
     call lsyssc_genEdgeList(rmatrix, rafcstab%h_IedgeList,&
-        LSYSSC_EDGELIST_NODESANDPOS, .true., .true.)
+        LSYSSC_EDGELIST_NODESANDPOS, .true., .true., rafcstab%NEDGE)
 
     ! Allocate memory
     if (rafcstab%h_IedgeListIdx .eq. ST_NOHANDLE) then
