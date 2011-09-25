@@ -2010,8 +2010,8 @@ contains
         
         ! Initialise stabilisation structure by hand
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
-        rafcstab%ctypePrelimiting   = AFCSTAB_PRELIMITING_NONE
-        rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
+        rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
+        rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
         call afcstab_genEdgeList(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
 
@@ -2606,12 +2606,12 @@ contains
 
     ! Set stabilisation to standard Galerkin
     cconvectionStabilisation =&
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-    rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType
+    rproblemLevel%Rafcstab(convectionAFC)%cafcstabType = AFCSTAB_GALERKIN
 
     cdiffusionStabilisation =&
-        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
-    rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+        rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType
+    rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType = AFCSTAB_GALERKIN
 
     ! Set update notifiers for the discrete transport operator and the
     ! preconditioner in the problem level structure
@@ -2635,9 +2635,9 @@ contains
         rvector2, 0, ssectionName, rcollection)
 
     ! Ok, now we have to switch on all types of stabilisation again
-    rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation =&
+    rproblemLevel%Rafcstab(convectionAFC)%cafcstabType =&
         cconvectionStabilisation
-    rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation =&
+    rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType =&
         cdiffusionStabilisation
 
     ! ... and we reset the mass type

@@ -337,7 +337,7 @@ contains
     rafcstab%NNVEDGE = 0
 
     ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
+    select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
@@ -371,8 +371,8 @@ contains
       call afcstab_allocFlux(rafcstab)
 
       ! We need the edgewise vector for the prelimited fluxes
-      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_PRELIMITING_NONE).or.&
-          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+      if ((rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE).or.&
+          (rafcstab%cafcstabType     .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
 
@@ -402,7 +402,7 @@ contains
 
       ! We need the edgewise vector if raw antidiffusive fluxes should
       ! be prelimited
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
 
@@ -468,7 +468,7 @@ contains
     rafcstab%NNVEDGE = 0
 
     ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
+    select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
@@ -502,8 +502,8 @@ contains
       call afcstab_allocFlux(rafcstab)
 
       ! We need the edgewise vector for the prelimited fluxes
-      if ((rafcstab%ctypePrelimiting      .ne. AFCSTAB_PRELIMITING_NONE) .or.&
-          (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+      if ((rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) .or.&
+          (rafcstab%cafcstabType     .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
 
@@ -537,7 +537,7 @@ contains
       
       ! We need the edgewise vector if raw antidiffusive fluxes should
       ! be prelimited
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
       
@@ -4556,7 +4556,7 @@ contains
       !-------------------------------------------------------------------------
       ! 2) Prelimit the raw antidiffusive fluxes (if required)
       !-------------------------------------------------------------------------
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
         
         ! Check if stabilisation provides raw antidiffusive fluxes
         if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
@@ -4576,11 +4576,11 @@ contains
         ! Set additional pointer
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
         
-        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+        if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
           ! Perform standard prelimiting
           call doStdPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
-        elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+        elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
           ! Perform minmod prelimiting
           call doMinModPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
@@ -4614,7 +4614,7 @@ contains
       end if
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         
         ! Set additional pointer
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
@@ -4731,7 +4731,7 @@ contains
         ! User-supplied callback routine
         call fcb_limitNodal(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
-      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      elseif (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Standard routine without constraints
         call doLimitNodalDble(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
@@ -4768,7 +4768,7 @@ contains
       end if
 
       ! Compute edgewise correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
@@ -6101,7 +6101,7 @@ contains
       !-------------------------------------------------------------------------
       ! 2) Prelimit the raw antidiffusive fluxes (if required)
       !-------------------------------------------------------------------------
-      if (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
         
         ! Check if stabilisation provides raw antidiffusive fluxes
         if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
@@ -6121,11 +6121,11 @@ contains
         ! Set additional pointer
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
         
-        if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+        if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
           ! Perform standard prelimiting
           call doStdPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
-        elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+        elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
           ! Perform minmod prelimiting
           call doMinModPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
@@ -6159,7 +6159,7 @@ contains
       end if
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         
         ! Set additional pointer
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
@@ -6276,7 +6276,7 @@ contains
         ! User-supplied callback routine
         call fcb_limitNodal(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
-      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      elseif (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Standard routine without constraints
         call doLimitNodalDble(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
@@ -6313,7 +6313,7 @@ contains
       end if
       
       ! Compute edgewise correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
@@ -7577,7 +7577,7 @@ contains
     ! Check if stabilisation provides edge-based data structures
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0) .and.&
-        (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_LINFCT_MASS)) then
+        (rafcstab%cafcstabType .ne. AFCSTAB_LINFCT_MASS)) then
       call output_line('Stabilisation does not provide edge data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
       call sys_halt()
@@ -7600,7 +7600,7 @@ contains
     call lsysbl_getbase_double(rx, p_Dx)
     
     ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
+    select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
@@ -7642,7 +7642,7 @@ contains
         !-----------------------------------------------------------------------
 
         ! Check for special treatment
-        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+        if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
           
           ! Set pointers
           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
@@ -7656,7 +7656,7 @@ contains
               rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
               .true., p_DfluxPrel)
 
-        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+        elseif (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
           
           ! We have to assemble the raw-antidiffusive fluxes for
           ! prelimiting separately based on the low-order predictor
@@ -7666,11 +7666,11 @@ contains
             call lsysbl_getbase_double(rxPredictor, p_DxPredictor)
             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
             
-            if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+            if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
               ! Compute solution difference for standard prelimiting
               call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
                   rafcstab%NEQ, rafcstab%NVAR, p_DxPredictor, p_DfluxPrel)
-            elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+            elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
               call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                   rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_DxPredictor, dscale,&
@@ -7710,7 +7710,7 @@ contains
         ! Assemble implicit part of raw-antidiffusive fluxes
         !-----------------------------------------------------------------------
         
-        if ((rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_ITERATIVE) .and.&
+        if ((rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_ITERATIVE) .and.&
             iand(ioperationSpec, AFCSTAB_FCTFLUX_REJECTED) .ne. 0) then
           !---------------------------------------------------------------------
           ! Apply the rejected antidiffusive fluxes from the previous limiting
@@ -7811,14 +7811,14 @@ contains
 
       !-------------------------------------------------------------------------
 
-      if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+      if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
         ! Compute fluxes for standard prelimiting based on the
         ! low-order solution which serves as predictor
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
         call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_DfluxPrel)
         
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+      elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
         ! Make a backup of the spatial part of the raw-antidiffusive
         ! fluxes which are used for minmod prelimiting
         call lsyssc_copyVector(rafcstab%p_rvectorFlux,&
@@ -8262,7 +8262,7 @@ contains
     ! Check if stabilisation provides edge-based data structures
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0) .and.&
-        (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_LINFCT_MASS)) then
+        (rafcstab%cafcstabType .ne. AFCSTAB_LINFCT_MASS)) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
       call sys_halt()
@@ -8285,7 +8285,7 @@ contains
     call lsyssc_getbase_double(rx, p_Dx)
     
     ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
+    select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
@@ -8327,7 +8327,7 @@ contains
         !-----------------------------------------------------------------------
 
         ! Check for special treatment
-        if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+        if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
           
           ! Set pointers
           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
@@ -8341,7 +8341,7 @@ contains
               rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
               .true., p_DfluxPrel)
 
-        elseif (rafcstab%ctypePrelimiting .ne. AFCSTAB_PRELIMITING_NONE) then
+        elseif (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
           
           ! We have to assemble the raw-antidiffusive fluxes for
           ! prelimiting separately based on the low-order predictor
@@ -8351,11 +8351,11 @@ contains
             call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
             
-            if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+            if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
               ! Compute solution difference for standard prelimiting
               call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
                   rafcstab%NEQ, rafcstab%NVAR, p_DxPredictor, p_DfluxPrel)
-            elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+            elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
               call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                   rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_DxPredictor, dscale,&
@@ -8395,7 +8395,7 @@ contains
         ! Assemble implicit part of raw-antidiffusive fluxes
         !-----------------------------------------------------------------------
         
-        if ((rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_NLINFCT_ITERATIVE) .and.&
+        if ((rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_ITERATIVE) .and.&
             iand(ioperationSpec, AFCSTAB_FCTFLUX_REJECTED) .ne. 0) then
           !---------------------------------------------------------------------
           ! Apply the rejected antidiffusive fluxes from the previous limiting
@@ -8496,14 +8496,14 @@ contains
 
       !-------------------------------------------------------------------------
 
-      if (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_STD) then
+      if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
         ! Compute fluxes for standard prelimiting based on the
         ! low-order solution which serves as predictor
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
         call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_DfluxPrel)
         
-      elseif (rafcstab%ctypePrelimiting .eq. AFCSTAB_PRELIMITING_MINMOD) then
+      elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
         ! Make a backup of the spatial part of the raw-antidiffusive
         ! fluxes which are used for minmod prelimiting
         call lsyssc_copyVector(rafcstab%p_rvectorFlux,&

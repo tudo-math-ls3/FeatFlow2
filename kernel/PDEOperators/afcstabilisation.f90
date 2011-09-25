@@ -671,14 +671,14 @@ module afcstabilisation
   type t_afcstab
     
     ! Format Tag: Identifies the type of stabilisation
-    integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
+    integer :: cafcstabType = AFCSTAB_GALERKIN
 
     ! Format Tag: Identifies the type of prelimiting
     ! Can take one of the AFCSTAB_PRELIMITING_xxxx flags.
-    integer :: ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
+    integer :: cprelimitingType = AFCSTAB_PRELIMITING_NONE
 
     ! Format Tag: Identifies the type of limiting
-    integer :: ctypeLimiting = AFCSTAB_LIMITING_NONE
+    integer :: climitingType = AFCSTAB_LIMITING_NONE
 
     ! Format Tag: Identifies the format of the scalar template matrix
     ! underlying the edge-based sparsity structure (if any)
@@ -887,33 +887,33 @@ contains
 
     ! Get type of stabilisation from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-        "istabilisation", rafcstab%ctypeAFCstabilisation, AFCSTAB_GALERKIN)
+        "istabilisation", rafcstab%cafcstabType, AFCSTAB_GALERKIN)
 
     ! Get type of prelimiting from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-        "iprelimiting", rafcstab%ctypePrelimiting, AFCSTAB_PRELIMITING_NONE)
+        "iprelimiting", rafcstab%cprelimitingType, AFCSTAB_PRELIMITING_NONE)
 
 
     ! In a second step, special settings particular to individual
     ! stabilisation techniques are made `by hand'.
     
     ! Check if stabilisation should be applied
-    select case(rafcstab%ctypeAFCstabilisation)
+    select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
       ! high-order Galerkin scheme, low-order scheme:
       ! no prelimiting, no limiting
-      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
-      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_NONE
+      rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
+      rafcstab%climitingType    = AFCSTAB_LIMITING_NONE
 
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_IMPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
           AFCSTAB_LINFCT)
       ! Symmetric flux limiting with prelimiting as given by the user
-      rafcstab%ctypeLimiting = AFCSTAB_LIMITING_SYMMETRIC
+      rafcstab%climitingType = AFCSTAB_LIMITING_SYMMETRIC
 
     case (AFCSTAB_LINFCT_MASS,&
           AFCSTAB_SYMMETRIC,&
@@ -922,8 +922,8 @@ contains
           AFCSTAB_LINLPT_MASS,&
           AFCSTAB_LINLPT_SYMMETRIC)
       ! Symmetric flux limiting without prelimiting
-      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
-      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_SYMMETRIC
+      rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
+      rafcstab%climitingType    = AFCSTAB_LIMITING_SYMMETRIC
 
     case (AFCSTAB_LINLPT_UPWINDBIASED)
       ! For this special case, symmetric flux limiting must be
@@ -931,19 +931,19 @@ contains
       ! D. Kuzmin, Linearity-preserving flux correction and
       ! convergence acceleration for constrained Galerin schemes,
       ! Technical Report 421, TU Dortmund, 2011.
-      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
-      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_SYMMETRIC
+      rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
+      rafcstab%climitingType    = AFCSTAB_LIMITING_SYMMETRIC
 
     case (AFCSTAB_TVD)
       ! Upwind-biased flux limiting with standard prelimiting
-      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_STD
-      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_UPWINDBIASED
+      rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_STD
+      rafcstab%climitingType    = AFCSTAB_LIMITING_UPWINDBIASED
 
     case (AFCSTAB_GP,&
           AFCSTAB_NLINLPT_UPWINDBIASED)
       ! Upwind-biased flux limiting with minmod prelimiting
-      rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_MINMOD
-      rafcstab%ctypeLimiting    = AFCSTAB_LIMITING_UPWINDBIASED
+      rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_MINMOD
+      rafcstab%climitingType    = AFCSTAB_LIMITING_UPWINDBIASED
 
     case default
       call output_line('Invalid AFC type!',&
@@ -1107,20 +1107,20 @@ contains
     rafcstab%p_rvectorPredictor => null()
 
     ! Reset atomic data
-    rafcstab%ctypeAFCstabilisation = AFCSTAB_GALERKIN
-    rafcstab%ctypePrelimiting      = AFCSTAB_PRELIMITING_NONE
-    rafcstab%ctypeLimiting         = AFCSTAB_LIMITING_NONE
-    rafcstab%cmatrixFormat         = LSYSSC_MATRIXUNDEFINED
-    rafcstab%cdataType             = ST_DOUBLE
-    rafcstab%istabilisationSpec    = AFCSTAB_UNDEFINED
-    rafcstab%iduplicationFlag      = 0
-    rafcstab%NEQ                   = 0
-    rafcstab%NVAR                  = 1
-    rafcstab%NVARtransformed       = 1
-    rafcstab%NEDGE                 = 0
-    rafcstab%NNVEDGE               = 0
-    rafcstab%nmatrixCoeffs         = 0
-    rafcstab%ncoeffs               = 0
+    rafcstab%cafcstabType = AFCSTAB_GALERKIN
+    rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
+    rafcstab%climitingType      = AFCSTAB_LIMITING_NONE
+    rafcstab%cmatrixFormat      = LSYSSC_MATRIXUNDEFINED
+    rafcstab%cdataType          = ST_DOUBLE
+    rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
+    rafcstab%iduplicationFlag   = 0
+    rafcstab%NEQ                = 0
+    rafcstab%NVAR               = 1
+    rafcstab%NVARtransformed    = 1
+    rafcstab%NEDGE              = 0
+    rafcstab%NNVEDGE            = 0
+    rafcstab%nmatrixCoeffs      = 0
+    rafcstab%ncoeffs            = 0
 
   contains
 
@@ -1585,17 +1585,17 @@ contains
     ! Copy structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
-      rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
-      rafcstabDest%ctypePrelimiting      = rafcstabSrc%ctypePrelimiting
-      rafcstabDest%ctypeLimiting         = rafcstabSrc%ctypeLimiting
-      rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
-      rafcstabDest%cdataType             = rafcstabSrc%cdataType
-      rafcstabDest%NEQ                   = rafcstabSrc%NEQ
-      rafcstabDest%NVAR                  = rafcstabSrc%NVAR
-      rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
-      rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
-      rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
-      rafcstabDest%istabilisationSpec    = ior(rafcstabDest%istabilisationSpec,&
+      rafcstabDest%cafcstabType       = rafcstabSrc%cafcstabType
+      rafcstabDest%cprelimitingType   = rafcstabSrc%cprelimitingType
+      rafcstabDest%climitingType      = rafcstabSrc%climitingType
+      rafcstabDest%cmatrixFormat      = rafcstabSrc%cmatrixFormat
+      rafcstabDest%cdataType          = rafcstabSrc%cdataType
+      rafcstabDest%NEQ                = rafcstabSrc%NEQ
+      rafcstabDest%NVAR               = rafcstabSrc%NVAR
+      rafcstabDest%NVARtransformed    = rafcstabSrc%NVARtransformed
+      rafcstabDest%NEDGE              = rafcstabSrc%NEDGE
+      rafcstabDest%NNVEDGE            = rafcstabSrc%NNVEDGE
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
                                                AFCSTAB_INITIALISED)
     end if
 
@@ -1903,17 +1903,17 @@ contains
     ! Duplicate structural data
     if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_INITIALISED)) then
-      rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
-      rafcstabDest%ctypePrelimiting      = rafcstabSrc%ctypePrelimiting
-      rafcstabDest%ctypeLimiting         = rafcstabSrc%ctypeLimiting
-      rafcstabDest%cmatrixFormat         = rafcstabSrc%cmatrixFormat
-      rafcstabDest%cdataType             = rafcstabSrc%cdataType
-      rafcstabDest%NEQ                   = rafcstabSrc%NEQ
-      rafcstabDest%NVAR                  = rafcstabSrc%NVAR
-      rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
-      rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
-      rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
-      rafcstabDest%istabilisationSpec    = ior(rafcstabDest%istabilisationSpec,&
+      rafcstabDest%cafcstabType       = rafcstabSrc%cafcstabType
+      rafcstabDest%cprelimitingType   = rafcstabSrc%cprelimitingType
+      rafcstabDest%climitingType      = rafcstabSrc%climitingType
+      rafcstabDest%cmatrixFormat      = rafcstabSrc%cmatrixFormat
+      rafcstabDest%cdataType          = rafcstabSrc%cdataType
+      rafcstabDest%NEQ                = rafcstabSrc%NEQ
+      rafcstabDest%NVAR               = rafcstabSrc%NVAR
+      rafcstabDest%NVARtransformed    = rafcstabSrc%NVARtransformed
+      rafcstabDest%NEDGE              = rafcstabSrc%NEDGE
+      rafcstabDest%NNVEDGE            = rafcstabSrc%NNVEDGE
+      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
                                                AFCSTAB_INITIALISED)
     end if
 

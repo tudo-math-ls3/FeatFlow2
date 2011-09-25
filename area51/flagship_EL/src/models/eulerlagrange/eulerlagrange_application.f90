@@ -1641,7 +1641,7 @@ module eulerlagrange_application
         ! Initialise stabilisation structure by hand
         rafcstab%iSpec= AFCSTAB_UNDEFINED
         rafcstab%bprelimiting = .false.
-        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        rafcstab%cafcstabType = AFCSTAB_FEMFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         
@@ -3988,7 +3988,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
 
         ! Wrong element
         if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
-                  abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
+                  abs(rParticles%p_lambda3(iPart))-1) .ge. 0.00001) then
             call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 

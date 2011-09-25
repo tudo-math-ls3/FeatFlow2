@@ -2032,7 +2032,7 @@ contains
         ! Initialise stabilisation structure by hand
         rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
         rafcstab%bprelimiting = .false.
-        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        rafcstab%cafcstabType = AFCSTAB_FEMFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         call afcstab_genEdgeList(&

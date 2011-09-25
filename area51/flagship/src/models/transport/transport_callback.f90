@@ -832,7 +832,7 @@ contains
 
       ! Check if stabilisation should be applied
       bbuildStabilisation = (AFCSTAB_GALERKIN .ne.&
-          rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
     else   ! convectionAFC < 0
 
@@ -1156,7 +1156,7 @@ contains
 
     case (DIFFUSION_ANISOTROPIC)
       ! Anisotropic diffusion
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
       case (AFCSTAB_SYMMETRIC)
         call gfsc_buildJacobianSymm(&
             rsolution, 1.0_DP, hstep, .false.,&
@@ -1194,7 +1194,7 @@ contains
         ! is used if present; otherwise an error is thrown
         if (present(fcb_calcMatrixPrimal_sim)) then
 
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_IMPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE)
@@ -1386,7 +1386,7 @@ contains
            VELOCITY_TIMEDEP)
         ! linear velocity
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -1443,7 +1443,7 @@ contains
       case(VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -1508,7 +1508,7 @@ contains
       case(VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -1573,7 +1573,7 @@ contains
       case(VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -1638,7 +1638,7 @@ contains
       case(VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -1702,7 +1702,7 @@ contains
       case(VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -1779,7 +1779,7 @@ contains
         ! is used if present; otherwise an error is thrown
         if (present(fcb_calcMatrixDual_sim)) then
 
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_IMPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE)
@@ -1971,7 +1971,7 @@ contains
            VELOCITY_TIMEDEP)
         ! linear velocity
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT,&
               AFCSTAB_NLINFCT_IMPLICIT,&
               AFCSTAB_NLINFCT_ITERATIVE)
@@ -2194,7 +2194,7 @@ contains
     if (massAFC > 0) then
 
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
 
       case (AFCSTAB_NLINLPT_MASS)
 
@@ -2240,7 +2240,7 @@ contains
     if (convectionAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         
       case (AFCSTAB_NLINFCT_EXPLICIT,&
             AFCSTAB_NLINFCT_IMPLICIT,&
@@ -2355,7 +2355,7 @@ contains
     if (diffusionAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
         
       case (AFCSTAB_SYMMETRIC)
         call gfsc_buildConvectionVectorSymm(&
@@ -2554,7 +2554,7 @@ contains
         if (convectionAFC > 0) then
           
           ! What type of stabilisation are we?
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
             
           case (AFCSTAB_TVD)
             call gfsc_buildConvectionVectorTVD(&
@@ -2648,7 +2648,7 @@ contains
         if (diffusionAFC > 0) then
           
           ! What kind of stabilisation should be applied?
-          select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
             
           case (AFCSTAB_SYMMETRIC)
             call gfsc_buildConvectionVectorSymm(&
@@ -2699,7 +2699,7 @@ contains
         if (convectionAFC > 0) then
           
           ! What type of stabilisation are we?
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
             
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
@@ -2983,7 +2983,7 @@ contains
     if (massAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
         
       case (AFCSTAB_NLINLPT_MASS)
 
@@ -3036,7 +3036,7 @@ contains
     if (convectionAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         
       case (AFCSTAB_NLINFCT_EXPLICIT,&
             AFCSTAB_NLINFCT_ITERATIVE,&
@@ -3079,7 +3079,7 @@ contains
           ! Perform standard flux correction in zeroth iteration
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD
         else
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
           case (AFCSTAB_NLINFCT_EXPLICIT)
             ! Perform standard flux correction without recomputing bounds
             ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
@@ -3106,7 +3106,7 @@ contains
             ioperationSpec, rres)
 
         ! Special treatment for iterative FCT-algorithm
-        if (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation .eq.&
+        if (rproblemLevel%Rafcstab(convectionAFC)%cafcstabType .eq.&
             AFCSTAB_NLINFCT_ITERATIVE) then
           ! Subtract corrected antidiffusion from right-hand side
           call gfsc_buildConvectionVectorFCT(&
@@ -3185,7 +3185,7 @@ contains
     if (diffusionAFC > 0) then
 
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
         
       case (AFCSTAB_SYMMETRIC)
         call gfsc_buildConvectionVectorSymm(&
@@ -4883,7 +4883,7 @@ contains
     if (convectionAFC > 0) then
 
       ! What type of stabilisation are we?
-      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
       case (AFCSTAB_LINFCT)
         ! Get parameters from parameter list
@@ -5042,7 +5042,7 @@ contains
     if (convectionAFC > 0) then
 
       ! What type of stabilisation are we?
-      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
         
       case (AFCSTAB_LINLPT_UPWINDBIASED)
         
@@ -5073,7 +5073,7 @@ contains
     if (diffusionAFC > 0) then
       
       ! What type of stabilisation are we?
-      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
         
       case (AFCSTAB_LINLPT_SYMMETRIC)
 
@@ -5104,7 +5104,7 @@ contains
     if (massAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
         
       case (AFCSTAB_LINLPT_MASS)
         
@@ -6300,7 +6300,7 @@ contains
       if (diffusionAFC > 0) then
 
         ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
 
         case (AFCSTAB_DMP)
           ! Satisfy discrete maximum principle
@@ -6421,7 +6421,7 @@ contains
         if (present(fcb_calcMatrixPrimal_sim) .and.&
             present(fcb_calcMatrixDiagPrimal_sim)) then
 
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
             
           case (AFCSTAB_GALERKIN)
             
@@ -6499,7 +6499,7 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6569,7 +6569,7 @@ contains
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6601,7 +6601,7 @@ contains
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6633,7 +6633,7 @@ contains
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6665,7 +6665,7 @@ contains
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6697,7 +6697,7 @@ contains
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6754,7 +6754,7 @@ contains
         if (present(fcb_calcMatrixDual_sim) .and.&
             present(fcb_calcMatrixDiagDual_sim)) then
 
-          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
             
           case (AFCSTAB_GALERKIN)
             
@@ -6833,7 +6833,7 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -6997,8 +6997,8 @@ contains
     integer :: convectionAFC,diffusionAFC,ivelocitytype
     integer :: iapproxtimederivativetype
     integer :: lumpedMassMatrix,consistentMassMatrix
-    integer :: ctypeAFCstabilisationConvection
-    integer :: ctypeAFCstabilisationDiffusion
+    integer :: cafcstabTypeConvection
+    integer :: cafcstabTypeDiffusion
     integer :: ite,nmaxIterationsApproxTimeDerivative
     integer(I32) :: istabilisationSpecConvection
     integer(I32) :: istabilisationSpecDiffusion
@@ -7106,20 +7106,20 @@ contains
       ! Galerkin scheme; this implies that their specification flags
       ! are changed, so make a backup copy of them, too
       if (convectionAFC > 0) then
-        ctypeAFCstabilisationConvection&
-            = rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        cafcstabTypeConvection&
+            = rproblemLevel%Rafcstab(convectionAFC)%cafcstabType
         istabilisationSpecConvection&
             = rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType&
             = AFCSTAB_GALERKIN
       end if
       
       if (diffusionAFC > 0) then
-        ctypeAFCstabilisationDiffusion&
-            = rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+        cafcstabTypeDiffusion&
+            = rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType
         istabilisationSpecDiffusion&
             = rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType&
             = AFCSTAB_GALERKIN
       end if
       
@@ -7131,15 +7131,15 @@ contains
       
       ! Reset stabilisation structures to their original configuration
       if (convectionAFC > 0) then
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType&
+            = cafcstabTypeConvection
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
             = istabilisationSpecConvection
       end if
       
       if (diffusionAFC > 0) then
-        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationDiffusion
+        rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType&
+            = cafcstabTypeDiffusion
         rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
             = istabilisationSpecDiffusion
       end if
@@ -7216,20 +7216,20 @@ contains
       ! Galerkin scheme; this implies that their specification flags
       ! are changed, so make a backup copy of them, too
       if (convectionAFC > 0) then
-        ctypeAFCstabilisationConvection&
-            = rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        cafcstabTypeConvection&
+            = rproblemLevel%Rafcstab(convectionAFC)%cafcstabType
         istabilisationSpecConvection&
             = rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType&
             = AFCSTAB_UPWIND
       end if
       
       if (diffusionAFC > 0) then
-        ctypeAFCstabilisationDiffusion&
-            = rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+        cafcstabTypeDiffusion&
+            = rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType
         istabilisationSpecDiffusion&
             = rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType&
             = AFCSTAB_DMP
       end if
       
@@ -7241,15 +7241,15 @@ contains
       
       ! Reset stabilisation structures for further usage
       if (convectionAFC > 0) then
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType&
+            = cafcstabTypeConvection
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
             = istabilisationSpecConvection
       end if
       
       if (diffusionAFC > 0) then
-        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationDiffusion
+        rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType&
+            = cafcstabTypeDiffusion
         rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
             = istabilisationSpecDiffusion
       end if

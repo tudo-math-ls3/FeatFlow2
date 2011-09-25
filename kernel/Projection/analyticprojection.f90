@@ -1109,8 +1109,8 @@ contains
     
     ! Initialise the stabilisation structure
     rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
-    rafcstab%ctypePrelimiting = AFCSTAB_PRELIMITING_NONE
-    rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
+    rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
+    rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
     call gfsc_initStabilisation(rmatrixMass, rafcstab)
     call afcstab_genEdgeList(rmatrixMass, rafcstab)
 

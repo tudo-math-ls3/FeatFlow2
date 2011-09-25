@@ -1828,8 +1828,8 @@ contains
     integer, dimension(2) :: IposAFC
     integer :: consistentMassMatrixHydro,consistentMassMatrixTransport
     integer :: convectionAFC,inviscidAFC
-    integer :: ctypeAFCstabilisationConvection
-    integer :: ctypeAFCstabilisationInviscid
+    integer :: cafcstabTypeConvection
+    integer :: cafcstabTypeInviscid
     integer :: iapproxtimederivativetypeHydro,iapproxtimederivativetypeTransport
     integer :: ilimitersynchronisation,nfailsafe,ivariable,nvariable,ite
     integer :: imassantidiffusiontypeHydro,imassantidiffusiontypeTransport
@@ -1853,9 +1853,9 @@ contains
 
     ! Do we have to apply linearised FEM-FCT?
     if ((inviscidAFC .le. 0) .or. (convectionAFC .le. 0)) return
-    if ((rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+    if ((rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
          .ne. AFCSTAB_LINFCT) .or.&
-        (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+        (rproblemLevel%Rafcstab(convectionAFC)%cafcstabType&
          .ne. AFCSTAB_LINFCT)) return
 
     ! Set positions of stabilisation structures
@@ -1959,13 +1959,13 @@ contains
         ! to overwrite it to enforce using the standard Galerkin
         ! scheme; this implies that the specification flag is changed,
         ! so make a backup copy of it, too
-        ctypeAFCstabilisationInviscid =&
-            rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        cafcstabTypeInviscid =&
+            rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType
         istabilisationSpecInviscid =&
             rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
 
         ! Enforce using the standard Galerkin method without any stabilisation
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType = AFCSTAB_GALERKIN
 
         ! Compute $K(u^L)*u^L$ and store the result in rvector2
         call hydro_calcDivergenceVector(rproblemLevel,&
@@ -1985,7 +1985,7 @@ contains
         end if
 
         ! Reset stabilisation structure to its original configuration
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType = cafcstabTypeInviscid
         rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpecInviscid
 
         ! Scale rvector2 by the inverse of the lumped mass matrix and store
@@ -2036,13 +2036,13 @@ contains
         ! to overwrite it to enforce using the standard Galerkin
         ! scheme; this implies that the specification flag is changed,
         ! so make a backup copy of it, too
-        ctypeAFCstabilisationInviscid =&
-            rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        cafcstabTypeInviscid =&
+            rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType
         istabilisationSpecInviscid =&
             rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
         
         ! Enforce using the standard Galerkin method without any stabilisation
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = AFCSTAB_UPWIND
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType = AFCSTAB_UPWIND
         
         ! Compute $L(u^L)*u^L$ and store the result in rvector1
         call hydro_calcDivergenceVector(rproblemLevel,&
@@ -2061,7 +2061,7 @@ contains
         end if
 
         ! Reset stabilisation structures to their original configuration
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType = cafcstabTypeInviscid
         rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpecInviscid
 
         ! Scale it by the inverse of the lumped mass matrix
@@ -2191,13 +2191,13 @@ contains
         ! have to overwrite them to enforce using the standard
         ! Galerkin scheme; this implies that their specification flags
         ! are changed, so make a backup copy of them, too
-        ctypeAFCstabilisationConvection =&
-            rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        cafcstabTypeConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%cafcstabType
         istabilisationSpecConvection =&
             rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
 
         ! Enforce using the standard Galerkin method without any stabilisation
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType = AFCSTAB_GALERKIN
 
         ! Create discrete transport operator of high-order (Galerkin method)
         call transp_calcTransportOperator(rproblemLevel,&
@@ -2205,7 +2205,7 @@ contains
             1.0_DP, p_rmatrix, ssectionNameTransport, rcollection, bforceUpdate=.true.)
 
         ! Reset stabilisation structures to their original configuration
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType = cafcstabTypeConvection
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
 
         ! Compute $K(u^L)*u^L$ and store the result in rvector2
@@ -2291,13 +2291,13 @@ contains
         ! have to overwrite them to enforce using the standard
         ! Galerkin scheme; this implies that their specification flags
         ! are changed, so make a backup copy of them, too
-        ctypeAFCstabilisationConvection =&
-            rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+        cafcstabTypeConvection =&
+            rproblemLevel%Rafcstab(convectionAFC)%cafcstabType
         istabilisationSpecConvection =&
             rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec
 
         ! Enforce using the standard Galerkin method without any stabilisation
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_UPWIND
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType = AFCSTAB_UPWIND
         
         ! Create discrete transport operator of low-order
         call transp_calcTransportOperator(rproblemLevel,&
@@ -2305,7 +2305,7 @@ contains
             1.0_DP, p_rmatrix, ssectionNameTransport, rcollection, bforceUpdate=.true.)
 
         ! Reset stabilisation structures for further usage
-        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = ctypeAFCstabilisationConvection
+        rproblemLevel%Rafcstab(convectionAFC)%cafcstabType = cafcstabTypeConvection
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
 
 

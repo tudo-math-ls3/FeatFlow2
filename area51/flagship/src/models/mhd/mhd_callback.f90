@@ -1085,7 +1085,7 @@ contains
         if (inviscidAFC > 0) then
 
           ! What type of stabilisation are we?
-          select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
 
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
@@ -1146,7 +1146,7 @@ contains
         if (inviscidAFC > 0) then
 
           ! What type of stabilisation are we?
-          select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+          select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
 
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
@@ -1361,7 +1361,7 @@ contains
     if (massAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
 
       case (AFCSTAB_NLINLPT_MASS)
         print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
@@ -1377,7 +1377,7 @@ contains
     !-------------------------------------------------------------------------
 
     ! What type if stabilisation is applied?
-    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
           AFCSTAB_NLINFCT_IMPLICIT)
@@ -1402,7 +1402,7 @@ contains
         ! Perform standard flux correction in zeroth iteration
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
       else
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         case (AFCSTAB_NLINFCT_EXPLICIT)
           ! Perform standard flux correction without recomputing bounds
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
@@ -1427,7 +1427,7 @@ contains
           ssectionName, rcollection)
 
       ! Special treatment for iterative FCT-algorithm
-      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation .eq.&
+      if (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType .eq.&
           AFCSTAB_NLINFCT_ITERATIVE) then
         ! Subtract corrected antidiffusion from right-hand side
         call gfsys_buildDivVectorFCT(&
@@ -1463,7 +1463,7 @@ contains
     if (viscousAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(viscousAFC)%cafcstabType)
         
       case (AFCSTAB_NLINLPT_SYMMETRIC)
         print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
@@ -1617,7 +1617,7 @@ contains
     if (massAFC > 0) then
 
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(massAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(massAFC)%cafcstabType)
 
       case (AFCSTAB_NLINLPT_MASS)
         print *, "AFCSTAB_NLINLPT_MASS not implemented yet"
@@ -1637,7 +1637,7 @@ contains
     if (inviscidAFC > 0) then
 
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         
       case (AFCSTAB_NLINFCT_EXPLICIT,&
             AFCSTAB_NLINFCT_IMPLICIT,&
@@ -1681,7 +1681,7 @@ contains
     if (viscousAFC > 0) then
       
       ! What kind of stabilisation should be applied?
-      select case(rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(viscousAFC)%cafcstabType)
 
       case (AFCSTAB_NLINLPT_SYMMETRIC)
         print *, "AFCSTAB_NLINLPT_SYMMETRIC not implemented yet"
@@ -1870,7 +1870,7 @@ contains
     if (inviscidAFC > 0) then
 
       ! What type of stabilisation are we?
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         
         case (AFCSTAB_LINFCT)
         ! Get parameters from parameter list
@@ -4200,7 +4200,7 @@ contains
       ! Check if stabilisation structure is available
       if (inviscidAFC .le. 0) return
       ! What type if stabilisation is applied?
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+      select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         
       case (AFCSTAB_GALERKIN)
         
@@ -4519,8 +4519,8 @@ contains
     integer :: inviscidAFC,viscousAFC
     integer :: iblock,iapproxtimederivativetype
     integer :: lumpedMassMatrix,consistentMassMatrix
-    integer :: ctypeAFCstabilisationInviscid
-    integer :: ctypeAFCstabilisationViscous
+    integer :: cafcstabTypeInviscid
+    integer :: cafcstabTypeViscous
     integer :: ite,nmaxIterationsApproxTimeDerivative
     integer(I32) :: istabilisationSpecInviscid
     integer(I32) :: istabilisationSpecViscous
@@ -4600,20 +4600,20 @@ contains
       ! Galerkin scheme; this implies that their specification flags
       ! are changed, so make a backup copy of them, too
       if (inviscidAFC > 0) then
-        ctypeAFCstabilisationInviscid&
-            = rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        cafcstabTypeInviscid&
+            = rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType
         istabilisationSpecInviscid&
             = rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
             = AFCSTAB_GALERKIN
       end if
 
       if (viscousAFC > 0) then
-        ctypeAFCstabilisationViscous&
-            = rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation
+        cafcstabTypeViscous&
+            = rproblemLevel%Rafcstab(viscousAFC)%cafcstabType
         istabilisationSpecViscous&
             = rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(viscousAFC)%cafcstabType&
             = AFCSTAB_GALERKIN
       end if
 
@@ -4634,15 +4634,15 @@ contains
       
       ! Reset stabilisation structures to their original configuration
       if (inviscidAFC > 0) then
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
+            = cafcstabTypeInviscid
         rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
             = istabilisationSpecInviscid
       end if
 
       if (viscousAFC > 0) then
-        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationViscous
+        rproblemLevel%Rafcstab(viscousAFC)%cafcstabType&
+            = cafcstabTypeViscous
         rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
             = istabilisationSpecViscous
       end if
@@ -4698,20 +4698,20 @@ contains
       ! Galerkin scheme; this implies that their specification flags
       ! are changed, so make a backup copy of them, too
       if (inviscidAFC > 0) then
-        ctypeAFCstabilisationInviscid&
-            = rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation
+        cafcstabTypeInviscid&
+            = rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType
         istabilisationSpecInviscid&
             = rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
             = AFCSTAB_UPWIND
       end if
 
       if (viscousAFC > 0) then
-        ctypeAFCstabilisationViscous&
-            = rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation
+        cafcstabTypeViscous&
+            = rproblemLevel%Rafcstab(viscousAFC)%cafcstabType
         istabilisationSpecViscous&
             = rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec
-        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
+        rproblemLevel%Rafcstab(viscousAFC)%cafcstabType&
             = AFCSTAB_DMP
       end if
 
@@ -4732,15 +4732,15 @@ contains
 
       ! Reset stabilisation structures to their original configuration
       if (inviscidAFC > 0) then
-        rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationInviscid
+        rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
+            = cafcstabTypeInviscid
         rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
             = istabilisationSpecInviscid
       end if
 
       if (viscousAFC > 0) then
-        rproblemLevel%Rafcstab(viscousAFC)%ctypeAFCstabilisation&
-            = ctypeAFCstabilisationViscous
+        rproblemLevel%Rafcstab(viscousAFC)%cafcstabType&
+            = cafcstabTypeViscous
         rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
             = istabilisationSpecViscous
       end if

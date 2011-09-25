@@ -1352,7 +1352,7 @@ contains
           .eq. AFCSTAB_UNDEFINED) then
 
         ! Determine the number of transformed variables
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN,&
               AFCSTAB_UPWIND)
@@ -1973,8 +1973,8 @@ contains
         
         ! Initialise stabilisation structure by hand
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
-        rafcstab%ctypePrelimiting   = AFCSTAB_PRELIMITING_NONE
-        rafcstab%ctypeAFCstabilisation = AFCSTAB_LINFCT_MASS
+        rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
+        rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         call afcstab_genEdgeList(&

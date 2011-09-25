@@ -1051,7 +1051,7 @@ contains
         dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
         ! What type if stabilisation is applied?
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
 
         case (AFCSTAB_GALERKIN)
 
@@ -1561,7 +1561,7 @@ contains
     !---------------------------------------------------------------------------
 
     ! What type if stabilisation is applied?
-    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
 
     case (AFCSTAB_GALERKIN)
 
@@ -1803,7 +1803,7 @@ contains
     !-------------------------------------------------------------------------
 
     ! What type if stabilisation is applied?
-    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_ITERATIVE,&
           AFCSTAB_FEMFCT_IMPLICIT)
@@ -1822,7 +1822,7 @@ contains
         else
           call lsysbl_copyVector(rsolution, p_rpredictor)
         end if
-      elseif (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+      elseif (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
               .eq. AFCSTAB_FEMFCT_ITERATIVE) then
         ! ... in each iteration for iterative limiting
         call lsysbl_invertedDiagMatVec(&
@@ -1843,7 +1843,7 @@ contains
         ! Perform standard flux correction in zeroth iteration
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
       else
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         case (AFCSTAB_FEMFCT_CLASSICAL)
           ! Perform standard flux correction without recomputing bounds
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
@@ -1868,7 +1868,7 @@ contains
           ssectionName, rcollection)
 
       ! Subtract corrected antidiffusion from right-hand side
-      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+      if (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
           .eq. AFCSTAB_FEMFCT_ITERATIVE) then
         call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -2030,7 +2030,7 @@ contains
 
     dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
 
-    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
 
     case (AFCSTAB_GALERKIN)
 
@@ -2365,7 +2365,7 @@ contains
 
     ! Do we have to apply linearised FEM-FCT?
     if (inviscidAFC .le. 0) return
-    if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+    if (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
         .ne. AFCSTAB_FEMFCT_LINEARISED) return
 
     ! Get more parameters from parameter list
