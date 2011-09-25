@@ -880,9 +880,6 @@ contains
     integer :: i,j,nmatrices,nsubstrings,ccubType
     character(len=SYS_STRLEN) :: selemName
 
-real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
-integer, dimension(:,:), pointer :: p_IedgeList
-
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'templatematrix', templateMatrix)

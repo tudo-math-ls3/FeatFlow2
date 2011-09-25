@@ -60,13 +60,19 @@
 !# 15.) gfem_getbase_IedgeList
 !#      -> Returns pointer to the edge list
 !#
-!# 16.) gfem_getbase_DcoeffsAtNode / gfem_getbase_FcoeffsAtNode
+!# 16.) gfem_getbase_InodeList
+!#      -> Returns pointer to the node list
+!#
+!# 17.) gfem_getbase_DcoeffsAtNode / gfem_getbase_FcoeffsAtNode
 !#      -> Returns pointer to the coefficients at nodes
 !#
-!# 17.) gfem_getbase_DcoeffsAtEdge / gfem_getbase_FcoeffsAtEdge
+!# 18.) gfem_getbase_DcoeffsAtEdge / gfem_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to the coefficients at edges
 !#
-!# 18.) gfem_genEdgeList
+!# 19.) gfem_genNodeList
+!#      -> Generates the node list for a given matrix
+!#
+!# 20.) gfem_genEdgeList
 !#      -> Generates the edge list for a given matrix
 !#
 !# The following auxiliary routines are available:
@@ -106,6 +112,7 @@ module groupfembase
 
   use fsystem
   use genoutput
+  use linearalgebra
   use linearsystemscalar
   use linearsystemblock
   use storage
@@ -130,8 +137,12 @@ module groupfembase
   public :: gfem_isVectorCompatible
   public :: gfem_getbase_IedgeListIdx
   public :: gfem_getbase_IedgeList
+  public :: gfem_getbase_InodeList
   public :: gfem_getbase_DcoeffsAtNode
+  public :: gfem_getbase_FcoeffsAtNode
   public :: gfem_getbase_DcoeffsAtEdge
+  public :: gfem_getbase_FcoeffsAtEdge
+  public :: gfem_genNodeList
   public :: gfem_genEdgeList
 
   public :: gfem_copyH2D_IedgeList
@@ -159,14 +170,17 @@ module groupfembase
 !<constantblock description="Bitfield identifiers for properties of the \
 !                            group finite element set">
 
+  ! Nodal structure has been computed: InodeList
+  integer(I32), parameter, public :: GFEM_HAS_NODESTRUCTURE = 2_I32**1
+
   ! Edge-based structure has been computed: IedgeListIdx, IedgeList
-  integer(I32), parameter, public :: GFEM_HAS_EDGESTRUCTURE = 2_I32**1
+  integer(I32), parameter, public :: GFEM_HAS_EDGESTRUCTURE = 2_I32**2
 
   ! Nodal coefficient array has been computed: DcoeffsAtNode
-  integer(I32), parameter, public :: GFEM_HAS_NODEDATA      = 2_I32**2
+  integer(I32), parameter, public :: GFEM_HAS_NODEDATA      = 2_I32**3
 
   ! Edge-based coefficient array has been computed: DcoeffsAtEdge
-  integer(I32), parameter, public :: GFEM_HAS_EDGEDATA      = 2_I32**3
+  integer(I32), parameter, public :: GFEM_HAS_EDGEDATA      = 2_I32**4
 !</constantblock>
 
 
@@ -175,6 +189,9 @@ module groupfembase
   
   ! Duplicate atomic structure
   integer(I32), parameter, public :: GFEM_DUP_STRUCTURE     = 2_I32**0
+  
+  ! Duplicate edge-nodal structure: InodeList
+  integer(I32), parameter, public :: GFEM_DUP_NODESTRUCTURE = GFEM_HAS_NODESTRUCTURE
 
   ! Duplicate edge-based structure: IedgeListIdx, IedgeList
   integer(I32), parameter, public :: GFEM_DUP_EDGESTRUCTURE = GFEM_HAS_EDGESTRUCTURE
@@ -192,6 +209,9 @@ module groupfembase
   
   ! Share atomic structure
   integer(I32), parameter, public :: GFEM_SHARE_STRUCTURE     = GFEM_DUP_STRUCTURE
+
+   ! Share edge-nodal structure: InodeList
+  integer(I32), parameter, public :: GFEM_SHARE_NODESTRUCTURE = GFEM_DUP_NODESTRUCTURE
 
   ! Share edge-based structure: IedgeListIdx, IedgeList
   integer(I32), parameter, public :: GFEM_SHARE_EDGESTRUCTURE = GFEM_DUP_EDGESTRUCTURE
@@ -263,6 +283,13 @@ module groupfembase
     ! IedgeList(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
     integer :: h_IedgeList = ST_NOHANDLE
+    
+    ! Handle to nodal structure
+    ! InodeList(2,1:NEQ) : the global number of the node
+    ! This handle is only allocated if the group finite element set is
+    ! restricted to a subset of the degrees of freedom; otherwise it
+    ! would just list 1,2,...,NEQ in which case it is not allocated
+    integer :: h_InodeList = ST_NOHANDLE
 
     ! Handle to precomputed coefficients at nodes
     integer :: h_CoeffsAtNode = ST_NOHANDLE
@@ -506,6 +533,13 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! Release nodal structure
+    if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
+      if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
+          call storage_free(rgroupFEMSet%h_InodeList)
+    end if
+    rgroupFEMSet%h_InodeList = ST_NOHANDLE
+
     ! Release edge structure
     if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)) then
       if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE)&
@@ -532,6 +566,8 @@ contains
 
     ! Reset ownerships
     rgroupFEMSet%iduplicationFlag = iand(rgroupFEMSet%iduplicationFlag,&
+                                         not(GFEM_SHARE_NODESTRUCTURE))
+    rgroupFEMSet%iduplicationFlag = iand(rgroupFEMSet%iduplicationFlag,&
                                          not(GFEM_SHARE_EDGESTRUCTURE))
     rgroupFEMSet%iduplicationFlag = iand(rgroupFEMSet%iduplicationFlag,&
                                          not(GFEM_SHARE_NODEDATA))
@@ -539,6 +575,8 @@ contains
                                          not(GFEM_SHARE_EDGEDATA))
 
     ! Reset specification
+    rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
+                                 not(GFEM_HAS_NODESTRUCTURE))
     rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                  not(GFEM_HAS_EDGESTRUCTURE))
     rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
@@ -642,7 +680,7 @@ contains
         if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)) then
           if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODEDATA)) then
             call output_line('Handle h_CoeffsAtNode '//&
-                'is shared and cannot be resized!',&
+                'is shared and cannot be resised!',&
                 OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
           else
             call storage_realloc('gfem_resizeGFEMSetDirect',&
@@ -663,11 +701,28 @@ contains
       ! Set new number of nodes
       rgroupFEMSet%NEQ = NEQ
 
+      if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
+          call output_line('Handle h_InodeList '//&
+              'is shared and cannot be resised!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
+        else
+          ! Resize array
+          call storage_realloc('gfem_resizeGFEMSetDirect',&
+              rgroupFEMSet%NEQ, rgroupFEMSet%h_InodeList,&
+              ST_NEWBLOCK_NOINIT, .false.)
+          
+          ! Reset specifiert
+          rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
+                                       not(GFEM_HAS_NODESTRUCTURE))
+        end if
+      end if
+
       if (rgroupFEMSet%cassemblyType .eq. GFEM_EDGEBASED) then
         if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)) then
           if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODEDATA)) then
             call output_line('Handle h_CoeffsAtNode '//&
-                'is shared and cannot be resized!',&
+                'is shared and cannot be resised!',&
                 OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
           else
             call storage_realloc('gfem_resizeGFEMSetDirect',&
@@ -692,7 +747,7 @@ contains
       if (check(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
         if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)) then
           call output_line('Handle h_IedgeList '//&
-              'is shared and cannot be resized!',&
+              'is shared and cannot be resised!',&
               OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
         else
           ! Resize array
@@ -709,7 +764,7 @@ contains
       if (check(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)) then
         if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGEDATA)) then
           call output_line('Handle h_CoeffsAtEdge '//&
-              'is shared and cannot be resized!',&
+              'is shared and cannot be resised!',&
               OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
         else
           ! Reseiz array
@@ -912,20 +967,51 @@ contains
       rgroupFEMSetDest%ncoeffsAtEdge = rgroupFEMSetSrc%ncoeffsAtEdge
     end if
 
+
+    ! Copy node structure
+    if (check(idupFlag, GFEM_DUP_NODESTRUCTURE)) then
+      ! Remove existing data owned by the destination structure
+      if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
+                      GFEM_SHARE_NODESTRUCTURE))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_NODESTRUCTURE))) then
+        call storage_free(rgroupFEMSetDest%h_InodeList)
+      end if
+
+      ! Copy content from source to destination structure
+      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+        call storage_copy(rgroupFEMSetSrc%h_InodeList,&
+            rgroupFEMSetDest%h_InodeList)
+      end if
+        
+      ! Adjust specifier of the destination structure
+      rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE))
+      
+      ! Reset ownership
+      rgroupFEMSetDest%iduplicationFlag =&
+          iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_NODESTRUCTURE))
+    end if
+
+
     ! Copy edge structure
     if (check(idupFlag, GFEM_DUP_EDGESTRUCTURE)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
-                      GFEM_SHARE_EDGESTRUCTURE))) then
+                      GFEM_SHARE_EDGESTRUCTURE))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_EDGESTRUCTURE))) then
         call storage_free(rgroupFEMSetDest%h_IedgeListIdx)
         call storage_free(rgroupFEMSetDest%h_IedgeList)
       end if
 
       ! Copy content from source to destination structure
-      call storage_copy(rgroupFEMSetSrc%h_IedgeListIdx,&
-          rgroupFEMSetDest%h_IedgeListIdx)
-      call storage_copy(rgroupFEMSetSrc%h_IedgeList,&
-          rgroupFEMSetDest%h_IedgeList)
+      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        call storage_copy(rgroupFEMSetSrc%h_IedgeListIdx,&
+            rgroupFEMSetDest%h_IedgeListIdx)
+        call storage_copy(rgroupFEMSetSrc%h_IedgeList,&
+            rgroupFEMSetDest%h_IedgeList)
+      end if
 
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
@@ -936,17 +1022,22 @@ contains
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_EDGESTRUCTURE))
     end if
 
+
     ! Copy coefficients at nodes
     if (check(idupFlag, GFEM_DUP_NODEDATA)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
-                      GFEM_SHARE_NODEDATA))) then
+                      GFEM_SHARE_NODEDATA))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_NODEDATA))) then
         call storage_free(rgroupFEMSetDest%h_CoeffsAtNode)
       end if
 
       ! Copy content from source to destination structure
-      call storage_copy(rgroupFEMSetSrc%h_CoeffsAtNode,&
-          rgroupFEMSetDest%h_CoeffsAtNode)
+      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODEDATA)) then
+        call storage_copy(rgroupFEMSetSrc%h_CoeffsAtNode,&
+            rgroupFEMSetDest%h_CoeffsAtNode)
+      end if
 
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
@@ -957,17 +1048,22 @@ contains
           iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_NODEDATA))
     end if
 
+
     ! Copy coefficients at edges
     if (check(idupFlag, GFEM_DUP_EDGEDATA)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
-                      GFEM_SHARE_EDGEDATA))) then
+                      GFEM_SHARE_EDGEDATA))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_EDGEDATA))) then
         call storage_free(rgroupFEMSetDest%h_CoeffsAtEdge)
       end if
 
       ! Copy content from source to destination structure
-      call storage_copy(rgroupFEMSetSrc%h_CoeffsAtEdge,&
-          rgroupFEMSetDest%h_CoeffsAtEdge)
+      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGEDATA)) then
+        call storage_copy(rgroupFEMSetSrc%h_CoeffsAtEdge,&
+            rgroupFEMSetDest%h_CoeffsAtEdge)
+      end if
 
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
@@ -1093,6 +1189,29 @@ contains
       rgroupFEMSetDest%ncoeffsAtEdge = rgroupFEMSetSrc%ncoeffsAtEdge
     end if
 
+    ! Duplicate node structure
+    if (check(idupFlag, GFEM_DUP_NODESTRUCTURE)) then
+      ! Remove existing data owned by the destination structure
+      if (.not.(check(rgroupFEMSetDest%iduplicationFlag,&
+                      GFEM_SHARE_NODESTRUCTURE))&
+          .and.(check(rgroupFEMSetDest%isetSpec,&
+                      GFEM_HAS_NODESTRUCTURE))) then
+        call storage_free(rgroupFEMSetDest%h_InodeList)
+      end if
+
+      ! Copy handle from source to destination structure
+      rgroupFEMSetDest%h_InodeList = rgroupFEMSetSrc%h_InodeList
+      
+      ! Adjust specifier of the destination structure
+      rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE))
+      
+      ! Reset ownership
+      rgroupFEMSetDest%iduplicationFlag =&
+          ior(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)
+    end if
+
+
     ! Duplicate edge structure
     if (check(idupFlag, GFEM_DUP_EDGESTRUCTURE)) then
       ! Remove existing data owned by the destination structure
@@ -1107,7 +1226,7 @@ contains
       ! Copy handle from source to destination structure
       rgroupFEMSetDest%h_IedgeListIdx = rgroupFEMSetSrc%h_IedgeListIdx
       rgroupFEMSetDest%h_IedgeList = rgroupFEMSetSrc%h_IedgeList
-
+      
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
           iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGESTRUCTURE))
@@ -1116,6 +1235,7 @@ contains
       rgroupFEMSetDest%iduplicationFlag =&
           ior(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)
     end if
+
 
     ! Copy coefficients at nodes
     if (check(idupFlag, GFEM_DUP_NODEDATA)) then
@@ -1138,6 +1258,7 @@ contains
       rgroupFEMSetDest%iduplicationFlag =&
           ior(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODEDATA)
     end if
+
 
     ! Copy coefficients at edges
     if (check(idupFlag, GFEM_DUP_EDGEDATA)) then
@@ -2018,6 +2139,41 @@ contains
 
 !<subroutine>
 
+  subroutine gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+
+!<description>
+    ! Returns a pointer to the node structure
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the node structure
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    integer, dimension(:,:), pointer :: p_InodeList
+!</output>
+!</subroutine>
+
+    ! Do we edge structure at all?
+    if ((rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) .or.&
+        (rgroupFEMSet%NEQ         .eq. 0)) then
+      nullify(p_InodeList)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_int2D(rgroupFEMSet%h_InodeList,&
+        p_InodeList, rgroupFEMSet%NEQ)
+
+  end subroutine gfem_getbase_InodeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
 
 !<description>
@@ -2192,6 +2348,132 @@ contains
 
 !<subroutine>
 
+  subroutine gfem_genNodeList(rmatrix, rgroupFEMSet, IdofList)
+
+!<description>
+    ! This subroutine stores the list of degress of freedom to the
+    ! group finite element set. If no list of degrees of freedom is
+    ! provided, then the corresponding data structure is deallocated.
+!</description>
+
+!<input>
+    ! Scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! OPTIONAL: a list of degress of freedoms to which the edge
+    ! structure should be restricted.
+    integer, dimension(:), intent(in), optional :: IdofList
+!</input>
+
+!<inputoutput>
+    ! Group finite element structure
+    type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_InodeList
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer :: isize,idx,ieq
+
+    ! Check if edge structure is owned by the stabilisation structure
+    if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE) .eq.&
+             GFEM_SHARE_NODESTRUCTURE) then
+      call output_line('Node list is not owned by structure and '//&
+          'therefore cannot be generated',&
+          OU_CLASS_WARNING,OU_MODE_STD,'gfem_genNodeList')
+      return
+    end if
+
+    if (present(IdofList)) then
+
+      ! If (some of the) matrix dimensions have not been initialised
+      ! then the initialisation is done below, and thus, fixes this set
+      if (rgroupFEMSet%NEQ .eq. 0) then
+        rgroupFEMSet%NEQ = size(IdofList)
+      elseif (rgroupFEMSet%NEQ .ne. size(IdofList)) then
+        call output_line('Number of equations mismatch!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
+        call sys_halt()
+      end if
+      
+      if (rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) then
+        call storage_new('gfem_genNodeList', 'InodeList',&
+            (/2,rgroupFEMSet%NEQ/), ST_INT, rgroupFEMSet%h_InodeList,&
+            ST_NEWBLOCK_ZERO)
+      else
+        call storage_getsize(rgroupFEMSet%h_InodeList, isize)
+        if (isize .ne. rgroupFEMSet%NEQ) then
+          call storage_free(rgroupFEMSet%h_InodeList)
+          call storage_new('gfem_genNodeList', 'InodeList',&
+              (/2,rgroupFEMSet%NEQ/), ST_INT, rgroupFEMSet%h_InodeList,&
+              ST_NEWBLOCK_ZERO)
+        end if
+      end if
+
+      ! Set pointer
+      call storage_getbase_int2D(rgroupFEMSet%h_InodeList, p_InodeList)
+
+      ! General node data structure
+      ! Generate edge data structure
+      select case(rmatrix%cmatrixFormat)
+      case (LSYSSC_MATRIX1)
+        do idx = 1, rgroupFEMSet%NEQ
+          ieq = IdofList(idx)
+          p_InodeList(1,idx) = ieq
+          p_InodeList(2,idx) = rmatrix%NEQ*(ieq-1)+ieq
+        end do
+        
+      case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
+        call lsyssc_getbase_Kld(rmatrix, p_Kdiagonal)
+        do idx = 1, rgroupFEMSet%NEQ
+          ieq = IdofList(idx)
+          p_InodeList(1,idx) = ieq
+          p_InodeList(2,idx) = p_Kdiagonal(ieq)
+        end do
+
+      case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
+        call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+        do idx = 1, rgroupFEMSet%NEQ
+          ieq = IdofList(idx)
+          p_InodeList(1,idx) = ieq
+          p_InodeList(2,idx) = p_Kdiagonal(ieq)
+        end do
+
+      end select
+      
+    else
+
+      ! Remove nodal structure from the group finite element set
+      if (.not.(check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE))&
+          .and.(check(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE))) then
+        call storage_free(rgroupFEMSet%h_InodeList)
+      end if
+      rgroupFEMSet%h_InodeList = ST_NOHANDLE
+
+    end if
+
+  contains
+
+    !**************************************************************
+    ! Checks if idupFlag has all bits ibitfield set.
+    
+    pure function check(idupFlag, ibitfield)
+      
+      integer(I32), intent(in) :: idupFlag,ibitfield
+      
+      logical :: check
+      
+      check = (iand(idupFlag,ibitfield) .eq. ibitfield)
+      
+    end function check
+
+  end subroutine gfem_genNodeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine gfem_genEdgeList(rmatrix, rgroupFEMSet, IdofList)
 
 !<description>
@@ -2229,7 +2511,7 @@ contains
       return
     end if
 
-    ! If (some of the) matrix dimensions have not been initialized then
+    ! If (some of the) matrix dimensions have not been initialised then
     ! the initialisation is done below, and thus, fixes this set
     if ((rgroupFEMSet%NA .eq. 0) .or. (rgroupFEMSet%NEQ .eq. 0)&
         .or. (rgroupFEMSet%NEDGE .eq. 0)) then

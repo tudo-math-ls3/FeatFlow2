@@ -24,7 +24,7 @@
 !# means of the algebraic flux correction (AFC) methodology proposed
 !# by Kuzmin, Moeller and Turek in a series of publications. As a
 !# starting point for scalar conservation laws, the reader is referred
-!# to the book chapter
+!# to the book chapterdiffu
 !#
 !#     D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
 !#     conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
@@ -38,21 +38,19 @@
 !# afcstabilisation. The initialisation as a scalar stabilisation
 !# structure is done by the routine gfsc_initStabilisation.
 !# 
-!# There are three types of routines. The gfsc_buildXXXOperator
-!# routines can be used to assemble the discrete convection or
-!# diffusion operators resulting from the standard Galerkin finite
-!# element discretisation plus some discretely defined artificial
-!# diffusion. For convective terms, this technique is termed discrete
-!# upwinding, whereas for physical diffusion operators this approach
-!# ensures that the discrete maximum principle holds. Consequently,
-!# the term DMP is adopted.
+!# There are three types of routines. The gfsc_buildOperator routine
+!# can be used to assemble discrete diffusion operators resulting from
+!# the standard Galerkin finite element discretisation plus some
+!# discretely defined artificial diffusion. For convective terms, this
+!# technique is termed discrete upwinding, whereas for physical
+!# diffusion operators this approach ensures that the discrete maximum
+!# principle holds. Consequently, the term DMP is adopted.
 !#
-!# The second type of routines is given by
-!# gfsc_buildConvVectorXXX. They can be used to update/initialise the
-!# convectove term applying some sort of algebraic flux
-!# correction. Importantly, the family of AFC schemes gives rise to
-!# nonlinear algebraic equations that need to be solved
-!# iteratively. Thus, it is usefull to build the compensating
+!# The second type of routines is given by gfsc_buildVectorXXX. They
+!# can be used to update/initialise the rhs/residual applying some
+!# sort of algebraic flux correction. Importantly, the family of AFC
+!# schemes gives rise to nonlinear algebraic equations that need to be
+!# solved iteratively. Thus, it is usefull to build the compensating
 !# antidiffusion into the residual vector rather than the right hand
 !# side. However, it is still possible to give a negative scaling
 !# factor.
@@ -72,12 +70,12 @@
 !# 1.) gfsc_initStabilisation
 !#     -> Initializes the stabilisation structure
 !#
-!# 2.) gfsc_buildConvectionOperator = gfsc_buildConvOperatorScalar /
-!#                                    gfsc_buildConvOperatorBlock
-!#     -> Assembles the convective part of the transport operator
-!#
-!# 3.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
-!#     -> Assembles the diffusive part of the transport operator
+!# 2.) gfsc_buildOperator = gfsc_buildOperatorConst /
+!#                          gfsc_buildOperatorNodeScalar /
+!#                          gfsc_buildOperatorNodeBlock /
+!#                          gfsc_buildOperatorEdgeScalar /
+!#                          gfsc_buildOperatorEdgeBlock
+!#     -> Assembles a discrete operator by the group finite element formulation
 !#
 !# 4.) gfsc_buildFluxFCT = gfsc_buildFluxFCTScalar /
 !#                         gfsc_buildFluxFCTBlock
@@ -161,6 +159,10 @@
 !#      -> Compute the nodal correction factors, i.e., the ratio of
 !#         admissible solution increments and raw antidiffusion
 !#
+!# 3.) gfsc_upwindOrientation = gfsc_upwindOrientationDble /
+!#                              gfsc_upwindOrientationSngl
+!#     -> Swap edge orientation so that the starting edge is located upwind
+!#
 !# </purpose>
 !##############################################################################
 
@@ -185,8 +187,7 @@ module groupfemscalar
   private
   
   public :: gfsc_initStabilisation
-  public :: gfsc_buildConvectionOperator
-  public :: gfsc_buildDiffusionOperator
+  public :: gfsc_buildOperator
   public :: gfsc_buildFluxFCT
   public :: gfsc_buildFluxLPT
   public :: gfsc_buildConvectionVectorFCT
@@ -249,9 +250,12 @@ module groupfemscalar
   ! *****************************************************************************
   ! *****************************************************************************
 
-  interface gfsc_buildConvectionOperator
-    module procedure gfsc_buildConvOperatorScalar
-    module procedure gfsc_buildConvOperatorBlock
+  interface gfsc_buildOperator
+    module procedure gfsc_buildOperatorConst
+    module procedure gfsc_buildOperatorNodeScalar
+    module procedure gfsc_buildOperatorNodeBlock
+    module procedure gfsc_buildOperatorEdgeScalar
+    module procedure gfsc_buildOperatorEdgeBlock
   end interface
 
   interface gfsc_buildFluxFCT
@@ -330,6 +334,11 @@ module groupfemscalar
     module procedure gfsc_limitUnboundedSngl
     module procedure gfsc_limitBoundedDble
     module procedure gfsc_limitBoundedSngl
+  end interface
+
+  interface gfsc_upwindOrientation
+    module procedure gfsc_upwindOrientationDble
+    module procedure gfsc_upwindOrientationSngl
   end interface
 
   ! *****************************************************************************
@@ -566,19 +575,1473 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorBlock(rafcstab, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-      bbuildStabilisation, bclear, rconvMatrix, rcollection)
+  subroutine gfsc_buildOperatorConst(rgroupFEMSet, dscale, bclear, rmatrix, rafcstab)
+
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries are taken from
+    ! the precomputed values stored in the structure rgroupFEMSet.
+    !
+    ! This is the simplest of the gfsc_buildOperatorX routines. It can
+    ! handle both node-by-node and edge-by-edge matrix assembly.
+    !
+    ! If the optional stabilisation structure rafcstab is present then
+    ! for each edge IJ the matrix entries and the artificial diffusion
+    ! coefficient is stored according to the following convention:
+    !
+    ! For upwind-biased stabilisation
+    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! For symmetric stabilisation
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !
+    ! Otherwise, the standard operator is assembled without stabilisation.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+    
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
+
+    real(SP), dimension(:), pointer :: p_Fdata
+    real(SP), dimension(:,:), pointer :: p_Fcoefficients
+    real(SP), dimension(:,:), pointer :: p_FcoeffsAtNode
+    real(SP), dimension(:,:,:), pointer :: p_FcoeffsAtEdge
+
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:,:), pointer :: p_InodeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer, dimension(:), pointer :: p_Kdiagonal,p_Kld
+
+    logical :: bsymm
+
+    ! Check if matrix and vector have the same data type
+    if (rmatrix%cdataType .ne. rgroupFEMSet%cdataType) then
+      call output_line('Data types mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+      call sys_halt()
+    end if
+
+    ! What type of assembly should be performed
+    select case(rgroupFEMSet%cassemblyType)
+
+    case (GFEM_NODEBASED)
+      !-------------------------------------------------------------------------
+      ! Node-based assembly
+      !-------------------------------------------------------------------------
+
+      ! Check if group finite element set is prepared
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA) .eq. 0) then
+        call output_line('Group finite element set does not provide required data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+        call sys_halt()
+      end if
+
+      if (present(rafcstab)) then
+        call output_line('Stabilisation is not feasible in node-by-node assembly!',&
+            OU_CLASS_WARNING,OU_MODE_STD,'gfsc_buildOperatorConst')
+      end if
+      
+      ! What kind of matrix are we?
+      select case(rmatrix%cmatrixFormat)
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+        !-----------------------------------------------------------------------
+        ! Matrix format 7 and 9
+        !-----------------------------------------------------------------------
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+
+        ! What data types are we?
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          ! Set pointers
+          call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+
+          ! Check if only a subset of the matrix is required
+          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+            call doOpNodeMat79Dble(p_Kld, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, dscale, bclear, p_Ddata)
+          else
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+            call doOpNodeMat79Dble(p_Kld, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, dscale, bclear, p_Ddata, p_InodeList)
+          end if
+
+        case (ST_SINGLE)
+          ! Set pointers
+          call gfem_getbase_FcoeffsAtNode(rgroupFEMSet, p_FcoeffsAtNode)
+          call lsyssc_getbase_single(rmatrix, p_Fdata)
+
+          ! Check if only a subset of the matrix is required
+          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+            call doOpNodeMat79Sngl(p_Kld, rgroupFEMSet%NEQ,&
+                p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata)
+          else
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+            call doOpNodeMat79Sngl(p_Kld, rgroupFEMSet%NEQ,&
+                p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata, p_InodeList)
+          end if
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+          call sys_halt()
+        end select
+
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+        call sys_halt()
+      end select
+
+      
+    case (GFEM_EDGEBASED)
+      !-------------------------------------------------------------------------
+      ! Edge-based assembly
+      !-------------------------------------------------------------------------
+
+      ! Check if group finite element set is prepared
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)      .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)      .eq. 0)) then
+        call output_line('Group finite element set does not provide required data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+        call sys_halt()
+      end if
+      
+      ! Set pointers
+      call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+      call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
+      
+      ! What kind of matrix are we?
+      select case(rmatrix%cmatrixFormat)
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+        !-----------------------------------------------------------------------
+        ! Matrix format 7 and 9
+        !-----------------------------------------------------------------------
+        
+        ! Set diagonal pointer
+        if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+          call lsyssc_getbase_Kld(rmatrix, p_Kdiagonal)
+        else
+          call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+        end if
+        
+        ! What data types are we?
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          ! Set pointers
+          call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+          call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+
+          ! Check if only a subset of the matrix is required
+          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+            call doOpDiagMat79Dble(p_Kdiagonal, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, dscale, bclear, p_Ddata)
+          else
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+            call doOpDiagMat79Dble(p_Kdiagonal, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, dscale, bclear, p_Ddata, p_InodeList)
+          end if
+          
+
+          ! Do we have to build the stabilisation?
+          if (present(rafcstab)) then
+            
+            ! Check if stabilisation has been prepared
+            if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+              call output_line('Stabilisation has not been prepared!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+              call sys_halt()
+            end if
+
+            ! Symmetric artificial diffusion?
+            bsymm = .not.(rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED)
+            
+            ! Check if coefficients should be stored in stabilisation
+            if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+              
+              ! Check if stabilisation has the same data type
+              if (rafcstab%cdataType .ne. ST_DOUBLE) then
+                call output_line('Stabilisation must have double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+                call sys_halt()
+              end if
+              
+              ! Set additional pointers
+              call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+              
+              !-----------------------------------------------------------------
+              ! Assemble operator with stabilisation and generate coefficients
+              !-----------------------------------------------------------------
+              call doOpEdgeAFCMat79Dble(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                  rgroupFEMSet%NEDGE, p_DcoeffsAtEdge, dscale, bclear, bsymm,&
+                  p_Ddata, p_Dcoefficients)
+              
+              ! Set state of stabilisation
+              rafcstab%istabilisationSpec =&
+                  ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
+              
+              ! Do we need edge orientation?
+              if (rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
+                call gfsc_upwindOrientationDble(p_Dcoefficients, p_IedgeList,&
+                    p_DcoeffsAtEdge, 2, 3)
+                rafcstab%istabilisationSpec =&
+                    ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+              else
+                rafcstab%istabilisationSpec =&
+                    iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+              end if
+              
+            else
+              
+              !-----------------------------------------------------------------
+              ! Assemble operator with stabilisation but do not generate coeffs
+              !-----------------------------------------------------------------
+              call doOpEdgeStabMat79Dble(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                  rgroupFEMSet%NEDGE, p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata)
+            end if
+
+          else   ! no stabilisation structure present
+
+            !-------------------------------------------------------------------
+            ! Assemble operator without stabilisation
+            !-------------------------------------------------------------------
+            call doOpEdgeMat79Dble(p_IedgeListIdx, p_IedgeList,&
+                rgroupFEMSet%NEDGE, p_DcoeffsAtEdge, dscale, bclear, p_Ddata)
+          end if
+
+        case (ST_SINGLE)
+          ! Set pointers
+          call gfem_getbase_FcoeffsAtNode(rgroupFEMSet, p_FcoeffsAtNode)
+          call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
+          call lsyssc_getbase_single(rmatrix, p_Fdata)
+          
+          ! Check if only a subset of the matrix is required
+          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+            call doOpDiagMat79Sngl(p_Kdiagonal, rgroupFEMSet%NEQ,&
+                p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata)
+          else
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+            call doOpDiagMat79Sngl(p_Kdiagonal, rgroupFEMSet%NEQ,&
+                p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata, p_InodeList)
+          end if
+
+          ! Do we have to build the stabilisation?
+          if (present(rafcstab)) then
+            
+            ! Check if stabilisation has been prepared
+            if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+              call output_line('Stabilisation has not been prepared!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+              call sys_halt()
+            end if
+
+            ! Symmetric artificial diffusion?
+            bsymm = .not.(rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED)
+            
+            ! Check if coefficients should be stored in stabilisation
+            if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+              
+              ! Check if stabilisation has the same data type
+              if (rafcstab%cdataType .ne. ST_SINGLE) then
+                call output_line('Stabilisation must have double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+                call sys_halt()
+              end if
+              
+              ! Set additional pointers
+              call afcstab_getbase_FcoeffsAtEdge(rafcstab, p_Fcoefficients)
+              
+              !-----------------------------------------------------------------
+              ! Assemble operator with stabilisation
+              !-----------------------------------------------------------------
+              call doOpEdgeAFCMat79Sngl(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                  rgroupFEMSet%NEDGE, p_FcoeffsAtEdge, real(dscale,SP),&
+                  bclear, bsymm, p_Fdata, p_Fcoefficients)
+              
+              ! Set state of stabilisation
+              rafcstab%istabilisationSpec =&
+                  ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
+              
+              ! Do we need edge orientation?
+              if (rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
+                call gfsc_upwindOrientationSngl(p_Fcoefficients, p_IedgeList,&
+                    p_FcoeffsAtEdge, 2, 3)
+                rafcstab%istabilisationSpec =&
+                    ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+              else
+                rafcstab%istabilisationSpec =&
+                    iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+              end if
+              
+            else
+              
+              !-----------------------------------------------------------------
+              ! Assemble operator with stabilisation but do not generate coeffs
+              !-----------------------------------------------------------------
+              call doOpEdgeStabMat79Sngl(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                  rgroupFEMSet%NEDGE, p_FcoeffsAtEdge, real(dscale,SP),&
+                  bclear, bsymm, p_Fdata)
+            end if
+            
+          else   ! no stabilisation structure present
+
+            !-------------------------------------------------------------------
+            ! Assemble operator without stabilisation
+            !-------------------------------------------------------------------
+            call doOpEdgeMat79Sngl(p_IedgeListIdx, p_IedgeList, rgroupFEMSet%NEDGE,&
+                p_FcoeffsAtEdge, real(dscale,SP), bclear, p_Fdata)
+          end if
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+          call sys_halt()
+        end select
+        
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+        call sys_halt()
+      end select
+
+    case default
+      call output_line('Unsupported assembly type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
+      call sys_halt()
+    end select
+    
+  contains
+    
+    ! Here, the working routine follow
+
+    !**************************************************************
+    ! Assemble operator node-by-node without stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOpNodeMat79Dble(Kld, NEQ, DcoeffsAtNode,&
+        dscale, bclear, Ddata, InodeList)
+
+      ! input parameters
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:,:), intent(in), optional :: InodeList
+      integer, intent(in) :: NEQ
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! local variables
+      integer :: idx,ieq,ij
+
+      !-------------------------------------------------------------------------
+      ! Assemble matrix entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) call lalg_clearVector(Ddata)
+
+      if (present(InodeList)) then
+        
+        ! Loop over the subset of equations
+        !$omp parallel do default(shared) private(ij)
+        do idx = 1, size(InodeList,2)
+
+          ! Get position of matrix entry
+          ij  = InodeList(2,idx)
+
+          ! Update the matrix coefficient
+          Ddata(ij) = Ddata(ij) + dscale*DcoeffsAtNode(1,idx)
+        end do
+        !$omp end parallel do
+
+      else
+        
+        ! Loop over all equations
+        !$omp parallel do default(shared) private(ij)
+        do ieq = 1, NEQ
+          do ij = Kld(ieq), Kld(ieq+1)-1
+
+            ! Update the matrix coefficient
+            Ddata(ij) = Ddata(ij) + dscale*DcoeffsAtNode(1,ij)
+          end do
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doOpNodeMat79Dble
+
+    !**************************************************************
+    ! Assemble operator node-by-node without stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOpNodeMat79Sngl(Kld, NEQ, FcoeffsAtNode,&
+        fscale, bclear, Fdata, InodeList)
+
+      ! input parameters
+      real(SP), dimension(:,:), intent(in) :: FcoeffsAtNode
+      real(SP), intent(in) :: fscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:,:), intent(in), optional :: InodeList
+      integer, intent(in) :: NEQ
+
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+      
+      ! local variables
+      integer :: idx,ieq,ij
+
+      !-------------------------------------------------------------------------
+      ! Assemble matrix entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) call lalg_clearVector(Fdata)
+
+      if (present(InodeList)) then
+        
+        ! Loop over the subset of equations
+        !$omp parallel do default(shared) private(ij)
+        do idx = 1, size(InodeList,2)
+
+          ! Get position of matrix entry
+          ij  = InodeList(2,idx)
+
+          ! Update the matrix coefficient
+          Fdata(ij) = Fdata(ij) + fscale*FcoeffsAtNode(1,idx)
+        end do
+        !$omp end parallel do
+
+      else
+        
+        ! Loop over all equations
+        !$omp parallel do default(shared) private(ij)
+        do ieq = 1, NEQ
+          do ij = Kld(ieq), Kld(ieq+1)-1
+
+            ! Update the matrix coefficient
+            Fdata(ij) = Fdata(ij) + dscale*FcoeffsAtNode(1,ij)
+          end do
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end subroutine doOpNodeMat79Sngl
+
+    !**************************************************************
+    ! Assemble diagonal part of the operator
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOpDiagMat79Dble(Kdiagonal, NEQ, DcoeffsAtNode,&
+        dscale, bclear, Ddata, InodeList)
+
+      ! input parameters
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:,:), intent(in), optional :: InodeList
+      integer, intent(in) :: NEQ
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! local variables
+      integer :: ieq,ii,idx
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+
+        if (present(InodeList)) then
+
+          ! Loop over the subset of equations
+          !$omp parallel do default(shared) private(ii,ieq)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do idx = 1, NEQ
+
+            ! Get equation number and  position of diagonal entry
+            ieq = InodeList(1,idx)
+            ii  = InodeList(2,idx)
+            
+            ! Update the diagonal coefficient
+            Ddata(ii) = dscale*DcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+
+        else
+
+          ! Loop over all equations
+          !$omp parallel do default(shared) private(ii)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do ieq = 1, NEQ
+            
+            ! Get position of diagonal entry
+            ii = Kdiagonal(ieq)
+            
+            ! Update the diagonal coefficient
+            Ddata(ii) = dscale*DcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+        end if
+
+      else   ! do not clear matrix
+
+        if (present(InodeList)) then
+
+          ! Loop over the subset of equations
+          !$omp parallel do default(shared) private(ii,ieq)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do idx = 1, NEQ
+
+            ! Get equation number and position of diagonal entry
+            ieq = InodeList(1,idx)
+            ii  = InodeList(2,idx)
+            
+            ! Update the diagonal coefficient
+            Ddata(ii) = Ddata(ii) + dscale*DcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+
+        else
+
+          ! Loop over all equations
+          !$omp parallel do default(shared) private(ii)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do ieq = 1, NEQ
+            
+            ! Get position of diagonal entry
+            ii = Kdiagonal(ieq)
+            
+            ! Update the diagonal coefficient
+            Ddata(ii) = Ddata(ii) + dscale*DcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+
+        end if
+
+      end if
+
+    end subroutine doOpDiagMat79Dble
+
+    !**************************************************************
+    ! Assemble diagonal part of the operator
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOpDiagMat79Sngl(Kdiagonal, NEQ, FcoeffsAtNode,&
+        fscale, bclear, Fdata, InodeList)
+
+      ! input parameters
+      real(SP), dimension(:,:), intent(in) :: FcoeffsAtNode
+      real(SP), intent(in) :: fscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:,:), intent(in), optional :: InodeList
+      integer, intent(in) :: NEQ
+
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+      
+      ! local variables
+      integer :: ieq,ii,idx
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+
+        if (present(InodeList)) then
+
+          ! Loop over the subset of equations
+          !$omp parallel do default(shared) private(ii,ieq)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do idx = 1, NEQ
+
+            ! Get equation number and  position of diagonal entry
+            ieq = InodeList(1,idx)
+            ii  = InodeList(2,idx)
+            
+            ! Update the diagonal coefficient
+            Fdata(ii) = fscale*FcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+
+        else
+
+          ! Loop over all equations
+          !$omp parallel do default(shared) private(ii)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do ieq = 1, NEQ
+            
+            ! Get position of diagonal entry
+            ii = Kdiagonal(ieq)
+            
+            ! Update the diagonal coefficient
+            Fdata(ii) = fscale*FcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do do
+        end if
+
+      else   ! do not clear matrix
+
+        if (present(InodeList)) then
+
+          ! Loop over the subset of equations
+          !$omp parallel do default(shared) private(ii,ieq)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do idx = 1, NEQ
+
+            ! Get equation number and position of diagonal entry
+            ieq = InodeList(1,idx)
+            ii  = InodeList(2,idx)
+            
+            ! Update the diagonal coefficient
+            Fdata(ii) = Fdata(ii) + fscale*FcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+
+        else
+
+          ! Loop over all equations
+          !$omp parallel do default(shared) private(ii)&
+          !$omp if (NEQ > GFSC_NEQMIN_OMP)
+          do ieq = 1, NEQ
+            
+            ! Get position of diagonal entry
+            ii = Kdiagonal(ieq)
+            
+            ! Update the diagonal coefficient
+            Fdata(ii) = Fdata(ii) + fscale*FcoeffsAtNode(1,ieq)
+          end do
+          !$omp end parallel do
+
+        end if
+
+      end if
+
+    end subroutine doOpDiagMat79Sngl
+    
+    !**************************************************************
+    ! Assemble operator edge-by-edge without stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOpEdgeMat79Dble(IedgeListIdx, IedgeList, NEDGE,&
+        DcoeffsAtEdge, dscale, bclear, Ddata)
+      
+      ! input parameters
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+
+      ! local variables
+      integer :: iedge,igroup,ij,ji     
+
+      !$omp parallel default(shared) private(ij,ji,d_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+ 
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            
+            ! Update the global operator
+            Ddata(ij) = dscale*DcoeffsAtEdge(1,1,iedge)
+            Ddata(ji) = dscale*DcoeffsAtEdge(1,2,iedge)
+          end do
+          !$omp end do
+        end do ! igroup
+
+      else   ! do not clear matrix
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            
+            ! Update the global operator
+            Ddata(ij) = Ddata(ij) + dscale*DcoeffsAtEdge(1,1,iedge)
+            Ddata(ji) = Ddata(ji) + dscale*DcoeffsAtEdge(1,2,iedge)
+          end do
+          !$omp end do
+        end do ! igroup
+
+      end if
+      !$omp end parallel
+
+    end subroutine doOpEdgeMat79Dble
+
+    !**************************************************************
+    ! Assemble operator edge-by-edge without stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOpEdgeMat79Sngl(IedgeListIdx, IedgeList, NEDGE,&
+        FcoeffsAtEdge, fscale, bclear, Fdata)
+      
+      ! input parameters
+      real(SP), dimension(:,:,:), intent(in) :: FcoeffsAtEdge
+      real(SP), intent(in) :: fscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+
+      ! local variables
+      integer :: iedge,igroup,ij,ji
+      
+      !$omp parallel default(shared) private(ij,ji,d_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+        
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+        
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            
+            ! Update the global operator
+            Fdata(ij) = fscale*FcoeffsAtEdge(1,1,iedge)
+            Fdata(ji) = fscale*FcoeffsAtEdge(1,2,iedge)
+          end do
+          !$omp end do
+        end do ! igroup
+
+      else   ! do not clear matrix
+
+        ! Loop over the edge groups and process all edges of one group
+        ! in parallel without the need to synchronize memory access
+        do igroup = 1, size(IedgeListIdx)-1
+          !$omp do
+          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+            
+            ! Get node numbers and matrix positions
+            ij = IedgeList(3,iedge)
+            ji = IedgeList(4,iedge)
+            
+            ! Update the global operator
+            Fdata(ij) = Fdata(ij) + fscale*FcoeffsAtEdge(1,1,iedge)
+            Fdata(ji) = Fdata(ji) + fscale*FcoeffsAtEdge(1,2,iedge)
+          end do
+          !$omp end do
+        end do ! igroup
+
+      end if
+      !$omp end parallel
+
+    end subroutine doOpEdgeMat79Sngl
+
+    !**************************************************************
+    ! Assemble edge-by-edge operator with stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOpEdgeStabMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, DcoeffsAtEdge, dscale, bclear, bsymm, Ddata)
+      
+      ! input parameters
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear, bsymm
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+
+      ! local variables
+      real(DP) :: d_ij
+      integer :: iedge,igroup,ii,ij,ji,jj
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+   
+        if (bsymm) then
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Symmetric artificial diffusion coefficient
+              d_ij = max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Non-symmetric artificial diffusion coefficient
+              d_ij = max(0.0_DP,&
+                  -DcoeffsAtEdge(1,1,iedge), -DcoeffsAtEdge(1,1,iedge))
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        end if
+        
+      else   ! do not clear matrix
+        
+        if (bsymm) then
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Symmetric artificial diffusion coefficient
+              d_ij = max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = Ddata(ij) + dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = Ddata(ji) + dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+          
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Non-symmetric artificial diffusion coefficient
+              d_ij = max(0.0_DP,&
+                  -DcoeffsAtEdge(1,1,iedge), -DcoeffsAtEdge(1,2,iedge))
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = Ddata(ij) + dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = Ddata(ji) + dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        end if
+
+      end if
+      !$omp end parallel
+
+    end subroutine doOpEdgeStabMat79Dble
+
+    !**************************************************************
+    ! Assemble operator edge-by-edge with stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOpEdgeStabMat79Sngl(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, FcoeffsAtEdge, fscale, bclear, bsymm, Fdata)
+
+      ! input parameters
+      real(SP), dimension(:,:,:), intent(in) :: FcoeffsAtEdge
+      real(SP), intent(in) :: fscale
+      logical, intent(in) :: bclear, bsymm
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+
+      ! local variables
+      real(SP) :: d_ij
+      integer :: iedge,igroup,ii,ij,ji,jj
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+   
+        if (bsymm) then
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Symmetric artificial diffusion coefficient
+              d_ij = max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+          
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Non-symmetric artificial diffusion coefficient
+              d_ij = max(0.0_SP,&
+                  -FcoeffsAtEdge(1,1,iedge), -FcoeffsAtEdge(1,2,iedge))
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+          
+        end if
+
+      else   ! do not clear matrix
+        
+        if (bsymm) then
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Symmetric atificial diffusion coefficient
+              d_ij = max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = Fdata(ij) + fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = Fdata(ji) + fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Non-symmetric atificial diffusion coefficient
+              d_ij = max(0.0_SP,&
+                  -FcoeffsAtEdge(1,1,iedge), -FcoeffsAtEdge(1,2,iedge))
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = Fdata(ij) + fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = Fdata(ji) + fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+          
+        end if
+
+      end if
+      !$omp end parallel
+
+    end subroutine doOpEdgeStabMat79Sngl
+
+    !**************************************************************
+    ! Assemble operator edge-by-edge with stabilisation and AFC data.
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOpEdgeAFCMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, DcoeffsAtEdge, dscale, bclear, bsymm, Ddata, Dcoefficients)
+
+      ! input parameters
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear,bsymm
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! output parameters
+      real(DP), dimension(:,:), intent(out) :: Dcoefficients
+      
+      ! local variables
+      real(DP) :: d_ij,k_ij,k_ji
+      integer :: iedge,igroup,ii,ij,ji,jj
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,k_ij,k_ji)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+
+        if (bsymm) then
+        
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1       
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_DP,  DcoeffsAtEdge(1,1,iedge))
+              
+              ! Symmetric AFC w/o edge orientation
+              Dcoefficients(1:2,iedge) = (/d_ij, k_ij/)
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_DP,  DcoeffsAtEdge(1,1,iedge))
+              k_ji = max(0.0_DP,  DcoeffsAtEdge(1,2,iedge))
+              
+              ! Non-symmetric AFC w/o edge orientation
+              Dcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        end if
+
+      else   ! do not clear matrix
+        
+        if (bsymm) then
+          
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_DP,  DcoeffsAtEdge(1,1,iedge))
+              
+              ! Symmetric AFC w/o edge orientation
+              Dcoefficients(1:2,iedge) = (/d_ij, k_ij/)
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = Ddata(ij) + dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = Ddata(ji) + dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_DP, -DcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_DP,  DcoeffsAtEdge(1,1,iedge))
+              k_ji = max(0.0_DP,  DcoeffsAtEdge(1,2,iedge))
+              
+              ! Non-symmetric AFC w/o edge orientation
+              Dcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - d_ij
+              Ddata(jj) = Ddata(jj) - d_ij
+              Ddata(ij) = Ddata(ij) + dscale*(DcoeffsAtEdge(1,1,iedge) + d_ij)
+              Ddata(ji) = Ddata(ji) + dscale*(DcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        end if
+        
+      end if
+      !$omp end parallel
+
+    end subroutine doOpEdgeAFCMat79Dble
+
+    !**************************************************************
+    ! Assemble operator edge-by-edge with stabilisation and AFC data.
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOpEdgeAFCMat79Sngl(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, FcoeffsAtEdge, fscale, bclear, bsymm, Fdata, Fcoefficients)
+
+      ! input parameters
+      real(SP), dimension(:,:,:), intent(in) :: FcoeffsAtEdge
+      real(SP), intent(in) :: fscale
+      logical, intent(in) :: bclear,bsymm
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(SP), dimension(:), intent(inout) :: Fdata
+      
+      ! output parameters
+      real(SP), dimension(:,:), intent(out) :: Fcoefficients
+      
+      ! local variables
+      real(SP) :: d_ij,k_ij,k_ji
+      integer :: iedge,igroup,ii,ij,ji,jj
+      
+      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,k_ij,k_ji)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) then
+
+        if (bsymm) then
+        
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1       
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_SP,  FcoeffsAtEdge(1,1,iedge))
+              
+              ! Symmetric AFC w/o edge orientation
+              Fcoefficients(1:2,iedge) = (/d_ij, k_ij/)
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_SP,  FcoeffsAtEdge(1,1,iedge))
+              k_ji = max(0.0_SP,  FcoeffsAtEdge(1,2,iedge))
+              
+              ! Non-symmetric AFC w/o edge orientation
+              Fcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        end if
+
+      else   ! do not clear matrix
+        
+        if (bsymm) then
+          
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_SP,  FcoeffsAtEdge(1,1,iedge))
+              
+              ! Symmetric AFC w/o edge orientation
+              Fcoefficients(1:2,iedge) = (/d_ij, k_ij/)
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = Fdata(ij) + fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = Fdata(ji) + fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        else
+
+          ! Loop over the edge groups and process all edges of one group
+          ! in parallel without the need to synchronize memory access
+          do igroup = 1, size(IedgeListIdx)-1
+            !$omp do
+            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+              
+              ! Get node numbers and matrix positions
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Artificial diffusion coefficient
+              d_ij = max(0.0_SP, -FcoeffsAtEdge(1,1,iedge))
+              k_ij = max(0.0_SP,  FcoeffsAtEdge(1,1,iedge))
+              k_ji = max(0.0_SP,  FcoeffsAtEdge(1,2,iedge))
+              
+              ! Non-symmetric AFC w/o edge orientation
+              Fcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
+              
+              ! Update the global operator
+              Fdata(ii) = Fdata(ii) - d_ij
+              Fdata(jj) = Fdata(jj) - d_ij
+              Fdata(ij) = Fdata(ij) + fscale*(FcoeffsAtEdge(1,1,iedge) + d_ij)
+              Fdata(ji) = Fdata(ji) + fscale*(FcoeffsAtEdge(1,2,iedge) + d_ij)
+            end do
+            !$omp end do
+          end do ! igroup
+
+        end if
+        
+      end if
+      !$omp end parallel
+
+    end subroutine doOpEdgeAFCMat79Sngl
+
+  end subroutine gfsc_buildOperatorConst
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorNodeBlock(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, rcollection)
     
 !<description>
-    ! This subroutine assembles the discrete transport operator which
-    ! results from the group finite element formulation of the
-    ! continuous problem
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
     !
-    !   <tex> $$ \nabla\cdot{\bf f}(u) $$ </tex>
-    !
-    ! where ${\bf f}(u)$ is a user-defined flux function for the
-    ! scalar field $u$.
+    ! This routine supports only node-by-node assembly.
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
@@ -586,18 +2049,16 @@ contains
 !</description>
 
 !<input>
-    ! The solution vector
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
+    ! Vector on which the matrix entries may depend.
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
     type(t_vectorBlock), intent(in) :: rx
-    
+
     ! Scaling factor
     real(DP), intent(in) :: dscale
-
-    ! Switch for stabilisation
-    ! TRUE  : perform stabilisation
-    ! FALSE : perform no stabilisation
-    logical, intent(in) :: bbuildStabilisation
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -606,87 +2067,54 @@ contains
 
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
-    include 'intf_calcMatrixSc_sim.inc'
 !</input>
 
 !<inputoutput>
-    ! The stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! The global operator
-    type(t_matrixScalar), intent(inout) :: rconvMatrix
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
-
+    
     ! Check if block vector contains exactly one block
     if (rx%nblocks .ne. 1) then
 
       call output_line('Solution vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock')
       call sys_halt()
 
     else
-      
-      call gfsc_buildConvOperatorScalar(rafcstab, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-          bbuildStabilisation, bclear, rconvMatrix, rcollection)
+
+      call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, rcollection)
 
     end if
+    
+  end subroutine gfsc_buildOperatorNodeBlock
 
-  end subroutine gfsc_buildConvOperatorBlock
-  
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorScalar(rafcstab, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-      bbuildStabilisation, bclear, rconvMatrix, rcollection)
-
+  subroutine gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, rcollection)
+    
 !<description>
-
-    ! This subroutine assembles the discrete transport operator which
-    ! results from the group finite element formulation of the
-    ! continuous problem
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
     !
-    !   <tex> $$ \nabla\cdot{\bf f}(u) $$ </tex>
-    !
-    ! where ${\bf f}(u)$ is a user-defined flux function for the
-    ! scalar field $u$.
-    !
-    ! This routine can be used to apply the following discretisations:
-    !
-    ! (1) the standard Galerkin finite element method which will be
-    !     referred to as high-order approximation
-    !
-    ! (2) the discrete upwinding operator which results from the
-    !     conservative elimination of negative off-diagonal entries
-    !     from the Galerkin operator. This technique is for instance
-    !     described in the reference:
-    !
-    !     D. Kuzmin and M. Moeller, Algebraic flux correction
-    !     I. Scalar conservation laws, In: D. Kuzmin et al. (eds),
-    !     Flux-Corrected Transport: Principles, Algorithms, and
-    !     Applications, Springer, 2005, 155-206.
-    !
-    ! (3) In addition to (2), discrete upwinding is performed and
-    !     auxiliary data required for flux limiting is generated in
-    !     the optional stabilisation structure rafcstab. For symmetric
-    !     flux limiters, the artificial diffusion coefficient d_ij and
-    !     the entries of the low-order operator l_ij=k_ij+d_ij are
-    !     stored as well as the node numbers i and j and the matrix
-    !     positions ij/ji of the edge (i,j).  For upwind-biased flux
-    !     limiters the same data are stored but the following
-    !     orientation convention is applied. Node i is located upwind
-    !     and corresponds to the column number whose entry has been
-    !     eliminated.
+    ! This routine supports only node-by-node assembly.
 !</description>
 
 !<input>
-    ! The solution vector
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
+    ! Vector on which the matrix entries may depend.
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
     type(t_vectorScalar), intent(in) :: rx
@@ -694,10 +2122,165 @@ contains
     ! Scaling factor
     real(DP), intent(in) :: dscale
 
-    ! Switch for stabilisation
-    ! TRUE  : perform stabilisation
-    ! FALSE : perform no stabilisation
-    logical, intent(in) :: bbuildStabilisation
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata,p_Dx
+    real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
+    
+    integer, dimension(:,:), pointer :: p_InodeList
+    integer, dimension(:), pointer :: p_Kld
+
+    ! Check if matrix and vector have the same data type
+    if ((rmatrix%cdataType .ne. rx%cdataType) .or.&
+        (rmatrix%cdataType .ne. rgroupFEMSet%cdataType)) then
+      call output_line('Data types mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
+      call sys_halt()
+    end if
+
+    ! What type of assembly should be performed
+    select case(rgroupFEMSet%cassemblyType)
+
+    case (GFEM_NODEBASED)
+      !-------------------------------------------------------------------------
+      ! Node-based assembly
+      !-------------------------------------------------------------------------
+
+      ! Check if group finite element set is prepared
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA) .eq. 0) then
+        call output_line('Group finite element set does not provide required data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
+        call sys_halt()
+      end if
+
+      ! What kind of matrix are we?
+      select case(rmatrix%cmatrixFormat)
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+        !-----------------------------------------------------------------------
+        ! Matrix format 7 and 9
+        !-----------------------------------------------------------------------
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+
+        ! What data types are we?
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          ! Set pointers
+          call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+
+          ! Check if only a subset of the matrix is required
+          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+            call doOperatorMat79Dble(p_Kld, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, dscale, bclear, p_Ddata)
+          else
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+            call doOperatorMat79Dble(p_Kld, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, dscale, bclear, p_Ddata, p_InodeList)
+          end if
+
+           case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
+          call sys_halt()
+        end select
+
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
+        call sys_halt()
+      end select
+
+    case default
+      call output_line('Unsupported assembly type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the working routine follow
+
+    !**************************************************************
+    ! Assemble operator node-by-node without stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOperatorMat79Dble(Kld, NEQ, DcoeffsAtNode,&
+        dscale, bclear, Ddata, InodeList)
+
+      ! input parameters
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:,:), intent(in), optional :: InodeList
+      integer, intent(in) :: NEQ
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+    end subroutine doOperatorMat79Dble
+
+  end subroutine gfsc_buildOperatorNodeScalar
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorEdgeBlock(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      dscale, bclear, rmatrix, rcollection, rafcstab)
+    
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
+    !
+    ! If the optional stabilisation structure rafcstab is present then
+    ! for each edge IJ the matrix entries and the artificial diffusion
+    ! coefficient is stored according to the following convention:
+    !
+    ! For upwind-biased stabilisation
+    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! For symmetric stabilisation
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !
+    ! Note that this routine serves as a wrapper for block vectors. If
+    ! there is only one block, then the corresponding scalar routine
+    ! is called.  Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    ! Note that this vector is only required for nonlinear
+    ! problems which require the evaluation of the velocity
+    type(t_vectorBlock), intent(in) :: rx
+    
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -710,154 +2293,290 @@ contains
 !</input>
 
 !<inputoutput>
-    ! The stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! The transport operator
-    type(t_matrixScalar), intent(inout) :: rconvMatrix
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! Check if block vector contains exactly one block
+    if (rx%nblocks .ne. 1) then
+
+      call output_line('Solution vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock')
+      call sys_halt()
+
+    else
+
+      call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
+          bclear, rmatrix, rcollection, rafcstab)
+
+    end if
+
+  end subroutine gfsc_buildOperatorEdgeBlock
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
+      bclear, rmatrix, rcollection, rafcstab)
+
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
+    !
+    ! This routine supports only node-by-node assembly.
+    !
+    ! If the optional stabilisation structure rafcstab is present then
+    ! for each edge IJ the matrix entries and the artificial diffusion
+    ! coefficient is stored according to the following convention:
+    !
+    ! For upwind-biased stabilisation
+    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! For symmetric stabilisation
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    ! Note that this vector is only required for nonlinear
+    ! problems which require the evaluation of the velocity
+    type(t_vectorScalar), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+    
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
+    include 'intf_calcMatrixSc_sim.inc'
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ConvOp,p_Dx
-    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-    integer, dimension(:,:), pointer :: p_IedgeList
-    integer, dimension(:), pointer :: p_IedgeListIdx,p_Kdiagonal
-
-    ! Check if stabilisation has been initialised
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
-      call sys_halt()
-    end if
-
-    ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
-      call sys_halt()
-    end if
-
-    ! Set pointers
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
-    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-    call lsyssc_getbase_double(rconvMatrix, p_ConvOp)
-    call lsyssc_getbase_double(rx, p_Dx)
+    real(DP), dimension(:), pointer :: p_Ddata,p_Dx
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
+    real(DP), dimension(:,:), pointer :: p_Dcoefficients
     
-    ! What kind of matrix are we?
-    select case(rconvMatrix%cmatrixFormat)
-    case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:,:), pointer :: p_InodeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer, dimension(:), pointer :: p_Kdiagonal
+
+    ! Check if matrix and vector have the same data type
+    if ((rmatrix%cdataType .ne. rx%cdataType) .or.&
+        (rmatrix%cdataType .ne. rgroupFEMSet%cdataType)) then
+      call output_line('Data types mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+      call sys_halt()
+    end if
+    
+    ! What type of assembly should be performed
+    select case(rgroupFEMSet%cassemblyType)
+
+    case (GFEM_EDGEBASED)
       !-------------------------------------------------------------------------
-      ! Matrix format 7 and 9
+      ! Edge-based assembly
       !-------------------------------------------------------------------------
       
-      ! Set diagonal pointer
-      if (rconvMatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-        call lsyssc_getbase_Kld(rconvMatrix, p_Kdiagonal)
-      else
-        call lsyssc_getbase_Kdiagonal(rconvMatrix, p_Kdiagonal)
+      ! Check if group finite element set is prepared
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)      .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)      .eq. 0)) then
+        call output_line('Group finite element set does not provide required data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+        call sys_halt()
       end if
-
-      ! Do we have to build the stabilisation?
-      if (bbuildStabilisation) then
         
-        ! Set additional pointers
-        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
+      ! Set pointers
+      call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+      call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
+      
+      ! What kind of matrix are we?
+      select case(rmatrix%cmatrixFormat)
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+        !-----------------------------------------------------------------------
+        ! Matrix format 7 and 9
+        !-----------------------------------------------------------------------
         
-        ! Assemble Galerkin operator with stabilisation
-        call doOperatorAFCMat79Dble(p_Kdiagonal, p_IedgeListIdx,&
-            p_IedgeList, rafcstab%NEDGE, rconvMatrix%NEQ,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx,&
-            dscale, bclear, p_ConvOp, p_DcoefficientsAtEdge)
-        
-        ! Set state of stabilisation
-        rafcstab%istabilisationSpec =&
-            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
-        
-        ! Do we need edge orientation?
-        if (rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
-          call doUpwindOrientationDble(rafcstab%NEDGE, p_IedgeList,&
-              p_DcoefficientsAtEdge, p_DmatrixCoeffsAtEdge)
-          rafcstab%istabilisationSpec =&
-              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+        ! Set diagonal pointer
+        if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) then
+          call lsyssc_getbase_Kld(rmatrix, p_Kdiagonal)
         else
-          rafcstab%istabilisationSpec =&
-              iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+          call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
         end if
         
-      else   ! bbuildStabilisation == no
-        
-        ! Apply standard discretisation without stabilisation
-        call doOperatorMat79Dble(p_Kdiagonal, p_IedgeListIdx,&
-            p_IedgeList, rafcstab%NEDGE, rconvMatrix%NEQ,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, p_Dx,&
-            dscale, bclear, p_ConvOp)
+        ! What data types are we?
+        select case(rmatrix%cdataType)
           
-        ! Set state of stabilisation
-        rafcstab%istabilisationSpec =&
-            iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEVALUES))
-        rafcstab%istabilisationSpec =&
-            iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+        case (ST_DOUBLE)
+          ! Set pointers
+          call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+          call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+          call lsyssc_getbase_double(rx, p_Dx)
         
-      end if
-      
-    case DEFAULT
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvOperatorScalar')
+          ! Check if only a subset of the matrix is required
+          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+            call doOpDiagMat79Dble(p_Kdiagonal, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+          else
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+            call doOpDiagMat79Dble(p_Kdiagonal, rgroupFEMSet%NEQ,&
+                p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata, p_InodeList)
+          end if
+
+          
+          ! Do we have to build the stabilisation?
+          if (present(rafcstab)) then
+            
+            ! Check if stabilisation has been prepared
+            if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+              call output_line('Stabilisation has not been prepared!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+              call sys_halt()
+            end if
+
+            ! Check if coefficients should be stored in stabilisation
+            if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+
+              ! Check if stabilisation has the same data type
+              if (rafcstab%cdataType .ne. ST_DOUBLE) then
+                call output_line('Stabilisation must have double precision!',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+                call sys_halt()
+              end if
+                   
+              ! Set additional pointers
+              call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+
+              !-----------------------------------------------------------------
+              ! Assemble operator with stabilisation and generate coefficients
+              !-----------------------------------------------------------------
+              call doOperatorAFCMat79Dble(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                  rgroupFEMSet%NEDGE, p_DcoeffsAtEdge, p_Dx, dscale, bclear,&
+                  p_Ddata, p_Dcoefficients)
+              
+              ! Set state of stabilisation
+              rafcstab%istabilisationSpec =&
+                  ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
+              
+              ! Do we need edge orientation?
+              if (rafcstab%ctypeLimiting .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
+                call gfsc_upwindOrientationDble(p_Dcoefficients, p_IedgeList,&
+                    p_DcoeffsAtEdge, 2, 3)
+                rafcstab%istabilisationSpec =&
+                    ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+              else
+                rafcstab%istabilisationSpec =&
+                    iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+              end if
+        
+            else
+
+              !-----------------------------------------------------------------
+              ! Assemble operator with stabilisation but do not generate coeffs
+              !-----------------------------------------------------------------
+              call doOperatorStabMat79Dble(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                  rgroupFEMSet%NEDGE, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata)
+            end if
+            
+          else   ! no stabilisation structure present
+
+            !-------------------------------------------------------------------
+            ! Assemble operator without stabilisation
+            !-------------------------------------------------------------------
+            call doOperatorMat79Dble(p_Kdiagonal, p_IedgeListIdx, p_IedgeList,&
+                rgroupFEMSet%NEDGE, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata)
+          end if
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+          call sys_halt()
+        end select
+              
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+        call sys_halt()
+      end select
+
+    case default
+      call output_line('Unsupported assembly type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
       call sys_halt()
     end select
     
   contains
 
     ! Here, the working routine follow
-        
-    !**************************************************************
-    ! Assemble convection operator K
-    ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
-        NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, Dx, dscale, bclear, K)
-      
+    !**************************************************************
+    ! Assemble diagonal part of the operator
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOpDiagMat79Dble(Kdiagonal, NEQ, DcoeffsAtNode, Dx,&
+        dscale, bclear, Ddata, InodeList)
+
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
-      real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:,:), intent(in), optional :: InodeList
+      integer, intent(in) :: NEQ
 
       ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: K
+      real(DP), dimension(:), intent(inout) :: Ddata
       
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
-      real(DP), dimension(:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: DcoefficientsAtNode
-      real(DP), dimension(:,:), pointer :: DcoefficientsAtEdge
       integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
-      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
-      integer :: i,iedge,igroup,ii,ij,ji,jj
-      
+      integer :: idx,IEQset,IEQmax
+      integer :: i,iidx,ii
+
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
-
+      
       !$omp parallel default(shared)&
-      !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
-      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
-      !$omp         iedge,ii,ij,ji,jj)
+      !$omp private(DcoefficientsAtNode,DdataAtNode,IEQmax,&
+      !$omp         IverticesAtNode,i,idx,ieq,ii)
 
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSC_NEQSIM))
@@ -874,27 +2593,50 @@ contains
         ! at most GFSC_NEQSIM equations simultaneously.
         
         IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
-                
-        ! Loop through all equations in the current set
-        ! and prepare the auxiliary arrays
-        do idx = 1, IEQmax-IEQset+1
-          
-          ! Get actual equation number
-          i = idx+IEQset-1
+        
+        if (present(InodeList)) then
 
-          ! Get position of diagonal entry
-          ii = Kdiagonal(i)
-          
-          ! Fill auxiliary arrays
-          IverticesAtNode(1,idx) = i
-          IverticesAtNode(2,idx) = ii
-          DdataAtNode(idx)       = Dx(i)
-        end do
+          ! Loop through all equations in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEQmax-IEQset+1
+            
+            ! Get actual index
+            iidx = idx+IEQset-1
+            
+            ! Get equation number and position of diagonal entry
+            i  = InodeList(1,iidx)
+            ii = InodeList(2,iidx)
+            
+            ! Fill auxiliary arrays
+            IverticesAtNode(1,idx) = i
+            IverticesAtNode(2,idx) = ii
+            DdataAtNode(idx)       = Dx(i)
+          end do
+
+        else
+
+          ! Loop through all equations in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEQmax-IEQset+1
+
+            ! Get actual equation number
+            i = idx+IEQset-1
+            
+            ! Get position of diagonal entry
+            ii = Kdiagonal(i)
+            
+            ! Fill auxiliary arrays
+            IverticesAtNode(1,idx) = i
+            IverticesAtNode(2,idx) = ii
+            DdataAtNode(idx)       = Dx(i)
+          end do
+
+        end if
 
         ! Use callback function to compute diagonal entries
         call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
-            DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
+            DcoeffsAtNode(:,IEQset:IEQmax),&
             IverticesAtNode(:,1:IEQmax-IEQset+1),&
             dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
@@ -908,7 +2650,7 @@ contains
             ii = IverticesAtNode(2,idx)
             
             ! Update the diagonal coefficient
-            K(ii) = DcoefficientsAtNode(1,idx)
+            Ddata(ii) = DcoefficientsAtNode(1,idx)
           end do
 
         else   ! do not clear matrix
@@ -918,7 +2660,7 @@ contains
             ii = IverticesAtNode(2,idx)
             
             ! Update the diagonal coefficient
-            K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+            Ddata(ii) = Ddata(ii) + DcoefficientsAtNode(1,idx)
           end do
 
         end if
@@ -929,14 +2671,48 @@ contains
       deallocate(IverticesAtNode)
       deallocate(DdataAtNode)
       deallocate(DcoefficientsAtNode)
+      !$omp end parallel
 
+    end subroutine doOpDiagMat79Dble
+
+    !**************************************************************
+    ! Assemble operator edge-by-edge without stabilisation
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOperatorMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, DcoeffsAtEdge, Dx, dscale, bclear, Ddata)
+      
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: Dcoefficients
+
+      ! local variables
+      integer :: idx,IEDGEset,IEDGEmax
+      integer :: iedge,igroup,ij,ji
+      
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,ij,ji)
+
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
-      allocate(DcoefficientsAtEdge(3,GFSC_NEDGESIM))
+      allocate(Dcoefficients(2,GFSC_NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -972,10 +2748,10 @@ contains
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
-              DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
+              Dcoefficients(:,1:IEDGEmax-IEDGEset+1), rcollection)
           
           ! Loop through all edges in the current set
           ! and scatter the entries to the global matrix
@@ -984,41 +2760,30 @@ contains
               
               ! Get actual edge number
               iedge = idx+IEDGEset-1
-              
-              ! Get position of diagonal entries
-              ii = Kdiagonal(IedgeList(1,iedge))
-              jj = Kdiagonal(IedgeList(2,iedge))
-              
+                            
               ! Get position of off-diagonal entries
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               
               ! Update the global operator
-              K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
-              K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
-              K(ij) = DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
-              K(ji) = DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+              Ddata(ij) = Dcoefficients(1,idx)
+              Ddata(ji) = Dcoefficients(2,idx)
             end do
 
           else   ! do not clear matrix
+
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
               iedge = idx+IEDGEset-1
               
-              ! Get position of diagonal entries
-              ii = Kdiagonal(IedgeList(1,iedge))
-              jj = Kdiagonal(IedgeList(2,iedge))
-              
               ! Get position of off-diagonal entries
               ij = IedgeList(3,iedge)
               ji = IedgeList(4,iedge)
               
               ! Update the global operator
-              K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
-              K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
-              K(ij) = K(ij) + DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
-              K(ji) = K(ji) + DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+              Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
+              Ddata(ji) = Ddata(ji) + Dcoefficients(2,idx)
             end do
 
           end if
@@ -1029,131 +2794,50 @@ contains
 
       ! Deallocate temporal memory
       deallocate(DdataAtEdge)
-      deallocate(DcoefficientsAtEdge)
+      deallocate(Dcoefficients)
       !$omp end parallel
       
     end subroutine doOperatorMat79Dble
-       
+    
     !**************************************************************
-    ! Assemble convection operator K and AFC data.
+    ! Assemble operator edge-by-edge with stabilisation.
     ! All matrices are stored in matrix format 7 and 9
     
-    subroutine doOperatorAFCMat79Dble(Kdiagonal, IedgeListIdx,&
-        IedgeList, NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge,&
-        Dx, dscale, bclear, K, DcoefficientsAtEdge)
+    subroutine doOperatorStabMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, DcoeffsAtEdge, Dx, dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
-      real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
+      integer, intent(in) :: NEDGE
 
       ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: K
-      
-      ! output parameters
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(inout) :: Ddata
       
       ! auxiliary arras
-      real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: DdataAtEdge
-      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode
-      integer, dimension(:,:), pointer  :: IverticesAtNode
+      real(DP), dimension(:,:), pointer :: Dcoefficients
       
       ! local variables
-      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
-      integer :: i,iedge,igroup,ii,ij,ji,jj
-
-      !-------------------------------------------------------------------------
-      ! Assemble diagonal entries
-      !-------------------------------------------------------------------------
-
-      !$omp parallel default(shared)&
-      !$omp private(DcoefficientsAtNode,DdataAtEdge,DdataAtNode,IEDGEmax,&
-      !$omp         IEQmax,IverticesAtNode,i,idx,iedge,ii,ij,ji,jj)
-
-      ! Allocate temporal memory
-      allocate(IverticesAtNode(2,GFSC_NEQSIM))
-      allocate(DdataAtNode(GFSC_NEQSIM))
-      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
-
-      ! Loop over the equations
-      !$omp do schedule(static,1)
-      do IEQset = 1, NEQ, GFSC_NEQSIM
-
-        ! We always handle GFSC_NEQSIM equations simultaneously.
-        ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
-        ! at most GFSC_NEQSIM equations simultaneously.
-        
-        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
-        
-        ! Loop through all equations in the current set
-        ! and prepare the auxiliary arrays
-        do idx = 1, IEQmax-IEQset+1
-          
-          ! Get actual equation number
-          i = idx+IEQset-1
-
-          ! Get position of diagonal entry
-          ii = Kdiagonal(i)
-          
-          ! Fill auxiliary arrays
-          IverticesAtNode(1,idx) = i
-          IverticesAtNode(2,idx) = ii
-          DdataAtNode(idx)       = Dx(i)
-        end do
-
-        ! Use callback function to compute diagonal entries
-        call fcb_calcMatrixDiagSc_sim(&
-            DdataAtNode(1:IEQmax-IEQset+1),&
-            DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1),&
-            dscale, IEQmax-IEQset+1,&
-            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
-        
-        ! Loop through all equations in the current set
-        ! and scatter the entries to the global matrix
-        if (bclear) then
-          do idx = 1, IEQmax-IEQset+1
-            
-            ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
-            
-            ! Update the diagonal coefficient
-            K(ii) = DcoefficientsAtNode(1,idx)
-          end do
-
-        else   ! do not clear matrix
-          
-          do idx = 1, IEQmax-IEQset+1
-            
-            ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
-            
-            ! Update the diagonal coefficient
-            K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
-          end do
-        end if
-      end do
-      !$omp end do
-      
-      ! Deallocate temporal memory
-      deallocate(IverticesAtNode)
-      deallocate(DdataAtNode)
-      deallocate(DcoefficientsAtNode)
+      integer :: idx,IEDGEset,IEDGEmax
+      integer :: iedge,igroup,ii,ij,ji,jj
 
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtEdge,&
+      !$omp         IEDGEmax,i,idx,iedge,ii,ij,ji,jj)
+      
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
-
+      allocate(Dcoefficients(3,GFSC_NEDGESIM))
+      
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
       do igroup = 1, size(IedgeListIdx)-1
@@ -1173,7 +2857,7 @@ contains
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
           
-          ! DcoefficientsAtEdge is not allocated as temporal array
+          ! Dcoefficients is not allocated as temporal array
           ! since it is given as global output parameter.
           
           ! Loop through all edges in the current set
@@ -1191,10 +2875,149 @@ contains
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
               DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
-              DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
+              Dcoefficients(:,1:IEDGEmax-IEDGEset+1), rcollection)
+          
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global matrix
+          if (bclear) then
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
+              Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
+              Ddata(ij) = Dcoefficients(2,idx) + Dcoefficients(1,idx) 
+              Ddata(ji) = Dcoefficients(3,idx) + Dcoefficients(1,idx)
+            end do
+
+          else   ! do not clear matrix
+
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of diagonal entries
+              ii = Kdiagonal(IedgeList(1,iedge))
+              jj = Kdiagonal(IedgeList(2,iedge))
+              
+              ! Get position of off-diagonal entries
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+              
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
+              Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
+              Ddata(ij) = Ddata(ij) + Dcoefficients(2,idx) + Dcoefficients(1,idx) 
+              Ddata(ji) = Ddata(ji) + Dcoefficients(3,idx) + Dcoefficients(1,idx)
+            end do
+
+          end if
+        end do
+        !$omp end do
+
+      end do ! igroup
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(Dcoefficients)
+      !$omp end parallel
+      
+    end subroutine doOperatorStabMat79Dble
+
+    !**************************************************************
+    ! Assemble operator edge-by-edge with stabilisation and AFC data.
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOperatorAFCMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
+        NEDGE, DcoeffsAtEdge, Dx, dscale, bclear, Ddata, Dcoefficients)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
+      integer, intent(in) :: NEDGE
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! output parameters
+      real(DP), dimension(:,:), intent(out) :: Dcoefficients
+      
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      
+      ! local variables
+      integer :: idx,IEDGEset,IEDGEmax
+      integer :: iedge,igroup,ii,ij,ji,jj
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      !$omp parallel default(shared)&
+      !$omp private(DdataAtEdge,IEDGEmax,i,idx,iedge,ii,ij,ji,jj)
+      
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = IedgeListIdx(igroup),&
+                      IedgeListIdx(igroup+1)-1, GFSC_NEDGESIM
+
+          ! We always handle GFSC_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSC_NEDGESIM edges simultaneously.
+          
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSC_NEDGESIM)
+          
+          ! Dcoefficients is not allocated as temporal array
+          ! since it is given as global output parameter.
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
+          end do
+          
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              Dcoefficients(:,IEDGEset:IEDGEmax), rcollection)
           
           ! Loop through all edges in the current set
           ! and scatter the entries to the global matrix
@@ -1213,16 +3036,14 @@ contains
               ji = IedgeList(4,iedge)
               
               ! Compute entries of low-order operator
-              DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
-                                             DcoefficientsAtEdge(1,iedge)
-              DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
-                                             DcoefficientsAtEdge(1,iedge)
+              Dcoefficients(2,iedge) = Dcoefficients(2,iedge) + Dcoefficients(1,iedge)
+              Dcoefficients(3,iedge) = Dcoefficients(3,iedge) + Dcoefficients(1,iedge)
 
               ! Update the global operator
-              K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
-              K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
-              K(ij) = DcoefficientsAtEdge(2,iedge)
-              K(ji) = DcoefficientsAtEdge(3,iedge)
+              Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
+              Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
+              Ddata(ij) = Dcoefficients(2,iedge)
+              Ddata(ji) = Dcoefficients(3,iedge)
             end do
 
           else   ! do not clear matrix
@@ -1241,16 +3062,14 @@ contains
               ji = IedgeList(4,iedge)
               
               ! Compute entries of low-order operator
-              DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
-                                             DcoefficientsAtEdge(1,iedge)
-              DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
-                                             DcoefficientsAtEdge(1,iedge)
+              Dcoefficients(2,iedge) = Dcoefficients(2,iedge) + Dcoefficients(1,iedge)
+              Dcoefficients(3,iedge) = Dcoefficients(3,iedge) + Dcoefficients(1,iedge)
 
               ! Update the global operator
-              K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
-              K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
-              K(ij) = K(ij) + DcoefficientsAtEdge(2,iedge)
-              K(ji) = K(ji) + DcoefficientsAtEdge(3,iedge)
+              Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
+              Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
+              Ddata(ij) = Ddata(ij) + Dcoefficients(2,iedge)
+              Ddata(ji) = Ddata(ji) + Dcoefficients(3,iedge)
             end do
 
           end if
@@ -1264,441 +3083,8 @@ contains
       !$omp end parallel
       
     end subroutine doOperatorAFCMat79Dble
-    
-    !**************************************************************
-    ! Enforce edge orientation for upwind-based AFC
-    subroutine doUpwindOrientationDble(nedge, IedgeList,&
-        DcoefficientsAtEdge, DmatrixCoeffsAtEdge)
-      
-      ! inout/output parameters
-      integer, dimension(:,:), intent(inout) :: IedgeList
-      real(DP), dimension(:,:), intent(inout) :: DcoefficientsAtEdge
-      real(DP), dimension(:,:,:), intent(inout) :: DmatrixCoeffsAtEdge
-      integer, intent(in) :: nedge
-
-      ! local variables
-      real(DP) :: daux
-      integer :: iedge,iaux,naux
-
-      naux  = size(DmatrixCoeffsAtEdge,1)
-
-      !$omp parallel do default(shared) private(iaux,daux)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-      do iedge = 1, nedge
-        if (DcoefficientsAtEdge(2,iedge) .gt.&
-            DcoefficientsAtEdge(3,iedge)) then
-          ! Swap nodes i <-> j
-          iaux = IedgeList(1,iedge)
-          IedgeList(1,iedge) = IedgeList(2,iedge)
-          IedgeList(2,iedge) = iaux
-
-          ! Swap edges ij <-> ji
-          iaux = IedgeList(3,iedge)
-          IedgeList(3,iedge) = IedgeList(4,iedge)
-          IedgeList(4,iedge) = iaux
-
-          ! Swap edge data l_ij <-> l_ji
-          daux = DcoefficientsAtEdge(2,iedge)
-          DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(3,iedge)
-          DcoefficientsAtEdge(3,iedge) = daux
-
-          ! Swap edgewise matrix coefficients ij <-> ji
-          do iaux = 1, naux
-            daux = DmatrixCoeffsAtEdge(iaux,1,iedge)
-            DmatrixCoeffsAtEdge(iaux,1,iedge) = DmatrixCoeffsAtEdge(iaux,2,iedge)
-            DmatrixCoeffsAtEdge(iaux,2,iedge) = daux
-          end do
-        end if
-      end do
-      !$omp end parallel do
-
-    end subroutine doUpwindOrientationDble
-    
-  end subroutine gfsc_buildConvOperatorScalar
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsc_buildDiffusionOperator(rafcstab, dscale,&
-      bbuildStabilisation, bclear, rdiffMatrix)
-
-!<description>
-
-    ! This subroutine assembles the discrete transport operator which
-    ! results from the group finite element formulation of the
-    ! continuous problem
-    !
-    !   <tex> $$ \nabla\cdot{\bf f}(\nabla u) $$ </tex>
-    !
-    ! where ${\bf f}(\nabla u)$ is a user-defined flux function for
-    ! depending on the gradient of the scalar field $u$.
-    !
-    ! This routine can be used to apply the following discretisations:
-    !
-    ! (1) the standard Galerkin finite element method which will be
-    !     referred to as high-order approximation
-    !
-    ! (2) the operator which preserves the discrete maximum principle.
-    !     This technique is for instance described in the reference:
-    !
-    !     D. Kuzmin, M.J. Shashkov, and D. Svyatski, A constrainted
-    !     finite element method satisfying the discrete maximum
-    !     principle for anisotropic diffuision problems. Journal of
-    !     Computational Physics, vol. 228, 2009, p.3448-3463.
-    !
-    ! (3) In addition to (2), an operator which preserves the discrete
-    !     maximum principle is constructed and the artificial
-    !     diffusion coefficient is stored so that flux limiters can be
-    !     applied.
-!</description>
-
-!<input>
-
-    ! Scaling factor
-    real(DP), intent(in) :: dscale
-
-    ! Switch for stabilisation
-    ! TRUE  : perform stabilisation
-    ! FALSE : perform no stabilisation
-    logical, intent(in) :: bbuildStabilisation
-
-    ! Switch for matrix assembly
-    ! TRUE  : clear matrix before assembly
-    ! FALSE : assemble matrix in an additive way
-    logical, intent(in) :: bclear
-!</input>
-
-!<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout), optional :: rafcstab
-
-    ! diffusion operator
-    type(t_matrixScalar), intent(inout) :: rdiffMatrix
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    real(DP), dimension(:), pointer :: p_DiffOp
-    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-    integer, dimension(:,:), pointer :: p_IedgeList
-    integer, dimension(:), pointer :: p_IedgeListIdx,p_Kdiagonal
-
-
-    ! Check if stabilisation has been initialised
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
-      call sys_halt()
-    end if
-    
-    ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
-      call output_line('Stabilisation does not provide edge-based data structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
-      call sys_halt()
-    end if
-    
-    ! Set pointers
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
-    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    call afcstab_getbase_DmatCoeffAtNode(rafcstab, p_DmatrixCoeffsAtNode)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
-    call lsyssc_getbase_double(rdiffMatrix, p_DiffOp)
-    
-    ! What kind of matrix are we?
-    select case(rdiffMatrix%cmatrixFormat)
-    case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
-      !-------------------------------------------------------------------------
-      ! Matrix format 7 and 9
-      !-------------------------------------------------------------------------
-      
-      ! Set diagonal pointer
-      if (rdiffMatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-        call lsyssc_getbase_Kld(rdiffMatrix, p_Kdiagonal)
-      else
-        call lsyssc_getbase_Kdiagonal(rdiffMatrix, p_Kdiagonal)
-      end if
-      
-      ! Do we have to build stabilisation?
-      if (bbuildStabilisation) then
         
-        ! Set additional pointers
-        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-        
-        ! Assemble Galerkin operator with stabilisation
-        call doOperatorAFCMat79Dble(p_Kdiagonal, p_IedgeListIdx,&
-            p_IedgeList, rafcstab%NEDGE, rdiffMatrix%NEQ,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, dscale,&
-            bclear, p_DiffOp, p_DcoefficientsAtEdge)
-        
-        ! Set state of stabilisation
-        rafcstab%istabilisationSpec =&
-            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
-
-      else   ! bbuildStabilisation == no
-
-        ! Assemble Galerkin operator with stabilisation
-        call doOperatorMat79Dble(p_Kdiagonal, p_IedgeListIdx, &
-            p_IedgeList, rafcstab%NEDGE, rdiffMatrix%NEQ,&
-            p_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtEdge, dscale,&
-            bclear, p_DiffOp)
-
-        ! Set state of stabilisation
-        rafcstab%istabilisationSpec =&
-            iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEVALUES))
-        
-      end if
-      
-    case DEFAULT
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildDiffusionOperator')
-      call sys_halt()
-    end select
-    
-  contains
-    
-    ! Here, the working routine follow
-    
-    !**************************************************************
-    ! Assemble low-order diffusion operator S.
-    ! All matrices are stored in matrix format 7 and 9
-    
-    subroutine doOperatorMat79Dble(Kdiagonal, IedgeListIdx, IedgeList,&
-        NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge, dscale, bclear, K)
-      
-      real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
-      real(DP), intent(in) :: dscale
-      logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: K
-
-      ! local variables
-      real(DP) :: d_ij
-      integer :: iedge,ieq,igroup,ii,ij,ji,jj
-      
-
-      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij)&
-      !$omp if (NEQ > GFSC_NEQMIN_OMP .or. NEDGE > GFSC_NEDGEMIN_OMP)
-
-      !-------------------------------------------------------------------------
-      ! Assemble diagonal entries
-      !-------------------------------------------------------------------------
-
-      if (bclear) then
-        ! Loop over the equations
-        !$omp do
-        do ieq = 1, NEQ
-          
-          ! Get position of diagonal entry
-          ii = Kdiagonal(ieq)
-          
-          ! Update the diagonal coefficient
-          K(ii) = dscale*DmatrixCoeffsAtNode(1,ieq)
-        end do
-        !$omp end do
-
-      else   ! do not clear matrix
-        ! Loop over the equations
-        !$omp do
-        do ieq = 1, NEQ
-          
-          ! Get position of diagonal entry
-          ii = Kdiagonal(ieq)
-          
-          ! Update the diagonal coefficient
-          K(ii) = K(ii) + dscale*DmatrixCoeffsAtNode(1,ieq)
-        end do
-        !$omp end do
-      end if
-
-      !-------------------------------------------------------------------------
-      ! Assemble off-diagonal entries
-      !-------------------------------------------------------------------------
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IedgeListIdx)-1
-        
-        if (bclear) then
-          !$omp do
-          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-        
-            ! Get node numbers and matrix positions
-            ij = IedgeList(3,iedge)
-            ji = IedgeList(4,iedge)
-            ii = Kdiagonal(IedgeList(1,iedge))
-            jj = Kdiagonal(IedgeList(2,iedge))
-            
-            ! Artificial diffusion coefficient
-            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
-            
-            ! Update the global operator
-            K(ii) = K(ii) - d_ij
-            K(jj) = K(jj) - d_ij
-            K(ij) = dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
-            K(ji) = dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
-          end do
-          !$omp end do
-
-        else   ! do not clear matrix
-          ! Loop over all edges
-          !$omp do
-          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-        
-            ! Get node numbers and matrix positions
-            ij = IedgeList(3,iedge)
-            ji = IedgeList(4,iedge)
-            ii = Kdiagonal(IedgeList(1,iedge))
-            jj = Kdiagonal(IedgeList(2,iedge))
-            
-            ! Artificial diffusion coefficient
-            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
-            
-            ! Update the global operator
-            K(ii) = K(ii) - d_ij
-            K(jj) = K(jj) - d_ij
-            K(ij) = K(ij) + dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
-            K(ji) = K(ji) + dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
-          end do
-          !$omp end do
-        end if
-
-      end do ! igroup
-      !$omp end parallel
-
-    end subroutine doOperatorMat79Dble
-
-    !**************************************************************
-    ! Assemble low-order diffusion operator S and AFC data.
-    ! All matrices are stored in matrix format 7 and 9
-    
-    subroutine doOperatorAFCMat79Dble(Kdiagonal, IedgeListIdx,&
-        IedgeList, NEDGE, NEQ, DmatrixCoeffsAtNode, DmatrixCoeffsAtEdge,&
-        dscale, bclear, K, DcoefficientsAtEdge)
-
-      real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
-      real(DP), intent(in) :: dscale
-      logical, intent(in) :: bclear
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx,Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: K
-      
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP) :: d_ij,s_ij
-      integer :: iedge,ieq,igroup,ii,ij,ji,jj
-      
-      !$omp parallel default(shared) private(ii,ij,ji,jj,d_ij,s_ij)&
-      !$omp if (NEQ > GFSC_NEQMIN_OMP .or. NEDGE > GFSC_NEDGEMIN_OMP)
-
-      !-------------------------------------------------------------------------
-      ! Assemble diagonal entries
-      !-------------------------------------------------------------------------
-
-      if (bclear) then
-        ! Loop over the equations
-        !$omp do
-        do ieq = 1, NEQ
-          
-          ! Get position of diagonal entry
-          ii = Kdiagonal(ieq)
-          
-          ! Update the diagonal coefficient
-          K(ii) = dscale*DmatrixCoeffsAtNode(1,ieq)
-        end do
-        !$omp end do
-
-      else   ! do not clear matrix
-        ! Loop over the equations
-        !$omp do
-        do ieq = 1, NEQ
-          
-          ! Get position of diagonal entry
-          ii = Kdiagonal(ieq)
-          
-          ! Update the diagonal coefficient
-          K(ii) = K(ii) + dscale*DmatrixCoeffsAtNode(1,ieq)
-        end do
-        !$omp end do
-      end if
-
-      !-------------------------------------------------------------------------
-      ! Assemble off-diagonal entries
-      !-------------------------------------------------------------------------
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronize memory access
-      do igroup = 1, size(IedgeListIdx)-1
-        
-        if (bclear) then
-          !$omp do
-          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-            
-            ! Get node numbers and matrix positions
-            ij = IedgeList(3,iedge)
-            ji = IedgeList(4,iedge)
-            ii = Kdiagonal(IedgeList(1,iedge))
-            jj = Kdiagonal(IedgeList(2,iedge))
-            
-            ! Artificial diffusion coefficient
-            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
-            s_ij = max(0.0_DP,  DmatrixCoeffsAtEdge(1,1,iedge))
-            
-            ! AFC w/o edge orientation
-            DcoefficientsAtEdge(1:2,iedge) = (/d_ij, s_ij/)
-            
-            ! Update the global operator
-            K(ii) = K(ii) - d_ij
-            K(jj) = K(jj) - d_ij
-            K(ij) = dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
-            K(ji) = dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
-          end do
-          !$omp end do
-
-        else   ! do not clear matrix
-          !$omp do
-          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-            
-            ! Get node numbers and matrix positions
-            ij = IedgeList(3,iedge)
-            ji = IedgeList(4,iedge)
-            ii = Kdiagonal(IedgeList(1,iedge))
-            jj = Kdiagonal(IedgeList(2,iedge))
-            
-            ! Artificial diffusion coefficient
-            d_ij = max(0.0_DP, -DmatrixCoeffsAtEdge(1,1,iedge))
-            s_ij = max(0.0_DP,  DmatrixCoeffsAtEdge(1,1,iedge))
-            
-            ! AFC w/o edge orientation
-            DcoefficientsAtEdge(1:2,iedge) = (/d_ij, s_ij/)
-            
-            ! Update the global operator
-            K(ii) = K(ii) - d_ij
-            K(jj) = K(jj) - d_ij
-            K(ij) = K(ij) + dscale*(DmatrixCoeffsAtEdge(1,1,iedge) + d_ij)
-            K(ji) = K(ji) + dscale*(DmatrixCoeffsAtEdge(1,2,iedge) + d_ij)
-          end do
-          !$omp end do
-        end if
-        
-      end do ! igroup
-      !$omp end parallel
-
-    end subroutine doOperatorAFCMat79Dble
-
-  end subroutine gfsc_buildDiffusionOperator
+  end subroutine gfsc_buildOperatorEdgeScalar
  
   !*****************************************************************************
 
@@ -3197,7 +4583,7 @@ contains
       real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
-      real(DP) :: diff,pp,pm,err,aerr,corr,acorr
+      real(DP) :: diff
       integer :: ieq
       
       !$omp parallel sections default(shared) private(ieq,diff)
@@ -3252,7 +4638,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
-      real(DP) :: f_ij,r_ij,r_ji
+      real(DP) :: f_ij,r_ij
       integer :: iedge,i,j
       
       ! Loop over all edges
@@ -3614,7 +5000,7 @@ contains
       
       ! local variables
       real(DP) :: d_ij,diff,f_ij,fm_ij,fp_ij,l_ji
-      integer :: i,iedge,igroup,ij,j
+      integer :: i,iedge,igroup,j
       
       
       if ((iand(ioperationSpec, AFCSTAB_TVDALGO_ADINCREMENTS) .ne. 0) .and.&
@@ -4355,7 +5741,7 @@ contains
 
       ! local variables
       real(DP) :: d_ij,f_ij,s_ij,diff
-      integer :: i,iedge,igroup,ij,j
+      integer :: i,iedge,igroup,j
       
       
       ! Clear nodal vectors
@@ -5962,11 +7348,11 @@ contains
       real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
-      real(DP) :: f_ij,r_ij,r_ji
+      real(DP) :: f_ij,r_ij
       integer :: iedge,i,j
       
       ! Loop over all edges
-      !$omp parallel do default(shared) private(i,j,f_ij,r_ij,r_ji)&
+      !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
@@ -11167,7 +12553,7 @@ contains
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
-      integer :: ild,isep,l,iloc
+      integer :: ild,l
       
       
       ! Loop over all entries of the k-th row
@@ -11196,7 +12582,7 @@ contains
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
-      integer :: ild,isep,l,iloc
+      integer :: ild,l
       
       
       ! Loop over all entries of the k-th row
@@ -12282,7 +13668,7 @@ contains
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
-      integer :: ild,isep,l,iloc
+      integer :: ild,l
       
       
       ! Loop over all entries of the k-th row
@@ -12311,7 +13697,7 @@ contains
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
-      integer :: ild,isep,l,iloc
+      integer :: ild,l
       
       
       ! Loop over all entries of the k-th row
@@ -13444,7 +14830,7 @@ contains
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
-      integer :: ild,isep,l,iloc
+      integer :: ild,l
       
       
       ! Loop over all entries of the k-th row
@@ -13473,7 +14859,7 @@ contains
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
-      integer :: ild,isep,l,iloc
+      integer :: ild,l
       
       
       ! Loop over all entries of the k-th row
@@ -14265,5 +15651,161 @@ contains
       r = fval
     end if
   end function gfsc_limitBoundedSngl
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_upwindOrientationDble(Dcoefficients, IedgeList,&
+      DcoeffsAtEdge, ipos, jpos)
+
+!<description>
+    ! This subroutine orients the edges so that the starting node of
+    ! each edge is located upwind. This orientation convention is
+    ! introduced in the paper:
+    !
+    ! D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    ! conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
+    ! Transport: Principles, Algorithms, and Applications, Springer,
+    ! 2005, 155-206.
+!</description>
+
+!<input>
+    ! Positions of node I and J
+    integer, intent(in) :: ipos,jpos
+!</input>
+
+!<inputoutput>
+    ! Coefficients used to determine the upwind direction
+    ! DIMENSION(1:IPOS:JPOS:NPOS,1:NEDGE),
+    ! where IPOS and JPOS are the positions where the data
+    ! for node I and J is stored, respectively
+    real(DP), dimension(:,:), intent(inout) :: Dcoefficients
+    
+    ! Additional coefficients at the edges
+    ! DIMENSION(1:N2,1:2,1:NEDGE)
+    real(DP), dimension(:,:,:), intent(inout) :: DcoeffsAtEdge
+
+    ! List of edges
+    ! DIMENSION(1:N3,1:NEDGE)
+    integer, dimension(:,:), intent(inout) :: IedgeList   
+!</inputoutput>
+!</subroutine
+
+    ! local variables
+    real(DP) :: daux
+    integer :: iedge,iaux,naux,nedge
+    
+    nedge = size(IedgeList,2)
+    naux  = size(DcoeffsAtEdge,1)
+    
+    !$omp parallel do default(shared) private(iaux,daux)&
+    !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+    do iedge = 1, nedge
+      if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
+        ! Swap nodes i <-> j
+        iaux = IedgeList(1,iedge)
+        IedgeList(1,iedge) = IedgeList(2,iedge)
+        IedgeList(2,iedge) = iaux
+        
+        ! Swap edges ij <-> ji
+        iaux = IedgeList(3,iedge)
+        IedgeList(3,iedge) = IedgeList(4,iedge)
+        IedgeList(4,iedge) = iaux
+        
+        ! Swap edge data data_ij <-> data_ji
+        daux = Dcoefficients(ipos,iedge)
+        Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
+        Dcoefficients(jpos,iedge) = daux
+        
+        ! Swap edgewise coefficients Data_ij <-> Data_ji
+        do iaux = 1, naux
+          daux = DcoeffsAtEdge(iaux,1,iedge)
+          DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
+          DcoeffsAtEdge(iaux,2,iedge) = daux
+        end do
+      end if
+    end do
+    !$omp end parallel do
+    
+  end subroutine gfsc_upwindOrientationDble
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_upwindOrientationSngl(Fcoefficients, IedgeList,&
+      FcoeffsAtEdge, ipos, jpos)
+
+!<description>
+    ! This subroutine orients the edges so that the starting node of
+    ! each edge is located upwind. This orientation convention is
+    ! introduced in the paper:
+    !
+    ! D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    ! conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
+    ! Transport: Principles, Algorithms, and Applications, Springer,
+    ! 2005, 155-206.
+!</description>
+
+!<input>
+    ! Positions of node I and J
+    integer, intent(in) :: ipos,jpos
+!</input>
+
+!<inputoutput>
+    ! Coefficients used to determine the upwind direction
+    ! DIMENSION(1:IPOS:JPOS:NPOS,1:NEDGE),
+    ! where IPOS and JPOS are the positions where the data
+    ! for node I and J is stored, respectively
+    real(SP), dimension(:,:), intent(inout) :: Fcoefficients
+    
+    ! Additional coefficients at the edges
+    ! DIMENSION(1:N2,1:2,1:NEDGE)
+    real(SP), dimension(:,:,:), intent(inout) :: FcoeffsAtEdge
+
+    ! List of edges
+    ! DIMENSION(1:N3,1:NEDGE)
+    integer, dimension(:,:), intent(inout) :: IedgeList   
+!</inputoutput>
+!</subroutine
+
+    ! local variables
+    real(SP) :: Faux
+    integer :: iedge,iaux,naux,nedge
+    
+    nedge = size(IedgeList,2)
+    naux  = size(FcoeffsAtEdge,1)
+    
+    !$omp parallel do default(shared) private(iaux,daux)&
+    !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+    do iedge = 1, nedge
+      if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
+        ! Swap nodes i <-> j
+        iaux = IedgeList(1,iedge)
+        IedgeList(1,iedge) = IedgeList(2,iedge)
+        IedgeList(2,iedge) = iaux
+        
+        ! Swap edges ij <-> ji
+        iaux = IedgeList(3,iedge)
+        IedgeList(3,iedge) = IedgeList(4,iedge)
+        IedgeList(4,iedge) = iaux
+        
+        ! Swap edge data data_ij <-> data_ji
+        faux = Fcoefficients(ipos,iedge)
+        Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
+        Fcoefficients(jpos,iedge) = faux
+        
+        ! Swap edgewise coefficients Data_ij <-> Data_ji
+        do iaux = 1, naux
+          faux = FcoeffsAtEdge(iaux,1,iedge)
+          FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
+          FcoeffsAtEdge(iaux,2,iedge) = faux
+        end do
+      end if
+    end do
+    !$omp end parallel do
+    
+  end subroutine gfsc_upwindOrientationSngl
 
 end module groupfemscalar

@@ -2932,7 +2932,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_getbase_DcoeffsAtEdge(rafcstab,p_DcoefficientsAtEdge)
+  subroutine afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
 
 !<description>
     ! Returns a pointer to the double-valued edge data

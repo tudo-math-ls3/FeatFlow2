@@ -6210,10 +6210,9 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: smode
-    logical :: bbuildStabilisation
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
-    integer :: ivelocitytype, idiffusiontype
-    integer :: convectionAFC, diffusionAFC, velocityfield
+    integer :: ivelocitytype,idiffusiontype,coeffMatrix_S
+    integer :: convectionAFC,diffusionAFC,velocityfield
+    integer :: convectionGFEM,diffusionGFEM
     logical :: breturn
     
 
@@ -6238,12 +6237,6 @@ contains
         'rparlist', ssectionName=ssectionName)
 
     ! Get positions of coefficient matrices from parameter list
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'coeffmatrix_S', coeffMatrix_S)
 
@@ -6301,6 +6294,8 @@ contains
       ! Anisotropic diffusion
       call parlst_getvalue_int(p_rparlist,&
           ssectionName, 'diffusionAFC', diffusionAFC)
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'diffusionGFEM', diffusionGFEM, diffusionAFC)
 
       if (diffusionAFC > 0) then
 
@@ -6309,16 +6304,16 @@ contains
 
         case (AFCSTAB_DMP)
           ! Satisfy discrete maximum principle
-          call gfsc_buildDiffusionOperator(&
-              rproblemLevel%Rafcstab(diffusionAFC),&
-              dscale, .false., .true., rmatrix)
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1),&
+              dscale, .true., rmatrix)
 
         case (AFCSTAB_SYMMETRIC)
           ! Satisfy discrete maximum principle
           ! and assemble stabilisation structure
-          call gfsc_buildDiffusionOperator(&
-              rproblemLevel%Rafcstab(diffusionAFC),&
-              dscale, .true., .true., rmatrix)
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1),&
+              dscale, .true., rmatrix, rproblemLevel%Rafcstab(diffusionAFC))
 
         case default
           ! Compute the standard Galerkin approximation
@@ -6391,6 +6386,8 @@ contains
         ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'convectionGFEM', convectionGFEM, convectionAFC)
 
     ! Attach user-defined collection structure to temporal collection
     ! structure (may be required by the callback function)
@@ -6424,32 +6421,63 @@ contains
         if (present(fcb_calcMatrixPrimal_sim) .and.&
             present(fcb_calcMatrixDiagPrimal_sim)) then
 
-          ! Check if stabilisation should be applied
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
-            bbuildStabilisation = .false.
+            
+          case (AFCSTAB_GALERKIN)
+            
+            ! Apply standard Galerkin discretisation
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp)
+              
+            case (NDIM2D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp)
+              
+            case (NDIM3D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp)
+            end select
+
           case default
-            bbuildStabilisation = .true.
-          end select
+            
+            ! Apply low-order discretisation
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp,&
+                  rproblemLevel%Rafcstab(convectionAFC))
+              
+            case (NDIM2D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp,&
+                  rproblemLevel%Rafcstab(convectionAFC))
+              
+            case (NDIM3D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp,&
+                  rproblemLevel%Rafcstab(convectionAFC))
+            end select
 
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
           end select
 
         else ! callback function not present
@@ -6478,48 +6506,54 @@ contains
           ! Apply standard Galerkin discretisation
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvP1d_sim, transp_calcMatGalConvP1d_sim,&
-                dscale, .false., .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp)
 
           case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvP2d_sim, transp_calcMatGalConvP2d_sim,&
-                dscale, .false., .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp)
 
           case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvP3d_sim, transp_calcMatGalConvP3d_sim,&
-                dscale, .false., .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp)
           end select
 
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvP1d_sim, transp_calcMatUpwConvP1d_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp,&
+                rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvP2d_sim, transp_calcMatUpwConvP2d_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp,&
+                rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvP3d_sim, transp_calcMatUpwConvP3d_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp,&
+                rproblemLevel%Rafcstab(convectionAFC))
           end select
 
         end select
@@ -6540,21 +6574,21 @@ contains
         case (AFCSTAB_GALERKIN)
 
           ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagSTBurgP2d_sim, transp_calcMatGalSTBurgP2d_sim,&
-              dscale, .false., .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp)
 
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagSTBurgP2d_sim, transp_calcMatUpwSTBurgP2d_sim,&
-              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp,&
+              rproblemLevel%Rafcstab(convectionAFC))
 
         end select
 
@@ -6572,21 +6606,21 @@ contains
         case (AFCSTAB_GALERKIN)
 
           ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagSTBLevP2d_sim, transp_calcMatGalSTBLevP2d_sim,&
-              dscale, .false., .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp)
 
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagSTBLevP2d_sim, transp_calcMatUpwSTBLevP2d_sim,&
-              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp,&
+              rproblemLevel%Rafcstab(convectionAFC))
 
         end select
 
@@ -6604,21 +6638,21 @@ contains
         case (AFCSTAB_GALERKIN)
 
           ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagBurgP1d_sim, transp_calcMatGalBurgP1d_sim,&
-              dscale, .false., .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp)
 
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagBurgP1d_sim, transp_calcMatUpwBurgP1d_sim,&
-              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp,&
+              rproblemLevel%Rafcstab(convectionAFC))
 
         end select
 
@@ -6636,21 +6670,21 @@ contains
         case (AFCSTAB_GALERKIN)
 
           ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagBurgP2d_sim, transp_calcMatGalBurgP2d_sim,&
-              dscale, .false., .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp)
 
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagBurgP2d_sim, transp_calcMatUpwBurgP2d_sim,&
-              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp,&
+              rproblemLevel%Rafcstab(convectionAFC))
 
         end select
 
@@ -6668,21 +6702,21 @@ contains
         case (AFCSTAB_GALERKIN)
 
           ! Apply standard Galerkin discretisation
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagBLevP1d_sim, transp_calcMatGalBLevP1d_sim,&
-              dscale, .false., .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp)
 
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+          call gfsc_buildOperator(&
+              rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               transp_calcMatDiagBLevP1d_sim, transp_calcMatUpwBLevP1d_sim,&
-              dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+              dscale, .false., rmatrix, rcollectionTmp,&
+              rproblemLevel%Rafcstab(convectionAFC))
 
         end select
 
@@ -6720,33 +6754,65 @@ contains
         if (present(fcb_calcMatrixDual_sim) .and.&
             present(fcb_calcMatrixDiagDual_sim)) then
 
-          ! Check if stabilisation should be applied
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
-            bbuildStabilisation = .false.
+            
+          case (AFCSTAB_GALERKIN)
+            
+            ! Apply standard Galerkin discretisation
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp)
+              
+            case (NDIM2D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp)
+              
+            case (NDIM3D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp)
+            end select
+            
           case default
-            bbuildStabilisation = .true.
+            
+            ! Apply low-order discretisation
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp,&
+                  rproblemLevel%Rafcstab(convectionAFC))
+              
+            case (NDIM2D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp,&
+                  rproblemLevel%Rafcstab(convectionAFC))
+              
+            case (NDIM3D)
+              call gfsc_buildOperator(&
+                  rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                  rsolution,&
+                  fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
+                  dscale, .false., rmatrix, rcollectionTmp,&
+                  rproblemLevel%Rafcstab(convectionAFC))
+            end select
+            
           end select
 
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
-          end select
 
         else ! callback function not present
 
@@ -6774,48 +6840,54 @@ contains
           ! Apply standard Galerkin discretisation
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvD1d_sim, transp_calcMatGalConvD1d_sim,&
-                dscale, .false., .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp)
 
           case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvD2d_sim, transp_calcMatGalConvD2d_sim,&
-                dscale, .false., .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp)
 
           case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvD3d_sim, transp_calcMatGalConvD3d_sim,&
-                dscale, .false., .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp)
           end select
           
         case default
 
           ! Apply low-order discretisation
-          bbuildStabilisation = AFCSTAB_UPWIND .ne.&
-              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvD1d_sim, transp_calcMatUpwConvD1d_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp,&
+                rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvD2d_sim, transp_calcMatUpwConvD2d_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp,&
+                rproblemLevel%Rafcstab(convectionAFC))
 
           case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+            call gfsc_buildOperator(&
+                rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 transp_calcMatDiagConvD3d_sim, transp_calcMatUpwConvD3d_sim,&
-                dscale, bbuildStabilisation, .false., rmatrix, rcollectionTmp)
+                dscale, .false., rmatrix, rcollectionTmp,&
+                rproblemLevel%Rafcstab(convectionAFC))
           end select
 
         end select

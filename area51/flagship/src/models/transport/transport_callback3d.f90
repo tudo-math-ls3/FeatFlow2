@@ -326,30 +326,27 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
+      DcoefficientsAtEdge(1,iedge) = dscale*&
           (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
           +p_DvelocityZ(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
-      DcoefficientsAtEdge(3,iedge) = dscale*&
+      DcoefficientsAtEdge(2,iedge) = dscale*&
           (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
           +p_DvelocityZ(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
+      DcoefficientsAtEdge(1,iedge) = -dscale*&
           (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
           +p_DvelocityZ(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
-      DcoefficientsAtEdge(3,iedge) = -dscale*&
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
           (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
           +p_DvelocityZ(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
-
-      ! Set artificial diffusion to zero
-      DcoefficientsAtEdge(1,iedge) = 0.0_DP
     end do
 
   end subroutine transp_calcMatGalConvP3d_sim
@@ -626,30 +623,27 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
+      DcoefficientsAtEdge(1,iedge) = -dscale*&
           (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
           +p_DvelocityZ(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
-      DcoefficientsAtEdge(3,iedge) = -dscale*&
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
           (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
           +p_DvelocityZ(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
+      DcoefficientsAtEdge(1,iedge) = dscale*&
           (p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_DvelocityY(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge)&
           +p_DvelocityZ(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(3,1,iedge))
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
-      DcoefficientsAtEdge(3,iedge) = dscale*&
+      DcoefficientsAtEdge(2,iedge) = dscale*&
           (p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_DvelocityY(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge)&
           +p_DvelocityZ(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(3,2,iedge))
 #endif
-
-      ! Set artificial diffusion to zero
-      DcoefficientsAtEdge(1,iedge) = 0.0_DP
     end do
     
   end subroutine transp_calcMatGalConvD3d_sim
