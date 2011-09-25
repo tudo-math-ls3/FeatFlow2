@@ -3041,7 +3041,7 @@ contains
 
       real(DP), dimension(nvar) :: DauxBlock
       real(DP) :: daux
-      integer :: ia,ild,ieq,icol,ivar,jvar,ii
+      integer :: ia,ieq,icol,ivar,jvar,ii
 
       ! Forward block-substitution: [D+Lower(A)]*y = b,
       ! whereby D is the LU decomposition of the diagonal blocks
@@ -3123,7 +3123,7 @@ contains
 
       real(DP), dimension(nvar) :: DauxBlock
       real(DP) :: daux
-      integer :: ia,ild,ieq,icol,ivar,jvar,ii
+      integer :: ia,ieq,icol,ivar,jvar,ii
 
       ! Forward block-substitution: [D+Lower(A)]*y = b,
       ! whereby D is the LU decomposition of the diagonal blocks
