@@ -8687,7 +8687,6 @@ contains
     logical, intent(in) :: bignoreOwner
 
       ! local variables
-      integer(I32) :: iflag,iflag2
       integer :: isize
       integer :: NEQ,NNZROWS
       logical :: bremove 
@@ -8945,8 +8944,6 @@ contains
     
       ! local variables
       logical :: bremove
-      real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
-      real(SP), dimension(:), pointer :: p_Fdata,p_Fdata2
       
       ! Overwrite structural data
       call copyStaticContent(rsourceMatrix, rdestMatrix)
@@ -16452,7 +16449,7 @@ contains
     type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! local variables
-    integer :: irow,icol
+    integer :: icol
     real(DP), dimension(:), pointer :: p_Da
     real(SP), dimension(:), pointer :: p_FA
     real(DP) :: ddata
@@ -18616,7 +18613,7 @@ contains
     type(t_matrixScalar), pointer :: p_rdest
     real(DP), dimension(:), pointer :: p_DaA,p_DaB,p_DaC
     real(SP), dimension(:), pointer :: p_FaA,p_FaB,p_FaC
-    integer, dimension(:), pointer :: p_KldA,p_Kld2A,p_KldB,p_KldC
+    integer, dimension(:), pointer :: p_KldA,p_KldB,p_KldC
     integer, dimension(:), pointer :: p_KrowIdxA
     integer, dimension(:), pointer :: p_KcolA,p_KcolB,p_KcolC
     integer, dimension(:), pointer :: p_KdiagonalB,p_KdiagonalC,p_Kaux
@@ -24980,7 +24977,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_genEdgeList(rmatrix, h_IedgeList, ccontentType,&
-      bisSymmetric, bignoreDiagonal, nedge, IdofList)
+      bisSymmetric, bignoreDiagonal, nedge, Iselection)
 
 !<description>
     ! This subroutine generates a list of edges (i,j) based on all or
@@ -25009,7 +25006,7 @@ contains
 
     ! OPTIONAL: a list of degress of freedoms to which the edge
     ! structure should be restricted.
-    integer, dimension(:), intent(in), optional :: IdofList
+    integer, dimension(:), intent(in), optional :: Iselection
 !</input>
 
 !<inputoutput>
@@ -25028,11 +25025,11 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer, dimension(2) :: Isize
-    integer :: ncontent,h_Ksep,na,neq
+    integer :: h_Ksep,na,ncols,ncontent,neq
 
     ! Determine the number of edges
     if (nedge .le. 0)&
-        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, Iselection)
     
     ! Determine the type of information stored at each edge
     select case(ccontentType)
@@ -25068,17 +25065,17 @@ contains
     select case(rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
       if (bisSymmetric) then
-        if (present(IdofList)) then
+        if (present(Iselection)) then
           call genEdgesMat1SymmSel(rmatrix%NEQ, ccontentType,&
-              bignoreDiagonal, IdofList, p_IedgeList)
+              bignoreDiagonal, Iselection, p_IedgeList)
         else
           call genEdgesMat1Symm(rmatrix%NEQ, ccontentType,&
               bignoreDiagonal, p_IedgeList)
         end if
       else
-        if (present(IdofList)) then
+        if (present(Iselection)) then
           call genEdgesMat1Sel(rmatrix%NEQ, rmatrix%NCOLS, ccontentType,&
-              bignoreDiagonal, IdofList, p_IedgeList)
+              bignoreDiagonal, Iselection, p_IedgeList)
         else
           call genEdgesMat1(rmatrix%NEQ, rmatrix%NCOLS, ccontentType,&
               bignoreDiagonal, p_IedgeList)
@@ -25097,9 +25094,9 @@ contains
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
 
         ! Generate edge structure
-        if (present(IdofList)) then
+        if (present(Iselection)) then
           call genEdgesMat7SymmSel(p_Kld, p_Kcol, p_Ksep, ccontentType,&
-              bignoreDiagonal, IdofList, p_IedgeList)
+              bignoreDiagonal, Iselection, p_IedgeList)
         else
           call genEdgesMat7Symm(p_Kld, p_Kcol, p_Ksep, ccontentType,&
               bignoreDiagonal, p_IedgeList)
@@ -25108,10 +25105,10 @@ contains
         ! Release diagonal separator
         call storage_free(h_Ksep)
       else
-        if (present(IdofList)) then
+        if (present(Iselection)) then
           call genEdgesMat7Sel(p_Kld, p_Kcol, ccontentType,&
               bignoreDiagonal, max(rmatrix%NEQ,rmatrix%NCOLS),&
-              IdofList, p_IedgeList)
+              Iselection, p_IedgeList)
         else
           call genEdgesMat7(p_Kld, p_Kcol, ccontentType,&
               bignoreDiagonal, p_IedgeList)
@@ -25131,9 +25128,9 @@ contains
         call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
         
         ! Generate edge structure
-        if (present(IdofList)) then
+        if (present(Iselection)) then
           call genEdgesMat9SymmSel(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              ccontentType, bignoreDiagonal, IdofList, p_IedgeList)
+              ccontentType, bignoreDiagonal, Iselection, p_IedgeList)
         else
           call genEdgesMat9Symm(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
               ccontentType, bignoreDiagonal, p_IedgeList)
@@ -25142,10 +25139,10 @@ contains
         ! Release diagonal separator
         call storage_free(h_Ksep)
       else
-        if (present(IdofList)) then
+        if (present(Iselection)) then
           call genEdgesMat9Sel(p_Kld, p_Kcol, ccontentType,&
               bignoreDiagonal, max(rmatrix%NEQ,rmatrix%NCOLS),&
-              IdofList, p_IedgeList)
+              Iselection, p_IedgeList)
         else
           call genEdgesMat9(p_Kld, p_Kcol, ccontentType,&
               bignoreDiagonal, p_IedgeList)
@@ -25246,13 +25243,12 @@ contains
 
     !**************************************************************
     ! Generate edge data structure for symmetric dense matrices stored
-    ! in matrix format 1 restricted to a list of selected degrees of
-    ! freedom
+    ! in matrix format 1 restricted to a list of selected entries
     
     subroutine genEdgesMat1SymmSel(neq, ccontentType, bignoreDiagonal,&
-        IdofList, IedgeList)
+        Iselection, IedgeList)
       
-      integer, dimension(:), intent(in) :: IdofList
+      integer, dimension(:), intent(in) :: Iselection
       integer, intent(in) :: neq,ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
@@ -25261,10 +25257,10 @@ contains
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,iedge,ioffset
       
-      ! Generate set of active degrees of freedom
+      ! Generate set of active entries
       allocate(BisActive(neq)); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i))=.true.
+      do i = 1, size(Iselection)
+        BisActive(Iselection(i))=.true.
       end do
 
       ! Initialise edge counter
@@ -25452,13 +25448,12 @@ contains
 
     !**************************************************************
     ! Generate edge data structure for arbitrary dense matrices stored
-    ! in matrix format 1 restricted to a list of selected degrees of
-    ! freedom
+    ! in matrix format 1 restricted to a list of selected entries
     
     subroutine genEdgesMat1Sel(neq, ncols, ccontentType, bignoreDiagonal,&
-        IdofList, IedgeList)
+        Iselection, IedgeList)
       
-      integer, dimension(:), intent(in) :: IdofList
+      integer, dimension(:), intent(in) :: Iselection
       integer, intent(in) :: neq,ncols,ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
@@ -25467,10 +25462,10 @@ contains
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,iedge
       
-      ! Generate set of active degrees of freedom
+      ! Generate set of active entries
       allocate(BisActive(max(neq,ncols))); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i))=.true.
+      do i = 1, size(Iselection)
+        BisActive(Iselection(i))=.true.
       end do
 
       ! Initialise edge counter
@@ -25700,12 +25695,12 @@ contains
 
     !**************************************************************
     ! Generate edge data structure for symmetric matrix in format 7
-    ! restricted to a list of selected degrees of freedom
+    ! restricted to a list of selected entries
 
     subroutine genEdgesMat7SymmSel(Kld, Kcol, Ksep, ccontentType,&
-        bignoreDiagonal, IdofList, IedgeList)
+        bignoreDiagonal, Iselection, IedgeList)
 
-      integer, dimension(:), intent(in) :: Kld,Kcol,IdofList
+      integer, dimension(:), intent(in) :: Kld,Kcol,Iselection
       integer, intent(in) :: ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
@@ -25715,10 +25710,10 @@ contains
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,ij,ji,iedge
 
-      ! Generate set of active degrees of freedom
+      ! Generate set of active entries
       allocate(BisActive(size(Kld)-1)); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i))=.true.
+      do i = 1, size(Iselection)
+        BisActive(Iselection(i))=.true.
       end do
 
       ! Initialise edge counter
@@ -25894,7 +25889,7 @@ contains
       integer, dimension(:,:), intent(inout) :: IedgeList
 
       ! local variables
-      integer :: i,j,ij,ji,iedge,ioffset
+      integer :: i,j,ij,iedge,ioffset
       
       ! Initialise edge counter
       iedge = 0
@@ -25934,24 +25929,24 @@ contains
 
     !**************************************************************
     ! Generate edge data structure for arbitrary matrix in format 7
-    ! restricted to a list of selected degrees of freedom
+    ! restricted to a list of selected entries
 
     subroutine genEdgesMat7Sel(Kld, Kcol, ccontentType,&
-        bignoreDiagonal, ndof, IdofList, IedgeList)
+        bignoreDiagonal, ndof, Iselection, IedgeList)
 
-      integer, dimension(:), intent(in) :: Kld,Kcol,IdofList
+      integer, dimension(:), intent(in) :: Kld,Kcol,Iselection
       integer, intent(in) :: ndof,ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
 
       ! local variables
       logical, dimension(:), allocatable :: BisActive
-      integer :: i,j,ij,ji,iedge,ioffset
+      integer :: i,j,ij,iedge,ioffset
       
-      ! Generate set of active degrees of freedom
+      ! Generate set of active entries
       allocate(BisActive(ndof)); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i))=.true.
+      do i = 1, size(Iselection)
+        BisActive(Iselection(i))=.true.
       end do
       
       ! Initialise edge counter
@@ -26129,12 +26124,12 @@ contains
 
     !**************************************************************
     ! Generate edge data structure for symmetric matrix in format 9
-    ! restricted to a list of selected degrees of freedom
+    ! restricted to a list of selected entries
 
     subroutine genEdgesMat9SymmSel(Kld, Kcol, Kdiagonal, Ksep, ccontentType,&
-        bignoreDiagonal, IdofList, IedgeList)
+        bignoreDiagonal, Iselection, IedgeList)
 
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal,IdofList
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal,Iselection
       integer, intent(in) :: ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
@@ -26144,10 +26139,10 @@ contains
       logical, dimension(:), allocatable :: BisActive
       integer :: i,j,ij,ji,iedge
 
-      ! Generate set of active degrees of freedom
+      ! Generate set of active entries
       allocate(BisActive(size(Kld)-1)); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i))=.true.
+      do i = 1, size(Iselection)
+        BisActive(Iselection(i))=.true.
       end do
 
       ! Initialise edge counter
@@ -26324,7 +26319,7 @@ contains
       integer, dimension(:,:), intent(inout) :: IedgeList
 
       ! local variables
-      integer :: i,j,ij,ji,iedge
+      integer :: i,j,ij,iedge
       
       ! Initialise edge counter
       iedge = 0
@@ -26364,24 +26359,24 @@ contains
 
     !**************************************************************
     ! Generate edge data structure for arbitrary matrix in format 9
-    ! restricted to a list of selected degrees of freedom
+    ! restricted to a list of selected entries
 
     subroutine genEdgesMat9Sel(Kld, Kcol, ccontentType,&
-        bignoreDiagonal, ndof, IdofList, IedgeList)
+        bignoreDiagonal, ndof, Iselection, IedgeList)
 
-      integer, dimension(:), intent(in) :: Kld,Kcol,IdofList
+      integer, dimension(:), intent(in) :: Kld,Kcol,Iselection
       integer, intent(in) :: ndof,ccontentType
       logical, intent(in) :: bignoreDiagonal
       integer, dimension(:,:), intent(inout) :: IedgeList
 
       ! local variables
       logical, dimension(:), allocatable :: BisActive
-      integer :: i,j,ij,ji,iedge
+      integer :: i,j,ij,iedge
       
-      ! Generate set of active degrees of freedom
+      ! Generate set of active entries
       allocate(BisActive(ndof)); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i))=.true.
+      do i = 1, size(Iselection)
+        BisActive(Iselection(i))=.true.
       end do
 
       ! Initialise edge counter
@@ -26659,14 +26654,24 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+  subroutine lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+      Iselection, IrowList, IcolList)
 
 !<description>
-    ! This subroutine calculates the number of non-zero matrix entries
-    ! NA, the number of equations NEQ and the number of edges for the
-    ! given matrix rmatrix. If IdofList is given, then its entries are
-    ! used as degrees of freedom to which the group finite elment set
-    ! should be restricted to.
+    ! This subroutine calculates the dimensions of the matrix:
+    ! - number of non-zero matrix entries NA
+    ! - number of equations NEQ
+    ! - number of columns NCOLS
+    ! - number of edges NEDGE (=0 if NEQ /= NCOLS)
+    !
+    ! If the optional parameters Iselection, IrowList or IcolList are
+    ! given, then their entries are used as restriction set.
+    !
+    ! If Iselection is given, then its entries are used both for rows
+    ! and columns. If IrowList AND IcolList are given, then different
+    ! restriction sets are considered for the rows and the columns.
+    ! If either IrowList OR IcolList are given, then it is assumed
+    ! that only the rows or columns are restricted.
 !</description>
 
 !<input>
@@ -26675,7 +26680,9 @@ contains
 
     ! OPTIONAL: a list of degress of freedoms to which the edge
     ! structure should be restricted.
-    integer, dimension(:), intent(in), optional :: IdofList
+    integer, dimension(:), intent(in), optional :: Iselection
+    integer, dimension(:), intent(in), optional :: IrowList
+    integer, dimension(:), intent(in), optional :: IcolList
 !</intput>
 
 !<output>
@@ -26685,25 +26692,121 @@ contains
     ! Number of equations
     integer, intent(out) :: neq
 
+    ! Number of columns
+    integer, intent(out) :: ncols
+
     ! Number of edges
     integer, intent(out) :: nedge
 !</output>
+!</subroutine>
 
     ! local variables
-    logical, dimension(:), allocatable :: BisActive
+    logical, dimension(:), pointer :: BisActiveRow,BisActiveColumn
     integer, dimension(:), pointer :: p_Kld, p_Kcol
     integer :: i,ij,j
 
-    if (present(IdofList)) then
+    if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+      call output_line('!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_calcDimsFromMatrix')
+      call sys_halt()
+    end if
 
-      ! Generate set of active degrees of freedom
-      allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS))); BisActive=.false.
-      do i = 1, size(IdofList)
-        BisActive(IdofList(i)) = .true.
-      end do
+    if (.not.(present(Iselection)) .and.&
+        .not.(present(IrowList)) .and.&
+        .not.(present(IcolList))) then
+
+      na    = rmatrix%NA
+      neq   = rmatrix%NEQ
+      ncols = rmatrix%NCOLS
+
+      if (neq .eq. ncols) then
+        nedge = (na-neq)/2
+      else
+        nedge = 0
+      end if
+      
+    else
+      
+      if (present(Iselection)) then
+        
+        ! Use the same set of restrictions for rows and columns
+        allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        BisActiveRow=.false.;  BisActiveColumn => BisActiveRow
+
+        ! Set number of rows and columns
+        neq = size(Iselection); ncols = neq
+
+        ! Generate set of active rows
+        do i = 1, size(Iselection)
+          BisActiveRow(Iselection(i)) = .true.
+        end do
+
+      elseif (present(IrowList)) then
+
+        ! Use IrowList as restrictions for rows
+        allocate(BisActiveRow(rmatrix%NEQ))
+        BisActiveRow=.false.
+
+        ! Set number of rows
+        neq = size(IrowList)
+
+        ! Generate set of active rows
+        do i = 1, size(IrowList)
+          BisActiveRow(IrowList(i)) = .true.
+        end do
+        
+        if (present(IcolList)) then
+
+          ! Use IcolList as restrictions for rows
+          allocate(BisActiveColumn(rmatrix%NCOLS))
+          BisActiveColumn=.false.
+          
+          ! Set number of columns
+          ncols = size(IcolList)
+
+          ! Generate set of active columns
+          do i = 1, size(IcolList)
+            BisActiveColumn(IcolList(i)) = .true.
+          end do
+
+        else
+
+          ! Mark all columns active
+          allocate(BisActiveColumn(rmatrix%NCOLS))
+          BisActiveColumn=.true.
+
+          ! Set number of columns
+          ncols = rmatrix%NCOLS
+
+        end if
+
+      elseif (present(IcolList)) then
+
+        ! Use IcolList as restrictions for rows
+        allocate(BisActiveColumn(rmatrix%NCOLS))
+        BisActiveColumn=.false.
+        
+        ! Set number of columns
+        ncols = size(IcolList)
+
+        ! Generate set of active columns
+        do i = 1, size(IcolList)
+          BisActiveColumn(IcolList(i)) = .true.
+        end do
+
+        ! Mark all rows active
+        allocate(BisActiveRow(rmatrix%NEQ))
+        BisActiveRow=.true.
+
+        ! Set number of rows
+        neq = rmatrix%NEQ
+
+      end if
+       
+      !-------------------------------------------------------------------------
 
       ! Initialisation
-      na=0; neq=0; nedge=0
+      na = 0
       
       ! What type of matrix are we?
       select case(rmatrix%cmatrixFormat)
@@ -26711,14 +26814,19 @@ contains
         
         ! Determine number of non-zero matrix entries, equations and edges
         do i = 1, rmatrix%NEQ
-          if (.not.BisActive(i)) cycle
-          neq = neq+1
+          if (.not.BisActiveRow(i)) cycle
           do j = 1, rmatrix%NCOLS
-            if (.not.BisActive(j)) cycle
+            if (.not.BisActiveColumn(j)) cycle
             na = na+1
           end do
         end do
-        nedge = (na-neq)/2
+
+        ! Compute number of edges
+        if (neq .eq. ncols) then
+          nedge = (na-neq)/2
+        else
+          nedge = 0
+        end if
         
       case(LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL,&
            LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
@@ -26729,30 +26837,34 @@ contains
         
         ! Determine number of non-zero matrix entries, equations and edges
         do i=1, rmatrix%NEQ
-          if (.not.BisActive(i)) cycle
-          neq = neq+1
+          if (.not.BisActiveRow(i)) cycle
           do ij = p_Kld(i), p_Kld(i+1)-1
             j = p_Kcol(ij)
-            if (.not.BisActive(j)) cycle
+            if (.not.BisActiveColumn(j)) cycle
             na = na+1
           end do
         end do
-        nedge = (na-neq)/2
+        
+        ! Compute number of edges
+        if (neq .eq. ncols) then
+          nedge = (na-neq)/2
+        else
+          nedge = 0
+        end if
         
       case default
         call output_line('Unsupported matrix format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_calcDimsFromMatrix')        
+            OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_calcDimsFromMatrix1')        
         call sys_halt()
       end select
       
       ! Deallocate temporal memory
-      deallocate(BisActive)
-
-    else
-      
-      na = rmatrix%NA
-      neq = rmatrix%NEQ
-      nedge = (na-neq)/2
+      if (present(Iselection)) then
+        deallocate(BisActiveRow)
+        nullify(BisActiveColumn)
+      else
+        deallocate(BisActiveRow,BisActiveColumn)
+      end if
 
     end if
 
