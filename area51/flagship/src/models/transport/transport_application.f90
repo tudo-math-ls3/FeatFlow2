@@ -199,6 +199,7 @@ module transport_application
   use fsystem
   use genoutput
   use graph
+  use groupfembase
   use groupfemscalar
   use hadaptaux
   use hadaptivity
@@ -722,12 +723,12 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! local variables
-    integer :: massAFC
-    integer :: convectionAFC
-    integer :: diffusionAFC
+    integer :: massAFC,templateGFEM
+    integer :: convectionAFC,convectionGFEM
+    integer :: diffusionAFC,diffusionGFEM
     integer :: iconvToTria
     integer :: ivelocitytype
-
+    
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -740,30 +741,47 @@ contains
         ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
+    ! Default is empty section, i.e. no configuration
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'mass', smass, '')
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'diffusion', sdiffusion, '')
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'convection', sconvection, '')
+    ! Default is no stabilization
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'massAFC', massAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'convectionAFC', convectionAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'diffusionAFC', diffusionAFC, 0)
+    ! By default the same identifier is used for the group finite
+    ! element formulation and the stabilization structure
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateGFEM', templateGFEM)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'convectionGFEM', convectionGFEM, convectionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionGFEM', diffusionGFEM, diffusionAFC)
+
+    ! Consistency check
+    if (templateGFEM .eq. 0) then
+      convectionGFEM = 0
+      diffusionGFEM = 0
+    end if
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1 ! one discretisation
-    rproblemDescriptor%nafcstab        = max(massAFC,&
-                                             convectionAFC,&
-                                             diffusionAFC)
+    rproblemDescriptor%nafcstab        = max(massAFC, convectionAFC, diffusionAFC)
+    rproblemDescriptor%ngroupfemBlock  = max(templateGFEM, convectionGFEM, diffusionGFEM)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = merge(1,0,transp_hasVelocityVector(ivelocitytype)) ! velocity field
+    rproblemDescriptor%nvectorBlock    = merge(1,0,& 
+                                           transp_hasVelocityVector(ivelocitytype)) 
+                                         ! velocity field
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
@@ -777,18 +795,23 @@ contains
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
+      ! Initialize the group finite element block structures:
+      ! - for templates, convective and diffusive terms
+      if (templateGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
+      if (convectionGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(convectionGFEM), 1)
+      if (diffusionGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(diffusionGFEM), 1)
 
-      ! Initialize the stabilisation structure for mass term (if required)
+      ! Initialize the stabilisation structures for the mass, the
+      ! convective and the diffusive term (if required)
       if (massAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, smass,&
           p_rproblemLevel%Rafcstab(massAFC))
-
-      ! Initialize the stabilisation structure for convective term (if required)
       if (convectionAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sconvection,&
           p_rproblemLevel%Rafcstab(convectionAFC))
-
-      ! Initialize the stabilisation structure for diffusive term (if required)
       if (diffusionAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sdiffusion,&
           p_rproblemLevel%Rafcstab(diffusionAFC))
@@ -840,22 +863,25 @@ contains
     integer :: coeffMatrix_CY
     integer :: coeffMatrix_CZ
     integer :: coeffMatrix_S
-    integer :: massAFC
-    integer :: convectionAFC
-    integer :: diffusionAFC
+    integer :: massAFC,templateGFEM
+    integer :: convectionAFC,convectionGFEM
+    integer :: diffusionAFC,diffusionGFEM
     integer :: discretisation
     integer :: ijacobianFormat
     integer :: imatrixFormat
 
-    
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
+    type(t_groupFEMSet), pointer :: p_rgroupFEMSet
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
     integer, dimension(:), allocatable :: Celement
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
     integer :: i,j,nmatrices,nsubstrings,ccubType
     character(len=SYS_STRLEN) :: selemName
+
+real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
+integer, dimension(:,:), pointer :: p_IedgeList
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
@@ -884,6 +910,12 @@ contains
         ssectionName, 'convectionAFC', convectionAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'diffusionAFC', diffusionAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateGFEM', templateGFEM)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'convectionGFEM', convectionGFEM, convectionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionGFEM', diffusionGFEM, diffusionAFC)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist,&
@@ -1046,7 +1078,6 @@ contains
       call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
       call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
           imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
-
     end if
 
 
@@ -1056,13 +1087,11 @@ contains
                                          rproblemLevel%Rmatrix(templateMatrix))) then
         call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(systemMatrix),&
             rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(systemMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
     end if
 
@@ -1075,13 +1104,11 @@ contains
             rproblemLevel%Rmatrix(transportMatrix),&
             rproblemLevel%Rmatrix(templateMatrix),&
             .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(transportMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
     end if
 
@@ -1113,12 +1140,10 @@ contains
               rproblemLevel%Rmatrix(templateMatrix),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
         else
           call afcstab_genExtSparsity(&
               rproblemLevel%Rmatrix(templateMatrix),&
               rproblemLevel%Rmatrix(jacobianMatrix))
-
         end if
       end if
     end if
@@ -1132,40 +1157,32 @@ contains
             rproblemLevel%Rmatrix(consistentMassMatrix),&
             rproblemLevel%Rmatrix(templateMatrix),&
             .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
-
 
       if (lumpedMassMatrix > 0) then
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-
         call lsyssc_lumpMatrixScalar(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
-
       end if
     elseif (lumpedMassMatrix > 0) then
       call lsyssc_duplicateMatrix(&
           rproblemLevel%Rmatrix(templateMatrix),&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC)
-
       call lsyssc_lumpMatrixScalar(&
           rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
-
     end if
 
 
@@ -1177,13 +1194,11 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_S),&
             rproblemLevel%Rmatrix(templateMatrix),&
             .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(coeffMatrix_S),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
 
       ! Get function parser from collection
@@ -1209,21 +1224,17 @@ contains
     ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
     ! template matrix
     if (coeffMatrix_CX > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
+      if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+                                         rproblemLevel%Rmatrix(templateMatrix))) then
         call lsyssc_resizeMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CX),&
             rproblemLevel%Rmatrix(templateMatrix),&
             .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(coeffMatrix_CX),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CX),&
@@ -1234,21 +1245,17 @@ contains
     ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
     ! template matrix
     if (coeffMatrix_CY > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-        
+      if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+                                         rproblemLevel%Rmatrix(templateMatrix))) then
         call lsyssc_resizeMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CY),&
             rproblemLevel%Rmatrix(templateMatrix),&
             .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(coeffMatrix_CY),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CY),&
@@ -1259,27 +1266,99 @@ contains
     ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
     ! template matrix
     if (coeffMatrix_CZ > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
+      if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+                                         rproblemLevel%Rmatrix(templateMatrix))) then
         call lsyssc_resizeMatrix(&
             rproblemLevel%Rmatrix(coeffMatrix_CZ),&
             rproblemLevel%Rmatrix(templateMatrix),&
             .false., .false., .true.)
-
       else
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(coeffMatrix_CZ),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
       end if
       call stdop_assembleSimpleMatrix(&
           rproblemLevel%Rmatrix(coeffMatrix_CZ),&
           DER_DERIV3D_Z, DER_FUNC)
     end if
 
+
+    ! Initialize/resize template group finite elment structure and
+    ! generate the edge structure derived from the template matrix
+    if (templateGFEM > 0) then
+      ! Set pointer to first group finite element set of this block
+      p_rgroupFEMSet =>&
+          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
+      
+      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize first group finite element set for edge-based assembly
+        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix), 0, 0, GFEM_EDGEBASED)
+      else
+        ! Resize first group finite element set
+        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
+
+      ! Generate edge structure derived from template matrix
+      call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
+          p_rgroupFEMSet)
+    else
+      convectionGFEM = 0
+      diffusionGFEM = 0
+    end if
+    
+    
+    ! Initialize/resize group finite element structure as duplicate of
+    ! the template group finite element structure and fill it with the
+    ! precomputed matrix coefficients for the convective term
+    if (convectionGFEM > 0) then
+      ! Set pointer to first group finite element set of this block
+      p_rgroupFEMSet =>&
+          rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1)
+      
+      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_CX   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
+        
+        ! Initialize first group finite element set for edge-based assembly
+        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            nmatrices, nmatrices, GFEM_EDGEBASED)
+      else
+        ! Resize first group finite element set
+        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
+      
+      ! Duplicate edge-based structure from template
+      call gfem_duplicateGroupFEMSet(&
+          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+          p_rgroupFEMSet, GFEM_DUP_EDGESTRUCTURE, .true.)
+
+      ! Copy constant coefficient matrices to group finite element set
+      nmatrices = 0
+      if (coeffMatrix_CX > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
+      end if
+      if (coeffMatrix_CY > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
+      end if
+      if (coeffMatrix_CZ > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
+      end if
+    end if
+    
     
     ! Resize stabilisation structure if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
@@ -1331,7 +1410,47 @@ contains
       end if
     end if
 
-    ! The same applies to the diffusive stabilisation structure
+    ! Initialize/resize group finite element structure as duplicate of
+    ! the template group finite element structure and fill it with the
+    ! precomputed matrix coefficients for the diffusice term
+    if (diffusionGFEM > 0) then
+      ! Set pointer to first group finite element set of this block
+      p_rgroupFEMSet =>&
+          rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1)
+      
+      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_S > 0) nmatrices = nmatrices+1
+        
+        ! Initialize first group finite element set for edge-based assembly
+        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix),&
+            nmatrices, nmatrices, GFEM_EDGEBASED)
+      else
+        ! Resize first group finite element set
+        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
+      
+      ! Duplicate edge-based structure from template
+      call gfem_duplicateGroupFEMSet(&
+          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+          p_rgroupFEMSet, GFEM_DUP_EDGESTRUCTURE, .true.)
+
+      ! Copy constant coefficient matrices to group finite element set
+      nmatrices = 0
+      if (coeffMatrix_S > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_S:coeffMatrix_S), (/nmatrices/))
+      end if
+    end if
+
+
+    ! Resize stabilisation structure if necessary and remove the
+    ! indicator for the subdiagonal edge structure. If they are
+    ! needed, then they are re-generated on-the-fly.
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
@@ -1342,7 +1461,7 @@ contains
 
         ! Compute number of matrices to by copied
         nmatrices = 0
-        if (coeffMatrix_S   > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_S > 0) nmatrices = nmatrices+1
 
         ! Initialise memory for constant coefficient matrices
         if (nmatrices > 0)&
@@ -1365,7 +1484,10 @@ contains
       end if
     end if
 
-    ! The same applies to the mass stabilisation structure
+
+    ! Resize stabilisation structure if necessary and remove the
+    ! indicator for the subdiagonal edge structure. If they are
+    ! needed, then they are re-generated on-the-fly.
     if (massAFC > 0) then
       if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then

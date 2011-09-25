@@ -17,6 +17,15 @@ Discretisation = 1
 # Position of the velocity field data in the block vector structure
 VelocityField = 1
 
+# Position of the group finite element block for the convective term
+ConvectionGFEM = 1
+
+# Position of the group finite element block for the diffusive term
+DiffusionGFEM = 2
+
+# Position of the template group finite element block
+TemplateGFEM = 3
+
 # Position of the stabilization for the convective term
 ConvectionAFC = 1
 

@@ -17,6 +17,18 @@ Discretisation = 1
 # Position of the stabilization for the inviscid term
 InviscidAFC = 1
 
+# Position of the stabilization for the viscous term
+ViscousAFC = 0
+
+# Position of the group finite element block for the inviscid term
+InviscidGFEM = 1
+
+# Position of the group finite element block for the viscous term
+ViscousGFEM = 0
+
+# Position of the template group finite element block
+TemplateGFEM = 3
+
 # Position of the system matrix for the hydrodynamic model
 SystemMatrix = 1
 
