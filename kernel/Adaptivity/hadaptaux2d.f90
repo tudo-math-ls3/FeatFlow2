@@ -3063,7 +3063,7 @@ contains
       logical :: bismarked
 
       ! local variables
-      integer :: ive,nve
+      integer :: ive
 
       ! Are we at the boundary?
       if (iel*ielmid .eq. 0) then

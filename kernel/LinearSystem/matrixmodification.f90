@@ -625,7 +625,7 @@ contains
       ! local variables
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_Kcol
-      integer :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
+      integer :: ieq,jeq,ild,jld,jrow,icol,jcol,na,naIncr
 
       ! Get Kld and Kcol
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -792,7 +792,7 @@ contains
       ! local variables
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       integer, dimension(:), pointer :: p_Kcol
-      integer :: ieq,jeq,ild,jld,irow,jrow,icol,jcol,na,naIncr
+      integer :: ieq,jeq,ild,jld,irow,icol,jcol,na,naIncr
       
       ! Get Kld, Kcol and Kdiagonal
       call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -946,7 +946,7 @@ contains
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_KldAux
       integer, dimension(:), pointer :: p_Kcol,p_KcolAux
-      integer :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
+      integer :: ieq,ild,jld,jjld,icol,jcol,naIncr,idxIncr,iidxIncr
       integer              :: h_KldAux,h_KcolAux
 
       ! Allocate temporal memory
@@ -1087,7 +1087,7 @@ contains
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
       integer, dimension(:), pointer :: p_KldAux
       integer, dimension(:), pointer :: p_Kcol,p_KcolAux
-      integer :: ieq,ild,jld,jjld,icol,jcol,na,naIncr,idxIncr,iidxIncr
+      integer :: ieq,ild,jld,jjld,icol,jcol,nnaIncr,idxIncr,iidxIncr
       integer              :: h_KldAux,h_KcolAux
 
       ! Allocate temporal memory
