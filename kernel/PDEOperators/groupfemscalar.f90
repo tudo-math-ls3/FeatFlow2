@@ -1212,7 +1212,7 @@ contains
             ! Update the diagonal coefficient
             Fdata(ii) = fscale*FcoeffsAtNode(1,ieq)
           end do
-          !$omp end parallel do do
+          !$omp end parallel do
         end if
 
       else   ! do not clear matrix
@@ -1275,7 +1275,7 @@ contains
       ! local variables
       integer :: iedge,igroup,ij,ji     
 
-      !$omp parallel default(shared) private(ij,ji,d_ij)&
+      !$omp parallel default(shared) private(ij,ji)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
  
       !-------------------------------------------------------------------------
@@ -1346,7 +1346,7 @@ contains
       ! local variables
       integer :: iedge,igroup,ij,ji
       
-      !$omp parallel default(shared) private(ij,ji,d_ij)&
+      !$omp parallel default(shared) private(ij,ji)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
 
       !-------------------------------------------------------------------------
@@ -2576,7 +2576,7 @@ contains
       
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtNode,DdataAtNode,IEQmax,&
-      !$omp         IverticesAtNode,i,idx,ieq,ii)
+      !$omp         IverticesAtNode,i,idx,ii)
 
       ! Allocate temporal memory
       allocate(IverticesAtNode(2,GFSC_NEQSIM))
@@ -2707,8 +2707,7 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtEdge,&
-      !$omp         IEDGEmax,i,idx,iedge,ij,ji)
+      !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ij,ji)
 
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
@@ -2831,8 +2830,7 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtEdge,&
-      !$omp         IEDGEmax,i,idx,iedge,ii,ij,ji,jj)
+      !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ii,ij,ji,jj)
       
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
@@ -2972,7 +2970,7 @@ contains
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(DdataAtEdge,IEDGEmax,i,idx,iedge,ii,ij,ji,jj)
+      !$omp private(DdataAtEdge,IEDGEmax,idx,iedge,ii,ij,ji,jj)
       
       ! Allocate temporal memory
       allocate(DdataAtEdge(2,GFSC_NEDGESIM))
@@ -4642,7 +4640,7 @@ contains
       integer :: iedge,i,j
       
       ! Loop over all edges
-      !$omp parallel do default(shared) private(i,j,f_ij,r_ij,r_ji)&
+      !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
       !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
@@ -15771,13 +15769,13 @@ contains
 !</subroutine
 
     ! local variables
-    real(SP) :: Faux
+    real(SP) :: faux
     integer :: iedge,iaux,naux,nedge
     
     nedge = size(IedgeList,2)
     naux  = size(FcoeffsAtEdge,1)
     
-    !$omp parallel do default(shared) private(iaux,daux)&
+    !$omp parallel do default(shared) private(iaux,faux)&
     !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
     do iedge = 1, nedge
       if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then

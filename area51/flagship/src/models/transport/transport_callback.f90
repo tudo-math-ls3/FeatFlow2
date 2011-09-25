@@ -5336,22 +5336,22 @@ contains
       if (dtime(1) < 0.0) then
 
         ! Evaluate all coefficients using the function parser
-        !omp do parallel
+        !$omp parallel do
         do iel = 1, nelements
           call fparser_evalFunction(p_rfparser, icomp, 2,&
               Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel))
         end do
-        !$omp end do parallel
+        !$omp end parallel do
 
       else
 
         ! Evaluate all coefficients using the function parser
-        !$omp do parallel
+        !$omp parallel do
         do iel = 1, nelements
           call fparser_evalFunction(p_rfparser, icomp, 2,&
               Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel), dtime)
         end do
-        !$omp end do parallel
+        !$omp end parallel do
 
       end if
 
@@ -5452,12 +5452,12 @@ contains
     icomp = rcollection%IquickAccess(1)
 
     ! Evaluate all values using the function parser
-    !omp do parallel
+    !$omp parallel do
     do iel = 1, nelements
       call fparser_evalFunction(p_rfparser, icomp, 2,&
           Dpoints(:,:,iel), Dvalues(:,iel))
     end do
-    !$omp end do parallel
+    !$omp end parallel do
     
   end subroutine transp_refFuncAnalytic
 
