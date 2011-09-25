@@ -60,19 +60,22 @@
 !# 15.) gfem_getbase_IedgeList
 !#      -> Returns pointer to the edge list
 !#
-!# 16.) gfem_getbase_InodeList
+!# 16.) gfem_getbase_InodeListIdx
+!#      -> Returns pointer to the index pointer for the node list
+!#
+!# 17.) gfem_getbase_InodeList
 !#      -> Returns pointer to the node list
 !#
-!# 17.) gfem_getbase_DcoeffsAtNode / gfem_getbase_FcoeffsAtNode
+!# 18.) gfem_getbase_DcoeffsAtNode / gfem_getbase_FcoeffsAtNode
 !#      -> Returns pointer to the coefficients at nodes
 !#
-!# 18.) gfem_getbase_DcoeffsAtEdge / gfem_getbase_FcoeffsAtEdge
+!# 19.) gfem_getbase_DcoeffsAtEdge / gfem_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to the coefficients at edges
 !#
-!# 19.) gfem_genNodeList
+!# 20.) gfem_genNodeList
 !#      -> Generates the node list for a given matrix
 !#
-!# 20.) gfem_genEdgeList
+!# 21.) gfem_genEdgeList
 !#      -> Generates the edge list for a given matrix
 !#
 !# The following auxiliary routines are available:
@@ -137,6 +140,7 @@ module groupfembase
   public :: gfem_isVectorCompatible
   public :: gfem_getbase_IedgeListIdx
   public :: gfem_getbase_IedgeList
+  public :: gfem_getbase_InodeListIdx
   public :: gfem_getbase_InodeList
   public :: gfem_getbase_DcoeffsAtNode
   public :: gfem_getbase_FcoeffsAtNode
@@ -280,12 +284,19 @@ module groupfembase
 
     ! Handle to edge structure
     ! IedgeList(1:2,1:NEDGE) : the two end-points of the edge
-    ! IedgeList(3:4,1:NEDGE) : the two matrix position that
-    !                                correspond to the edge
+    ! IedgeList(3:4,1:NEDGE) : the two matrix position that correspond to the edge
     integer :: h_IedgeList = ST_NOHANDLE
     
+    ! Handle to index pointer for edge structure
+    ! InodeListIdx(1:NEQ) : the index separator of the node list
+    integer :: h_InodeListIdx = ST_NOHANDLE
+
     ! Handle to nodal structure
-    ! InodeList(2,1:NEQ) : the global number of the node
+    ! InodeList(1,1:NA) : the global number of the node
+    ! InodeList(2,1:NA) : the global position of the corresponding matrix entry
+    !
+    ! By definition InodeList(InodeListIdx(idx)) is the node itself.
+    !
     ! This handle is only allocated if the group finite element set is
     ! restricted to a subset of the degrees of freedom; otherwise it
     ! would just list 1,2,...,NEQ in which case it is not allocated
@@ -452,10 +463,16 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: na,nedge,neq
+    integer :: na,neq,ncols,nedge
 
-    ! Calculate dimensions of matrix (possible with restriction)
-    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    ! Calculate dimensions of matrix (possibly with restriction)
+    if (cassembly .eq. GFEM_NODEBASED) then
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          IrowList=IdofList)
+    else
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          Iselection=IdofList)
+    end if
     
     ! Call initialisation routine
     call gfem_initGroupFEMSet(rgroupFEMSet, na, neq, nedge,&
@@ -537,8 +554,11 @@ contains
     if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
       if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
           call storage_free(rgroupFEMSet%h_InodeList)
+      if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
+          call storage_free(rgroupFEMSet%h_InodeListIdx)
     end if
     rgroupFEMSet%h_InodeList = ST_NOHANDLE
+    rgroupFEMSet%h_InodeListIdx = ST_NOHANDLE
 
     ! Release edge structure
     if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)) then
@@ -669,15 +689,18 @@ contains
     type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
 !</inputoutput>
 !</subroutine>
-  
+
+    !---------------------------------------------------------------------------
     ! Resize non-zero entries
+    !---------------------------------------------------------------------------
     if (rgroupFEMSet%NA .ne. NA) then
 
       ! Set new number of nonzero entries
       rgroupFEMSet%NA = NA
       
       if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
-        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)) then
+        !-----------------------------------------------------------------------
+        if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE) then
           if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODEDATA)) then
             call output_line('Handle h_CoeffsAtNode '//&
                 'is shared and cannot be resised!',&
@@ -687,39 +710,43 @@ contains
                 rgroupFEMSet%NA, rgroupFEMSet%h_CoeffsAtNode,&
                 ST_NEWBLOCK_NOINIT, .false.)
             
-            ! Reset specifiert
+            ! Reset specifier
             rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                          not(GFEM_HAS_NODEDATA))
           end if
         end if
       end if
-    end if
 
-    ! Resize nodal quantities
-    if (rgroupFEMSet%NEQ .ne. NEQ) then
-      
-      ! Set new number of nodes
-      rgroupFEMSet%NEQ = NEQ
-
-      if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+      !-----------------------------------------------------------------------
+      if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE) then
         if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
           call output_line('Handle h_InodeList '//&
               'is shared and cannot be resised!',&
               OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
         else
-          ! Resize array
           call storage_realloc('gfem_resizeGFEMSetDirect',&
-              rgroupFEMSet%NEQ, rgroupFEMSet%h_InodeList,&
+              rgroupFEMSet%NA, rgroupFEMSet%h_InodeList,&
               ST_NEWBLOCK_NOINIT, .false.)
           
-          ! Reset specifiert
+          ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
                                        not(GFEM_HAS_NODESTRUCTURE))
         end if
       end if
 
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Resize nodal quantities
+    !---------------------------------------------------------------------------
+    if (rgroupFEMSet%NEQ .ne. NEQ) then
+      
+      ! Set new number of nodes
+      rgroupFEMSet%NEQ = NEQ
+
       if (rgroupFEMSet%cassemblyType .eq. GFEM_EDGEBASED) then
-        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)) then
+        !-----------------------------------------------------------------------
+        if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE) then
           if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODEDATA)) then
             call output_line('Handle h_CoeffsAtNode '//&
                 'is shared and cannot be resised!',&
@@ -729,22 +756,60 @@ contains
                 rgroupFEMSet%NEQ, rgroupFEMSet%h_CoeffsAtNode,&
                 ST_NEWBLOCK_NOINIT, .false.)
             
-            ! Reset specifiert
+            ! Reset specifier
             rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
-                                         not(GFEM_HAS_NODEDATA))
+                                         not(GFEM_HAS_EDGEDATA))
           end if
         end if
       end if
+
+      !-----------------------------------------------------------------------
+      if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE) then
+        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
+          call output_line('Handle h_InodeListIdx '//&
+              'is shared and cannot be resised!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
+        else
+          ! Resize array
+          call storage_realloc('gfem_resizeGFEMSetDirect',&
+              rgroupFEMSet%NEQ+1, rgroupFEMSet%h_InodeListIdx,&
+              ST_NEWBLOCK_NOINIT, .false.)
+          
+          ! Reset specifier
+          rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
+                                       not(GFEM_HAS_NODESTRUCTURE))
+        end if
+      end if
+
     end if
 
-
+    !---------------------------------------------------------------------------
     ! Resize edge-based quantities
+    !---------------------------------------------------------------------------
     if (rgroupFEMSet%NEDGE .ne. NEDGE) then
       
       ! Set new number of edges
       rgroupFEMSet%NEDGE = NEDGE
 
-      if (check(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+      !-----------------------------------------------------------------------
+      if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
+        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGEDATA)) then
+          call output_line('Handle h_CoeffsAtEdge '//&
+              'is shared and cannot be resised!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
+        else
+          call storage_realloc('gfem_resizeGFEMSetDirect',&
+              rgroupFEMSet%NEDGE, rgroupFEMSet%h_CoeffsAtEdge,&
+              ST_NEWBLOCK_NOINIT, .false.)
+          
+          ! Reset specifier
+          rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
+                                       not(GFEM_HAS_EDGEDATA))
+        end if
+      end if
+
+      !-------------------------------------------------------------------------
+      if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE) then
         if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)) then
           call output_line('Handle h_IedgeList '//&
               'is shared and cannot be resised!',&
@@ -761,22 +826,6 @@ contains
         end if
       end if
 
-      if (check(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)) then
-        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGEDATA)) then
-          call output_line('Handle h_CoeffsAtEdge '//&
-              'is shared and cannot be resised!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
-        else
-          ! Reseiz array
-          call storage_realloc('gfem_resizeGFEMSetDirect',&
-              rgroupFEMSet%NEDGE, rgroupFEMSet%h_CoeffsAtEdge,&
-              ST_NEWBLOCK_NOINIT, .false.)
-
-          ! Reset specifiert
-          rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
-                                       not(GFEM_HAS_EDGEDATA))
-        end if
-      end if
     end if
 
   contains
@@ -827,13 +876,19 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: na,neq,nedge
+    integer :: na,neq,ncols,nedge
 
-    ! Calculate dimensions of matrix (possible with restriction)
-    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    ! Calculate dimensions of matrix (possibly with restriction)
+    if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          IrowList=IdofList)
+    else
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          Iselection=IdofList)
+    end if
 
     ! Call resize routine
-    call gfem_resizeGroupFEMSet(rgroupFEMSet, rmatrix%NA, rmatrix%NEQ, nedge)
+    call gfem_resizeGroupFEMSet(rgroupFEMSet, na, neq, nedge)
 
   end subroutine gfem_resizeGFEMSetByMatrix
 
@@ -975,11 +1030,14 @@ contains
                       GFEM_SHARE_NODESTRUCTURE))&
           .and.(check(rgroupFEMSetDest%isetSpec,&
                       GFEM_HAS_NODESTRUCTURE))) then
+        call storage_free(rgroupFEMSetDest%h_InodeListIdx)
         call storage_free(rgroupFEMSetDest%h_InodeList)
       end if
 
       ! Copy content from source to destination structure
       if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+        call storage_copy(rgroupFEMSetSrc%h_InodeListIdx,&
+            rgroupFEMSetDest%h_InodeListIdx)
         call storage_copy(rgroupFEMSetSrc%h_InodeList,&
             rgroupFEMSetDest%h_InodeList)
       end if
@@ -1196,10 +1254,12 @@ contains
                       GFEM_SHARE_NODESTRUCTURE))&
           .and.(check(rgroupFEMSetDest%isetSpec,&
                       GFEM_HAS_NODESTRUCTURE))) then
+        call storage_free(rgroupFEMSetDest%h_InodeListIdx)
         call storage_free(rgroupFEMSetDest%h_InodeList)
       end if
 
       ! Copy handle from source to destination structure
+      rgroupFEMSetDest%h_InodeListIdx = rgroupFEMSetSrc%h_InodeListIdx
       rgroupFEMSetDest%h_InodeList = rgroupFEMSetSrc%h_InodeList
       
       ! Adjust specifier of the destination structure
@@ -2088,7 +2148,7 @@ contains
 !</output>
 !</subroutine>
 
-    ! Do we edge structure at all?
+    ! Do we have an edge structure at all?
     if (rgroupFEMSet%h_IedgeListIdx .eq. ST_NOHANDLE) then
       nullify(p_IedgeListIdx)
       return
@@ -2122,7 +2182,7 @@ contains
 !</output>
 !</subroutine>
 
-    ! Do we edge structure at all?
+    ! Do we have an edge structure at all?
     if ((rgroupFEMSet%h_IedgeList .eq. ST_NOHANDLE) .or.&
         (rgroupFEMSet%NEDGE       .eq. 0)) then
       nullify(p_IedgeList)
@@ -2134,6 +2194,40 @@ contains
         p_IedgeList, rgroupFEMSet%NEDGE)
 
   end subroutine gfem_getbase_IedgeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+
+!<description>
+    ! Returns a pointer to the index pointer for the nodal structure
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the nodal index structure
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    integer, dimension(:), pointer :: p_InodeListIdx
+!</output>
+!</subroutine>
+
+    ! Do we have a node structure at all?
+    if (rgroupFEMSet%h_InodeListIdx .eq. ST_NOHANDLE) then
+      nullify(p_InodeListIdx)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_int(rgroupFEMSet%h_InodeListIdx,&
+        p_InodeListIdx, rgroupFEMSet%NEQ+1)
+
+  end subroutine gfem_getbase_InodeListIdx
 
   !*****************************************************************************
 
@@ -2157,16 +2251,16 @@ contains
 !</output>
 !</subroutine>
 
-    ! Do we edge structure at all?
+    ! Do we have a node structure at all?
     if ((rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) .or.&
-        (rgroupFEMSet%NEQ         .eq. 0)) then
+        (rgroupFEMSet%NA          .eq. 0)) then
       nullify(p_InodeList)
       return
     end if
     
     ! Get the array
     call storage_getbase_int2D(rgroupFEMSet%h_InodeList,&
-        p_InodeList, rgroupFEMSet%NEQ)
+        p_InodeList, rgroupFEMSet%NA)
 
   end subroutine gfem_getbase_InodeList
 
@@ -2372,9 +2466,12 @@ contains
 !</subroutine>
 
     ! local variables
+    logical, dimension(:), allocatable :: BisActive
     integer, dimension(:,:), pointer :: p_InodeList
-    integer, dimension(:), pointer :: p_Kdiagonal
-    integer :: isize,idx,ieq
+    integer, dimension(:), pointer :: p_InodeListIdx
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
+    integer, dimension(2) :: Isize2D
+    integer :: idx,ieq,iidx,ij,isize,jcol,na,neq,ncols,nedge
 
     ! Check if edge structure is owned by the stabilisation structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE) .eq.&
@@ -2387,69 +2484,255 @@ contains
 
     if (present(IdofList)) then
 
-      ! If (some of the) matrix dimensions have not been initialised
-      ! then the initialisation is done below, and thus, fixes this set
-      if (rgroupFEMSet%NEQ .eq. 0) then
-        rgroupFEMSet%NEQ = size(IdofList)
-      elseif (rgroupFEMSet%NEQ .ne. size(IdofList)) then
-        call output_line('Number of equations mismatch!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
-        call sys_halt()
+      ! If (some of the) matrix dimensions have not been initialised then
+      ! the initialisation is done below, and thus, fixes this set
+      if ((rgroupFEMSet%NA .eq. 0) .or. (rgroupFEMSet%NEQ .eq. 0)&
+          .or. (rgroupFEMSet%NEDGE .eq. 0)) then
+
+        ! Calculate dimensions of matrix (possibly with restriction)
+        if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
+          call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+              IrowList=IdofList)
+        else
+          call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+              Iselection=IdofList)
+        end if
+          
+        
+        ! If the number of edges has not been set before then it is set
+        ! below; otherwise an error is thrown if the number of edges mismatch
+        if (rgroupFEMSet%NEDGE .eq. 0) then
+          rgroupFEMSet%NEDGE = nedge
+        elseif (rgroupFEMSet%NEDGE .ne. nedge) then
+          call output_line('Number of edges mismatch!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
+          call sys_halt()
+        end if
+        
+        ! If the number of equations has not been set before then it is
+        ! set below; otherwise an error is thrown if the number of
+        ! equations mismatch
+        if (rgroupFEMSet%NEQ .eq. 0) then
+          rgroupFEMSet%NEQ = neq
+        elseif (rgroupFEMSet%NEQ .ne. neq) then
+          call output_line('Number of equations mismatch!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
+          call sys_halt()
+        end if
+        
+        ! If the number of non-zero matrix entries has not been set
+        ! before then it is set below; otherwise an error is thrown if
+        ! the number of equations mismatch
+        if (rgroupFEMSet%NA .eq. 0) then
+          rgroupFEMSet%NA = na
+        elseif (rgroupFEMSet%NA .ne. na) then
+          call output_line('Number of non-zero matrix entries mismatch!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
+          call sys_halt()
+        end if
       end if
-      
+
+      ! Allocate memory for node list if required
       if (rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) then
         call storage_new('gfem_genNodeList', 'InodeList',&
-            (/2,rgroupFEMSet%NEQ/), ST_INT, rgroupFEMSet%h_InodeList,&
+            (/2,rgroupFEMSet%NA/), ST_INT, rgroupFEMSet%h_InodeList,&
             ST_NEWBLOCK_ZERO)
       else
-        call storage_getsize(rgroupFEMSet%h_InodeList, isize)
-        if (isize .ne. rgroupFEMSet%NEQ) then
+        call storage_getsize(rgroupFEMSet%h_InodeList, Isize2D)
+        if (Isize2D(2) .ne. rgroupFEMSet%NA) then
           call storage_free(rgroupFEMSet%h_InodeList)
           call storage_new('gfem_genNodeList', 'InodeList',&
-              (/2,rgroupFEMSet%NEQ/), ST_INT, rgroupFEMSet%h_InodeList,&
+              (/2,rgroupFEMSet%NA/), ST_INT, rgroupFEMSet%h_InodeList,&
               ST_NEWBLOCK_ZERO)
         end if
       end if
 
-      ! Set pointer
-      call storage_getbase_int2D(rgroupFEMSet%h_InodeList, p_InodeList)
+      ! Allocate memory for index pointer to node list if required
+      if (rgroupFEMSet%h_InodeListIdx .eq. ST_NOHANDLE) then
+        call storage_new('gfem_genNodeList', 'InodeListIdx',&
+            rgroupFEMSet%NEQ+1, ST_INT, rgroupFEMSet%h_InodeListIdx,&
+            ST_NEWBLOCK_ZERO)
+      else
+        call storage_getsize(rgroupFEMSet%h_InodeListIdx, isize)
+        if (isize .ne. rgroupFEMSet%NEQ+1) then
+          call storage_free(rgroupFEMSet%h_InodeListIdx)
+          call storage_new('gfem_genNodeList', 'InodeListIdx',&
+              rgroupFEMSet%NEQ+1, ST_INT, rgroupFEMSet%h_InodeListIdx,&
+              ST_NEWBLOCK_ZERO)
+        end if
+      end if
+      
+      ! Set pointers
+      call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+      call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
 
       ! General node data structure
-      ! Generate edge data structure
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
-        do idx = 1, rgroupFEMSet%NEQ
-          ieq = IdofList(idx)
-          p_InodeList(1,idx) = ieq
-          p_InodeList(2,idx) = rmatrix%NEQ*(ieq-1)+ieq
-        end do
         
-      case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
-        call lsyssc_getbase_Kld(rmatrix, p_Kdiagonal)
-        do idx = 1, rgroupFEMSet%NEQ
-          ieq = IdofList(idx)
-          p_InodeList(1,idx) = ieq
-          p_InodeList(2,idx) = p_Kdiagonal(ieq)
+        ! Generate set of active degrees of freedom
+        allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS))); BisActive=.false.
+        do idx = 1, size(IdofList)
+          BisActive(IdofList(idx))=.true.
         end do
+
+        ! Initialise counter and index pointer
+        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+
+        ! Loop over all equations
+        do ieq = 1, rmatrix%NEQ
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(ieq)) cycle
+
+          ! Increase index counter
+          iidx = iidx+1
+
+          ! Loop over all matrix entries in current row
+          do jcol = 1, rmatrix%NCOLS           
+            ! Set column number and matrix position
+            p_InodeList(1,idx) = jcol
+            p_InodeList(2,idx) = rmatrix%NCOLS*(ieq-1)+jcol
+            
+            ! Increase counter
+            idx = idx+1
+          end do
+
+          ! Set starting position of new node
+          p_InodeListIdx(iidx) = idx
+        end do
+               
+        ! Deallocate temporal memory
+        deallocate(BisActive)
+
+        ! Set state of structure
+        rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
+                                    GFEM_HAS_NODESTRUCTURE)
+
+      case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+        
+        ! Generate set of active degrees of freedom
+        allocate(BisActive(rmatrix%NEQ)); BisActive=.false.
+        do idx = 1, size(IdofList)
+          BisActive(IdofList(idx))=.true.
+        end do
+
+        ! Initialise counter and index pointer
+        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+        
+        ! Loop over all rows
+        do ieq = 1, size(p_Kld)-1
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(ieq)) cycle
+
+          ! Increase index counter
+          iidx = iidx+1
+
+          ! Loop over all matrix entries in current row
+          do ij = p_Kld(ieq), p_Kld(ieq+1)-1          
+            ! Set column number and matrix position
+            p_InodeList(1,idx) = p_Kcol(ij)
+            p_InodeList(2,idx) = ij
+
+            ! Increase counter
+            idx = idx+1
+          end do
+
+          ! Set starting position of new node
+          p_InodeListIdx(iidx) = idx
+        end do
+
+        ! Deallocate temporal memory
+        deallocate(BisActive)
+
+        ! Set state of structure
+        rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
+                                    GFEM_HAS_NODESTRUCTURE)
 
       case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
+
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
-        do idx = 1, rgroupFEMSet%NEQ
-          ieq = IdofList(idx)
-          p_InodeList(1,idx) = ieq
+        
+        ! Generate set of active degrees of freedom
+        allocate(BisActive(rmatrix%NEQ)); BisActive=.false.
+        do idx = 1, size(IdofList)
+          BisActive(IdofList(idx))=.true.
+        end do
+     
+        ! Initialise counter and index pointer
+        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+        
+        ! Loop over all rows
+        do ieq = 1, size(p_Kld)-1
+
+          ! Check if this row belongs to an active DOF
+          if (.not.BisActive(ieq)) cycle
+
+          ! Increase index counter
+          iidx = iidx+1
+
+          ! Set row number and matrix position of diagonal entry
+          p_InodeList(1,idx) = p_Kcol(p_Kdiagonal(ieq))
           p_InodeList(2,idx) = p_Kdiagonal(ieq)
+
+          ! Increase counter
+          idx = idx+1
+          
+          ! Loop over all left off-diagonal matrix entries in current row
+          do ij = p_Kld(ieq), p_Kdiagonal(ieq)-1
+            ! Set column number and matrix position
+            p_InodeList(1,idx) = p_Kcol(ij)
+            p_InodeList(2,idx) = ij
+
+            ! Increase counter
+            idx = idx+1
+          end do
+
+          ! Loop over all right off-diagonal matrix entries in current row
+          do ij = p_Kdiagonal(ieq)+1, p_Kld(ieq+1)-1          
+            ! Set column number and matrix position
+            p_InodeList(1,idx) = p_Kcol(ij)
+            p_InodeList(2,idx) = ij
+
+            ! Increase counter
+            idx = idx+1
+          end do
+
+          ! Set starting position of new node
+          p_InodeListIdx(iidx) = idx
         end do
 
+        ! Deallocate temporal memory
+        deallocate(BisActive)
+
+        ! Set state of structure
+        rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
+                                    GFEM_HAS_NODESTRUCTURE)
+   
       end select
       
-    else
+    else ! no restriction to subset is required
 
       ! Remove nodal structure from the group finite element set
       if (.not.(check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE))&
           .and.(check(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE))) then
+        call storage_free(rgroupFEMSet%h_InodeListIdx)
         call storage_free(rgroupFEMSet%h_InodeList)
       end if
-      rgroupFEMSet%h_InodeList = ST_NOHANDLE
+      rgroupFEMSet%h_InodeListIdx = ST_NOHANDLE
+      rgroupFEMSet%h_InodeList    = ST_NOHANDLE
+
+      ! Unset state of structure
+      rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
+                               not(GFEM_HAS_NODESTRUCTURE))
 
     end if
 
@@ -2500,7 +2783,7 @@ contains
     ! local variables
     !$ integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
-    integer :: na,neq,nedge
+    integer :: na,neq,ncols,nedge
 
     ! Check if edge structure is owned by the stabilisation structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE) .eq.&
@@ -2515,8 +2798,15 @@ contains
     ! the initialisation is done below, and thus, fixes this set
     if ((rgroupFEMSet%NA .eq. 0) .or. (rgroupFEMSet%NEQ .eq. 0)&
         .or. (rgroupFEMSet%NEDGE .eq. 0)) then
-      ! Calculate dimensions of matrix (possible with restriction)
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+
+      ! Calculate dimensions of matrix (possibly with restriction)
+      if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            IrowList=IdofList)
+      else
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            Iselection=IdofList)
+      end if
 
       ! If the number of edges has not been set before then it is set
       ! below; otherwise an error is thrown if the number of edges mismatch
@@ -2543,8 +2833,8 @@ contains
       ! before then it is set below; otherwise an error is thrown if
       ! the number of equations mismatch
       if (rgroupFEMSet%NA .eq. 0) then
-        rgroupFEMSet%NA = neq
-      elseif (rgroupFEMSet%NA .ne. neq) then
+        rgroupFEMSet%NA = na
+      elseif (rgroupFEMSet%NA .ne. na) then
         call output_line('Number of non-zero matrix entries mismatch!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
         call sys_halt()
@@ -2904,10 +3194,16 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: na,neq,nedge
+    integer :: na,neq,ncols,nedge
 
-    ! Calculate dimensions of matrix (possible with restriction)
-    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    ! Calculate dimensions of matrix (possibly with restriction)
+    if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          IrowList=IdofList)
+    else
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          Iselection=IdofList)
+    end if
     
     ! Call allocation routine
     call gfem_allocCoeffs(rgroupFEMSet, ncoeffsAtNode, ncoeffsAtEdge,&
