@@ -305,6 +305,9 @@
 !# 12.) lsyssc_regroupEdgeList
 !#      -> Regroup a list of edges into independent groups which can be
 !#         processed individually, i.e. in parallel
+!#
+!# 13.) lsyssc_calcDimsFromMatrix
+!#      -> Calculates dimensions NA, NEQ, and NEDGE from matrix
 !# </purpose>
 !##############################################################################
 
@@ -952,6 +955,7 @@ module linearsystemscalar
   public :: lsyssc_createEmptyMatrix9
   public :: lsyssc_genEdgeList
   public :: lsyssc_regroupEdgeList
+  public :: lsyssc_calcDimsFromMatrix
 
 contains
 
@@ -24976,7 +24980,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_genEdgeList(rmatrix, h_IedgeList, ccontentType,&
-      bisSymmetric, bignoreDiagonal, IdofList)
+      bisSymmetric, bignoreDiagonal, nedge, IdofList)
 
 !<description>
     ! This subroutine generates a list of edges (i,j) based on all or
@@ -25011,6 +25015,12 @@ contains
 !<inputoutput>
     ! Handle for the edge list
     integer, intent(inout) :: h_IedgeList
+
+    ! On input: if nedge > 0 then this value is adpted as the number
+    !           of edges precomputed externally; otherwise the
+    !           number of edges is computed internally and returned
+    ! On output: the number of edges
+    integer, intent(inout) :: nedge
 !</inputoutput>
 !</subroutine>
 
@@ -25018,29 +25028,12 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer, dimension(2) :: Isize
-    integer :: ncontent,nedge,h_Ksep
+    integer :: ncontent,h_Ksep,na,neq
 
     ! Determine the number of edges
-    select case(rmatrix%cmatrixFormat)
-    case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL,&
-          LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL,&
-          LSYSSC_MATRIX1)
-      nedge = (rmatrix%NA-rmatrix%NEQ)
-      if (bisSymmetric) nedge = nedge/2
-      if (.not.bignoreDiagonal) nedge = nedge+rmatrix%NEQ
-
-    case (LSYSSC_MATRIXD)
-      call output_line('Edge-bases data structure cannot be generated&
-          &from diagonal matrix!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genEdgeList')
-      call sys_halt()
-
-    case default
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genEdgeList')
-      call sys_halt()
-    end select
-
+    if (nedge .le. 0)&
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+    
     ! Determine the type of information stored at each edge
     select case(ccontentType)
     case (LSYSSC_EDGELIST_NODESONLY, LSYSSC_EDGELIST_POSONLY)
@@ -25786,7 +25779,7 @@ contains
         do i = 1, size(Kld)-1
 
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(i)) then
+          if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
@@ -25833,7 +25826,7 @@ contains
         do i = 1, size(Kld)-1
         
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(i)) then
+          if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
@@ -26168,7 +26161,7 @@ contains
         do i = 1, size(Kld)-1
         
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(i)) then
+          if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
@@ -26215,7 +26208,7 @@ contains
         do i = 1, size(Kld)-1
 
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(i)) then
+          if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
@@ -26263,7 +26256,7 @@ contains
         do i = 1, size(Kld)-1
         
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(i)) then
+          if (BisActive(i)) then
 
             if (.not.bignoreDiagonal) then
               ! Increase edge counter
@@ -26659,6 +26652,110 @@ contains
       call storage_free(h_IedgeListTemp)
 
     end subroutine genEdgeListIdx
-
+    
   end subroutine lsyssc_regroupEdgeList
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_calcDimsFromMatrix(rmatrix, na, neq, nedge, IdofList)
+
+!<description>
+    ! This subroutine calculates the number of non-zero matrix entries
+    ! NA, the number of equations NEQ and the number of edges for the
+    ! given matrix rmatrix. If IdofList is given, then its entries are
+    ! used as degrees of freedom to which the group finite elment set
+    ! should be restricted to.
+!</description>
+
+!<input>
+    ! Scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! OPTIONAL: a list of degress of freedoms to which the edge
+    ! structure should be restricted.
+    integer, dimension(:), intent(in), optional :: IdofList
+!</intput>
+
+!<output>
+    ! Number of non-zero matrix entries
+    integer, intent(out) :: na
+
+    ! Number of equations
+    integer, intent(out) :: neq
+
+    ! Number of edges
+    integer, intent(out) :: nedge
+!</output>
+
+    ! local variables
+    logical, dimension(:), allocatable :: BisActive
+    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    integer :: i,ij,j
+
+    if (present(IdofList)) then
+
+      ! Generate set of active degrees of freedom
+      allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS))); BisActive=.false.
+      do i = 1, size(IdofList)
+        BisActive(IdofList(i)) = .true.
+      end do
+
+      ! Initialisation
+      na=0; neq=0; nedge=0
+      
+      ! What type of matrix are we?
+      select case(rmatrix%cmatrixFormat)
+      case(LSYSSC_MATRIX1)
+        
+        ! Determine number of non-zero matrix entries, equations and edges
+        do i = 1, rmatrix%NEQ
+          if (.not.BisActive(i)) cycle
+          neq = neq+1
+          do j = 1, rmatrix%NCOLS
+            if (.not.BisActive(j)) cycle
+            na = na+1
+          end do
+        end do
+        nedge = (na-neq)/2
+        
+      case(LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL,&
+           LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
+        
+        ! Set pointers
+        call lsyssc_getbase_Kld(rmatrix, p_Kld)
+        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+        
+        ! Determine number of non-zero matrix entries, equations and edges
+        do i=1, rmatrix%NEQ
+          if (.not.BisActive(i)) cycle
+          neq = neq+1
+          do ij = p_Kld(i), p_Kld(i+1)-1
+            j = p_Kcol(ij)
+            if (.not.BisActive(j)) cycle
+            na = na+1
+          end do
+        end do
+        nedge = (na-neq)/2
+        
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_calcDimsFromMatrix')        
+        call sys_halt()
+      end select
+      
+      ! Deallocate temporal memory
+      deallocate(BisActive)
+
+    else
+      
+      na = rmatrix%NA
+      neq = rmatrix%NEQ
+      nedge = (na-neq)/2
+
+    end if
+
+  end subroutine lsyssc_calcDimsFromMatrix
+
 end module
