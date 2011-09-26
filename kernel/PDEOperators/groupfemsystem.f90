@@ -770,7 +770,7 @@ contains
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtNode
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
+      integer, dimension(:,:), pointer  :: IdofsAtNode
       
       ! local variables
       integer :: IEDGEmax,IEDGEset,IEQmax,IEQset,idx,igroup
@@ -779,7 +779,7 @@ contains
       
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
-      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
+      !$omp         DdataAtNode,IEDGEmax,IEQmax,IdofsAtNode,i,idx,&
       !$omp         iedge,ii,ij,ivar,ji,jj)
 
       !-------------------------------------------------------------------------
@@ -787,7 +787,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Allocate temporal memory
-      allocate(IverticesAtNode(2,GFSYS_NEQSIM))
+      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
       allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
       allocate(DcoefficientsAtNode(NVAR,1,GFSYS_NEQSIM))
 
@@ -813,8 +813,8 @@ contains
           ii = Kdiagonal(i)
           
           ! Fill auxiliary arrays
-          IverticesAtNode(1,idx) = i
-          IverticesAtNode(2,idx) = ii
+          IdofsAtNode(1,idx) = i
+          IdofsAtNode(2,idx) = ii
           DdataAtNode(:,idx)     = Dx(i,:)
         end do
 
@@ -822,7 +822,7 @@ contains
         call fcb_calcMatrixDiagSys_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            IdofsAtNode(:,1:IEQmax-IEQset+1),&
             dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,:,1:IEQmax-IEQset+1), rcollection)
         
@@ -832,7 +832,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
 
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             do ivar = 1, NVAR
@@ -844,7 +844,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
 
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             do ivar = 1, NVAR
@@ -858,7 +858,7 @@ contains
       !$omp end do
       
       ! Deallocate temporal memory
-      deallocate(IverticesAtNode)
+      deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
       deallocate(DcoefficientsAtNode)
 
@@ -1004,7 +1004,7 @@ contains
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtNode
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
+      integer, dimension(:,:), pointer  :: IdofsAtNode
       
       ! local variables
       integer :: IEDGEmax,IEDGEset,IEQmax,IEQset,idx,igroup
@@ -1013,7 +1013,7 @@ contains
       
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
-      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
+      !$omp         DdataAtNode,IEDGEmax,IEQmax,IdofsAtNode,i,idx,&
       !$omp         iedge,ii,ij,ijpos,ivar,jvar,ji,jj)
 
       !-------------------------------------------------------------------------
@@ -1021,7 +1021,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Allocate temporal memory
-      allocate(IverticesAtNode(2,GFSYS_NEQSIM))
+      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
       allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
       allocate(DcoefficientsAtNode(NVAR*NVAR,1,GFSYS_NEQSIM))
 
@@ -1047,8 +1047,8 @@ contains
           ii = Kdiagonal(i)
           
           ! Fill auxiliary arrays
-          IverticesAtNode(1,idx) = i
-          IverticesAtNode(2,idx) = ii
+          IdofsAtNode(1,idx) = i
+          IdofsAtNode(2,idx) = ii
           DdataAtNode(:,idx)     = Dx(i,:)
         end do
 
@@ -1056,7 +1056,7 @@ contains
         call fcb_calcMatrixDiagSys_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            IdofsAtNode(:,1:IEQmax-IEQset+1),&
             dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,:,1:IEQmax-IEQset+1), rcollection)
 
@@ -1066,7 +1066,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             do ivar = 1, NVAR
@@ -1081,7 +1081,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             do ivar = 1, NVAR
@@ -1098,7 +1098,7 @@ contains
       !$omp end do
 
       ! Deallocate temporal memory
-      deallocate(IverticesAtNode)
+      deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
       deallocate(DcoefficientsAtNode)
 
@@ -1412,7 +1412,7 @@ contains
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtNode
       real(DP), dimension(:,:,:), pointer :: DcoefficientsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
+      integer, dimension(:,:), pointer  :: IdofsAtNode
       
       ! local variables
       integer :: igroup,idx,IEQset,IEQmax,IEDGEset,IEDGEmax
@@ -1421,7 +1421,7 @@ contains
       
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtEdge,DcoefficientsAtNode,DdataAtEdge,&
-      !$omp         DdataAtNode,IEDGEmax,IEQmax,IverticesAtNode,i,idx,&
+      !$omp         DdataAtNode,IEDGEmax,IEQmax,IdofsAtNode,i,idx,&
       !$omp         iedge,ii,ij,ji,jj)
 
       !-------------------------------------------------------------------------
@@ -1429,7 +1429,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Allocate temporal memory
-      allocate(IverticesAtNode(2,GFSYS_NEQSIM))
+      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
       allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
       allocate(DcoefficientsAtNode(MVAR,1,GFSYS_NEQSIM))
 
@@ -1455,8 +1455,8 @@ contains
           ii = Kdiagonal(i)
           
           ! Fill auxiliary arrays
-          IverticesAtNode(1,idx) = i
-          IverticesAtNode(2,idx) = ii
+          IdofsAtNode(1,idx) = i
+          IdofsAtNode(2,idx) = ii
           DdataAtNode(:,idx)     = Dx(:,i)
         end do
 
@@ -1464,7 +1464,7 @@ contains
         call fcb_calcMatrixDiagSys_sim(&
             DdataAtNode(:,1:IEQmax-IEQset+1),&
             DmatrixCoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            IdofsAtNode(:,1:IEQmax-IEQset+1),&
             dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,:,1:IEQmax-IEQset+1), rcollection)
 
@@ -1474,7 +1474,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
 
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             K(:,ii) = DcoefficientsAtNode(:,1,idx)
@@ -1484,7 +1484,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
 
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             K(:,ii) = K(:,ii) + DcoefficientsAtNode(:,1,idx)
@@ -1495,7 +1495,7 @@ contains
       !$omp end do
 
       ! Deallocate temporal memory
-      deallocate(IverticesAtNode)
+      deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
       deallocate(DcoefficientsAtNode)
 

@@ -1985,7 +1985,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatDiagMatD2d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
+      IdofsAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -2000,7 +2000,7 @@ contains
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2029,7 +2029,7 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatDiag2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -2045,7 +2045,7 @@ contains
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

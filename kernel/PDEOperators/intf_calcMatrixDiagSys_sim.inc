@@ -5,7 +5,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagSys_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
+      IdofsAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
 
     use fsystem
     use collection
@@ -31,7 +31,7 @@
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
   !   DIMENSION(2,nnodes)
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

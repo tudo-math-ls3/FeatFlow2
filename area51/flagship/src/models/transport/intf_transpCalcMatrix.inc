@@ -10,7 +10,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagPrimal_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
     use fsystem
@@ -32,7 +32,7 @@
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling paramter
   real(DP), intent(in) :: dscale
@@ -64,7 +64,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixPrimal_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
     use fsystem
@@ -87,7 +87,7 @@
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -119,7 +119,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagDual_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
     use fsystem
@@ -141,7 +141,7 @@
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling paremter
   real(DP), intent(in) :: dscale
@@ -173,7 +173,7 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDual_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale, nedges,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale, nedges,&
       DcoefficientsAtEdge, rcollection)
 
     use fsystem
@@ -196,7 +196,7 @@
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale

@@ -330,7 +330,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxGal2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -350,7 +350,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -491,7 +491,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxGalNoBdr2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -514,7 +514,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -591,7 +591,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -611,7 +611,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -760,7 +760,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxScDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -782,7 +782,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -930,7 +930,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -950,7 +950,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1146,7 +1146,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxRoeDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 
 !<description>
@@ -1168,7 +1168,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1399,7 +1399,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -1419,7 +1419,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1561,7 +1561,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcFluxRusDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
-      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+      IdofsAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -1582,7 +1582,7 @@ contains
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1724,7 +1724,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatDiagMatD2d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
+      IdofsAtNode, dscale, DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1739,7 +1739,7 @@ contains
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1783,7 +1783,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatDiag2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -1799,7 +1799,7 @@ contains
   real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtNode
+  integer, dimension(:,:), intent(in) :: IdofsAtNode
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1865,7 +1865,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatGalMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1880,7 +1880,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1938,7 +1938,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatGal2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -1953,7 +1953,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2057,7 +2057,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatScDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
     
 !<description>
@@ -2073,7 +2073,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2161,7 +2161,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatScDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2177,7 +2177,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2316,7 +2316,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatRoeDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2332,7 +2332,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2487,7 +2487,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatRoeDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2503,7 +2503,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2703,7 +2703,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatRusDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2719,7 +2719,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2795,7 +2795,7 @@ contains
 !<subroutine>
 
   pure subroutine eulerlagrange_calcMatRusDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale,&
       DcoefficientsAtEdge, rcollection)
 
 !<description>
@@ -2811,7 +2811,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+  integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -8301,9 +8301,9 @@ end subroutine eulerlagrange_setnewinitialvalue
 
     ! Pointer to vertices Adjacent to an Edge. 
     ! Handle to 
-    !       p_IverticesAtEdge = array [1..2,1..NMT]
+    !       p_IdofsAtEdge = array [1..2,1..NMT]
     ! The numbers of the two vertices adjacent to an edge IMT. 
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IdofsAtEdge
    
     ! pointer to vertices on boundary. 
     !
@@ -8430,7 +8430,7 @@ end subroutine eulerlagrange_setnewinitialvalue
     call storage_getbase_int2D(&
          p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     call storage_getbase_int2D(&
-         p_rtriangulation%h_IverticesAtEdge, p_IverticesAtEdge)
+         p_rtriangulation%h_IdofsAtEdge, p_IdofsAtEdge)
 
     ! get scalar for scaling of the domain
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscalex", domscalex)
@@ -8443,10 +8443,10 @@ end subroutine eulerlagrange_setnewinitialvalue
     end do edgesearch
 
     ! Set ray for the vertices of the edge
-    dx2= p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
-    dy2= p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
-    dx3= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
-    dy3= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge))
+    dx2= p_DvertexCoords(1,p_IdofsAtEdge(1,iedge))
+    dy2= p_DvertexCoords(2,p_IdofsAtEdge(1,iedge))
+    dx3= p_DvertexCoords(1,p_IdofsAtEdge(2,iedge))
+    dy3= p_DvertexCoords(2,p_IdofsAtEdge(2,iedge))
 
     ! Set ray for the particle movement from the old and the new particle position
     dx0= rParticles%p_xpos_old(iPart)
@@ -8477,9 +8477,9 @@ end subroutine eulerlagrange_setnewinitialvalue
         end if
 
 		! Tangent in x-direction 
-		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
+		tang(1)= p_DvertexCoords(1,p_IdofsAtEdge(2,iedge)) - p_DvertexCoords(1,p_IdofsAtEdge(2,iedge))
 		! Tangent in y-direction
-		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
+		tang(2)= p_DvertexCoords(2,p_IdofsAtEdge(2,iedge)) - p_DvertexCoords(1,p_IdofsAtEdge(2,iedge))
         ! Norming of the tangent
 		tang(1)= tang(1)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
 		tang(2)= tang(2)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)

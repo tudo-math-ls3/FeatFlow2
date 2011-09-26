@@ -2564,7 +2564,7 @@ contains
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: DcoefficientsAtNode
-      integer, dimension(:,:), pointer  :: IverticesAtNode
+      integer, dimension(:,:), pointer  :: IdofsAtNode
 
       ! local variables
       integer :: idx,IEQset,IEQmax
@@ -2576,10 +2576,10 @@ contains
       
       !$omp parallel default(shared)&
       !$omp private(DcoefficientsAtNode,DdataAtNode,IEQmax,&
-      !$omp         IverticesAtNode,i,idx,ii)
+      !$omp         IdofsAtNode,i,idx,ii)
 
       ! Allocate temporal memory
-      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(IdofsAtNode(2,GFSC_NEQSIM))
       allocate(DdataAtNode(GFSC_NEQSIM))
       allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
 
@@ -2608,8 +2608,8 @@ contains
             ii = InodeList(2,iidx)
             
             ! Fill auxiliary arrays
-            IverticesAtNode(1,idx) = i
-            IverticesAtNode(2,idx) = ii
+            IdofsAtNode(1,idx) = i
+            IdofsAtNode(2,idx) = ii
             DdataAtNode(idx)       = Dx(i)
           end do
 
@@ -2626,8 +2626,8 @@ contains
             ii = Kdiagonal(i)
             
             ! Fill auxiliary arrays
-            IverticesAtNode(1,idx) = i
-            IverticesAtNode(2,idx) = ii
+            IdofsAtNode(1,idx) = i
+            IdofsAtNode(2,idx) = ii
             DdataAtNode(idx)       = Dx(i)
           end do
 
@@ -2637,7 +2637,7 @@ contains
         call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
             DcoeffsAtNode(:,IEQset:IEQmax),&
-            IverticesAtNode(:,1:IEQmax-IEQset+1),&
+            IdofsAtNode(:,1:IEQmax-IEQset+1),&
             dscale, IEQmax-IEQset+1,&
             DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
 
@@ -2647,7 +2647,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             Ddata(ii) = DcoefficientsAtNode(1,idx)
@@ -2657,7 +2657,7 @@ contains
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
-            ii = IverticesAtNode(2,idx)
+            ii = IdofsAtNode(2,idx)
             
             ! Update the diagonal coefficient
             Ddata(ii) = Ddata(ii) + DcoefficientsAtNode(1,idx)
@@ -2668,7 +2668,7 @@ contains
       !$omp end do
 
       ! Deallocate temporal memory
-      deallocate(IverticesAtNode)
+      deallocate(IdofsAtNode)
       deallocate(DdataAtNode)
       deallocate(DcoefficientsAtNode)
       !$omp end parallel

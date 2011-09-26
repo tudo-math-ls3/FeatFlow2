@@ -192,7 +192,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatDiagConvP3d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -209,7 +209,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtNode
+    integer, dimension(:,:), intent(in) :: IdofsAtNode
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -250,15 +250,15 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #endif
     end do
     
@@ -489,7 +489,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatDiagConvD3d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
 
 !<description>
@@ -506,7 +506,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtNode
+    integer, dimension(:,:), intent(in) :: IdofsAtNode
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -547,15 +547,15 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
-          +p_DvelocityZ(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode)&
+          +p_DvelocityZ(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(3,inode))
 #endif
     end do
     

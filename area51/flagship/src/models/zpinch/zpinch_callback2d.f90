@@ -457,7 +457,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatDiagConvIntlP2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -477,7 +477,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtNode
+    integer, dimension(:,:), intent(in) :: IdofsAtNode
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -514,14 +514,14 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 
 #else
       ! Compute convective coefficient  $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -681,7 +681,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatDiagConvIntlD2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -701,7 +701,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtNode
+    integer, dimension(:,:), intent(in) :: IdofsAtNode
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -738,13 +738,13 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient  $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -904,7 +904,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatDiagConvBlockP2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -924,7 +924,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtNode
+    integer, dimension(:,:), intent(in) :: IdofsAtNode
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -961,13 +961,13 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
@@ -1130,7 +1130,7 @@ contains
 !<subroutine>
 
   subroutine zpinch_calcMatDiagConvBlockD2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IverticesAtNode, dscale, nnodes,&
+      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
       DcoefficientsAtNode, rcollection)
     
 !<description>
@@ -1150,7 +1150,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IverticesAtNode
+    integer, dimension(:,:), intent(in) :: IdofsAtNode
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -1187,13 +1187,13 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
-          (p_DvelocityX(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
-          +p_DvelocityY(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+          (p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_DvelocityY(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
 #endif
     end do
     
