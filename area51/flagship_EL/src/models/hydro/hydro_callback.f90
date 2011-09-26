@@ -104,7 +104,7 @@
 module hydro_callback
 
 #include "hydro.h"
-  use afcstabilisation
+  use afcstabbase
   use basicgeometry
   use boundary
   use boundarycondaux
@@ -502,19 +502,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatGalMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatGalMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatGalMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -532,19 +532,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatScDissMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatScDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatScDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -562,19 +562,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatRoeDissMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatRoeDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatRoeDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -592,19 +592,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD1d_sim, hydro_calcMatRusDissMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatRusDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiagMatD3d_sim, hydro_calcMatRusDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -637,19 +637,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatGal1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatGal2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatGal3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -667,19 +667,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatScDiss1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatScDiss2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatScDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -697,19 +697,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatRoeDiss1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatRoeDiss2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatRoeDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -727,19 +727,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag1d_sim, hydro_calcMatRusDiss1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag2d_sim, hydro_calcMatRusDiss2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcMatDiag3d_sim, hydro_calcMatRusDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix))
@@ -1063,26 +1063,26 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildDivVector(&
+            call gfsys_buildVector(&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 hydro_calcFluxGal1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
-            call gfsys_buildDivVector(&
+            call gfsys_buildVector(&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 hydro_calcFluxGal2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
-            call gfsys_buildDivVector(&
+            call gfsys_buildVector(&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal3d_sim, dscale, .true., rrhs)
           end select
 
         case (AFCSTAB_UPWIND,&
-              AFCSTAB_FEMFCT_CLASSICAL,&
-              AFCSTAB_FEMFCT_ITERATIVE,&
-              AFCSTAB_FEMFCT_IMPLICIT,&
-              AFCSTAB_FEMFCT_LINEARISED)
+              AFCSTAB_NLINFCT_EXPLICIT,&
+              AFCSTAB_NLINFCT_ITERATIVE,&
+              AFCSTAB_NLINFCT_IMPLICIT,&
+              AFCSTAB_LINFCT)
 
           !---------------------------------------------------------------------
           ! Compute the initial low-order right-hand side
@@ -1099,17 +1099,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxGal3d_sim, dscale, .true., rrhs)
             end select
@@ -1120,17 +1120,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss3d_sim, dscale, .true., rrhs)
             end select
@@ -1142,17 +1142,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
             end select
@@ -1163,17 +1163,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
             end select
@@ -1185,17 +1185,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
               
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
             end select
@@ -1206,17 +1206,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
             end select
@@ -1228,17 +1228,17 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   hydro_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
             end select
@@ -1249,7 +1249,7 @@ contains
             call sys_halt()
           end select
 
-        case (AFCSTAB_FEMTVD)
+        case (AFCSTAB_TVD)
 
           !---------------------------------------------------------------------
           ! Compute the initial low-order right-hand side + FEM-TVD stabilisation
@@ -1259,19 +1259,19 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildDivVectorTVD(&
+            call afcsys_buildVectorTVD(&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
                 hydro_calcFluxGalNoBdr1d_sim,&
                 hydro_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
-            call gfsys_buildDivVectorTVD(&
+            call afcsys_buildVectorTVD(&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
                 hydro_calcFluxGalNoBdr2d_sim,&
                 hydro_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
-            call gfsys_buildDivVectorTVD(&
+            call afcsys_buildVectorTVD(&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
                 hydro_calcFluxGalNoBdr3d_sim,&
                 hydro_calcCharacteristics3d_sim, dscale, .true., rrhs)
@@ -1573,26 +1573,26 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal3d_sim, dscale, .false., rres)
       end select
 
     case (AFCSTAB_UPWIND,&
-          AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT,&
-          AFCSTAB_FEMFCT_LINEARISED)
+          AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT,&
+          AFCSTAB_LINFCT)
 
       !-------------------------------------------------------------------------
       ! Compute the low-order residual
@@ -1611,17 +1611,17 @@ contains
         ! Assemble divergence of flux without dissipation
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal3d_sim, dscale, .false., rres)
         end select
@@ -1632,17 +1632,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss3d_sim, dscale, .false., rres)
         end select
@@ -1654,17 +1654,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
         end select
@@ -1675,17 +1675,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss3d_sim, dscale, .false., rres)
         end select
@@ -1697,17 +1697,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
         end select
@@ -1718,17 +1718,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss3d_sim, dscale, .false., rres)
         end select
@@ -1740,17 +1740,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
         end select
@@ -1761,7 +1761,7 @@ contains
         call sys_halt()
       end select
 
-    case (AFCSTAB_FEMTVD)
+    case (AFCSTAB_TVD)
 
       !-------------------------------------------------------------------------
       ! Compute the low-order residual + FEM-TVD stabilisation
@@ -1771,19 +1771,19 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
             hydro_calcFluxGalNoBdr1d_sim,&
             hydro_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
             hydro_calcFluxGalNoBdr2d_sim,&
             hydro_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
             hydro_calcFluxGalNoBdr3d_sim,&
             hydro_calcCharacteristics3d_sim, dscale , .false., rres)
@@ -1804,9 +1804,9 @@ contains
 
     ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-    case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMFCT_IMPLICIT)
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
 
 
       ! Set pointer to predictor
@@ -1823,7 +1823,7 @@ contains
           call lsysbl_copyVector(rsolution, p_rpredictor)
         end if
       elseif (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
-              .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+              .eq. AFCSTAB_NLINFCT_ITERATIVE) then
         ! ... in each iteration for iterative limiting
         call lsysbl_invertedDiagMatVec(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1844,19 +1844,19 @@ contains
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
       else
         select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-        case (AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_NLINFCT_EXPLICIT)
           ! Perform standard flux correction without recomputing bounds
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
                            AFCSTAB_FCTALGO_BOUNDS
 
-        case (AFCSTAB_FEMFCT_IMPLICIT)
+        case (AFCSTAB_NLINFCT_IMPLICIT)
           ! Perform semi-implicit flux correction
           ioperationSpec = AFCSTAB_FCTALGO_INITALPHA+&
                            AFCSTAB_FCTALGO_LIMITEDGE+&
                            AFCSTAB_FCTALGO_CORRECT+&
                            AFCSTAB_FCTALGO_CONSTRAIN
 
-        case (AFCSTAB_FEMFCT_ITERATIVE)
+        case (AFCSTAB_NLINFCT_ITERATIVE)
           ! Perform standard flux correction
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD
         end select
@@ -1869,8 +1869,8 @@ contains
 
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
-          .eq. AFCSTAB_FEMFCT_ITERATIVE) then
-        call gfsys_buildDivVectorFCT(&
+          .eq. AFCSTAB_NLINFCT_ITERATIVE) then
+        call afcsys_buildVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
             p_rpredictor, rtimestep%dStep, .false.,&
@@ -2042,23 +2042,23 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             hydro_calcFluxGal3d_sim, dscale, .false., rrhs)
       end select
 
     case (AFCSTAB_UPWIND,&
-          AFCSTAB_FEMFCT_LINEARISED)
+          AFCSTAB_LINFCT)
 
       !-----------------------------------------------------------------------
       ! Compute the low-order right-hand side
@@ -2078,17 +2078,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxGal3d_sim, dscale, .false., rrhs)
         end select
@@ -2099,17 +2099,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxScDiss3d_sim, dscale, .false., rrhs)
         end select
@@ -2120,17 +2120,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
         end select
@@ -2141,17 +2141,17 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               hydro_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
         end select
@@ -2162,7 +2162,7 @@ contains
         call sys_halt()
       end select
 
-    case (AFCSTAB_FEMTVD)
+    case (AFCSTAB_TVD)
 
       !-----------------------------------------------------------------------
       ! Compute the low-order right-hand side + FEM-TVD stabilisation
@@ -2172,19 +2172,19 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
             hydro_calcFluxGalNoBdr1d_sim,&
             hydro_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
             hydro_calcFluxGalNoBdr2d_sim,&
             hydro_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
             hydro_calcFluxGalNoBdr3d_sim,&
             hydro_calcCharacteristics3d_sim, dscale, .false., rrhs)
@@ -2366,7 +2366,7 @@ contains
     ! Do we have to apply linearised FEM-FCT?
     if (inviscidAFC .le. 0) return
     if (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
-        .ne. AFCSTAB_FEMFCT_LINEARISED) return
+        .ne. AFCSTAB_LINFCT) return
 
     ! Get more parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
@@ -2554,14 +2554,14 @@ contains
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTScDiss1d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTScDiss1d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2570,14 +2570,14 @@ contains
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTScDiss2d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTScDiss2d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2586,14 +2586,14 @@ contains
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTScDiss3d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTScDiss3d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2609,14 +2609,14 @@ contains
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRoeDiss1d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRoeDiss1d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2625,14 +2625,14 @@ contains
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRoeDiss2d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRoeDiss2d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2641,14 +2641,14 @@ contains
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRoeDiss3d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRoeDiss3d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2664,14 +2664,14 @@ contains
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRusDiss1d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRusDiss1d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2680,14 +2680,14 @@ contains
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRusDiss2d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRusDiss2d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2696,14 +2696,14 @@ contains
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRusDiss3d_sim,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution2, rcollection)
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, hydro_calcFluxFCTRusDiss3d_sim,&
               theta, tstep, dscale, binit, rcollection=rcollection)
@@ -2839,17 +2839,17 @@ contains
         ! Apply FEM-FCT algorithm for density fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity1d_sim, hydro_trafoDiffDensity1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity2d_sim, hydro_trafoDiffDensity2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity3d_sim, hydro_trafoDiffDensity3d_sim)
@@ -2860,17 +2860,17 @@ contains
         ! Apply FEM-FCT algorithm for energy fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy1d_sim, hydro_trafoDiffEnergy1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy2d_sim, hydro_trafoDiffEnergy2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy3d_sim, hydro_trafoDiffEnergy3d_sim)
@@ -2881,17 +2881,17 @@ contains
         ! Apply FEM-FCT algorithm for pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure1d_sim, hydro_trafoDiffPressure1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure2d_sim, hydro_trafoDiffPressure2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure3d_sim, hydro_trafoDiffPressure3d_sim)
@@ -2902,18 +2902,18 @@ contains
         ! Apply FEM-FCT algorithm for velocity fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity1d_sim, hydro_trafoDiffVelocity1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity2d_sim, hydro_trafoDiffVelocity2d_sim,&
               fcb_limitEdgewise=hydro_limitEdgewiseVelocity)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity3d_sim, hydro_trafoDiffVelocity3d_sim,&
@@ -2925,18 +2925,18 @@ contains
         ! Apply FEM-FCT algorithm for momentum fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum1d_sim, hydro_trafoDiffMomentum1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum2d_sim, hydro_trafoDiffMomentum2d_sim,&
               fcb_limitEdgewise=hydro_limitEdgewiseMomentum)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum3d_sim, hydro_trafoDiffMomentum3d_sim,&
@@ -2948,17 +2948,17 @@ contains
         ! Apply FEM-FCT algorithm for density and energy fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng1d_sim, hydro_trafoDiffDenEng1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng2d_sim, hydro_trafoDiffDenEng2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng3d_sim, hydro_trafoDiffDenEng3d_sim)
@@ -2969,17 +2969,17 @@ contains
         ! Apply FEM-FCT algorithm for density and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre1d_sim, hydro_trafoDiffDenPre1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre2d_sim, hydro_trafoDiffDenPre2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre3d_sim, hydro_trafoDiffDenPre3d_sim)
@@ -2990,7 +2990,7 @@ contains
         nvartransformed = hydro_getNVARtransformed(rproblemLevel, slimitingvariable)
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
-        call gfsys_buildDivVectorFCT(&
+        call afcsys_buildVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
             rsolution, dscale, bclear, iopSpec, rresidual)
 
@@ -3001,17 +3001,17 @@ contains
         ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel1d_sim, hydro_trafoDiffDenPreVel1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel2d_sim, hydro_trafoDiffDenPreVel2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel3d_sim, hydro_trafoDiffDenPreVel3d_sim)
@@ -3031,7 +3031,7 @@ contains
         p_rafcstab%istabilisationSpec =&
             ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
 
-        call gfsys_buildDivVectorFCT(&
+        call afcsys_buildVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
             rsolution, dscale, bclear, iopSpec, rresidual)
         
@@ -3065,7 +3065,7 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
       
-      call gfsys_buildDivVectorFCT(&
+      call afcsys_buildVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
           rsolution, dscale, bclear, iopSpec, rresidual)
     end if
@@ -3117,7 +3117,7 @@ contains
     integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
     ! OPTIONAL: callback function to compute variable transformation
-    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
@@ -3353,7 +3353,7 @@ contains
     integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
     ! OPTIONAL: callback function to compute variable transformation
-    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining

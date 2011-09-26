@@ -287,7 +287,7 @@ module collection
   use fparser, only: t_fparser
   use geometry, only: t_geometryObject, t_particleCollection, t_particleCollection3D
   use hadaptaux, only: t_hadapt
-  use afcstabilisation, only: t_afcstab
+  use afcstabbase, only: t_afcstab
   use statistics, only: t_timer
   use list, only: t_list
   use arraylist, only: t_arraylist

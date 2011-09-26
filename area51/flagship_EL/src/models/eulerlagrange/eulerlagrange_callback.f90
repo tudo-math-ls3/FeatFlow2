@@ -89,7 +89,7 @@
 
 module eulerlagrange_callback
 
-  use afcstabilisation
+  use afcstabbase
   use basicgeometry
   use boundaryfilter
   use collection
@@ -402,21 +402,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatGalMatD1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatGalMatD2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatGalMatD3d_sim,&
@@ -435,21 +435,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatScDissMatD1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatScDissMatD2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatScDissMatD3d_sim,&
@@ -468,21 +468,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatRoeDissMatD1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatRoeDissMatD2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatRoeDissMatD3d_sim,&
@@ -501,21 +501,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatRusDissMatD1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatRusDissMatD2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatRusDissMatD3d_sim,&
@@ -550,21 +550,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatGal1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatGal2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatGal3d_sim,&
@@ -583,21 +583,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatScDiss1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatScDiss2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatScDiss3d_sim,&
@@ -616,21 +616,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatRoeDiss1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatRoeDiss2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatRoeDiss3d_sim,&
@@ -649,21 +649,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatRusDiss1d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatRusDiss2d_sim,&
               1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(&
+          call gfsys_buildOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatRusDiss3d_sim,&
@@ -1006,19 +1006,19 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildDivVector(&
+            call gfsys_buildVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 eulerlagrange_calcFluxGal1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
-            call gfsys_buildDivVector(&
+            call gfsys_buildVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 eulerlagrange_calcFluxGal2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
-            call gfsys_buildDivVector(&
+            call gfsys_buildVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 eulerlagrange_calcFluxGal3d_sim, dscale, .true., rrhs)
@@ -1045,19 +1045,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxGal1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxGal2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxGal3d_sim, dscale, .true., rrhs)
@@ -1069,19 +1069,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxScDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxScDiss3d_sim, dscale, .true., rrhs)
@@ -1094,19 +1094,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxScDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
@@ -1118,19 +1118,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
@@ -1143,19 +1143,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
@@ -1167,19 +1167,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
@@ -1192,19 +1192,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildDivVector(&
+              call gfsys_buildVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   eulerlagrange_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
@@ -1226,21 +1226,21 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildDivVectorTVD(&
+            call afcsys_buildVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 eulerlagrange_calcFluxGalNoBdr1d_sim,&
                 eulerlagrange_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
-            call gfsys_buildDivVectorTVD(&
+            call afcsys_buildVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 eulerlagrange_calcFluxGalNoBdr2d_sim,&
                 eulerlagrange_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
-            call gfsys_buildDivVectorTVD(&
+            call afcsys_buildVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 eulerlagrange_calcFluxGalNoBdr3d_sim,&
@@ -1456,19 +1456,19 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGal1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGal2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGal3d_sim, dscale, .false., rres)
@@ -1497,19 +1497,19 @@ contains
         ! Assemble divergence operator without dissipation
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxGal1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxGal2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxGal3d_sim, dscale, .false., rres)
@@ -1521,19 +1521,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss3d_sim, dscale, .false., rres)
@@ -1546,19 +1546,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
@@ -1570,19 +1570,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss3d_sim, dscale, .false., rres)
@@ -1595,19 +1595,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
@@ -1619,19 +1619,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss3d_sim, dscale, .false., rres)
@@ -1644,19 +1644,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
@@ -1678,21 +1678,21 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGalNoBdr1d_sim,&
             eulerlagrange_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGalNoBdr2d_sim,&
             eulerlagrange_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGalNoBdr3d_sim,&
@@ -1778,7 +1778,7 @@ contains
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType&
           .eq. AFCSTAB_FEMFCT_ITERATIVE) then
-        call gfsys_buildDivVectorFCT(&
+        call afcsys_buildVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
             p_rpredictor, rtimestep%dStep, .false.,&
@@ -1944,19 +1944,19 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGal1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGal2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildDivVector(&
+        call gfsys_buildVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGal3d_sim, dscale, .false., rrhs)
@@ -1983,19 +1983,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxGal1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxGal2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxGal3d_sim, dscale, .false., rrhs)
@@ -2007,19 +2007,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxScDiss3d_sim, dscale, .false., rrhs)
@@ -2032,19 +2032,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
@@ -2057,19 +2057,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildDivVector(&
+          call gfsys_buildVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               eulerlagrange_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
@@ -2092,21 +2092,21 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGalNoBdr1d_sim,&
             eulerlagrange_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGalNoBdr2d_sim,&
             eulerlagrange_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildDivVectorTVD(&
+        call afcsys_buildVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             eulerlagrange_calcFluxGalNoBdr3d_sim,&
@@ -2468,14 +2468,14 @@ contains
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTScalarDiss1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTScalarDiss1d,&
@@ -2485,14 +2485,14 @@ contains
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTScalarDiss2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTScalarDiss2d,&
@@ -2502,14 +2502,14 @@ contains
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTScalarDiss3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTScalarDiss3d,&
@@ -2526,14 +2526,14 @@ contains
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTTensorDiss1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTTensorDiss1d,&
@@ -2543,14 +2543,14 @@ contains
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTTensorDiss2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTTensorDiss2d,&
@@ -2560,14 +2560,14 @@ contains
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTTensorDiss3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTTensorDiss3d,&
@@ -2584,14 +2584,14 @@ contains
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTRusanov1d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTRusanov1d,&
@@ -2601,14 +2601,14 @@ contains
       case (NDIM2D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTRusanov2d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTRusanov2d,&
@@ -2618,14 +2618,14 @@ contains
       case (NDIM3D)
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTRusanov3d,&
               theta, tstep, dscale, binit,&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsys_buildFluxFCT(&
+          call afcsys_buildFluxFCT(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, eulerlagrange_calcFluxFCTRusanov3d,&
@@ -2760,17 +2760,17 @@ contains
         ! Apply FEM-FCT algorithm for density fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDensity1d_sim, eulerlagrange_trafoDiffDensity1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDensity2d_sim, eulerlagrange_trafoDiffDensity2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDensity3d_sim, eulerlagrange_trafoDiffDensity3d_sim)
@@ -2781,17 +2781,17 @@ contains
         ! Apply FEM-FCT algorithm for energy fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxEnergy1d_sim, eulerlagrange_trafoDiffEnergy1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxEnergy2d_sim, eulerlagrange_trafoDiffEnergy2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxEnergy3d_sim, eulerlagrange_trafoDiffEnergy3d_sim)
@@ -2802,17 +2802,17 @@ contains
         ! Apply FEM-FCT algorithm for pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxPressure1d_sim, eulerlagrange_trafoDiffPressure1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxPressure2d_sim, eulerlagrange_trafoDiffPressure2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxPressure3d_sim, eulerlagrange_trafoDiffPressure3d_sim)
@@ -2823,18 +2823,18 @@ contains
         ! Apply FEM-FCT algorithm for velocity fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxVelocity1d_sim, eulerlagrange_trafoDiffVelocity1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxVelocity2d_sim, eulerlagrange_trafoDiffVelocity2d_sim,&
               fcb_limitEdgewise=eulerlagrange_limitEdgewiseVelocity)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxVelocity3d_sim, eulerlagrange_trafoDiffVelocity3d_sim,&
@@ -2846,18 +2846,18 @@ contains
         ! Apply FEM-FCT algorithm for momentum fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxMomentum1d_sim, eulerlagrange_trafoDiffMomentum1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxMomentum2d_sim, eulerlagrange_trafoDiffMomentum2d_sim,&
               fcb_limitEdgewise=eulerlagrange_limitEdgewiseMomentum)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxMomentum3d_sim, eulerlagrange_trafoDiffMomentum3d_sim,&
@@ -2869,17 +2869,17 @@ contains
         ! Apply FEM-FCT algorithm for density and energy fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenEng1d_sim, eulerlagrange_trafoDiffDenEng1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenEng2d_sim, eulerlagrange_trafoDiffDenEng2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenEng3d_sim, eulerlagrange_trafoDiffDenEng3d_sim)
@@ -2890,17 +2890,17 @@ contains
         ! Apply FEM-FCT algorithm for density and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenPre1d_sim, eulerlagrange_trafoDiffDenPre1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenPre2d_sim, eulerlagrange_trafoDiffDenPre2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenPre3d_sim, eulerlagrange_trafoDiffDenPre3d_sim)
@@ -2911,7 +2911,7 @@ contains
         nvartransformed = eulerlagrange_getNVARtransformed(rproblemLevel, slimitingvariable)
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
-        call gfsys_buildDivVectorFCT(&
+        call afcsys_buildVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
             rsolution, dscale, bclear, iopSpec, rresidual)
 
@@ -2922,17 +2922,17 @@ contains
         ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenPreVel1d_sim, eulerlagrange_trafoDiffDenPreVel1d_sim)
         case (NDIM2D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenPreVel2d_sim, eulerlagrange_trafoDiffDenPreVel2d_sim)
         case (NDIM3D)
-          call gfsys_buildDivVectorFCT(&
+          call afcsys_buildVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               eulerlagrange_trafoFluxDenPreVel3d_sim, eulerlagrange_trafoDiffDenPreVel3d_sim)
@@ -2950,7 +2950,7 @@ contains
         ! Enforce existence of edgewise correction factors
         p_rafcstab%iSpec = ior(p_rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
 
-        call gfsys_buildDivVectorFCT(&
+        call afcsys_buildVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
             rsolution, dscale, bclear, iopSpec, rresidual)
         
@@ -2981,7 +2981,7 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
       
-      call gfsys_buildDivVectorFCT(&
+      call afcsys_buildVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
           rsolution, dscale, bclear, iopSpec, rresidual)
     end if
@@ -3033,7 +3033,7 @@ contains
     integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
     ! OPTIONAL: callback function to compute variable transformation
-    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
@@ -3269,7 +3269,7 @@ contains
     integer, dimension(:,:), intent(in) :: IdofsAtEdge
 
     ! OPTIONAL: callback function to compute variable transformation
-    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    include '../../../../../kernel/PDEOperators/intf_calcFluxTransformation_sim.inc'
     optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining

@@ -466,13 +466,7 @@ contains
     integer :: na,neq,ncols,nedge
 
     ! Calculate dimensions of matrix (possibly with restriction)
-    if (cassembly .eq. GFEM_NODEBASED) then
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-          IrowList=IdofList)
-    else
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-          Iselection=IdofList)
-    end if
+    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)
     
     ! Call initialisation routine
     call gfem_initGroupFEMSet(rgroupFEMSet, na, neq, nedge,&
@@ -879,13 +873,7 @@ contains
     integer :: na,neq,ncols,nedge
 
     ! Calculate dimensions of matrix (possibly with restriction)
-    if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-          IrowList=IdofList)
-    else
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-          Iselection=IdofList)
-    end if
+    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)
 
     ! Call resize routine
     call gfem_resizeGroupFEMSet(rgroupFEMSet, na, neq, nedge)
@@ -1942,7 +1930,7 @@ contains
         return
       else
         call output_line('Matrix/group finite element set not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isMatrixCompatibleSc')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_isMatrixCompatibleSc')
         call sys_halt()
       end if
     end if
@@ -2068,7 +2056,7 @@ contains
         return
       else
         call output_line('Vector/group finite element set not compatible, different structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_isVectorCompatibleSc')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_isVectorCompatibleSc')
         call sys_halt()
       end if
     end if
@@ -2490,14 +2478,7 @@ contains
           .or. (rgroupFEMSet%NEDGE .eq. 0)) then
 
         ! Calculate dimensions of matrix (possibly with restriction)
-        if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
-          call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-              IrowList=IdofList)
-        else
-          call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-              Iselection=IdofList)
-        end if
-          
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)         
         
         ! If the number of edges has not been set before then it is set
         ! below; otherwise an error is thrown if the number of edges mismatch
@@ -2800,13 +2781,7 @@ contains
         .or. (rgroupFEMSet%NEDGE .eq. 0)) then
 
       ! Calculate dimensions of matrix (possibly with restriction)
-      if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
-        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-            IrowList=IdofList)
-      else
-        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-            Iselection=IdofList)
-      end if
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)
 
       ! If the number of edges has not been set before then it is set
       ! below; otherwise an error is thrown if the number of edges mismatch
@@ -3197,13 +3172,7 @@ contains
     integer :: na,neq,ncols,nedge
 
     ! Calculate dimensions of matrix (possibly with restriction)
-    if (rgroupFEMSet%cassemblyType .eq. GFEM_NODEBASED) then
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-          IrowList=IdofList)
-    else
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-          Iselection=IdofList)
-    end if
+    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)
     
     ! Call allocation routine
     call gfem_allocCoeffs(rgroupFEMSet, ncoeffsAtNode, ncoeffsAtEdge,&

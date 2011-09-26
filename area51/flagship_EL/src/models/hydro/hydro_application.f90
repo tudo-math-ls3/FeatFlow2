@@ -100,7 +100,8 @@
 
 module hydro_application
 
-  use afcstabilisation
+  use afcstabbase
+  use afcstabsystem
   use bilinearformevaluation
   use boundary
   use boundarycondaux
@@ -1533,7 +1534,7 @@ contains
         end do
 
         ! Initialise stabilisation structure
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
             nvartransformed, p_rdiscretisation)
@@ -2033,7 +2034,7 @@ contains
         rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
         rafcstab%bprelimiting = .false.
         rafcstab%cafcstabType = AFCSTAB_FEMFCT_MASS
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         call afcstab_genEdgeList(&
             p_rconsistentMassMatrix, rafcstab)
@@ -2041,7 +2042,7 @@ contains
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
-        call gfsys_buildFluxFCT(rafcstab, rvectorHigh,&
+        call afcsys_buildFluxFCT(rafcstab, rvectorHigh,&
             hydro_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP, .true.,&
             p_rconsistentMassMatrix, rcollection=rcollection)
         

@@ -103,7 +103,8 @@
 
 module eulerlagrange_application
     
-  use afcstabilisation
+  use afcstabbase
+  use afcstabsystem
   use basicgeometry
   use bilinearformevaluation
   use boundary
@@ -1229,7 +1230,7 @@ module eulerlagrange_application
         end do
 
         ! Initialise stabilisation structure
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC), nvartransformed)
 
@@ -1642,13 +1643,13 @@ module eulerlagrange_application
         rafcstab%iSpec= AFCSTAB_UNDEFINED
         rafcstab%bprelimiting = .false.
         rafcstab%cafcstabType = AFCSTAB_FEMFCT_MASS
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
-        call gfsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
+        call afcsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
             rafcstab, rvectorHigh, rvectorHigh, eulerlagrange_calcFluxFCTScalarDiss1d,&
             0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
         

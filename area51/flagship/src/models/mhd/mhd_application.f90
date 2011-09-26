@@ -103,7 +103,8 @@ module mhd_application
 
 #include "mhd.h"
 
-  use afcstabilisation
+  use afcstabbase
+  use afcstabsystem
   use bilinearformevaluation
   use boundary
   use boundarycondaux
@@ -1387,7 +1388,7 @@ contains
         end select
 
         ! Initialise stabilisation structure
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
             NVARtransformed, p_rdiscretisation)
@@ -1459,7 +1460,7 @@ contains
         end do
 
         ! Initialise stabilisation structure
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(viscousAFC),&
             nvartransformed, p_rdiscretisation)
@@ -1552,7 +1553,7 @@ contains
         end do
 
         ! Initialise stabilisation structure
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(massAFC),&
             nvartransformed, p_rdiscretisation)
@@ -1975,15 +1976,13 @@ contains
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
         rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
         rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
-        call gfsys_initStabilisation(&
+        call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
-        call afcstab_genEdgeList(&
-            p_rconsistentMassMatrix, rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
-        call gfsys_buildFluxFCT(rafcstab, rvectorHigh,&
+        call afcsys_buildFluxFCT(rafcstab, rvectorHigh,&
             mhd_calcFluxFCTScDiss1d_sim, 0.0_DP, 0.0_DP, 1.0_DP,&
             .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
             p_rconsistentMassMatrix, rcollection=rcollection)
@@ -2012,7 +2011,7 @@ contains
               rafcstab, 'ssolutionconstrainvariable')
           
           ! Apply failsafe flux correction
-          call gfsys_failsafeFCT(rafcstab, p_rlumpedMassMatrix,&
+          call afcsys_failsafeFCT(rafcstab, p_rlumpedMassMatrix,&
               rvector, 1.0_DP, 1e-8_DP, AFCSTAB_FAILSAFEALGO_STANDARD,&
               bisAccepted, nsteps=nsolutionfailsafe,&
               CvariableNames=SsolutionFailsafeVariables,&

@@ -738,7 +738,7 @@ contains
   subroutine hydro_calcDivVecScDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock
@@ -1040,7 +1040,7 @@ contains
   subroutine hydro_calcDivVecScDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock
@@ -1440,7 +1440,7 @@ contains
   subroutine hydro_calcDivVecRoeDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock
@@ -1913,7 +1913,7 @@ contains
   subroutine hydro_calcDivVecRoeDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock
@@ -2224,7 +2224,7 @@ contains
   subroutine hydro_calcDivVecRusDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock
@@ -2536,7 +2536,7 @@ contains
   subroutine hydro_calcDivVecRusDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock

@@ -183,7 +183,8 @@
 
 module transport_application
 
-  use afcstabilisation
+  use afcstabbase
+  use afcstabscalar
   use bilinearformevaluation
   use boundary
   use boundarycondaux
@@ -1363,7 +1364,7 @@ contains
     if (convectionAFC > 0) then
       if (rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
-        call gfsc_initStabilisation(&
+        call afcsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
             p_rdiscretisation)
@@ -1451,7 +1452,7 @@ contains
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
-        call gfsc_initStabilisation(&
+        call afcsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rafcstab(diffusionAFC),&
             p_rdiscretisation)
@@ -1488,7 +1489,7 @@ contains
     if (massAFC > 0) then
       if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
-        call gfsc_initStabilisation(&
+        call afcsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rafcstab(massAFC),&
             p_rdiscretisation)
@@ -2012,17 +2013,16 @@ contains
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
         rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
         rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
-        call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
-        call afcstab_genEdgeList(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
+        call afcsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes
-        call gfsc_buildFluxFCT(rafcstab, rvectorHigh,&
+        call afcsc_buildFluxFCT(rafcstab, rvectorHigh,&
             0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
             AFCSTAB_FCTFLUX_EXPLICIT,&
             p_rconsistentMassMatrix, rvectorHigh)
 
         ! Apply flux correction to solution profile
-        call gfsc_buildConvectionVectorFCT(rafcstab,&
+        call afcsc_buildVectorFCT(rafcstab,&
             p_rlumpedMassMatrix, rvector, 1.0_DP, .false.,&
             AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 

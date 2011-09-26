@@ -6208,7 +6208,7 @@ contains
     type(t_Particles), intent(inout) :: rParticles
     
     ! Current number of particle
-    integer, intent(inout) :: iPart
+    integer, intent(in) :: iPart
 
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
@@ -6399,7 +6399,7 @@ contains
 
    
     ! Current number of particle
-    integer, intent(inout) :: iPart
+    integer, intent(in) :: iPart
   
     ! Position of the element
     real(DP), dimension(2) :: particlepos
@@ -6534,7 +6534,7 @@ contains
     type(t_Particles), intent(inout) :: rParticles
 
     ! Current number of particle
-    integer, intent(inout) :: iPart
+    integer, intent(in) :: iPart
 
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
@@ -8732,7 +8732,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
     
     ! Current number of the particle
-    integer, intent(inout) :: iPart
+    integer, intent(in) :: iPart
     
     ! pointer to elements adjacent to the boundary. 
     !
@@ -9138,7 +9138,7 @@ end subroutine hydro_setnewinitialvalue
     type(t_Particles), intent(inout) :: rParticles
 
     ! Number of the current particle
-    integer, intent(inout) :: iPart
+    integer, intent(in) :: iPart
     
     ! Current element
     integer, intent(inout) :: currentElement
@@ -9454,7 +9454,7 @@ end subroutine hydro_setnewinitialvalue
     type(t_problemLevel), pointer :: p_rproblemLevel
     
     ! current number of particle
-    integer, intent(inout) :: iPart
+    integer, intent(in) :: iPart
 
     ! Pointer to nodal property array. 
     ! Handle to 
@@ -9513,9 +9513,9 @@ end subroutine hydro_setnewinitialvalue
 
     ! Pointer to vertices Adjacent to an Edge. 
     ! Handle to 
-    !       p_IdofsAtEdge = array [1..2,1..NMT]
+    !       p_IverticesAtEdge = array [1..2,1..NMT]
     ! The numbers of the two vertices adjacent to an edge IMT. 
-    integer, dimension(:,:), pointer :: p_IdofsAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
    
     ! pointer to vertices on boundary. 
     !
@@ -9642,7 +9642,7 @@ end subroutine hydro_setnewinitialvalue
     call storage_getbase_int2D(&
          p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
     call storage_getbase_int2D(&
-         p_rtriangulation%h_IdofsAtEdge, p_IdofsAtEdge)
+         p_rtriangulation%h_IverticesAtEdge, p_IverticesAtEdge)
 
     ! get scalar for scaling of the domain
     call parlst_getvalue_double(rparlist, 'Hydro', "domscalex", domscalex)
@@ -9655,10 +9655,10 @@ end subroutine hydro_setnewinitialvalue
     end do edgesearch
 
     ! Set ray for the vertices of the edge
-    dx2= p_DvertexCoords(1,p_IdofsAtEdge(1,iedge))
-    dy2= p_DvertexCoords(2,p_IdofsAtEdge(1,iedge))
-    dx3= p_DvertexCoords(1,p_IdofsAtEdge(2,iedge))
-    dy3= p_DvertexCoords(2,p_IdofsAtEdge(2,iedge))
+    dx2= p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
+    dy2= p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
+    dx3= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
+    dy3= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge))
 
     ! Set ray for the particle movement from the old and the new particle position
     dx0= rParticles%p_xpos_old(iPart)
@@ -9689,9 +9689,9 @@ end subroutine hydro_setnewinitialvalue
         end if
 
 		! Tangent in x-direction 
-		tang(1)= p_DvertexCoords(1,p_IdofsAtEdge(2,iedge)) - p_DvertexCoords(1,p_IdofsAtEdge(2,iedge))
+		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
 		! Tangent in y-direction
-		tang(2)= p_DvertexCoords(2,p_IdofsAtEdge(2,iedge)) - p_DvertexCoords(1,p_IdofsAtEdge(2,iedge))
+		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
         ! Norming of the tangent
 		tang(1)= tang(1)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
 		tang(2)= tang(2)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)

@@ -137,7 +137,8 @@
 
 module transport_callback
 
-  use afcstabilisation
+  use afcstabbase
+  use afcstabscalar
   use basicgeometry
   use bilinearformevaluation
   use boundary
@@ -871,21 +872,21 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsc_buildConvectionJacobian(&
+            call gfsc_buildJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
                 rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
-            call gfsc_buildConvectionJacobian(&
+            call gfsc_buildJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
                 rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
-            call gfsc_buildConvectionJacobian(&
+            call gfsc_buildJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -911,21 +912,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsc_buildConvectionJacobian(&
+          call gfsc_buildJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsolution, transp_calcMatUpwConvP1d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
               rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM2D)
-          call gfsc_buildConvectionJacobian(&
+          call gfsc_buildJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwConvP2d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
               rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM3D)
-          call gfsc_buildConvectionJacobian(&
+          call gfsc_buildJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rsolution, transp_calcMatUpwConvP3d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -934,7 +935,7 @@ contains
 
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-        call gfsc_buildConvectionJacobian(&
+        call gfsc_buildJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rsolution, transp_calcMatUpwSTBurgP2d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
@@ -942,7 +943,7 @@ contains
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-        call gfsc_buildConvectionJacobian(&
+        call gfsc_buildJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rsolution, transp_calcMatUpwSTBLevP2d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
@@ -950,7 +951,7 @@ contains
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
-        call gfsc_buildConvectionJacobian(&
+        call gfsc_buildJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rsolution, transp_calcMatUpwBurgP1d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
@@ -958,7 +959,7 @@ contains
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-        call gfsc_buildConvectionJacobian(&
+        call gfsc_buildJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rsolution, transp_calcMatUpwBurgP2d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
@@ -966,7 +967,7 @@ contains
 
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
-        call gfsc_buildConvectionJacobian(&
+        call gfsc_buildJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rsolution, transp_calcMatUpwBLevP1d_sim, hstep,&
             1.0_DP, bbuildStabilisation, .false.,&
@@ -995,21 +996,21 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsc_buildConvectionJacobian(&
+            call gfsc_buildJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, fcb_calcMatrixDual_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
                 rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM2D)
-            call gfsc_buildConvectionJacobian(&
+            call gfsc_buildJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, fcb_calcMatrixDual_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
                 rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
           case (NDIM3D)
-            call gfsc_buildConvectionJacobian(&
+            call gfsc_buildJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rsolution, fcb_calcMatrixDual_sim, hstep,&
                 1.0_DP, bbuildStabilisation, .false.,&
@@ -1035,21 +1036,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsc_buildConvectionJacobian(&
+          call gfsc_buildJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsolution, transp_calcMatUpwConvD1d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
               rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM2D)
-          call gfsc_buildConvectionJacobian(&
+          call gfsc_buildJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwConvD2d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
               rproblemLevel%Rmatrix(transportMatrix), rcollectionTmp)
 
         case (NDIM3D)
-          call gfsc_buildConvectionJacobian(&
+          call gfsc_buildJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rsolution, transp_calcMatUpwConvD3d_sim, hstep,&
               1.0_DP, bbuildStabilisation, .false.,&
@@ -1158,7 +1159,7 @@ contains
       ! Anisotropic diffusion
       select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
       case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildJacobianSymm(&
+        call afcsc_buildJacobianSymm(&
             rsolution, 1.0_DP, hstep, .false.,&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1207,7 +1208,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1216,7 +1217,7 @@ contains
                     rproblemLevel%Rmatrix(consistentMassMatrix))
 
               case (NDIM2D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1225,7 +1226,7 @@ contains
                     rproblemLevel%Rmatrix(consistentMassMatrix))
 
               case (NDIM3D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1238,7 +1239,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1246,7 +1247,7 @@ contains
                     rproblemLevel%Rmatrix(jacobianMatrix))
 
               case (NDIM2D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1254,7 +1255,7 @@ contains
                     rproblemLevel%Rmatrix(jacobianMatrix))
 
               case (NDIM3D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1267,7 +1268,7 @@ contains
           case (AFCSTAB_TVD)
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsc_buildJacobianTVD(&
+              call afcsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rsolution, fcb_calcMatrixPrimal_sim,&
                   rtimestep%dStep, hstep, .false.,&
@@ -1276,7 +1277,7 @@ contains
                   bisExtendedSparsity)
 
             case (NDIM2D)
-              call gfsc_buildJacobianTVD(&
+              call afcsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rsolution, fcb_calcMatrixPrimal_sim,&
                   rtimestep%dStep, hstep, .false.,&
@@ -1285,7 +1286,7 @@ contains
                   bisExtendedSparsity)
 
             case (NDIM3D)
-              call gfsc_buildJacobianTVD(&
+              call afcsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rsolution, fcb_calcMatrixPrimal_sim,&
                   rtimestep%dStep, hstep, .false.,&
@@ -1304,7 +1305,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianGP(&
+                call afcsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
                     rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
@@ -1314,7 +1315,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM2D)
-                call gfsc_buildJacobianGP(&
+                call afcsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
                     rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
@@ -1324,7 +1325,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM3D)
-                call gfsc_buildJacobianGP(&
+                call afcsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
                     rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
@@ -1338,7 +1339,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianTVD(&
+                call afcsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%dStep, hstep, .false.,&
@@ -1347,7 +1348,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM2D)
-                call gfsc_buildJacobianTVD(&
+                call afcsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%dStep, hstep, .false.,&
@@ -1356,7 +1357,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM3D)
-                call gfsc_buildJacobianTVD(&
+                call afcsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%dStep, hstep, .false.,&
@@ -1396,13 +1397,13 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(rsolution,&
+            call afcsc_buildJacobianFCT(rsolution,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(rsolution,&
+            call afcsc_buildJacobianFCT(rsolution,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1410,7 +1411,7 @@ contains
 
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(rsolution,&
+          call afcsc_buildJacobianTVD(rsolution,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1423,7 +1424,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, rtimestep%theta,&
                 rtimestep%dStep, hstep, .false.,&
@@ -1431,7 +1432,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(rsolution,&
+            call afcsc_buildJacobianTVD(rsolution,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1453,7 +1454,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwSTBurgP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1461,7 +1462,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwSTBurgP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1470,7 +1471,7 @@ contains
           end if
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(&
+          call afcsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwSTBurgP2d_sim,&
               rtimestep%dStep, hstep, .false.,&
@@ -1485,7 +1486,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwSTBurgP2d_sim,&
@@ -1494,7 +1495,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(&
+            call afcsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwSTBurgP2d_sim,&
                 rtimestep%dStep, hstep, .false.,&
@@ -1518,7 +1519,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwSTBLevP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1526,7 +1527,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwSTBLevP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1535,7 +1536,7 @@ contains
           end if
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(&
+          call afcsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwSTBLevP2d_sim,&
               rtimestep%dStep, hstep, .false.,&
@@ -1550,7 +1551,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwSTBLevP2d_sim,&
@@ -1559,7 +1560,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(&
+            call afcsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwSTBLevP2d_sim,&
                 rtimestep%dStep, hstep, .false.,&
@@ -1583,7 +1584,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwBurgP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1591,7 +1592,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwBurgP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1600,7 +1601,7 @@ contains
           end if
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(&
+          call afcsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsolution, transp_calcMatUpwBurgP1d_sim,&
               rtimestep%dStep, hstep, .false.,&
@@ -1615,7 +1616,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwBurgP1d_sim,&
@@ -1624,7 +1625,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(&
+            call afcsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, transp_calcMatUpwBurgP1d_sim,&
                 rtimestep%dStep, hstep, .false.,&
@@ -1648,7 +1649,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwBurgP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1656,7 +1657,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwBurgP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1665,7 +1666,7 @@ contains
           end if
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(&
+          call afcsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rsolution, transp_calcMatUpwBurgP2d_sim,&
               rtimestep%dStep, hstep, .false.,&
@@ -1680,7 +1681,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwBurgP2d_sim,&
@@ -1688,7 +1689,7 @@ contains
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix), bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(&
+            call afcsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rsolution, transp_calcMatUpwBurgP2d_sim,&
                 rtimestep%dStep, hstep, .false.,&
@@ -1712,7 +1713,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, transp_calcMatUpwBLevP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1720,7 +1721,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(&
+            call afcsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, transp_calcMatUpwBLevP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1729,7 +1730,7 @@ contains
           end if
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(&
+          call afcsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rsolution, transp_calcMatUpwBLevP1d_sim,&
               rtimestep%dStep, hstep, .false.,&
@@ -1744,7 +1745,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, transp_calcMatUpwBLevP1d_sim,&
@@ -1753,7 +1754,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(&
+            call afcsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rsolution, transp_calcMatUpwBLevP1d_sim,&
                 rtimestep%dStep, hstep, .false.,&
@@ -1792,7 +1793,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1801,7 +1802,7 @@ contains
                     rproblemLevel%Rmatrix(consistentMassMatrix))
 
               case (NDIM2D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1810,7 +1811,7 @@ contains
                     rproblemLevel%Rmatrix(consistentMassMatrix))
 
               case (NDIM3D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1823,7 +1824,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1831,7 +1832,7 @@ contains
                     rproblemLevel%Rmatrix(jacobianMatrix))
 
               case (NDIM2D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1839,7 +1840,7 @@ contains
                     rproblemLevel%Rmatrix(jacobianMatrix))
 
               case (NDIM3D)
-                call gfsc_buildJacobianFCT(&
+                call afcsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
@@ -1853,7 +1854,7 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsc_buildJacobianTVD(&
+              call afcsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rsolution, fcb_calcMatrixDual_sim,&
                   rtimestep%dStep, hstep, .false.,&
@@ -1862,7 +1863,7 @@ contains
                   bisExtendedSparsity)
 
             case (NDIM2D)
-              call gfsc_buildJacobianTVD(&
+              call afcsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rsolution, fcb_calcMatrixDual_sim,&
                   rtimestep%dStep, hstep, .false.,&
@@ -1871,7 +1872,7 @@ contains
                   bisExtendedSparsity)
 
             case (NDIM3D)
-              call gfsc_buildJacobianTVD(&
+              call afcsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rsolution, fcb_calcMatrixDual_sim,&
                   rtimestep%dStep, hstep, .false.,&
@@ -1890,7 +1891,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianGP(&
+                call afcsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
                     rsolution, rsolution0, fcb_calcMatrixDual_sim,&
@@ -1900,7 +1901,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM2D)
-                call gfsc_buildJacobianGP(&
+                call afcsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
                     rsolution, rsolution0, fcb_calcMatrixDual_sim,&
@@ -1910,7 +1911,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM3D)
-                call gfsc_buildJacobianGP(&
+                call afcsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
                     rsolution, rsolution0, fcb_calcMatrixDual_sim,&
@@ -1924,7 +1925,7 @@ contains
 
               select case(rproblemLevel%rtriangulation%ndim)
               case (NDIM1D)
-                call gfsc_buildJacobianTVD(&
+                call afcsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%dStep, hstep, .false.,&
@@ -1933,7 +1934,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM2D)
-                call gfsc_buildJacobianTVD(&
+                call afcsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%dStep, hstep, .false.,&
@@ -1942,7 +1943,7 @@ contains
                     bisExtendedSparsity)
 
               case (NDIM3D)
-                call gfsc_buildJacobianTVD(&
+                call afcsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%dStep, hstep, .false.,&
@@ -1981,13 +1982,13 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianFCT(rsolution,&
+            call afcsc_buildJacobianFCT(rsolution,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 rproblemLevel%Rmatrix(consistentMassMatrix))
           else
-            call gfsc_buildJacobianFCT(rsolution,&
+            call afcsc_buildJacobianFCT(rsolution,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1995,7 +1996,7 @@ contains
 
 
         case (AFCSTAB_TVD)
-          call gfsc_buildJacobianTVD(rsolution,&
+          call afcsc_buildJacobianTVD(rsolution,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2007,7 +2008,7 @@ contains
 
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildJacobianGP(&
+            call afcsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
                 rsolution, rsolution0, rtimestep%theta,&
                 rtimestep%dStep, hstep, .false.,&
@@ -2015,7 +2016,7 @@ contains
                 rproblemLevel%Rmatrix(jacobianMatrix),&
                 bisExtendedSparsity)
           else
-            call gfsc_buildJacobianTVD(rsolution,&
+            call afcsc_buildJacobianTVD(rsolution,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2214,12 +2215,12 @@ contains
             1.0_DP/rtimestep%dStep, -1.0_DP/rtimeStep%dStep)
 
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
             p_rpredictor, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
 
         ! Apply FEM-LPT correction to the residual vector
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(massAFC),&
             p_rpredictor, rtimeStep%dStep, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rrhs)
@@ -2266,7 +2267,7 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           ! Assemble explicit part of the raw-antidiffusive fluxes
           ! with the contribution of the consistent mass matrix
-          call gfsc_buildFluxFCT(&
+          call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rtimestep%theta, rtimestep%dStep, 1.0_DP,&
               .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
@@ -2275,13 +2276,13 @@ contains
         else
           ! Assemble explicit part of the raw-antidiffusive fluxes
           ! without the contribution of the consistent mass matrix
-          call gfsc_buildFluxFCT(&
+          call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rtimestep%theta, 1.0_DP, 1.0_DP,&
               .true., .true., AFCSTAB_FCTFLUX_EXPLICIT)
           
           ! Perform flux correction
-          call gfsc_buildConvectionVectorFCT(&
+          call afcsc_buildVectorFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               p_rpredictor, dscale, .false.,&
@@ -2291,7 +2292,7 @@ contains
         !-----------------------------------------------------------------------
 
       case (AFCSTAB_TVD)
-        call gfsc_buildConvectionVectorTVD(&
+        call afcsc_buildVectorTVD(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         
@@ -2306,14 +2307,14 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           ! Apply general-purpose flux limiter considering the
           ! contribution mass antidiffusive fluxes
-          call gfsc_buildConvectionVectorGP(&
+          call afcsc_buildVectorGP(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution, rsolution0, rtimestep%theta, dscale,&
               .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         else
           ! Apply flux limiting of TVD-type without mass-antidiffusion
-          call gfsc_buildConvectionVectorTVD(&
+          call afcsc_buildVectorTVD(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
         end if
@@ -2330,11 +2331,11 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
         ! Apply FEM-LPT correction to the residual vector
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, dscale, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rrhs)
@@ -2358,7 +2359,7 @@ contains
       select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
         
       case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildConvectionVectorSymm(&
+        call afcsc_buildVectorSymm(&
             rproblemLevel%Rafcstab(diffusionAFC), rsolution, dscale, rrhs)
         
         !-----------------------------------------------------------------------
@@ -2373,11 +2374,11 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
         ! Apply explicit part of the FEM-LPT correction to right-hand side
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, dscale, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rrhs)
@@ -2557,7 +2558,7 @@ contains
           select case(rproblemLevel%Rafcstab(convectionAFC)%cafcstabType)
             
           case (AFCSTAB_TVD)
-            call gfsc_buildConvectionVectorTVD(&
+            call afcsc_buildVectorTVD(&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rrhs)
 
@@ -2573,11 +2574,11 @@ contains
                 rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
 
             ! Build the raw antidiffusive fluxes 
-            call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
+            call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
                 rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
 
             ! Apply explicit part of the FEM-LPT correction to right-hand side
-            call gfsc_buildVectorLPT(&
+            call afcsc_buildVectorLPT(&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rsolution, dscale, .false.,&
                 AFCSTAB_LPTALGO_STANDARD, rrhs)
@@ -2612,7 +2613,7 @@ contains
             if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
               ! Assemble explicit part of the raw-antidiffusive fluxes
               ! with the contribution of the consistent mass matrix
-              call gfsc_buildFluxFCT(&
+              call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                   rtimestep%theta, rtimestep%dStep, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
@@ -2621,7 +2622,7 @@ contains
             else
               ! Assemble explicit part of the raw-antidiffusive fluxes
               ! without the contribution of the consistent mass matrix
-              call gfsc_buildFluxFCT(&
+              call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                   rtimestep%theta, 1.0_DP, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
@@ -2651,7 +2652,7 @@ contains
           select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
             
           case (AFCSTAB_SYMMETRIC)
-            call gfsc_buildConvectionVectorSymm(&
+            call afcsc_buildVectorSymm(&
                 rproblemLevel%Rafcstab(diffusionAFC), rsolution, dscale, rrhs)
 
             !-------------------------------------------------------------------
@@ -2666,11 +2667,11 @@ contains
                 rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
             
             ! Build the raw antidiffusive fluxes 
-            call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
+            call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
                 rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
 
             ! Apply explicit part of the FEM-LPT correction to right-hand side
-            call gfsc_buildVectorLPT(&
+            call afcsc_buildVectorLPT(&
                 rproblemLevel%Rafcstab(diffusionAFC),&
                 rsolution, dscale, .false.,&
                 AFCSTAB_LPTALGO_STANDARD, rrhs)
@@ -2726,7 +2727,7 @@ contains
             if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
               ! Assemble explicit part of the raw-antidiffusive fluxes
               ! with the contribution of the consistent mass matrix
-              call gfsc_buildFluxFCT(&
+              call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                   rtimestep%theta, rtimestep%dStep, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
@@ -2735,7 +2736,7 @@ contains
             else
               ! Assemble explicit part of the raw-antidiffusive fluxes
               ! without the contribution of the consistent mass matrix
-              call gfsc_buildFluxFCT(&
+              call afcsc_buildFluxFCT(&
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                   rtimestep%theta, 1.0_DP, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT)
@@ -3003,12 +3004,12 @@ contains
             1.0_DP/rtimestep%dStep, -1.0_DP/rtimeStep%dStep)
 
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
             p_rpredictor, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
 
         ! Apply FEM-LPT correction to the residual vector
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(massAFC),&
             p_rpredictor, rtimeStep%dStep, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rres)
@@ -3058,7 +3059,7 @@ contains
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! with the contribution of the consistent mass matrix
-          call gfsc_buildFluxFCT(&
+          call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               rtimestep%theta, rtimestep%dStep, 1.0_DP,&
               .true., .true., ioperationSpec,&
@@ -3067,7 +3068,7 @@ contains
         else
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! without the contribution of the consistent mass matrix
-          call gfsc_buildFluxFCT(&
+          call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
               rtimestep%theta, rtimestep%dStep, 1.0_DP,&
               .true., .true., ioperationSpec,&
@@ -3099,7 +3100,7 @@ contains
         end if
 
         ! Perform flux correction
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
@@ -3109,7 +3110,7 @@ contains
         if (rproblemLevel%Rafcstab(convectionAFC)%cafcstabType .eq.&
             AFCSTAB_NLINFCT_ITERATIVE) then
           ! Subtract corrected antidiffusion from right-hand side
-          call gfsc_buildConvectionVectorFCT(&
+          call afcsc_buildVectorFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               p_rpredictor, rtimestep%dStep, .false.,&
@@ -3124,7 +3125,7 @@ contains
         !-----------------------------------------------------------------------
 
       case (AFCSTAB_TVD)
-        call gfsc_buildConvectionVectorTVD(&
+        call afcsc_buildVectorTVD(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rres)
 
@@ -3137,13 +3138,13 @@ contains
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsc_buildConvectionVectorGP(&
+          call afcsc_buildVectorGP(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution, rsolution0, rtimestep%theta, rtimestep%dStep,&
               .false., AFCSTAB_TVDALGO_STANDARD, rres)
         else
-          call gfsc_buildConvectionVectorTVD(&
+          call afcsc_buildVectorTVD(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, dscale, .false., AFCSTAB_TVDALGO_STANDARD, rres)
         end if
@@ -3160,11 +3161,11 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
         ! Apply FEM-LPT correction to the residual vector
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, dscale, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rres)
@@ -3188,7 +3189,7 @@ contains
       select case(rproblemLevel%Rafcstab(diffusionAFC)%cafcstabType)
         
       case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildConvectionVectorSymm(&
+        call afcsc_buildVectorSymm(&
             rproblemLevel%Rafcstab(diffusionAFC), rsolution, dscale, rres)
         
         !-----------------------------------------------------------------------
@@ -3203,11 +3204,11 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
         ! Apply explicit part of the FEM-LPT correction to right-hand side
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, dscale, .false.,&
             AFCSTAB_LPTALGO_STANDARD, rres)
@@ -4914,7 +4915,7 @@ contains
           
           ! Build the raw antidiffusive fluxes and include
           ! contribution from the consistent mass matrix
-          call gfsc_buildFluxFCT(&
+          call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, 0.0_DP, 1.0_DP, 1.0_DP,&
               .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
@@ -4931,14 +4932,14 @@ contains
           
           ! Build the raw antidiffusive fluxes without including 
           ! the contribution from consistent mass matrix
-          call gfsc_buildFluxFCT(&
+          call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, 0.0_DP, 1.0_DP, 1.0_DP,&
               .true., .true., AFCSTAB_FCTFLUX_EXPLICIT)
         end if
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rsolution, rtimestep%dStep, .false.,&
@@ -5054,11 +5055,11 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
         ! Apply linearised FEM-LPT correction
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_LPTALGO_STANDARD + AFCSTAB_LPTALGO_SCALEBYMASS,&
@@ -5085,11 +5086,11 @@ contains
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
         ! Build the raw antidiffusive fluxes 
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
         ! Apply linearised FEM-LPT correction
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
             rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, rtimestep%dStep, .false.,&
             AFCSTAB_LPTALGO_STANDARD + AFCSTAB_LPTALGO_SCALEBYMASS,&
@@ -5135,12 +5136,12 @@ contains
 
         ! Build the raw antidiffusive fluxes based on the approximate
         ! time derivative stored in vector p_rvector1
-        call gfsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
+        call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
             p_rvector1, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
 
         ! Apply linearised FEM-LPT correction
-        call gfsc_buildVectorLPT(&
+        call afcsc_buildVectorLPT(&
           rproblemLevel%Rafcstab(massAFC),&
           p_rvector1, rtimestep%dStep, .false.,&
           AFCSTAB_LPTALGO_STANDARD + AFCSTAB_LPTALGO_SCALEBYMASS,&

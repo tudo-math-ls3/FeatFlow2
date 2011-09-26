@@ -7,7 +7,7 @@
   subroutine fcb_calcDivOperator(rafcstab, rx, rmatrix, dscale, bclear,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock

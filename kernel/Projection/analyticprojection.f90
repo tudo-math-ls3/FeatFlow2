@@ -31,7 +31,8 @@
 
 module analyticprojection
 
-  use afcstabilisation
+  use afcstabbase
+  use afcstabscalar
   use basicgeometry
   use boundary
   use collection
@@ -1111,16 +1112,16 @@ contains
     rafcstab%istabilisationSpec= AFCSTAB_UNDEFINED
     rafcstab%cprelimitingType = AFCSTAB_PRELIMITING_NONE
     rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
-    call gfsc_initStabilisation(rmatrixMass, rafcstab)
+    call afcsc_initStabilisation(rmatrixMass, rafcstab)
     call afcstab_genEdgeList(rmatrixMass, rafcstab)
 
     ! Compute the fluxes for the raw mass antidiffusion
-    call gfsc_buildFluxFCT(rafcstab, rvectorAux,&
+    call afcsc_buildFluxFCT(rafcstab, rvectorAux,&
         0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
         AFCSTAB_FCTFLUX_EXPLICIT, rmatrixMass, rvectorAux)
 
     ! Apply flux correction to improve the low-order L2-projection
-    call gfsc_buildConvectionVectorFCT(rafcstab,&
+    call afcsc_buildVectorFCT(rafcstab,&
         p_rmatrixMassLumped, rvector, 1._DP, .false.,&
         AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 

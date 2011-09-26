@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> afcstabilisation </name>
+!# <name> afcstabbase </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -134,9 +134,27 @@
 !#                               afcstab_buildBoundsLPT2D /
 !#                               afcstab_buildBoundsLPT3D
 !#
+!# 35.) afcstab_limit = afcstab_limitUnboundedDble /
+!#                      afcstab_limitUnboundedSngl /
+!#                      afcstab_limitBoundedDble /
+!#                      afcstab_limitBoundedSngl
+!#      -> Compute the nodal correction factors, i.e., the ratio of
+!#         admissible solution increments and raw antidiffusion
+!#
+!# 36.) afcstab_combineFluxes = afcstab_combFluxesDble /
+!#                              afcstab_combFluxesSngl
+!#      -> Linear combination of the vectors of fluxes
+!#
+!# 37.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
+!#      -> Linear combination of the vectors of fluxes
+!#
+!# 38.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
+!#                                  afcstab_upwindOrientationSngl
+!#     -> Swap edge orientation so that the starting edge is located upwind
+!#
 !# </purpose>
 !##############################################################################
-module afcstabilisation
+module afcstabbase
 
   use basicgeometry
   use fsystem
@@ -198,9 +216,13 @@ module afcstabilisation
   public :: afcstab_allocFlux0
   public :: afcstab_allocFlux
   public :: afcstab_allocAlpha
+
+  public :: afcstab_limit
+  public :: afcstab_combineFluxes
+  public :: afcstab_combineFluxesDble
+  public :: afcstab_combineFluxesSngl
+  public :: afcstab_upwindOrientation
    
-  ! *****************************************************************************
-  ! *****************************************************************************
   ! *****************************************************************************
 
 !<constants>
@@ -657,8 +679,6 @@ module afcstabilisation
 !</constants>
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
 
 !<types>
 !<typeblock>
@@ -824,8 +844,6 @@ module afcstabilisation
 !</types>
 
   ! *****************************************************************************
-  ! *****************************************************************************
-  ! *****************************************************************************
 
   interface afcstab_resizeStabilisation
     module procedure afcstab_resizeStabDirect
@@ -852,6 +870,23 @@ module afcstabilisation
     module procedure afcstab_buildBoundsLPT1D
     module procedure afcstab_buildBoundsLPT2D
     module procedure afcstab_buildBoundsLPT3D
+  end interface
+
+  interface afcstab_limit
+    module procedure afcstab_limitUnboundedDble
+    module procedure afcstab_limitUnboundedSngl
+    module procedure afcstab_limitBoundedDble
+    module procedure afcstab_limitBoundedSngl
+  end interface
+
+  interface afcstab_combineFluxes
+    module procedure afcstab_combFluxesDble
+    module procedure afcstab_combFluxesSngl
+  end interface
+
+  interface afcstab_upwindOrientation
+    module procedure afcstab_upwindOrientationDble
+    module procedure afcstab_upwindOrientationSngl
   end interface
 
 contains
@@ -5363,4 +5398,757 @@ contains
 
   end subroutine afcstab_buildBoundsLPT3D
 
-end module afcstabilisation
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function afcstab_limitUnboundedDble(p, q, dval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(DP), intent(in) :: p,q
+
+    ! default value
+    real(DP), intent(in) :: dval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = dval
+    end if
+  end function afcstab_limitUnboundedDble
+  
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function afcstab_limitUnboundedSngl(p, q, fval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value fval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(SP), intent(in) :: p,q
+
+    ! default value
+    real(SP), intent(in) :: fval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(SP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = fval
+    end if
+  end function afcstab_limitUnboundedSngl
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function afcstab_limitBoundedDble(p, q, dval, dbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(DP), intent(in) :: p,q
+    
+    ! default value
+    real(DP), intent(in) :: dval
+
+    ! upper bound
+    real(DP), intent(in) :: dbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+    
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, dbound)
+    else
+      r = dval
+    end if
+  end function afcstab_limitBoundedDble
+
+  !*****************************************************************************
+
+!<function>
+  
+  elemental function afcstab_limitBoundedSngl(p, q, fval, fbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+    ! Single valued version
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(SP), intent(in) :: p,q
+    
+    ! default value
+    real(SP), intent(in) :: fval
+
+    ! upper bound
+    real(SP), intent(in) :: fbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(SP) :: r
+!</result>
+!</function>
+    
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, fbound)
+    else
+      r = fval
+    end if
+  end function afcstab_limitBoundedSngl
+
+  !*****************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine afcstab_combFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha)
+
+!<description>
+    ! This subroutine combines the two fluxes:
+    ! Dflux2 := Dflux2 + dscale * Dalpha * Dflux1
+!</description>
+    
+!<input>
+    ! First flux
+    real(DP), dimension(:), intent(in) :: Dflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(DP), dimension(:), intent(in), optional :: Dalpha
+
+    ! Global scaling factor for all entries of flux1
+    real(DP), intent(in) :: dscale
+
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
+!</input>
+
+!<inputoutput>
+    ! Second flux
+    real(DP), dimension(:), intent(inout) :: Dflux2
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+    
+    if (present(Dalpha)) then
+      
+      if (dscale .eq. 1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge)&
+                        + Dalpha(iedge) * Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (dscale .eq. -1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge)&
+                        - Dalpha(iedge) * Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge)&
+                        + dscale * Dalpha(iedge) * Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+      
+    else   ! Dalpha not present
+      
+      if (dscale .eq. 1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge) + Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (dscale .eq. -1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge) - Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(iedge) = Dflux2(iedge) + dscale * Dflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+      
+    end if
+
+  end subroutine afcstab_combFluxesDble
+
+  ! ****************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine afcstab_combFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha)
+
+!<description>
+    ! This subroutine combines the two fluxes:
+    ! Fflux2 := Fflux2 + fscale * Falpha * Fflux1
+!</description>
+    
+!<input>
+    ! First flux
+    real(SP), dimension(:), intent(in) :: Fflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(SP), dimension(:), intent(in), optional :: Falpha
+
+    ! Global scaling factor for all entries of flux1
+    real(SP), intent(in) :: fscale
+
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
+!</input>
+
+!<inputoutput>
+    ! Second flux
+    real(SP), dimension(:), intent(inout) :: Fflux2
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+    
+    if (present(Falpha)) then
+      
+      if (fscale .eq. 1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge)&
+                        + Falpha(iedge) * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (fscale .eq. -1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge)&
+                        - Falpha(iedge) * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge)&
+                        + fscale * Falpha(iedge) * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+      
+    else   ! Falpha not present
+      
+      if (fscale .eq. 1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge) + Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      elseif (fscale .eq. -1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge) - Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      else
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(iedge) = Fflux2(iedge) + fscale * Fflux1(iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+      
+    end if
+
+  end subroutine afcstab_combFluxesSngl
+
+  ! ****************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+    pure&
+#endif
+    subroutine afcstab_combineFluxesDble(NVAR, NEDGE, dscale, Dflux1, Dflux2, Dalpha)
+
+!<description>
+    ! This subroutine combines the two fluxes:
+    ! Dflux2 := Dflux2 + dscale * Dalpha * Dflux1
+!</description>
+
+!<input>
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
+
+    ! Number of variables
+    integer, intent(in) :: NVAR
+
+    ! First flux
+    real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(DP), dimension(:), intent(in), optional :: Dalpha
+
+    ! Global scaling factor for all entries of flux1
+    real(DP), intent(in) :: dscale    
+!</input>
+
+!<inputoutput>
+    ! Second flux
+    real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: iedge
+    
+    if (present(Dalpha)) then
+
+      if (dscale .eq. 1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          + Dalpha(iedge) * Dflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (dscale .eq. -1.0_DP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          - Dalpha(iedge) * Dflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          + dscale * Dalpha(iedge) * Dflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    else   ! Dalpha not present
+
+      if (dscale .eq. 1.0_DP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          + Dflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (dscale .eq. -1.0_DP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          - Dflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Dflux2(:,iedge) = Dflux2(:,iedge)&
+                          + dscale * Dflux1(:,iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+
+    end if
+
+  end subroutine afcstab_combineFluxesDble
+
+  ! ****************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+    pure&
+#endif
+    subroutine afcstab_combineFluxesSngl(NVAR, NEDGE, fscale, Fflux1, Fflux2, Falpha)
+
+!<description>
+    ! This subroutine combines the two fluxes:
+    ! Fflux2 := Fflux2 + fscale * Falpha * Fflux1
+!</description>
+
+!<input>
+    ! First flux
+    real(SP), dimension(NVAR,NEDGE), intent(in) :: Fflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(SP), dimension(:), intent(in), optional :: Falpha
+
+    ! Global scaling factor for all entries of flux1
+    real(SP), intent(in) :: fscale
+
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
+
+    ! Number of variables
+    integer, intent(in) :: NVAR
+!</input>
+
+!<inputoutput>
+    ! Second flux
+    real(SP), dimension(NVAR,NEDGE), intent(inout) :: Fflux2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: iedge
+    
+    if (present(Falpha)) then
+
+      if (fscale .eq. 1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(:,iedge) = Fflux2(:,iedge)&
+                          + Falpha(iedge) * Fflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (fscale .eq. -1.0_SP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(:,iedge) = Fflux2(:,iedge)&
+                          - Falpha(iedge) * Fflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(:,iedge) = Fflux2(:,iedge)&
+                          + fscale * Falpha(iedge) * Fflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    else   ! Falpha not present
+
+      if (fscale .eq. 1.0_SP) then
+        
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(:,iedge) = Fflux2(:,iedge)&
+                          + Fflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (fscale .eq. -1.0_SP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(:,iedge) = Fflux2(:,iedge)&
+                          - Fflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Fflux2(:,iedge) = Fflux2(:,iedge)&
+                          + fscale * Fflux1(:,iedge)
+        end do
+        !$omp end parallel do
+        
+      end if
+
+    end if
+
+  end subroutine afcstab_combineFluxesSngl
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_upwindOrientationDble(Dcoefficients, IedgeList,&
+      DcoeffsAtEdge, ipos, jpos)
+
+!<description>
+    ! This subroutine orients the edges so that the starting node of
+    ! each edge is located upwind. This orientation convention is
+    ! introduced in the paper:
+    !
+    ! D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    ! conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
+    ! Transport: Principles, Algorithms, and Applications, Springer,
+    ! 2005, 155-206.
+!</description>
+
+!<input>
+    ! Positions of node I and J
+    integer, intent(in) :: ipos,jpos
+!</input>
+
+!<inputoutput>
+    ! Coefficients used to determine the upwind direction
+    ! DIMENSION(1:IPOS:JPOS:NPOS,1:NEDGE),
+    ! where IPOS and JPOS are the positions where the data
+    ! for node I and J is stored, respectively
+    real(DP), dimension(:,:), intent(inout) :: Dcoefficients
+    
+    ! Additional coefficients at the edges
+    ! DIMENSION(1:N2,1:2,1:NEDGE)
+    real(DP), dimension(:,:,:), intent(inout) :: DcoeffsAtEdge
+
+    ! List of edges
+    ! DIMENSION(1:N3,1:NEDGE)
+    integer, dimension(:,:), intent(inout) :: IedgeList   
+!</inputoutput>
+!</subroutine
+
+    ! local variables
+    real(DP) :: daux
+    integer :: iedge,iaux,naux,nedge
+    
+    nedge = size(IedgeList,2)
+    naux  = size(DcoeffsAtEdge,1)
+    
+    !$omp parallel do default(shared) private(iaux,daux)&
+    !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+    do iedge = 1, nedge
+      if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
+        ! Swap nodes i <-> j
+        iaux = IedgeList(1,iedge)
+        IedgeList(1,iedge) = IedgeList(2,iedge)
+        IedgeList(2,iedge) = iaux
+        
+        ! Swap edges ij <-> ji
+        iaux = IedgeList(3,iedge)
+        IedgeList(3,iedge) = IedgeList(4,iedge)
+        IedgeList(4,iedge) = iaux
+        
+        ! Swap edge data data_ij <-> data_ji
+        daux = Dcoefficients(ipos,iedge)
+        Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
+        Dcoefficients(jpos,iedge) = daux
+        
+        ! Swap edgewise coefficients Data_ij <-> Data_ji
+        do iaux = 1, naux
+          daux = DcoeffsAtEdge(iaux,1,iedge)
+          DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
+          DcoeffsAtEdge(iaux,2,iedge) = daux
+        end do
+      end if
+    end do
+    !$omp end parallel do
+    
+  end subroutine afcstab_upwindOrientationDble
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_upwindOrientationSngl(Fcoefficients, IedgeList,&
+      FcoeffsAtEdge, ipos, jpos)
+
+!<description>
+    ! This subroutine orients the edges so that the starting node of
+    ! each edge is located upwind. This orientation convention is
+    ! introduced in the paper:
+    !
+    ! D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    ! conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
+    ! Transport: Principles, Algorithms, and Applications, Springer,
+    ! 2005, 155-206.
+!</description>
+
+!<input>
+    ! Positions of node I and J
+    integer, intent(in) :: ipos,jpos
+!</input>
+
+!<inputoutput>
+    ! Coefficients used to determine the upwind direction
+    ! DIMENSION(1:IPOS:JPOS:NPOS,1:NEDGE),
+    ! where IPOS and JPOS are the positions where the data
+    ! for node I and J is stored, respectively
+    real(SP), dimension(:,:), intent(inout) :: Fcoefficients
+    
+    ! Additional coefficients at the edges
+    ! DIMENSION(1:N2,1:2,1:NEDGE)
+    real(SP), dimension(:,:,:), intent(inout) :: FcoeffsAtEdge
+
+    ! List of edges
+    ! DIMENSION(1:N3,1:NEDGE)
+    integer, dimension(:,:), intent(inout) :: IedgeList   
+!</inputoutput>
+!</subroutine
+
+    ! local variables
+    real(SP) :: faux
+    integer :: iedge,iaux,naux,nedge
+    
+    nedge = size(IedgeList,2)
+    naux  = size(FcoeffsAtEdge,1)
+    
+    !$omp parallel do default(shared) private(iaux,faux)&
+    !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+    do iedge = 1, nedge
+      if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
+        ! Swap nodes i <-> j
+        iaux = IedgeList(1,iedge)
+        IedgeList(1,iedge) = IedgeList(2,iedge)
+        IedgeList(2,iedge) = iaux
+        
+        ! Swap edges ij <-> ji
+        iaux = IedgeList(3,iedge)
+        IedgeList(3,iedge) = IedgeList(4,iedge)
+        IedgeList(4,iedge) = iaux
+        
+        ! Swap edge data data_ij <-> data_ji
+        faux = Fcoefficients(ipos,iedge)
+        Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
+        Fcoefficients(jpos,iedge) = faux
+        
+        ! Swap edgewise coefficients Data_ij <-> Data_ji
+        do iaux = 1, naux
+          faux = FcoeffsAtEdge(iaux,1,iedge)
+          FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
+          FcoeffsAtEdge(iaux,2,iedge) = faux
+        end do
+      end if
+    end do
+    !$omp end parallel do
+    
+  end subroutine afcstab_upwindOrientationSngl
+
+end module afcstabbase

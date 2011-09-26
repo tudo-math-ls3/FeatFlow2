@@ -7,7 +7,7 @@
   subroutine fcb_calcDivVector(rafcstab, rx, ry, dscale, bclear,&
       fcb_calcFlux_sim, rcollection)
 
-    use afcstabilisation
+    use afcstabbase
     use collection
     use fsystem
     use linearsystemblock

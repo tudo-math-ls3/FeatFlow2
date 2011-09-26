@@ -32,7 +32,9 @@ module zpinch_callback
 
 #include "../hydro/hydro.h"
 
-  use afcstabilisation
+  use afcstabbase
+  use afcstabscalar
+  use afcstabsystem
   use basicgeometry
   use boundarycondaux
   use boundaryfilter
@@ -2484,7 +2486,7 @@ contains
             Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply failsafe flux correction for the hydrodynamic model
-        call gfsys_failsafeFCT(&
+        call afcsys_failsafeFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
               Rsolution(1), rtimestep%dStep, 1e-8_DP,&
@@ -2495,7 +2497,7 @@ contains
 
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2523,7 +2525,7 @@ contains
         
         ! Compute and apply linearised FEM-FCT correction for the
         ! transport model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2542,7 +2544,7 @@ contains
           Rsolution(1), ssectionNameHydro, rcollection)
       
       ! Compute linearised FEM-FCT correction for the transport model
-      call gfsc_buildConvectionVectorFCT(&
+      call afcsc_buildVectorFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
@@ -2583,7 +2585,7 @@ contains
             Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply linearised FEM-FCT correction for the transportmodel
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2608,7 +2610,7 @@ contains
       
       ! Compute linearised FEM-FCT correction for the transport model
       ! (without initialisation)
-      call gfsc_buildConvectionVectorFCT(&
+      call afcsc_buildVectorFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
@@ -2644,7 +2646,7 @@ contains
             Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply linearised FEM-FCT correction for the transport model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2656,7 +2658,7 @@ contains
     case (3)   ! Transport model first, hydrodynamic second second
       
       ! Compute linearised FEM-FCT correction for the transport model
-      call gfsc_buildConvectionVectorFCT(&
+      call afcsc_buildVectorFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
@@ -2705,7 +2707,7 @@ contains
             Rsolution(1), ssectionNameHydro, rcollection)
         
         ! Apply linearised FEM-FCT correction for the transport model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2758,7 +2760,7 @@ contains
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
         
         ! Apply linearised FEM-FCT correction for transport model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2773,7 +2775,7 @@ contains
 
         ! Compute and apply linearised FEM-FCT correction for
         ! transport model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
@@ -2800,7 +2802,7 @@ contains
         
         ! Compute and apply linearised FEM-FCT correction for
         ! hydrodynamic model
-        call gfsc_buildConvectionVectorFCT(&
+        call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&

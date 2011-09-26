@@ -6,7 +6,7 @@
 
 module euler_lagrange
 
-  use afcstabilisation
+  use afcstabbase
   use bilinearformevaluation
   use boundary
   use boundaryfilter

@@ -1,18 +1,18 @@
-  ! -*- mode: f90; -*-
+   ! -*- mode: f90; -*-
 
   interface
 
 !<subroutine>
     
-  subroutine fcb_calcMatrixDiagSc_sim(DdataAtNode, DcoeffsAtNode,&
-      InodeList, dscale, nnodes, DmatrixAtNode, rcollection)
+  subroutine fcb_calcVectorSc_sim(DdataAtNode, DcoeffsAtNode,&
+      InodeList, dscale, nnodes, DvectorAtNode, rcollection)
 
     use fsystem
     use collection
 
 !<description>
     ! Given the solution data DdataAtNode and auxiliary coefficients
-    ! DcoeffsAtNode this subroutine computes the local matrix entries
+    ! DcoeffsAtNode this subroutine computes the local vector entries
     ! DmatrixAtNode for the node $i$.
 !</description>
 
@@ -38,19 +38,18 @@
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: collection structure
-    type(t_collection), intent(inout), optional :: rcollection
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
-  ! Coefficients of the matrix for all nodes under consideration
-  !   DIMENSION(ncoeffs,nnodes)
-  ! with ncoeffs the number of matrix coefficients at the node
-  real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
+  ! Coefficients of the vector for all nodes under consideration
+  !   DIMENSION(nnodes)
+  real(DP), dimension(:), intent(out) :: DvectorAtNode
 !</output>
 
 !</subroutine>
 
-  end subroutine fcb_calcMatrixDiagSc_sim
+  end subroutine fcb_calcVectorSc_sim
 
   end interface

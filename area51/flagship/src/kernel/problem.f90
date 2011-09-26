@@ -66,7 +66,7 @@
 
 module problem
 
-  use afcstabilisation
+  use afcstabbase
   use basicgeometry
   use boundary
   use boundaryfilter
