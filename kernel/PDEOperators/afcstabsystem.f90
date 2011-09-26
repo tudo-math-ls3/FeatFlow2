@@ -265,7 +265,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -284,7 +284,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -308,7 +308,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -352,7 +352,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -452,7 +452,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -471,7 +471,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -495,7 +495,7 @@ contains
 
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&
@@ -543,7 +543,7 @@ contains
       
       ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
       if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .ne. 0) then
           rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
           rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
           rafcstab%iduplicationFlag =&

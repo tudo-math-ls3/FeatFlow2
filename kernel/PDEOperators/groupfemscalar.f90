@@ -120,8 +120,8 @@ module groupfemscalar
   end interface
   
   interface gfsc_buildVector
-    module procedure gfsc_buildVectorNodeScalar
-    module procedure gfsc_buildVectorNodeBlock
+!    module procedure gfsc_buildVectorNodeScalar
+!    module procedure gfsc_buildVectorNodeBlock
     module procedure gfsc_buildVectorEdgeScalar
     module procedure gfsc_buildVectorEdgeBlock
   end interface
@@ -155,7 +155,7 @@ contains
     !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! Otherwise, the standard operator is assembled without stabilisation.
 !</description>
@@ -1744,15 +1744,16 @@ contains
           ! Set pointers
           call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
           call lsyssc_getbase_double(rmatrix, p_Ddata)
+          call lsyssc_getbase_double(rx, p_Dx)
 
           ! Check if only a subset of the matrix is required
           if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
             call doOperatorMat79Dble(p_Kld, rgroupFEMSet%NEQ,&
-                p_DcoeffsAtNode, dscale, bclear, p_Ddata)
+                p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           else
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
             call doOperatorMat79Dble(p_Kld, rgroupFEMSet%NEQ,&
-                p_DcoeffsAtNode, dscale, bclear, p_Ddata, p_InodeList)
+                p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata, p_InodeList)
           end if
 
            case default
@@ -1781,10 +1782,11 @@ contains
     ! Assemble operator node-by-node without stabilisation
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doOperatorMat79Dble(Kld, NEQ, DcoeffsAtNode,&
+    subroutine doOperatorMat79Dble(Kld, NEQ, DcoeffsAtNode, Dx,&
         dscale, bclear, Ddata, InodeList)
 
       ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
@@ -1821,7 +1823,7 @@ contains
     !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
@@ -1901,7 +1903,7 @@ contains
     !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
 !</description>
 
 !<input>
@@ -2773,7 +2775,7 @@ contains
     !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
@@ -2849,7 +2851,7 @@ contains
     !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
     !
     ! For symmetric stabilisation
-    !   Coefficients(1:2, IJ) = (/d_ij, k_ij=k_ji/)
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
 !</description>
 
 !<input>
@@ -2882,9 +2884,239 @@ contains
     type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
-  
-    print *, "Not implemented yet!"
-    stop
+    
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dx,p_Ddata
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
+    real(DP), dimension(:,:), pointer :: p_Dcoefficients
+    
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
+
+    ! Check if vectors have the same data type double
+    if ((rx%cdataType .ne. rvector%cdataType) .or.&
+        (rx%cdataType .ne. rgroupFEMSet%cdataType)) then
+      call output_line('Data types mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
+      call sys_halt()
+    end if
+
+    ! What type of assembly should be performed
+    select case(rgroupFEMSet%cassemblyType)
+
+    case (GFEM_EDGEBASED)
+      !-------------------------------------------------------------------------
+      ! Edge-based assembly
+      !-------------------------------------------------------------------------
+      
+      ! Check if group finite element set is prepared
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)      .eq. 0)) then
+        call output_line('Group finite element set does not provide required data!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
+        call sys_halt()
+      end if
+        
+      ! Set pointers
+      call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+      call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
+
+      ! What data types are we?
+      select case(rvector%cdataType)
+      case (ST_DOUBLE)
+        ! Set pointers
+        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        call lsyssc_getbase_double(rx, p_Dx)
+        call lsyssc_getbase_double(rvector, p_Ddata)
+        
+        ! Do we have to build the stabilisation?
+        if (present(rafcstab)) then
+          
+          ! Check if stabilisation has been prepared
+          if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+            call output_line('Stabilisation has not been prepared!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
+            call sys_halt()
+          end if
+          
+          ! Check if coefficients should be stored in stabilisation
+          if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+            
+            ! Check if stabilisation has the same data type
+            if (rafcstab%cdataType .ne. ST_DOUBLE) then
+              call output_line('Stabilisation must have double precision!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
+              call sys_halt()
+            end if
+            
+            ! Set additional pointers
+            call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+            
+            !-------------------------------------------------------------------
+            ! Assemble vector with stabilisation and generate coefficients
+            !-------------------------------------------------------------------
+            call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
+                p_Dx, dscale, p_Ddata, p_Dcoefficients)
+            
+            ! Set state of stabilisation
+            rafcstab%istabilisationSpec =&
+                ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
+            
+            ! Do we need edge orientation?
+            if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
+              call afcstab_upwindOrientation(p_Dcoefficients, p_IedgeList,&
+                  p_DcoeffsAtEdge, 2, 3)
+              rafcstab%istabilisationSpec =&
+                  ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+            else
+              rafcstab%istabilisationSpec =&
+                  iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+            end if
+            
+          else
+            
+            !-------------------------------------------------------------------
+            ! Assemble operator without stabilisation
+            !-------------------------------------------------------------------
+            call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
+                p_Dx, dscale, p_Ddata)
+          end if
+          
+        else   ! no stabilisation structure present
+          
+          !---------------------------------------------------------------------
+          ! Assemble operator without stabilisation
+          !---------------------------------------------------------------------
+          call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
+              p_Dx, dscale, p_Ddata)
+          
+        end if
+        
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
+        call sys_halt()
+      end select
+
+    case default
+      call output_line('Unsupported assembly type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
+      call sys_halt()
+    end select
+      
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Assemble vector edge-by-edge without stabilisation
+
+    subroutine doVectorDble(IedgeListIdx, IedgeList, DcoeffsAtEdge,&
+        Dx, dscale, Ddata, Dcoefficients)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+
+      ! output parameters
+      real(DP), dimension(:,:), intent(out), optional :: Dcoefficients
+
+      ! auxiliary arrays
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      
+      ! local variables
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
+
+      !$omp parallel default(shared)&
+      !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSYS_NEDGESIM))
+      allocate(DfluxesAtEdge(2,GFSYS_NEDGESIM))
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = IedgeListIdx(igroup),&
+                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
+          
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+GFSYS_NEDGESIM)
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
+          end do
+          
+          ! Use callback function to compute internodal fluxes
+          if (present(Dcoefficients)) then
+            call fcb_calcFluxSc_sim(&
+                DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+                IedgeList(:,IEDGEset:IEDGEmax),&
+                dscale, IEDGEmax-IEDGEset+1,&
+                DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                rcollection=rcollection)
+          else
+            call fcb_calcFluxSc_sim(&
+                DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+                IedgeList(:,IEDGEset:IEDGEmax),&
+                dscale, IEDGEmax-IEDGEset+1,&
+                DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+                Dcoefficients(:,IEDGEset:IEDGEmax), rcollection)
+          end if
+          
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Update the global vector
+            Ddata(i) = Ddata(i)+DfluxesAtEdge(1,idx)
+            Ddata(j) = Ddata(j)+DfluxesAtEdge(2,idx)
+          end do
+        end do
+        !$omp end do
+
+      end do ! igroup
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DfluxesAtEdge)
+      !$omp end parallel
+
+    end subroutine doVectorDble
 
   end subroutine gfsc_buildVectorEdgeScalar
 

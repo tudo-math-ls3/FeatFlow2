@@ -5,7 +5,8 @@
 !<subroutine>
     
   subroutine fcb_calcFluxSc_sim(DdataAtEdge, DcoeffsAtEdge,&
-      IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
+      IedgeList, dscale, nedges, DfluxesAtEdge, Dcoefficients,&
+      rcollection)
 
     use fsystem
     use collection
@@ -51,6 +52,11 @@
   !   DIMENSION(2,nedges)
   ! with nvar the number of variables at each endpoint
   real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
+
+  ! OPTIONAL: Coefficients of the matrix for all edges under consideration
+  !   DIMENSION(ncoeffs,nedges)
+  ! with ncoeffs the number of matrix coefficients at the edge
+  real(DP), dimension(:,:), intent(out), optional :: Dcoefficients
 !</output>
 
 !</subroutine>
