@@ -5473,7 +5473,7 @@ contains
     call gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
 
     ! If the particle is still outside the element
-    if (binside == .FALSE.) then
+    if (binside == .false.) then
       ! Take the old elementnumber
 	  rParticles%p_element(iPart) = currentelm
 
@@ -6247,7 +6247,7 @@ contains
 
     ! Wrong element
     if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
-              abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
+              abs(rParticles%p_lambda3(iPart))-1) .ge. 0.00001) then
         call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
