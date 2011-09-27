@@ -159,7 +159,9 @@
 			<Filter Name="Interfaces">
 			<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsccallback.inc"/>
 			<File RelativePath="..\..\..\kernel\PDEOperators\intf_gfsyscallback.inc"/></Filter>
-		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabilisation.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabbase.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabscalar.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabsystem.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\convection.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\groupfembase.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\groupfemscalar.f90"/>

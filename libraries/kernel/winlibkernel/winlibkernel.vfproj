@@ -149,7 +149,9 @@
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\intf_nlsolcallback.inc"/>
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\nonlinearsolver.f90"/></Filter>
 		<Filter Name="PDEOperators">
-		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabilisation.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabbase.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabscalar.f90"/>
+		<File RelativePath="..\..\..\kernel\PDEOperators\afcstabsystem.f90"/>
 		<File RelativePath="..\..\..\kernel\PDEOperators\convection.f90">
 			<FileConfiguration Name="Debug Parallel|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration></File>
