@@ -3038,8 +3038,8 @@ contains
       !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(2,GFSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(2,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      allocate(DfluxesAtEdge(2,GFSC_NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3051,14 +3051,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, GFSC_NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle GFSC_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most GFSC_NEDGESIM edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+GFSC_NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
