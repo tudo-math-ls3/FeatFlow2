@@ -1292,14 +1292,16 @@ contains
       if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
         ! Initialize first group finite element set for edge-based assembly
         call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix), 0, 0, GFEM_EDGEBASED)
+            rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
       else
         ! Resize first group finite element set
         call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(templateMatrix))
       end if
 
-      ! Generate edge structure derived from template matrix
+      ! Generate diagonal and edge structure derived from template matrix
+      call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
+          p_rgroupFEMSet)
       call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
           p_rgroupFEMSet)
     else
@@ -1317,16 +1319,20 @@ contains
           rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1)
       
       if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize first group finite element set for edge-based
+        ! assembly as aduplicate of the template structure
+        call gfem_duplicateGroupFEMSet(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+
         ! Compute number of matrices to by copied
         nmatrices = 0
         if (coeffMatrix_CX   > 0) nmatrices = nmatrices+1
         if (coeffMatrix_CY   > 0) nmatrices = nmatrices+1
         if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
         
-        ! Initialize first group finite element set for edge-based assembly
-        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            nmatrices, nmatrices, GFEM_EDGEBASED)
+        ! Allocate memory for matrix entries
+        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
       else
         ! Resize first group finite element set
         call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
@@ -1336,7 +1342,7 @@ contains
       ! Duplicate edge-based structure from template
       call gfem_duplicateGroupFEMSet(&
           rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_EDGESTRUCTURE, .true.)
+          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGESTRUCTURE, .true.)
 
       ! Copy constant coefficient matrices to group finite element set
       nmatrices = 0
@@ -1356,7 +1362,6 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
       end if
     end if
-    
     
     ! Resize stabilisation structure if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
@@ -1417,14 +1422,18 @@ contains
           rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1)
       
       if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize first group finite element set for edge-based
+        ! assembly as aduplicate of the template structure
+        call gfem_duplicateGroupFEMSet(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+
         ! Compute number of matrices to by copied
         nmatrices = 0
         if (coeffMatrix_S > 0) nmatrices = nmatrices+1
         
-        ! Initialize first group finite element set for edge-based assembly
-        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            nmatrices, nmatrices, GFEM_EDGEBASED)
+        ! Allocate memory for matrix entries
+        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
       else
         ! Resize first group finite element set
         call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
@@ -1434,7 +1443,7 @@ contains
       ! Duplicate edge-based structure from template
       call gfem_duplicateGroupFEMSet(&
           rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_EDGESTRUCTURE, .true.)
+          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGESTRUCTURE, .true.)
 
       ! Copy constant coefficient matrices to group finite element set
       nmatrices = 0

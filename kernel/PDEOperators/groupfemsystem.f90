@@ -73,6 +73,15 @@ module groupfemsystem
   integer, public            :: GFSYS_NEDGESIM = 64
 #endif
 #endif
+
+  ! Number of nonzero entries to handle simultaneously when building matrices
+#ifndef GFSYS_NASIM
+#ifndef ENABLE_AUTOTUNE
+  integer, parameter, public :: GFSYS_NASIM = 1000
+#else
+  integer, public            :: GFSYS_NASIM = 1000
+#endif
+#endif
   
   ! Minimum number of nodes for OpenMP parallelisation: If the number of
   ! nodes is below this value, then no parallelisation is performed.
@@ -91,6 +100,17 @@ module groupfemsystem
   integer, parameter, public :: GFSYS_NEDGEMIN_OMP = 1000
 #else
   integer, public            :: GFSYS_NEDGEMIN_OMP = 1000
+#endif
+#endif
+
+  ! Minimum number of nonzero entries for OpenMP parallelisation: If
+  ! the number of nonzero entries is below this value, then no
+  ! parallelisation is performed.
+#ifndef GFSYS_NAMIN_OMP
+#ifndef ENABLE_AUTOTUNE
+  integer, parameter, public :: GFSYS_NAMIN_OMP = 1000
+#else
+  integer, public            :: GFSYS_NAMIN_OMP = 1000
 #endif
 #endif
 !</constantblock>
