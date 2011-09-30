@@ -1906,7 +1906,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resised arbitrarily.
+  ! assigned to the vector. The vector can be resized arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -1980,7 +1980,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resised arbitrarily.
+  ! assigned to the vector. The vector can be resized arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -2062,7 +2062,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resised arbitrarily.
+  ! assigned to the vector. The vector can be resized arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -2127,7 +2127,7 @@ contains
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
   ! allocated for a vector of length NEQMAX but only length NEQ is
-  ! assigned to the vector. The vector can be resised arbitrarily.
+  ! assigned to the vector. The vector can be resized arbitrarily.
   ! Note that no memory reallocation is required if NEQ < NEQMAX.
   ! In order to keep the actual size of the memory transparent from
   ! the user, NEQMAX is not stored directly. It can only be obtained,
@@ -2306,7 +2306,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resised one
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
     logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
@@ -2328,13 +2328,13 @@ contains
 
     ! Check, that vector is not a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
-      print *, "lsyssc_resizeVectorDirect: A copied vector cannot be resised!"
+      print *, "lsyssc_resizeVectorDirect: A copied vector cannot be resized!"
       call sys_halt()
     end if
     
     ! Check, if vector has been initialised before.
     if (rvector%NEQ .eq. 0 .or. rvector%h_Ddata .eq. ST_NOHANDLE) then
-      print *, "lsyssc_resizeVectorDirect: A vector can only be resised " // &
+      print *, "lsyssc_resizeVectorDirect: A vector can only be resized " // &
                "if it has been created correctly!"
       call sys_halt()
     end if
@@ -2413,7 +2413,7 @@ contains
   ! Resizes the vector structure so that it exhibits the same memory layout 
   ! as the template vector. Note that this subroutine can only be used
   ! if the template vector has the same internal structure, e.g., data type, NVAR
-  ! as the vector to be resised.
+  ! as the vector to be resized.
   !
   ! If NEQ is smaller than the real memory allocated for the vector, then
   ! only NEQ is reset. Otherwise, the memory is physically reallocated.
@@ -2438,7 +2438,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resised one
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
     logical, intent(in), optional              :: bcopy
 
 !</input>
@@ -2456,7 +2456,7 @@ contains
 
     ! Check, if vector is a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
-      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resised!"
+      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
       call sys_halt()
     end if
 
@@ -2511,7 +2511,7 @@ contains
     ! scalar template matrix. If the vector does not exist, then it
     ! is created according to the matrix structure.
     !
-    ! If it already exists, then it is resised accordingly so that
+    ! If it already exists, then it is resized accordingly so that
     ! its size coincides with the number of columns of the matrix.
 !</description>
 
@@ -2523,7 +2523,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resised one
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
     logical, intent(in), optional              :: bcopy
 
 !</input>
@@ -2539,7 +2539,7 @@ contains
 
     ! Check, if vector is a copy of another (possibly larger) vector
     if (rvector%bisCopy) then
-      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resised!"
+      print *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
       call sys_halt()
     end if
     
@@ -2594,11 +2594,11 @@ contains
   ! If the optional parameters NEQMAX, NCOLSMAX or NAMAX are specified, then 
   ! memory is allocated for these values rather than NEQ, NCOLS or NA.
   !
-  ! By default, a matrix cannot be resised, if it is copied (even partially)
+  ! By default, a matrix cannot be resized, if it is copied (even partially)
   ! from another matrix. This is to prevent inconsistent data, i.e., the
-  ! copied matrix is resised correctly but the original matrix still has
+  ! copied matrix is resized correctly but the original matrix still has
   ! old values NEQ, NCOLS, and NA. However, if the optional parameter
-  ! bforce=.TRUE. then a copied matrix is resised virtually. That means,
+  ! bforce=.TRUE. then a copied matrix is resized virtually. That means,
   ! the atomic data NEQ, NCOLS, and NA are set to the new values if the
   ! corresponding handles for the structure and data are associated
   ! to memory blocks of sufficient size.
@@ -2622,7 +2622,7 @@ contains
     ! Whether to fill the matrix with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the matrix to the resised one
+    ! OPTIONAL: Whether to copy the content of the matrix to the resized one
     logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Maximum number of equations
@@ -2661,14 +2661,14 @@ contains
     if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) .and.&
          .not.bdoresize) then
-      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resised if " // &
+      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if " // &
                "this is forced explicitely!"
       call sys_halt()
     end if
 
     ! Check, if matrix has been initialised before.
     if (rmatrix%NEQ .eq. 0 .or. rmatrix%NCOLS .eq. 0 .or. rmatrix%NA .eq. 0) then
-      print *, "lsyssc_resizeMatrixDirect: A matrix can only be resised " // &
+      print *, "lsyssc_resizeMatrixDirect: A matrix can only be resized " // &
                "if it has been created correctly!"
       call sys_halt()
     end if
@@ -2705,13 +2705,13 @@ contains
     rmatrix%NEQ   = NEQ
     rmatrix%NCOLS = NCOLS
 
-    ! Now, the matrix has been virtually resised, that is, it already states
+    ! Now, the matrix has been virtually resized, that is, it already states
     ! the new dimensions. In order to resize the matrix physically, its structure
     ! and/or data need to be (re-)allocated).
     ! Remark: If the matrix was a copy of another matrix and if resize was
     ! not forced, then this routine would have stopped earlier. Hence, we can
     ! be sure, that resize is admissible in general. In other words, the structure/
-    ! data is resised unconditionally if it is not copied from another matrix.
+    ! data is resized unconditionally if it is not copied from another matrix.
     ! If it is a copy of another matrix, then we check if corresponding handles
     ! are associated to large enough memory blocks. If not, then we stop with 
     ! an error. In any case, copied parts of the matrix are not cleared.
@@ -2721,7 +2721,7 @@ contains
       
     case (LSYSSC_MATRIX1,LSYSSC_MATRIXD)
       
-      ! For these matrices, only the data array needs to be resised since
+      ! For these matrices, only the data array needs to be resized since
       ! there is no actual matrix structure.
       
       ! Are we copy or not?
@@ -2882,7 +2882,7 @@ contains
           if (bclear) call storage_clear(rmatrix%h_Kcol)
         end if
         
-        ! If the matrix is stored in format 9, then the diagonal array must be resised.
+        ! If the matrix is stored in format 9, then the diagonal array must be resized.
         if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9) .or.&
             (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL)) then
           
@@ -2925,7 +2925,7 @@ contains
         
       end if
       
-      ! Ok, the matrix structure has been resised according to the prescribed dimensions.
+      ! Ok, the matrix structure has been resized according to the prescribed dimensions.
       ! Now, let us resize the data array of the matrix.
       
       ! Are we copy or not?
@@ -3107,7 +3107,7 @@ contains
   ! Resizes the matrix so that it exhibits the same memory layout as the
   ! template matrix. Note that this subroutine can only be used if the
   ! template matrix has the same internal structure, e.g., data type, NVAR
-  ! as the matrix to be resised.
+  ! as the matrix to be resized.
   !
   ! If the parameter bclear=.TRUE. the complete matrix is cleared.
   ! This is done both in case the matrix is reallocated physically or not.
@@ -3120,11 +3120,11 @@ contains
   ! That is, if both parameters are given, then no data is copied if the
   ! matrix shoud be cleared afterwards ;-)
   !
-  ! By default, a matrix cannot be resised, if it is copied (even partially)
+  ! By default, a matrix cannot be resized, if it is copied (even partially)
   ! from another matrix. This is to prevent inconsistent data, i.e., the
-  ! copied matrix is resised correctly but the original matrix still has
+  ! copied matrix is resized correctly but the original matrix still has
   ! old values NEQ, NCOLS, and NA. However, if the optional parameter
-  ! bforce=.TRUE. then a copied matrix is resised virtually. That means,
+  ! bforce=.TRUE. then a copied matrix is resized virtually. That means,
   ! the atomic data NEQ, NCOLS, and NA are set to the new values if the
   ! corresponding handles for the structure and data are associated
   ! to memory blocks of sufficient size.
@@ -3142,7 +3142,7 @@ contains
     ! Whether to fill the vector with zero initially
     logical, intent(in)                        :: bclear
 
-    ! OPTIONAL: Whether to copy the content of the vector to the resised one
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
     logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Whether to enforce resize even if matrix is copied from another matrix
@@ -3171,7 +3171,7 @@ contains
     if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) .and.&
          .not.bdoresize) then
-      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resised if" // &
+      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if" // &
                "this is forced explicitely!"
       call sys_halt()
     end if
