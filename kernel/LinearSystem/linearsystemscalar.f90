@@ -25033,10 +25033,12 @@ contains
     
     ! Determine the type of information stored at each edge
     select case(ccontentType)
-    case (LSYSSC_EDGELIST_NODESONLY, LSYSSC_EDGELIST_POSONLY)
+    case (LSYSSC_EDGELIST_NODESONLY)
       ncontent = 2
-    case (LSYSSC_EDGELIST_NODESANDPOS)
+    case (LSYSSC_EDGELIST_POSONLY)
       ncontent = 4
+    case (LSYSSC_EDGELIST_NODESANDPOS)
+      ncontent = 6
     case default
       call output_line('Unsupported content specifier!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genEdgeList')
@@ -25208,9 +25210,11 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
+            IedgeList(3,iedge) = neq*(i-1)+i
+            IedgeList(4,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25231,9 +25235,11 @@ contains
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
+            IedgeList(5,iedge) = neq*(i-1)+i
+            IedgeList(6,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25315,9 +25321,11 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
+            IedgeList(3,iedge) = neq*(i-1)+i
+            IedgeList(4,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25344,9 +25352,11 @@ contains
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
+            IedgeList(5,iedge) = neq*(i-1)+i
+            IedgeList(6,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25411,9 +25421,11 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
+            IedgeList(3,iedge) = neq*(i-1)+i
+            IedgeList(4,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25436,9 +25448,11 @@ contains
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
+            IedgeList(5,iedge) = neq*(i-1)+i
+            IedgeList(6,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25521,9 +25535,11 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = neq*(i-1)+j
             IedgeList(2,iedge) = neq*(j-1)+i
+            IedgeList(3,iedge) = neq*(i-1)+i
+            IedgeList(4,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25552,9 +25568,11 @@ contains
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = neq*(i-1)+j
             IedgeList(4,iedge) = neq*(j-1)+i
+            IedgeList(5,iedge) = neq*(i-1)+i
+            IedgeList(6,iedge) = neq*(j-1)+j
           end do
         end do
 
@@ -25595,8 +25613,7 @@ contains
             iedge = iedge+1
 
             ! Set node numbers i and i
-            IedgeList(1,iedge) = i
-            IedgeList(2,iedge) = i
+            IedgeList(1:2,iedge) = i
           end if
 
           ! Loop over all off-diagonal matrix entries IJ which are
@@ -25626,9 +25643,8 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set node numbers i and i
-            IedgeList(1,iedge) = Kld(i)
-            IedgeList(2,iedge) = Kld(i)
+            ! Set matrix position ii
+            IedgeList(1:4,iedge) = Kld(i)
           end if
           
           ! Loop over all off-diagonal matrix entries IJ which are
@@ -25643,9 +25659,11 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and ,jj
             IedgeList(1,iedge) = ij
             IedgeList(2,iedge) = ji
+            IedgeList(3,iedge) = Kld(i)
+            IedgeList(4,iedge) = Kld(j)
           end do
         end do
         
@@ -25659,12 +25677,10 @@ contains
             iedge = iedge+1
 
             ! Set node numbers i and i
-            IedgeList(1,iedge) = i
-            IedgeList(2,iedge) = i
+            IedgeList(1:2,iedge) = i
 
-            ! Set node numbers i and i
-            IedgeList(3,iedge) = Kld(i)
-            IedgeList(4,iedge) = Kld(i)
+            ! Set matrix position ii
+            IedgeList(3:6,iedge) = Kld(i)
           end if
 
           ! Loop over all off-diagonal matrix entries IJ which are
@@ -25683,9 +25699,11 @@ contains
             IedgeList(1,iedge) = i
             IedgeList(2,iedge) = j
 
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(3,iedge) = ij
             IedgeList(4,iedge) = ji
+            IedgeList(5,iedge) = Kld(i)
+            IedgeList(6,iedge) = Kld(j)
           end do
         end do
 
@@ -25734,8 +25752,7 @@ contains
               iedge = iedge+1
               
               ! Set node numbers i and i
-              IedgeList(1,iedge) = i
-              IedgeList(2,iedge) = i
+              IedgeList(1:2,iedge) = i
             end if
             
             ! Loop over all off-diagonal matrix entries IJ which are
@@ -25780,9 +25797,8 @@ contains
               ! Increase edge counter
               iedge = iedge+1
               
-              ! Set node numbers i and i
-              IedgeList(1,iedge) = Kld(i)
-              IedgeList(2,iedge) = Kld(i)
+              ! Set matrix position ii
+              IedgeList(1:4,iedge) = Kld(i)
             end if
             
             ! Loop over all off-diagonal matrix entries IJ which are
@@ -25800,9 +25816,11 @@ contains
               ! Increase edge counter
               iedge = iedge+1
               
-              ! Set matrix positions ij and ji
+              ! Set matrix positions ij, ji, ii, and jj
               IedgeList(1,iedge) = ij
               IedgeList(2,iedge) = ji
+              IedgeList(3,iedge) = Kld(i)
+              IedgeList(4,iedge) = Kld(j)
             end do
 
           else
@@ -25828,12 +25846,10 @@ contains
               iedge = iedge+1
               
               ! Set node numbers i and i
-              IedgeList(1,iedge) = i
-              IedgeList(2,iedge) = i
+              IedgeList(1:2,iedge) = i
               
-              ! Set node numbers i and i
-              IedgeList(3,iedge) = Kld(i)
-              IedgeList(4,iedge) = Kld(i)
+              ! Set matrix position ii
+              IedgeList(3:6,iedge) = Kld(i)
             end if
             
             ! Loop over all off-diagonal matrix entries IJ which are
@@ -25855,9 +25871,11 @@ contains
               IedgeList(1,iedge) = i
               IedgeList(2,iedge) = j
               
-              ! Set matrix positions ij and ji
+              ! Set matrix positions ij, ji, ii, and jj
               IedgeList(3,iedge) = ij
               IedgeList(4,iedge) = ji
+              IedgeList(5,iedge) = Kld(i)
+              IedgeList(6,iedge) = Kld(j)
             end do
 
           else
@@ -26024,8 +26042,7 @@ contains
             iedge = iedge+1
 
             ! Set node numbers i and i
-            IedgeList(1,iedge) = i
-            IedgeList(2,iedge) = i
+            IedgeList(1:2,iedge) = i
           end if
 
           ! Loop over all off-diagonal matrix entries IJ which are
@@ -26055,9 +26072,8 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set node numbers i and i
-            IedgeList(1,iedge) = Kdiagonal(i)
-            IedgeList(2,iedge) = Kdiagonal(i)
+            ! Set matrix position ii
+            IedgeList(1:4,iedge) = Kdiagonal(i)
           end if
           
           ! Loop over all off-diagonal matrix entries IJ which are
@@ -26072,9 +26088,11 @@ contains
             ! Increase edge counter
             iedge = iedge+1
             
-            ! Set matrix positions ij and ji
+            ! Set matrix positions ij, ji, ii, and jj
             IedgeList(1,iedge) = ij
             IedgeList(2,iedge) = ji
+            IedgeList(3,iedge) = Kdiagonal(i)
+            IedgeList(4,iedge) = Kdiagonal(j)
           end do
         end do
         
@@ -26088,12 +26106,10 @@ contains
             iedge = iedge+1
 
             ! Set node numbers i and i
-            IedgeList(1,iedge) = i
-            IedgeList(2,iedge) = i
+            IedgeList(1:2,iedge) = i
 
             ! Set node numbers i and i
-            IedgeList(3,iedge) = Kdiagonal(i)
-            IedgeList(4,iedge) = Kdiagonal(i)
+            IedgeList(3:6,iedge) = Kdiagonal(i)
           end if
 
           ! Loop over all off-diagonal matrix entries IJ which are
@@ -26115,6 +26131,8 @@ contains
             ! Set matrix positions ij and ji
             IedgeList(3,iedge) = ij
             IedgeList(4,iedge) = ji
+            IedgeList(5,iedge) = Kdiagonal(i)
+            IedgeList(6,iedge) = Kdiagonal(j)
           end do
         end do
 
@@ -26163,8 +26181,7 @@ contains
               iedge = iedge+1
               
               ! Set node numbers i and i
-              IedgeList(1,iedge) = i
-              IedgeList(2,iedge) = i
+              IedgeList(1:2,iedge) = i
             end if
             
             ! Loop over all off-diagonal matrix entries IJ which are
@@ -26210,8 +26227,7 @@ contains
               iedge = iedge+1
               
               ! Set node numbers i and i
-              IedgeList(1,iedge) = Kdiagonal(i)
-              IedgeList(2,iedge) = Kdiagonal(i)
+              IedgeList(1:4,iedge) = Kdiagonal(i)
             end if
             
             ! Loop over all off-diagonal matrix entries IJ which are
@@ -26232,6 +26248,8 @@ contains
               ! Set matrix positions ij and ji
               IedgeList(1,iedge) = ij
               IedgeList(2,iedge) = ji
+              IedgeList(3,iedge) = Kdiagonal(i)
+              IedgeList(4,iedge) = Kdiagonal(j)
             end do
 
           else
@@ -26258,12 +26276,10 @@ contains
               iedge = iedge+1
               
               ! Set node numbers i and i
-              IedgeList(1,iedge) = i
-              IedgeList(2,iedge) = i
+              IedgeList(1:2,iedge) = i
               
               ! Set node numbers i and i
-              IedgeList(3,iedge) = Kdiagonal(i)
-              IedgeList(4,iedge) = Kdiagonal(i)
+              IedgeList(3:6,iedge) = Kdiagonal(i)
             end if
             
             ! Loop over all off-diagonal matrix entries IJ which are
@@ -26288,6 +26304,8 @@ contains
               ! Set matrix positions ij and ji
               IedgeList(3,iedge) = ij
               IedgeList(4,iedge) = ji
+              IedgeList(5,iedge) = Kdiagonal(i)
+              IedgeList(6,iedge) = Kdiagonal(j)
             end do
 
           else
@@ -26472,7 +26490,7 @@ contains
           nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
     else
       call storage_getsize(h_IedgeListIdx, isize)
-      if (isize < nmaxColor) then
+      if (isize .lt. nmaxColor) then
         call storage_free(h_IedgeListIdx)
         call storage_new('lsyssc_regroupEdgeList','IedgeListIdx',&
             nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
