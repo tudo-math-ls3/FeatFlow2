@@ -55,6 +55,22 @@ DEPSREL = 1E-8
 # Maximum number of MG iterations
 IMAXITER = 50
 
+# Coarse grid solver
+# 0: UMFPACK (default)
+# 1: CG
+# 2: BiCGStab
+CCGSOLVER = 0
+
+# Coarse grid solver preconditioner
+# 0: none (default)
+# 1: Jacobi
+# 2: SSOR
+# 3: ILU(0)
+CCGPREC = 0
+
+# Maximum iterations for coarse grid solver
+ICGMAXITER = 50
+
 # Smoother
 # 0: Jacobi (default)
 # 1: SOR

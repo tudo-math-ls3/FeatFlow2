@@ -70,13 +70,14 @@ contains
   type(t_vectorBlock) :: rvecSol,rvecRhs,rvecTmp
   !type(t_boundaryRegion) :: rbndRegion
   type(t_meshRegion) :: rmeshRegion
-  type(t_linsolNode), pointer :: p_rsolver,p_rsmoother
+  type(t_linsolNode), pointer :: p_rsolver,p_rsmoother, p_rprec
   type(t_matrixBlock), dimension(:), pointer :: Rmatrices
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
   integer, dimension(:), pointer :: p_Isort
   integer :: NLMIN, NLMAX,ierror
   integer :: i,j,k,n,iseed,cavrgType,cfilterPrjMat,csmoother,csmoothType,nsmoothSteps,&
-      cdumpSysMat, cdumpPrjMat, cdumpRhsVec, cdumpSolVec, ccycle, imaxIter, ndim
+      cdumpSysMat, cdumpPrjMat, cdumpRhsVec, cdumpSolVec, ccycle, imaxIter, ndim, &
+      cCGSolver, cCGPrec, iCGMaxIter
   real(DP) :: ddamping, depsRel
 
     ! Fetch all necessary parameters
@@ -100,6 +101,10 @@ contains
     call parlst_getvalue_int(rparam, '', 'CCYCLE', ccycle, 0)
     call parlst_getvalue_double(rparam, '', 'DEPSREL', depsRel, 1E-8_DP)
     call parlst_getvalue_int(rparam, '', 'IMAXITER', imaxIter, 50)
+
+    call parlst_getvalue_int(rparam, '', 'CCGSOLVER', cCGSolver, 0)
+    call parlst_getvalue_int(rparam, '', 'CCGPREC', cCGPrec, 0)
+    call parlst_getvalue_int(rparam, '', 'ICGMAXITER', iCGMaxIter, 50)
 
     call parlst_getvalue_int(rparam, '', 'CSMOOTHER', csmoother, 1)
     call parlst_getvalue_int(rparam, '', 'CSMOOTHTYPE', csmoothType, 3)
@@ -131,6 +136,9 @@ contains
     call output_line('CCYCLE         = ' // trim(sys_sil(ccycle,4)))
     call output_line('DEPSREL        = ' // trim(sys_sdEP(depsRel, 20, 12)))
     call output_line('IMAXITER       = ' // trim(sys_sil(imaxIter,8)))
+    call output_line('CCGSOLVER      = ' // trim(sys_sil(cCGSolver,4)))
+    call output_line('CCGPREC        = ' // trim(sys_sil(cCGPrec,4)))
+    call output_line('ICGMAXITER     = ' // trim(sys_sil(iCGMaxIter,8)))
     call output_line('CSMOOTHER      = ' // trim(sys_sil(csmoother,4)))
     call output_line('CSMOOTHTYPE    = ' // trim(sys_sil(csmoothType,4)))
     call output_line('NSMOOTHSTEPS   = ' // trim(sys_sil(nsmoothSteps,4)))
@@ -385,9 +393,38 @@ contains
     ! Set up multigrid
     call linsol_initMultigrid2 (p_rsolver,NLMAX-NLMIN+1)
     
+    ! set up a coarse grid preconditioner
+    if(cCGSolver .ne. 0) then
+      select case(cCGPrec)
+      case (0)
+        nullify(p_rprec)
+
+      case (1)
+        call linsol_initJacobi(p_rprec)
+
+      case (2)
+        call linsol_initSSOR(p_rprec)
+
+      case (3)
+        call linsol_initMILUs1x1 (p_rprec,0,0.0_DP)
+      end select
+    end if
+
     ! Set up a coarse grid solver.
     call linsol_getMultigrid2Level (p_rsolver,1,p_rlevelInfo)
-    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+    select case(cCGSolver)
+    case (0)
+      call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+
+    case (1)
+      call linsol_initCG(p_rlevelInfo%p_rcoarseGridSolver, p_rprec)
+
+    case (2)
+      call linsol_initBiCGStab(p_rlevelInfo%p_rcoarseGridSolver, p_rprec)
+
+    end select
+
+    p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = iCGMaxIter
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
