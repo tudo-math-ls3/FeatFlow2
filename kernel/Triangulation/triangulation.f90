@@ -777,8 +777,8 @@ module triangulation
   
   ! All adjacent elements
   integer(i32), parameter, public :: TRI_NEIGH_ALL = TRI_NEIGH_VERTEXNEIGHBOURS + &
-                                             TRI_NEIGH_EDGENEIGHBOURS + &
-                                             TRI_NEIGH_FACENEIGHBOURS
+                                                     TRI_NEIGH_EDGENEIGHBOURS + &
+                                                     TRI_NEIGH_FACENEIGHBOURS
   
 !</constants>
 
