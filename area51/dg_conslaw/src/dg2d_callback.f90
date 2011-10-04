@@ -2331,17 +2331,17 @@ contains
              !            Dcoefficients (1,ipoint,iel) = 1.0_dp
              !          end if
 
-!                       ! Shock tube
-!                       if (dx<0.5_dp) then
-!                         Dcoefficients (1,ipoint,iel) = 1.0_dp
-!                       else
-!                         Dcoefficients (1,ipoint,iel) = 0.125_dp
-!                       end if 
+                       ! Shock tube
+                       if (dx<0.5_dp) then
+                         Dcoefficients (1,ipoint,iel) = 1.0_dp
+                       else
+                         Dcoefficients (1,ipoint,iel) = 0.125_dp
+                       end if 
 
 
              ! Constant
              !Dcoefficients (1,ipoint,iel) = 1.0_dp
-             Dcoefficients (1,ipoint,iel) = 0.0_dp
+             !Dcoefficients (1,ipoint,iel) = 0.0_dp
 
 
              !          ! For scalar problem
@@ -2393,7 +2393,7 @@ contains
              dy = Dpoints(2,ipoint,iel)
 
              !Dcoefficients (1,ipoint,iel) = 0.5_dp*sqrt(1.4_dp)
-             Dcoefficients (1,ipoint,iel) = 3.0_dp*sqrt(1.4_dp)
+!             Dcoefficients (1,ipoint,iel) = 3.0_dp*sqrt(1.4_dp)
              
 !       ! Isentropicvortex
 !        dt = 0
@@ -2450,8 +2450,10 @@ contains
 
               ! Constant
               !Dcoefficients (1,ipoint,iel) = 1.0_dp
-              !Dcoefficients (1,ipoint,iel) = 2.5_dp+0.125_dp*1.4_dp
-              Dcoefficients (1,ipoint,iel) = 2.5_dp+4.5_dp*1.4_dp
+              
+              
+              ! Mach 3 wall reflection
+!              Dcoefficients (1,ipoint,iel) = 2.5_dp+4.5_dp*1.4_dp
               
 !             ! Isentropic vortex
 !             dt = 0.0_dp
@@ -3845,139 +3847,139 @@ contains
           ! Set boundary conditions
           ! Test, if we are at a boundary
           if (IelementList(iedge)==0) then
-!             ! No BCs
-!             Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
-!             Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
-!             Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
-!             Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
-
-
-              if (dx<0.0000001_dp) then
-              
-              ! write(*,*) 'In',dx
-
-              !!! Boundary conditions by Riemann invariants !!!
-              
-              ! Calculate Riemann invariants from outer (freestream) state
-              ! Here you can set the desired freestream state
-              
-              ! Mach 3
-              drho = 1.0_dp
-              du = 3.0_dp*sqrt(1.4_dp)
-              dv = 0.0_dp
-              dE = 2.5_dp+4.5_dp*1.4_dp
-              
-!              ! Mach 0.5
-!              drho = 1.0_dp   !1.0_dp
-!              du = 0.5_dp*sqrt(1.4_dp)
-!              dv = 0.0_dp
-!              dE = 2.5_dp+0.125_dp*1.4_dp
-              
-              dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
-              dH = dE + dpr/drho
-              dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-              
-              dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
-              dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-              
-              dW1o = dvn - 2.0_dp*dc/(gamma-1)
-              dW2o = dpr/(drho**gamma)
-              dW3o = dvt
-              dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-              
-              ! Calculate Riemann invariants from inner values
-              drho = Dsolutionvalues(1,ipoint,iedge,1)
-              du = Dsolutionvalues(1,ipoint,iedge,2)/drho
-              dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
-              dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-              
-              dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
-              dH = dE + dpr/drho
-              dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-              
-              dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
-              dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-              
-              dW1 = dvn - 2.0_dp*dc/(gamma-1)
-              dW2 = dpr/(drho**gamma)
-              dW3 = dvt
-              dW4 = dvn + 2.0_dp*dc/(gamma-1)
-        
-        ! Choose inner/outer state depending on the sign of the
-        ! eigenvalues
-        if ((dvn-dc)<0.0_dp) dW1 = dW1o
-        if (dvn<0.0_dp) then
-          dW2 = dW2o
-          dW3 = dW3o
-        end if
-        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-        
-        ! Transform back to conservative variables and set value
-        ! in the ghost node
-        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
-        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
-        dpr = dc*dc*drho/gamma
-        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
-        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-        
-        Dsolutionvalues(2,ipoint,iedge,1) = drho
-        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
-        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
-        Dsolutionvalues(2,ipoint,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
-        
-        
-!        ! It is Mach 3 - so we can set everything
-!        drho = 1.0_dp   !1.0_dp
-!        du = 3.0_dp*sqrt(1.4_dp)
-!        dv = 0.0_dp
-!        dE = 2.5_dp+4.5_dp*1.4_dp
-!        
-!        Dsolutionvalues(2,ipoint,iedge,1) = drho
-!        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
-!        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
-!        Dsolutionvalues(2,ipoint,iedge,4) = drho*dE
-        
-        
-        
-        elseif (dx>3.99999_dp) then
-        
-        !write(*,*) 'Out', dx
-        
              ! No BCs
              Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
              Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
              Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
              Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
-        
-        else
-        
-        !write(*,*) 'Wall', dx
 
-             ! Reflecting BCs
-             ! Calculate x- and y- velocity from momentum
-             drho = Dsolutionvalues(1,ipoint,iedge,1)
-             du = Dsolutionvalues(1,ipoint,iedge,2)/drho
-             dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
 
-             ! Calculate normal and tangential part
-             dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
-             dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-
-             ! Invert the normal part
-             dvn = -dvn
-             dvt =  dvt
-
-             ! Calculate new velocity
-             du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
-             dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
-
-             ! Set new momentum
-             Dsolutionvalues(2,ipoint,iedge,1) = drho
-             Dsolutionvalues(2,ipoint,iedge,2) = drho * du
-             Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
-             Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
-             
-            end if 
+!              if (dx<0.0000001_dp) then
+!              
+!              ! write(*,*) 'In',dx
+!
+!              !!! Boundary conditions by Riemann invariants !!!
+!              
+!              ! Calculate Riemann invariants from outer (freestream) state
+!              ! Here you can set the desired freestream state
+!              
+!              ! Mach 3
+!              drho = 1.0_dp
+!              du = 3.0_dp*sqrt(1.4_dp)
+!              dv = 0.0_dp
+!              dE = 2.5_dp+4.5_dp*1.4_dp
+!              
+!!              ! Mach 0.5
+!!              drho = 1.0_dp   !1.0_dp
+!!              du = 0.5_dp*sqrt(1.4_dp)
+!!              dv = 0.0_dp
+!!              dE = 2.5_dp+0.125_dp*1.4_dp
+!              
+!              dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+!              dH = dE + dpr/drho
+!              dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+!              
+!              dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!              dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+!              
+!              dW1o = dvn - 2.0_dp*dc/(gamma-1)
+!              dW2o = dpr/(drho**gamma)
+!              dW3o = dvt
+!              dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+!              
+!              ! Calculate Riemann invariants from inner values
+!              drho = Dsolutionvalues(1,ipoint,iedge,1)
+!              du = Dsolutionvalues(1,ipoint,iedge,2)/drho
+!              dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
+!              dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
+!              
+!              dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
+!              dH = dE + dpr/drho
+!              dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
+!              
+!              dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!              dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+!              
+!              dW1 = dvn - 2.0_dp*dc/(gamma-1)
+!              dW2 = dpr/(drho**gamma)
+!              dW3 = dvt
+!              dW4 = dvn + 2.0_dp*dc/(gamma-1)
+!        
+!        ! Choose inner/outer state depending on the sign of the
+!        ! eigenvalues
+!        if ((dvn-dc)<0.0_dp) dW1 = dW1o
+!        if (dvn<0.0_dp) then
+!          dW2 = dW2o
+!          dW3 = dW3o
+!        end if
+!        if ((dvn+dc)<0.0_dp) dW4 = dW4o
+!        
+!        ! Transform back to conservative variables and set value
+!        ! in the ghost node
+!        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
+!        drho = (dc*dc/(gamma*dW2))**(1.0_dp/(gamma-1.0_dp))
+!        dpr = dc*dc*drho/gamma
+!        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
+!        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
+!        
+!        Dsolutionvalues(2,ipoint,iedge,1) = drho
+!        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
+!        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
+!        Dsolutionvalues(2,ipoint,iedge,4) = dpr/(gamma-1.0_dp) + drho*0.5_dp*(du*du+dv*dv)
+!        
+!        
+!!        ! It is Mach 3 - so we can set everything
+!!        drho = 1.0_dp   !1.0_dp
+!!        du = 3.0_dp*sqrt(1.4_dp)
+!!        dv = 0.0_dp
+!!        dE = 2.5_dp+4.5_dp*1.4_dp
+!!        
+!!        Dsolutionvalues(2,ipoint,iedge,1) = drho
+!!        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
+!!        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
+!!        Dsolutionvalues(2,ipoint,iedge,4) = drho*dE
+!        
+!        
+!        
+!        elseif (dx>3.99999_dp) then
+!        
+!        !write(*,*) 'Out', dx
+!        
+!             ! No BCs
+!             Dsolutionvalues(2,ipoint,iedge,1) = Dsolutionvalues(1,ipoint,iedge,1)
+!             Dsolutionvalues(2,ipoint,iedge,2) = Dsolutionvalues(1,ipoint,iedge,2)
+!             Dsolutionvalues(2,ipoint,iedge,3) = Dsolutionvalues(1,ipoint,iedge,3)
+!             Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+!        
+!        else
+!        
+!        !write(*,*) 'Wall', dx
+!
+!             ! Reflecting BCs
+!             ! Calculate x- and y- velocity from momentum
+!             drho = Dsolutionvalues(1,ipoint,iedge,1)
+!             du = Dsolutionvalues(1,ipoint,iedge,2)/drho
+!             dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
+!
+!             ! Calculate normal and tangential part
+!             dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
+!             dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
+!
+!             ! Invert the normal part
+!             dvn = -dvn
+!             dvt =  dvt
+!
+!             ! Calculate new velocity
+!             du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
+!             dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
+!
+!             ! Set new momentum
+!             Dsolutionvalues(2,ipoint,iedge,1) = drho
+!             Dsolutionvalues(2,ipoint,iedge,2) = drho * du
+!             Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
+!             Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
+!             
+!            end if 
 
 
              !        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
@@ -8176,18 +8178,28 @@ contains
           !      Dvel(1)=1.0_dp
           !      Dvel(2)=1.0_dp
 
-          ! Steady circular convection
-          Dvel(1)=-dy
-          Dvel(2)=dx
+!          ! Steady circular convection
+!          Dvel(1)=-dy
+!          Dvel(2)=dx
+          
+          ! Constant Charakteristics
+          Dvel(1)=1.0_dp
+          Dvel(2)=0.75_dp
 
           dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
 
           ! Boundary conditions
           if (IelementList(iel)==0) then
           
-            if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
-            if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
+!            ! BC for circular convection
+!            if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
+!            if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iel) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
           
+            ! BC for constant charakteristics
+            Dsolutionvalues(2,ipoint,iel) = 0.0_dp
+            if ((abs(dx)<10.0_dp*SYS_EPSREAL_DP).and.(dy<0.3_dp)) Dsolutionvalues(2,ipoint,iel) = 1.0_dp
+            if ((abs(dy)<10.0_dp*SYS_EPSREAL_DP).and.(dx<0.3_dp)) Dsolutionvalues(2,ipoint,iel) = 1.0_dp
+            
           end if
           
 
@@ -8332,10 +8344,13 @@ contains
           ! Get solution      
           dQ(1) = DsolutionValues(1,ipoint,iel,1)
 
-          ! Set the coefficients
-          Dcoefficients (1,1,ipoint,iel) = -dy*dQ(1)
-          Dcoefficients (1,2,ipoint,iel) = dx*dQ(1)
-
+!          ! Set the coefficients for circular convection
+!          Dcoefficients (1,1,ipoint,iel) = -dy*dQ(1)
+!          Dcoefficients (1,2,ipoint,iel) = dx*dQ(1)
+          
+          ! For constant characteristics
+          Dcoefficients (1,1,ipoint,iel) = 1.0_dp*dQ(1)
+          Dcoefficients (1,2,ipoint,iel) = 0.75_dp*dQ(1)
 
 
        end do
@@ -8443,11 +8458,13 @@ contains
           dx = rdomainIntSubset%p_DcubPtsReal(1,ipoint,iel)
           dy = rdomainIntSubset%p_DcubPtsReal(2,ipoint,iel)
 
-          ! Set coefficients (the velocity vector)
-          Dcoefficients(1,1,1,ipoint,iel) = -dy
-          Dcoefficients(1,1,2,ipoint,iel) =  dx
-          !        Dcoefficients(1,ipoint,iel) = dx
-          !        Dcoefficients(2,ipoint,iel) = dy
+!          ! Set coefficients (the velocity vector) for circular convection
+!          Dcoefficients(1,1,1,ipoint,iel) = -dy
+!          Dcoefficients(1,1,2,ipoint,iel) =  dx
+          
+          ! Set coefficients (the velocity vector) for constant characteristic
+          Dcoefficients(1,1,1,ipoint,iel) = 1.0_dp
+          Dcoefficients(1,1,2,ipoint,iel) = 0.75_dp
 
        end do
     end do
@@ -8538,19 +8555,30 @@ contains
           dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
 
 
-          DfluxValues(1,1,1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
-          !      DfluxValues(1,ipoint,iedge) = dx*normal(1,iedge) + dy*normal(2,iedge)
+!          ! For circular convection
+!          DfluxValues(1,1,1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+          ! For constant characteristics
+          DfluxValues(1,1,1,ipoint,iedge) = 1.0_dp*normal(1,iedge) + 0.75_dp*normal(2,iedge)
 
           if (DfluxValues(1,1,1,ipoint,iedge).ge.0.0_dp) then
-
-             DfluxValues(1,1,1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+             
+!             ! For circular convection
+!             DfluxValues(1,1,1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+!             DfluxValues(1,1,2,ipoint,iedge) = 0.0_dp
+             
+             ! For constant characteristics
+             DfluxValues(1,1,1,ipoint,iedge) = 1.0_dp*normal(1,iedge) + 0.75_dp*normal(2,iedge)
              DfluxValues(1,1,2,ipoint,iedge) = 0.0_dp
 
           else
-
+             
+!             ! For circular convection
+!             DfluxValues(1,1,1,ipoint,iedge) = 0.0_dp
+!             DfluxValues(1,1,2,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
+             
+             ! For constant characteristics
              DfluxValues(1,1,1,ipoint,iedge) = 0.0_dp
-             DfluxValues(1,1,2,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
-
+             DfluxValues(1,1,2,ipoint,iedge) = 1.0_dp*normal(1,iedge) + 0.75_dp*normal(2,iedge)
           end if
 
        end do

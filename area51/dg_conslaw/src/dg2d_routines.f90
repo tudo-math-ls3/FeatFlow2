@@ -69,6 +69,11 @@ module dg2d_routines
      real(dp) :: dstarttime, dendtime, dlasttime
      real(dp), dimension(:), allocatable :: Dtimers
   end type t_profiler
+  
+  type t_pMultigrid
+     integer :: inumDiscr
+     type(t_BlockDiscretisation), pointer, dimension(:) :: p_rDiscrLev
+  end type t_pMultigrid
 
   public :: linf_dg_buildVectorScalarEdge2d
 
@@ -7646,7 +7651,7 @@ contains
 
              if (iidx.ne.0) then
                 ! Dimensional splitting
-                do idim = 10,10
+                do idim = -1,-1
                    ! Now we need the trafo matrices
 
 
@@ -7761,7 +7766,7 @@ contains
                       dquo = sqrt(da*da+db*db)
                       DQcharext = Euler_transformVector(DQchar)
 
-                      if (dquo<SYS_EPSREAL_DP) then
+                      if (dquo<10.0_dp*SYS_EPSREAL_DP) then
                          DL = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
                          DR = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
                       else
@@ -14829,6 +14834,89 @@ contains
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   !****************************************************************************
+
+  !<subroutine>  
+
+  subroutine dg_pM_project (rvectorSource,rvectorDest)
+
+    !<description>
+
+    ! For p-Multigrid. Takes a dg_Tx vector and projects it to a dg_Ty vector.
+
+    !</description>
+
+    !<input>
+
+    ! The lower order input vector
+    type(t_vectorScalar), intent(in) :: rvectorSource
+
+    !</input>
+
+    !<output>
+
+    ! The higher order output vector
+    type(t_vectorScalar), intent(inout) :: rvectorDest
+
+    !</output>
+
+    !</subroutine>
+ 
+    integer :: ndofloc1, ndofloc2, iel, NEL, nDOFlocSource, nDOFlocDest
+    integer(I32) :: celementSource, celementDest
+    real(DP), dimension(:), pointer :: p_DdataSource, p_DdataDest
+    integer, dimension(6) :: IdofGlobSource, IdofGlobDest
+
+    ! Get number of elements
+    NEL = rvectorSource%p_rspatialDiscr%p_rtriangulation%NEL
+
+    ! What is the current element type?
+    celementSource = rvectorSource%p_rspatialDiscr%RelementDistr(1)%celement
+    celementDest = rvectorDest%p_rspatialDiscr%RelementDistr(1)%celement
+
+    ! Get number of local DOF
+    nDOFlocSource = elem_igetNDofLoc(celementSource)
+    nDOFlocDest = elem_igetNDofLoc(celementDest)
+    
+    ! Get Pointers to data
+    call lsyssc_getbase_double(rvectorSource, p_DdataSource)
+    call lsyssc_getbase_double(rvectorDest, p_DdataDest)
+    
+    ! Initialize destination vector DOFs
+    p_DdataDest(:) = 0.0_dp
+    
+    ! Loop over all elements
+    do iel = 1, NEL
+      
+      ! Get global DOFs from the elements
+      call dof_locGlobMapping(rvectorSource%p_rspatialDiscr, iel, IdofGlobSource(1:nDOFlocSource))
+      call dof_locGlobMapping(rvectorDest%p_rspatialDiscr, iel, IdofGlobDest(1:nDOFlocDest))
+      
+      ! Copy DOFs from source to dest vector
+      p_DdataDest(IdofGlobDest(1:min(nDOFlocSource,nDOFlocDest))) = p_DdataSource(IdofGlobSource(1:min(nDOFlocSource,nDOFlocDest)))
+      
+      
+    
+    end do 
+  
+  
+  
+  
+  end subroutine
   
   
 !  !****************************************************************************
