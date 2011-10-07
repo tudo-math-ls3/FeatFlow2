@@ -69,11 +69,6 @@ module dg2d_routines
      real(dp) :: dstarttime, dendtime, dlasttime
      real(dp), dimension(:), allocatable :: Dtimers
   end type t_profiler
-  
-  type t_pMultigrid
-     integer :: inumDiscr
-     type(t_BlockDiscretisation), pointer, dimension(:) :: p_rDiscrLev
-  end type t_pMultigrid
 
   public :: linf_dg_buildVectorScalarEdge2d
 
@@ -7651,7 +7646,7 @@ contains
 
              if (iidx.ne.0) then
                 ! Dimensional splitting
-                do idim = -1,-1
+                do idim = 10,10
                    ! Now we need the trafo matrices
 
 
@@ -7766,7 +7761,7 @@ contains
                       dquo = sqrt(da*da+db*db)
                       DQcharext = Euler_transformVector(DQchar)
 
-                      if (dquo<10.0_dp*SYS_EPSREAL_DP) then
+                      if (dquo<SYS_EPSREAL_DP) then
                          DL = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
                          DR = Euler_buildMixedLcfromRoe(DQcharext,1.0_dp,0.0_dp)
                       else
@@ -9861,11 +9856,11 @@ contains
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
-       call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
+       call dg_bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
-       call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
+       call dg_bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
@@ -11149,11 +11144,11 @@ contains
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
-       call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(1)%p_IdofsTest, &
+       call dg_bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
-       call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(2)%p_IdofsTest, &
+       call dg_bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
@@ -14836,89 +14831,6 @@ contains
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-   !****************************************************************************
-
-  !<subroutine>  
-
-  subroutine dg_pM_project (rvectorSource,rvectorDest)
-
-    !<description>
-
-    ! For p-Multigrid. Takes a dg_Tx vector and projects it to a dg_Ty vector.
-
-    !</description>
-
-    !<input>
-
-    ! The lower order input vector
-    type(t_vectorScalar), intent(in) :: rvectorSource
-
-    !</input>
-
-    !<output>
-
-    ! The higher order output vector
-    type(t_vectorScalar), intent(inout) :: rvectorDest
-
-    !</output>
-
-    !</subroutine>
- 
-    integer :: ndofloc1, ndofloc2, iel, NEL, nDOFlocSource, nDOFlocDest
-    integer(I32) :: celementSource, celementDest
-    real(DP), dimension(:), pointer :: p_DdataSource, p_DdataDest
-    integer, dimension(6) :: IdofGlobSource, IdofGlobDest
-
-    ! Get number of elements
-    NEL = rvectorSource%p_rspatialDiscr%p_rtriangulation%NEL
-
-    ! What is the current element type?
-    celementSource = rvectorSource%p_rspatialDiscr%RelementDistr(1)%celement
-    celementDest = rvectorDest%p_rspatialDiscr%RelementDistr(1)%celement
-
-    ! Get number of local DOF
-    nDOFlocSource = elem_igetNDofLoc(celementSource)
-    nDOFlocDest = elem_igetNDofLoc(celementDest)
-    
-    ! Get Pointers to data
-    call lsyssc_getbase_double(rvectorSource, p_DdataSource)
-    call lsyssc_getbase_double(rvectorDest, p_DdataDest)
-    
-    ! Initialize destination vector DOFs
-    p_DdataDest(:) = 0.0_dp
-    
-    ! Loop over all elements
-    do iel = 1, NEL
-      
-      ! Get global DOFs from the elements
-      call dof_locGlobMapping(rvectorSource%p_rspatialDiscr, iel, IdofGlobSource(1:nDOFlocSource))
-      call dof_locGlobMapping(rvectorDest%p_rspatialDiscr, iel, IdofGlobDest(1:nDOFlocDest))
-      
-      ! Copy DOFs from source to dest vector
-      p_DdataDest(IdofGlobDest(1:min(nDOFlocSource,nDOFlocDest))) = p_DdataSource(IdofGlobSource(1:min(nDOFlocSource,nDOFlocDest)))
-      
-      
-    
-    end do 
-  
-  
-  
-  
-  end subroutine
-  
-  
 !  !****************************************************************************
 !
 !!<subroutine>
@@ -15745,7 +15657,12 @@ contains
 !  end subroutine dg_pperr_scalar2d_conf
   
   
-    !****************************************************************************
+  
+
+
+
+
+ !****************************************************************************
 
   !<subroutine>
 
@@ -15809,7 +15726,7 @@ contains
   
     ! local variables
     integer, dimension(:), pointer :: p_Kcol, p_Kld, p_KrowIdx
-    integer :: na,iel,idofe,jdofe,indofTest,indofTrial,jcol0,jdfg,jcol,nnzrows
+    integer :: na,iel,idofe,jdofe,indofTest,indofTrial,jcol0,jcol1,jdfg,jcol,nnzrows
 
     indofTrial = icolsPerElement
     indofTest = irowsPerElement
@@ -15854,6 +15771,7 @@ contains
           ! to JCOL0:
 
           jcol0=p_Kld(Irows(idofe,iel))
+          jcol1=p_Kld(Irows(idofe,iel)+1)-1
           
           ! Now we loop through the other DOF`s on the current element
           ! (the "O"`s).
@@ -15873,7 +15791,7 @@ contains
             ! the row to find the position of column IDFG.
             ! Jump out of the DO loop if we find the column.
             
-            do jcol = jcol0, p_Kld(Irows(idofe,iel)+1)
+            do jcol = jcol0,jcol1
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
 
@@ -15975,6 +15893,5 @@ contains
     end select
       
   end subroutine
-
 
 end module dg2d_routines

@@ -78,7 +78,7 @@ contains
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
-    integer, parameter :: nvar2d = 1, npMultigrid = 2
+    integer, parameter :: nvar2d = 1
 
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -163,7 +163,7 @@ contains
     ! How many extra points for output
     integer :: iextraPoints
 
-    integer :: ivar, idiscr
+    integer :: ivar
 
     ! For time measurement
     real(dp) :: dtime1, dtime2
@@ -175,8 +175,6 @@ contains
     real(dp) :: ddefnorm
 
     integer :: idef
-    
-    type(t_pMultigrid) :: rpMultigrid
 
     ! The profiler to measure the time
     type(t_profiler) :: rprofiler
@@ -366,36 +364,6 @@ contains
             rdiscretisation%Rspatialdiscr(ivar), &
             .true.)
     end do
-    
-    
-    ! For p-Multigrid, we use the one triangulation already created, but
-    ! have to create multiple (3) discretisations
-    rpMultigrid%inumDiscr = npMultigrid
-    allocate(rpMultigrid%p_rDiscrLev(rpMultigrid%inumDiscr))
-    do idiscr = 1, rpMultigrid%inumDiscr
-      
-      
-      select case (idiscr)  
-        case (1)
-         ielementType = EL_DG_T0_2D
-        case (2)
-         ielementType = EL_DG_T1_2D
-        case (3)
-         ielementType = EL_DG_T2_2D
-      end select
-    
-        ! Now we can start to initialise the discretisation. At first, set up
-    ! a block discretisation structure that specifies the blocks in the
-    ! solution vector. For the shallow water problem we need three (nvar2d) blocks
-    call spdiscr_initBlockDiscr (rpMultigrid%p_rDiscrLev(idiscr), nvar2d,&
-         rtriangulation, rboundary)
-    
-      call spdiscr_initDiscr_simple (rpMultigrid%p_rDiscrLev(idiscr)%RspatialDiscr(1), &
-                    ielementType,CUB_G6_2D,rtriangulation, rboundary)
-    end do
-    
-    
-    
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -2934,9 +2902,6 @@ contains
                 ! the residual is reached.
                 p_rsolverNode%depsRel = 1.0e-8
                 p_rsolverNode%depsAbs = 1.0e-10
-                
-                ! Set the maximum number of iteratons
-                p_rsolverNode%nmaxIterations = 5000
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
@@ -3442,362 +3407,6 @@ contains
 
 
      
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-       ! Fully implicit linear convection, Newton-Like implementation, p-Multigrid
-       case(11)
-
-          ! Calculate matrix MC
-          call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-               LSYSSC_MATRIX9,rmatrixMC,&
-               rdiscretisation%RspatialDiscr(1),&
-               BILF_MATC_EDGEBASED)
-
-          rform%itermCount = 1
-          rform%Idescriptors(1,1) = DER_FUNC
-          rform%Idescriptors(2,1) = DER_FUNC
-          rform%ballCoeffConstant = .true.
-          rform%BconstantCoeff = .true.
-          !call lsyssc_clearMatrix (rmatrixMC)
-          call bilf_buildMatrixScalar (rform,.true.,rmatrixMC)
-
-
-          ! Set up the structure of the system matrix
-!!! call lsysbl_createMatBlockByDiscr (rblockDiscretisationTrial,rmatrixBlock)
-          call lsysbl_createEmptyMatrix (rmatrixBlock,nvar2d,nvar2d)
-          do i = 1, nvar2d
-             do j = 1, nvar2d
-                !    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                !                                     LSYSSC_MATRIX9,rmatrixBlock%Rmatrixblock(i,j),&
-                !                                     rdiscretisation%RspatialDiscr(1),&
-                !                                     BILF_MATC_EDGEBASED)
-                call lsyssc_copyMatrix (rmatrixMC,rmatrixBlock%RmatrixBlock(i,j))
-             end do
-          end do
-          call lsysbl_updateMatStrucInfo (rmatrixBlock)
-
-
-          ! Set up the structure of the matrix A
-          call lsysbl_createEmptyMatrix (rmatrixABlock,nvar2d,nvar2d)
-          do i = 1, nvar2d
-             do j = 1, nvar2d
-                !    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                !                                     LSYSSC_MATRIX9,rmatrixABlock%RmatrixBlock(i,j),&
-                !                                     rdiscretisation%RspatialDiscr(1),&
-                !                                     BILF_MATC_EDGEBASED)
-                call lsyssc_copyMatrix (rmatrixMC,rmatrixABlock%RmatrixBlock(i,j))
-             end do
-          end do
-          call lsysbl_updateMatStrucInfo (rmatrixABlock)
-
-          
-
-          ttime = 0.0_dp
-
-          iConvNewtontimestepping3: do
-
-             ! Print the time level
-             write(*,*) 'Time: ', ttime
-
-             ! Create RHS-Vector
-
-             ! At first set up the corresponding linear form (f,Phi_j):
-             rlinformedge%itermCount = 1
-             rlinformedge%Idescriptors(1) = DER_FUNC2D
-             
-             ! Now use the dg-function for the edge terms
-             call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G5_1D, .true.,&
-                  rrhsBlock,rsolBlock,&
-                  raddTriaData,&
-                  iConv_flux_dg_buildVectorBlEdge2D_sim_Newton,&
-                  rcollection)
-
-
-             call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
-
-
-             ! Then add the convection terms
-             if(ielementType .ne. EL_DG_T0_2D) then
-                ! Set up linear form
-                rlinformconv%itermCount = 2
-                rlinformconv%Idescriptors(1) = DER_DERIV_X
-                rlinformconv%Idescriptors(2) = DER_DERIV_Y
-                rcollection%p_rvectorQuickAccess1 => rsolBlock
-                ! Call the linearformroutine
-                call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
-                     iConv_flux_sys_block,rcollection)
-             end if
-
-
-
-!             iEuler_defcorr3: do
-
-                ! Release solver data and structure
-                call linsol_doneData (p_rsolverNode)
-                call linsol_doneStructure (p_rsolverNode)
-
-                ! Release the solver node and all subnodes attached to it (if at all):
-                call linsol_releaseSolver (p_rsolverNode)
-
-                ! Calculate the defect vector
-
-                ! First calculate the matrix for the cell terms
-                rform%itermCount = 2
-                rform%Idescriptors(1,1) = DER_FUNC
-                rform%Idescriptors(2,1) = DER_DERIV_X
-                rform%Idescriptors(1,2) = DER_FUNC
-                rform%Idescriptors(2,2) = DER_DERIV_Y
-                rform%ballCoeffConstant = .false.
-                rform%BconstantCoeff = .false.
-                rcollection%p_rvectorQuickAccess1 => rsolBlock
-                !call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
-                if (ielementtype.ne.EL_DG_T0_2D) then
-                   call bilf_buildMatrixBlock2 (rform, .true., rmatrixABlock,&
-                        fcoeff_buildMatrixBl_sim_iConvNewton,rcollection)!,rscalarAssemblyInfo)
-                else
-                   call lsysbl_clearMatrix(rmatrixABlock)
-                end if
-
-                call lsysbl_scaleMatrix (rmatrixABlock,-1.0_DP)
-                !call matio_writeMatrixHR(rmatrixMC,'./gmv/feat_routine.txt',.true.,0,'./gmv/feat_routine.txt','(E20.10)')
-
-
-
-                ! Next calculate the edge terms
-                rform%itermCount = 2
-                rform%Idescriptors(1,1) = DER_FUNC
-                rform%Idescriptors(2,1) = DER_FUNC
-                rform%Idescriptors(1,2) = DER_FUNC
-                rform%Idescriptors(2,2) = DER_FUNC
-                rform%ballCoeffConstant = .false.
-                rform%BconstantCoeff = .false.
-                rcollection%p_rvectorQuickAccess1 => rsolBlock   
-                rcollection%Dquickaccess(1) = dt
-                call bilf_dg_buildMatrixBlEdge2D_ss (rform, CUB_G5_1D, .false., rmatrixABlock,&
-                     rsolBlock, raddTriaData,&
-                     flux_dg_buildMatrixBlEdge2D_sim_iConv_Newton_ss,&
-                     rcollection)!, cconstrType)
-
-                ! Calculate the preconditioner matrix
-                !        call lsysbl_clearMatrix(rmatrixBlock)
-                !call lsysbl_copyMatrix (rmatrixABlock,rmatrixBlock)
-                call lsysbl_duplicateMatrix (rmatrixABlock,rmatrixBlock,&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-                do i = 1, nvar2d
-
-                   call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
-                        .false.,.false.,.true.,.false.)
-
-                end do
-
-                !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
-                !        pause
-
-
-!                ! Calculate the defect vector
-!                call lsysbl_copyVector (rrhsBlock,rdefBlock)
-!                call lsysbl_blockMatVec(rmatrixBlock,rsolBlock,&
-!                     rdefBlock,-1.0_dp,1.0_dp)
-
-
-                !        do i = 1, nvar2d
-                !        do j = 1, nvar2d
-                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')                       
-                !          pause
-                !        end do 
-                !        end do
-
-
-                !        ! During the linear solver, the boundary conditions are also
-                !    ! frequently imposed to the vectors. But as the linear solver
-                !    ! does not work with the actual solution vectors but with
-                !    ! defect vectors instead.
-                !    ! So, set up a filter chain that filters the defect vector
-                !    ! during the solution process to implement discrete boundary conditions.
-                !    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-                !    
-                !    
-                !    ! Fill in the boundary conditions
-                !        call vecfil_discreteBCrhs (rrhsBlock)
-                !        call vecfil_discreteBCsol (rsolBlock)
-                !        call matfil_discreteBC (rmatrixABlock)
-
-                ! Create a BiCGStab-solver.
-                nullify(p_rpreconditioner)
-                CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-                !call linsol_initJacobi (p_rpreconditioner)
-                call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)!,RfilterChain)
-                !call linsol_initUMFPACK4 (p_rsolverNode)
-                !call linsol_initGMRES (p_rsolverNode,50,p_rpreconditioner)
-
-                ! Set the output level of the solver to 2 for some output
-                p_rsolverNode%ioutputLevel = 2
-
-                ! The linear solver stops, when this relative or absolut norm of
-                ! the residual is reached.
-                p_rsolverNode%depsRel = 1.0e-8
-                p_rsolverNode%depsAbs = 1.0e-10
-                
-                ! Set the maximum number of iteratons
-                p_rsolverNode%nmaxIterations = 5000
-
-                ! Attach the system matrix to the solver.
-                ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
-                ! routine to attach all these matrices.
-                ! Remark: Do not make a call like
-                !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-                ! This does not work on all compilers, since the compiler would have
-                ! to create a temp array on the stack - which does not always work!
-                Rmatrices = (/rmatrixBlock/)
-                call linsol_setMatrices(p_RsolverNode,Rmatrices)
-
-                ! Initialise structure/data of the solver. This allows the
-                ! solver to allocate memory / perform some precalculation
-                ! to the problem.
-                call linsol_initStructure (p_rsolverNode, ierror)
-                if (ierror .ne. LINSOL_ERR_NOERROR) then
-                   write(*,*) 'linsol_initStructure',ierror
-                   pause
-                   stop
-                end if
-                call linsol_initData (p_rsolverNode, ierror)
-                if (ierror .ne. LINSOL_ERR_NOERROR) then
-                   write(*,*) 'linsol_initData', ierror
-                   pause
-                   stop
-                end if
-
-
-
-
-!                ! Solve for solution updade
-!                ! Afterwards the defect vector contains the solution update
-!                call linsol_precondDefect (p_RsolverNode,rdefBlock)
-                
-                
-                ! Solve for solution update
-                call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-
-
-                ! Update the solution
-                call lsysbl_vectorLinearComb (rSolUpBlock,rSolBlock,1.0_dp,1.0_dp)
-                !        call vecfil_discreteBCsol (rsolBlock)
-                
-                ! Limit solution
-                if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
-                
-!                ! Fix negative solution values
-!                call dg_makeSolPos (rSolBlock)
-
-                write(*,*) '  Update:',lsysbl_vectorNorm(rSolUpBlock,LINALG_NORML2)
-!
-!                if (lsysbl_vectorNorm(rDefBlock,LINALG_NORML2) < 1.0e-12) exit iEuler_defcorr3
-
-                !        write(*,*) lsyssc_vectorNorm(rDefBlock%Rvectorblock(1),LINALG_NORML2)
-                !        call dg2vtk(rDefBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-                !        pause
-
-
-                !        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-                !        pause
-
-                !        ! Output solution to vtk file
-                !        sofile = './gmv/u2d_rho'
-                !        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-                !        sofile = './gmv/u2d_rhou'
-                !        call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
-                !        sofile = './gmv/u2d_rhov'
-                !        call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
-                !        sofile = './gmv/u2d_rhoE'
-                !        call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
-                !        pause
-
-
-!             end do iEuler_defcorr3
-
-
-
-!             call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                  getReferenceFunction_2D)
-!             call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-
-!             call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-!             call output_line ('Mass: ' // sys_sdEL(derror,10) )
-
-
-             ttime = ttime + dt
-             
-             call lsysbl_releaseMatrix (rmatrixBlock)
-             
-             
-             ! If we want to make a video
-                if ((imakevideo == 1).and.(ttime>dvideotime-0.001_DP*dt)) then
-
-                   write(*,*) ''
-                   write(*,*) 'Writing videofile'
-
-                   ifilenumber = ifilenumber + 1
-
-                   select case (ioutputtype)
-                   case (1)
-                      ! Output solution to gmv file
-                      call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-                   case (2)
-                      ! Output solution to vtk file
-                      call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-                   end select
-
-                   dvideotime = dvideotime + dvideotimestep
-                end if
-             
-             
-             
-             
-             if (ttime.ge.(ttfinal-1.0e-12)) exit iConvNewtontimestepping3
-          end do iConvNewtontimestepping3
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
-     
 
 
        end select
@@ -4002,13 +3611,7 @@ contains
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
-    
-    do idiscr = 1, rpMultigrid%inumDiscr
-      call spdiscr_releaseBlockDiscr(rpMultigrid%p_rDiscrLev(idiscr))
-    end do
-    
-    deallocate(rpMultigrid%p_rDiscrLev)
-    
+
     ! Release the triangulation. 
     call tria_done (rtriangulation)
 
