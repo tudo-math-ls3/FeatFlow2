@@ -1144,8 +1144,8 @@ contains
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge) * Dflux(iedge)
@@ -1206,8 +1206,8 @@ contains
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Compute local upper and lower bounds
           Dqp(i) = max(Dqp(i), Dx(j))
@@ -1351,8 +1351,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
-        i  = IedgeList(1,iedge)
-        j  = IedgeList(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f_ij = Dflux(iedge)
@@ -1398,8 +1398,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
-        i  = IedgeList(1,iedge)
-        j  = IedgeList(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Get precomputed raw antidiffusive fluxes
         f1_ij = Dflux1(iedge)
@@ -1456,8 +1456,8 @@ contains
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -1508,8 +1508,8 @@ contains
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
         
           ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
           f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
@@ -2945,8 +2945,8 @@ contains
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
           ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
           ! Apply multiplicative correction factor
           f_ij = Dalpha(iedge) * Dflux(iedge)
@@ -3875,8 +3875,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -3888,8 +3888,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -3906,8 +3906,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
@@ -3919,8 +3919,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -3937,8 +3937,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -3950,8 +3950,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Compute raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -4106,8 +4106,8 @@ contains
       do iedge = 1, NEDGE
         
         ! Determine indices
-        i  = IedgeList(1,iedge)
-        j  = IedgeList(2,iedge)
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
         
         ! Compute solution difference; in contrast to the literature,
         ! we compute the solution difference $u_i-u_j$ and check if
@@ -4615,8 +4615,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4646,8 +4646,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4680,8 +4680,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4710,8 +4710,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4744,8 +4744,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4774,8 +4774,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
 
             ! Determine coefficients
             d_ij = DcoefficientsAtEdge(1,iedge)
@@ -4835,8 +4835,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -4848,8 +4848,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -4866,8 +4866,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
@@ -4879,8 +4879,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -4897,8 +4897,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Store raw antidiffusive flux
             Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
@@ -4910,8 +4910,8 @@ contains
           do iedge = 1, NEDGE
             
             ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
             ! Update raw antidiffusive flux
             Dflux(iedge) = Dflux(iedge)&
@@ -4999,8 +4999,8 @@ contains
         do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
 
           ! Get node numbers
-          i  = IedgeList(1,iedge)
-          j  = IedgeList(2,iedge)
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
 
           ! Update bounds
           Dq(i) = Dq(i) + DboundsAtEdge(1,iedge)*DcoefficientsAtEdge(1,iedge)
