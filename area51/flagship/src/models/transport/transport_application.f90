@@ -1342,7 +1342,7 @@ contains
       ! Duplicate edge-based structure from template
       call gfem_duplicateGroupFEMSet(&
           rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGESTRUCTURE, .true.)
+          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
 
       ! Copy constant coefficient matrices to group finite element set
       nmatrices = 0
@@ -1362,57 +1362,22 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
       end if
     end if
-    
-    ! Resize stabilisation structure if necessary and remove the
-    ! indicator for the subdiagonal edge structure. If they are
-    ! needed, then they are re-generated on-the-fly.
+
+    ! Initialise/Resize stabilisation structure for the convective
+    ! term by duplicating parts of the template group finite element set
     if (convectionAFC > 0) then
       if (rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
         call afcsc_initStabilisation(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rafcstab(convectionAFC),&
-            p_rdiscretisation)
-
-        ! Compute number of matrices to by copied
-        nmatrices = 0
-        if (coeffMatrix_CX   > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CY   > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZ   > 0) nmatrices = nmatrices+1
-
-        ! Initialise memory for constant coefficient matrices
-        if (nmatrices > 0)&
-            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(convectionAFC), nmatrices)
-
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            rproblemLevel%Rafcstab(convectionAFC), p_rdiscretisation)
       else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(&
-            rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(templateMatrix))
-      end if
-
-      ! Copy constant coefficient matrices to stabilisation structure
-      nmatrices = 0
-      if (coeffMatrix_CX > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
-      end if
-      if (coeffMatrix_CY > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
-      end if
-      if (coeffMatrix_CZ > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
+        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
       end if
     end if
-
+    
+    
     ! Initialize/resize group finite element structure as duplicate of
     ! the template group finite element structure and fill it with the
     ! precomputed matrix coefficients for the diffusice term
@@ -1443,7 +1408,7 @@ contains
       ! Duplicate edge-based structure from template
       call gfem_duplicateGroupFEMSet(&
           rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGESTRUCTURE, .true.)
+          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
 
       ! Copy constant coefficient matrices to group finite element set
       nmatrices = 0
@@ -1454,61 +1419,35 @@ contains
       end if
     end if
 
-
-    ! Resize stabilisation structure if necessary and remove the
-    ! indicator for the subdiagonal edge structure. If they are
-    ! needed, then they are re-generated on-the-fly.
+    ! Initialise/Resize stabilisation structure for the diffusive
+    ! term by duplicating parts of the template group finite element set
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
         call afcsc_initStabilisation(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rafcstab(diffusionAFC),&
-            p_rdiscretisation)
-
-        ! Compute number of matrices to by copied
-        nmatrices = 0
-        if (coeffMatrix_S > 0) nmatrices = nmatrices+1
-
-        ! Initialise memory for constant coefficient matrices
-        if (nmatrices > 0)&
-            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(diffusionAFC), nmatrices)
-
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            rproblemLevel%Rafcstab(diffusionAFC), p_rdiscretisation)
       else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(&
-            rproblemLevel%Rafcstab(diffusionAFC),&
-            rproblemLevel%Rmatrix(templateMatrix))
-      end if
-
-      ! Copy constant coefficient matrices to stabilisation structure
-      nmatrices = 0
-      if (coeffMatrix_S > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(diffusionAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_S:coeffMatrix_S), (/nmatrices/))
+        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(diffusionAFC),&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
       end if
     end if
+    
 
-
-    ! Resize stabilisation structure if necessary and remove the
-    ! indicator for the subdiagonal edge structure. If they are
-    ! needed, then they are re-generated on-the-fly.
+    ! Initialize/Resize stabilisation structure for the mass matrix by
+    ! duplicating parts of the template group finite element set
     if (massAFC > 0) then
       if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
         call afcsc_initStabilisation(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rafcstab(massAFC),&
-            p_rdiscretisation)
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            rproblemLevel%Rafcstab(massAFC), p_rdiscretisation)
       else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(&
-            rproblemLevel%Rafcstab(massAFC),&
-            rproblemLevel%Rmatrix(templateMatrix))
+        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
       end if
     end if
+
 
     ! Set update notifiers for the discrete transport operator and the
     ! preconditioned in the problem level structure

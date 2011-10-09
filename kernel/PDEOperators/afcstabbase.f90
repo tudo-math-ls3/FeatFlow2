@@ -18,7 +18,8 @@
 !#
 !# 3.) afcstab_resizeStabilisation = afcstab_resizeStabDirect /
 !#                                   afcstab_resizeStabIndScalar
-!#                                   afcstab_resizeStabIndBlock
+!#                                   afcstab_resizeStabIndBlock /
+!#                                   afcstab_resizeStabIndGFEM
 !#     -> Resizes a stabilisation structure
 !#
 !# 4.) afcstab_copyStabilisation
@@ -162,6 +163,7 @@ module afcstabbase
   use basicgeometry
   use fsystem
   use genoutput
+  use groupfembase
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
@@ -350,7 +352,7 @@ module afcstabbase
   integer(I32), parameter, public :: AFCSTAB_INITIALISED          = 2_I32**1
 
   ! Edge-based structure has been generated: IedgeList
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGESTRUCTURE    = 2_I32**2
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIST         = 2_I32**2
 
   ! Edge-based structure has been oriented: IedgeList
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGEORIENTATION  = 2_I32**3
@@ -397,7 +399,7 @@ module afcstabbase
   integer(I32), parameter, public :: AFCSTAB_DUP_STRUCTURE        = 2_I32**1
 
   ! Duplicate edge-based structure: IedgeList
-  integer(I32), parameter, public :: AFCSTAB_DUP_EDGESTRUCTURE    = AFCSTAB_HAS_EDGESTRUCTURE
+  integer(I32), parameter, public :: AFCSTAB_DUP_EDGELIST         = AFCSTAB_HAS_EDGELIST
 
   ! Duplicate edge-based values: DcoefficientsAtEdge
   integer(I32), parameter, public :: AFCSTAB_DUP_EDGEVALUES       = AFCSTAB_HAS_EDGEVALUES 
@@ -442,7 +444,7 @@ module afcstabbase
   integer(I32), parameter, public :: AFCSTAB_SHARE_STRUCTURE        = AFCSTAB_DUP_STRUCTURE
 
   ! Share edge-based structure: IedgeList
-  integer(I32), parameter, public :: AFCSTAB_SHARE_EDGESTRUCTURE    = AFCSTAB_DUP_EDGESTRUCTURE
+  integer(I32), parameter, public :: AFCSTAB_SHARE_EDGELIST         = AFCSTAB_DUP_EDGELIST
 
   ! Share edge-based values: DcoefficientsAtEdge
   integer(I32), parameter, public :: AFCSTAB_SHARE_EDGEVALUES       = AFCSTAB_DUP_EDGEVALUES
@@ -704,10 +706,6 @@ module afcstabbase
     ! Format Tag: Identifies the type of limiting
     integer :: climitingType = AFCSTAB_LIMITING_NONE
 
-    ! Format Tag: Identifies the format of the scalar template matrix
-    ! underlying the edge-based sparsity structure (if any)
-    integer :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
-
     ! Format Tag: Identifies the data type
     integer :: cdataType = ST_DOUBLE
     
@@ -793,7 +791,7 @@ module afcstabbase
 
 
     ! Handle to bounds at edges (i.e. off-diagonal entries)
-    integer :: h_DboundsAtEdge = ST_NOHANDLE
+    integer :: h_BoundsAtEdge = ST_NOHANDLE
 
     ! Pointer to the vector of correction factors
     type(t_vectorScalar), pointer :: p_rvectorAlpha => null()
@@ -857,6 +855,7 @@ module afcstabbase
     module procedure afcstab_resizeStabDirect
     module procedure afcstab_resizeStabIndScalar
     module procedure afcstab_resizeStabIndBlock
+    module procedure afcstab_resizeStabIndGFEM
   end interface
 
   interface afcstab_isMatrixCompatible
@@ -1014,7 +1013,7 @@ contains
 
 
     ! Release edge structure
-    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) then
+    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIST)) then
       if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IedgeList)
       if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
@@ -1031,9 +1030,9 @@ contains
 
     ! Release edge bounds
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS) .and.&
-        (rafcstab%h_DboundsAtEdge .ne. ST_NOHANDLE))&
-        call storage_free(rafcstab%h_DboundsAtEdge)
-    rafcstab%h_DboundsAtEdge = ST_NOHANDLE
+        (rafcstab%h_BoundsAtEdge .ne. ST_NOHANDLE))&
+        call storage_free(rafcstab%h_BoundsAtEdge)
+    rafcstab%h_BoundsAtEdge = ST_NOHANDLE
 
     ! Release off-diagonal edges
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
@@ -1153,7 +1152,6 @@ contains
     rafcstab%cafcstabType = AFCSTAB_GALERKIN
     rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
     rafcstab%climitingType      = AFCSTAB_LIMITING_NONE
-    rafcstab%cmatrixFormat      = LSYSSC_MATRIXUNDEFINED
     rafcstab%cdataType          = ST_DOUBLE
     rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
     rafcstab%iduplicationFlag   = 0
@@ -1186,7 +1184,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_resizeStabDirect(rafcstab, neq, nedge)
+  subroutine afcstab_resizeStabDirect(rafcstab, NEQ, NEDGE)
 
 !<description>
     ! This subroutine resizes all vectors of the stabilisation
@@ -1197,10 +1195,10 @@ contains
 
 !<input>
     ! number of equations
-    integer, intent(in) :: neq
+    integer, intent(in) :: NEQ
 
     ! number of edges
-    integer, intent(in) :: nedge   
+    integer, intent(in) :: NEDGE   
 !</input>
 
 !<inputoutput>
@@ -1208,306 +1206,484 @@ contains
     type(t_afcstab), intent(inout)   :: rafcstab
 !</inputoutput>
 !</subroutine>
-    
+
+    ! local variables
+    integer, dimension(2) :: Isize2D
+    integer :: isize
     
     ! REMARK: The handle IedgeListIdx is not modified here due
     ! to the following reasons: If the edges are not reordered into
     ! independent groups then IedgeListIdx(1:2)=(/1,NEDGE+1/).
     ! Otherwise, the edge-data structure needs to be regenerated anyway.
     
+    !---------------------------------------------------------------------------
     ! Resize nodal quantities
-    if (rafcstab%NEQ .ne. neq) then
+    !---------------------------------------------------------------------------
+    if (rafcstab%NEQ .ne. NEQ) then
 
       ! Set new number of nodes
-      rafcstab%NEQ = neq
+      rafcstab%NEQ = NEQ
       
       ! Resize edge index vector and clear specification 
+      !-------------------------------------------------------------------------
       if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+          call storage_getsize(rafcstab%h_IsuperdiagEdgesIdx, isize)
+          if (rafcstab%NEQ+1 .ne. isize) then
+            call output_line('Handle h_IsuperdiagEdgesIdx '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEQ+1, rafcstab%h_IsuperdiagEdgesIdx,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_IsuperdiagEdgesIdx '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
         end if
       end if
       
       ! Resize subdiagonal edge index vector and clear specification
+      !-------------------------------------------------------------------------
       if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+          call storage_getsize(rafcstab%h_IsubdiagEdgesIdx, isize)
+          if (rafcstab%NEQ+1 .ne. isize) then
+            call output_line('Handle h_IsubdiagEdgesIdx '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEQ+1, rafcstab%h_IsubdiagEdgesIdx,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_IsubdiagEdgesIdx '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
         end if
       end if
 
       ! Resize matrix data at nodes and clear specification
+      !-------------------------------------------------------------------------
       if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
+          call storage_getsize(rafcstab%h_IsubdiagEdgesIdx, Isize2D)
+          if (rafcstab%NEQ .ne. Isize2D(2)) then
+            call output_line('Handle h_DmatrixCoeffsAtNode '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_DmatrixCoeffsAtNode '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_MATRIXCOEFFS))
         end if
       end if
 
-      ! Resize transformed nodal vector
+      ! Resize transformed nodal vector and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorDx)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEVALUES)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorDx%NEQ) then
+            call output_line('Vector p_rvectorDx '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorDx,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorDx '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_NODEVALUES))
         end if
       end if
 
-      ! Resize nodal vectors P+
+      ! Resize nodal vectors P+ and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorPp)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorPp%NEQ) then
+            call output_line('Vector p_rvectorPp '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorPp,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorPp '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_ADINCREMENTS))
         end if
       end if
       
-      ! Resize nodal vectors P-
+      ! Resize nodal vectors P- and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorPm)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADINCREMENTS)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorPm%NEQ) then
+            call output_line('Vector p_rvectorPm '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorPm,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorPm '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_ADINCREMENTS))
         end if
       end if
       
-      ! Resize nodal vectors Q
+      ! Resize nodal vectors Q and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorQ)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorQ%NEQ) then
+            call output_line('Vector p_rvectorQ '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorQ,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorQ '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_NODEBOUNDS))
         end if
       end if
 
-      ! Resize nodal vectors Q+
+      ! Resize nodal vectors Q+ and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorQp)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorQp%NEQ) then
+            call output_line('Vector p_rvectorQp '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorQp,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorQp '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_NODEBOUNDS))
         end if
       end if
       
-      ! Resize nodal vectors Q-
+      ! Resize nodal vectors Q- and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorQm)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODEBOUNDS)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorQm%NEQ) then
+            call output_line('Vector p_rvectorQm '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorQm,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorQm '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_NODEBOUNDS))
         end if
       end if
       
-      ! Resize nodal vectors R+
+      ! Resize nodal vectors R+ and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorRp)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorRp%NEQ) then
+            call output_line('Vector p_rvectorRp '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorRp,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorRp '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_NODELIMITER))
         end if
       end if
       
-      ! Resize nodal vectors R-
+      ! Resize nodal vectors R- and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorRm)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_NODELIMITER)) then
-          call lsyssc_resizeVector(rafcstab%p_rvectorRm,&
-          rafcstab%NEQ, .false., .false.)
+          if (rafcstab%NEQ .ne. rafcstab%p_rvectorRm%NEQ) then
+            call output_line('Vector p_rvectorRm '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
         else
-          call output_line('Vector p_rvectorRm '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          call lsyssc_resizeVector(rafcstab%p_rvectorRm,&
+              rafcstab%NEQ, .false., .false.)
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_NODELIMITER))
         end if
       end if
       
-      ! Resize nodal vector for the low-order predictor
+      ! Resize nodal vector for the low-order predictor and clear specification
+      !-------------------------------------------------------------------------
       if (associated(rafcstab%p_rvectorPredictor)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_PREDICTOR)) then
+          if (rafcstab%NEQ*rafcstab%NVAR .ne. rafcstab%p_rvectorPredictor%NEQ) then
+            call output_line('Vector p_rvectorPredictor '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsysbl_resizeVectorBlock(rafcstab%p_rvectorPredictor,&
               rafcstab%NEQ, .false., .false.)
-        else
-          call output_line('Vector p_rvectorPredictor '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_PREDICTOR))
         end if
       end if
 
     end if
-      
     
+    !---------------------------------------------------------------------------
     ! Resize edge quantities
-    if (rafcstab%NEDGE .ne. nedge) then
-
+    !---------------------------------------------------------------------------
+    if (rafcstab%NEDGE .ne. NEDGE) then
+      
       ! Set new number of edges
-      rafcstab%NEDGE = nedge
+      rafcstab%NEDGE = NEDGE
 
-      ! Resize array of edges
+      ! Resize array of edges and clear specification
+      !-------------------------------------------------------------------------
       if (rafcstab%h_IedgeList .ne. ST_NOHANDLE) then
-        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIST)) then
+          call storage_getsize(rafcstab%h_IedgeList, Isize2D)
+          if (rafcstab%NEDGE .ne. Isize2D(2)) then
+            call output_line('Handle h_IedgeList '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_IedgeList,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_IedgeList '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_EDGELIST))
         end if
       end if
-      
-      ! Resize array of subdiagonal edges
+       
+      ! Resize array of subdiagonal edges and clear specification
+      !-------------------------------------------------------------------------
       if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
+          call storage_getsize(rafcstab%h_IsubdiagEdges, isize)
+          if (rafcstab%NEDGE .ne. isize) then
+            call output_line('Handle h_IsubdiagEdges '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_IsubdiagEdges,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_IsubdiagEdges '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_OFFDIAGONALEDGES))
         end if
       end if
 
-      ! Resize array of edge data
+      ! Resize array of edge data and clear specification
+      !-------------------------------------------------------------------------
       if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)) then
+          call storage_getsize(rafcstab%h_CoefficientsAtEdge, Isize2D)
+          if (rafcstab%NEDGE .ne. Isize2D(2)) then
+            call output_line('Handle h_CoefficientsAtEdge '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_CoefficientsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_CoefficientsAtEdge '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_EDGEVALUES))
         end if
       end if
       
-      ! Resize array of edge bounds
-      if (rafcstab%h_DboundsAtEdge .ne. ST_NOHANDLE) then
+      ! Resize array of edge bounds and clear specification
+      !-------------------------------------------------------------------------
+      if (rafcstab%h_BoundsAtEdge .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS)) then
-          call storage_realloc('afcstab_resizeStabDirect',&
-              rafcstab%NEDGE, rafcstab%h_DboundsAtEdge,&
-              ST_NEWBLOCK_NOINIT, .false.)
+          call storage_getsize(rafcstab%h_BoundsAtEdge, Isize2D)
+          if (rafcstab%NEDGE .ne. Isize2D(2)) then
+            call output_line('Handle h_BoundsAtEdge '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
         else
-          call output_line('Handle h_DboundsAtEdge '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          call storage_realloc('afcstab_resizeStabDirect',&
+              rafcstab%NEDGE, rafcstab%h_BoundsAtEdge,&
+              ST_NEWBLOCK_NOINIT, .false.)
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_EDGEBOUNDS))
         end if
       end if
       
-      ! Resize matrix data at edges
+      ! Resize matrix data at edges and clear specification
+      !-------------------------------------------------------------------------
       if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
+          call storage_getsize(rafcstab%h_DmatrixCoeffsAtEdge, Isize2D)
+          if (rafcstab%NEDGE .ne. Isize2D(2)) then
+            call output_line('Handle h_DmatrixCoeffsAtEdge '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call storage_realloc('afcstab_resizeStabDirect',&
               rafcstab%NEDGE, rafcstab%h_DmatrixCoeffsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
-        else
-          call output_line('Handle h_DmatrixCoeffsAtEdge '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_MATRIXCOEFFS))
         end if
       end if
 
-      ! Resize edge vectors for the correction factor and the fluxes
+      ! Resize edge vectors for the correction factor and clear specification
+      !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorAlpha)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIMITER)) then
+          if (rafcstab%NEDGE .ne. rafcstab%p_rvectorAlpha%NEQ) then
+            call output_line('Vector p_rvectorAlpha '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorAlpha,&
               rafcstab%NEDGE, .false., .false.)
-        else
-          call output_line('Vector p_rvectorAlpha '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_EDGELIMITER))
         end if
       end if
       
+      ! Resize edge vectors for the explicit flux and clear specification
+      !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorFlux0)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
+          if (rafcstab%NEDGE .ne. rafcstab%p_rvectorFlux0%NEQ) then
+            call output_line('Vector p_rvectorFlux0 '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorFlux0,&
               rafcstab%NEDGE, .false., .false.)
-        else
-          call output_line('Vector p_rvectorFlux0 '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
-        end if
-      end if
-
-      if(associated(rafcstab%p_rvectorFlux)) then
-        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
-          call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
-              rafcstab%NEDGE, .false., .false.)
-        else
-          call output_line('Vector p_rvectorFlux '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_ADFLUXES))
         end if
       end if
       
+      ! Resize edge vectors for the implicit flux and clear specification
+      !-------------------------------------------------------------------------
+      if(associated(rafcstab%p_rvectorFlux)) then
+        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
+          if (rafcstab%NEDGE .ne. rafcstab%p_rvectorFlux%NEQ) then
+            call output_line('Vector p_rvectorFlux '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
+          call lsyssc_resizeVector(rafcstab%p_rvectorFlux,&
+              rafcstab%NEDGE, .false., .false.)
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_ADFLUXES))
+        end if
+      end if
+      
+      ! Resize edge vectors for the prelimiting flux and clear specification
+      !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorFluxPrel)) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
+          if (rafcstab%NEDGE .ne. rafcstab%p_rvectorFluxPrel%NEQ) then
+            call output_line('Vector p_rvectorFluxPrel '//&
+                'is shared and cannot be resized!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
+            call sys_halt()
+          end if
+        else
           call lsyssc_resizeVector(rafcstab%p_rvectorFluxPrel,&
               rafcstab%NEDGE, .false., .false.)
-        else
-          call output_line('Vector p_rvectorFluxPrel '//&
-              'is shared and cannot be resized!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'afcstab_resizeStabDirect')
+          
+          ! Reset specifier
+          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
+                                             not(AFCSTAB_HAS_ADFLUXES))
         end if
       end if
 
     end if
     
-    ! Set state of stabilisation to either undefined or initialised
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
-    else
-      rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
-    end if
-
   contains
 
     !**************************************************************
-    ! Checks if bitfield ibitfield in idupFlag is not set.
+    ! Checks if bitfield ibitfield in iflag is set.
+    
+    pure function check(iflag, ibitfield)
 
-    pure function check(idupFlag, ibitfield)
-
-      integer(I32), intent(in) :: idupFlag,ibitfield
+      integer(I32), intent(in) :: iflag,ibitfield
       
       logical :: check
       
-      check = (iand(idupFlag,ibitfield) .ne. ibitfield)
+      check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
 
@@ -1517,7 +1693,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_resizeStabIndScalar(rafcstab, rmatrixTemplate)
+  subroutine afcstab_resizeStabIndScalar(rafcstab, rmatrix)
 
 !<description>
     ! This subroutine resizes all vectors of the stabilisation
@@ -1528,7 +1704,7 @@ contains
 
 !<input>
     ! template matrix
-    type(t_matrixScalar), intent(in) :: rmatrixTemplate
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -1542,8 +1718,8 @@ contains
 
     
     ! Determine number of equations and edges
-    neq   = rmatrixTemplate%NEQ
-    nedge = (rmatrixTemplate%NA-rmatrixTemplate%NEQ)/2
+    neq   = rmatrix%NEQ
+    nedge = (rmatrix%NA-rmatrix%NEQ)/2
 
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
@@ -1554,7 +1730,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_resizeStabIndBlock(rafcstab, rmatrixBlockTemplate)
+  subroutine afcstab_resizeStabIndBlock(rafcstab, rmatrixBlock)
 
 !<description>
     ! This subroutine resizes all vectors of the stabilisation
@@ -1565,7 +1741,7 @@ contains
 
 !<input>
     ! template matrix
-    type(t_matrixBlock), intent(in) :: rmatrixBlockTemplate
+    type(t_matrixBlock), intent(in) :: rmatrixBlock
 !</input>
 
 !<inputoutput>
@@ -1579,10 +1755,10 @@ contains
 
     
     ! Check if block matrix has only one block
-    if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and.&
-        (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
+    if ((rmatrixBlock%nblocksPerCol .eq. 1) .and.&
+        (rmatrixBlock%nblocksPerRow .eq. 1)) then
       call afcstab_resizeStabIndScalar(rafcstab,&
-          rmatrixBlockTemplate%RmatrixBlock(1,1))
+          rmatrixBlock%RmatrixBlock(1,1))
 
       ! That is it
       return
@@ -1590,14 +1766,43 @@ contains
     
 
     ! Determine number of equations and edges
-    neq   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
-    nedge = (rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
-             rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ)/2
+    neq   = rmatrixBlock%RmatrixBlock(1,1)%NEQ
+    nedge = (rmatrixBlock%RmatrixBlock(1,1)%NA-&
+             rmatrixBlock%RmatrixBlock(1,1)%NEQ)/2
 
     ! Call resize routine directly
     call afcstab_resizeStabDirect(rafcstab, neq, nedge)
-
+    
   end subroutine afcstab_resizeStabIndBlock
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_resizeStabIndGFEM(rafcstab, rgroupFEMSet)
+
+!<description>
+    ! This subroutine resizes all vectors of the stabilisation
+    ! structure so that they are compatible to the template matrix.
+    !
+    ! NOTE: Only those vectors are resized which are actually present.
+!</description>
+
+!<input>
+    ! group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout)   :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! Call resize routine directly
+    call afcstab_resizeStabDirect(rafcstab, rgroupFEMSet%NEQ, rgroupFEMSet%NEDGE)
+    
+  end subroutine afcstab_resizeStabIndGFEM
 
   !*****************************************************************************
 
@@ -1631,7 +1836,6 @@ contains
       rafcstabDest%cafcstabType       = rafcstabSrc%cafcstabType
       rafcstabDest%cprelimitingType   = rafcstabSrc%cprelimitingType
       rafcstabDest%climitingType      = rafcstabSrc%climitingType
-      rafcstabDest%cmatrixFormat      = rafcstabSrc%cmatrixFormat
       rafcstabDest%cdataType          = rafcstabSrc%cdataType
       rafcstabDest%NEQ                = rafcstabSrc%NEQ
       rafcstabDest%NVAR               = rafcstabSrc%NVAR
@@ -1643,8 +1847,8 @@ contains
     end if
 
     ! Copy edge structre
-    if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGELIST) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIST)) then
       ! Copy content from source to destination structure
       call storage_copy(rafcstabSrc%h_IedgeListIdx,&
           rafcstabDest%h_IedgeListIdx)
@@ -1652,12 +1856,12 @@ contains
           rafcstabDest%h_IedgeList)
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIST))
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION))
       ! Reset ownership
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          not(AFCSTAB_SHARE_EDGESTRUCTURE))
+          not(AFCSTAB_SHARE_EDGELIST))
     end if
 
     ! Copy edge values
@@ -1949,7 +2153,6 @@ contains
       rafcstabDest%cafcstabType       = rafcstabSrc%cafcstabType
       rafcstabDest%cprelimitingType   = rafcstabSrc%cprelimitingType
       rafcstabDest%climitingType      = rafcstabSrc%climitingType
-      rafcstabDest%cmatrixFormat      = rafcstabSrc%cmatrixFormat
       rafcstabDest%cdataType          = rafcstabSrc%cdataType
       rafcstabDest%NEQ                = rafcstabSrc%NEQ
       rafcstabDest%NVAR               = rafcstabSrc%NVAR
@@ -1961,10 +2164,10 @@ contains
     end if
 
     ! Duplicate edge structre
-    if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGELIST) .and.&
+        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIST)) then
       ! Remove existing data owned by the destination structure
-      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE))) then
+      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGELIST))) then
         call storage_free(rafcstabDest%h_IedgeListIdx)
         call storage_free(rafcstabDest%h_IedgeList)
       end if
@@ -1973,12 +2176,12 @@ contains
       rafcstabDest%h_IedgeList = rafcstabSrc%h_IedgeList
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE))
+          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGELIST))
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION))
       ! Set ownership to shared
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          AFCSTAB_SHARE_EDGESTRUCTURE)
+          AFCSTAB_SHARE_EDGELIST)
     end if
 
     ! Duplicate edge values
@@ -2002,9 +2205,9 @@ contains
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS)))&
-          call storage_free(rafcstabDest%h_DboundsAtEdge)
+          call storage_free(rafcstabDest%h_BoundsAtEdge)
       ! Copy handle from source to destination structure
-      rafcstabDest%h_DboundsAtEdge = rafcstabSrc%h_DboundsAtEdge
+      rafcstabDest%h_BoundsAtEdge = rafcstabSrc%h_BoundsAtEdge
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEBOUNDS))
@@ -2321,7 +2524,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST) .eq. 0) then
       call afcstab_genEdgeList(Rmatrices(1), rafcstab)
     end if
 
@@ -2691,7 +2894,7 @@ contains
     call output_line('cdataType:                      '//trim(sys_siL(rafcstab%cdataType,15)))
     call output_line('iduplicationFlag:               '//trim(sys_siL(rafcstab%iduplicationFlag,15)))
     call checkAndOutput('AFCSTAB_SHARE_STRUCTURE:        ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_STRUCTURE)
-    call checkAndOutput('AFCSTAB_SHARE_EDGESTRUCTURE:    ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGESTRUCTURE)
+    call checkAndOutput('AFCSTAB_SHARE_EDGELIST:         ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGELIST)
     call checkAndOutput('AFCSTAB_SHARE_EDGEVALUES:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGEVALUES)
     call checkAndOutput('AFCSTAB_SHARE_OFFDIAGONALEDGES: ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_OFFDIAGONALEDGES)
     call checkAndOutput('AFCSTAB_SHARE_ADFLUXES:         ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_ADFLUXES)
@@ -2705,7 +2908,7 @@ contains
     call checkAndOutput('AFCSTAB_SHARE_EDGEBOUNDS:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGEBOUNDS)
     call output_line('istabilisationSpec:             '//trim(sys_siL(rafcstab%istabilisationSpec,15)))
     call checkAndOutput('AFCSTAB_INITIALISED:            ',rafcstab%istabilisationSpec,AFCSTAB_INITIALISED)
-    call checkAndOutput('AFCSTAB_HAS_EDGESTRUCTURE:      ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGESTRUCTURE)
+    call checkAndOutput('AFCSTAB_HAS_EDGELIST:           ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGELIST)
     call checkAndOutput('AFCSTAB_HAS_EDGEORIENTATION:    ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGEORIENTATION)
     call checkAndOutput('AFCSTAB_HAS_EDGEVALUES:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGEVALUES)
     call checkAndOutput('AFCSTAB_HAS_OFFDIAGONALEDGES:   ',rafcstab%istabilisationSpec,AFCSTAB_HAS_OFFDIAGONALEDGES)
@@ -2733,7 +2936,7 @@ contains
     call checkAndOutputHandle('CoefficientsAtEdge:             ', rafcstab%h_CoefficientsAtEdge)
     call checkAndOutputHandle('DmatrixCoeffsAtNode:            ', rafcstab%h_DmatrixCoeffsAtNode)
     call checkAndOutputHandle('DmatrixCoeffsAtEdge:            ', rafcstab%h_DmatrixCoeffsAtEdge)
-    call checkAndOutputHandle('DboundsAtEdge:                  ', rafcstab%h_DboundsAtEdge)
+    call checkAndOutputHandle('BoundsAtEdge:                   ', rafcstab%h_BoundsAtEdge)
 
     if (associated(rafcstab%p_rvectorAlpha)) then
       call output_lbrk()
@@ -3413,14 +3616,14 @@ contains
 !</subroutine>
 
     ! Do we have bounds at edges data at all?
-    if ((rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEDGE           .eq. 0)) then
+    if ((rafcstab%h_BoundsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE          .eq. 0)) then
       nullify(p_DboundsAtEdge)
       return
     end if
     
     ! Get the array
-    call storage_getbase_double2D(rafcstab%h_DboundsAtEdge,&
+    call storage_getbase_double2D(rafcstab%h_BoundsAtEdge,&
         p_DboundsAtEdge,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_DboundsAtEdge
@@ -3448,14 +3651,14 @@ contains
 !</subroutine>
 
     ! Do we have bounds at edges data at all?
-    if ((rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEDGE           .eq. 0)) then
+    if ((rafcstab%h_BoundsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE          .eq. 0)) then
       nullify(p_FboundsAtEdge)
       return
     end if
     
     ! Get the array
-    call storage_getbase_single2D(rafcstab%h_DboundsAtEdge,&
+    call storage_getbase_single2D(rafcstab%h_BoundsAtEdge,&
         p_FboundsAtEdge,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_FboundsAtEdge
@@ -3495,28 +3698,13 @@ contains
     end if
 
     ! Check if edge structure is owned by the stabilisation structure
-    if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGESTRUCTURE) .eq.&
-        AFCSTAB_SHARE_EDGESTRUCTURE) then
+    if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGELIST) .eq.&
+        AFCSTAB_SHARE_EDGELIST) then
       call output_line('Edge structure is not owned by stabilisation and '//&
           'therefore cannot be generated',&
           OU_CLASS_WARNING,OU_MODE_STD,'afcstab_genEdgeList')
       return
     end if
-
-    ! Set matrix format
-    select case(rmatrix%cmatrixFormat)
-    case (LSYSSC_MATRIX1)
-      rafcstab%cmatrixFormat = LSYSSC_MATRIX1
-    case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
-      rafcstab%cmatrixFormat = LSYSSC_MATRIX7
-    case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
-      rafcstab%cmatrixFormat = LSYSSC_MATRIX9
-      
-    case default
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_genEdgeList')
-      call sys_halt()
-    end select
     
     ! Generate edge list for a matrix which is structurally symmetric,
     ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
@@ -3552,7 +3740,7 @@ contains
     
     ! Set state of stabiliation
     rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)
+        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)
         
   end subroutine afcstab_genEdgeList
 
@@ -3584,7 +3772,7 @@ contains
     integer :: isize
 
     ! Check if edge-based data structure is prepared
-    if (iand(rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
+    if (iand(rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGELIST) .eq. 0) then
       call output_line('Stabilisation structure does not provide required ' //&
           'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_genOffdiagEdge')
@@ -3902,7 +4090,7 @@ contains
     
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
-        not(AFCSTAB_SHARE_EDGESTRUCTURE))
+        not(AFCSTAB_SHARE_EDGELIST))
 
   end subroutine afcstab_allocEdgeStructure
 
@@ -3979,10 +4167,10 @@ contains
     if (present(cdataType)) ctype = cdataType
     
     Isize = (/2, rafcstab%NEDGE/)
-    if (rafcstab%h_DboundsAtEdge .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_DboundsAtEdge)
+    if (rafcstab%h_BoundsAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_BoundsAtEdge)
     call storage_new('afcstab_allocBoundsAtEdge', 'DboundsAtEdge',&
-        Isize, cType, rafcstab%h_DboundsAtEdge, ST_NEWBLOCK_NOINIT)
+        Isize, cType, rafcstab%h_BoundsAtEdge, ST_NEWBLOCK_NOINIT)
     
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
@@ -4356,14 +4544,14 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_genEdgeList(rmatrixCx, rafcstab)
     end if
 
     ! Check if stabilisation structure provides array to store bounds;
     ! otherwise allocate new memory using the predefined data type
-    if (rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE)&
+    if (rafcstab%h_BoundsAtEdge .eq. ST_NOHANDLE)&
         call afcstab_allocBoundsAtEdge(rafcstab, rafcstab%cdataType)
 
     ! Check if source matrix is compatible with stabilisation structure
@@ -4776,14 +4964,14 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_genEdgeList(rmatrixCx, rafcstab)
     end if
 
     ! Check if stabilisation structure provides array to store bounds;
     ! otherwise allocate new memory using the predefined data type
-    if (rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE)&
+    if (rafcstab%h_BoundsAtEdge .eq. ST_NOHANDLE)&
         call afcstab_allocBoundsAtEdge(rafcstab, rafcstab%cdataType)
 
     ! Check if source matrix is compatible with stabilisation structure
@@ -5223,14 +5411,14 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_genEdgeList(rmatrixCx, rafcstab)
     end if
 
     ! Check if stabilisation structure provides array to store bounds;
     ! otherwise allocate new memory using the predefined data type
-    if (rafcstab%h_DboundsAtEdge .eq. ST_NOHANDLE)&
+    if (rafcstab%h_BoundsAtEdge .eq. ST_NOHANDLE)&
         call afcstab_allocBoundsAtEdge(rafcstab, rafcstab%cdataType)
 
     ! Check if source matrix is compatible with stabilisation structure

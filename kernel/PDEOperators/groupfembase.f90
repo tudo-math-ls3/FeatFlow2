@@ -223,25 +223,26 @@ module groupfembase
 !                            group finite element set">
 
   ! List of restricted DOFs has been computed: IdofList
-  integer(I32), parameter, public :: GFEM_HAS_DOFLIST       = 2_I32**1
-
-  ! Diagonal pointers have been computed: IdiagList
-  integer(I32), parameter, public :: GFEM_HAS_DIAGLIST      = 2_I32**2
-
-  ! Nodal structure has been computed: InodeList
-  integer(I32), parameter, public :: GFEM_HAS_NODESTRUCTURE = 2_I32**3
+  integer(I32), parameter, public :: GFEM_HAS_DOFLIST  = 2_I32**1
 
   ! Edge-based structure has been computed: IedgeListIdx, IedgeList
-  integer(I32), parameter, public :: GFEM_HAS_EDGESTRUCTURE = 2_I32**4
+  integer(I32), parameter, public :: GFEM_HAS_EDGELIST = 2_I32**2
 
-  ! Diagonal coefficient array has been computed: CoeffsAtDiag
-  integer(I32), parameter, public :: GFEM_HAS_DIAGDATA      = 2_I32**5
+  ! Nodal structure has been computed: InodeList
+  integer(I32), parameter, public :: GFEM_HAS_NODELIST = 2_I32**3
 
-  ! Nodal coefficient array has been computed: CoeffsAtNode
-  integer(I32), parameter, public :: GFEM_HAS_NODEDATA      = 2_I32**6
+  ! Diagonal pointers have been computed: IdiagList
+  integer(I32), parameter, public :: GFEM_HAS_DIAGLIST = 2_I32**4
 
   ! Edge-based coefficient array has been computed: CoeffsAtEdge
-  integer(I32), parameter, public :: GFEM_HAS_EDGEDATA      = 2_I32**7  
+  integer(I32), parameter, public :: GFEM_HAS_EDGEDATA = 2_I32**5
+
+  ! Nodal coefficient array has been computed: CoeffsAtNode
+  integer(I32), parameter, public :: GFEM_HAS_NODEDATA = 2_I32**6
+
+  ! Diagonal coefficient array has been computed: CoeffsAtDiag
+  integer(I32), parameter, public :: GFEM_HAS_DIAGDATA = 2_I32**7
+
 !</constantblock>
 
 
@@ -249,38 +250,38 @@ module groupfembase
 !                            between group finite element structures">
   
   ! Duplicate atomic structure
-  integer(I32), parameter, public :: GFEM_DUP_STRUCTURE     = 2_I32**16
+  integer(I32), parameter, public :: GFEM_DUP_STRUCTURE = 2_I32**16
   
   ! Duplicate list of restricted DOFs: IdofList
-  integer(I32), parameter, public :: GFEM_DUP_DOFLIST       = GFEM_HAS_DOFLIST
+  integer(I32), parameter, public :: GFEM_DUP_DOFLIST   = GFEM_HAS_DOFLIST
 
   ! Duplicate diagonal pointers: IdiagList
-  integer(I32), parameter, public :: GFEM_DUP_DIAGLIST      = GFEM_HAS_DIAGLIST
+  integer(I32), parameter, public :: GFEM_DUP_DIAGLIST  = GFEM_HAS_DIAGLIST
   
   ! Duplicate edge-nodal structure: InodeList
-  integer(I32), parameter, public :: GFEM_DUP_NODESTRUCTURE = GFEM_HAS_NODESTRUCTURE
+  integer(I32), parameter, public :: GFEM_DUP_NODELIST  = GFEM_HAS_NODELIST
 
   ! Duplicate edge-based structure: IedgeListIdx, IedgeList
-  integer(I32), parameter, public :: GFEM_DUP_EDGESTRUCTURE = GFEM_HAS_EDGESTRUCTURE
+  integer(I32), parameter, public :: GFEM_DUP_EDGELIST  = GFEM_HAS_EDGELIST
 
   ! Duplicate diagonal coefficient array: CoeffsAtDiag
-  integer(I32), parameter, public :: GFEM_DUP_DIAGDATA      = GFEM_HAS_DIAGDATA
+  integer(I32), parameter, public :: GFEM_DUP_DIAGDATA  = GFEM_HAS_DIAGDATA
 
   ! Duplicate nodal coefficient array: CoeffsAtNode
-  integer(I32), parameter, public :: GFEM_DUP_NODEDATA      = GFEM_HAS_NODEDATA
+  integer(I32), parameter, public :: GFEM_DUP_NODEDATA  = GFEM_HAS_NODEDATA
 
   ! Duplicate edge-based coefficient array: CoeffsAtEdge
-  integer(I32), parameter, public :: GFEM_DUP_EDGEDATA      = GFEM_HAS_EDGEDATA
+  integer(I32), parameter, public :: GFEM_DUP_EDGEDATA  = GFEM_HAS_EDGEDATA
 
   ! Duplicate everything
-  integer(I32), parameter, public :: GFEM_DUP_ALL           = GFEM_DUP_STRUCTURE+&
-                                                              GFEM_DUP_DOFLIST+&
-                                                              GFEM_DUP_DIAGLIST+&
-                                                              GFEM_DUP_NODESTRUCTURE+&
-                                                              GFEM_DUP_EDGESTRUCTURE+&
-                                                              GFEM_DUP_DIAGDATA+&
-                                                              GFEM_DUP_NODEDATA+&
-                                                              GFEM_DUP_EDGEDATA
+  integer(I32), parameter, public :: GFEM_DUP_ALL       = GFEM_DUP_STRUCTURE+&
+                                                          GFEM_DUP_DOFLIST+&
+                                                          GFEM_DUP_DIAGLIST+&
+                                                          GFEM_DUP_NODELIST+&
+                                                          GFEM_DUP_EDGELIST+&
+                                                          GFEM_DUP_DIAGDATA+&
+                                                          GFEM_DUP_NODEDATA+&
+                                                          GFEM_DUP_EDGEDATA
 !</constantblock>
 
 
@@ -288,25 +289,25 @@ module groupfembase
 !                            between group finite element structures">
   
   ! Share list of restricted DOFs: IdofList
-  integer(I32), parameter, public :: GFEM_SHARE_DOFLIST       = GFEM_HAS_DOFLIST
+  integer(I32), parameter, public :: GFEM_SHARE_DOFLIST  = GFEM_HAS_DOFLIST
 
   ! Share diagonal pointers: IdiagList
-  integer(I32), parameter, public :: GFEM_SHARE_DIAGLIST      = GFEM_HAS_DIAGLIST
+  integer(I32), parameter, public :: GFEM_SHARE_DIAGLIST = GFEM_HAS_DIAGLIST
 
   ! Share edge-nodal structure: InodeList
-  integer(I32), parameter, public :: GFEM_SHARE_NODESTRUCTURE = GFEM_HAS_NODESTRUCTURE
+  integer(I32), parameter, public :: GFEM_SHARE_NODELIST = GFEM_HAS_NODELIST
 
   ! Share edge-based structure: IedgeListIdx, IedgeList
-  integer(I32), parameter, public :: GFEM_SHARE_EDGESTRUCTURE = GFEM_HAS_EDGESTRUCTURE
+  integer(I32), parameter, public :: GFEM_SHARE_EDGELIST = GFEM_HAS_EDGELIST
 
   ! Share diagonal coefficient array: CoeffsAtDiag
-  integer(I32), parameter, public :: GFEM_SHARE_DIAGDATA      = GFEM_HAS_DIAGDATA
+  integer(I32), parameter, public :: GFEM_SHARE_DIAGDATA = GFEM_HAS_DIAGDATA
 
   ! Share nodal coefficient array: CoeffsAtNode
-  integer(I32), parameter, public :: GFEM_SHARE_NODEDATA      = GFEM_HAS_NODEDATA
+  integer(I32), parameter, public :: GFEM_SHARE_NODEDATA = GFEM_HAS_NODEDATA
 
   ! Share edge-based coefficient array: CoeffsAtEdge
-  integer(I32), parameter, public :: GFEM_SHARE_EDGEDATA      = GFEM_HAS_EDGEDATA 
+  integer(I32), parameter, public :: GFEM_SHARE_EDGEDATA = GFEM_HAS_EDGEDATA 
 !</constantblock>
 !</constants>
 
@@ -367,8 +368,14 @@ module groupfembase
 
     ! Handle to diagonal positions of the underlying matrix
     ! IdiagList(1,1:NEQ) : the node number i of the equation ieq
-    ! IdiagList(2,1:NEQ) : the position of the diagoanl entry ii that
+    ! IdiagList(2,1:NEQ) : the position of the diagonal entry ii that
     !                      corresponds to the equation ieq
+    !
+    ! Example: If there is no restriction to s selected subset of
+    ! degrees of freedom then IdiagList(:,ieq) -> (/ ieq, ii /)
+    ! such that ii corresponds to the diagonal entry A(ieq,ieq).
+    ! If only a restricted subset of degrees of freedom is considered
+    ! then IdiagList(:,ieq) -> (/ i, ii /), whereby ieq /= i.
     integer :: h_IdiagList = ST_NOHANDLE
 
     ! Handle to index pointer for edge structure
@@ -382,15 +389,33 @@ module groupfembase
     !                          correspond to the edge (ij)
     ! IedgeList(5:6,1:NEDGE) : the two matrix position ii and jj that
     !                          correspond to the diagonal entries
+    !
+    ! Example IedgeList(:,iedge) -> (/ i, j, ij, ji, ii, jj /)
     integer :: h_IedgeList = ST_NOHANDLE
     
     ! Handle to index pointer for node structure
     ! InodeListIdx(1:NEQ+1) : the index separator of the node list
+    !
+    ! All nodes in Inode List contributing to equation ieq are given by
+    ! InodeList( InodeListIdx(ieq) : InodeListIdx(ieq+1)-1 )
     integer :: h_InodeListIdx = ST_NOHANDLE
 
     ! Handle to nodal structure
-    ! InodeList(1,1:NA) : the global number of the node
-    ! InodeList(2,1:NA) : the global position of the corresponding matrix entry
+    ! InodeList(1:NA)   : the global column number of the node j 
+    !
+    ! OR
+    !
+    ! InodeList(1,1:NA) : the global column number of the node j
+    ! InodeList(2,1:NA) : the global position ia of the matrix entry
+    !
+    ! Example: If there is no restriction to s selected subset of
+    ! degrees of freedom then InodeList(ia) -> column number of ia.
+    ! If only a restricted subset of degrees of freedom is considered
+    ! then InodeList(:,ia) -> (/ j, ia /), where ia is the global
+    ! position of the matrix entry connecting nodes i and j. By
+    ! definition, the second case (with restriction of DOFs) implies
+    ! InodeList(1,InodeListIdx(ieq)) -> i, where i is the gobal node
+    ! number the corresponds to equation ieq.
     integer :: h_InodeList = ST_NOHANDLE
     
     ! Handle to precomputed coefficiets at matrix diagonal
@@ -683,7 +708,7 @@ contains
     rgroupFEMSet%h_IdiagList = ST_NOHANDLE
 
     ! Release nodal structure
-    if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
+    if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)) then
       if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
           call storage_free(rgroupFEMSet%h_InodeList)
       if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
@@ -693,7 +718,7 @@ contains
     rgroupFEMSet%h_InodeListIdx = ST_NOHANDLE
 
     ! Release edge structure
-    if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)) then
+    if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGELIST)) then
       if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE)&
           call storage_free(rgroupFEMSet%h_IedgeList)
       if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
@@ -833,7 +858,7 @@ contains
       
       !-----------------------------------------------------------------------
       if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE) then
-        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
+        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)) then
           call storage_getdimension(rgroupFEMSet%h_InodeList, idimension)
           if (idimension .eq. 1) then
             call storage_getsize(rgroupFEMSet%h_InodeList, isize)
@@ -859,7 +884,7 @@ contains
           
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
-                                       not(GFEM_HAS_NODESTRUCTURE))
+                                       not(GFEM_HAS_NODELIST))
         end if
       end if
 
@@ -918,7 +943,7 @@ contains
 
       !-----------------------------------------------------------------------
       if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE) then
-        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)) then
+        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)) then
           call storage_getsize(rgroupFEMSet%h_InodeListIdx, isize)
           if (rgroupFEMSet%NEQ+1 .ne. isize) then
             call output_line('Handle h_InodeListIdx '//&
@@ -934,7 +959,7 @@ contains
           
           ! Reset specifier
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
-                                       not(GFEM_HAS_NODESTRUCTURE))
+                                       not(GFEM_HAS_NODELIST))
         end if
       end if
 
@@ -971,7 +996,7 @@ contains
 
       !-------------------------------------------------------------------------
       if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE) then
-        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)) then
+        if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGELIST)) then
           call storage_getsize(rgroupFEMSet%h_IedgeList, Isize2D)
           if (rgroupFEMSet%NEDGE .ne. Isize2D(2)) then
             call output_line('Handle h_IedgeList '//&
@@ -987,7 +1012,7 @@ contains
           
           ! Reset specifiert
           rgroupFEMSet%isetSpec = iand(rgroupFEMSet%isetSpec,&
-                                       not(GFEM_HAS_EDGESTRUCTURE))
+                                       not(GFEM_HAS_EDGELIST))
         end if
       end if
 
@@ -1315,16 +1340,16 @@ contains
 
 
     ! Copy node structure
-    if (check(idupFlag, GFEM_DUP_NODESTRUCTURE)) then
+    if (check(idupFlag, GFEM_DUP_NODELIST)) then
       ! Remove existing data owned by the destination structure
-      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)&
-          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODELIST)&
+          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_NODELIST)) then
         call storage_free(rgroupFEMSetDest%h_InodeListIdx)
         call storage_free(rgroupFEMSetDest%h_InodeList)
       end if
 
       ! Copy content from source to destination structure
-      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST)) then
         call storage_copy(rgroupFEMSetSrc%h_InodeListIdx,&
             rgroupFEMSetDest%h_InodeListIdx)
         call storage_copy(rgroupFEMSetSrc%h_InodeList,&
@@ -1333,25 +1358,25 @@ contains
         
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
-          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE))
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST))
       
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
-          iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_NODESTRUCTURE))
+          iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_NODELIST))
     end if
 
 
     ! Copy edge structure
-    if (check(idupFlag, GFEM_DUP_EDGESTRUCTURE)) then
+    if (check(idupFlag, GFEM_DUP_EDGELIST)) then
       ! Remove existing data owned by the destination structure
-      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)&
-          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGELIST)&
+          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_EDGELIST)) then
         call storage_free(rgroupFEMSetDest%h_IedgeListIdx)
         call storage_free(rgroupFEMSetDest%h_IedgeList)
       end if
 
       ! Copy content from source to destination structure
-      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+      if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST)) then
         call storage_copy(rgroupFEMSetSrc%h_IedgeListIdx,&
             rgroupFEMSetDest%h_IedgeListIdx)
         call storage_copy(rgroupFEMSetSrc%h_IedgeList,&
@@ -1360,11 +1385,11 @@ contains
 
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
-          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGESTRUCTURE))
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST))
       
       ! Set ownership
       rgroupFEMSetDest%iduplicationFlag =&
-          iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_EDGESTRUCTURE))
+          iand(rgroupFEMSetDest%iduplicationFlag, not(GFEM_SHARE_EDGELIST))
     end if
 
 
@@ -1611,10 +1636,10 @@ contains
     
 
     ! Duplicate node structure
-    if (check(idupFlag, GFEM_DUP_NODESTRUCTURE)) then
+    if (check(idupFlag, GFEM_DUP_NODELIST)) then
       ! Remove existing data owned by the destination structure
-      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE)&
-          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_NODELIST)&
+          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_NODELIST)) then
         call storage_free(rgroupFEMSetDest%h_InodeListIdx)
         call storage_free(rgroupFEMSetDest%h_InodeList)
       end if
@@ -1625,19 +1650,19 @@ contains
       
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
-          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE))
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST))
       
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
-          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODESTRUCTURE))
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_NODELIST))
     end if
 
 
     ! Duplicate edge structure
-    if (check(idupFlag, GFEM_DUP_EDGESTRUCTURE)) then
+    if (check(idupFlag, GFEM_DUP_EDGELIST)) then
       ! Remove existing data owned by the destination structure
-      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE)&
-          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_EDGESTRUCTURE)) then
+      if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_EDGELIST)&
+          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_EDGELIST)) then
         call storage_free(rgroupFEMSetDest%h_IedgeListIdx)
         call storage_free(rgroupFEMSetDest%h_IedgeList)
       end if
@@ -1648,11 +1673,11 @@ contains
       
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
-          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGESTRUCTURE))
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST))
       
       ! Reset ownership
       rgroupFEMSetDest%iduplicationFlag = ior(rgroupFEMSetDest%iduplicationFlag,&
-          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGESTRUCTURE))
+          iand(rgroupFEMSetSrc%isetSpec, GFEM_HAS_EDGELIST))
     end if
 
 
@@ -1873,7 +1898,7 @@ contains
     if (iand(cinit, GFEM_INITCOEFFS_NODEBASED) .eq. GFEM_INITCOEFFS_NODEBASED) then
 
       ! Check if structure provides node-based structure and coefficient array
-      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST) .eq. 0) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
         call sys_halt()
@@ -2033,8 +2058,8 @@ contains
     if (iand(cinit, GFEM_INITCOEFFS_EDGEBASED) .eq. GFEM_INITCOEFFS_EDGEBASED) then
       
       ! Check if structure provides edge-based structure and coefficient array
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
         call sys_halt()
@@ -3061,8 +3086,8 @@ contains
     integer :: idx,ieq,iidx,ij,isize,jcol
     
     ! Check if node structure is owned by the structure
-    if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODESTRUCTURE) .eq.&
-        GFEM_SHARE_NODESTRUCTURE) then
+    if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST) .eq.&
+        GFEM_SHARE_NODELIST) then
       call output_line('Node list is not owned by structure and '//&
           'therefore cannot be generated',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_genNodeList')
@@ -3143,12 +3168,12 @@ contains
 
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODESTRUCTURE)
+                                    GFEM_HAS_NODELIST)
         
       case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
 
         ! Remove nodal structure from the group finite element set
-        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST)) then
           call storage_free(rgroupFEMSet%h_InodeListIdx)
           call storage_free(rgroupFEMSet%h_InodeList)
         end if
@@ -3159,16 +3184,16 @@ contains
         
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODESTRUCTURE)
+                                    GFEM_HAS_NODELIST)
 
         ! Reset ownership
         rgroupFEMSet%iduplicationFlag = ior(rgroupFEMSet%iduplicationFlag,&
-                                            GFEM_SHARE_NODESTRUCTURE)
+                                            GFEM_SHARE_NODELIST)
 
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
 
         ! Remove nodal structure from the group finite element set
-        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE)) then
+        if (check(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST)) then
           call storage_free(rgroupFEMSet%h_InodeListIdx)
           call storage_free(rgroupFEMSet%h_InodeList)
         end if
@@ -3179,11 +3204,11 @@ contains
         
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODESTRUCTURE)
+                                    GFEM_HAS_NODELIST)
 
         ! Reset ownership
         rgroupFEMSet%iduplicationFlag = ior(rgroupFEMSet%iduplicationFlag,&
-                                            GFEM_SHARE_NODESTRUCTURE)
+                                            GFEM_SHARE_NODELIST)
 
       end select
       
@@ -3250,11 +3275,20 @@ contains
           ! Increase index counter
           iidx = iidx+1
 
+          ! Set column number and matrix position corresponding to
+          ! equation number ieq, i.e. the one to which all other nodes
+          ! in the current row contribute
+          p_InodeList(1,idx) = ieq
+          p_InodeList(2,idx) = rmatrix%NCOLS*(ieq-1)+ieq
+
+          ! Increase counter
+          idx = idx+1
+
           ! Loop over all matrix entries in current row
           do jcol = 1, rmatrix%NCOLS
             
             ! Check if this column belongs to an active DOF
-            if (.not.BisActive(jcol)) cycle
+            if (.not.BisActive(jcol) .or. ieq.eq.jcol) cycle
 
             ! Set column number and matrix position
             p_InodeList(1,idx) = jcol
@@ -3273,7 +3307,7 @@ contains
 
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODESTRUCTURE)
+                                    GFEM_HAS_NODELIST)
 
       case (LSYSSC_MATRIX7, LSYSSC_MATRIX7INTL)
 
@@ -3325,7 +3359,7 @@ contains
 
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODESTRUCTURE)
+                                    GFEM_HAS_NODELIST)
 
       case (LSYSSC_MATRIX9, LSYSSC_MATRIX9INTL)
 
@@ -3401,7 +3435,7 @@ contains
 
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
-                                    GFEM_HAS_NODESTRUCTURE)
+                                    GFEM_HAS_NODELIST)
    
       end select
       
@@ -3452,8 +3486,8 @@ contains
     integer, dimension(:), pointer :: p_IedgeListIdx,p_IdofList
 
     ! Check if edge structure is owned by the structure
-    if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGESTRUCTURE) .eq.&
-             GFEM_SHARE_EDGESTRUCTURE) then
+    if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGELIST) .eq.&
+             GFEM_SHARE_EDGELIST) then
       call output_line('Edge list is not owned by structure and '//&
           'therefore cannot be generated',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
@@ -3520,7 +3554,7 @@ contains
     !$ end if
 
     ! Set state of structure
-    rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE)
+    rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST)
  
   end subroutine gfem_genEdgeList
 
@@ -3760,40 +3794,40 @@ contains
 
     call output_line('GroupFEMSet:')
     call output_line('------------')
-    call output_line('cassemblyType:            '//trim(sys_siL(rgroupFEMSet%cassemblyType,15)))
-    call output_line('cdataType:                '//trim(sys_siL(rgroupFEMSet%cdataType,15)))
-    call output_line('iduplicationFlag:         '//trim(sys_siL(rgroupFEMSet%iduplicationFlag,15)))
-    call checkAndOutput('GFEM_SHARE_DOFLIST:       ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DOFLIST)
-    call checkAndOutput('GFEM_SHARE_DIAGLIST:      ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DIAGLIST)
-    call checkAndOutput('GFEM_SHARE_NODESTRUCTURE: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_NODESTRUCTURE)
-    call checkAndOutput('GFEM_SHARE_EDGESTRUCTURE: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_EDGESTRUCTURE)
-    call checkAndOutput('GFEM_SHARE_DIAGDATA:      ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DIAGDATA)
-    call checkAndOutput('GFEM_SHARE_NODEDATA:      ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_NODEDATA)
-    call checkAndOutput('GFEM_SHARE_EDGEDATA:      ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_EDGEDATA)
-    call output_line('isetSpec:                 '//trim(sys_siL(rgroupFEMSet%isetSpec,15)))
-    call checkAndOutput('GFEM_HAS_DOFLIST:         ',rgroupFEMSet%isetSpec,GFEM_HAS_DOFLIST)
-    call checkAndOutput('GFEM_HAS_DIAGLIST:        ',rgroupFEMSet%isetSpec,GFEM_HAS_DIAGLIST)
-    call checkAndOutput('GFEM_HAS_NODESTRUCTURE:   ',rgroupFEMSet%isetSpec,GFEM_HAS_NODESTRUCTURE)
-    call checkAndOutput('GFEM_HAS_EDGESTRUCTURE:   ',rgroupFEMSet%isetSpec,GFEM_HAS_EDGESTRUCTURE)
-    call checkAndOutput('GFEM_HAS_DIAGDATA:        ',rgroupFEMSet%isetSpec,GFEM_HAS_DIAGDATA)
-    call checkAndOutput('GFEM_HAS_NODEDATA:        ',rgroupFEMSet%isetSpec,GFEM_HAS_NODEDATA)
-    call checkAndOutput('GFEM_HAS_EDGEDATA:        ',rgroupFEMSet%isetSpec,GFEM_HAS_EDGEDATA)
-    call output_line('NA:                       '//trim(sys_siL(rgroupFEMSet%NA,15)))
-    call output_line('NEQ:                      '//trim(sys_siL(rgroupFEMSet%NEQ,15)))
-    call output_line('NEDGE:                    '//trim(sys_siL(rgroupFEMSet%NEDGE,15)))
-    call output_line('NVAR:                     '//trim(sys_siL(rgroupFEMSet%NVAR,15)))
-    call output_line('ncoeffsAtDiag:            '//trim(sys_siL(rgroupFEMSet%ncoeffsAtDiag,15)))
-    call output_line('ncoeffsAtNode:            '//trim(sys_siL(rgroupFEMSet%ncoeffsAtNode,15)))
-    call output_line('ncoeffsAtEdge:            '//trim(sys_siL(rgroupFEMSet%ncoeffsAtEdge,15)))
-    call checkAndOutputHandle('IdofList:                 ', rgroupFEMSet%h_IdofList)
-    call checkAndOutputHandle('IdiagList:                ', rgroupFEMSet%h_IdiagList)
-    call checkAndOutputHandle('IedgeListIdx:             ', rgroupFEMSet%h_IedgeListIdx)
-    call checkAndOutputHandle('IedgeList:                ', rgroupFEMSet%h_IedgeList)
-    call checkAndOutputHandle('InodeListIdx:             ', rgroupFEMSet%h_InodeListIdx)
-    call checkAndOutputHandle('InodeList:                ', rgroupFEMSet%h_InodeList)
-    call checkAndOutputHandle('CoeffsAtDiag:             ', rgroupFEMSet%h_CoeffsAtDiag)
-    call checkAndOutputHandle('CoeffsAtNode:             ', rgroupFEMSet%h_CoeffsAtNode)
-    call checkAndOutputHandle('CoeffsAtEdge:             ', rgroupFEMSet%h_CoeffsAtEdge)
+    call output_line('cassemblyType:       '//trim(sys_siL(rgroupFEMSet%cassemblyType,15)))
+    call output_line('cdataType:           '//trim(sys_siL(rgroupFEMSet%cdataType,15)))
+    call output_line('iduplicationFlag:    '//trim(sys_siL(rgroupFEMSet%iduplicationFlag,15)))
+    call checkAndOutput('GFEM_SHARE_DOFLIST:  ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DOFLIST)
+    call checkAndOutput('GFEM_SHARE_DIAGLIST: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DIAGLIST)
+    call checkAndOutput('GFEM_SHARE_NODELIST: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_NODELIST)
+    call checkAndOutput('GFEM_SHARE_EDGELIST: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_EDGELIST)
+    call checkAndOutput('GFEM_SHARE_DIAGDATA: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_DIAGDATA)
+    call checkAndOutput('GFEM_SHARE_NODEDATA: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_NODEDATA)
+    call checkAndOutput('GFEM_SHARE_EDGEDATA: ',rgroupFEMSet%iduplicationFlag,GFEM_SHARE_EDGEDATA)
+    call output_line('isetSpec:            '//trim(sys_siL(rgroupFEMSet%isetSpec,15)))
+    call checkAndOutput('GFEM_HAS_DOFLIST:    ',rgroupFEMSet%isetSpec,GFEM_HAS_DOFLIST)
+    call checkAndOutput('GFEM_HAS_DIAGLIST:   ',rgroupFEMSet%isetSpec,GFEM_HAS_DIAGLIST)
+    call checkAndOutput('GFEM_HAS_NODELIST:   ',rgroupFEMSet%isetSpec,GFEM_HAS_NODELIST)
+    call checkAndOutput('GFEM_HAS_EDGELIST:   ',rgroupFEMSet%isetSpec,GFEM_HAS_EDGELIST)
+    call checkAndOutput('GFEM_HAS_DIAGDATA:   ',rgroupFEMSet%isetSpec,GFEM_HAS_DIAGDATA)
+    call checkAndOutput('GFEM_HAS_NODEDATA:   ',rgroupFEMSet%isetSpec,GFEM_HAS_NODEDATA)
+    call checkAndOutput('GFEM_HAS_EDGEDATA:   ',rgroupFEMSet%isetSpec,GFEM_HAS_EDGEDATA)
+    call output_line('NA:                  '//trim(sys_siL(rgroupFEMSet%NA,15)))
+    call output_line('NEQ:                 '//trim(sys_siL(rgroupFEMSet%NEQ,15)))
+    call output_line('NEDGE:               '//trim(sys_siL(rgroupFEMSet%NEDGE,15)))
+    call output_line('NVAR:                '//trim(sys_siL(rgroupFEMSet%NVAR,15)))
+    call output_line('ncoeffsAtDiag:       '//trim(sys_siL(rgroupFEMSet%ncoeffsAtDiag,15)))
+    call output_line('ncoeffsAtNode:       '//trim(sys_siL(rgroupFEMSet%ncoeffsAtNode,15)))
+    call output_line('ncoeffsAtEdge:       '//trim(sys_siL(rgroupFEMSet%ncoeffsAtEdge,15)))
+    call checkAndOutputHandle('IdofList:            ', rgroupFEMSet%h_IdofList)
+    call checkAndOutputHandle('IdiagList:           ', rgroupFEMSet%h_IdiagList)
+    call checkAndOutputHandle('IedgeListIdx:        ', rgroupFEMSet%h_IedgeListIdx)
+    call checkAndOutputHandle('IedgeList:           ', rgroupFEMSet%h_IedgeList)
+    call checkAndOutputHandle('InodeListIdx:        ', rgroupFEMSet%h_InodeListIdx)
+    call checkAndOutputHandle('InodeList:           ', rgroupFEMSet%h_InodeList)
+    call checkAndOutputHandle('CoeffsAtDiag:        ', rgroupFEMSet%h_CoeffsAtDiag)
+    call checkAndOutputHandle('CoeffsAtNode:        ', rgroupFEMSet%h_CoeffsAtNode)
+    call checkAndOutputHandle('CoeffsAtEdge:        ', rgroupFEMSet%h_CoeffsAtEdge)
 
   contains
 

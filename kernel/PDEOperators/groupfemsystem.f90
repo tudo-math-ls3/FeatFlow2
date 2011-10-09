@@ -242,7 +242,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildOperatorBlock')
@@ -877,7 +877,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildOperatorScalar')
@@ -1238,7 +1238,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVectorBlock')
@@ -1431,7 +1431,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)      .eq. 0) .or.&
         (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)  .eq. 0)) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVectorScalar')

@@ -27,13 +27,18 @@
 !#                          gfsc_buildOperatorNodeBlock /
 !#                          gfsc_buildOperatorEdgeScalar /
 !#                          gfsc_buildOperatorEdgeBlock
-!#     -> Assembles a discrete operator by the group finite element formulation
+!#     -> Assembles a discrete operator node-by-node or
+!#        edge-by-edge by the group finite element formulation
 !#
-!# 2.) gfsc_buildVector = gfsc_buildVectorNodeScalar /
-!#                        gfsc_buildVectorNodeBlock /
-!#                        gfsc_buildVectorEdgeScalar /
-!#                        gfsc_buildVectorEdgeBlock
-!#     -> Assembles a discrete vector by the group finite element formulation
+!# 2.) gfsc_buildVectorNode = gfsc_buildVectorNodeScalar /
+!#                            gfsc_buildVectorNodeBlock
+!#     -> Assembles a discrete vector node-by-node by the
+!#        group finite element formulation
+!#
+!# 3.) gfsc_buildVectorEdge = gfsc_buildVectorEdgeScalar /
+!#                            gfsc_buildVectorEdgeBlock
+!#     -> Assembles a discrete vector edge-by-edge by the
+!#        group finite element formulation
 !#
 !# 3.) gfsc_buildJacobian = gfsc_buildJacobianScalar /
 !#                          gfsc_buildJacobianBlock
@@ -62,6 +67,10 @@ module groupfemscalar
   
   public :: gfsc_buildOperator
   public :: gfsc_buildVector
+  public :: gfsc_buildOperatorNode
+  public :: gfsc_buildOperatorEdge
+  public :: gfsc_buildVectorNode
+  public :: gfsc_buildVectorEdge
   public :: gfsc_buildJacobian
   
 !<constants>
@@ -138,10 +147,30 @@ module groupfemscalar
     module procedure gfsc_buildOperatorEdgeScalar
     module procedure gfsc_buildOperatorEdgeBlock
   end interface
+
+  interface gfsc_buildOperatorNode
+    module procedure gfsc_buildOperatorNodeScalar
+    module procedure gfsc_buildOperatorNodeBlock
+  end interface
+
+  interface gfsc_buildOperatorEdge
+    module procedure gfsc_buildOperatorEdgeScalar
+    module procedure gfsc_buildOperatorEdgeBlock
+  end interface
   
   interface gfsc_buildVector
-!    module procedure gfsc_buildVectorNodeScalar
-!    module procedure gfsc_buildVectorNodeBlock
+    module procedure gfsc_buildVectorNodeScalar
+    module procedure gfsc_buildVectorNodeBlock
+    module procedure gfsc_buildVectorEdgeScalar
+    module procedure gfsc_buildVectorEdgeBlock
+  end interface
+
+  interface gfsc_buildVectorNode
+    module procedure gfsc_buildVectorNodeScalar
+    module procedure gfsc_buildVectorNodeBlock
+  end interface
+
+  interface gfsc_buildVectorEdge
     module procedure gfsc_buildVectorEdgeScalar
     module procedure gfsc_buildVectorEdgeBlock
   end interface
@@ -238,8 +267,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
         call sys_halt()
@@ -293,10 +322,10 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)      .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA)      .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorConst')
         call sys_halt()
@@ -553,7 +582,7 @@ contains
         do idx = 1, size(InodeList,2)
           
           ! Get position of matrix entry
-          ia  = InodeList(2,idx)
+          ia = InodeList(2,idx)
           
           ! Update the matrix coefficient
           Ddata(ia) = dscale*DcoeffsAtNode(1,idx)
@@ -568,7 +597,7 @@ contains
         do idx = 1, size(InodeList,2)
           
           ! Get position of matrix entry
-          ia  = InodeList(2,idx)
+          ia = InodeList(2,idx)
           
           ! Update the matrix coefficient
           Ddata(ia) = Ddata(ia) + dscale*DcoeffsAtNode(1,idx)
@@ -607,7 +636,7 @@ contains
         do ia = 1, size(Fdata)
           
           ! Update the matrix coefficient
-          Fdata(ia) = dscale*FcoeffsAtNode(1,ia)
+          Fdata(ia) = fscale*FcoeffsAtNode(1,ia)
         end do
         !$omp end parallel do
         
@@ -619,7 +648,7 @@ contains
         do ia = 1, size(Fdata)
           
           ! Update the matrix coefficient
-          Fdata(ia) = Fdata(ia) + dscale*FcoeffsAtNode(1,ia)
+          Fdata(ia) = Fdata(ia) + fscale*FcoeffsAtNode(1,ia)
         end do
         !$omp end parallel do
         
@@ -629,7 +658,6 @@ contains
 
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
-    ! All matrices are stored in matrix format 7 and 9
 
     subroutine doOperatorNodeSnglSel(InodeList, FcoeffsAtNode,&
         fscale, bclear, Fdata)
@@ -644,7 +672,7 @@ contains
       real(SP), dimension(:), intent(inout) :: Fdata
       
       ! local variables
-      integer :: idx,ieq,ij
+      integer :: ia,idx
 
       !-------------------------------------------------------------------------
       ! Assemble matrix entries
@@ -653,30 +681,30 @@ contains
       if (bclear) then
         
         ! Loop over the subset of equations
-        !$omp parallel do default(shared) private(ij)&
+        !$omp parallel do default(shared) private(ia)&
         !$omp if (size(InodeList,2) > GFSC_NEQMIN_OMP)
         do idx = 1, size(InodeList,2)
           
           ! Get position of matrix entry
-          ij  = InodeList(2,idx)
+          ia = InodeList(2,idx)
           
           ! Update the matrix coefficient
-          Fdata(ij) = fscale*FcoeffsAtNode(1,idx)
+          Fdata(ia) = fscale*FcoeffsAtNode(1,idx)
         end do
         !$omp end parallel do
         
       else
         
         ! Loop over the subset of equations
-        !$omp parallel do default(shared) private(ij)&
+        !$omp parallel do default(shared) private(ia)&
         !$omp if (size(InodeList,2) > GFSC_NEQMIN_OMP)
         do idx = 1, size(InodeList,2)
           
           ! Get position of matrix entry
-          ij  = InodeList(2,idx)
+          ia = InodeList(2,idx)
           
           ! Update the matrix coefficient
-          Fdata(ij) = Fdata(ij) + fscale*FcoeffsAtNode(1,idx)
+          Fdata(ia) = Fdata(ia) + fscale*FcoeffsAtNode(1,idx)
         end do
         !$omp end parallel do
         
@@ -700,7 +728,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Ddata
       
       ! local variables
-      integer :: ieq,ii
+      integer :: ia,idx
 
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
@@ -709,30 +737,30 @@ contains
       if (bclear) then
         
         ! Loop over all equations
-        !$omp parallel do default(shared) private(ii)&
+        !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > GFSC_NEQMIN_OMP)
-        do ieq = 1, size(IdiagList,2)
+        do idx = 1, size(IdiagList,2)
           
           ! Get position of diagonal entry
-          ii = IdiagList(2,ieq)
+          ia = IdiagList(2,idx)
           
           ! Update the diagonal coefficient
-          Ddata(ii) = dscale*DcoeffsAtDiag(1,ieq)
+          Ddata(ia) = dscale*DcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
         
       else
         
         ! Loop over all equations
-        !$omp parallel do default(shared) private(ii)&
+        !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > GFSC_NEQMIN_OMP)
-        do ieq = 1, size(IdiagList,2)
+        do idx = 1, size(IdiagList,2)
           
           ! Get position of diagonal entry
-          ii = IdiagList(2,ieq)
+          ia = IdiagList(2,idx)
           
           ! Update the diagonal coefficient
-          Ddata(ii) = Ddata(ii) + dscale*DcoeffsAtDiag(1,ieq)
+          Ddata(ia) = Ddata(ia) + dscale*DcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
         
@@ -756,7 +784,7 @@ contains
       real(SP), dimension(:), intent(inout) :: Fdata
       
       ! local variables
-      integer :: ieq,ii
+      integer :: ia,idx
 
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
@@ -765,30 +793,30 @@ contains
       if (bclear) then
         
         ! Loop over all equations
-        !$omp parallel do default(shared) private(ii)&
+        !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > GFSC_NEQMIN_OMP)
-        do ieq = 1, size(IdiagList,2)
+        do idx = 1, size(IdiagList,2)
           
           ! Get position of diagonal entry
-          ii = IdiagList(2,ieq)
+          ia = IdiagList(2,idx)
           
           ! Update the diagonal coefficient
-          Fdata(ii) = fscale*FcoeffsAtDiag(1,ieq)
+          Fdata(ia) = fscale*FcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
         
       else
         
         ! Loop over all equations
-        !$omp parallel do default(shared) private(ii)&
+        !$omp parallel do default(shared) private(ia)&
         !$omp if (size(IdiagList,2) > GFSC_NEQMIN_OMP)
-        do ieq = 1, size(IdiagList,2)
+        do idx = 1, size(IdiagList,2)
           
           ! Get position of diagonal entry
-          ii = IdiagList(2,ieq)
+          ia = IdiagList(2,idx)
           
           ! Update the diagonal coefficient
-          Fdata(ii) = Fdata(ii) + fscale*FcoeffsAtDiag(1,ieq)
+          Fdata(ia) = Fdata(ia) + fscale*FcoeffsAtDiag(1,idx)
         end do
         !$omp end parallel do
         
@@ -1671,11 +1699,10 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata,p_Dx
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
-    
-    integer, dimension(:,:), pointer :: p_InodeList
-    integer, dimension(:), pointer :: p_Kcol
+    real(DP), dimension(:), pointer :: p_Ddata,p_Dx
+    integer, dimension(:,:), pointer :: p_InodeList2D
+    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
 
     ! Check if matrix and vector have the same data type
     if ((rmatrix%cdataType .ne. rx%cdataType) .or.&
@@ -1694,53 +1721,46 @@ contains
       !-------------------------------------------------------------------------
 
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
         call sys_halt()
       end if
 
-      ! What kind of matrix are we?
-      select case(rmatrix%cmatrixFormat)
-      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
-        !-----------------------------------------------------------------------
-        ! Matrix format 7 and 9
-        !-----------------------------------------------------------------------
-
+      ! What data types are we?
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
         ! Set pointers
-        call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-
-        ! What data types are we?
-        select case(rmatrix%cdataType)
-        case (ST_DOUBLE)
+        call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
+        call lsyssc_getbase_double(rmatrix, p_Ddata)
+        call lsyssc_getbase_double(rx, p_Dx)
+        
+        ! Check if only a subset of the matrix is required
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
           ! Set pointers
-          call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
-          call lsyssc_getbase_double(rmatrix, p_Ddata)
-          call lsyssc_getbase_double(rx, p_Dx)
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
-          ! Check if only a subset of the matrix is required
-          if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) then
-            call doOperatorDble(p_Kcol, p_DcoeffsAtNode,&
-                p_Dx, dscale, bclear, p_Ddata)
-          else
-            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
-            call doOperatorDbleSel(p_InodeList, p_DcoeffsAtNode,&
-                p_Dx, dscale, bclear, p_Ddata)
-          end if
-
-        case default
-          call output_line('Unsupported data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
-          call sys_halt()
-        end select
+          ! Assemble operator node-by-node
+          call doOperatorDble(p_InodeListIdx, p_InodeList1D,&
+              p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+        else
+          ! Set pointers
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+          
+          ! Assemble selected part of the operator node-by-node
+          call doOperatorDbleSel(p_InodeListIdx, p_InodeList2D,&
+              p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+        end if
 
       case default
-        call output_line('Unsupported matrix format!',&
+        call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
         call sys_halt()
       end select
-
+      
     case default
       call output_line('Unsupported assembly type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeScalar')
@@ -1754,15 +1774,15 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDble(Kcol, DcoeffsAtNode, Dx,&
-        dscale, bclear, Ddata)
+    subroutine doOperatorDble(InodeListIdx, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
@@ -1770,36 +1790,36 @@ contains
       ! auxiliary arras
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
-      integer, dimension(:,:), pointer  :: IdofsAtNode
+      integer, dimension(:,:), pointer :: IdofsAtNode
       
       ! local variables
       integer :: idx,IAset,IAmax
       integer :: ij,j
-
+      
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IAmax,IdofsAtNode,idx,ij,j)&
-      !$omp if (size(Kcol) > GFSC_NAMIN_OMP)
+      !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,IAmax,idx,ij,j)&
+      !$omp if (size(InodeList) > GFSC_NAMIN_OMP)
       
       ! allocate temporal memory
-      allocate(IdofsAtNode(2,GFSC_NASIM))
       allocate(DdataAtNode(GFSC_NASIM))
       allocate(Dcoefficients(1,GFSC_NASIM))
+      allocate(IdofsAtNode(2,GFSC_NASIM))
       
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
-      do IAset = 1, size(Kcol), GFSC_NASIM
-        
+      do IAset = 1, size(InodeList), GFSC_NASIM
+
         ! We always handle GFSC_NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle 
         ! at most GFSC_NASIM matrix entries simultaneously.
         
-        IAmax = min(size(Kcol), IAset-1+GFSC_NASIM)
-        
+        IAmax = min(size(InodeList), IAset-1+GFSC_NASIM)
+
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
         do idx = 1, IAmax-IAset+1
@@ -1808,7 +1828,7 @@ contains
           ij = idx+IAset-1
           
           ! Get column number of matrix entry
-          j = Kcol(ij)
+          j = InodeList(ij)
           
           ! Fill auxiliary array
           IdofsAtNode(1,idx) = j
@@ -1824,13 +1844,13 @@ contains
             dscale, IAmax-IAset+1,&
             Dcoefficients(:,1:IAmax-IAset+1), rcollection)
         
-        ! Loop through all edges in the current set
+        ! Loop through all nonzero matrix entries in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
           do idx = 1, IAmax-IAset+1
             
             ! Get position of matrix entry
-            ij = IdofsAtNode(2,idx)
+            ij = idx+IAset-1
             
             ! Update the global operator
             Ddata(ij) = Dcoefficients(1,idx)
@@ -1841,7 +1861,7 @@ contains
           do idx = 1, IAmax-IAset+1
             
             ! Get position of matrix entry
-            ij = IdofsAtNode(2,idx)
+            ij = idx+IAset-1
             
             ! Update the global operator
             Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
@@ -1861,8 +1881,8 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDbleSel(InodeList, DcoeffsAtNode, Dx,&
-        dscale, bclear, Ddata)
+    subroutine doOperatorDbleSel(InodeListIdx, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
@@ -1870,6 +1890,7 @@ contains
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: InodeList
+      integer, dimension(:), intent(in) :: InodeListIdx
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
@@ -1909,11 +1930,8 @@ contains
         ! and prepare the auxiliary arrays
         do idx = 1, IAmax-IAset+1
           
-          ! Get actual index
-          ij = idx+IAset-1
-          
           ! Fill auxiliary array
-          DdataAtNode(idx) = Dx(InodeList(1,ij))
+          DdataAtNode(idx) = Dx(InodeList(1,idx+IAset-1))
         end do
         
         ! Use callback function to compute diagonal entries
@@ -1924,7 +1942,7 @@ contains
             dscale, IAmax-IAset+1,&
             Dcoefficients(:,1:IAmax-IAset+1), rcollection)
         
-        ! Loop through all edges in the current set
+        ! Loop through all nonzero matrix entries in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
           do idx = 1, IAmax-IAset+1
@@ -1947,7 +1965,6 @@ contains
             Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
           end do
         end if
-        
       end do
       !$omp end do
       
@@ -2126,14 +2143,12 @@ contains
       !-------------------------------------------------------------------------
       
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST)      .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA)      .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
-
-call gfem_infoGroupFEMSet(rgroupFEMSet)
         call sys_halt()
       end if
         
@@ -2254,15 +2269,14 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
       real(DP), dimension(:,:), pointer :: Dcoefficients
 
       ! local variables
-      integer :: idx,IEQset,IEQmax
-      integer :: i,ii
+      integer :: IEQmax,IEQset,i,ia,idx
 
       !-------------------------------------------------------------------------
       ! Assemble diagonal entries
       !-------------------------------------------------------------------------
       
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IEQmax,i,idx,ii)&
+      !$omp private(Dcoefficients,DdataAtNode,IEQmax,i,idx,ia)&
       !$omp if (size(IdiagList,2) > GFSC_NEQMIN_OMP)
       
       ! Allocate temporal memory
@@ -2285,12 +2299,12 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
         do idx = 1, IEQmax-IEQset+1
           
           ! Get actual equation number
-          i = IdiagList(1,idx)
+          i = IdiagList(1,idx+IEQset-1)
           
           ! Fill auxiliary array
-          DdataAtNode(idx)   = Dx(i)
+          DdataAtNode(idx) = Dx(i)
         end do
-        
+
         ! Use callback function to compute diagonal entries
         call fcb_calcMatrixDiagSc_sim(&
             DdataAtNode(1:IEQmax-IEQset+1),&
@@ -2305,10 +2319,10 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
-            ii = IdiagList(2,idx)
+            ia = IdiagList(2,idx+IEQset-1)
             
             ! Update the diagonal coefficient
-            Ddata(ii) = Dcoefficients(1,idx)
+            Ddata(ia) = Dcoefficients(1,idx)
           end do
           
         else   ! do not clear matrix
@@ -2316,10 +2330,10 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
-            ii = IdiagList(2,idx)
+            ia = IdiagList(2,idx+IEQset-1)
             
             ! Update the diagonal coefficient
-            Ddata(ii) = Ddata(ii) + Dcoefficients(1,idx)
+            Ddata(ia) = Ddata(ia) + Dcoefficients(1,idx)
           end do
         end if
         
@@ -2553,7 +2567,7 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
               Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
-              Ddata(ij) =             Dcoefficients(2,idx) + Dcoefficients(1,idx) 
+              Ddata(ij) =             Dcoefficients(2,idx) + Dcoefficients(1,idx)
               Ddata(ji) =             Dcoefficients(3,idx) + Dcoefficients(1,idx)
             end do
 
@@ -2575,7 +2589,7 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
               ! Update the global operator
               Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
               Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
-              Ddata(ij) = Ddata(ij) + Dcoefficients(2,idx) + Dcoefficients(1,idx) 
+              Ddata(ij) = Ddata(ij) + Dcoefficients(2,idx) + Dcoefficients(1,idx)
               Ddata(ji) = Ddata(ji) + Dcoefficients(3,idx) + Dcoefficients(1,idx)
             end do
 
@@ -2849,10 +2863,10 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Dx,p_Ddata
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
-    integer, dimension(:), pointer :: p_InodeListIdx
-    integer, dimension(:,:), pointer :: p_InodeList
+    real(DP), dimension(:), pointer :: p_Dx,p_Ddata
+    integer, dimension(:,:), pointer :: p_InodeList2D
+    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
 
     ! Check if vectors have the same data type double
     if ((rx%cdataType .ne. rvector%cdataType) .or.&
@@ -2871,28 +2885,39 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
       !-------------------------------------------------------------------------
 
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorNodeScalar')
         call sys_halt()
       end if
-
-      ! Set pointers
-      call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
-      call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
-
+      
       ! What data types are we?
       select case(rvector%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
         call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
-        call lsyssc_getbase_double(rx, p_Dx)
         call lsyssc_getbase_double(rvector, p_Ddata)
+        call lsyssc_getbase_double(rx, p_Dx)
+        
+        ! Check if only a subset of the vector is required
+        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
+          ! Set pointers
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
-!!$        ! Assemble vector without stabilisation
-!!$        call doVectorDble(p_InodeListIdx, p_InodeList, p_DcoeffsAtNode,&
-!!$            p_Dx, dscale, bclear, p_Ddata)
+          ! Assemble vector node-by-node
+          call doVectorDble(p_InodeListIdx, p_InodeList1D,&
+              p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+        else
+          ! Set pointers
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+
+          ! Assemble selected part of the vector node-by-node
+          call doVectorDbleSel(p_InodeListIdx, p_InodeList2D,&
+              p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+        end if
         
       case default
         call output_line('Unsupported data type!',&
@@ -2910,58 +2935,69 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
     
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
-    ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doVectorDble(Kld, Kcol, DcoeffsAtNode, Dx,&
-        dscale, bclear, Ddata)
+    subroutine doVectorDble(InodeListIdx, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
       
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
       
       ! auxiliary arras
-      real(DP), dimension(:), pointer :: DdataAtNode
-      real(DP), dimension(:,:), pointer :: Dcoefficients
+      real(DP), dimension(:), pointer :: DdataAtNode,Dcoefficients
       integer, dimension(:,:), pointer  :: IdofsAtNode
       
       ! local variables
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ij,j
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
-
+      
       if (bclear) call lalg_clearVector(Ddata)
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IAmax,IApos,IAset,IEQmax,i,ia,idx,ij,j)&
-      !$omp if(size(Kld) > GFSC_NEQMIN_OMP)
-      
+      !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
+      !$omp if(size(InodeList) > GFSC_NAMIN_OMP)
+
+      ! Allocate temporal memory
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(Dcoefficients(GFSC_NEQSIM))
+      allocate(IdofsAtNode(2,GFSC_NEQSIM))
+
       ! Loop over all equations in blocks of size GFSC_NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(Kld)-1, GFSC_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, GFSC_NEQSIM
         
         ! We always handle GFSC_NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
         ! at most GFSC_NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(Kld)-1, IEQset-1+GFSC_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSC_NEQSIM)
         
-        IAset  = 1 ! lower bound of nonzero matrix entries
-        IAmax  = 1 ! upper bound of nonzero matrix entries
-        IApos  = Kld(IEQset) ! absolute position of first nonzero matrix entry
+        ! Since the number of nonzero entries per equation is not
+        ! fixed we need to iterate over all equations in the current
+        ! set of equations [IEQset:IEQmax] and process not more than
+        ! GFSC_NASIM nonzero entries simultaneously.
         
-        ! Since the number of nonzero entries per equation is not fixed
-        ! we need to iterate over all equations in the current set of
-        ! equations to ensure that the number of nonzero entries to be
-        ! processed simultaneously is not larger than GFSC_NASIM
+        ! Initialise the lower and upper bounds of nonzero entries;
+        ! note that this is not the matrix position itself but the
+        ! equation number to which the nonzero matrix entries belong
+        IAset = IEQset
+        IAmax = IEQset
+
+        ! Also initialise the absolute position of first nonzero entry
+        IApos = InodeListIdx(IEQset)
+        
+        ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
           
           ! Initialise local index which will run from IAset..IAmax.
@@ -2976,52 +3012,53 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
           do while(IAmax .le. IEQmax)
 
             ! Exit if more than GFSC_NASIM nonzero entries would be processed
-            if (Kld(IEQset+IAmax)-IApos+1 .gt. GFSC_NASIM) exit
+            if (InodeListIdx(IAmax+1)-IApos .gt. GFSC_NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
-            do ia = Kld(IEQset+IAmax-1), Kld(IEQset+IAmax)-1
+            do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
+              
               ! Update local index
               idx = idx+1
               
               ! Fill auxiliary arrays
-              IdofsAtNode(1,idx) = Kcol(ia)     ! absolut nodal value j
-              IdofsAtNode(2,idx) = ia           ! absolute matrix position ia
-              DdataAtNode(idx)   = Dx(Kcol(ia)) ! solution value at node j=Kcol(ia)
+              IdofsAtNode(1,idx) = InodeList(ia)     ! absolut nodal value j
+              IdofsAtNode(2,idx) = ia                ! absolute matrix position ia
+              DdataAtNode(idx)   = Dx(InodeList(ia)) ! solution value at node j
             end do
             
-            ! Update upper bound for nonzero matrix index
+            ! Increase the upper bound for nonzero entries
             IAmax = IAmax+1
           end do
           
           ! Use callback function to compute matrix entries
-          call fcb_calcMatrixDiagSc_sim(&
+          call fcb_calcVectorSc_sim(&
               DdataAtNode(1:idx),&
               DcoeffsAtNode(:,IApos:IApos+idx-1),&
               IdofsAtNode(:,1:idx),&
-              dscale, idx, Dcoefficients(:,1:idx), rcollection)
+              dscale, idx, Dcoefficients(1:idx), rcollection)
           
           ! Initialise local index which will run from IAset..IAmax
           idx = 0
 
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
-          do i = IEQSet+IAset-1, IEQSet+IAmax-2
+          do ieq = IAset, IAmax-1
             
             ! Loop over all contributions to this equation
-            do ia = Kld(i), Kld(i+1)-1
+            do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
               
               ! Update local index
               idx = idx+1
               
               ! Update the global vector
-              Ddata(i) = Ddata(i) + Dcoefficients(1,idx)
+              Ddata(ieq) = Ddata(ieq) + Dcoefficients(idx)
             end do
           end do
           
           ! Proceed with next nonzero entries in current set
-          IAset = IAmax-1
-          IApos = Kld(IEQSet+IASet-1)
+          IAset = IAmax
+          IApos = InodeListIdx(IASet)
           
         end do
       end do
@@ -3034,6 +3071,143 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
       !$omp end parallel
 
     end subroutine doVectorDble
+
+    !**************************************************************
+    ! Assemble vector node-by-node without stabilisation
+
+    subroutine doVectorDbleSel(InodeListIdx, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+      
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: InodeListIdx
+      integer, dimension(:,:), intent(in) :: InodeList
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+      
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode,Dcoefficients
+      
+      ! local variables
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ieq
+
+      !-------------------------------------------------------------------------
+      ! Assemble all entries
+      !-------------------------------------------------------------------------
+      
+      if (bclear) call lalg_clearVector(Ddata)
+
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtNode,IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
+      !$omp if(size(InodeList,2) > GFSC_NAMIN_OMP)
+
+      ! Allocate temporal memory
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(Dcoefficients(GFSC_NEQSIM))
+
+      ! Loop over all equations in blocks of size GFSC_NEQSIM
+      !$omp do schedule(static,1)
+      do IEQset = 1, size(InodeListIdx)-1, GFSC_NEQSIM
+        
+        ! We always handle GFSC_NEQSIM equations by one OpenMP thread.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations by one OpenMP thread.
+
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSC_NEQSIM)
+        
+        ! Since the number of nonzero entries per equation is not
+        ! fixed we need to iterate over all equations in the current
+        ! set of equations [IEQset:IEQmax] and process not more than
+        ! GFSC_NASIM nonzero entries simultaneously.
+        
+        ! Initialise the lower and upper bounds of nonzero entries;
+        ! note that this is not the matrix position itself but the
+        ! equation number to which the nonzero matrix entries belong
+        IAset = IEQset
+        IAmax = IEQset
+
+        ! Also initialise the absolute position of first nonzero entry
+        IApos = InodeListIdx(IEQset)
+        
+        ! Repeat until all equation in the current set have been processed
+        do while (IAset .le. IEQmax)
+          
+          ! Initialise local index which will run from IAset..IAmax.
+          ! Since IAset and IAmax are not fixed but they are updated
+          ! step-by-step we need this complicated while-loop
+          idx = 0
+
+          ! Loop over the equations of the current group and include
+          ! an equation into the current set of nonzero matrix entries
+          ! if the total number of nonzero matrix entries in the set
+          ! does not exceed the upper bound GFSC_NASIM
+          do while(IAmax .le. IEQmax)
+
+            ! Exit if more than GFSC_NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. GFSC_NASIM) exit
+            
+            ! Loop through all nonzero matrix entries in the current
+            ! equation and prepare the auxiliary arrays for it
+            do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Fill auxiliary arrays
+              DdataAtNode(idx) = Dx(InodeList(1,ia)) ! solution value at node j
+            end do
+            
+            ! Increase the upper bound for nonzero entries
+            IAmax = IAmax+1
+          end do
+          
+          ! Use callback function to compute matrix entries
+          call fcb_calcVectorSc_sim(&
+              DdataAtNode(1:idx),&
+              DcoeffsAtNode(:,IApos:IApos+idx-1),&
+              InodeList(:,IApos:IApos+idx-1),&
+              dscale, idx, Dcoefficients(1:idx), rcollection)
+          
+          ! Initialise local index which will run from IAset..IAmax
+          idx = 0
+
+          ! Loop through all equations in the current set
+          ! and scatter the entries to the global matrix
+          do i = IAset, IAmax-1
+            
+            ! Get actual node number
+            ieq = InodeList(1,InodeListIdx(i))
+            
+            ! Loop over all contributions to this equation
+            do ia = InodeListIdx(i), InodeListIdx(i+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Update the global vector
+              Ddata(ieq) = Ddata(ieq) + Dcoefficients(idx)
+            end do
+          end do
+          
+          ! Proceed with next nonzero entries in current set
+          IAset = IAmax
+          IApos = InodeListIdx(IASet)
+          
+        end do
+      end do
+      !$omp end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtNode)
+      deallocate(Dcoefficients)
+      !$omp end parallel
+
+    end subroutine doVectorDbleSel
 
   end subroutine gfsc_buildVectorNodeScalar
 
@@ -3192,8 +3366,8 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
       !-------------------------------------------------------------------------
       
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA)      .eq. 0)) then
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
+          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeScalar')
         call sys_halt()
@@ -3363,7 +3537,7 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
                 IedgeList(:,IEDGEset:IEDGEmax),&
                 dscale, IEDGEmax-IEDGEset+1,&
                 DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
-                rcollection=rcollection)
+                Dcoefficients(:,IEDGEset:IEDGEmax), rcollection)
           else
             call fcb_calcFluxSc_sim(&
                 DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3371,7 +3545,7 @@ call gfem_infoGroupFEMSet(rgroupFEMSet)
                 IedgeList(:,IEDGEset:IEDGEmax),&
                 dscale, IEDGEmax-IEDGEset+1,&
                 DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
-                Dcoefficients(:,IEDGEset:IEDGEmax), rcollection)
+                rcollection=rcollection)
           end if
           
           ! Loop through all edges in the current set
