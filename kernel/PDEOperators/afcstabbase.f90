@@ -150,7 +150,10 @@
 !#
 !# 38.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
 !#                                  afcstab_upwindOrientationSngl
-!#     -> Swap edge orientation so that the starting edge is located upwind
+!#      -> Swap edge orientation so that the starting edge is located upwind
+!#
+!# 39.) afcstb_infoStabilisation
+!#      -> Outputs information about the stabilisation structure
 !#
 !# </purpose>
 !##############################################################################
@@ -181,6 +184,7 @@ module afcstabbase
   public :: afcstab_copyMatrixCoeffs
   public :: afcstab_isMatrixCompatible
   public :: afcstab_isVectorCompatible
+  public :: afcstab_infoStabilisation
 
   public :: afcstab_getbase_array
   public :: afcstab_getbase_IedgeListIdx
@@ -722,6 +726,13 @@ module afcstabbase
     ! Number of equations of the sparsity pattern
     integer :: NEQ = 0
 
+    ! Number of edges of the sparsity pattern
+    integer :: NEDGE = 0
+
+    ! Maximum number of edges adjacent to one vertex. This
+    ! corresponds to the maximum number of nonzero row entries.
+    integer :: NNVEDGE = 0
+
     ! Number of local variables; in general scalar solution vectors of
     ! size NEQ posses NEQ entries. However, scalar vectors can be
     ! interleaved, that is, each of the NEQ entries stores NVAR local
@@ -738,19 +749,12 @@ module afcstabbase
     ! in terms of conservative variables. 
     integer :: NVARtransformed = 1
 
-    ! Number of edges of the sparsity pattern
-    integer :: NEDGE = 0
-
-    ! Maximum number of edges adjacent to one vertex. This
-    ! corresponds to the maximum number of nonzero row entries.
-    integer :: NNVEDGE = 0
-
     ! Number of different matrix coefficients stored in
     ! DmatrixCoeffsAtNode and DmatrixCoeffsAtEdge, respectively.
     integer :: nmatrixCoeffs = 0
 
     ! Number of different coefficients stored in DCoefficientsAtEdge
-    integer :: ncoeffs = 0
+    integer :: ncoeffsAtEdge = 0
 
     ! Handle to index pointer for edge structure
     ! The numbers IedgeListIdx(k):IedgeListIdx(k+1)-1
@@ -758,9 +762,11 @@ module afcstabbase
     integer :: h_IedgeListIdx = ST_NOHANDLE
 
     ! Handle to edge structure
-    ! IedgeList(1:2,1:NEDGE) : the two end-points of the edge
-    ! IedgeList(3:4,1:NEDGE) : the two matrix position that
-    !                                correspond to the edge
+    ! IedgeList(1:2,1:NEDGE) : the two end-points i and j of the edge (ij)
+    ! IedgeList(3:4,1:NEDGE) : the two matrix position ij and ji that
+    !                          correspond to the edge (ij)
+    ! IedgeList(5:6,1:NEDGE) : the two matrix position ii and jj that
+    !                          correspond to the diagonal entries
     integer :: h_IedgeList = ST_NOHANDLE
 
     ! Handle to index pointer for superdiagonal edge numbers
@@ -778,11 +784,13 @@ module afcstabbase
     ! Handle to coefficient at edge structure
     integer :: h_CoefficientsAtEdge = ST_NOHANDLE
 
+
     ! Handle to auxiliary matrix data at nodes (i.e. diagonal entries)
     integer :: h_DmatrixCoeffsAtNode = ST_NOHANDLE
 
     ! Handle to auxiliary matrix data at edges (i.e. off-diagonal entries)
     integer :: h_DmatrixCoeffsAtEdge = ST_NOHANDLE
+
 
     ! Handle to bounds at edges (i.e. off-diagonal entries)
     integer :: h_DboundsAtEdge = ST_NOHANDLE
@@ -1155,7 +1163,7 @@ contains
     rafcstab%NEDGE              = 0
     rafcstab%NNVEDGE            = 0
     rafcstab%nmatrixCoeffs      = 0
-    rafcstab%ncoeffs            = 0
+    rafcstab%ncoeffsAtEdge      = 0
 
   contains
 
@@ -2663,6 +2671,215 @@ contains
 
 !<subroutine>
 
+  subroutine afcstab_infoStabilisation(rafcstab)
+
+!<description>
+  ! This subroutine prints out information about the stabilisation structure
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+!</subroutine>
+
+    call output_line('AFCstabilisation:')
+    call output_line('-----------------')
+    call output_line('cafcstabType:                   '//trim(sys_siL(rafcstab%cafcstabType,15)))
+    call output_line('cprelimitingType:               '//trim(sys_siL(rafcstab%cprelimitingType,15)))
+    call output_line('climitingType:                  '//trim(sys_siL(rafcstab%climitingType,15)))
+    call output_line('cdataType:                      '//trim(sys_siL(rafcstab%cdataType,15)))
+    call output_line('iduplicationFlag:               '//trim(sys_siL(rafcstab%iduplicationFlag,15)))
+    call checkAndOutput('AFCSTAB_SHARE_STRUCTURE:        ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_STRUCTURE)
+    call checkAndOutput('AFCSTAB_SHARE_EDGESTRUCTURE:    ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGESTRUCTURE)
+    call checkAndOutput('AFCSTAB_SHARE_EDGEVALUES:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGEVALUES)
+    call checkAndOutput('AFCSTAB_SHARE_OFFDIAGONALEDGES: ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_OFFDIAGONALEDGES)
+    call checkAndOutput('AFCSTAB_SHARE_ADFLUXES:         ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_ADFLUXES)
+    call checkAndOutput('AFCSTAB_SHARE_ADINCREMENTS:     ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_ADINCREMENTS)
+    call checkAndOutput('AFCSTAB_SHARE_NODEBOUNDS:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_NODEBOUNDS)
+    call checkAndOutput('AFCSTAB_SHARE_NODELIMITER:      ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_NODELIMITER)
+    call checkAndOutput('AFCSTAB_SHARE_EDGELIMITER:      ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGELIMITER)
+    call checkAndOutput('AFCSTAB_SHARE_PREDICTOR:        ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_PREDICTOR)
+    call checkAndOutput('AFCSTAB_SHARE_MATRIXCOEFFS:     ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_MATRIXCOEFFS)
+    call checkAndOutput('AFCSTAB_SHARE_NODEVALUES:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_NODEVALUES)
+    call checkAndOutput('AFCSTAB_SHARE_EDGEBOUNDS:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGEBOUNDS)
+    call output_line('istabilisationSpec:             '//trim(sys_siL(rafcstab%istabilisationSpec,15)))
+    call checkAndOutput('AFCSTAB_INITIALISED:            ',rafcstab%istabilisationSpec,AFCSTAB_INITIALISED)
+    call checkAndOutput('AFCSTAB_HAS_EDGESTRUCTURE:      ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGESTRUCTURE)
+    call checkAndOutput('AFCSTAB_HAS_EDGEORIENTATION:    ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGEORIENTATION)
+    call checkAndOutput('AFCSTAB_HAS_EDGEVALUES:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGEVALUES)
+    call checkAndOutput('AFCSTAB_HAS_OFFDIAGONALEDGES:   ',rafcstab%istabilisationSpec,AFCSTAB_HAS_OFFDIAGONALEDGES)
+    call checkAndOutput('AFCSTAB_HAS_ADFLUXES:           ',rafcstab%istabilisationSpec,AFCSTAB_HAS_ADFLUXES)
+    call checkAndOutput('AFCSTAB_HAS_ADINCREMENTS:       ',rafcstab%istabilisationSpec,AFCSTAB_HAS_ADINCREMENTS)
+    call checkAndOutput('AFCSTAB_HAS_NODEBOUNDS:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_NODEBOUNDS)
+    call checkAndOutput('AFCSTAB_HAS_NODELIMITER:        ',rafcstab%istabilisationSpec,AFCSTAB_HAS_NODELIMITER)
+    call checkAndOutput('AFCSTAB_HAS_EDGELIMITER:        ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGELIMITER)
+    call checkAndOutput('AFCSTAB_HAS_PREDICTOR:          ',rafcstab%istabilisationSpec,AFCSTAB_HAS_PREDICTOR)
+    call checkAndOutput('AFCSTAB_HAS_MATRIXCOEFFS:       ',rafcstab%istabilisationSpec,AFCSTAB_HAS_MATRIXCOEFFS)
+    call checkAndOutput('AFCSTAB_HAS_NODEVALUES:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_NODEVALUES)
+    call checkAndOutput('AFCSTAB_HAS_EDGEBOUNDS:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGEBOUNDS)
+    call output_line('NEQ:                            '//trim(sys_siL(rafcstab%NEQ,15)))
+    call output_line('NEDGE:                          '//trim(sys_siL(rafcstab%NEDGE,15)))
+    call output_line('NNVEDGE:                        '//trim(sys_siL(rafcstab%NNVEDGE,15)))
+    call output_line('NVAR:                           '//trim(sys_siL(rafcstab%NVAR,15)))
+    call output_line('NVARtransformed:                '//trim(sys_siL(rafcstab%NVARtransformed,15)))
+    call output_line('nmatrixCoeffs:                  '//trim(sys_siL(rafcstab%nmatrixCoeffs,15)))
+    call output_line('ncoeffsAtEdge:                  '//trim(sys_siL(rafcstab%ncoeffsAtEdge,15)))
+    call checkAndOutputHandle('IedgeListIdx:                   ', rafcstab%h_IedgeListIdx)
+    call checkAndOutputHandle('IedgeList:                      ', rafcstab%h_IedgeList)
+    call checkAndOutputHandle('IsuperdiagEdgesIdx:             ', rafcstab%h_IsuperdiagEdgesIdx)
+    call checkAndOutputHandle('IsubdiagEdgesIdx:               ', rafcstab%h_IsubdiagEdgesIdx)
+    call checkAndOutputHandle('IsubdiagEdges:                  ', rafcstab%h_IsubdiagEdges)
+    call checkAndOutputHandle('CoefficientsAtEdge:             ', rafcstab%h_CoefficientsAtEdge)
+    call checkAndOutputHandle('DmatrixCoeffsAtNode:            ', rafcstab%h_DmatrixCoeffsAtNode)
+    call checkAndOutputHandle('DmatrixCoeffsAtEdge:            ', rafcstab%h_DmatrixCoeffsAtEdge)
+    call checkAndOutputHandle('DboundsAtEdge:                  ', rafcstab%h_DboundsAtEdge)
+
+    if (associated(rafcstab%p_rvectorAlpha)) then
+      call output_lbrk()
+      call output_line('vectorAlpha')
+      call lsyssc_infoVector(rafcstab%p_rvectorAlpha)
+    end if
+
+    if (associated(rafcstab%p_rvectorFlux0)) then
+      call output_lbrk()
+      call output_line('vectorFlux0')
+      call lsyssc_infoVector(rafcstab%p_rvectorFlux0)
+    end if
+    
+    if (associated(rafcstab%p_rvectorFlux)) then
+      call output_lbrk()
+      call output_line('vectorFlux')
+      call lsyssc_infoVector(rafcstab%p_rvectorFlux)
+    end if
+
+    if (associated(rafcstab%p_rvectorFluxPrel)) then
+      call output_lbrk()
+      call output_line('vectorFluxPrel')
+      call lsyssc_infoVector(rafcstab%p_rvectorFluxPrel)
+    end if
+
+    if (associated(rafcstab%p_rvectorDx)) then
+      call output_lbrk()
+      call output_line('vectorDx')
+      call lsyssc_infoVector(rafcstab%p_rvectorDx)
+    end if
+
+    if (associated(rafcstab%p_rvectorPp)) then
+      call output_lbrk()
+      call output_line('vectorPp')
+      call lsyssc_infoVector(rafcstab%p_rvectorPp)
+    end if
+
+    if (associated(rafcstab%p_rvectorPm)) then
+      call output_lbrk()
+      call output_line('vectorPm')
+      call lsyssc_infoVector(rafcstab%p_rvectorPm)
+    end if
+
+    if (associated(rafcstab%p_rvectorQ)) then
+      call output_lbrk()
+      call output_line('vectorQ')
+      call lsyssc_infoVector(rafcstab%p_rvectorQ)
+    end if
+
+    if (associated(rafcstab%p_rvectorQp)) then
+      call output_lbrk()
+      call output_line('vectorQp')
+      call lsyssc_infoVector(rafcstab%p_rvectorQp)
+    end if
+
+    if (associated(rafcstab%p_rvectorQm)) then
+      call output_lbrk()
+      call output_line('vectorQm')
+      call lsyssc_infoVector(rafcstab%p_rvectorQm)
+    end if
+
+    if (associated(rafcstab%p_rvectorRp)) then
+      call output_lbrk()
+      call output_line('vectorRp')
+      call lsyssc_infoVector(rafcstab%p_rvectorRp)
+    end if
+
+    if (associated(rafcstab%p_rvectorRm)) then
+      call output_lbrk()
+      call output_line('vectorRm')
+      call lsyssc_infoVector(rafcstab%p_rvectorRm)
+    end if
+
+    if (associated(rafcstab%p_rvectorPredictor)) then
+      call output_lbrk()
+      call output_line('vectorPredictor')
+      call lsysbl_infoVector(rafcstab%p_rvectorPredictor)
+    end if
+
+  contains
+
+    ! Here some working routines follow
+
+    !***************************************************************************
+    ! Check bitfield and output string
+
+    subroutine checkAndOutput(cstring, iflag, ibitfield)
+
+      ! input parameters
+      character(len=*), intent(in) :: cstring
+      integer(I32), intent(in) :: iflag, ibitfield
+
+      if (iand(iflag, ibitfield) .eq. ibitfield) then
+        call output_line (cstring//'TRUE')
+      else
+        call output_line (cstring//'FALSE')
+      end if
+
+    end subroutine checkAndOutput
+
+    !***************************************************************************
+    ! Check handle and output shape of array
+
+    subroutine checkAndOutputHandle(cstring, h_handle)
+
+      ! input parameters
+      character(len=*), intent(in) :: cstring
+      integer, intent(in) :: h_handle
+
+      ! local variabels
+      integer :: isize,idimension
+      integer, dimension(2) :: Isize2D
+      integer, dimension(3) :: Isize3D
+
+      if (h_handle .ne. ST_NOHANDLE) then
+        call storage_getdimension(h_handle, idimension)
+
+        select case(idimension)
+        case (1)
+          call storage_getsize(h_handle, isize)
+          call output_line (cstring//trim(sys_siL(h_handle,15))//&
+              ' ('//trim(sys_siL(isize,15))//')')
+
+        case(2)
+          call storage_getsize(h_handle, Isize2D)
+          call output_line (cstring//trim(sys_siL(h_handle,15))//&
+              ' ('//trim(sys_siL(Isize2D(1),15))//','//trim(sys_siL(Isize2D(2),15))//')')
+          
+        case (3)
+          call storage_getsize(h_handle, Isize3D)
+          call output_line (cstring//trim(sys_siL(h_handle,15))//&
+              ' ('//trim(sys_siL(Isize3D(1),15))//','//trim(sys_siL(Isize3D(2),15))//&
+                    trim(sys_siL(Isize3D(3),15))//')')
+        end select
+      else
+        call output_line (cstring//trim(sys_siL(h_handle,15)))
+      end if
+      
+    end subroutine checkAndOutputHandle
+
+  end subroutine afcstab_infoStabilisation
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine afcstab_getbase_arrayBlock(rmatrix, rarray, bisFullMatrix)
 
 !<description>
@@ -3693,7 +3910,7 @@ contains
   
 !<subroutine>
 
-  subroutine afcstab_allocCoeffsAtEdge(rafcstab, ncoeffs, cdataType)
+  subroutine afcstab_allocCoeffsAtEdge(rafcstab, ncoeffsAtEdge, cdataType)
 
 !<description>
     ! This subroutine allocates the coefficients at edge structuree
@@ -3701,7 +3918,7 @@ contains
 
 !<input>
     ! Number of coefficients at edge
-    integer, intent(in) :: ncoeffs
+    integer, intent(in) :: ncoeffsAtEdge
     
     ! OPTIONAL: data type which overwrites internal setting
     integer, intent(in), optional :: cdataType
@@ -3720,8 +3937,8 @@ contains
     ctype = rafcstab%cdataType
     if (present(cdataType)) ctype = cdataType
 
-    rafcstab%ncoeffs = ncoeffs
-    Isize = (/rafcstab%ncoeffs, rafcstab%NEDGE/)
+    rafcstab%ncoeffsAtEdge = ncoeffsAtEdge
+    Isize = (/rafcstab%ncoeffsAtEdge, rafcstab%NEDGE/)
     if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE)&
         call storage_free(rafcstab%h_CoefficientsAtEdge)
     call storage_new('afcstab_allocCoeffsAtEdge', 'DcoefficientsAtEdge',&
