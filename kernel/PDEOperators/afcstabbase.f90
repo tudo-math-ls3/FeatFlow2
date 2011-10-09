@@ -6042,35 +6042,73 @@ contains
     nedge = size(IedgeList,2)
     naux  = size(DcoeffsAtEdge,1)
     
-    !$omp parallel do default(shared) private(iaux,daux)&
-    !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-    do iedge = 1, nedge
-      if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
-        ! Swap nodes i <-> j
-        iaux = IedgeList(1,iedge)
-        IedgeList(1,iedge) = IedgeList(2,iedge)
-        IedgeList(2,iedge) = iaux
-        
-        ! Swap edges ij <-> ji
-        iaux = IedgeList(3,iedge)
-        IedgeList(3,iedge) = IedgeList(4,iedge)
-        IedgeList(4,iedge) = iaux
-        
-        ! Swap edge data data_ij <-> data_ji
-        daux = Dcoefficients(ipos,iedge)
-        Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
-        Dcoefficients(jpos,iedge) = daux
-        
-        ! Swap edgewise coefficients Data_ij <-> Data_ji
-        do iaux = 1, naux
-          daux = DcoeffsAtEdge(iaux,1,iedge)
-          DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
-          DcoeffsAtEdge(iaux,2,iedge) = daux
-        end do
-      end if
-    end do
-    !$omp end parallel do
-    
+    select case(size(IedgeList,1))
+    case (2)
+      !$omp parallel do default(shared) private(iaux,daux)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+          
+          ! Swap edge data data_ij <-> data_ji
+          daux = Dcoefficients(ipos,iedge)
+          Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
+          Dcoefficients(jpos,iedge) = daux
+          
+          ! Swap edgewise coefficients Data_ij <-> Data_ji
+          do iaux = 1, naux
+            daux = DcoeffsAtEdge(iaux,1,iedge)
+            DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
+            DcoeffsAtEdge(iaux,2,iedge) = daux
+          end do
+        end if
+      end do
+      !$omp end parallel do
+
+    case (6)
+      !$omp parallel do default(shared) private(iaux,daux)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+          
+          ! Swap edges ij <-> ji
+          iaux = IedgeList(3,iedge)
+          IedgeList(3,iedge) = IedgeList(4,iedge)
+          IedgeList(4,iedge) = iaux
+          
+          ! Swap edges ii <-> jj
+          iaux = IedgeList(5,iedge)
+          IedgeList(5,iedge) = IedgeList(6,iedge)
+          IedgeList(6,iedge) = iaux
+          
+          ! Swap edge data data_ij <-> data_ji
+          daux = Dcoefficients(ipos,iedge)
+          Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
+          Dcoefficients(jpos,iedge) = daux
+          
+          ! Swap edgewise coefficients Data_ij <-> Data_ji
+          do iaux = 1, naux
+            daux = DcoeffsAtEdge(iaux,1,iedge)
+            DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
+            DcoeffsAtEdge(iaux,2,iedge) = daux
+          end do
+        end if
+      end do
+      !$omp end parallel do
+
+    case default
+      call output_line('SIZE(IedgeList,2) is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDble')
+      call sys_halt()
+    end select
+
   end subroutine afcstab_upwindOrientationDble
 
   !*****************************************************************************
@@ -6120,35 +6158,73 @@ contains
     nedge = size(IedgeList,2)
     naux  = size(FcoeffsAtEdge,1)
     
-    !$omp parallel do default(shared) private(iaux,faux)&
-    !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
-    do iedge = 1, nedge
-      if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
-        ! Swap nodes i <-> j
-        iaux = IedgeList(1,iedge)
-        IedgeList(1,iedge) = IedgeList(2,iedge)
-        IedgeList(2,iedge) = iaux
-        
-        ! Swap edges ij <-> ji
-        iaux = IedgeList(3,iedge)
-        IedgeList(3,iedge) = IedgeList(4,iedge)
-        IedgeList(4,iedge) = iaux
-        
-        ! Swap edge data data_ij <-> data_ji
-        faux = Fcoefficients(ipos,iedge)
-        Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
-        Fcoefficients(jpos,iedge) = faux
-        
-        ! Swap edgewise coefficients Data_ij <-> Data_ji
-        do iaux = 1, naux
-          faux = FcoeffsAtEdge(iaux,1,iedge)
-          FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
-          FcoeffsAtEdge(iaux,2,iedge) = faux
-        end do
-      end if
-    end do
-    !$omp end parallel do
+    select case(size(IedgeList,1))
+    case (2)
+      !$omp parallel do default(shared) private(iaux,faux)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+          
+          ! Swap edge data data_ij <-> data_ji
+          faux = Fcoefficients(ipos,iedge)
+          Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
+          Fcoefficients(jpos,iedge) = faux
+          
+          ! Swap edgewise coefficients Data_ij <-> Data_ji
+          do iaux = 1, naux
+            faux = FcoeffsAtEdge(iaux,1,iedge)
+            FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
+            FcoeffsAtEdge(iaux,2,iedge) = faux
+          end do
+        end if
+      end do
+      !$omp end parallel do
+
+    case (6)
+      !$omp parallel do default(shared) private(iaux,faux)&
+      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+          
+          ! Swap edges ij <-> ji
+          iaux = IedgeList(3,iedge)
+          IedgeList(3,iedge) = IedgeList(4,iedge)
+          IedgeList(4,iedge) = iaux
+
+          ! Swap edges ii <-> jj
+          iaux = IedgeList(5,iedge)
+          IedgeList(5,iedge) = IedgeList(6,iedge)
+          IedgeList(6,iedge) = iaux
+          
+          ! Swap edge data data_ij <-> data_ji
+          faux = Fcoefficients(ipos,iedge)
+          Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
+          Fcoefficients(jpos,iedge) = faux
+          
+          ! Swap edgewise coefficients Data_ij <-> Data_ji
+          do iaux = 1, naux
+            faux = FcoeffsAtEdge(iaux,1,iedge)
+            FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
+            FcoeffsAtEdge(iaux,2,iedge) = faux
+          end do
+        end if
+      end do
+      !$omp end parallel do
+    
+    case default
+      call output_line('SIZE(IedgeList,2) is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl')
+      call sys_halt()
+    end select
     
   end subroutine afcstab_upwindOrientationSngl
-
+  
 end module afcstabbase
