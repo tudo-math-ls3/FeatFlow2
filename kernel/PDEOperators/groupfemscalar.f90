@@ -66,7 +66,6 @@ module groupfemscalar
   private
   
   public :: gfsc_buildOperator
-  public :: gfsc_buildVector
   public :: gfsc_buildOperatorNode
   public :: gfsc_buildOperatorEdge
   public :: gfsc_buildVectorNode
@@ -158,13 +157,6 @@ module groupfemscalar
     module procedure gfsc_buildOperatorEdgeBlock
   end interface
   
-  interface gfsc_buildVector
-    module procedure gfsc_buildVectorNodeScalar
-    module procedure gfsc_buildVectorNodeBlock
-    module procedure gfsc_buildVectorEdgeScalar
-    module procedure gfsc_buildVectorEdgeBlock
-  end interface
-
   interface gfsc_buildVectorNode
     module procedure gfsc_buildVectorNodeScalar
     module procedure gfsc_buildVectorNodeBlock
