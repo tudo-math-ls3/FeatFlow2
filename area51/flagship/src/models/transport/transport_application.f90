@@ -780,8 +780,7 @@ contains
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = merge(1,0,& 
-                                           transp_hasVelocityVector(ivelocitytype)) 
+    rproblemDescriptor%nvectorBlock    = merge(1,0,transp_hasVelocityVector(ivelocitytype)) 
                                          ! velocity field
 
     ! Check if quadrilaterals should be converted to triangles
