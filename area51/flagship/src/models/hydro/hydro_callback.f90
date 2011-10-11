@@ -5395,8 +5395,9 @@ contains
       if (bclear) call lsysbl_clearVector(rvector)
     else
 
-      ! Check if stabilisation structure is available
-      if (inviscidAFC .le. 0) return
+      ! Check if group finite element structure and stabilisation
+      ! structure are both available
+      if ((inviscidGFEM .le. 0) .or. (inviscidAFC .le. 0)) return
       
       ! What type if stabilisation is applied?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
