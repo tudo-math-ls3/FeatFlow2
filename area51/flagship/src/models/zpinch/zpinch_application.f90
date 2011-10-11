@@ -71,6 +71,13 @@ module zpinch_application
   use boundarycondaux
   use boundaryfilter
   use collection
+  use flagship_basic
+  use fparser
+  use genoutput
+  use graph
+  use groupfembase
+  use hadaptaux
+  use hadaptivity
   use hydro_application
   use hydro_basic
   use hydro_basic1d
@@ -80,12 +87,6 @@ module zpinch_application
   use hydro_callback1d
   use hydro_callback2d
   use hydro_callback3d
-  use flagship_basic
-  use fparser
-  use genoutput
-  use graph
-  use hadaptaux
-  use hadaptivity
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -637,8 +638,9 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! local variables
-    integer :: convectionAFC
-    integer :: inviscidAFC
+    integer :: templateGFEM
+    integer :: convectionAFC,convectionGFEM
+    integer :: inviscidAFC,inviscidGFEM
     integer :: iconvToTria
 
 
@@ -656,23 +658,31 @@ contains
         ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
-
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateGFEM', templateGFEM)
+    
     call parlst_getvalue_string(rparlist,&
         ssectionNameTransport, 'convection', sconvection)
     call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'convectionAFC', convectionAFC)
+        ssectionNameTransport, 'convectionAFC', convectionAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionNameTransport, 'convectionGFEM', convectionGFEM, convectionAFC)
+    
     call parlst_getvalue_string(rparlist,&
         ssectionNameHydro, 'inviscid', sinviscid)
     call parlst_getvalue_int(rparlist,&
-        ssectionNameHydro, 'inviscidAFC', inviscidAFC)
+        ssectionNameHydro, 'inviscidAFC', inviscidAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionNameHydro, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
 
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 2
-    rproblemDescriptor%nafcstab        = 2   ! for inviscid and convective stabilisation
+    rproblemDescriptor%ndiscretisation = 2   ! two discretisations
+    rproblemDescriptor%nafcstab        = max(convectionAFC, inviscidAFC)
+    rproblemDescriptor%ngroupfemBlock  = max(templateGFEM, convectionGFEM, inviscidGFEM)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 10
-    rproblemDescriptor%nmatrixBlock    = 2
+    rproblemDescriptor%nmatrixBlock    = 2   ! two system matrices
     rproblemDescriptor%nvectorScalar   = 0
     rproblemDescriptor%nvectorBlock    = 2   ! external velocity field
 
@@ -687,12 +697,21 @@ contains
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
-
+      ! Initialize the group finite element block structures:
+      ! - for templates, inviscid and viscous terms
+      if (templateGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
+      if (convectionGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(convectionGFEM), 1)
+      if (inviscidGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(inviscidGFEM), 1)
+      
+      ! Initialize the stabilisation structures for the convective and
+      ! the inviscid term (if required)
       if (convectionAFC > 0) then
         call afcstab_initFromParameterlist(rparlist, sconvection,&
             p_rproblemLevel%Rafcstab(convectionAFC))
       end if
-
       if (inviscidAFC > 0) then
         call afcstab_initFromParameterlist(rparlist, sinviscid,&
             p_rproblemLevel%Rafcstab(inviscidAFC))

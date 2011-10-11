@@ -96,6 +96,10 @@
 !# 27.) gfem_infoGroupFEMBlock
 !#      -> Outputs information about the group finite element block
 !#
+!# 28.) gfem_getbase_array = gfem_getbase_arrayScalar /
+!#                           gfem_getbase_arrayBlock
+!#      -> Returns the array of pointers to a given block matrix
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) gfem_copyH2D_IedgeList
@@ -149,7 +153,7 @@ module groupfembase
 
   private
 
-  public :: t_groupFEMSet,t_groupFEMBlock
+  public :: t_groupFEMSet,t_groupFEMBlock,t_array
   public :: gfem_initGroupFEMSet
   public :: gfem_initGroupFEMBlock
   public :: gfem_releaseGroupFEMSet
@@ -180,6 +184,7 @@ module groupfembase
   public :: gfem_genDiagList
   public :: gfem_infoGroupFEMSet
   public :: gfem_infoGroupFEMBlock
+  public :: gfem_getbase_array
 
   public :: gfem_copyH2D_IedgeList
   public :: gfem_copyD2H_IedgeList
@@ -450,6 +455,27 @@ module groupfembase
 
   end type t_groupFEMBlock
 !</typeblock>
+
+
+!<typeblock>
+
+  ! This structure can be used to realise arrays-of-pointers which is
+  ! necessary to address the content of multiple scalar submatrices
+  ! simultaneously. 
+
+  type t_array
+
+    ! Type of data associated to the handle ST_DOUBLE, ST_SINGLE)
+    integer :: idataType = ST_NOHANDLE
+
+    ! Pointer to the double-valued matrix data
+    real(DP), dimension(:), pointer :: p_Ddata => null()
+
+    ! Pointer to the single-valued matrix data
+    real(SP), dimension(:), pointer :: p_Fdata => null()
+
+  end type t_array
+!</typeblock>
 !</types>
 
 
@@ -481,6 +507,11 @@ module groupfembase
   interface gfem_getbase_InodeList
     module procedure gfem_getbase_InodeList1D
     module procedure gfem_getbase_InodeList2D
+  end interface
+
+  interface gfem_getbase_array
+    module procedure gfem_getbase_arrayScalar
+    module procedure gfem_getbase_arrayBlock
   end interface
 
 contains
@@ -3922,6 +3953,135 @@ contains
     end do
     
   end subroutine gfem_infoGroupFEMBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_getbase_arrayBlock(rmatrix, rarray, bisFullMatrix)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the scalar
+    ! submatrices of the given block matrix rmatrix.
+    ! If the optional parameter bisFullMatrix is given, then this routine
+    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
+    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
+    ! blocks of the block matrix are associated.
+!</description>
+
+!<input>
+    ! The block matrix
+    type(t_matrixBlock), intent(in) :: rmatrix
+!</input>
+
+!<output>
+    ! The array
+    type(t_array), dimension(:,:), intent(out) :: rarray
+
+    ! OPTIONAL: indicator for full block matrix
+    logical, intent(out), optional :: bisFullMatrix
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: iblock,jblock
+    logical :: bisFull
+
+    ! Check if array is compatible
+    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
+        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
+      call output_line('Block matrix and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfem_getbase_arrayBlock')
+      call sys_halt()
+    end if
+
+    ! Assign pointers
+    bisFull = .true.
+    do iblock = 1, rmatrix%nblocksPerCol
+      do jblock = 1, rmatrix%nblocksPerRow
+        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
+          select case(rmatrix%RmatrixBlock(iblock,jblock)%cdataType)
+          case (ST_DOUBLE)
+            rarray(iblock,jblock)%idataType = ST_DOUBLE
+            call lsyssc_getbase_double(&
+                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Ddata)
+          case (ST_SINGLE)
+            rarray(iblock,jblock)%idataType = ST_SINGLE
+            call lsyssc_getbase_single(&
+                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Fdata)
+          case default
+            call output_line('Unsupported data type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_getbase_arrayBlock')
+            call sys_halt()
+          end select
+        else
+          nullify(rarray(iblock,jblock)%p_Ddata)
+          nullify(rarray(iblock,jblock)%p_Fdata)
+          bisFull = .false.
+        end if
+      end do
+    end do
+
+    if (present(bisFullMatrix)) bisFullMatrix = bisFull
+
+  end subroutine gfem_getbase_arrayBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_getbase_arrayScalar(Rmatrices, rarray)
+
+!<description>
+    ! This subroutine assigns the pointers of the array to the array
+    ! of scalar matrices.
+!</description>
+
+!<input>
+    ! The array of scalar matrices
+    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
+!</input>
+
+!<output>
+    ! The array
+    type(t_array), dimension(:), intent(out) :: rarray
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Check if array is compatible
+    if (size(Rmatrices) .ne. size(rarray)) then
+      call output_line('Array of matrices and array are not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfem_getbase_arrayScalar')
+      call sys_halt()
+    end if
+
+    ! Assing pointers
+    do i = 1, size(Rmatrices)
+      if (lsyssc_isExplicitMatrix1D(Rmatrices(i))) then
+        select case(Rmatrices(i)%cdataType)
+        case (ST_DOUBLE)
+          rarray(i)%idataType = ST_DOUBLE
+          call lsyssc_getbase_double(&
+              Rmatrices(i), rarray(i)%p_Ddata)
+        case (ST_SINGLE)
+          rarray(i)%idataType = ST_SINGLE
+          call lsyssc_getbase_single(&
+              Rmatrices(i), rarray(i)%p_Fdata)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfem_getbase_arrayScalar')
+          call sys_halt()
+        end select
+      else
+        nullify(rarray(i)%p_Ddata)
+        nullify(rarray(i)%p_Fdata)
+      end if
+    end do
+
+  end subroutine gfem_getbase_arrayScalar
 
   !*****************************************************************************
 

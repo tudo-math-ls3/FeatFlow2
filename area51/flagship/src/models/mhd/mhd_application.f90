@@ -113,6 +113,19 @@ module mhd_application
   use cubature
   use derivatives
   use element
+  use flagship_basic
+  use fparser
+  use fsystem
+  use genoutput
+  use graph
+  use groupfembase
+  use groupfemsystem
+  use hadaptaux
+  use hadaptivity
+  use linearformevaluation
+  use lineariser
+  use linearsystemblock
+  use linearsystemscalar
   use mhd_basic
   use mhd_basic1d
   use mhd_basic2d
@@ -121,18 +134,6 @@ module mhd_application
   use mhd_callback1d
   use mhd_callback2d
   use mhd_callback3d
-  use flagship_basic
-  use fparser
-  use fsystem
-  use genoutput
-  use graph
-  use groupfemsystem
-  use hadaptaux
-  use hadaptivity
-  use lineariser
-  use linearformevaluation
-  use linearsystemblock
-  use linearsystemscalar
   use paramlist
   use pprocerror
   use pprocgradients
@@ -548,9 +549,9 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! local variables
-    integer :: massAFC
-    integer :: inviscidAFC
-    integer :: viscousAFC
+    integer :: massAFC,templateGFEM
+    integer :: inviscidAFC,inviscidGFEM
+    integer :: viscousAFC,viscousGFEM
     integer :: iconvToTria
 
 
@@ -563,24 +564,33 @@ contains
         ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
+    ! Default is empty section, i.e. no configuration
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'mass', smass, '')
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'inviscid', sinviscid, '')
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'viscous', sviscous, '')
+    ! Default is no stabilization
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'massAFC', massAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'viscousAFC', viscousAFC, 0)
+    ! By default the same identifier is used for the group finite
+    ! element formulation and the stabilization structure
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateGFEM', templateGFEM)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'viscousGFEM', viscousGFEM, viscousAFC)
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1   ! one discretisation
-    rproblemDescriptor%nafcstab        = max(massAFC,&
-                                             inviscidAFC,&
-                                             viscousAFC)
+    rproblemDescriptor%nafcstab        = max(massAFC, inviscidAFC, viscousAFC)
+    rproblemDescriptor%ngroupfemBlock  = max(templateGFEM, inviscidGFEM, viscousGFEM)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 5
@@ -600,18 +610,23 @@ contains
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
+      ! Initialize the group finite element block structures:
+      ! - for templates, inviscid and viscous terms
+      if (templateGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
+      if (inviscidGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(inviscidGFEM), 1)
+      if (viscousGFEM > 0)&
+          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(viscousGFEM), 1)
 
-      ! Initialize the stabilisation structure for mass term (if required)
+      ! Initialize the stabilisation structures for the mass, the
+      ! inviscid and the viscous term (if required)
       if (massAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, smass,&
           p_rproblemLevel%Rafcstab(massAFC))
-      
-      ! Initialize the stabilisation structure for inviscid term (if required)
       if (inviscidAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sinviscid,&
           p_rproblemLevel%Rafcstab(inviscidAFC))
-
-      ! Initialize the stabilisation structure for viscous term (if required)
       if (viscousAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sviscous,&
           p_rproblemLevel%Rafcstab(viscousAFC))
@@ -653,10 +668,6 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-    type(t_triangulation) , pointer :: p_rtriangulation
-    type(t_boundary) , pointer :: p_rboundary
-    character(len=SYS_STRLEN) :: slimitingvariable
     integer :: templateMatrix
     integer :: systemMatrix
     integer :: jacobianMatrix
@@ -671,20 +682,24 @@ contains
     integer :: coeffMatrix_CXY
     integer :: coeffMatrix_CXZ
     integer :: coeffMatrix_CYZ
-    integer :: massAFC
-    integer :: inviscidAFC
-    integer :: viscousAFC
+    integer :: massAFC,templateGFEM
+    integer :: inviscidAFC,inviscidGFEM
+    integer :: viscousAFC,viscousGFEM
     integer :: discretisation
     integer :: isystemFormat
     integer :: isystemCoupling
     integer :: imatrixFormat
 
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_triangulation) , pointer :: p_rtriangulation
+    type(t_groupFEMSet), pointer :: p_rgroupFEMSet
+    type(t_boundary) , pointer :: p_rboundary
+    character(len=SYS_STRLEN) :: slimitingvariable
     integer, dimension(:), allocatable :: Celement
-    character(len=SYS_STRLEN) :: selemName
-
     integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
     integer :: nmatrices,nsubstrings,ccubType
+    character(len=SYS_STRLEN) :: selemName
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -721,6 +736,12 @@ contains
         ssectionName, 'inviscidAFC', inviscidAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'viscousAFC', viscousAFC, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateGFEM', templateGFEM)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'viscousGFEM', viscousGFEM, viscousAFC)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist,&
@@ -1343,32 +1364,105 @@ contains
           rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
           DER_DERIV3D_Y, DER_DERIV3D_Z)
     end if
-    
-    
-    ! Resize stabilisation structures if necessary and remove the
-    ! indicator for the subdiagonal edge structure. If they are
-    ! needed, then they are re-generated on-the-fly.
+
+
+    ! Initialize/resize template group finite elment structure and
+    ! generate the edge structure derived from the template matrix
+    if (templateGFEM > 0) then
+      ! Set pointer to first group finite element set of this block
+      p_rgroupFEMSet =>&
+          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
+      
+      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize first group finite element set for edge-based assembly
+        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
+      else
+        ! Resize first group finite element set
+        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
+      
+      ! Generate diagonal and edge structure derived from template matrix
+      call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
+          p_rgroupFEMSet)
+      call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
+          p_rgroupFEMSet)
+    else
+      inviscidGFEM = 0
+      viscousGFEM = 0
+    end if
+
+    ! Initialize/resize group finite element structure as duplicate of
+    ! the template group finite element structure and fill it with the
+    ! precomputed matrix coefficients for the inviscid term
+    if (inviscidGFEM > 0) then
+      ! Set pointer to first group finite element set of this block
+      p_rgroupFEMSet =>&
+          rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1)
+      
+      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize first group finite element set for edge-based
+        ! assembly as aduplicate of the template structure
+        call gfem_duplicateGroupFEMSet(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+
+        ! Compute number of matrices to by copied
+        nmatrices = 0
+        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
+        
+        ! Allocate memory for matrix entries
+        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
+      else
+        ! Resize first group finite element set
+        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
+      
+      ! Duplicate edge-based structure from template
+      call gfem_duplicateGroupFEMSet(&
+          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
+
+      ! Copy constant coefficient matrices to group finite element set
+      nmatrices = 0
+      if (coeffMatrix_CX > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
+      end if
+      if (coeffMatrix_CY > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
+      end if
+      if (coeffMatrix_CZ > 0) then
+        nmatrices = nmatrices+1
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
+      end if
+    end if
+
+    ! Initialise/Resize stabilisation structure for the inviscid term
+    ! by duplicating parts of the template group finite element set
     if (inviscidAFC > 0) then
       if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
-
+        
         ! Determine the number of transformed variables
         select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
-        case (AFCSTAB_GALERKIN,&
-              AFCSTAB_UPWIND)
-          
+        case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
           ! No variable transformation needs to be performed
           NVARtransformed = 0
 
-        case (AFCSTAB_TVD,&
-              AFCSTAB_GP)
-
+        case (AFCSTAB_TVD, AFCSTAB_GP)
           ! Transformation to characteristic variables
           NVARtransformed = mhd_getNVAR(rproblemLevel)
 
         case default
-
           ! Get number of expressions for limiting variables
           nvariable = max(1,&
               parlst_querysubstrings(rparlist,&
@@ -1389,179 +1483,152 @@ contains
 
         ! Initialise stabilisation structure
         call afcsys_initStabilisation(&
-            rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            NVARtransformed, p_rdiscretisation)
-
-        ! Compute number of matrices to by copied
-        nmatrices = 0
-        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
-        
-        ! Initialise memory for constant coefficient matrices
-        if (nmatrices > 0)&
-            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(inviscidAFC), nmatrices)
-
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            rproblemLevel%Rafcstab(inviscidAFC), NVARtransformed, p_rdiscretisation)
       else
         ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(templateMatrix))
-
-        rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
-            iand(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
-            not(AFCSTAB_HAS_OFFDIAGONALEDGES))
+        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
       end if
-
-      ! Copy constant coefficient matrices to stabilisation structure
-      nmatrices = 0
-      if (coeffMatrix_CX > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
-      end if
-      if (coeffMatrix_CY > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
-      end if
-      if (coeffMatrix_CZ > 0) then
-        nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
-      end if
-     
     end if
 
-    ! The same applies to the viscous stabilisation structure
-    if (viscousAFC > 0) then
-      if (rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
-
-        ! Get number of expressions for limiting variables
-        nvariable = max(1,&
-            parlst_querysubstrings(rparlist,&
-            ssectionName, 'slimitingvariable'))
-        
-        ! Initialise number of limiting variables
-        nvartransformed = 1
-
-        ! Determine maximum number of limiting variables in a single set
-        do ivariable = 1, nvariable
-          call parlst_getvalue_string(rparlist,&
-              ssectionName, 'slimitingvariable',&
-              slimitingvariable, isubstring=ivariable)
-          nvartransformed = max(nvartransformed,&
-              mhd_getNVARtransformed(rproblemLevel, slimitingvariable))
-        end do
-
-        ! Initialise stabilisation structure
-        call afcsys_initStabilisation(&
-            rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(viscousAFC),&
-            nvartransformed, p_rdiscretisation)
+    ! Initialize/resize group finite element structure as duplicate of
+    ! the template group finite element structure and fill it with the
+    ! precomputed matrix coefficients for the viscous term
+    if (viscousGFEM > 0) then
+      ! Set pointer to first group finite element set of this block
+      p_rgroupFEMSet =>&
+          rproblemLevel%RgroupFEMBlock(viscousGFEM)%RgroupFEMBlock(1)
+      
+      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize first group finite element set for edge-based
+        ! assembly as aduplicate of the template structure
+        call gfem_duplicateGroupFEMSet(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
 
         ! Compute number of matrices to by copied
         nmatrices = 0
-        if (coeffMatrix_CXX  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CYY  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZZ  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXY  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXZ  > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CYZ  > 0) nmatrices = nmatrices+1
-
-        ! Initialise memory for constant coefficient matrices
-        if (nmatrices > 0)&
-            call afcstab_initMatrixCoeffs(rproblemLevel%Rafcstab(viscousAFC), nmatrices)
+        if (coeffMatrix_CXX > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CYY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZZ > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CXZ > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CYZ > 0) nmatrices = nmatrices+1
         
+        ! Allocate memory for matrix entries
+        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
       else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        ! Resize first group finite element set
+        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(templateMatrix))
-
-        rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec =&
-            iand(rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec,&
-            not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
+      
+      ! Duplicate edge-based structure from template
+      call gfem_duplicateGroupFEMSet(&
+          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
 
-      ! Copy constant coefficient matrices to stabilisation structure
+      ! Copy constant coefficient matrices to group finite element set
       nmatrices = 0
       if (coeffMatrix_CXX > 0) then
         nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(coeffMatrix_CXX:coeffMatrix_CXX), (/nmatrices/))
       end if
       if (coeffMatrix_CYY > 0) then
         nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(coeffMatrix_CYY:coeffMatrix_CYY), (/nmatrices/))
       end if
       if (coeffMatrix_CZZ > 0) then
         nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(coeffMatrix_CZZ:coeffMatrix_CZZ), (/nmatrices/))
       end if
       if (coeffMatrix_CXY > 0) then
         nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(coeffMatrix_CXY:coeffMatrix_CXY), (/nmatrices/))
       end if
       if (coeffMatrix_CXZ > 0) then
         nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(coeffMatrix_CXZ:coeffMatrix_CXZ), (/nmatrices/))
       end if
       if (coeffMatrix_CYZ > 0) then
         nmatrices = nmatrices+1
-        call afcstab_CopyMatrixCoeffs(&
-            rproblemLevel%Rafcstab(viscousAFC),&
+        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
             rproblemLevel%Rmatrix(coeffMatrix_CYZ:coeffMatrix_CYZ), (/nmatrices/))
       end if
-
     end if
 
-    ! The same applies to the mass stabilisation structure
-    if (massAFC > 0) then
-      if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
+    ! Initialise/Resize stabilisation structure for the inviscid term
+    ! by duplicating parts of the template group finite element set
+    if (viscousAFC > 0) then
+      if (rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
-
+        
         ! Get number of expressions for limiting variables
         nvariable = max(1,&
             parlst_querysubstrings(rparlist,&
             ssectionName, 'slimitingvariable'))
         
         ! Initialise number of limiting variables
-        nvartransformed = 1
+        NVARtransformed = 1
+        
+        ! Determine maximum number of limiting variables in a single set
+        do ivariable = 1, nvariable
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'slimitingvariable',&
+              slimitingvariable, isubstring=ivariable)
+          NVARtransformed = max(NVARtransformed,&
+              mhd_getNVARtransformed(rproblemLevel, slimitingvariable))
+        end do
+        
+        ! Initialise stabilisation structure
+        call afcsys_initStabilisation(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            rproblemLevel%Rafcstab(viscousAFC), NVARtransformed, p_rdiscretisation)
+      else
+        ! Resize stabilisation structure
+        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(viscousAFC),&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+      end if
+    end if
+
+    
+    ! Initialize/Resize stabilisation structure for the mass matrix by
+    ! duplicating parts of the template group finite element set
+    if (massAFC > 0) then
+      if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
+          .eq. AFCSTAB_UNDEFINED) then
+        
+        ! Get number of expressions for limiting variables
+        nvariable = max(1,&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'slimitingvariable'))
+        
+        ! Initialise number of limiting variables
+        NVARtransformed = 1
 
         ! Determine maximum number of limiting variables in a single set
         do ivariable = 1, nvariable
           call parlst_getvalue_string(rparlist,&
               ssectionName, 'slimitingvariable',&
               slimitingvariable, isubstring=ivariable)
-          nvartransformed = max(nvartransformed,&
+          NVARtransformed = max(NVARtransformed,&
               mhd_getNVARtransformed(rproblemLevel, slimitingvariable))
         end do
-
+        
         ! Initialise stabilisation structure
         call afcsys_initStabilisation(&
-            rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(massAFC),&
-            nvartransformed, p_rdiscretisation)
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            rproblemLevel%Rafcstab(massAFC), NVARtransformed, p_rdiscretisation)
       else
         ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(&
-            rproblemLevel%Rafcstab(massAFC),&
-            rproblemLevel%Rmatrix(templateMatrix))
+        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
       end if
     end if
 

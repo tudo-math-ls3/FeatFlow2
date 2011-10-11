@@ -50,6 +50,6 @@
 
 !</subroutine>
 
-  end subroutine fcb_calcVectorSc_sim
+  end subroutine fcb_calcVectorSys_sim
 
   end interface

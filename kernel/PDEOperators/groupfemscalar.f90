@@ -24,9 +24,13 @@
 !#
 !# 1.) gfsc_buildOperator = gfsc_buildOperatorConst /
 !#                          gfsc_buildOperatorNodeScalar /
-!#                          gfsc_buildOperatorNodeBlock /
+!#                          gfsc_buildOperatorNodeBlock1 /
+!#                          gfsc_buildOperatorNodeBlock2 /
+!#                          gfsc_buildOperatorNodeBlock3 /
 !#                          gfsc_buildOperatorEdgeScalar /
-!#                          gfsc_buildOperatorEdgeBlock
+!#                          gfsc_buildOperatorEdgeBlock1 /
+!#                          gfsc_buildOperatorEdgeBlock2 /
+!#                          gfsc_buildOperatorEdgeBlock3
 !#     -> Assembles a discrete operator node-by-node or
 !#        edge-by-edge by the group finite element formulation
 !#
@@ -142,19 +146,27 @@ module groupfemscalar
   interface gfsc_buildOperator
     module procedure gfsc_buildOperatorConst
     module procedure gfsc_buildOperatorNodeScalar
-    module procedure gfsc_buildOperatorNodeBlock
+    module procedure gfsc_buildOperatorNodeBlock1
+    module procedure gfsc_buildOperatorNodeBlock2
+    module procedure gfsc_buildOperatorNodeBlock3
     module procedure gfsc_buildOperatorEdgeScalar
-    module procedure gfsc_buildOperatorEdgeBlock
+    module procedure gfsc_buildOperatorEdgeBlock1
+    module procedure gfsc_buildOperatorEdgeBlock2
+    module procedure gfsc_buildOperatorEdgeBlock3
   end interface
 
   interface gfsc_buildOperatorNode
     module procedure gfsc_buildOperatorNodeScalar
-    module procedure gfsc_buildOperatorNodeBlock
+    module procedure gfsc_buildOperatorNodeBlock1
+    module procedure gfsc_buildOperatorNodeBlock2
+    module procedure gfsc_buildOperatorNodeBlock3
   end interface
 
   interface gfsc_buildOperatorEdge
     module procedure gfsc_buildOperatorEdgeScalar
-    module procedure gfsc_buildOperatorEdgeBlock
+    module procedure gfsc_buildOperatorEdgeBlock1
+    module procedure gfsc_buildOperatorEdgeBlock2
+    module procedure gfsc_buildOperatorEdgeBlock3
   end interface
   
   interface gfsc_buildVectorNode
@@ -272,7 +284,7 @@ contains
       end if
       
       ! What data types are we?
-      select case(rmatrix%cdataType)
+      select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
         call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
@@ -329,7 +341,7 @@ contains
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
       
       ! What data types are we?
-      select case(rmatrix%cdataType)
+      select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
         call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
@@ -1586,8 +1598,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildOperatorNodeBlock(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, rcollection)
+  subroutine gfsc_buildOperatorNodeBlock1(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix,&
+      rcollection, rafcstab, fcb_calcOperatorNodeSc)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -1597,9 +1610,9 @@ contains
     !
     ! This routine supports only node-by-node assembly.
     !
-    ! Note that this routine serves as a wrapper for block vectors. If
-    ! there is only one block, then the corresponding scalar routine
-    ! is called.  Otherwise, an error is thrown.
+    ! Note that this routine serves as a wrapper for block vectors and
+    ! matrices. If there is only one block, then the corresponding
+    ! scalar routine is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -1619,6 +1632,176 @@ contains
 
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorNodeSc.inc'
+    optional :: fcb_calcOperatorNodeSc
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+    
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcOperatorNodeSc)) then
+      
+      call fcb_calcOperatorNodeSc(rgroupFEMSet, rx, rmatrix, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, rcollection, rafcstab)
+      
+    elseif ((rx%nblocks            .eq. 1) .and.&
+            (rmatrix%nblocksPerCol .eq. 1) .and.&
+            (rmatrix%nblocksPerRow .eq. 1)) then
+
+      ! Call scalar version of this routine
+      call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcMatrixDiagSc_sim, dscale, bclear,&
+          rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+      
+    else
+      call output_line('Matrix/Vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock1')
+      call sys_halt()
+    end if
+    
+  end subroutine gfsc_buildOperatorNodeBlock1
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorNodeBlock2(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix,&
+      rcollection, rafcstab, fcb_calcOperatorNodeSc)
+    
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
+    !
+    ! This routine supports only node-by-node assembly.
+    !
+    ! Note that this routine serves as a wrapper for block matrices. If
+    ! there is only one block, then the corresponding scalar routine
+    ! is called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorScalar), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorNodeSc.inc'
+    optional :: fcb_calcOperatorNodeSc
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+    
+    ! Local variables
+    type(t_vectorBlock) :: rxBlock
+
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcOperatorNodeSc)) then
+      
+      ! Create auxiliary 1-block vector
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+
+      call fcb_calcOperatorNodeSc(rgroupFEMSet, rxBlock, rmatrix, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block vector
+      call lsysbl_releaseVector(rxBlock)
+
+    elseif ((rmatrix%nblocksPerCol .eq. 1) .and.&
+            (rmatrix%nblocksPerRow .eq. 1)) then
+
+      ! Call scalar version of this routine
+      call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx,&
+          fcb_calcMatrixDiagSc_sim, dscale, bclear,&
+          rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+      
+    else
+      call output_line('Matrix must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock2')
+      call sys_halt()
+    end if
+    
+  end subroutine gfsc_buildOperatorNodeBlock2
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorNodeBlock3(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix,&
+      rcollection, rafcstab, fcb_calcOperatorNodeSc)
+    
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
+    !
+    ! This routine supports only node-by-node assembly.
+    !
+    ! Note that this routine serves as a wrapper for block vectors. If
+    ! there is only one block, then the corresponding scalar routine
+    ! is called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorNodeSc.inc'
+    optional :: fcb_calcOperatorNodeSc
 !</input>
 
 !<inputoutput>
@@ -1627,31 +1810,49 @@ contains
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
     
-    ! Check if block vector contains exactly one block
-    if (rx%nblocks .ne. 1) then
+    ! Local variables
+    type(t_matrixBlock) :: rmatrixBlock
 
-      call output_line('Solution vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock')
-      call sys_halt()
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcOperatorNodeSc)) then
+      
+      ! Create auxiliary 1-block matrix
+      call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
 
-    else
+      call fcb_calcOperatorNodeSc(rgroupFEMSet, rx, rmatrixBlock, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block matrix
+      call lsysbl_releaseMatrix(rmatrixBlock)
 
+    elseif (rx%nblocks .eq. 1) then
+
+      ! Call scalar version of this routine
       call gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, rcollection)
-
+          fcb_calcMatrixDiagSc_sim, dscale, bclear,&
+          rmatrix, rcollection, rafcstab)
+      
+    else
+      call output_line('Vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorNodeBlock3')
+      call sys_halt()
     end if
     
-  end subroutine gfsc_buildOperatorNodeBlock
+  end subroutine gfsc_buildOperatorNodeBlock3
 
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine gfsc_buildOperatorNodeScalar(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix, rcollection)
+      fcb_calcMatrixDiagSc_sim, dscale, bclear, rmatrix,&
+      rcollection, rafcstab, fcb_calcOperatorNodeSc)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -1679,6 +1880,10 @@ contains
 
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorNodeSc.inc'
+    optional :: fcb_calcOperatorNodeSc
 !</input>
 
 !<inputoutput>
@@ -1687,14 +1892,37 @@ contains
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rxBlock
+    type(t_matrixBlock) :: rmatrixBlock
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
     integer, dimension(:,:), pointer :: p_InodeList2D
     integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcOperatorNodeSc)) then
+      ! Create auxiliary 1-block vector and matrix
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
+      
+      ! Call user-defined assembly
+      call fcb_calcOperatorNodeSc(rgroupFEMSet, rxBlock, rmatrixBlock, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block vector and matrix
+      call lsysbl_releaseVector(rxBlock)
+      call lsysbl_releaseMatrix(rmatrixBlock)
+
+      ! That`s it
+      return
+    end if
 
     ! Check if matrix and vector have the same data type
     if ((rmatrix%cdataType .ne. rx%cdataType) .or.&
@@ -1721,7 +1949,7 @@ contains
       end if
 
       ! What data types are we?
-      select case(rmatrix%cdataType)
+      select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
         call gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
@@ -1839,6 +2067,7 @@ contains
         ! Loop through all nonzero matrix entries in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
+
           do idx = 1, IAmax-IAset+1
             
             ! Get position of matrix entry
@@ -1937,6 +2166,7 @@ contains
         ! Loop through all nonzero matrix entries in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
+
           do idx = 1, IAmax-IAset+1
             
             ! Get position of matrix entry
@@ -1973,9 +2203,203 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildOperatorEdgeBlock(rgroupFEMSet, rx,&
+
+  subroutine gfsc_buildOperatorEdgeBlock1(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
-      dscale, bclear, rmatrix, rcollection, rafcstab)
+      dscale, bclear, rmatrix, rcollection, rafcstab,&
+      fcb_calcOperatorEdgeSc)
+    
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
+    !
+    ! This routine supports only edge-by-edge assembly.
+    !
+    ! If the optional stabilisation structure rafcstab is present then
+    ! for each edge IJ the matrix entries and the artificial diffusion
+    ! coefficient is stored according to the following convention:
+    !
+    ! For upwind-biased stabilisation
+    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! For symmetric stabilisation
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! Note that this routine serves as a wrapper for block vectors and
+    ! matrices. If there is only one block, then the corresponding
+    ! scalar routine is called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorBlock), intent(in) :: rx
+    
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
+    include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorEdgeSc.inc'
+    optional :: fcb_calcOperatorEdgeSc
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcOperatorEdgeSc)) then
+      
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrix, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+          rcollection, rafcstab)
+      
+    elseif ((rx%nblocks            .eq. 1) .and.&
+            (rmatrix%nblocksPerCol .eq. 1) .and.&
+            (rmatrix%nblocksPerRow .eq. 1)) then
+
+      ! Call scalar version of this routine
+      call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
+          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+      
+    else
+      call output_line('Matrix/Vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock1')
+      call sys_halt()
+    end if
+    
+  end subroutine gfsc_buildOperatorEdgeBlock1
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorEdgeBlock2(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      dscale, bclear, rmatrix, rcollection, rafcstab,&
+      fcb_calcOperatorEdgeSc)
+    
+!<description>
+    ! This subroutine assembles a discrete operator by the group
+    ! finite element formulation. The matrix entries may depend on the
+    ! values of the vector rx (e.g. the solution vector) and they are
+    ! computed by calling user-defined callback functions.
+    !
+    ! This routine supports only edge-by-edge assembly.
+    !
+    ! If the optional stabilisation structure rafcstab is present then
+    ! for each edge IJ the matrix entries and the artificial diffusion
+    ! coefficient is stored according to the following convention:
+    !
+    ! For upwind-biased stabilisation
+    !   Coefficients(1:3, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! For symmetric stabilisation
+    !   Coefficients(1:2, IJ) = (/d_ij, k_ij, k_ji/)
+    !
+    ! Note that this routine serves as a wrapper for block matrices. If
+    ! there is only one block, then the corresponding scalar routine
+    ! is called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend.
+    type(t_vectorScalar), intent(in) :: rx
+    
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
+    include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorEdgeSc.inc'
+    optional :: fcb_calcOperatorEdgeSc
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! Local variables
+    type(t_vectorBlock) :: rxBlock
+
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcOperatorEdgeSc)) then
+
+      ! Create auxiliary 1-block vector
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrix, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+          rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block vector
+      call lsysbl_releaseVector(rxBlock)
+      
+    elseif ((rmatrix%nblocksPerCol .eq. 1) .and.&
+            (rmatrix%nblocksPerRow .eq. 1)) then
+      
+      ! Call scalar version of this routine
+      call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
+          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
+          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+      
+    else
+      call output_line('Matrix must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock2')
+      call sys_halt()        
+    end if
+    
+  end subroutine gfsc_buildOperatorEdgeBlock2
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildOperatorEdgeBlock3(rgroupFEMSet, rx,&
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      dscale, bclear, rmatrix, rcollection, rafcstab,&
+      fcb_calcOperatorEdgeSc)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -1997,7 +2421,7 @@ contains
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
-    ! is called.  Otherwise, an error is thrown.
+    ! is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -2018,6 +2442,10 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorEdgeSc.inc'
+    optional :: fcb_calcOperatorEdgeSc
 !</input>
 
 !<inputoutput>
@@ -2032,30 +2460,45 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Check if block vector contains exactly one block
-    if (rx%nblocks .ne. 1) then
+    ! Local variables
+    type(t_matrixBlock) :: rmatrixBlock
 
-      call output_line('Solution vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock')
-      call sys_halt()
-
-    else
-
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcOperatorEdgeSc)) then
+      
+      ! Create auxiliary 1-block matrix
+      call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
+      
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrixBlock, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+          rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block matrix
+      call lsysbl_releaseMatrix(rmatrixBlock)
+      
+    elseif (rx%nblocks .eq. 1) then
+      
+      ! Call scalar version of this routine
       call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
           bclear, rmatrix, rcollection, rafcstab)
-
+      
+    else
+      call output_line('Vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock2')
+      call sys_halt()        
     end if
-
-  end subroutine gfsc_buildOperatorEdgeBlock
+    
+  end subroutine gfsc_buildOperatorEdgeBlock3
   
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-      bclear, rmatrix, rcollection, rafcstab)
+      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      dscale, bclear, rmatrix, rcollection, rafcstab,&
+      fcb_calcOperatorEdgeSc)
 
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -2094,6 +2537,10 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcOperatorEdgeSc.inc'
+    optional :: fcb_calcOperatorEdgeSc
 !</input>
 
 !<inputoutput>
@@ -2109,14 +2556,34 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rxBlock
+    type(t_matrixBlock) :: rmatrixBlock
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtDiag
     real(DP), dimension(:,:), pointer :: p_Dcoefficients
-    
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:,:), pointer :: p_IdiagList
     integer, dimension(:), pointer :: p_IedgeListIdx
+
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcOperatorEdgeSc)) then
+      ! Create auxiliary 1-block vector and matrix
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
+      
+      ! Call user-defined assembly
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrixBlock, dscale,&
+          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+          rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block vector and matrix
+      call lsysbl_releaseVector(rxBlock)
+      call lsysbl_releaseMatrix(rmatrixBlock)
+
+      ! That`s it
+      return
+    end if
 
     ! Check if matrix and vector have the same data type
     if ((rmatrix%cdataType .ne. rx%cdataType) .or.&
@@ -2150,7 +2617,7 @@ contains
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
       
       ! What data types are we?
-      select case(rmatrix%cdataType)
+      select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
         call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
@@ -2308,6 +2775,7 @@ contains
         ! Loop through all equations in the current set
         ! and scatter the entries to the global matrix
         if (bclear) then
+
           do idx = 1, IEQmax-IEQset+1
             
             ! Get position of diagonal entry
@@ -2418,6 +2886,7 @@ contains
           ! Loop through all edges in the current set
           ! and scatter the entries to the global matrix
           if (bclear) then
+
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
@@ -2543,6 +3012,7 @@ contains
           ! Loop through all edges in the current set
           ! and scatter the entries to the global matrix
           if (bclear) then
+
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
@@ -2681,6 +3151,7 @@ contains
           ! Loop through all edges in the current set
           ! and scatter the entries to the global matrix
           if (bclear) then
+
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
@@ -2750,7 +3221,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildVectorNodeBlock(rgroupFEMSet, rx,&
-      fcb_calcVectorSc_sim, dscale, bclear, rvector, rcollection)
+      fcb_calcVectorSc_sim, dscale, bclear, rvector,&
+      rcollection, rafcstab, fcb_calcVectorNodeSc)
     
 !<description>
     ! This subroutine assembles a discrete vector by the group
@@ -2782,6 +3254,10 @@ contains
 
     ! Callback functions to compute vector entries
     include 'intf_calcVectorSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcVectorNodeSc.inc'
+    optional :: fcb_calcVectorNodeSc
 !</input>
 
 !<inputoutput>
@@ -2790,22 +3266,29 @@ contains
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
-    ! Check if both block vectors contain exactly one block
-    if ((rx%nblocks .ne. 1) .or. (rvector%nblocks .ne. 1)) then
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcVectorNodeSc)) then
 
+      call fcb_calcVectorNodeSc(rgroupFEMSet, rx, rvector, dscale,&
+          bclear, fcb_calcVectorSc_sim, rcollection, rafcstab)
+      
+    elseif ((rx%nblocks .eq. 1) .and. (rvector%nblocks .eq. 1)) then
+
+      ! Call scalar version of this routine
+      call gfsc_buildVectorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcVectorSc_sim, dscale, bclear, rvector%RvectorBlock(1),&
+          rcollection, rafcstab)
+
+    else
       call output_line('Vectors must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorNodeBlock')
       call sys_halt()
-
-    else
-
-      call gfsc_buildVectorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcVectorSc_sim, dscale, bclear, rvector%RvectorBlock(1),&
-          rcollection)
-
     end if
 
   end subroutine gfsc_buildVectorNodeBlock
@@ -2815,7 +3298,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildVectorNodeScalar(rgroupFEMSet, rx,&
-      fcb_calcVectorSc_sim, dscale, bclear, rvector, rcollection)
+      fcb_calcVectorSc_sim, dscale, bclear, rvector,&
+      rcollection, rafcstab, fcb_calcVectorNodeSc)
     
 !<description>
     ! This subroutine assembles a discrete vector by the group
@@ -2843,6 +3327,10 @@ contains
 
     ! Callback functions to compute vector entries
     include 'intf_calcVectorSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcVectorNodeSc.inc'
+    optional :: fcb_calcVectorNodeSc
 !</input>
 
 !<inputoutput>
@@ -2851,15 +3339,37 @@ contains
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
+    type(t_vectorBlock) :: rxBlock,rvectorBlock
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
     integer, dimension(:,:), pointer :: p_InodeList2D
     integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcVectorNodeSc)) then
+      ! Create auxiliary 1-block vectors
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      call lsysbl_createVecFromScalar(rvector, rvectorBlock)
+      
+      ! Call user-defined assembly
+      call fcb_calcVectorNodeSc(rgroupFEMSet, rxBlock, rvectorBlock,&
+          dscale, bclear, fcb_calcVectorSc_sim, rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block vectors
+      call lsysbl_releaseVector(rxBlock)
+      call lsysbl_releaseVector(rvectorBlock)
 
+      ! That`s it
+      return
+    end if
+    
     ! Check if vectors have the same data type double
     if ((rx%cdataType .ne. rvector%cdataType) .or.&
         (rx%cdataType .ne. rgroupFEMSet%cdataType)) then
@@ -3094,7 +3604,8 @@ contains
       if (bclear) call lalg_clearVector(Ddata)
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
+      !$omp private(Dcoefficients,DdataAtNode,&
+      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
       !$omp if(size(InodeList,2) > GFSC_NAMIN_OMP)
 
       ! Allocate temporal memory
@@ -3208,7 +3719,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildVectorEdgeBlock(rgroupFEMSet, rx,&
-      fcb_calcFluxSc_sim, dscale, bclear, rvector, rcollection, rafcstab)
+      fcb_calcFluxSc_sim, dscale, bclear, rvector,&
+      rcollection, rafcstab, fcb_calcVectorEdgeSc)
     
 !<description>
     ! This subroutine assembles a vector operator by the group
@@ -3248,6 +3760,10 @@ contains
 
     ! Callback function to compute vector entries
     include 'intf_calcFluxSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcVectorEdgeSc.inc'
+    optional :: fcb_calcVectorEdgeSc
 !</input>
 
 !<inputoutput>
@@ -3262,19 +3778,23 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Check if both block vectors contain exactly one block
-    if ((rx%nblocks .ne. 1) .or. (rvector%nblocks .ne. 1)) then
+    ! Check if user-defined callback function is present
+    if (present(fcb_calcVectorEdgeSc)) then
 
-      call output_line('Vectors must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeBlock')
-      call sys_halt()
+      call fcb_calcVectorEdgeSc(rgroupFEMSet, rx, rvector, dscale,&
+          bclear, fcb_calcFluxSc_sim, rcollection, rafcstab)
 
-    else
+    elseif ((rx%nblocks .eq. 1) .and. (rvector%nblocks .eq. 1)) then
 
+      ! Call scalar version of this routine
       call gfsc_buildVectorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcFluxSc_sim, dscale, bclear, rvector%RvectorBlock(1),&
           rcollection, rafcstab)
 
+    else
+      call output_line('Vectors must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildVectorEdgeBlock')
+      call sys_halt()
     end if
 
   end subroutine gfsc_buildVectorEdgeBlock
@@ -3284,7 +3804,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildVectorEdgeScalar(rgroupFEMSet, rx,&
-      fcb_calcFluxSc_sim, dscale, bclear, rvector, rcollection, rafcstab)
+      fcb_calcFluxSc_sim, dscale, bclear, rvector,&
+      rcollection, rafcstab, fcb_calcVectorEdgeSc)
     
 !<description>
     ! This subroutine assembles a vector operator by the group
@@ -3320,6 +3841,10 @@ contains
 
     ! Callback function to compute vector entries
     include 'intf_calcFluxSc_sim.inc'
+
+    ! OPTIONAL: callback function to overwrite the standard operation
+    include 'intf_calcVectorEdgeSc.inc'
+    optional :: fcb_calcVectorEdgeSc
 !</input>
 
 !<inputoutput>
@@ -3335,11 +3860,30 @@ contains
 !</subroutine>
     
     ! local variables
+    type(t_vectorBlock) :: rxBlock,rvectorBlock
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     real(DP), dimension(:,:), pointer :: p_Dcoefficients
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
+
+    ! Check if user-defined assembly is provided
+    if (present(fcb_calcVectorEdgeSc)) then
+      ! Create auxiliary 1-block vector
+      call lsysbl_createVecFromScalar(rx, rxBlock)
+      call lsysbl_createVecFromScalar(rvector, rvectorBlock)
+      
+      ! Call user-defined assembly
+      call fcb_calcVectorEdgeSc(rgroupFEMSet, rxBlock, rvectorBlock,&
+          dscale, bclear, fcb_calcFluxSc_sim, rcollection, rafcstab)
+      
+      ! Release auxiliary 1-block vectors
+      call lsysbl_releaseVector(rxBlock)
+      call lsysbl_releaseVector(rvectorBlock)
+
+      ! That`s it
+      return
+    end if
 
     ! Check if vectors have the same data type double
     if ((rx%cdataType .ne. rvector%cdataType) .or.&
@@ -3404,7 +3948,7 @@ contains
             ! Assemble vector with stabilisation and generate coefficients
             !-------------------------------------------------------------------
             call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
-                p_Dx, dscale, p_Ddata, p_Dcoefficients)
+                p_Dx, dscale, bclear, p_Ddata, p_Dcoefficients)
             
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
@@ -3424,19 +3968,19 @@ contains
           else
             
             !-------------------------------------------------------------------
-            ! Assemble operator without stabilisation
+            ! Assemble vector without stabilisation
             !-------------------------------------------------------------------
             call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
-                p_Dx, dscale, p_Ddata)
+                p_Dx, dscale, bclear, p_Ddata)
           end if
           
         else   ! no stabilisation structure present
           
           !---------------------------------------------------------------------
-          ! Assemble operator without stabilisation
+          ! Assemble vector without stabilisation
           !---------------------------------------------------------------------
           call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
-              p_Dx, dscale, p_Ddata)
+              p_Dx, dscale, bclear, p_Ddata)
           
         end if
         
@@ -3460,12 +4004,13 @@ contains
     ! Assemble vector edge-by-edge without stabilisation
 
     subroutine doVectorDble(IedgeListIdx, IedgeList, DcoeffsAtEdge,&
-        Dx, dscale, Ddata, Dcoefficients)
+        Dx, dscale, bclear, Ddata, Dcoefficients)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
 
@@ -3481,6 +4026,8 @@ contains
       
       ! local variables
       integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
+
+      if (bclear) call lalg_clearVector(Ddata)
 
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)&
@@ -3713,7 +4260,7 @@ contains
       call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
       call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
-    case DEFAULT
+    case default
       call output_line('Unsupported spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
       call sys_halt()
@@ -3820,7 +4367,7 @@ contains
       ! Release diagonal separator
       call storage_free(h_Ksep)
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
       call sys_halt()

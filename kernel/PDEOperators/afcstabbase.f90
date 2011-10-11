@@ -42,90 +42,86 @@
 !#                                  afcstab_isVectorCompatibleBl
 !#     -> Checks whether a vector and a stabilisation structure are compatible
 !#
-!# 10.) afcstab_getbase_array = afcstab_getbase_arrayScalar /
-!#                              afcstab_getbase_arrayBlock
-!#      -> Returns the array of pointers to a given block matrix
-!#
-!# 11.) afcstab_getbase_IedgeListIdx
+!# 10.) afcstab_getbase_IedgeListIdx
 !#      -> Returns pointer to the index pointer for the
 !#         edge structure
 !#
-!# 12.) afcstab_getbase_IedgeList
+!# 11.) afcstab_getbase_IedgeList
 !#      -> Returns pointer to the edge structure
 !#
-!# 13.) afcstab_getbase_IsupdiagEdgeIdx
+!# 12.) afcstab_getbase_IsupdiagEdgeIdx
 !#      -> Returns pointer to the index pointer for the
 !#         superdiagonal edge numbers
 !#
-!# 14.) afcstab_getbase_IsubdiagEdgeIdx
+!# 13.) afcstab_getbase_IsubdiagEdgeIdx
 !#      -> Returns pointer to the index pointer for the
 !#         subdiagonal edge numbers
 !#
-!# 15.) afcstab_getbase_IsubdiagEdge
+!# 14.) afcstab_getbase_IsubdiagEdge
 !#      -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 16.) afcstab_getbase_DcoeffsAtEdge = afcstab_getbase_DcoeffsAtEdge /
+!# 15.) afcstab_getbase_DcoeffsAtEdge = afcstab_getbase_DcoeffsAtEdge /
 !#                                      afcstab_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 17.) afcstab_getbase_DmatCoeffAtNode = afcstab_getbase_DmatCoeffAtNode /
+!# 16.) afcstab_getbase_DmatCoeffAtNode = afcstab_getbase_DmatCoeffAtNode /
 !#                                        afcstab_getbase_FmatCoeffAtNode
 !#      -> Returns pointer to the diagonal entries
 !#         of the auxiliary constant matrix coefficients
 !#
-!# 18.) afcstab_getbase_DmatCoeffAtEdge = afcstab_getbase_DmatCoeffAtEdge /
+!# 17.) afcstab_getbase_DmatCoeffAtEdge = afcstab_getbase_DmatCoeffAtEdge /
 !#                                        afcstab_getbase_FmatCoeffAtEdge
 !#      -> Returns pointer to the off-diagonal entries
 !#         of the auxiliary constant matrix coefficients
 !#
-!# 19.) afcstab_getbase_DboundsAtEdge = afcstab_getbase_DboundsAtEdge /
+!# 18.) afcstab_getbase_DboundsAtEdge = afcstab_getbase_DboundsAtEdge /
 !#                                      afcstab_getbase_FboundsAtEdge
 !#      -> Returns pointer to the bounds at edges
 !#
-!# 20.) afcstab_genEdgeList
+!# 19.) afcstab_genEdgeList
 !#      -> Generates the standard edge data structure
 !#
-!# 21.) afcstab_genOffdiagEdges
+!# 20.) afcstab_genOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 22.) afcstab_genExtSparsity
+!# 21.) afcstab_genExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 23.) afcstab_copyH2D_IedgeList
+!# 22.) afcstab_copyH2D_IedgeList
 !#      -> Copies the edge structure from the host memory
 !#         to the device memory.
 !#
-!# 24.) afcstab_copyD2H_IedgeList
+!# 23.) afcstab_copyD2H_IedgeList
 !#      -> Copies the edge structure from the device memory
 !#         to the host memory.
 !#
-!# 25.) afcstab_copyH2D_DmatCoeffAtEdge
+!# 24.) afcstab_copyH2D_DmatCoeffAtEdge
 !# -> Copies the off-diagonal entries of the auxiliary constant matrix
 !#         coefficients from the host memory to the device memory.
 !#
-!# 26.) afcstab_copyD2H_DmatCoeffAtEdge
+!# 25.) afcstab_copyD2H_DmatCoeffAtEdge
 !#      -> Copies the off-diagonal entries of the auxiliary constant matrix
 !#         coefficients from the device memory to the host memory.
 !#
-!# 27.) afcstab_allocEdgeStructure
+!# 26.) afcstab_allocEdgeStructure
 !#      -> Allocates the edge data structure
 !#
-!# 28.) afcstab_allocCoeffsAtEdge
+!# 27.) afcstab_allocCoeffsAtEdge
 !#      -> Allocates the coefficients at edge data structure
 !#
-!# 29.) afcstab_allocVectorsPQR
+!# 28.) afcstab_allocVectorsPQR
 !#      -> Allocates the nodal vectors P, Q, and R each for '+' and '-'
 !#
-!# 30.) afcstab_allocFlux
+!# 29.) afcstab_allocFlux
 !#      -> Allocates the edge-wise flux vector flux
 !#
-!# 31.) afcstab_allocFlux0
+!# 30.) afcstab_allocFlux0
 !#      -> Allocates the edge-wise flux vector flux0
 !#
-!# 32.) afcstab_allocFluxPrel
+!# 31.) afcstab_allocFluxPrel
 !#      -> Allocates the edge-wise flux vector fluxPrel
 !#
-!# 33.) afcstab_allocAlpha
+!# 32.) afcstab_allocAlpha
 !#      -> Allocates the edge-wise correction factors alpha
 !#
 !# 33.) afcstab_allocBoundsAtEdge
@@ -175,7 +171,7 @@ module afcstabbase
   implicit none
   
   private
-  public :: t_afcstab, t_array
+  public :: t_afcstab
 
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
@@ -188,7 +184,6 @@ module afcstabbase
   public :: afcstab_isVectorCompatible
   public :: afcstab_infoStabilisation
 
-  public :: afcstab_getbase_array
   public :: afcstab_getbase_IedgeListIdx
   public :: afcstab_getbase_IedgeList
   public :: afcstab_getbase_IsupdiagEdgeIdx
@@ -826,27 +821,6 @@ module afcstabbase
 
   end type t_afcstab
 !</typeblock>
-
-!<typeblock>
-
-  ! This structure can be used to realise arrays-of-pointers which is
-  ! necessary to address the content of multiple scalar submatrices
-  ! simultaneously. 
-
-  type t_array
-
-    ! Type of data associated to the handle ST_DOUBLE, ST_SINGLE)
-    integer :: idataType = ST_NOHANDLE
-
-    ! Pointer to the double-valued matrix data
-    real(DP), dimension(:), pointer :: p_Ddata => null()
-
-    ! Pointer to the single-valued matrix data
-    real(SP), dimension(:), pointer :: p_Fdata => null()
-
-  end type t_array
-!</typeblock>
-
 !</types>
 
   ! *****************************************************************************
@@ -866,11 +840,6 @@ module afcstabbase
   interface afcstab_isVectorCompatible
     module procedure afcstab_isVectorCompatibleSc
     module procedure afcstab_isVectorCompatibleBl
-  end interface
-
-  interface afcstab_getbase_array
-    module procedure afcstab_getbase_arrayScalar
-    module procedure afcstab_getbase_arrayBlock
   end interface
 
   interface afcstab_buildBoundsLPT
@@ -3078,135 +3047,6 @@ contains
     end subroutine checkAndOutputHandle
 
   end subroutine afcstab_infoStabilisation
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_arrayBlock(rmatrix, rarray, bisFullMatrix)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the scalar
-    ! submatrices of the given block matrix rmatrix.
-    ! If the optional parameter bisFullMatrix is given, then this routine
-    ! returns bisFullMatrix = .TRUE. if all blocks of rmatrix are associated.
-    ! Otherwise, bisFullMatrix = .FALSE. is returned if only the diagonal
-    ! blocks of the block matrix are associated.
-!</description>
-
-!<input>
-    ! The block matrix
-    type(t_matrixBlock), intent(in) :: rmatrix
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:,:), intent(out) :: rarray
-
-    ! OPTIONAL: indicator for full block matrix
-    logical, intent(out), optional :: bisFullMatrix
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: iblock,jblock
-    logical :: bisFull
-
-    ! Check if array is compatible
-    if (rmatrix%nblocksPerCol .ne. size(rarray,1) .or.&
-        rmatrix%nblocksPerRow .ne. size(rarray,2)) then
-      call output_line('Block matrix and array are not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
-      call sys_halt()
-    end if
-
-    ! Assign pointers
-    bisFull = .true.
-    do iblock = 1, rmatrix%nblocksPerCol
-      do jblock = 1, rmatrix%nblocksPerRow
-        if (lsyssc_isExplicitMatrix1D(rmatrix%RmatrixBlock(iblock,jblock))) then
-          select case(rmatrix%RmatrixBlock(iblock,jblock)%cdataType)
-          case (ST_DOUBLE)
-            rarray(iblock,jblock)%idataType = ST_DOUBLE
-            call lsyssc_getbase_double(&
-                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Ddata)
-          case (ST_SINGLE)
-            rarray(iblock,jblock)%idataType = ST_SINGLE
-            call lsyssc_getbase_single(&
-                rmatrix%RmatrixBlock(iblock,jblock), rarray(iblock,jblock)%p_Fdata)
-          case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayBlock')
-            call sys_halt()
-          end select
-        else
-          nullify(rarray(iblock,jblock)%p_Ddata)
-          nullify(rarray(iblock,jblock)%p_Fdata)
-          bisFull = .false.
-        end if
-      end do
-    end do
-
-    if (present(bisFullMatrix)) bisFullMatrix = bisFull
-
-  end subroutine afcstab_getbase_arrayBlock
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_arrayScalar(Rmatrices, rarray)
-
-!<description>
-    ! This subroutine assigns the pointers of the array to the array
-    ! of scalar matrices.
-!</description>
-
-!<input>
-    ! The array of scalar matrices
-    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
-!</input>
-
-!<output>
-    ! The array
-    type(t_array), dimension(:), intent(out) :: rarray
-!</output>
-!</subroutine>
-
-    ! local variables
-    integer :: i
-
-    ! Check if array is compatible
-    if (size(Rmatrices) .ne. size(rarray)) then
-      call output_line('Array of matrices and array are not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
-      call sys_halt()
-    end if
-
-    ! Assing pointers
-    do i = 1, size(Rmatrices)
-      if (lsyssc_isExplicitMatrix1D(Rmatrices(i))) then
-        select case(Rmatrices(i)%cdataType)
-        case (ST_DOUBLE)
-          rarray(i)%idataType = ST_DOUBLE
-          call lsyssc_getbase_double(&
-              Rmatrices(i), rarray(i)%p_Ddata)
-        case (ST_SINGLE)
-          rarray(i)%idataType = ST_SINGLE
-          call lsyssc_getbase_single(&
-              Rmatrices(i), rarray(i)%p_Fdata)
-        case default
-          call output_line('Unsupported data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'afcstab_getbase_arrayScalar')
-          call sys_halt()
-        end select
-      else
-        nullify(rarray(i)%p_Ddata)
-        nullify(rarray(i)%p_Fdata)
-      end if
-    end do
-
-  end subroutine afcstab_getbase_arrayScalar
 
   !*****************************************************************************
 

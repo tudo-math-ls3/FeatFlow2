@@ -24,8 +24,10 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) afcsys_initStabilisation = afcsys_initStabilisationScalar /
-!#                                afcsys_initStabilisationBlock
+!# 1.) afcsys_initStabilisation = afcsys_initStabByMatrixSc /
+!#                                afcsys_initStabByMatrixBl /
+!#                                afcsys_initStabByGroupFEMSetSc /
+!#                                afcsys_initStabByGroupFEMSetBl
 !#     -> Initialises the stabilisation structure
 !#
 !# 2.) afcsys_buildVectorFCT = afcsys_buildVectorFCTScalar /
@@ -143,8 +145,10 @@ module afcstabsystem
   ! ****************************************************************************
 
   interface afcsys_initStabilisation
-    module procedure afcsys_initStabilisationScalar
-    module procedure afcsys_initStabilisationBlock
+    module procedure afcsys_initStabByMatrixSc
+    module procedure afcsys_initStabByMatrixBl
+    module procedure afcsys_initStabByGroupFEMSetSc
+    module procedure afcsys_initStabByGroupFEMSetBl
   end interface
 
   interface afcsys_buildVectorFCT
@@ -173,12 +177,12 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_initStabilisationBlock(rmatrixBlockTemplate,&
-      rafcstab, NVARtransformed, rblockDiscretisation, rgroupFEMSet)
+  subroutine afcsys_initStabByMatrixBl(rmatrix, rafcstab, NVARtransformed,&
+      rblockDiscretisation)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
-    ! for use as a scalar stabilisation. The template matrix is used
+    ! for use as a system stabilisation. The template matrix is used
     ! to determine the number of equations and the number of edges.
     !
     ! Note that the matrix is required as block matrix. If this matrix
@@ -188,7 +192,7 @@ contains
 
 !<input>
     ! template block matrix
-    type(t_matrixBlock), intent(in) :: rmatrixBlockTemplate
+    type(t_matrixBlock), intent(in) :: rmatrix
 
     ! OPTIONAL: number of transformed variables
     ! If not present, then the number of variables
@@ -198,10 +202,6 @@ contains
     ! OPTIONAL: block discretisation structure which is used to
     ! create auxiliary vectors, e.g., for the predictor
     type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
-
-    ! OPTIONAL: group finite element set
-    ! If present, then its edge data structure is duplicated
-    type(t_groupFEMSet), intent(in), optional :: rgroupFEMSet
 !</input>
 
 !<inputoutput>
@@ -212,116 +212,81 @@ contains
 
 
     ! Check if block matrix has only one block
-    if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and.&
-        (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
+    if ((rmatrix%nblocksPerCol .eq. 1) .and.&
+        (rmatrix%nblocksPerRow .eq. 1)) then
       if (present(rblockDiscretisation)) then
-        call afcsys_initStabilisationScalar(&
-            rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab, NVARtransformed,&
-            rblockDiscretisation%RspatialDiscr(1), rgroupFEMSet)
+        call afcsys_initStabByMatrixSc(&
+            rmatrix%RmatrixBlock(1,1), rafcstab, NVARtransformed,&
+            rblockDiscretisation%RspatialDiscr(1))
       else
-        call afcsys_initStabilisationScalar(&
-            rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab, NVARtransformed,&
-            rgroupFEMSet=rgroupFEMSet)
+        call afcsys_initStabByMatrixSc(&
+            rmatrix%RmatrixBlock(1,1), rafcstab, NVARtransformed)
       end if
       return
     end if
 
-    ! Check that number of columns equans number of rows
-    if (rmatrixBlockTemplate%nblocksPerCol .ne.&
-        rmatrixBlockTemplate%nblocksPerRow) then
+    ! Check that number of columns equations number of rows
+    if (rmatrix%nblocksPerCol .ne.&
+        rmatrix%nblocksPerRow) then
       call output_line('Block matrix must have equal number of columns and rows!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabilisationBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByMatrixBl')
       call sys_halt()
     end if
 
     ! Check if matrix exhibits group structure
-    if (rmatrixBlockTemplate%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
+    if (rmatrix%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
       call output_line('Block matrix must have group structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabilisationBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByMatrixBl')
       call sys_halt()
     end if
 
     ! Set atomic data from first block
+    rafcstab%NVAR  = rmatrix%nblocksPerCol
+    rafcstab%NEQ   = rmatrix%RmatrixBlock(1,1)%NEQ
+    rafcstab%NEDGE = (rmatrix%RmatrixBlock(1,1)%NA-&
+                      rmatrix%RmatrixBlock(1,1)%NEQ)/2
+    rafcstab%NNVEDGE = 0
+
     if (present(NVARtransformed)) then
       rafcstab%NVARtransformed = NVARtransformed
     else
-      rafcstab%NVARtransformed = rmatrixBlockTemplate%nblocksPerCol
+      rafcstab%NVARtransformed = rafcstab%NVAR
     end if
-    rafcstab%NVAR  = rmatrixBlockTemplate%nblocksPerCol
-    rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
-    rafcstab%NEDGE = (rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
-                      rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ)/2
-    rafcstab%NNVEDGE = 0
-
+    
     ! Set specifier
     rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
-
-
+    
     ! What kind of stabilisation are we?
     select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-      end if
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix%RmatrixBlock(1,1), rafcstab)
 
+      !-------------------------------------------------------------------------
 
     case (AFCSTAB_TVD)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-      end if
-
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix%RmatrixBlock(1,1), rafcstab)
+      
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
-      
+
+      !-------------------------------------------------------------------------
 
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
           AFCSTAB_NLINFCT_IMPLICIT)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-      end if
-
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix%RmatrixBlock(1,1), rafcstab)
+      
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
 
@@ -346,26 +311,15 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., rafcstab%cdataType)
       end if
 
+      !-------------------------------------------------------------------------
 
     case (AFCSTAB_LINFCT,&
           AFCSTAB_LINFCT_MASS)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
-      end if
-
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix%RmatrixBlock(1,1), rafcstab)
+      
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
 
@@ -379,23 +333,25 @@ contains
         call afcstab_allocFluxPrel(rafcstab)
       end if
 
+      !-------------------------------------------------------------------------
+      
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabilisationBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByMatrixBl')
       call sys_halt()
     end select
-
-  end subroutine afcsys_initStabilisationBlock
+    
+  end subroutine afcsys_initStabByMatrixBl
 
   ! ****************************************************************************
 
 !<subroutine>
-  subroutine afcsys_initStabilisationScalar(rmatrixTemplate, rafcstab,&
-      NVARtransformed, rspatialDiscretisation, rgroupFEMSet)
+  subroutine afcsys_initStabByMatrixSc(rmatrix, rafcstab, NVARtransformed,&
+      rspatialDiscretisation)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
-    ! for use as a scalar stabilisation. The template matrix is used
+    ! for use as a system stabilisation. The template matrix is used
     ! to determine the number of equations and the number of edges.
     !
     ! Note that the matrix is required as scalar matrix. It can be
@@ -404,7 +360,7 @@ contains
 
 !<input>
     ! template matrix
-    type(t_matrixScalar), intent(in) :: rmatrixTemplate
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! OPTIONAL: number of transformed variables
     ! If not present, then the number of variables
@@ -414,11 +370,7 @@ contains
     ! OPTIONAL: spatial discretisation structure which is used to
     ! create auxiliary vectors, e.g., for the predictor
     type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
-
-    ! OPTIONAL: group finite element set
-    ! If present, then its edge data structure is duplicated
-    type(t_groupFEMSet), intent(in), optional :: rgroupFEMSet
-!</input>
+    !</input>
 
 !<inputoutput>
     ! stabilisation structure
@@ -431,84 +383,51 @@ contains
 
 
     ! Set atomic data
+    rafcstab%NVAR  = rmatrix%NVAR
+    rafcstab%NEQ   = rmatrix%NEQ
+    rafcstab%NEDGE = (rmatrix%NA-rmatrix%NEQ)/2
+    rafcstab%NNVEDGE = 0
+    
     if (present(NVARtransformed)) then
       rafcstab%NVARtransformed = NVARtransformed
     else
-      rafcstab%NVARtransformed = rmatrixTemplate%NVAR
+      rafcstab%NVARtransformed = rmatrix%NVAR
     end if
-    rafcstab%NVAR  = rmatrixTemplate%NVAR
-    rafcstab%NEQ   = rmatrixTemplate%NEQ
-    rafcstab%NEDGE = (rmatrixTemplate%NA-rmatrixTemplate%NEQ)/2
-    rafcstab%NNVEDGE = 0
-
+    
     ! Set specifier
     rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
-
+    
     ! What kind of stabilisation are we?
     select case(rafcstab%cafcstabType)
 
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-      end if
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix, rafcstab)
 
+      !-------------------------------------------------------------------------
 
     case (AFCSTAB_TVD)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-      end if
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix, rafcstab)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
 
+      !-------------------------------------------------------------------------
       
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
           AFCSTAB_NLINFCT_IMPLICIT)
 
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-      end if
-
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix, rafcstab)
+      
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
 
@@ -537,25 +456,14 @@ contains
       call lsysbl_convertVecFromScalar(rvectorTmp, rafcstab%p_rvectorPredictor)
       call lsyssc_releaseVector(rvectorTmp)
       
+      !-------------------------------------------------------------------------
 
     case (AFCSTAB_LINFCT,&
           AFCSTAB_LINFCT_MASS)
       
-      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji/)
-      if (present(rgroupFEMSet)) then
-        if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
-          rafcstab%h_IedgeListIdx = rgroupFEMSet%h_IedgeListIdx
-          rafcstab%h_IedgeList    = rgroupFEMSet%h_IedgeList
-          rafcstab%iduplicationFlag =&
-              ior(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)
-        else          
-          call afcstab_allocEdgeStructure(rafcstab,4)
-          call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-        end if
-      else
-        call afcstab_allocEdgeStructure(rafcstab,4)
-        call afcstab_genEdgeList(rmatrixTemplate, rafcstab)
-      end if
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      call afcstab_allocEdgeStructure(rafcstab,6)
+      call afcstab_genEdgeList(rmatrix, rafcstab)
 
       ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
       call afcstab_allocVectorsPQR(rafcstab)
@@ -569,29 +477,387 @@ contains
       if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
         call afcstab_allocFluxPrel(rafcstab)
       end if
+            
+      !-------------------------------------------------------------------------
       
+    case DEFAULT
+      call output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByMatrixSc')
+      call sys_halt()
+    end select
+
+  end subroutine afcsys_initStabByMatrixSc
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcsys_initStabByGroupFEMSetBl(rgroupFEMSet, rafcstab,&
+      NVARtransformed, rblockDiscretisation)
+
+!<description>
+    ! This subroutine initialises the discrete stabilisation structure
+    ! for use as a system stabilisation. The group finite element set
+    ! is used to determine the number of equations and the number of
+    ! edges. Common data structures are shared with the group FE set.
+!</description>
+
+!<input>
+    ! The group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! OPTIONAL: number of transformed variables
+    ! If not present, then the number of variables
+    ! NVAR is taken from the template matrix
+    integer, intent(in), optional :: NVARtransformed
+
+    ! OPTIONAL: block discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
+!</input>
+
+!<inputoutput>
+    ! The stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+
+    ! Check if block discretisation has only one block
+    if (present(rblockDiscretisation)) then
+      if (rblockDiscretisation%ncomponents .eq. 1) then
+        call afcsys_initStabByGroupFEMSetSc(&
+            rgroupFEMSet, rafcstab, NVARtransformed,&
+            rblockDiscretisation%RspatialDiscr(1))
+        return
+      end if
+    end if
+
+    ! Set atomic data
+    rafcstab%NVAR    = rgroupFEMSet%NVAR
+    rafcstab%NEQ     = rgroupFEMSet%NEQ
+    rafcstab%NEDGE   = rgroupFEMSet%NEDGE
+    rafcstab%NNVEDGE = 0
+    
+    if (present(NVARtransformed)) then
+      rafcstab%NVARtransformed = NVARtransformed
+    else
+      rafcstab%NVARtransformed = rafcstab%NVAR
+    end if
+
+    ! Set specifier
+    rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
+    
+    ! What kind of stabilisation are we?
+    select case(rafcstab%cafcstabType)
+
+    case (AFCSTAB_GALERKIN,&
+          AFCSTAB_UPWIND)
+
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetBl')
+        call sys_halt()
+      end if
+
+      !-------------------------------------------------------------------------
+      
+    case (AFCSTAB_TVD)
+      
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetBl')
+        call sys_halt()
+      end if
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
+
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetBl')
+        call sys_halt()
+      end if
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+
+      ! We need the edgewise vector for the prelimited fluxes
+      if ((rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE).or.&
+          (rafcstab%cafcstabType     .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+
+      ! We need the nodal block vector for the low-order predictor
+      allocate(rafcstab%p_rvectorPredictor)
+      if (present(rblockDiscretisation)) then
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
+      else
+        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+            rafcstab%NEQ, rafcstab%NVAR, .false., rafcstab%cdataType)
+      end if
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_LINFCT,&
+          AFCSTAB_LINFCT_MASS)
+
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetBl')
+        call sys_halt()
+      end if
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+
+      ! We need the edgewise vector if raw antidiffusive fluxes should
+      ! be prelimited
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+
+      !-------------------------------------------------------------------------
+      
+    case DEFAULT
+      call output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetBl')
+      call sys_halt()
+    end select
+
+  end subroutine afcsys_initStabByGroupFEMSetBl
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcsys_initStabByGroupFEMSetSc(rgroupFEMSet, rafcstab,&
+      NVARtransformed, rspatialDiscretisation)
+
+!<description>
+    ! This subroutine initialises the discrete stabilisation structure
+    ! for use as a system stabilisation. The group finite element set
+    ! is used to determine the number of equations and the number of
+    ! edges. Common data structures are shared with the group FE set.
+!</description>
+
+!<input>
+    ! The group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! OPTIONAL: number of transformed variables
+    ! If not present, then the number of variables
+    ! NVAR is taken from the template matrix
+    integer, intent(in), optional :: NVARtransformed
+
+    ! OPTIONAL: spatial discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
+!</input>
+
+!<inputoutput>
+    ! The stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorScalar) :: rvectorTmp
+
+    
+    ! Set atomic data
+    rafcstab%NVAR    = rgroupFEMSet%NVAR
+    rafcstab%NEQ     = rgroupFEMSet%NEQ
+    rafcstab%NEDGE   = rgroupFEMSet%NEDGE
+    rafcstab%NNVEDGE = 0
+    
+    if (present(NVARtransformed)) then
+      rafcstab%NVARtransformed = NVARtransformed
+    else
+      rafcstab%NVARtransformed = rafcstab%NVAR
+    end if
+
+    ! Set specifier
+    rafcstab%istabilisationSpec = AFCSTAB_INITIALISED
+    
+    ! What kind of stabilisation are we?
+    select case(rafcstab%cafcstabType)
+
+    case (AFCSTAB_GALERKIN,&
+          AFCSTAB_UPWIND)
+
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetSc')
+        call sys_halt()
+      end if
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_TVD)
+      
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetSc')
+        call sys_halt()
+      end if
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE,&
+          AFCSTAB_NLINFCT_IMPLICIT)
+
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetSc')
+        call sys_halt()
+      end if
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+
+      ! We need the edgewise vector for the prelimited fluxes
+      if ((rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE).or.&
+          (rafcstab%cafcstabType     .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+
       ! We need the nodal block vector for the low-order predictor
       allocate(rafcstab%p_rvectorPredictor)
       if (present(rspatialDiscretisation)) then
         call lsyssc_createVecByDiscr(rspatialDiscretisation,&
-            rvectorTmp, rafcstab%NVAR, .false., ST_DOUBLE)
+            rvectorTmp, rafcstab%NVAR, .false., rafcstab%cdataType)
       else
         call lsyssc_createVector(rvectorTmp,&
-            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+            rafcstab%NEQ, rafcstab%NVAR, .false., rafcstab%cdataType)
       end if
       
       ! Convert into 1-block vector
       call lsysbl_convertVecFromScalar(rvectorTmp, rafcstab%p_rvectorPredictor)
       call lsyssc_releaseVector(rvectorTmp)
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_LINFCT,&
+          AFCSTAB_LINFCT_MASS)
+
+      ! Handle for IedgeListIdx and IedgeList: (/i,j,ij,ji,ii,jj/)
+      if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .ne. 0) then
+        rafcstab%h_IedgeListIdx   = rgroupFEMSet%h_IedgeListIdx
+        rafcstab%h_IedgeList      = rgroupFEMSet%h_IedgeList
+        rafcstab%iduplicationFlag = ior(rafcstab%iduplicationFlag,&
+                                        AFCSTAB_SHARE_EDGELIST)
+        rafcstab%istabilisationSpec = ior(rafcstab%istabilisationSpec,&
+            iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST))
+      else
+        call output_line('Group finite element set does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetSc')
+        call sys_halt()
+      end if
       
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+
+      ! We need the edgewise vector if raw antidiffusive fluxes should
+      ! be prelimited
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+
+      !-------------------------------------------------------------------------
       
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabilisationScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcsys_initStabByGroupFEMSetSc')
       call sys_halt()
     end select
 
-  end subroutine afcsys_initStabilisationScalar
+  end subroutine afcsys_initStabByGroupFEMSetSc
   
   ! ****************************************************************************
 

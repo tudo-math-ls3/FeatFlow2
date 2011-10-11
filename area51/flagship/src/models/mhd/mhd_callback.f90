@@ -327,8 +327,9 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
     real(DP) :: dscale
-    integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix, inviscidAFC
-    integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar
+    integer :: systemMatrix,lumpedMassMatrix,consistentMassMatrix
+    integer :: inviscidAFC,inviscidGFEM
+    integer :: isystemCoupling,isystemPrecond,isystemFormat,imasstype,ivar
 
     ! Start time measurement for matrix evaluation
     p_rtimer => collct_getvalue_timer(rcollection,&
@@ -454,6 +455,8 @@ contains
         ssectionName, 'imasstype', imasstype)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
 
     ! Compute scaling parameter
     select case (imasstype)
@@ -482,21 +485,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD1d_sim, mhd_calcMatGalMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection)
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD2d_sim, mhd_calcMatGalMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection)
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatGalMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection)
@@ -515,24 +521,27 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD1d_sim, mhd_calcMatScDissMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD2d_sim, mhd_calcMatScDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatScDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -548,24 +557,27 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD1d_sim, mhd_calcMatRoeDissMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD2d_sim, mhd_calcMatRoeDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatRoeDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -581,24 +593,27 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD1d_sim, mhd_calcMatRusDissMatD1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD2d_sim, mhd_calcMatRusDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiagMatD3d_sim, mhd_calcMatRusDissMatD3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -629,21 +644,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag1d_sim, mhd_calcMatGal1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection)
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag2d_sim, mhd_calcMatGal2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection)
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag3d_sim, mhd_calcMatGal3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection)
@@ -662,24 +680,27 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag1d_sim, mhd_calcMatScDiss1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag2d_sim, mhd_calcMatScDiss2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag3d_sim, mhd_calcMatScDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -695,24 +716,27 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag1d_sim, mhd_calcMatRoeDiss1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag2d_sim, mhd_calcMatRoeDiss2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag3d_sim, mhd_calcMatRoeDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -728,24 +752,27 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag1d_sim, mhd_calcMatRusDiss1d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag2d_sim, mhd_calcMatRusDiss2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
           call gfsys_buildOperator(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcMatDiag3d_sim, mhd_calcMatRusDiss3d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -4183,7 +4210,7 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    integer :: inviscidAFC, idissipationtype
+    integer :: inviscidAFC,inviscidGFEM,idissipationtype
 
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -4191,15 +4218,19 @@ contains
 
     ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
-            ssectionName, 'inviscidAFC', inviscidAFC, 0)
-    
+        ssectionName, 'inviscidAFC', inviscidAFC, 0)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
+
     ! Do we have a zero scling parameter?
     if (dscale .eq. 0.0_DP) then
       if (bclear) call lsysbl_clearVector(rvector)
     else
+      
+      ! Check if group finite element structure and stabilisation
+      ! structure are both available
+      if ((inviscidGFEM .le. 0) .or. (inviscidAFC .le. 0)) return
 
-      ! Check if stabilisation structure is available
-      if (inviscidAFC .le. 0) return
       ! What type if stabilisation is applied?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         
@@ -4207,18 +4238,21 @@ contains
         
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildVector(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildVectorEdge(&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcFluxGal1d_sim, dscale, bclear, rvector, rcollection)
           
         case (NDIM2D)
-          call gfsys_buildVector(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildVectorEdge(&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcFluxGal2d_sim, dscale, bclear, rvector, rcollection)
           
         case (NDIM3D)
-          call gfsys_buildVector(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildVectorEdge(&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution,&
               mhd_calcFluxGal3d_sim, dscale, bclear, rvector, rcollection)
         end select
 
@@ -4245,18 +4279,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxGal1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxGal2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxGal3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
@@ -4268,18 +4305,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxScDiss1d_sim, dscale, bclear , rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxScDiss2d_sim, dscale, bclear, rvector, rcollection)
 
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxScDiss3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
@@ -4292,18 +4332,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxScDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxScDissDiSp2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxScDissDiSp3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
@@ -4315,18 +4358,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRoeDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRoeDiss2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRoeDiss3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
@@ -4339,18 +4385,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRoeDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRoeDissDiSp2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRoeDissDiSp3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
@@ -4362,18 +4411,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRusDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRusDiss2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRusDiss3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
@@ -4386,18 +4438,21 @@ contains
           
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  mhd_calcFluxRusDiss1d_sim, dscale, bclear, rvector, rcollection)
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
+                mhd_calcFluxRusDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRusDissDiSp2d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM3D)
-            call gfsys_buildVector(&
-                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+            call gfsys_buildVectorEdge(&
+                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+                rsolution,&
                 mhd_calcFluxRusDissDiSp3d_sim, dscale, bclear, rvector, rcollection)
           end select
           
