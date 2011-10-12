@@ -177,8 +177,8 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_initStabByMatrixBl(rmatrix, rafcstab, NVARtransformed,&
-      rblockDiscretisation)
+  subroutine afcsys_initStabByMatrixBl(rmatrix, rafcstab,&
+      rblockDiscretisation, NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -194,14 +194,14 @@ contains
     ! template block matrix
     type(t_matrixBlock), intent(in) :: rmatrix
 
+    ! OPTIONAL: block discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
+
     ! OPTIONAL: number of transformed variables
     ! If not present, then the number of variables
     ! NVAR is taken from the template matrix
     integer, intent(in), optional :: NVARtransformed
-
-    ! OPTIONAL: block discretisation structure which is used to
-    ! create auxiliary vectors, e.g., for the predictor
-    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
 !</input>
 
 !<inputoutput>
@@ -215,12 +215,11 @@ contains
     if ((rmatrix%nblocksPerCol .eq. 1) .and.&
         (rmatrix%nblocksPerRow .eq. 1)) then
       if (present(rblockDiscretisation)) then
-        call afcsys_initStabByMatrixSc(&
-            rmatrix%RmatrixBlock(1,1), rafcstab, NVARtransformed,&
-            rblockDiscretisation%RspatialDiscr(1))
+        call afcsys_initStabByMatrixSc(rmatrix%RmatrixBlock(1,1), rafcstab,&
+            rblockDiscretisation%RspatialDiscr(1), NVARtransformed)
       else
-        call afcsys_initStabByMatrixSc(&
-            rmatrix%RmatrixBlock(1,1), rafcstab, NVARtransformed)
+        call afcsys_initStabByMatrixSc(rmatrix%RmatrixBlock(1,1), rafcstab,&
+            NVARtransformed=NVARtransformed)
       end if
       return
     end if
@@ -346,8 +345,8 @@ contains
   ! ****************************************************************************
 
 !<subroutine>
-  subroutine afcsys_initStabByMatrixSc(rmatrix, rafcstab, NVARtransformed,&
-      rspatialDiscretisation)
+  subroutine afcsys_initStabByMatrixSc(rmatrix, rafcstab,&
+      rspatialDiscretisation, NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -362,15 +361,15 @@ contains
     ! template matrix
     type(t_matrixScalar), intent(in) :: rmatrix
 
+    ! OPTIONAL: spatial discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
+    
     ! OPTIONAL: number of transformed variables
     ! If not present, then the number of variables
     ! NVAR is taken from the template matrix
     integer, intent(in), optional :: NVARtransformed
-
-    ! OPTIONAL: spatial discretisation structure which is used to
-    ! create auxiliary vectors, e.g., for the predictor
-    type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
-    !</input>
+!</input>
 
 !<inputoutput>
     ! stabilisation structure
@@ -493,7 +492,7 @@ contains
 !<subroutine>
 
   subroutine afcsys_initStabByGroupFEMSetBl(rgroupFEMSet, rafcstab,&
-      NVARtransformed, rblockDiscretisation)
+      rblockDiscretisation, NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -506,14 +505,14 @@ contains
     ! The group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
+    ! Block discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_blockDiscretisation), intent(in) :: rblockDiscretisation
+
     ! OPTIONAL: number of transformed variables
     ! If not present, then the number of variables
     ! NVAR is taken from the template matrix
     integer, intent(in), optional :: NVARtransformed
-
-    ! OPTIONAL: block discretisation structure which is used to
-    ! create auxiliary vectors, e.g., for the predictor
-    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
 !</input>
 
 !<inputoutput>
@@ -524,13 +523,10 @@ contains
 
 
     ! Check if block discretisation has only one block
-    if (present(rblockDiscretisation)) then
-      if (rblockDiscretisation%ncomponents .eq. 1) then
-        call afcsys_initStabByGroupFEMSetSc(&
-            rgroupFEMSet, rafcstab, NVARtransformed,&
-            rblockDiscretisation%RspatialDiscr(1))
-        return
-      end if
+    if (rblockDiscretisation%ncomponents .eq. 1) then
+      call afcsys_initStabByGroupFEMSetSc(rgroupFEMSet, rafcstab,&
+          rblockDiscretisation%RspatialDiscr(1), NVARtransformed)
+      return
     end if
 
     ! Set atomic data
@@ -625,13 +621,8 @@ contains
 
       ! We need the nodal block vector for the low-order predictor
       allocate(rafcstab%p_rvectorPredictor)
-      if (present(rblockDiscretisation)) then
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
-            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
-      else
-        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
-            rafcstab%NEQ, rafcstab%NVAR, .false., rafcstab%cdataType)
-      end if
+      call lsysbl_createVectorBlock(rblockDiscretisation,&
+          rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
 
       !-------------------------------------------------------------------------
 
@@ -680,7 +671,7 @@ contains
 !<subroutine>
 
   subroutine afcsys_initStabByGroupFEMSetSc(rgroupFEMSet, rafcstab,&
-      NVARtransformed, rspatialDiscretisation)
+      rspatialDiscretisation, NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -693,14 +684,14 @@ contains
     ! The group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
+    ! OPTIONAL: spatial discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
+
     ! OPTIONAL: number of transformed variables
     ! If not present, then the number of variables
     ! NVAR is taken from the template matrix
     integer, intent(in), optional :: NVARtransformed
-
-    ! OPTIONAL: spatial discretisation structure which is used to
-    ! create auxiliary vectors, e.g., for the predictor
-    type(t_spatialDiscretisation), intent(in), optional :: rspatialDiscretisation
 !</input>
 
 !<inputoutput>

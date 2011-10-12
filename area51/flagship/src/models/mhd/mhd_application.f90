@@ -1484,7 +1484,7 @@ contains
         ! Initialise stabilisation structure
         call afcsys_initStabilisation(&
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(inviscidAFC), NVARtransformed, p_rdiscretisation)
+            rproblemLevel%Rafcstab(inviscidAFC), p_rdiscretisation, NVARtransformed)
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(inviscidAFC),&
@@ -1589,7 +1589,7 @@ contains
         ! Initialise stabilisation structure
         call afcsys_initStabilisation(&
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(viscousAFC), NVARtransformed, p_rdiscretisation)
+            rproblemLevel%Rafcstab(viscousAFC), p_rdiscretisation, NVARtransformed)
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(viscousAFC),&
@@ -1624,7 +1624,7 @@ contains
         ! Initialise stabilisation structure
         call afcsys_initStabilisation(&
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(massAFC), NVARtransformed, p_rdiscretisation)
+            rproblemLevel%Rafcstab(massAFC), p_rdiscretisation, NVARtransformed)
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
