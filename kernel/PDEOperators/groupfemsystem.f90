@@ -2924,28 +2924,28 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
-      !$omp if(size(InodeList) > GFSC_NAMIN_OMP)
+      !$omp if(size(InodeList) > GFSYS_NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSC_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSC_NEQSIM))
-      allocate(IdofsAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
+      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
+      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSC_NEQSIM
+      ! Loop over all equations in blocks of size GFSYS_NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSC_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
         
-        ! We always handle GFSC_NEQSIM equations by one OpenMP thread.
+        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSC_NEQSIM equations by one OpenMP thread.
+        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSC_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSC_NASIM nonzero entries simultaneously.
+        ! GFSYS_NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -2967,11 +2967,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSC_NASIM
+          ! does not exceed the upper bound GFSYS_NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSC_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSC_NASIM) exit
+            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3064,27 +3064,27 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
-      !$omp if(size(InodeList,2) > GFSC_NAMIN_OMP)
+      !$omp if(size(InodeList,2) > GFSYS_NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSC_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSC_NEQSIM))
+      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
+      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSC_NEQSIM
+      ! Loop over all equations in blocks of size GFSYS_NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSC_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
         
-        ! We always handle GFSC_NEQSIM equations by one OpenMP thread.
+        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSC_NEQSIM equations by one OpenMP thread.
+        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSC_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSC_NASIM nonzero entries simultaneously.
+        ! GFSYS_NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -3106,11 +3106,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSC_NASIM
+          ! does not exceed the upper bound GFSYS_NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSC_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSC_NASIM) exit
+            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3349,28 +3349,28 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
-      !$omp if(size(InodeList) > GFSC_NAMIN_OMP)
+      !$omp if(size(InodeList) > GFSYS_NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSC_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSC_NEQSIM))
-      allocate(IdofsAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
+      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
+      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSC_NEQSIM
+      ! Loop over all equations in blocks of size GFSYS_NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSC_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
         
-        ! We always handle GFSC_NEQSIM equations by one OpenMP thread.
+        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSC_NEQSIM equations by one OpenMP thread.
+        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSC_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSC_NASIM nonzero entries simultaneously.
+        ! GFSYS_NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -3392,11 +3392,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSC_NASIM
+          ! does not exceed the upper bound GFSYS_NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSC_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSC_NASIM) exit
+            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3489,27 +3489,27 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
-      !$omp if(size(InodeList,2) > GFSC_NAMIN_OMP)
+      !$omp if(size(InodeList,2) > GFSYS_NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSC_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSC_NEQSIM))
+      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
+      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSC_NEQSIM
+      ! Loop over all equations in blocks of size GFSYS_NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSC_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
         
-        ! We always handle GFSC_NEQSIM equations by one OpenMP thread.
+        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSC_NEQSIM equations by one OpenMP thread.
+        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSC_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSC_NASIM nonzero entries simultaneously.
+        ! GFSYS_NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -3531,11 +3531,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSC_NASIM
+          ! does not exceed the upper bound GFSYS_NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSC_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSC_NASIM) exit
+            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it

@@ -6290,7 +6290,7 @@ contains
     select case(size(IedgeList,1))
     case (2)
       !$omp parallel do default(shared) private(iaux,daux)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
@@ -6315,7 +6315,7 @@ contains
 
     case (6)
       !$omp parallel do default(shared) private(iaux,daux)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
@@ -6406,7 +6406,7 @@ contains
     select case(size(IedgeList,1))
     case (2)
       !$omp parallel do default(shared) private(iaux,faux)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
@@ -6431,7 +6431,7 @@ contains
 
     case (6)
       !$omp parallel do default(shared) private(iaux,faux)&
-      !$omp if (NEDGE > GFSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
