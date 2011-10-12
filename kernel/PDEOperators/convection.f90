@@ -45,30 +45,30 @@
 
 module convection
 
-  use fsystem
-  use storage
-  use genoutput
-  use linearalgebra
-  use linearsystemscalar
-  use linearsystemblock
-  use cubature
-  use vectorio
-  use matrixio
-  use domainintegration
-  use derivatives
-  use statistics
   use basicgeometry
-  use geometryaux
-  use dofmapping
-  use jumpstabilisation
-  use feevaluation
-  use triangulation
-  use element
-  use elementpreprocessing
-  use transformation
-  use spatialdiscretisation
   use bilinearformevaluation
   use collection
+  use cubature
+  use derivatives
+  use dofmapping
+  use domainintegration
+  use element
+  use elementpreprocessing
+  use feevaluation
+  use fsystem
+  use genoutput
+  use geometryaux
+  use jumpstabilisation
+  use linearalgebra
+  use linearsystemblock
+  use linearsystemscalar
+  use matrixio
+  use spatialdiscretisation
+  use statistics
+  use storage
+  use transformation
+  use triangulation
+  use vectorio
 
   implicit none
 
@@ -322,34 +322,34 @@ module convection
     ! Line integral cubature formula for discretising the Jump.
     ! One of the CUB_xxxx_1D-constants of the cubature.f90 module.
     ! Standard is Gauss 2-point formula.
-    integer(I32)          :: ccubType = CUB_G2_1D
+    integer(I32) :: ccubType = CUB_G2_1D
 
     ! Type of Jump stabilisation.
     ! One of the CONV_JUMP_xxxx-constants. Standard is unified edge
     ! stabilisation.
     ! CONV_JUMP_UNIFIEDEDGE: <tex>$ \sum_E \gamma h_E^2 \int_E [grad u] [grad v] ds $</tex>
     ! CONV_JUMP_REACTIVE:    <tex>$ \sum_E gamma nu 1/|E| \int_E [u] [v] ds $</tex>
-    integer               :: cjump = CONV_JUMP_UNIFIEDEDGE
+    integer :: cjump = CONV_JUMP_UNIFIEDEDGE
 
     ! 1st Relaxation parameter for the Jump stabilisation.
     ! =0.0: No Jump stabilisation
     ! >0.0: Add Jump stabilisation with relaxation parameter dgamma=djump.
-    real(DP)              :: dgamma = 0.01_DP
+    real(DP) :: dgamma = 0.01_DP
 
     ! 2nd Relaxation parameter for the Jump stabilisation.
     ! =0.0: No Jump stabilisation (Standard)
     ! >0.0: Add Jump stabilisation with relaxation parameter dgammastar
-    real(DP)              :: dgammastar = 0.0_DP
+    real(DP) :: dgammastar = 0.0_DP
 
     ! Exponent for edge length weight in the jump stabilisation.
     ! A value of 2 corresponds to a weight h_E^2, but this can be changed here.
-    real(dp)              :: deojEdgeExp = 2.0_DP
+    real(dp) :: deojEdgeExp = 2.0_DP
 
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
     ! in the <tex>$ \Theta $</tex>-scheme. For stationary problems, 1.0_DP must
     ! be used to assembly the not-weighted operator matrix.
-    real(DP)              :: dtheta = 1.0_DP
+    real(DP) :: dtheta = 1.0_DP
 
   end type
 
@@ -358,6 +358,13 @@ module convection
 !</typeblock>
 
 !</types>
+
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: conv_perfconfig
+
+  !************************************************************************
 
   public :: conv_upwind2d
   public :: conv_streamlineDiffusion2d
@@ -436,11 +443,11 @@ contains
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(in) :: cdef
 
-  ! optional: Solution vector u_2.
+  ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   type(t_vectorBlock), intent(in), target, optional :: rsolution
 
-  ! optional: Mesh velocity field.
+  ! OPTIONAL: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -449,7 +456,7 @@ contains
   ! configuration parameter block.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
-  ! optional:
+  ! OPTIONAL:
   ! Index block that specifies which component in rvecPrimary / rvecSecondary /
   ! rsolution / rdefect is the X-velocity and which one is the Y-velocity.
   !  IvelocityComp(1) gives the number of the X-velocity (usually = 1),
@@ -467,7 +474,7 @@ contains
   ! The nonlinear operator is added to the matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -478,7 +485,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
     integer(I32) :: celement
     integer, dimension(2) :: Icomp
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
@@ -744,7 +750,7 @@ contains
   ! Whether or not to use the ALE method
   logical, intent(in) :: bALE
 
-  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
+  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
@@ -752,7 +758,7 @@ contains
   ! Triangulation structure specifying the underlying mesh.
   type(t_triangulation), intent(in) :: rtriangulation
 
-  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
@@ -766,11 +772,11 @@ contains
   ! The system matrix. Must be format 7 or 9.
   type(t_matrixScalar), intent(inout), target :: rmatrix
 
-  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef1
 
-  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef2
 !</inputoutput>
@@ -1330,7 +1336,7 @@ contains
   subroutine conv_streamlineDiffusion2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
-                           rmatrix, rsolution, rdefect, DmeshVelocity)
+                           rmatrix, rsolution, rdefect, DmeshVelocity,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -1393,11 +1399,11 @@ contains
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(in) :: cdef
 
-  ! optional: Solution vector u_2.
+  ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   type(t_vectorBlock), intent(in), target, optional :: rsolution
 
-  ! optional: Mesh velocity field.
+  ! OPTIONAL: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -1405,6 +1411,10 @@ contains
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1414,7 +1424,7 @@ contains
   ! The nonlinear operator is added to the matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -1425,7 +1435,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,icomponent
+    integer :: icomponent
     integer(I32) :: celement
     real(DP), dimension(:), pointer :: p_DvelX1,p_DvelX2,p_DvelY1,p_DvelY2
     real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
@@ -1525,7 +1535,7 @@ contains
                       rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                       rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                       rconfig%bALE, rconfig%clocalh,&
-                      p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
+                      p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity,rperfconfig)
 
       else
 
@@ -1554,7 +1564,7 @@ contains
                         rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                         rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                         rconfig%bALE, rconfig%clocalh,&
-                        p_DsolX,p_DdefectX, DmeshVelocity)
+                        p_DsolX,p_DdefectX, DmeshVelocity,rperfconfig)
         end do
 
       end if
@@ -1567,7 +1577,8 @@ contains
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
-                    rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity)
+                    rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity,&
+                    rperfconfig=rperfconfig)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -1584,7 +1595,7 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
-                  clocalh, Du1,Ddef1, DmeshVelocity)
+                  clocalh, Du1,Ddef1, DmeshVelocity, rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -1712,22 +1723,25 @@ contains
   ! Method how to compute the local h
   integer, intent(in) :: clocalh
 
-  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
+  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
 
-  ! optional: velocity vector <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: velocity vector <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
   type(t_matrixScalar), intent(inout), target :: rmatrix
 
-  ! optional: defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef1
 !</inputoutput>
@@ -1735,7 +1749,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -1760,7 +1774,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
@@ -1808,6 +1822,15 @@ contains
   ! the elements.
   integer(I32) :: cevaluationTag
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => conv_perfconfig
+    end if
+
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -1847,8 +1870,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! For cdef containing CONV_MODDEFECT, we build the defect vector
     !     D = RHS - A*U
@@ -1909,9 +1932,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(indof,indof,nelementsPerBlock))
     allocate(Dentry(indof,indof))
 
@@ -1975,14 +1998,14 @@ contains
                               p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
 
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -2007,7 +2030,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
 
@@ -2557,7 +2580,7 @@ contains
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
-                  clocalh,Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
+                  clocalh,Du1,Du2,Ddef1,Ddef2, DmeshVelocity,rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -2680,12 +2703,12 @@ contains
   ! Method how to compute the local h
   integer, intent(in) :: clocalh
 
-  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
+  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
 
-  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
@@ -2693,17 +2716,20 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
   type(t_matrixScalar), intent(inout), target :: rmatrix
 
-  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef1
 
-  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef2
 !</inputoutput>
@@ -2711,7 +2737,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -2736,7 +2762,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
@@ -2784,6 +2810,15 @@ contains
   ! the elements.
   integer(I32) :: cevaluationTag
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => conv_perfconfig
+    end if
+
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -2823,8 +2858,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! For cdef containing CONV_MODDEFECT, we build the defect vector
     !     D = RHS - A*U
@@ -2886,9 +2921,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(indof,indof,nelementsPerBlock))
     allocate(Dentry(indof,indof))
 
@@ -2952,14 +2987,14 @@ contains
                               p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
 
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -2984,7 +3019,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
 
@@ -3535,7 +3570,7 @@ contains
   subroutine conv_streamlineDiffusionBlk2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
-                           rmatrix, rsolution, rdefect, DmeshVelocity)
+                           rmatrix, rsolution, rdefect, DmeshVelocity, rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -3576,7 +3611,6 @@ contains
 !</description>
 
 !<input>
-
   ! Primary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecPrimary
 
@@ -3601,11 +3635,11 @@ contains
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(in) :: cdef
 
-  ! optional: Solution vector u_2.
+  ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   type(t_vectorBlock), intent(in), target, optional :: rsolution
 
-  ! optional: Mesh velocity field.
+  ! OPTIONAL: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -3614,6 +3648,9 @@ contains
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3625,7 +3662,7 @@ contains
   ! diffusion.
   type(t_matrixBlock), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -3636,7 +3673,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
     integer(I32) :: celement
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
     type(t_vectorScalar), pointer :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
@@ -3805,7 +3841,7 @@ contains
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%ddeltaTransposed, &
                     rconfig%dnewtonTransposed, rconfig%bALE, rconfig%clocalh,&
-                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
+                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity, rperfconfig)
 
     else
 
@@ -3814,7 +3850,8 @@ contains
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
                     rconfig%dnewton, rconfig%ddeltaTransposed, rconfig%dnewtonTransposed, &
-                    rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity)
+                    rconfig%bALE, rconfig%clocalh,DmeshVelocity=DmeshVelocity,&
+                    rperfconfig=rperfconfig)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -3838,7 +3875,7 @@ contains
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
                   ddeltaTransposed,dnewtonTransposed, bALE, clocalh, &
-                  Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
+                  Du1,Du2,Ddef1,Ddef2, DmeshVelocity, rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -3963,8 +4000,6 @@ contains
   ! Weighting factor for the nonlinear term
   real(DP), intent(in) :: ddelta
 
-
-
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
@@ -3984,12 +4019,12 @@ contains
   ! Method how to compute the local h
   integer, intent(in) :: clocalh
 
-  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
+  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
 
-  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
@@ -3997,6 +4032,9 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4006,11 +4044,11 @@ contains
   ! the same structure.
   type(t_matrixBlock), intent(inout), target :: rmatrix
 
-  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef1
 
-  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef2
 !</inputoutput>
@@ -4018,7 +4056,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -4049,7 +4087,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   integer, dimension(:,:), pointer :: p_IedgesAtElement,p_IverticesAtElement
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
@@ -4109,6 +4147,15 @@ contains
   ! the elements.
   integer(I32) :: cevaluationTag
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => conv_perfconfig
+    end if
+
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -4151,8 +4198,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! For cdef containing CONV_MODDEFECT, we build the defect vector
     !     D = RHS - A*U
@@ -4253,9 +4300,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     !
     ! Kentry (:,:,:) defines the positions of the local matrices
     ! in the submatrices A11 and A22.
@@ -4361,18 +4408,18 @@ contains
     ! Loop over the elements - blockwise.
     !
     ! OpenMP-Extension: Each loop cycle is executed in a different thread,
-    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! so NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !%omp do schedule(dynamic,1)
-    do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
 
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -4397,7 +4444,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
 
@@ -5886,16 +5933,16 @@ contains
 
   !<input>
     ! Element where the local h should be calculated
-    integer, intent(in)               :: JEL
+    integer, intent(in) :: JEL
 
     integer, dimension(TRIA_MAXNVE2D,*), intent(in) :: Kvert
-    real(DP), dimension(NDIM2D,*), intent(in)       :: Dcorvg
+    real(DP), dimension(NDIM2D,*), intent(in) :: Dcorvg
 
     ! norm ||u||_T = mean velocity through element T=JEL
-    real(DP), intent(in)  :: dunorm
+    real(DP), intent(in) :: dunorm
 
     ! mean velocity u_T = (xbeta1,xbeta2) through element T=JEL
-    real(DP), intent(in)  :: XBETA1, XBETA2
+    real(DP), intent(in) :: XBETA1, XBETA2
   !</input>
 
   !<output>
@@ -6141,7 +6188,7 @@ contains
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity, &
-                           IvelocityComp)
+                           IvelocityComp, rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -6198,11 +6245,11 @@ contains
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(in) :: cdef
 
-  ! optional: Solution vector u_2.
+  ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   type(t_vectorBlock), intent(in), target, optional :: rsolution
 
-  ! optional: Mesh velocity field.
+  ! OPTIONAL: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -6213,7 +6260,7 @@ contains
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
-  ! optional:
+  ! OPTIONAL:
   ! Index block that specifies which component in rvecPrimary / rvecSecondary /
   ! rsolution / rdefect is the X-, Y- and Z-velocity.
   !  IvelocityComp(1) gives the number of the X-velocity (usually = 1),
@@ -6221,6 +6268,10 @@ contains
   !  IvelocityComp(3) gives the number of the Z-velocity (usually = 3).
   ! If not present, IvelocityComp=(/1,2,3/) is assumed.
   integer, dimension(3), intent(in), optional :: IvelocityComp
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6230,7 +6281,7 @@ contains
   ! The nonlinear operator is added to the matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -6241,7 +6292,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
     integer(I32) :: celement
     integer, dimension(3) :: Icomp
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
@@ -6374,7 +6424,8 @@ contains
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
                     rconfig%ddelta,rconfig%clocalH,rconfig%bALE,p_DsolX,p_DsolY,&
-                    p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
+                    p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity,&
+                    rperfconfig)
 
     else
 
@@ -6383,7 +6434,7 @@ contains
                     dprimWeight,dsecWeight,rmatrix,cdef,rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha,rconfig%dbeta,rconfig%dtheta,&
                     rconfig%ddelta,rconfig%clocalH,rconfig%bALE,&
-                    DmeshVelocity=DmeshVelocity)
+                    DmeshVelocity=DmeshVelocity,rperfconfig=rperfconfig)
 
     end if
 
@@ -6396,7 +6447,7 @@ contains
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,&
                   dweight1,dweight2,rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta,ddelta,clocalH,bALE, &
-                  Du1,Du2,Du3,Ddef1,Ddef2,Ddef3,DmeshVelocity)
+                  Du1,Du2,Du3,Ddef1,Ddef2,Ddef3,DmeshVelocity,rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -6526,38 +6577,41 @@ contains
   ! Whether or not to use the ALE method
   logical, intent(in) :: bALE
 
-  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
+  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
 
-  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
-  ! optional: Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
 
-  ! optional: Z-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Z-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du3
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
   type(t_matrixScalar), intent(inout), target :: rmatrix
 
-  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef1
 
-  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef2
 
-  ! optional: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef3
 !</inputoutput>
@@ -6565,7 +6619,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -6590,7 +6644,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   integer, dimension(:,:), pointer :: p_IverticesAtElement
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
@@ -6638,6 +6692,15 @@ contains
   ! the elements.
   integer(I32) :: cevaluationTag
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => conv_perfconfig
+    end if
+
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC3D) = .true.
@@ -6678,8 +6741,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! For cdef containing CONV_MODDEFECT, we build the defect vector
     !     D = RHS - A*U
@@ -6742,9 +6805,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(indof,indof,nelementsPerBlock))
     allocate(Dentry(indof,indof))
 
@@ -6810,14 +6873,14 @@ contains
                               p_IelementList)
 
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
 
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -6842,7 +6905,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
 
@@ -7417,7 +7480,8 @@ contains
 
   subroutine conv_streamlineDiffusionBlk3d (rvecPrimary, rvecSecondary,&
                                    dprimWeight, dsecWeight, rconfig, cdef, &
-                                   rmatrix, rsolution, rdefect, DmeshVelocity)
+                                   rmatrix, rsolution, rdefect, DmeshVelocity,&
+                                   rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -7478,11 +7542,11 @@ contains
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(in) :: cdef
 
-  ! optional: Solution vector u_2.
+  ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   type(t_vectorBlock), intent(in), target, optional :: rsolution
 
-  ! optional: Mesh velocity field.
+  ! OPTIONAL: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
   !   of the corner vertex ivt.
   ! DmeshVelocity(2,ivt) gives the Y-velocity of the mesh, i.e. the Y-velocity
@@ -7493,8 +7557,9 @@ contains
   ! configuration parameter block by bALE=true.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
-
-
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -7506,7 +7571,7 @@ contains
   ! diffusion.
   type(t_matrixBlock), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -7517,7 +7582,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
     integer(I32) :: celement
     type(t_vectorScalar), pointer :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2,&
                                      p_rvelZ1,p_rvelZ2
@@ -7738,7 +7802,8 @@ contains
               dprimWeight, dsecWeight, rmatrix,cdef, rconfig%dupsam, &
               rconfig%dnu, rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
               rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE, &
-              p_DsolX,p_DsolY,p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,DmeshVelocity)
+              p_DsolX,p_DsolY,p_DsolZ,p_DdefectX,p_DdefectY,p_DdefectZ,&
+              DmeshVelocity,rperfconfig)
 
     else
 
@@ -7747,7 +7812,7 @@ contains
                     dprimWeight,dsecWeight, rmatrix, cdef, rconfig%dupsam, &
                     rconfig%dnu,rconfig%dalpha, rconfig%dbeta, rconfig%dtheta,&
                     rconfig%ddelta, rconfig%dnewton, rconfig%clocalH,rconfig%bALE,&
-                    DmeshVelocity=DmeshVelocity)
+                    DmeshVelocity=DmeshVelocity,rperfconfig=rperfconfig)
 
     end if
 
@@ -7765,7 +7830,8 @@ contains
   subroutine conv_strdiff3dALEblk_double (&
                   u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel,dweight1,dweight2,&
                   rmatrix,cdef,dupsam,dnu,dalpha,dbeta,dtheta, ddelta, dnewton, &
-                  clocalH,bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity)
+                  clocalH,bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity,&
+                  rperfconfig)
 !<description>
   ! Standard streamline diffusion method to set up the operator
   ! <tex>
@@ -7891,8 +7957,6 @@ contains
   ! Weighting factor for the nonlinear term
   real(DP), intent(in) :: ddelta
 
-
-
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
@@ -7904,24 +7968,27 @@ contains
   ! Whether or not to use the ALE method
   logical, intent(in) :: bALE
 
-  ! optional: Mesh velocity field. Must be present if bALE=TRUE.
+  ! OPTIONAL: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity,
   ! DmeshVelocity(3,:) gives the Z-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
 
-  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
 
-  ! optional: Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
 
-  ! optional: Z-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Z-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du3
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -7931,15 +7998,15 @@ contains
   ! the same structure.
   type(t_matrixBlock), intent(inout), target :: rmatrix
 
-  ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef1
 
-  ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef2
 
-  ! optional: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
+  ! OPTIONAL: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
   real(DP), dimension(:), intent(inout), optional :: Ddef3
 !</inputoutput>
@@ -7947,7 +8014,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: indof,indofALE,IEQ,I,K,IDOFE,JDOFE,icubp
+  integer :: indof,indofALE,IEQ,IDOFE,JDOFE,icubp
   integer :: JCOL0,IDFG,JDFG,JCOL
   integer :: IEL,IELset,IELmax
   logical, dimension(EL_MAXNDER) :: Bder,BderALE
@@ -7977,7 +8044,7 @@ contains
   integer, dimension(:,:), pointer :: p_IfacesAtElement,&
                                     p_IverticesAtElement
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
@@ -8042,6 +8109,15 @@ contains
   ! the elements.
   integer(I32) :: cevaluationTag
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => conv_perfconfig
+    end if
+
     ! Initialise the derivative flags
     Bder = .false.
     Bder(DER_FUNC3D) = .true.
@@ -8085,8 +8161,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! For cdef containing CONV_MODDEFECT, we build the defect vector
     !     D = RHS - A*U
@@ -8175,9 +8251,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     !
     ! Kentry (:,:,:) defines the positions of the local matrices
     ! in the submatrices Aij.
@@ -8283,18 +8359,18 @@ contains
     ! Loop over the elements - blockwise.
     !
     ! OpenMP-Extension: Each loop cycle is executed in a different thread,
-    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! so NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !%omp do schedule(dynamic,1)
-    do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
 
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
 
-      IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
 
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
@@ -8319,7 +8395,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
 
@@ -9704,19 +9780,19 @@ contains
 
 !<input>
   ! mean velocity u_T through element T=iel
-  real(DP), dimension(3), intent(in)                  :: Du
+  real(DP), dimension(3), intent(in) :: Du
 
   ! norm ||u||_T = mean velocity through element T=JEL
-  real(DP), intent(in)                                :: dunorm
+  real(DP), intent(in) :: dunorm
 
   ! Element where the local h should be calculated
-  integer, intent(in)                :: iel
+  integer, intent(in) :: iel
 
   ! The IverticesAtElement array from the triangulation
   integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! The DvertexCoords array from the triangulation
-  real(DP), dimension(:,:), intent(in)                :: DvertexCoords
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
 !</input>
 
 !<output>
@@ -9920,13 +9996,13 @@ contains
 
 !<input>
   ! Element where the local h should be calculated
-  integer, intent(in)                :: iel
+  integer, intent(in) :: iel
 
   ! The IverticesAtElement array from the triangulation
   integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! The DvertexCoords array from the triangulation
-  real(DP), dimension(:,:), intent(in)                :: DvertexCoords
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
 !</input>
 
 !<output>
@@ -10012,7 +10088,7 @@ contains
   ! The nonlinear operator is added to the matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -10187,7 +10263,7 @@ contains
   ! The nonlinear operator is added to the matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -10356,7 +10432,7 @@ contains
   ! The nonlinear operator is added to the matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
 
-  ! optional: Defect vector.
+  ! OPTIONAL: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector:
@@ -10473,7 +10549,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dMat (rconfig,rmatrix,rvelocity,&
-      ffunctionCoefficient,rcollection)
+      ffunctionCoefficient,rcollection,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10510,6 +10586,10 @@ contains
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -10545,7 +10625,7 @@ contains
         bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToMatrix2D,rincorporateCollection,&
-        ffunctionCoefficient,rcollection)
+        ffunctionCoefficient,rcollection,rperfconfig)
 
   end subroutine
 
@@ -10554,7 +10634,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dDef (rconfig,rmatrix,rx,rd,rvelocity,&
-      ffunctionCoefficient,rcollection)
+      ffunctionCoefficient,rcollection,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10598,6 +10678,10 @@ contains
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -10633,7 +10717,7 @@ contains
         bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToDefect2D,rincorporateCollection,&
-        ffunctionCoefficient,rcollection)
+        ffunctionCoefficient,rcollection,rperfconfig)
 
     ! Note: When calculating the defect, it does not matter if
     ! one uses a call to lsyssc_isMatrixContentShared or .TRUE. in the above
@@ -10646,7 +10730,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dCalc (rconfig,rvelocityDiscr,bsimpleAij,rvelocity,&
-      fincorporate,rincorporateCollection,ffunctionCoefficient,rcollection)
+      fincorporate,rincorporateCollection,ffunctionCoefficient,rcollection,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10730,6 +10814,10 @@ contains
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
   optional :: ffunctionCoefficient
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -10853,6 +10941,15 @@ contains
     ! A temporary block vector containing only the velocity
     type(t_vectorBlock) :: rvelocitytemp
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => conv_perfconfig
+    end if
+
     ! Initialise the derivative flags. We need function values and
     ! 1st order derivatives.
     Bder = .false.
@@ -10937,8 +11034,8 @@ contains
       ! For saving some memory in smaller discretisations, we calculate
       ! the number of elements per block. For smaller triangulations,
       ! this is NEL. If there are too many elements, it is at most
-      ! BILF_NELEMSIM. This is only used for allocating some arrays.
-      nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+      ! NELEMSIM. This is only used for allocating some arrays.
+      nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -11002,15 +11099,15 @@ contains
       bcubPtsInitialised = .false.
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+      do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
 
         ! Number of the last element in the current set
-        IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+        IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
 
         ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), &
                                     Idofs)
 
@@ -12024,9 +12121,6 @@ contains
   ! local variables
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
   integer :: iel,ielidx,icubp
-  integer :: idof
-  integer, dimension(:,:), pointer :: p_IverticesAtElement
-  real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_DelementVolume
   real(DP) :: domega
 
@@ -12164,7 +12258,6 @@ contains
   ! local variables
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
   integer :: iel,ielidx,icubp
-  integer :: idof
   integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_DelementVolume

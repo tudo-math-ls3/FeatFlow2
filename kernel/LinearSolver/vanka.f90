@@ -336,7 +336,7 @@ module vanka
     
     ! Temporary array that saves the DOF`s that are in processing when
     ! looping over an element set.
-    ! DIMENSION(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks)
+    ! DIMENSION(nmaxLocalDOFs,NELEMSIM,nblocks)
     integer, dimension(:,:,:), pointer :: p_IelementDOFs => null()
 
   end type
@@ -745,14 +745,12 @@ module vanka
 
 !</types>
 
-!<constants>
-!<constantblock description="Constants defining the blocking of element sets in VANKA">
-
-  ! Number of elements to handle simultaneously in general VANKA
-  integer :: VANKA_NELEMSIM   = 1000
+  !************************************************************************
   
-!</constantblock>
-!</constants>
+  ! global performance configuration
+  type(t_perfconfig), target, save :: vanka_perfconfig
+  
+  !************************************************************************
 
 contains
 
@@ -767,7 +765,7 @@ contains
 
 !<subroutine>
   
-  subroutine vanka_initConformal (rmatrix,rvanka,cproblemClass,csubtype)
+  subroutine vanka_initConformal (rmatrix,rvanka,cproblemClass,csubtype,rperfconfig)
   
 !<description>
   ! Initialises the VANKA for conformal discretisations.
@@ -791,6 +789,10 @@ contains
   ! The VANKA solver subtype that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
   integer, intent(in) :: csubtype
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -803,7 +805,7 @@ contains
     select case (cproblemClass)
     case (VANKAPC_GENERAL)
       ! General VANKA
-      call vanka_initGeneralVanka (rmatrix,rvanka%rvankaGeneral)    
+      call vanka_initGeneralVanka (rmatrix,rvanka%rvankaGeneral,rperfconfig)
     
     case (VANKAPC_2DNAVIERSTOKES)
       ! Vanka for 2D Navier-Stokes problems
@@ -852,7 +854,7 @@ contains
   
 !<inputoutput>
   ! The VANKA structure to be cleaned up.
-  type(t_vanka), intent(inout)       :: rvanka
+  type(t_vanka), intent(inout) :: rvanka
 !</inputoutput>
 
 !</subroutine>
@@ -878,7 +880,7 @@ contains
 
 !<subroutine>
   
-  subroutine vanka_conformal (rvanka, rvector, rrhs, domega)
+  subroutine vanka_conformal (rvanka, rvector, rrhs, domega, rperfconfig)
   
 !<description>
   ! This routine applies the VANKA algorithm to the system $Ax=b$.
@@ -900,10 +902,14 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -911,7 +917,7 @@ contains
   type(t_vanka), intent(inout) :: rvanka
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(inout)      :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -923,7 +929,7 @@ contains
       ! internally, so afterwards we can jump out of the loop without handling
       ! the other element distributions.
       
-      call vanka_general (rvanka%rvankaGeneral, rvector, rrhs, domega)
+      call vanka_general (rvanka%rvankaGeneral, rvector, rrhs, domega, rperfconfig)
       
     case (VANKAPC_2DNAVIERSTOKES)
       ! 2D Navier Stokes problem.
@@ -970,7 +976,7 @@ contains
 
 !<subroutine>
 
-  subroutine vanka_initGeneralVanka (rmatrix,rvankaGeneral)
+  subroutine vanka_initGeneralVanka (rmatrix,rvankaGeneral,rperfconfig)
 
 !<description>
   ! This routine initialises the general VANKA solver and allocates
@@ -983,11 +989,15 @@ contains
   !  until the system is solved! (Usually this points to the system matrix in
   !  the corresponding solver structure of the underlying linear solver...)
   type(t_matrixBlock), intent(in), target :: rmatrix
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
   ! VANKA spiecific structure. Contains internal data and allocated memory.
-  type(t_vankaGeneral), intent(out)       :: rvankaGeneral
+  type(t_vankaGeneral), intent(out) :: rvankaGeneral
 !</output>
 
 !</subroutine>
@@ -995,8 +1005,17 @@ contains
     ! local variables
     logical :: bfirst
     integer :: nblocks,i,j,nmaxLocalDOFs,ndofsPerElement
-    type(t_spatialDiscretisation), pointer            :: p_rdiscretisation
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => vanka_perfconfig
+    end if
+
     ! Make sure the block matrix is not rectangular!
     if (rmatrix%nblocksPerCol .ne. rmatrix%nblocksPerRow) then
       call output_line ('System matrix is rectangular!',&
@@ -1111,7 +1130,7 @@ contains
     
     ! We know the maximum number of DOF`s now. For the later loop over the 
     ! elements, allocate memory for storing the DOF`s of an element set.
-    allocate(rvankaGeneral%p_IelementDOFs(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks))
+    allocate(rvankaGeneral%p_IelementDOFs(nmaxLocalDOFs,p_rperfconfig%NELEMSIM,nblocks))
     
     ! Remember the matrix
     rvankaGeneral%p_rmatrix => rmatrix
@@ -1131,7 +1150,7 @@ contains
   
 !<inputoutput>
   ! The general-VANKA structure to be cleaned up.
-  type(t_vankaGeneral), intent(inout)       :: rvankaGeneral
+  type(t_vankaGeneral), intent(inout) :: rvankaGeneral
 !</inputoutput>
 
 !</subroutine>
@@ -1156,7 +1175,7 @@ contains
 
 !<subroutine>
 
-  subroutine vanka_general (rvankaGeneral, rvector, rrhs, domega)
+  subroutine vanka_general (rvankaGeneral, rvector, rrhs, domega, rperfconfig)
 
 !<description>
   ! This routine applies the general-VANKA algorithm to the system $Ax=b$.
@@ -1168,19 +1187,23 @@ contains
 !<input>
   
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
   ! The general-VANKA structure. Must have been initialised with 
   ! vanka_initGeneralVanka before.
-  type(t_vankaGeneral), intent(inout)     :: rvankaGeneral
+  type(t_vankaGeneral), intent(inout) :: rvankaGeneral
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -1189,10 +1212,19 @@ contains
   integer :: i,j
   integer :: IELmax, IELset, iel, ieldistr
   integer, dimension(:), pointer :: p_IelementList
-  real(DP), dimension(:), pointer                 :: p_Drhs,p_Dvector
-  integer, dimension(:), pointer     :: p_Ipermutation
+  real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
+  integer, dimension(:), pointer :: p_Ipermutation
   type(t_spatialDiscretisation), pointer :: p_rdiscretisation
-    
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => vanka_perfconfig
+  end if
+
   ! Saved matrix and the vector(s) must be compatible!
   call lsysbl_isMatrixCompatible(rvector,rvankaGeneral%p_rmatrix,.false.)
   call lsysbl_isVectorCompatible(rvector,rrhs)
@@ -1215,13 +1247,13 @@ contains
                               p_IelementList)
       
     ! Loop over the elements - blockwise.
-    do IELset = 1, size(p_IelementList), VANKA_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
     
-      ! We always handle LINF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most VANKA_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
-      IELmax = min(size(p_IelementList),IELset-1+VANKA_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
     
       ! Loop over the blocks in the block vector to get the DOF`s everywhere.
       
@@ -1230,7 +1262,7 @@ contains
         ! Calculate the global DOF`s of all blocks.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our VANKA_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscr,&
                                      p_IelementList(IELset:IELmax), &
                                      rvankaGeneral%p_IelementDOFs(:,:,i))
@@ -1287,21 +1319,21 @@ contains
 
 !<input>
   ! The (block) RHS vector, given as one large array.
-  real(DP), dimension(:), intent(in)             :: Drhs
+  real(DP), dimension(:), intent(in) :: Drhs
   
   ! A relaxation parameter. Standard = 1.0_DP.
-  real(DP), intent(in)                           :: domega
+  real(DP), intent(in) :: domega
   
   ! A list of matrices to handle; directly specified by pointers
   ! to the substructures (data/columns/rows).
   type(t_matrixPointer79Vanka), dimension(:,:),&
-                                intent(in)       :: Rmatrices
+                                intent(in) :: Rmatrices
 
   ! Number of elements that should be processed in this sweep.
-  integer, intent(in)           :: nelements
+  integer, intent(in) :: nelements
   
   ! Number of blocks in the vectors
-  integer, intent(in)                            :: nblocks
+  integer, intent(in) :: nblocks
   
   ! Offset position of the blocks in the vector.
   ! Block i starts at position IblockOffset(i)+1 in Dvector / Drhs.
@@ -1309,14 +1341,14 @@ contains
   integer, dimension(:), intent(in) :: IblockOffset
   
   ! Number of local DOF`s in each block.
-  integer, dimension(:), intent(in)   :: InDofsLocal
+  integer, dimension(:), intent(in) :: InDofsLocal
   
   ! Total number of local DOF`s per element
-  integer, intent(in)                                    :: ndofsPerElement
+  integer, intent(in) :: ndofsPerElement
   
   ! List of DOF`s on every element for every block.
   ! DIMENSION(nmaxDOFs,nelements,nblocks)
-  integer, dimension(:,:,:), intent(in)     :: IelementDOFs
+  integer, dimension(:,:,:), intent(in) :: IelementDOFs
   
 !</input>
 
@@ -1461,7 +1493,7 @@ contains
     
     ! Memory for our local system; let us hope it is not too big :)
     real(DP), dimension(ndofsPerElement,ndofsPerElement) :: Daa
-    real(DP), dimension(ndofsPerElement)                 :: Dff
+    real(DP), dimension(ndofsPerElement) :: Dff
     real(DP) :: dscale
     integer, dimension(ndofsPerElement) :: Ipiv
     integer :: iinfo
@@ -1941,10 +1973,10 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
@@ -1959,7 +1991,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(inout)         :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! t_vanka structure that saves algorithm-specific parameters.
   type(t_vankaPointer2DNavSt), intent(inout) :: rvanka2DNavSt
@@ -2366,15 +2398,15 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -2385,13 +2417,13 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -2399,7 +2431,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -2773,18 +2805,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(inout)         :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
   
   ! A temporary vector in the size and structure of rvector
-  type(t_vectorBlock), intent(inout)         :: rtempVector
+  type(t_vectorBlock), intent(inout) :: rtempVector
 !</inputoutput>
 
 !</subroutine>
@@ -2795,13 +2827,13 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -2809,7 +2841,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -3180,18 +3212,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -3202,13 +3234,13 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -3216,7 +3248,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -3970,18 +4002,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -4008,7 +4040,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -4581,18 +4613,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -4603,13 +4635,13 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -4628,7 +4660,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp,j
+    integer :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -4932,14 +4964,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............                                   :::::: )
+      ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
-      !     (    ................ AA(4,4)                               :::::: )
-      !     (                            AA( 5, 5) ..............       :::::: )
+      !     (    ................ AA(4,4) :: :: :: )
+      !     (                            AA( 5, 5) .............. :: :: :: )
       !     (                                :                  :       :AA :: )
       !     (                                :                  :       :(B2): )
-      !     (                                ............... AA( 8, 8)  :::::: )
+      !     (                                ............... AA( 8, 8) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -5022,18 +5054,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -5044,15 +5076,15 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA,p_DA12,p_DA21,p_DA22
+    real(DP), dimension(:), pointer :: p_DA,p_DA12,p_DA21,p_DA22
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -5071,7 +5103,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp,j
+    integer :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -5405,14 +5437,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............    AA( 1, 5) ..............       :::::: )
+      ! C = ( AA(1,1)  ..............    AA( 1, 5) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B1): )
-      !     (    ................ AA(4,4)    ............... AA( 4, 8)  :::::: )
-      !     ( AA(5,1)  ..............    AA( 5, 5) ..............       :::::: )
+      !     (    ................ AA(4,4)    ............... AA( 4, 8) :: :: :: )
+      !     ( AA(5,1)  ..............    AA( 5, 5) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B2): )
-      !     (    ................ AA(8,4)    ............... AA( 8, 8)  :::::: )
+      !     (    ................ AA(8,4)    ............... AA( 8, 8) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -5491,15 +5523,15 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -5510,18 +5542,18 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
-    integer   :: NVT
-    integer    :: NMT
+    integer :: NVT
+    integer :: NMT
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
@@ -5539,7 +5571,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -5873,14 +5905,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)                                                   :::::: )
+      ! C = ( AA(1,1) :: :: :: )
       !     (          ..                                               :AA :: )
       !     (               ..                                          :(B1): )
-      !     (                     AA(9,9)                               :::::: )
-      !     (                            AA(10,10)                      :::::: )
+      !     (                     AA(9,9) :: :: :: )
+      !     (                            AA(10,10) :: :: :: )
       !     (                                      ..                   :AA :: )
       !     (                                           ..              :(B2): )
-      !     (                                                AA(18,18)  :::::: )
+      !     (                                                AA(18,18) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -5953,18 +5985,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -6342,14 +6374,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)                                                   :::::: )
+      ! C = ( AA(1,1) :: :: :: )
       !     (          ..                                               :AA :: )
       !     (               ..                                          :(B1): )
-      !     (                     AA(9,9)                               :::::: )
-      !     (                            AA(10,10)                      :::::: )
+      !     (                     AA(9,9) :: :: :: )
+      !     (                            AA(10,10) :: :: :: )
       !     (                                      ..                   :AA :: )
       !     (                                           ..              :(B2): )
-      !     (                                                AA(18,18)  :::::: )
+      !     (                                                AA(18,18) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -6412,18 +6444,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -6435,16 +6467,16 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA,p_DA22
+    real(DP), dimension(:), pointer :: p_DA,p_DA22
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
-    real(DP), dimension(:), pointer             :: p_DA12,p_DA21
+    real(DP), dimension(:), pointer :: p_DA12,p_DA21
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -6466,7 +6498,7 @@ contains
     real(DP), dimension(nnld) :: FF,UU
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -6821,14 +6853,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)                                                   :::::: )
+      ! C = ( AA(1,1) :: :: :: )
       !     (          ..                                               :AA :: )
       !     (               ..                                          :(B1): )
-      !     (                     AA(9,9)                               :::::: )
-      !     (                            AA(10,10)                      :::::: )
+      !     (                     AA(9,9) :: :: :: )
+      !     (                            AA(10,10) :: :: :: )
       !     (                                      ..                   :AA :: )
       !     (                                           ..              :(B2): )
-      !     (                                                AA(18,18)  :::::: )
+      !     (                                                AA(18,18) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -6887,15 +6919,15 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -6906,18 +6938,18 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
-    integer   :: NVT
-    integer    :: NMT
+    integer :: NVT
+    integer :: NMT
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
@@ -6934,7 +6966,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp,j
+    integer :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -7268,14 +7300,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............                                   :::::: )
+      ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
-      !     (    ................ AA(9,9)                               :::::: )
-      !     (                            AA(10,10) ..............       :::::: )
+      !     (    ................ AA(9,9) :: :: :: )
+      !     (                            AA(10,10) .............. :: :: :: )
       !     (                                :                  :       :AA :: )
       !     (                                :                  :       :(B2): )
-      !     (                                ............... AA(18,18)  :::::: )
+      !     (                                ............... AA(18,18) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -7348,18 +7380,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -7370,18 +7402,18 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
-    integer   :: NVT
-    integer    :: NMT
+    integer :: NVT
+    integer :: NMT
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
@@ -7398,7 +7430,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp,j
+    integer :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -7735,14 +7767,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............                                   :::::: )
+      ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
-      !     (    ................ AA(9,9)                               :::::: )
-      !     (                            AA(10,10) ..............       :::::: )
+      !     (    ................ AA(9,9) :: :: :: )
+      !     (                            AA(10,10) .............. :: :: :: )
       !     (                                :                  :       :AA :: )
       !     (                                :                  :       :(B2): )
-      !     (                                ............... AA(18,18)  :::::: )
+      !     (                                ............... AA(18,18) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -7813,18 +7845,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -7864,7 +7896,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp,j
+    integer :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,isubdof,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -8224,14 +8256,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............    AA(1,10) ...............       :::::: )
+      ! C = ( AA(1,1)  ..............    AA(1,10) ............... :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B1): )
-      !     (    ................ AA(9,9)    ............... AA(10,18)  :::::: )
-      !     ( AA(10,1) ..............    AA(10,10) ..............       :::::: )
+      !     (    ................ AA(9,9)    ............... AA(10,18) :: :: :: )
+      !     ( AA(10,1) ..............    AA(10,10) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B2): )
-      !     (    ............... AA(18,9)    ............... AA(18,18)  :::::: )
+      !     (    ............... AA(18,9)    ............... AA(18,18) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -8324,18 +8356,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -8346,16 +8378,16 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA11
     integer, dimension(:), pointer :: p_KldA11
-    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_Da33
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_Da33
     integer, dimension(:), pointer :: p_KdiagonalA33
     
     ! Triangulation information
@@ -8380,7 +8412,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! Offset information in arrays.
-    integer     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer :: ioffsetu,ioffsetv,ioffsetp,j
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux
@@ -9265,13 +9297,13 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
@@ -9421,18 +9453,18 @@ contains
   type(t_vankaPointer2DNavStOptC), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -9475,8 +9507,8 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetu,ioffsetv,ioffsetp
-    integer     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer :: ioffsetu,ioffsetv,ioffsetp
+    integer :: ioffsetl1,ioffsetl2,ioffsetxi
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -10071,18 +10103,18 @@ contains
   type(t_vankaPointer2DNavStOptC), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -10093,23 +10125,23 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA11
     integer, dimension(:), pointer :: p_KldA11
-    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22
     integer, dimension(:), pointer :: p_KcolA45
     integer, dimension(:), pointer :: p_KldA45
-    real(DP), dimension(:), pointer             :: p_DA44,p_DA45,p_DA54,p_DA55
-    real(DP), dimension(:), pointer             :: p_DR41,p_DR52,p_DR51,p_DR42
+    real(DP), dimension(:), pointer :: p_DA44,p_DA45,p_DA54,p_DA55
+    real(DP), dimension(:), pointer :: p_DR41,p_DR52,p_DR51,p_DR42
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12
     integer, dimension(:), pointer :: p_KcolM
     integer, dimension(:), pointer :: p_KldM
-    real(DP), dimension(:), pointer             :: p_DM
+    real(DP), dimension(:), pointer :: p_DM
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_Da33,p_Da66
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_Da33,p_Da66
     integer, dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
@@ -10141,10 +10173,10 @@ contains
     
     ! Offset information in arrays.
     ! Primal variables
-    integer     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer :: ioffsetu,ioffsetv,ioffsetp,j
     
     ! Dual variables
-    integer     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer :: ioffsetl1,ioffsetl2,ioffsetxi
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux,daux2
@@ -10933,13 +10965,13 @@ contains
   type(t_vankaPointer2DNavStOptC), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 
   ! Identifier for the part of the equation, where VANKA should be
   ! applied.
@@ -10952,7 +10984,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -10963,22 +10995,22 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA11
     integer, dimension(:), pointer :: p_KldA11
-    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22
     integer, dimension(:), pointer :: p_KcolA45
     integer, dimension(:), pointer :: p_KldA45
-    real(DP), dimension(:), pointer             :: p_DA44,p_DA45,p_DA54,p_DA55
+    real(DP), dimension(:), pointer :: p_DA44,p_DA45,p_DA54,p_DA55
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12
     integer, dimension(:), pointer :: p_KcolM
     integer, dimension(:), pointer :: p_KldM
-    real(DP), dimension(:), pointer             :: p_DM
+    real(DP), dimension(:), pointer :: p_DM
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_Da33,p_Da66
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_Da33,p_Da66
     integer, dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
@@ -11010,10 +11042,10 @@ contains
     
     ! Offset information in arrays.
     ! Primal variables
-    integer     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer :: ioffsetu,ioffsetv,ioffsetp,j
     
     ! Dual variables
-    integer     :: ioffsetl1,ioffsetl2,ioffsetxi
+    integer :: ioffsetl1,ioffsetl2,ioffsetxi
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux,daux2
@@ -12619,13 +12651,13 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
@@ -12923,15 +12955,15 @@ contains
   type(t_vankaPointer3DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -12942,15 +12974,15 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DB3
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_DD3
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DB3
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_DD3
     
     ! Triangulation information
     integer :: NEL
@@ -12958,7 +12990,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetw,ioffsetp
+    integer :: ioffsetv,ioffsetw,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 6
     integer, parameter :: lofsw = 12
@@ -13210,18 +13242,18 @@ contains
   type(t_vankaPointer3DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -13232,15 +13264,15 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DB3
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_DD3
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DB3
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_DD3
     
     ! Triangulation information
     integer :: NEL
@@ -13248,7 +13280,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetw,ioffsetp
+    integer :: ioffsetv,ioffsetw,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 6
     integer, parameter :: lofsw = 12
@@ -13911,18 +13943,18 @@ contains
   type(t_vankaPointer3DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -13933,15 +13965,15 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DB3
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_DD3
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DB3
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_DD3
     
     ! Triangulation information
     integer :: NEL
@@ -13960,7 +13992,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetw,ioffsetp,j
+    integer :: ioffsetv,ioffsetw,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsw = 2*nnvel
@@ -14132,14 +14164,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............                                   :::::: )
+      ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
-      !     (    ................ AA(4,4)                               :::::: )
-      !     (                            AA( 5, 5) ..............       :::::: )
+      !     (    ................ AA(4,4) :: :: :: )
+      !     (                            AA( 5, 5) .............. :: :: :: )
       !     (                                :                  :       :AA :: )
       !     (                                :                  :       :(B2): )
-      !     (                                ............... AA( 8, 8)  :::::: )
+      !     (                                ............... AA( 8, 8) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -14220,18 +14252,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -14256,7 +14288,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 3
     integer, parameter :: lofsp = 6
@@ -14810,18 +14842,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
   
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -14848,7 +14880,7 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j
     integer, parameter :: lofsv = 3
     integer, parameter :: lofsp = 6
@@ -15410,18 +15442,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -15432,13 +15464,13 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -15761,14 +15793,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............                                   :::::: )
+      ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
-      !     (    ................ AA(3,3)                               :::::: )
-      !     (                            AA( 4, 4) ..............       :::::: )
+      !     (    ................ AA(3,3) :: :: :: )
+      !     (                            AA( 4, 4) .............. :: :: :: )
       !     (                                :                  :       :AA :: )
       !     (                                :                  :       :(B2): )
-      !     (                                ............... AA( 6, 6)  :::::: )
+      !     (                                ............... AA( 6, 6) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -15837,18 +15869,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -15859,15 +15891,15 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA,p_DA12,p_DA21,p_DA22
+    real(DP), dimension(:), pointer :: p_DA,p_DA12,p_DA21,p_DA22
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
@@ -15886,7 +15918,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp,j
+    integer :: ioffsetv,ioffsetp,j
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -16220,14 +16252,14 @@ contains
       ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............    AA( 1, 4) ..............       :::::: )
+      ! C = ( AA(1,1)  ..............    AA( 1, 4) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B1): )
-      !     (    ................ AA(3,3)    ............... AA( 4, 6)  :::::: )
-      !     ( AA(4,1)  ..............    AA( 4, 4) ..............       :::::: )
+      !     (    ................ AA(3,3)    ............... AA( 4, 6) :: :: :: )
+      !     ( AA(4,1)  ..............    AA( 4, 4) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B2): )
-      !     (    ................ AA(6,3)    ............... AA( 6, 6)  :::::: )
+      !     (    ................ AA(6,3)    ............... AA( 6, 6) :: :: :: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -16297,18 +16329,18 @@ contains
   type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(in)         :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(in)                    :: domega
+  real(DP), intent(in) :: domega
 
   ! A list of element numbers where VANKA should be applied to.
-  integer, dimension(:)     :: IelementList
+  integer, dimension(:) :: IelementList
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(in)         :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -16319,16 +16351,16 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA11
     integer, dimension(:), pointer :: p_KldA11
-    real(DP), dimension(:), pointer             :: p_DA11,p_DA12,p_DA21,p_DA22
+    real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22
     integer, dimension(:), pointer :: p_KcolA12
     integer, dimension(:), pointer :: p_KldA12
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
-    real(DP), dimension(:), pointer             :: p_Da33
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
+    real(DP), dimension(:), pointer :: p_Da33
     integer, dimension(:), pointer :: p_KdiagonalA33
     
     ! Triangulation information
@@ -16353,7 +16385,7 @@ contains
     integer :: Ipiv(nnld),ilapackInfo
     
     ! Offset information in arrays.
-    integer     :: ioffsetu,ioffsetv,ioffsetp,j
+    integer :: ioffsetu,ioffsetv,ioffsetp,j
     
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux

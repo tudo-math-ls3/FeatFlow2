@@ -182,7 +182,6 @@ module griddeform
     ! tells whether the structure needs to be reinitialised
     logical             :: breinit = .false.
 
-
   end type
   
   public :: t_hgridLevels
@@ -331,6 +330,13 @@ module griddeform
   !</typeblock>
   
 !</types>    
+
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: griddef_perfconfig
+
+  !************************************************************************
 
   public :: griddef_deformationInit
   public :: griddef_DeformationDone
@@ -1139,7 +1145,7 @@ contains
                                         h_Dcontrib,&
                                         bstartNew, blevelHasChanged, bterminate, &
                                         bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,& 
-                                        def_monitorfct)
+                                        def_monitorfct,rperfconfig)
   !<description>
     ! This subroutine is the main routine for the grid deformation process, as all 
     ! necessary steps are included here. For performing grid deformation, it is sufficient
@@ -1170,21 +1176,25 @@ contains
 
     ! index of boundary condition related to the deformation PDE
     integer, intent(in):: ibcIdx
-  !</input>
 
     ! flag for grid checking: if true, the deformation process would lead to
     ! a grid with tangled elements
     logical , intent(in):: bdegenerated
 
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+    
+  !</input>
+
   !<inoutput>
     ! handle of vector with elementwise error contributions
     integer, intent(inout):: h_Dcontrib
   !</inoutput>
-  
-    ! A callback routine for the monitor function
-    include 'intf_monitorfct.inc'
-    optional :: def_monitorfct
-  
 
 !</subroutine>
 
@@ -1248,7 +1258,7 @@ contains
     ! perform one deformation step: This routine appplies deformation to the
     call  griddef_performOneDefStep(rgriddefInfo,&
                                     p_DblendPar(idef), NLMAX, NLMAX,&
-                                    def_monitorfct)
+                                    def_monitorfct,rperfconfig)
      
     ! nullifiy where neccesary 
     call griddef_cleanLevels(rgriddefInfo%p_rhLevels,NLMIN,NLMAX)
@@ -1323,7 +1333,7 @@ contains
 !<subroutine>
   subroutine griddef_performOneDefStep(rgriddefInfo,&
                                        dblendpar, ilevelODE, ilevel,&
-                                       def_monitorfct)
+                                       def_monitorfct,rperfconfig)
   !<description>
     ! This subroutine performs one deformation step of the enhanced deformation method.
   !</description>
@@ -1342,10 +1352,16 @@ contains
     
     ! blending parameter for monitorfunction sf + (1-s)g
     real(DP), intent(inout) :: dblendpar
-  !</input>
+
     ! A callback routine for the monitor function
     include 'intf_monitorfct.inc'
     optional :: def_monitorfct
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
+  !</input>
 
 !</subroutine>
 
@@ -1417,7 +1433,7 @@ contains
       end if
 
       ! normalise the reciprocal of the functions
-      call griddef_normaliseFctsInv(rgriddefInfo,i)
+      call griddef_normaliseFctsInv(rgriddefInfo,i,rperfconfig)
     
     
       
@@ -1891,19 +1907,24 @@ contains
   ! ***************************************************************************   
 
 !<subroutine>   
-  subroutine griddef_normaliseFctsInv(rgriddefInfo,iLevel)
-  !<description>
+  subroutine griddef_normaliseFctsInv(rgriddefInfo,iLevel,rperfconfig)
+!<description>
     ! 
     ! 
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<input>
+    integer, intent(in) :: iLevel
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
     ! structure containing all parameter settings for grid deformation
     type(t_griddefInfo),intent(inout) :: rgriddefInfo
-    
-    integer, intent(in) :: iLevel
-    
-  !</inputoutput>
+!</inputoutput>
 
 !</subroutine>
 
@@ -1940,7 +1961,8 @@ contains
                               p_DelementVolume)
   
   ! Integrate the functions f and g
-  call griddef_normaliseFctsInvAux(rgriddefInfo,iLevel,dIntF1,dIntF2,domega)
+  call griddef_normaliseFctsInvAux(rgriddefInfo, iLevel, dIntF1, dIntF2,&
+                                   domega, rperfconfig)
   
   ! compute the scaling factor
   dScale1 = dintF1/domega 
@@ -1957,7 +1979,7 @@ contains
 !<subroutine>
 
   subroutine griddef_normaliseFctsInvAux(rgriddefInfo,iLevel,&
-                                         dValue1,dValue2,dOm)
+                                         dValue1,dValue2,dOm,rperfconfig)
 
 !<description>
   !
@@ -1966,12 +1988,17 @@ contains
   !
 !</description>
 
+!<input>
+  integer, intent(in) :: iLevel
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
 !<inputoutput>
   ! structure containing all parameter settings for grid deformation
   type(t_griddefInfo),intent(inout) :: rgriddefInfo
-
-  integer, intent(in) :: iLevel
-
 !</inputoutput>
 
 !<output>
@@ -2037,7 +2064,7 @@ contains
   ! Pointer to the values of the function that are computed by the callback routine.
   real(dp), dimension(:,:,:), allocatable :: Dcoefficients
   
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
   
@@ -2056,6 +2083,15 @@ contains
   integer :: cevaluationTag
   
   real(dp) :: daux1,daux2
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => griddef_perfconfig
+    end if
 
     rdiscretisation => rgriddefInfo%p_rhLevels(iLevel)%rdiscretisation      
 
@@ -2082,8 +2118,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
     
     dValue1 = 0.0_DP
     dValue2 = 0.0_DP
@@ -2152,19 +2188,19 @@ contains
       NEL = p_relementDistribution%NEL
     
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global doF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global doF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global doF`s of our p_rperfconfig%NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1),&
                                      p_IelementList(IELset:IELmax),IdofsTest)
                                      
@@ -2341,7 +2377,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine griddef_createRhs (rgriddefInfo,iLevel)
+  subroutine griddef_createRhs (rgriddefInfo,iLevel,rperfconfig)
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
   ! The discretisation is assumed to be conformal, i.e. the doF`s
@@ -2359,6 +2395,11 @@ contains
 !</description>
 
 !<input>
+  integer, intent(in) :: iLevel
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2367,9 +2408,6 @@ contains
 
   ! structure containing all parameter settings for grid deformation
   type(t_griddefInfo),intent(inout) :: rgriddefInfo
-  
-  integer, intent(in) :: iLevel
-  
 !</inputoutput>
 
 !</subroutine>
@@ -2439,13 +2477,11 @@ contains
   type(t_elementDistribution), pointer :: p_elementDistribution
   type(t_elementDistribution), pointer :: p_elementDistributionFunc
   type(t_blockDiscretisation), pointer :: rdiscretisation 
-
-
   
   ! Number of elements in the current element distribution
   integer :: NEL
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
   
@@ -2457,9 +2493,16 @@ contains
   type(t_evalElementSet) :: revalSubset
   logical :: bcubPtsInitialised
   type(t_vectorScalar), pointer :: rvectorArea,rvectorMon,rvectorRhs
-  ! Create a t_discreteBC structure where we store all discretised boundary
-  ! conditions.
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
   
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => griddef_perfconfig
+  end if
+
   ! we do not want to write this name every time  
   rvectorArea => rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1%RvectorBlock(1)
   rvectorMon  => rgriddefInfo%p_rhLevels(iLevel)%rvectorMonFuncQ1%RvectorBlock(1)      
@@ -2487,8 +2530,8 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it is at most
-  ! LINF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(LINF_NELEMSIM,p_rtriangulation%NEL)
+  ! NELEMSIM. This is only used for allocating some arrays.
+  nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
@@ -2559,22 +2602,24 @@ contains
     NEL = p_elementDistribution%NEL
   
     ! Loop over the elements - blockwise.
-    do IELset = 1, NEL, LINF_NELEMSIM
+    do IELset = 1, NEL, p_rperfconfig%NELEMSIM
     
-      ! We always handle LINF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
       
-      IELmax = min(NEL,IELset-1+LINF_NELEMSIM)
+      IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
     
       ! Calculate the global doF`s into IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global doF`s of our LINF_NELEMSIM elements simultaneously.
-      call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
+      ! global doF`s of our NELEMSIM elements simultaneously.
+      call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1),&
+                                   p_IelementList(IELset:IELmax), &
                                    IdofsTest)
-      call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
+      call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1),&
+                                   p_IelementList(IELset:IELmax), &
                                    IdofsFunc)
                                    
       !call ZTIME(DT(4))
@@ -5137,7 +5182,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
                                         h_Dcontrib,&
                                         bstartNew, blevelHasChanged, bterminate, &
                                         bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,& 
-                                        def_monitorfct)
+                                        def_monitorfct,rperfconfig)
   !<description>
     ! This subroutine is the main routine for the grid deformation process, as all 
     ! necessary steps are included here. For performing grid deformation, it is sufficient
@@ -5168,21 +5213,25 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
     ! index of boundary condition related to the deformation PDE
     integer, intent(in):: ibcIdx
-  !</input>
 
     ! flag for grid checking: if true, the deformation process would lead to
     ! a grid with tangled elements
     logical , intent(in):: bdegenerated
 
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
+  !</input>
+
   !<inoutput>
     ! handle of vector with elementwise error contributions
     integer, intent(inout):: h_Dcontrib
   !</inoutput>
-  
-    ! A callback routine for the monitor function
-    include 'intf_monitorfct.inc'
-    optional :: def_monitorfct
-  
 
 !</subroutine>
 
@@ -5245,7 +5294,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !    ! perform one deformation step: This routine appplies deformation to the
     call griddef_performOneDefStep3D(rgriddefInfo,&
                                      p_DblendPar(idef), NLMAX, NLMAX,&
-                                     def_monitorfct)
+                                     def_monitorfct,rperfconfig)
      
     ! nullifiy where neccesary 
     if(idef .ne. rgriddefInfo%nadaptionSteps)then
@@ -5260,7 +5309,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !<subroutine>
   subroutine griddef_performOneDefStep3D(rgriddefInfo,&
                                          dblendpar, ilevelODE, ilevel,&
-                                         def_monitorfct)
+                                         def_monitorfct,rperfconfig)
   !<description>
     ! This subroutine performs one deformation step of the enhanced deformation method.
   !</description>
@@ -5279,10 +5328,15 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     
     ! blending parameter for monitorfunction sf + (1-s)g
     real(DP), intent(inout) :: dblendpar
-  !</input>
+
     ! A callback routine for the monitor function
     include 'intf_monitorfct.inc'
     optional :: def_monitorfct
+    
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  !</input>
 
 !</subroutine>
 
@@ -5343,8 +5397,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
       else
         ! or build a test monitor function
         call griddef_buildMonFuncTest(rgriddefInfo, i)
-      end if
-      
+      end if     
 
       ! blend monitor with current area distribution, if necessary
       if(bBlending) then
@@ -5354,15 +5407,13 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
       end if
 
       ! normalise the reciprocal of the functions
-      call griddef_normaliseFctsInv(rgriddefInfo,i)
-    
-    
+      call griddef_normaliseFctsInv(rgriddefInfo,i,rperfconfig)
       
       ! create the matrix for the poisson problem
       call griddef_createMatrixDef(rgriddefInfo,i)
 
       ! create rhs for deformation problem
-      call griddef_createRhs(rgriddefInfo,i)
+      call griddef_createRhs(rgriddefInfo,i,rperfconfig)
 !    
     end do
     

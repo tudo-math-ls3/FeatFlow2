@@ -126,6 +126,13 @@ module analyticprojection
 !</typeblock>
 
 !</types>
+  
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: anprj_perfconfig
+  
+  !************************************************************************
 
 contains
 
@@ -350,7 +357,7 @@ contains
 !<subroutine>
 
   subroutine anprj_discrDirect (rvector,&
-      ffunctionReference, rcollection, iorder)
+      ffunctionReference, rcollection, iorder, rperfconfig)
       
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
@@ -389,6 +396,10 @@ contains
   ! approximation" to the given function -- which means by evaluating
   ! in edge midpoints.
   integer, intent(in), optional :: iorder
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -443,7 +454,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -462,6 +473,15 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => anprj_perfconfig
+    end if
+    
     ! Evaluate optional parameters.
     iactualorder = 0
     if (present(iorder)) iactualorder = iorder
@@ -479,8 +499,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(1000,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
     
     ! Get the data of the FE function we want to initialise.
     ! Clear the FE function in-advance.
@@ -664,18 +684,18 @@ contains
       NEL = p_relementDistribution%NEL
     
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, 1000
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
-        IELmax = min(NEL,IELset-1+1000)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                          

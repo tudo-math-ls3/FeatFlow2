@@ -241,6 +241,18 @@ module fsystem
   
 !</constantblock>
 
+!<constantblock description="Legacy constants">
+
+  integer, parameter :: BILF_NELEMSIM = 128
+  integer, parameter :: LINF_NELEMSIM = 256
+  integer, parameter :: TRILF_NELEMSIM = 128
+  integer, parameter :: MLOP_NELEMSIM = 100
+  integer, parameter :: VANKA_NELEMSIM = 1000
+  
+  !$ integer, parameter :: QSOL_NEQMIN_OMP = 1000
+
+!</constantblock>
+
 !</constants>
 
 !************************************************************************
