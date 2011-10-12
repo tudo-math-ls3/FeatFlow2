@@ -295,20 +295,12 @@ module linearformevaluation
 
 !</types>
 
-!<constants>
-!<constantblock description="Constants defining the blocking of the assembly">
-
-  ! Number of elements to handle simultaneously when building vectors
-#ifndef LINF_NELEMSIM
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: LINF_NELEMSIM = 256
-#else
-  integer, public            :: LINF_NELEMSIM = 256
-#endif
-#endif
+  !************************************************************************
   
-!</constantblock>
-!</constants>
+  ! global performance configuration
+  type(t_perfconfig), target, save :: linf_perfconfig
+
+  !************************************************************************
 
   public :: linf_buildVectorScalar
   public :: linf_buildVectorScalar2
@@ -342,7 +334,8 @@ contains
 !<subroutine>
 
   subroutine linf_buildVectorScalar (rdiscretisation, rform, bclear, rvector,&
-                                     fcoeff_buildVectorSc_sim, rcollection)
+                                     fcoeff_buildVectorSc_sim, rcollection,&
+                                     rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -370,6 +363,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -405,7 +402,7 @@ contains
       
     case(ST_DOUBLE)
       call linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&  
-                                      fcoeff_buildVectorSc_sim, rcollection)
+                                      fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 
     case DEFAULT
       call output_line('Single precision vectors currently not supported!',&
@@ -426,7 +423,8 @@ contains
 !<subroutine>
 
   subroutine linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&
-                                        fcoeff_buildVectorSc_sim, rcollection)
+                                        fcoeff_buildVectorSc_sim, rcollection,&
+                                        rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
@@ -461,6 +459,10 @@ contains
   ! function <tex>$f$</tex> which is to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -480,6 +482,9 @@ contains
   integer :: IEL, IELmax, IELset, IDOFE
   real(DP) :: OM,AUX
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
   
@@ -532,19 +537,23 @@ contains
   ! Current element distribution
   type(t_elementDistribution), pointer :: p_relementDistribution
   
-  ! Number of elements in a block. Normally =LINF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
   
   ! Pointer to the coefficients that are computed by the callback routine.
   real(DP), dimension(:,:,:), allocatable :: Dcoefficients
-  
-  ! A t_domainIntSubset structure that is used for storing information
+    ! A t_domainIntSubset structure that is used for storing information
   ! and passing it to callback routines.
   type(t_domainIntSubset) :: rintSubset
   type(t_evalElementSet) :: revalElementSet
   logical :: bcubPtsInitialised
   
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => linf_perfconfig
+  end if
   
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the linear form and set BDER
@@ -606,8 +615,8 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it is at most
-  ! LINF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(LINF_NELEMSIM, p_rtriangulation%NEL)
+  ! NELEMSIM. This is only used for allocating some arrays.
+  nelementsPerBlock = min(p_rperfconfig%NELEMSIM, p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
@@ -658,7 +667,8 @@ contains
     !$omp parallel default(shared) &
     !$omp private(bcubPtsInitialised,AUX,DbasTest,Dcoefficients,DlocalData,&
     !$omp         IA,IALBET,ICUBP,IDOFE,IEL,IELmax,IdofsTest,OM,cevaluationTag,&
-    !$omp         p_Ddetj,revalElementSet,rintSubset)
+    !$omp         p_Ddetj,revalElementSet,rintSubset)&
+    !$omp if (size(p_IelementList) > p_rperfconfig%NELEMMIN_OMP)
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -880,7 +890,7 @@ contains
 
   subroutine linf_buildVectorScalarBdr1D (rform, bclear, rvector,&
                                           fcoeff_buildVectorScBdr1D_sim,&
-                                          iboundaryComp, rcollection)
+                                          iboundaryComp, rcollection, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -909,6 +919,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorScBdr1D.inc'
   optional :: fcoeff_buildVectorScBdr1D_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -993,7 +1007,7 @@ contains
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc)
+                CUB_G1_1D, NELbdc, rperfconfig)
             call linf_allocAssemblyData(rvectorAssembly)
             
             ! Assemble the data all elements
@@ -1039,7 +1053,7 @@ contains
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
                   rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc)
+                  CUB_G1_1D, NELbdc, rperfconfig)
               call linf_allocAssemblyData(rvectorAssembly)
               
               ! Assemble the data for one element
@@ -1078,7 +1092,8 @@ contains
 
   subroutine linf_buildVectorScalarBdr2D (rform, ccubType, bclear, rvector,&
                                           fcoeff_buildVectorScBdr2D_sim,&
-                                          rboundaryRegion, rcollection)
+                                          rboundaryRegion, rcollection,&
+                                          rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1110,6 +1125,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorScBdr2D.inc'
   optional :: fcoeff_buildVectorScBdr2D_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1133,6 +1152,15 @@ contains
     integer, dimension(:), pointer :: IelementList, IelementOrientation
     integer :: ibdc,ielementDistr,NELbdc
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
@@ -1214,12 +1242,13 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(LINF_NELEMSIM, NELbdc))
+                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
             
             ! Assemble the data for all elements in this element distribution
             call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
+                DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim,&
+                rcollection, rperfconfig)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -1240,7 +1269,7 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, LINF_NELEMSIM)
+                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
             
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
@@ -1270,7 +1299,8 @@ contains
                 ! Assemble the data for all elements in this element distribution
                 call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                    DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
+                    DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim,&
+                    rcollection, rperfconfig)
                 
               end if
               
@@ -1305,7 +1335,7 @@ contains
 
   subroutine linf_buildVecIntlScalarBdr1D (rform, bclear, rvector,&
                                            fcoeff_buildVectorBlBdr1D_sim,&
-                                           iboundaryComp, rcollection)
+                                           iboundaryComp, rcollection, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1334,6 +1364,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
   optional :: fcoeff_buildVectorBlBdr1D_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1418,7 +1452,7 @@ contains
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc)
+                CUB_G1_1D, NELbdc, rperfconfig)
             call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
             
             ! Assemble the data all elements
@@ -1464,7 +1498,7 @@ contains
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
                   rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc)
+                  CUB_G1_1D, NELbdc, rperfconfig)
               call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
               
               ! Assemble the data for one element
@@ -1506,7 +1540,8 @@ contains
 
   subroutine linf_buildVecIntlScalarBdr2D (rform, ccubType, bclear, rvector,&
                                            fcoeff_buildVectorBlBdr2D_sim,&
-                                           rboundaryRegion, rcollection)
+                                           rboundaryRegion, rcollection,&
+                                           rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1538,6 +1573,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1560,6 +1599,15 @@ contains
     real(DP), dimension(:,:), pointer :: DedgePosition
     integer, dimension(:), pointer :: IelementList, IelementOrientation
     integer :: ibdc,ielementDistr,NELbdc
+    
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
     
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
@@ -1636,12 +1684,13 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(LINF_NELEMSIM, NELbdc))
+                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
             
             ! Assemble the data for all elements in this element distribution
             call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
+                DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
+                rcollection, rperfconfig)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -1662,7 +1711,7 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, LINF_NELEMSIM)
+                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
             
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
@@ -1692,7 +1741,8 @@ contains
                 ! Assemble the data for all elements in this element distribution
                 call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                    DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
+                    DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
+                    rcollection, rperfconfig)
                 
               end if
               
@@ -1726,7 +1776,7 @@ contains
 !<subroutine>
 
   subroutine linf_initAssembly(rvectorAssembly,rform,&
-      celement,ccubType,nelementsPerBlock)
+      celement,ccubType,nelementsPerBlock,rperfconfig)
 
 !<description>
   ! Initialise a vector assembly structure for assembling a linear form.
@@ -1743,8 +1793,12 @@ contains
   integer(I32), intent(in) :: ccubType
   
   ! Optional: Maximum number of elements to process simultaneously.
-  ! If not specified, LINF_NELEMSIM is assumed.
+  ! If not specified, NELEMSIM is assumed.
   integer, intent(in), optional :: nelementsPerBlock
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1754,13 +1808,22 @@ contains
 
 !</subroutine>
   
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! local variables
     integer :: i,i1
   
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! Initialise the structure.
     rvectorAssembly%rform = rform
     rvectorAssembly%ccubType = ccubType
-    rvectorAssembly%nelementsPerBlock = LINF_NELEMSIM
+    rvectorAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
     if (present(nelementsPerBlock)) &
         rvectorAssembly%nelementsPerBlock = nelementsPerBlock
     rvectorAssembly%celement = celement
@@ -1929,7 +1992,7 @@ contains
 !<subroutine>  
   
   subroutine linf_assembleSubmeshVector (rvectorAssembly, rvector, IelementList,&
-      fcoeff_buildVectorSc_sim, rcollection)
+      fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -1947,6 +2010,9 @@ contains
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1988,6 +2054,15 @@ contains
     ! A vector holding the additive contributions of elements
     real(DP), dimension(:,:), allocatable :: DlocalData
   
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rvector,p_Ddata)
     indof = rvectorAssembly%indof
@@ -2006,7 +2081,8 @@ contains
     !$omp private(DlocalData,IELmax,cevaluationTag,daux,domega,ia,ialbet,&
     !$omp         icubp,idofe,iel,p_Dbas,p_Dcoefficients,p_Ddetj,p_Domega,&
     !$omp         p_Idescriptors,p_Idofs,p_revalElementSet,rintSubset,&
-    !$omp         rlocalVectorAssembly)
+    !$omp         rlocalVectorAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly)
     
@@ -2246,7 +2322,7 @@ contains
 !<subroutine>  
   
   subroutine linf_assembleSubmeshVecSc (rvectorAssembly, rvector, IelementList,&
-      fcoeff_buildVectorBl_sim, rcollection)
+      fcoeff_buildVectorBl_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -2264,6 +2340,9 @@ contains
   include 'intf_coefficientVectorBl.inc'
   optional :: fcoeff_buildVectorBl_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2306,6 +2385,15 @@ contains
     real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
   
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rvector,p_Ddata)
     indof = rvectorAssembly%indof
@@ -2324,7 +2412,8 @@ contains
     !$omp private(Daux,DlocalData,IELmax,cevaluationTag,domega,ia,ialbet,&
     !$omp         icubp,idofe,iel,ivar,p_Dbas,p_Dcoefficients,p_Ddetj,p_Domega,&
     !$omp         p_Idescriptors,p_Idofs,p_revalElementSet,rintSubset,&
-    !$omp         rlocalVectorAssembly)
+    !$omp         rlocalVectorAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
    
@@ -2801,7 +2890,7 @@ contains
   
   subroutine linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorScBdr2D_sim, rcollection)
+      fcoeff_buildVectorScBdr2D_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -2829,6 +2918,10 @@ contains
   include 'intf_coefficientVectorScBdr2D.inc'
   optional :: fcoeff_buildVectorScBdr2D_sim 
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
 !</input>
 
 !<inputoutput>
@@ -2878,6 +2971,14 @@ contains
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -2908,7 +3009,8 @@ contains
     !$omp         IELmax,cevaluationTag,daux,dlen,domega,ia,ialbet,icubp,idofe,&
     !$omp         iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
-    !$omp         rintSubset,rlocalVectorAssembly)
+    !$omp         rintSubset,rlocalVectorAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly)
     
@@ -3452,7 +3554,7 @@ contains
   
   subroutine linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorBlBdr2D_sim, rcollection)
+      fcoeff_buildVectorBlBdr2D_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -3480,6 +3582,10 @@ contains
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim 
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
 !</input>
 
 !<inputoutput>
@@ -3530,6 +3636,14 @@ contains
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
     
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -3560,7 +3674,8 @@ contains
     !$omp         IELmax,cevaluationTag,dlen,domega,ia,ialbet,icubp,idofe,&
     !$omp         iel,ivar,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
-    !$omp         rintSubset,rlocalVectorAssembly)
+    !$omp         rintSubset,rlocalVectorAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
     
@@ -3869,7 +3984,7 @@ contains
 !<subroutine>  
   
   subroutine linf_assembleSubmeshVecBl (rvectorAssembly, rvector,&
-      IelementList, fcoeff_buildVectorBl_sim, rcollection)
+      IelementList, fcoeff_buildVectorBl_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -3887,6 +4002,10 @@ contains
   include 'intf_coefficientVectorBl.inc'
   optional :: fcoeff_buildVectorBl_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
 !</input>
 
 !<inputoutput>
@@ -3929,6 +4048,15 @@ contains
     real(DP), dimension(:,:,:), allocatable :: DlocalData
     real(DP), dimension(:), allocatable :: Daux
   
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! Get some pointers for faster access
     call lsysbl_getbase_double (rvector,p_Ddata)
     indof = rvectorAssembly%indof
@@ -3947,7 +4075,8 @@ contains
     !$omp private(Daux,DlocalData,IELmax,cevaluationTag,domega,ia,ialbet,&
     !$omp         iblock,icubp,idofe,iel,p_Dbas,p_Dcoefficients,p_Ddetj,p_Domega,&
     !$omp         p_Idescriptors,p_Idofs,p_revalElementSet,rintSubset,&
-    !$omp         rlocalVectorAssembly)
+    !$omp         rlocalVectorAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
     
@@ -4434,7 +4563,7 @@ contains
   
   subroutine linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorBlBdr2D_sim, rcollection)
+      fcoeff_buildVectorBlBdr2D_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -4462,6 +4591,10 @@ contains
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim 
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
 !</input>
 
 !<inputoutput>
@@ -4512,7 +4645,15 @@ contains
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
     
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
 
@@ -4542,7 +4683,8 @@ contains
     !$omp         IELmax,cevaluationTag,daux,dlen,domega,ia,ialbet,iblock,icubp,&
     !$omp         idofe,iel,k,p_Dbas,p_Dcoefficients,p_Dcoords,p_DcubPtsRef,&
     !$omp         p_Domega,p_Idescriptors,p_Idofs,p_revalElementSet,&
-    !$omp         rintSubset,rlocalVectorAssembly)
+    !$omp         rintSubset,rlocalVectorAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
     call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
     
@@ -4852,7 +4994,8 @@ contains
 !<subroutine>
 
   subroutine linf_buildVectorScalar2 (rform, bclear, rvector,&
-                                      fcoeff_buildVectorSc_sim, rcollection)
+                                      fcoeff_buildVectorSc_sim, rcollection,&
+                                      rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -4886,6 +5029,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4906,6 +5053,15 @@ contains
     integer :: ielementDistr
     integer, dimension(:), pointer :: p_IelementList
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
@@ -4957,11 +5113,11 @@ contains
           call linf_initAssembly(rvectorAssembly,rform,&
               rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
               rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
-              min(LINF_NELEMSIM, size(p_IelementList)))
+              min(p_rperfconfig%NELEMSIM, size(p_IelementList)), rperfconfig)
           
           ! Assemble the data for all elements in this element distribution
           call linf_assembleSubmeshVector (rvectorAssembly,rvector,&
-              p_IelementList,fcoeff_buildVectorSc_sim,rcollection)
+              p_IelementList,fcoeff_buildVectorSc_sim,rcollection,rperfconfig)
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
@@ -4986,7 +5142,8 @@ contains
 !<subroutine>
 
   subroutine linf_buildVecIntlScalar2 (rform, bclear, rvector,&
-                                       fcoeff_buildVectorBl_sim, rcollection)
+                                       fcoeff_buildVectorBl_sim, rcollection,&
+                                       rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5020,6 +5177,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBl.inc'
   optional :: fcoeff_buildVectorBl_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5039,6 +5200,15 @@ contains
     type(t_linfVectorAssembly) :: rvectorAssembly
     integer :: ielementDistr
     integer, dimension(:), pointer :: p_IelementList
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
@@ -5085,11 +5255,11 @@ contains
           call linf_initAssembly(rvectorAssembly,rform,&
               rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
               rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
-              min(LINF_NELEMSIM, size(p_IelementList)))
+              min(p_rperfconfig%NELEMSIM, size(p_IelementList)), rperfconfig)
           
           ! Assemble the data for all elements in this element distribution
           call linf_assembleSubmeshVecSc (rvectorAssembly,rvector,&
-              p_IelementList,fcoeff_buildVectorBl_sim,rcollection)
+              p_IelementList,fcoeff_buildVectorBl_sim,rcollection,rperfconfig)
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
@@ -5114,7 +5284,8 @@ contains
 !<subroutine>
 
   subroutine linf_buildVectorBlock2 (rform, bclear, rvectorBlock,&
-                                     fcoeff_buildVectorBl_sim, rcollection)
+                                     fcoeff_buildVectorBl_sim, rcollection,&
+                                     rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5148,6 +5319,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBl.inc'
   optional :: fcoeff_buildVectorBl_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5170,6 +5345,15 @@ contains
     integer, dimension(:), pointer :: p_IelementList
     logical :: bcompatible
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! If the vector does not exist, stop here.
     if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
@@ -5231,11 +5415,11 @@ contains
           call linf_initAssembly(rvectorAssembly,rform,&
               p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
               p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
-              min(LINF_NELEMSIM, size(p_IelementList)))
+              min(p_rperfconfig%NELEMSIM, size(p_IelementList)), rperfconfig)
 
           ! Assemble the data for all elements in this element distribution
           call linf_assembleSubmeshVecBl (rvectorAssembly,rvectorBlock,&
-              p_IelementList,fcoeff_buildVectorBl_sim,rcollection)
+              p_IelementList,fcoeff_buildVectorBl_sim,rcollection,rperfconfig)
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
@@ -5261,7 +5445,7 @@ contains
 
   subroutine linf_buildVectorBlockBdr1D (rform, bclear, rvectorBlock,&
                                          fcoeff_buildVectorBlBdr1D_sim,&
-                                         iboundaryComp, rcollection)
+                                         iboundaryComp, rcollection, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5290,6 +5474,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
   optional :: fcoeff_buildVectorBlBdr1D_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5389,7 +5577,7 @@ contains
             ! Initialise a vector assembly structure for all elements
             call linf_initAssembly(rvectorAssembly, rform,&
                 p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc)
+                CUB_G1_1D, NELbdc, rperfconfig)
             call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
             
             ! Assemble the data all elements
@@ -5435,7 +5623,7 @@ contains
               ! Initialise a vector assembly structure for one element
               call linf_initAssembly(rvectorAssembly, rform,&
                   p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc)
+                  CUB_G1_1D, NELbdc, rperfconfig)
               call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
               
               ! Assemble the data for one element
@@ -5474,7 +5662,7 @@ contains
 
   subroutine linf_buildVectorBlockBdr2D (rform, ccubType, bclear, rvectorBlock,&
                                          fcoeff_buildVectorBlBdr2D_sim,&
-                                         rboundaryRegion, rcollection)
+                                         rboundaryRegion, rcollection, rperfconfig)
   
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5506,6 +5694,10 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5531,6 +5723,15 @@ contains
     integer :: ibdc,ielementDistr,NELbdc,iblock
     logical :: bcompatible
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => linf_perfconfig
+    end if
+
     ! If the vector does not exist, stop here.
     if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then  
       call output_line('Vector not available!',&
@@ -5622,12 +5823,13 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(LINF_NELEMSIM, NELbdc))
+                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
             
             ! Assemble the data for all elements in this element distribution
             call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
+                DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
+                rcollection, rperfconfig)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -5648,7 +5850,7 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, LINF_NELEMSIM)
+                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
             
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
@@ -5678,7 +5880,8 @@ contains
                 ! Assemble the data for all elements in this element distribution
                 call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                    DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim, rcollection)
+                    DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
+                    rcollection, rperfconfig)
                 
               end if
               
@@ -5712,7 +5915,7 @@ contains
 !<subroutine>
 
   subroutine linf_buildSimpleVector(rvector, fcoeff_buildVectorSc_sim, &
-                                    bclear, cderiv, rcollection)
+                                    bclear, cderiv, rcollection, rperfconfig)
   
 !<description>
 !</description>
@@ -5729,6 +5932,10 @@ contains
   ! OPTIONAL: A derivative specifier for the test functions. If not given,
   ! DER_FUNC is used.
   integer, optional, intent(in) :: cderiv
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5759,14 +5966,14 @@ contains
     if(present(fcoeff_buildVectorSc_sim)) then
       if(present(rcollection)) then
         call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-            rvector, fcoeff_buildVectorSc_sim, rcollection)
+            rvector, fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
       else
         call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-            rvector, fcoeff_buildVectorSc_sim)
+            rvector, fcoeff_buildVectorSc_sim, rperfconfig=rperfconfig)
       end if
     else
       call linf_buildVectorScalar(rvector%p_rspatialDiscr, rform, bclear2, &
-          rvector)
+          rvector, rperfconfig=rperfconfig)
     end if
 
   end subroutine

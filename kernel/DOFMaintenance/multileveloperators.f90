@@ -111,19 +111,6 @@ module multileveloperators
 
 !<constants>
 
-!<constantblock description="Constants defining the blocking of the assembly">
-
-  ! Number of elements to handle simultaneously when building matrices
-#ifndef MLOP_NELEMSIM
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: MLOP_NELEMSIM = 100
-#else
-  integer, public            :: MLOP_NELEMSIM = 100
-#endif
-#endif
-  
-!</constantblock>
-
 !<constantblock description="Averaging specifiers for prolongation matrix assembly">
 
   ! Use arithmetic averaging
@@ -139,6 +126,13 @@ module multileveloperators
 
 !</constants>
 
+  !************************************************************************
+
+  ! global performance configuration
+  type(t_perfconfig), target, save :: mlop_perfconfig
+
+  !************************************************************************
+
 contains
 
 
@@ -147,7 +141,8 @@ contains
 !<subroutine>
 
   subroutine mlop_create2LvlMatrixStruct (rdiscretisationCoarse,&
-                      rdiscretisationFine, iformat, rmatrixScalar, imemguess)
+                      rdiscretisationFine, iformat, rmatrixScalar,&
+                      imemguess, rperfconfig)
   
 !<description>
   ! This routine allows to calculate the structure of a finite-element matrix
@@ -172,6 +167,9 @@ contains
   ! entries) is assumed.
   integer, intent(in), optional :: imemGuess
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -219,13 +217,13 @@ contains
     
       ! Call the creation routine for structure 9:
       call mlop_create2LvlMatStruct9_conf (rdiscretisationCoarse,&
-                           rdiscretisationFine,rmatrixScalar,imem)
+                           rdiscretisationFine,rmatrixScalar,imem,rperfconfig)
      
     case (LSYSSC_MATRIX7)
     
       ! Call the creation routine for structure 9:
       call mlop_create2LvlMatStruct9_conf (rdiscretisationCoarse,&
-                           rdiscretisationFine,rmatrixScalar,imem)
+                           rdiscretisationFine,rmatrixScalar,imem,rperfconfig)
 
       ! Translate to matrix structure 7:
       call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
@@ -244,7 +242,7 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlMassMatrix (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar)
+                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a 2-Level mass matrix.
@@ -265,6 +263,9 @@ contains
   ! If .FALSE., the new matrix entries are added to the existing entries.
   logical, intent(in) :: bclear
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -313,7 +314,7 @@ contains
     select case (rmatrixScalar%cmatrixFormat) 
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar)
+                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
     
     case (LSYSSC_MATRIX7)
       ! Convert structure 7 to structure 9.For that purpose, make a backup of
@@ -326,7 +327,7 @@ contains
       
       ! Create the matrix in structure 9
       call mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar)
+                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
                                      
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -352,7 +353,8 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlProlMatrix (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,cavrgType)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      cavrgType,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a 2-Level prolongation matrix.
@@ -377,6 +379,10 @@ contains
   ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
   ! MLOP_AVRG_ARITHMETIC is used.
   integer, optional, intent(in) :: cavrgType
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -428,7 +434,8 @@ contains
     select case (rmatrixScalar%cmatrixFormat) 
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,caverage)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      caverage,rperfconfig)
     
     case (LSYSSC_MATRIX7)
       ! Convert structure 7 to structure 9.For that purpose, make a backup of
@@ -441,7 +448,8 @@ contains
       
       ! Create the matrix in structure 9
       call mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,caverage)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      caverage,rperfconfig)
                                      
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -466,7 +474,8 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlInterpMatrix (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,cavrgType)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      cavrgType,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a 2-Level interpolation matrix.
@@ -491,6 +500,10 @@ contains
   ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
   ! MLOP_AVRG_ARITHMETIC is used.
   integer, optional, intent(in) :: cavrgType
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -542,7 +555,8 @@ contains
     select case (rmatrixScalar%cmatrixFormat) 
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,caverage)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      caverage,rperfconfig)
     
     case (LSYSSC_MATRIX7)
       ! Convert structure 7 to structure 9.For that purpose, make a backup of
@@ -555,7 +569,8 @@ contains
       
       ! Create the matrix in structure 9
       call mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,caverage)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      caverage,rperfconfig)
                                      
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -580,7 +595,7 @@ contains
 !<subroutine>
   
   subroutine mlop_create2LvlMatStruct9_conf (rdiscrCoarse,rdiscrFine,&
-                                             rmatrixScalar,imemGuess)
+                                             rmatrixScalar,imemGuess,rperfconfig)
   
 !<description>
   ! This routine creates according to a given discretisation the matrix 
@@ -601,6 +616,9 @@ contains
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
   integer, intent(in) :: imemGuess
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -617,6 +635,9 @@ contains
   integer :: IELC,IELF,IELIDX,NELREF
   logical :: BSORT
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
   ! An allocateable list of handles for memory blocks. Size is dynamically 
   ! increased if there are too many columns in the matrix.
   integer, dimension(:), pointer :: p_Ihcol, p_Ihindx, p_IhTmp
@@ -680,6 +701,12 @@ contains
     
   ! Two arrays for the refinement-patch arrays of the coarse triangulation
   integer, dimension(:), pointer :: p_IrefPatchIdx, p_IrefPatch
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => mlop_perfconfig
+    end if
 
     ! The algorithm is: Test every DOF on one element against each other
     ! DOF on the same element and save the combination into a matrix
@@ -827,7 +854,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(MLOP_NELEMSIM,p_relementDistribution%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL) 
       
       ! Now calculate the number of fine mesh elements we want to process
       ! in one run. 
@@ -869,7 +896,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(MLOP_NELEMSIM,p_relementDistribution%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL) 
       
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that the trial functions
@@ -1333,7 +1360,7 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar)
+                      rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a 2-Level mass matrix.
@@ -1354,6 +1381,9 @@ contains
   ! If .FALSE., the new matrix entries are added to the existing entries.
   logical, intent(in) :: bclear
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1370,6 +1400,9 @@ contains
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
   
@@ -1437,6 +1470,12 @@ contains
   
   integer :: nmaxDerCoarse, nmaxDerFine
   integer :: nmaxRefDimCoarse, nmaxRefDimFine
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => mlop_perfconfig
+    end if
 
     ! We only need the function values as we want to assemble a mass matrix.
     Bder = .false.
@@ -1514,7 +1553,7 @@ contains
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
       ! Get the number of elements
-      nelementsCoarse = min(MLOP_NELEMSIM, p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, p_relemDistCoarse%NEL)
       
       ! Get the number of cubature points on the fine mesh
       ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
@@ -1574,9 +1613,9 @@ contains
     
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsFine))
     allocate(Dentry(inmaxdofFine,inmaxdofCoarse,nmaxelementsFine))
     
@@ -1612,7 +1651,7 @@ contains
 
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(MLOP_NELEMSIM, NELC) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC) 
       
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
@@ -1910,7 +1949,8 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,cavrgType)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      cavrgType,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a 2-Level prolongation matrix.
@@ -1934,6 +1974,10 @@ contains
   ! Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above.
   integer, intent(in) :: cavrgType
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1948,6 +1992,9 @@ contains
   integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
   
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
@@ -2030,6 +2077,12 @@ contains
   ! Maximum reference dimension
   integer :: nmaxRefDimFine, nmaxRefDimCoarse
 
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => mlop_perfconfig
+    end if
+
     ! We only need the function values as we want to assemble a mass matrix.
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -2106,7 +2159,7 @@ contains
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
       ! Get the number of elements
-      nelementsCoarse = min(MLOP_NELEMSIM, p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, p_relemDistCoarse%NEL)
       
       ! Get the number of cubature points on the fine mesh
       ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
@@ -2166,9 +2219,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsFine))
     allocate(Dentry(inmaxdofFine,inmaxdofCoarse,nmaxelementsFine))
     allocate(Dmass(inmaxdofFine,inmaxdofFine,nmaxelementsFine))
@@ -2218,7 +2271,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(MLOP_NELEMSIM,p_relemDistCoarse%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL) 
 
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
@@ -2578,7 +2631,8 @@ contains
 !<subroutine>
 
   subroutine mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
-                      rdiscretisationFine,bclear,rmatrixScalar,cavrgType)
+                      rdiscretisationFine,bclear,rmatrixScalar,&
+                      cavrgType,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a 2-Level interpolation matrix.
@@ -2602,6 +2656,10 @@ contains
   ! Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above.
   integer, intent(in) :: cavrgType
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2617,6 +2675,9 @@ contains
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
   
@@ -2697,6 +2758,12 @@ contains
   ! Maximum reference dimension
   integer :: nmaxRefDimFine, nmaxRefDimCoarse
 
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => mlop_perfconfig
+    end if
+
     ! We only need the function values as we want to assemble a mass matrix.
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -2774,7 +2841,7 @@ contains
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
       ! Get the number of elements
-      nelementsCoarse = min(MLOP_NELEMSIM, p_relemDistCoarse%NEL)
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, p_relemDistCoarse%NEL)
       
       ! Get the number of cubature points on the fine mesh
       ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
@@ -2883,7 +2950,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(MLOP_NELEMSIM,p_relemDistCoarse%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL) 
 
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered

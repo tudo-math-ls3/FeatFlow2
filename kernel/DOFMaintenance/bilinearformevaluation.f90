@@ -398,19 +398,14 @@ module bilinearformevaluation
 
 !</constantblock>
 
-!<constantblock description="Constants defining the blocking of the assembly">
-
-  ! Number of elements to handle simultaneously when building matrices
-#ifndef BILF_NELEMSIM
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: BILF_NELEMSIM = 128
-#else
-  integer, public            :: BILF_NELEMSIM = 128
-#endif
-#endif
-  
-!</constantblock>
 !</constants>
+
+  !************************************************************************
+
+  ! global performance configuration
+  type(t_perfconfig), target, save :: bilf_perfconfig
+
+  !************************************************************************
 
   public :: bilf_createMatrixStructure
   public :: bilf_buildMatrixScalar
@@ -433,7 +428,8 @@ contains
 !<subroutine>
 
   subroutine bilf_createMatrixStructure (rdiscretisationTrial,iformat,rmatrix, &
-                                         rdiscretisationTest,cconstrType,imemguess)
+                                         rdiscretisationTest,cconstrType,imemguess,&
+                                         rperfconfig)
   
 !<description>
   ! This routine allows to calculate the structure of a finite-element matrix
@@ -465,6 +461,10 @@ contains
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
   ! entries) is assumed.
   integer, intent(in), optional :: imemGuess
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -501,7 +501,7 @@ contains
       case (BILF_MATC_ELEMENTBASED)
         ! Call the creation routine for structure 9:
         call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
-            rdiscretisationTest,imem)
+            rdiscretisationTest,imem,rperfconfig)
         
       case (BILF_MATC_EDGEBASED)
       
@@ -517,7 +517,7 @@ contains
         end if
 
         call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
-            rdiscretisationTest,imem)
+            rdiscretisationTest,imem,rperfconfig)
         
       case DEFAULT
         call output_line ('Invalid matrix construction method.', &
@@ -533,7 +533,7 @@ contains
       
         ! Call the creation routine for structure 9:
         call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
-            rdiscretisationTest,imem)
+            rdiscretisationTest,imem,rperfconfig)
 
       case (BILF_MATC_EDGEBASED)
       
@@ -547,7 +547,7 @@ contains
         end if
         
         call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
-          rdiscretisationTest,imem)
+          rdiscretisationTest,imem,rperfconfig)
         
       case DEFAULT
         call output_line ('Invalid matrix construction method.', &
@@ -577,7 +577,7 @@ contains
 !<subroutine>
 
   subroutine bilf_buildMatrixScalar (rform,bclear,rmatrix,&
-      fcoeff_buildMatrixSc_sim,rcollection)
+      fcoeff_buildMatrixSc_sim,rcollection,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -611,6 +611,10 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -651,7 +655,7 @@ contains
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&  
-              fcoeff_buildMatrixSc_sim,rcollection)
+              fcoeff_buildMatrixSc_sim,rcollection,rperfconfig=rperfconfig)
         !ELSE
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrix)
         !END IF
@@ -666,7 +670,7 @@ contains
         
         ! Create the matrix in structure 9
         call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixBackup,&  
-            fcoeff_buildMatrixSc_sim,rcollection)
+            fcoeff_buildMatrixSc_sim,rcollection,rperfconfig=rperfconfig)
                                        
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -699,7 +703,7 @@ contains
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&  
-              fcoeff_buildMatrixSc_sim,rcollection)
+              fcoeff_buildMatrixSc_sim,rcollection,rperfconfig=rperfconfig)
         !ELSE
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrix)
         !END IF
@@ -715,7 +719,7 @@ contains
         
         ! Create the matrix in structure 9
         call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixBackup,&  
-            fcoeff_buildMatrixSc_sim,rcollection)
+            fcoeff_buildMatrixSc_sim,rcollection,rperfconfig=rperfconfig)
                                        
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -750,7 +754,7 @@ contains
 !<subroutine>
   
   subroutine bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
-      rdiscretisationTest,imemGuess)
+      rdiscretisationTest,imemGuess,rperfconfig)
   
 !<description>
   ! This routine creates according to a given discretisation the matrix 
@@ -776,6 +780,9 @@ contains
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
   integer, intent(in) :: imemGuess
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -785,12 +792,15 @@ contains
 !</output>
 
 !</subroutine>
-
+  
   ! local variables
   integer :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
   integer :: IDOFE, JDOFE, i, IHELP,NVE
   integer :: IEL, IELmax, IELset
   logical :: BSORT, bIdenticalTrialAndTest
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
   
   ! An allocateable list of handles for memory blocks. Size is dynamically 
   ! increased if there are too many columns in the matrix.
@@ -835,9 +845,7 @@ contains
   integer :: iallocated
   
   ! An allocateable array accepting the DOF`s of a set of elements.
-  !INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
-  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
-  integer, dimension(EL_MAXNBAS,BILF_NELEMSIM), target :: IdofsTest, IdofsTrial
+  integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
   integer, dimension(:,:), pointer :: p_IdofsTrial
   
   ! Number of local degees of freedom for trial and test functions
@@ -853,9 +861,15 @@ contains
   type(t_elementDistribution), pointer :: p_relementDistrTest
   type(t_elementDistribution), pointer :: p_relementDistrTrial
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
+
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => bilf_perfconfig
+  end if
 
   ! The algorithm is: Test every DOF on one element against each other
   ! DOF on the same element and save the combination into a matrix
@@ -912,8 +926,8 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it is at most
-  ! BILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+  ! NELEMSIM. This is only used for allocating some arrays.
+  nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
   ! Allocate a list of handles and a list of pointers corresponding to it.
   ! Initially allocate NmemBlkCount pointers
@@ -921,6 +935,9 @@ contains
   allocate(p_Ihindx(NmemBlkCount))
   allocate(p_Isize(NmemBlkCount))
   allocate(Rmemblock(NmemBlkCount))
+
+  allocate(IdofsTest(EL_MAXNBAS,p_rperfconfig%NELEMSIM))
+  allocate(IdofsTrial(EL_MAXNBAS,p_rperfconfig%NELEMSIM))
   
   ! Allocate the first memory block that receives a part of the
   ! temporary matrix structure.
@@ -1338,10 +1355,6 @@ contains
       end do ! IEL
     
     end do ! IELset
-
-    ! Clean up the DOF`s arrays    
-    !DEALLOCATE(IdofsTest)
-    !DEALLOCATE(IdofsTrial)
     
   end do ! icurrentElementDistr
   
@@ -1480,6 +1493,9 @@ contains
     call storage_free(p_Ihindx(i))
   end do
   
+  ! Clean up
+  deallocate(IdofsTest)
+  deallocate(IdofsTrial)
   deallocate(Rmemblock)
   deallocate(p_Isize)
   deallocate(p_Ihindx)
@@ -1492,7 +1508,7 @@ contains
 !<subroutine>
   
   subroutine bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
-      rdiscretisationTest,imemGuess)
+      rdiscretisationTest,imemGuess,rperfconfig)
   
 !<description>
   ! This routine creates according to a given discretisation the matrix 
@@ -1520,6 +1536,9 @@ contains
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
   integer, intent(in) :: imemGuess
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1537,6 +1556,9 @@ contains
   integer :: IEL, IELmax, IELset
   logical :: BSORT, bIdenticalTrialAndTest
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
   ! An allocateable list of handles for memory blocks. Size is dynamically 
   ! increased if there are too many columns in the matrix.
   integer, dimension(:), pointer :: p_Ihcol, p_Ihindx, p_IhTmp
@@ -1592,12 +1614,18 @@ contains
   type(t_elementDistribution), pointer :: p_relementDistrTest
   type(t_elementDistribution), pointer :: p_relementDistrTrial
 
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
   
   ! Adjacent elements
   integer, dimension(:,:), pointer :: p_Kadj
+
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => bilf_perfconfig
+  end if
 
   ! The algorithm is: Test every DOF on one element against each other
   ! DOF on the same element and save the combination into a matrix
@@ -1656,8 +1684,8 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it is at most
-  ! BILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+  ! NELEMSIM. This is only used for allocating some arrays.
+  nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
   ! Allocate a list of handles and a list of pointers corresponding to it.
   ! Initially allocate NmemBlkCount pointers
@@ -2359,7 +2387,7 @@ contains
 !  ! An allocateable array accepting the DOF`s of a set of elements.
 !  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
 !  INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
-!  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+!  !INTEGER, DIMENSION(EL_MAXNBAS,NELEMSIM), TARGET :: IdofsTest, IdofsTrial
 !  !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  
 !  ! Allocateable arrays for the values of the basis functions - 
@@ -2415,7 +2443,7 @@ contains
 !  ! Current element distribution
 !  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
 !  
-!  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+!  ! Number of elements in a block. Normally =NELEMSIM,
 !  ! except if there are less elements in the discretisation.
 !  INTEGER :: nelementsPerBlock
 !  
@@ -2508,8 +2536,8 @@ contains
 !  ! For saving some memory in smaller discretisations, we calculate
 !  ! the number of elements per block. For smaller triangulations,
 !  ! this is NEL. If there are too many elements, it is at most
-!  ! BILF_NELEMSIM. This is only used for allocating some arrays.
-!  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
+!  ! NELEMSIM. This is only used for allocating some arrays.
+!  nelementsPerBlock = MIN(NELEMSIM,p_rtriangulation%NEL)
 !  
 !  ! Get a pointer to the KVERT and DCORVG array
 !  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
@@ -2606,9 +2634,9 @@ contains
 !    
 !    ! Allocate an array saving the local matrices for all elements
 !    ! in an element set.
-!    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+!    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
 !    ! for this local matrix, but this would normally not fit to the cache
-!    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+!    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
 !    ALLOCATE(Kentry(indofTest,indofTrial,nelementsPerBlock))
 !    ALLOCATE(Dentry(indofTest,indofTrial))
 !    
@@ -3230,7 +3258,7 @@ contains
 !  ! Current element distribution
 !  TYPE(t_elementDistribution), POINTER :: p_relementDistribution
 !  
-!  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+!  ! Number of elements in a block. Normally =NELEMSIM,
 !  ! except if there are less elements in the discretisation.
 !  INTEGER :: nelementsPerBlock
 !  
@@ -3340,8 +3368,8 @@ contains
 !  ! For saving some memory in smaller discretisations, we calculate
 !  ! the number of elements per block. For smaller triangulations,
 !  ! this is NEL. If there are too many elements, it is at most
-!  ! BILF_NELEMSIM. This is only used for allocating some arrays.
-!  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
+!  ! NELEMSIM. This is only used for allocating some arrays.
+!  nelementsPerBlock = MIN(NELEMSIM,p_rtriangulation%NEL)
 !  
 !  ! Get a pointer to the KVERT and DCORVG array
 !  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
@@ -3476,9 +3504,9 @@ contains
 !    
 !    ! Allocate an array saving the local matrices for all elements
 !    ! in an element set.
-!    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+!    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
 !    ! for this local matrix, but this would normally not fit to the cache
-!    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+!    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
 !    ALLOCATE(Kentry(indofTrial,indofTest,nelementsPerBlock))
 !    ALLOCATE(Dentry(indofTrial,indofTest))
 !    
@@ -3538,19 +3566,19 @@ contains
 !    ! Loop over the elements - blockwise.
 !    !
 !    ! OpenMP-Extension: Each loop cycle is executed in a different thread,
-!    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+!    ! so NELEMSIM local matrices are simultaneously calculated in the
 !    ! inner loop(s).
 !    ! The blocks have all the same size, so we can use static scheduling.
 !    !
 !    !%omp do schedule(static,1)
-!    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
+!    DO IELset = 1, SIZE(p_IelementList), NELEMSIM
 !    
-!      ! We always handle BILF_NELEMSIM elements simultaneously.
+!      ! We always handle NELEMSIM elements simultaneously.
 !      ! How many elements have we actually here?
-!      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+!      ! Get the maximum element number, such that we handle at most NELEMSIM
 !      ! elements simultaneously.
 !      
-!      IELmax = MIN(SIZE(p_IelementList),IELset-1+BILF_NELEMSIM)
+!      IELmax = MIN(SIZE(p_IelementList),IELset-1+NELEMSIM)
 !    
 !      ! --------------------- DOF SEARCH PHASE ------------------------
 !    
@@ -3577,7 +3605,7 @@ contains
 !      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
 !      !
 !      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-!      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+!      ! global DOF`s of our NELEMSIM elements simultaneously.
 !      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                  .TRUE.,IdofsTest)
 !                                   
@@ -4017,7 +4045,7 @@ contains
 !<subroutine>
 
   subroutine bilf_buildMatrix9d_conf3 (rform,bclear,rmatrix,&
-      fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+      fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -4057,6 +4085,10 @@ contains
   ! about how to set up the matrix (e.g. cubature formula). If not specified,
   ! default settings are used.
   type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4073,6 +4105,9 @@ contains
   integer :: JCOL0,JCOL
   real(DP) :: OM,AUX, DB
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: BderTrialTempl, BderTestTempl, BderTrial, BderTest
 
@@ -4131,7 +4166,7 @@ contains
   type(t_elementDistribution), pointer :: p_relementDistrTest
   type(t_elementDistribution), pointer :: p_relementDistrTrial
   
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
   
@@ -4150,6 +4185,12 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscrTest
   type(t_spatialDiscretisation), pointer :: p_rdiscrTrial
   
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => bilf_perfconfig
+  end if
+
   if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
     call output_line ('No discretisation associated!',&
@@ -4247,8 +4288,8 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it is at most
-  ! BILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
+  ! NELEMSIM. This is only used for allocating some arrays.
+  nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
@@ -4323,7 +4364,8 @@ contains
     !$omp         Dentry,IA,IALBET,IB,ICUBP,IDOFE,IEL,IELmax,IdofsTest,&
     !$omp         IdofsTrial,JCOL,JCOL0,JDFG,JDOFE,Kentry,OM,&
     !$omp         bIdenticalTrialandTest,bcubPtsInitialised,cevaluationTag,&
-    !$omp         p_DbasTrial,p_Ddetj,p_IdofsTrial,revalElementSet,rintSubset)
+    !$omp         p_DbasTrial,p_Ddetj,p_IdofsTrial,revalElementSet,rintSubset)&
+    !$omp if (size(p_IelementList) > p_rperfconfig%NELEMMIN_OMP)
     
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -4346,9 +4388,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(indofTrial,indofTest,nelementsPerBlock))
     allocate(Dentry(indofTrial,indofTest))
     
@@ -4409,19 +4451,19 @@ contains
     ! Loop over the elements - blockwise.
     !
     ! OpenMP-Extension: Each loop cycle is executed in a different thread,
-    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! so NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !$omp do schedule(static,1)
-    do IELset = 1, size(p_IelementList), BILF_NELEMSIM
+    do IELset = 1, size(p_IelementList), p_rperfconfig%NELEMSIM
     
-      ! We always handle BILF_NELEMSIM elements simultaneously.
+      ! We always handle NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
       
-      IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
+      IELmax = min(size(p_IelementList),IELset-1+p_rperfconfig%NELEMSIM)
     
       ! --------------------- DOF SEARCH PHASE ------------------------
     
@@ -4448,7 +4490,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscrTest, p_IelementList(IELset:IELmax), &
                                    IdofsTest)
                                    
@@ -5101,7 +5143,7 @@ contains
 !<subroutine>
 
   subroutine bilf_initAssembly(rmatrixAssembly,rform,celementTest,&
-      celementTrial,ccubType,nelementsPerBlock)
+      celementTrial,ccubType,nelementsPerBlock,rperfconfig)
 
 !<description>
   ! Initialise a matrix assembly structure for assembling a bilinear form.
@@ -5120,9 +5162,13 @@ contains
   ! Type of cubature formula to use.
   integer(I32), intent(in) :: ccubType
   
-  ! Optional: Maximum number of elements to process simultaneously.
-  ! If not specified, BILF_NELEMSIM is assumed.
+  ! OPTIONAL: Maximum number of elements to process simultaneously.
+  ! If not specified, NELEMSIM is assumed.
   integer, intent(in), optional :: nelementsPerBlock
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -5135,11 +5181,20 @@ contains
     ! local variables
     logical, dimension(EL_MAXNDER) :: BderTrialTempl, BderTestTempl
     integer :: i,i1
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => bilf_perfconfig
+    end if
   
     ! Initialise the structure.
     rmatrixAssembly%rform = rform
     rmatrixAssembly%ccubType = ccubType
-    rmatrixAssembly%nelementsPerBlock = BILF_NELEMSIM
+    rmatrixAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
     if (present(nelementsPerBlock)) &
         rmatrixAssembly%nelementsPerBlock = nelementsPerBlock
     rmatrixAssembly%celementTrial = celementTrial
@@ -5314,9 +5369,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(rmatrixAssembly%p_Kentry(rmatrixAssembly%indofTrial,&
         rmatrixAssembly%indofTest,rmatrixAssembly%nelementsPerBlock))
     allocate(rmatrixAssembly%p_Dentry(rmatrixAssembly%indofTrial,&
@@ -5371,7 +5426,7 @@ contains
 !<subroutine>  
   
   subroutine bilf_assembleSubmeshMatrix9 (rmatrixAssembly, rmatrix, IelementList,&
-      fcoeff_buildMatrixSc_sim, rcollection)
+      fcoeff_buildMatrixSc_sim, rcollection, rperfconfig)
  
 !<description>
 
@@ -5389,6 +5444,10 @@ contains
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
 !</input>
 
 !<inputoutput>
@@ -5412,6 +5471,9 @@ contains
     real(DP), dimension(:), pointer :: p_DA
     integer :: indofTest,indofTrial,ncubp
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax
     integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
@@ -5438,6 +5500,12 @@ contains
     indofTrial = rmatrixAssembly%indofTrial
     ncubp      = rmatrixAssembly%ncubp
 
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => bilf_perfconfig
+    end if
+
     ! OpenMP-Extension: Copy the matrix assembly data to the local
     ! matrix assembly data, where we can allocate memory.
     !
@@ -5452,7 +5520,8 @@ contains
     !$omp         idofe,iel,jdofe,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
     !$omp         p_DcoefficientsBilf,p_Ddetj,p_Dentry,p_Domega,p_Idescriptors,&
     !$omp         p_IdofsTest,p_IdofsTrial,p_Kentry,p_revalElementSet,&
-    !$omp         rintSubset,rlocalMatrixAssembly)
+    !$omp         rintSubset,rlocalMatrixAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalMatrixAssembly = rmatrixAssembly
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
     
@@ -5481,7 +5550,7 @@ contains
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rmatrixAssembly%nelementsPerBlock)
@@ -5511,7 +5580,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
           IelementList(IELset:IELmax), p_IdofsTest)
                                    
@@ -6264,7 +6333,7 @@ contains
   
   subroutine bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      cconstrType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+      cconstrType, fcoeff_buildMatrixScBdr2D_sim, rcollection, rperfconfig)
   
 !<description>
 
@@ -6296,6 +6365,9 @@ contains
   include 'intf_coefficientMatrixScBdr2D.inc'
   optional :: fcoeff_buildMatrixScBdr2D_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6321,6 +6393,9 @@ contains
     integer :: indofTest,indofTrial,ncubp,nve
     logical :: bisLinearTrafo
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
     integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
@@ -6348,6 +6423,11 @@ contains
     real(DP), dimension(:,:), allocatable :: DpointsPar
     real(DP), dimension(:), allocatable :: DedgeLength
 
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => bilf_perfconfig
+    end if
 
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -6380,7 +6460,8 @@ contains
     !$omp         idofe,iel,jdofe,k,p_DbasTest,p_DbasTrial,p_Dcoefficients,&
     !$omp         p_DcoefficientsBilf,p_Dcoords,p_DcubPtsRef,p_Dentry,p_Domega,&
     !$omp         p_Idescriptors,p_IdofsTest,p_IdofsTrial,p_Kentry,&
-    !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)
+    !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalMatrixAssembly = rmatrixAssembly
     call bilf_allocAssemblyData(rlocalMatrixAssembly)
     
@@ -6430,7 +6511,7 @@ contains
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
-      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! Get the maximum element number, such that we handle at most NELEMSIM
       ! elements simultaneously.
       
       IELmax = min(size(IelementList),IELset-1+rmatrixAssembly%nelementsPerBlock)
@@ -6489,7 +6570,7 @@ contains
       ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
           IelementList(IELset:IELmax), p_IdofsTest)
                                    
@@ -6862,7 +6943,7 @@ contains
 !<subroutine>
 
   recursive subroutine bilf_buildMatrixScalar2 (rform, bclear, rmatrix,&
-      fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+      fcoeff_buildMatrixSc_sim, rcollection, rscalarAssemblyInfo, rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -6911,6 +6992,10 @@ contains
   ! about how to set up the matrix (e.g. cubature formula). If not specified,
   ! default settings are used.
   type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6928,6 +7013,15 @@ contains
   type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
   type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => bilf_perfconfig
+  end if
+
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
@@ -6999,11 +7093,12 @@ contains
               rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
               rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
               p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
-              min(BILF_NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL))
+              min(p_rperfconfig%NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL),&
+              rperfconfig)
               
           ! Assemble the data for all elements in this element distribution
           call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
-              p_IelementList,fcoeff_buildMatrixSc_sim,rcollection)
+              p_IelementList,fcoeff_buildMatrixSc_sim,rcollection,rperfconfig)
           
           ! Release the assembly structure.
           call bilf_doneAssembly(rmatrixAssembly)
@@ -7020,7 +7115,7 @@ contains
 
         ! Create the matrix in structure 9
         call bilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup,&
-            fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+            fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo,rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -7062,7 +7157,8 @@ contains
 !<subroutine>
 
   recursive subroutine bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrix,&
-      fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection, cconstrType)
+      fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection, cconstrType,&
+      rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix in 1D.
@@ -7101,6 +7197,10 @@ contains
   ! the matrix construction method. If not specified,
   ! BILF_MATC_ELEMENTBASED is used.
   integer, intent(in), optional :: cconstrType
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -7121,6 +7221,15 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   integer, dimension(:), pointer :: IelementList, IelementOrientation
   integer :: ibdc,ielementDistr,NELbdc,ccType
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => bilf_perfconfig
+  end if
 
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
@@ -7200,7 +7309,7 @@ contains
             call bilf_initAssembly(rmatrixAssembly, rform,&
                 rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                 rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                CUB_G1_1D, NELbdc)
+                CUB_G1_1D, NELbdc, rperfconfig)
             call bilf_allocAssemblyData(rmatrixAssembly)
             
             ! Assemble the data for all elements
@@ -7247,7 +7356,7 @@ contains
               call bilf_initAssembly(rmatrixAssembly, rform,&
                   rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                  CUB_G1_1D, NELbdc)
+                  CUB_G1_1D, NELbdc, rperfconfig)
               call bilf_allocAssemblyData(rmatrixAssembly)
               
               ! Assemble the data for all elements
@@ -7278,7 +7387,8 @@ contains
 
         ! Create the matrix in structure 9
         call bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrixBackup,&
-            fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection, cconstrType)
+            fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection,&
+            cconstrType, rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -7314,8 +7424,9 @@ contains
 
 !<subroutine>
 
-  recursive subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrix,&
-      fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection, cconstrType)
+  recursive subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear,&
+      rmatrix, fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection,&
+      cconstrType, rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix in 2D.
@@ -7357,6 +7468,10 @@ contains
   ! the matrix construction method. If not specified,
   ! BILF_MATC_ELEMENTBASED is used.
   integer, intent(in), optional :: cconstrType
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -7380,6 +7495,15 @@ contains
   real(DP), dimension(:,:), pointer :: DedgePosition
   integer, dimension(:), pointer :: IelementList, IelementOrientation
   integer :: ibdc,ielementDistr,NELbdc,ccType
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => bilf_perfconfig
+  end if
 
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
@@ -7477,12 +7601,13 @@ contains
             call bilf_initAssembly(rmatrixAssembly, rform,&
                 rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                 rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(BILF_NELEMSIM, NELbdc))
+                ccubType, min(p_rperfconfig%NELEMSIM, NELbdc), rperfconfig)
             
             ! Assemble the data for all elements in this element distribution
             call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim,&
+                rcollection, rperfconfig)
             
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
@@ -7504,7 +7629,7 @@ contains
             call bilf_initAssembly(rmatrixAssembly,rform,&
                 rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                 rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                ccubType, BILF_NELEMSIM)
+                ccubType, p_rperfconfig%NELEMSIM, rperfconfig)
 
             ! Create a boundary region for each boundary component and call
             ! the calculation routine for that.
@@ -7531,7 +7656,8 @@ contains
                 ! Assemble the data for all elements in this element distribution
                 call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                    DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                    DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim,&
+                    rcollection, rperfconfig)
 
               end if
               
@@ -7558,7 +7684,8 @@ contains
 
         ! Create the matrix in structure 9
         call bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrixBackup,&
-            fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection, cconstrType)
+            fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection,&
+            cconstrType, rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)

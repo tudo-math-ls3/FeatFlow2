@@ -173,21 +173,12 @@ module trilinearformevaluation
 
 !</types>
 
-!<constants>
-
-!<constantblock description="Constants defining the blocking of the assembly">
-
-  ! Number of elements to handle simultaneously when building matrices
-#ifndef TRILF_NELEMSIM
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: TRILF_NELEMSIM = 128
-#else
-  integer, public            :: TRILF_NELEMSIM = 128
-#endif
-#endif
+  !************************************************************************
   
-!</constantblock>
-!</constants>
+  ! global performance configuration
+  type(t_perfconfig), target, save :: trilf_perfconfig
+  
+  !************************************************************************
 
   public :: trilf_buildMatrixScalar
   public :: trilf_buildMatrixScalar2
@@ -206,7 +197,8 @@ contains
 !<subroutine>
 
   subroutine trilf_buildMatrixScalar (rform,bclear,rmatrixScalar,rvector,&
-                                      fcoeff_buildTrilMatrixSc_sim,rcollection)
+                                      fcoeff_buildTrilMatrixSc_sim,rcollection,&
+                                      rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix using
@@ -237,7 +229,6 @@ contains
 !</description>
 
 !<input>
-
   ! The trilinear form specifying the underlying PDE of the discretisation.
   type(t_trilinearForm), intent(in) :: rform
   
@@ -258,6 +249,10 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -295,14 +290,16 @@ contains
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
-                                          fcoeff_buildTrilMatrixSc_sim,rcollection)
+                                          fcoeff_buildTrilMatrixSc_sim,&
+                                          rcollection,rperfconfig)
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9.
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
         
         ! Create the matrix in structure 9
         call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
-                                        fcoeff_buildTrilMatrixSc_sim,rcollection)
+                                        fcoeff_buildTrilMatrixSc_sim,&
+                                        rcollection,rperfconfig)
                                        
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
@@ -328,7 +325,8 @@ contains
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
-                                          fcoeff_buildTrilMatrixSc_sim,rcollection)
+                                          fcoeff_buildTrilMatrixSc_sim,&
+                                          rcollection,rperfconfig)
         
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9
@@ -336,7 +334,8 @@ contains
         
         ! Create the matrix in structure 9
         call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
-                                        fcoeff_buildTrilMatrixSc_sim,rcollection)
+                                        fcoeff_buildTrilMatrixSc_sim,&
+                                        rcollection,rperfconfig)
                                        
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
@@ -364,7 +363,8 @@ contains
 !<subroutine>
 
   subroutine trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
-                                        fcoeff_buildTrilMatrixSc_sim,rcollection)
+                                        fcoeff_buildTrilMatrixSc_sim,rcollection,&
+                                        rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -408,6 +408,10 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -489,7 +493,7 @@ contains
   ! DOF-Data of the vector
   real(DP), dimension(:), pointer :: p_Ddata
   
-  ! Number of elements in a block. Normally =TRILF_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
   
@@ -508,6 +512,15 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscrTest,p_rdiscrTrial
   type(t_spatialDiscretisation), pointer :: p_rdiscrFunc
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => trilf_perfconfig
+  end if
+
   if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
     call output_line('No discretisation associated!',&
@@ -629,8 +642,8 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it is at most
-  ! TRILF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(TRILF_NELEMSIM,p_rtriangulation%NEL)
+  ! NELEMSIM. This is only used for allocating some arrays.
+  nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
@@ -726,7 +739,8 @@ contains
     !$omp         Kentry,OM,bIdenticalFuncAndTest,bIdenticalFuncAndTrial,&
     !$omp         bIdenticalTrialandTest,bcubPtsInitialised,cevaluationTag,&
     !$omp         iderType,ifunc,p_DbasFunc,p_DbasTrial,p_Ddetj,p_IdofsFunc,&
-    !$omp         p_IdofsTrial,revalElementSet,rintSubset)
+    !$omp         p_IdofsTrial,revalElementSet,rintSubset)&
+    !$omp if (size(p_IelementList) > p_rperfconfig%NELEMMIN_OMP)
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
@@ -755,9 +769,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*TRILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*TRILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(Kentry(indofTrial,indofTest,nelementsPerBlock))
     allocate(Dentry(indofTrial,indofTest))
     
@@ -1235,7 +1249,7 @@ contains
 !<subroutine>
 
   subroutine trilf_initAssembly(rmatrixAssembly,rform,celementTest,&
-      celementTrial,celementFunc,ccubType,nelementsPerBlock)
+      celementTrial,celementFunc,ccubType,nelementsPerBlock,rperfconfig)
 
 !<description>
   ! Initialise a matrix assembly structure for assembling a trilinear form.
@@ -1258,8 +1272,12 @@ contains
   integer(I32), intent(in) :: ccubType
   
   ! Optional: Maximum number of elements to process simultaneously.
-  ! If not specified, TRILF_NELEMSIM is assumed.
+  ! If not specified, NELEMSIM is assumed.
   integer, intent(in), optional :: nelementsPerBlock
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1273,10 +1291,19 @@ contains
     logical, dimension(EL_MAXNDER) :: BderTrialTempl,BderTestTempl,BderFuncTempl
     integer :: i,i1
   
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => trilf_perfconfig
+    end if
+
     ! Initialise the structure.
     rmatrixAssembly%rform = rform
     rmatrixAssembly%ccubType = ccubType
-    rmatrixAssembly%nelementsPerBlock = TRILF_NELEMSIM
+    rmatrixAssembly%nelementsPerBlock = p_rperfconfig%NELEMSIM
     if (present(nelementsPerBlock)) &
         rmatrixAssembly%nelementsPerBlock = nelementsPerBlock
     rmatrixAssembly%celementTrial = celementTrial
@@ -1495,9 +1522,9 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*TRILF_NELEMSIM integers
+    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*TRILF_NELEMSIM is normally much smaller!
+    ! anymore! indofTrial*indofTest*NELEMSIM is normally much smaller!
     allocate(rmatrixAssembly%p_Kentry(rmatrixAssembly%indofTrial,&
         rmatrixAssembly%indofTest,rmatrixAssembly%nelementsPerBlock))
     allocate(rmatrixAssembly%p_Dentry(rmatrixAssembly%indofTrial,&
@@ -1560,7 +1587,7 @@ contains
 !<subroutine>  
   
   subroutine trilf_assembleSubmeshMatrix9 (rmatrixAssembly, rmatrix, rvector,&
-      IelementList, fcoeff_buildTrilMatrixSc_sim, rcollection)
+      IelementList, fcoeff_buildTrilMatrixSc_sim, rcollection, rperfconfig)
  
 !<description>
 
@@ -1578,6 +1605,10 @@ contains
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+
 !</input>
 
 !<inputoutput>
@@ -1626,7 +1657,16 @@ contains
     integer, dimension(:,:), pointer :: p_IdofsFunc
     type(t_evalElementSet), pointer :: p_revalElementSet
     integer, dimension(:,:),pointer :: p_Idescriptors
-  
+    
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => trilf_perfconfig
+    end if
+
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rmatrix,p_DA)
     call lsyssc_getbase_double (rvector,p_Ddata)
@@ -1649,7 +1689,8 @@ contains
     !$omp         iderType,idofe,iel,jdofe,p_DbasFunc,p_DbasTest,p_DbasTrial,&
     !$omp         p_Dcoefficients,p_DcoefficientsTrilf,p_Ddetj,p_Dentry,p_Domega,&
     !$omp         p_Idescriptors,p_IdofsFunc,p_IdofsTest,p_IdofsTrial,p_Kentry,&
-    !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)
+    !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)&
+    !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalMatrixAssembly = rmatrixAssembly
     call trilf_allocAssemblyData(rlocalMatrixAssembly)
 
@@ -2065,7 +2106,7 @@ contains
 !<subroutine>
 
   recursive subroutine trilf_buildMatrixScalar2 (rform, bclear, rmatrix, rvector,&
-      fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+      fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo,rperfconfig)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix using
@@ -2107,7 +2148,6 @@ contains
 
 
 !<input>
-
   ! The trilinear form specifying the underlying PDE of the discretisation.
   type(t_trilinearForm), intent(in) :: rform
   
@@ -2133,6 +2173,10 @@ contains
   ! about how to set up the matrix (e.g. cubature formula). If not specified,
   ! default settings are used.
   type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2150,6 +2194,15 @@ contains
   type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
   type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => trilf_perfconfig
+  end if
+  
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
@@ -2238,11 +2291,12 @@ contains
               rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
               rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
               p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
-              min(TRILF_NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL))
+              min(p_rperfconfig%NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL),&
+              rperfconfig)
               
           ! Assemble the data for all elements in this element distribution
           call trilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,rvector,&
-              p_IelementList,fcoeff_buildTrilMatrixSc_sim,rcollection)
+              p_IelementList,fcoeff_buildTrilMatrixSc_sim,rcollection,rperfconfig)
           
           ! Release the assembly structure.
           call trilf_doneAssembly(rmatrixAssembly)
@@ -2265,7 +2319,8 @@ contains
       
       ! Create the matrix in structure 9
       call trilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup, rvector,&
-          fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo)
+          fcoeff_buildTrilMatrixSc_sim,rcollection,rscalarAssemblyInfo,&
+          rperfconfig)
       
       ! Convert back to structure 7
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
