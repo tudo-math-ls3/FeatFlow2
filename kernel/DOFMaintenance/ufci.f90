@@ -25,12 +25,8 @@ public :: t_ufciData
 !<constantblock description="General parameters">
 
   ! Maximum number of functions which may be evaluated simultaneously
-#ifndef UFCI_MAX_SIM
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: UFCI_MAX_SIM = 32
-#else
-  integer, public            :: UFCI_MAX_SIM = 32
-#endif
+#ifndef UFCI_NITEMSIM
+  integer, parameter, public :: UFCI_NITEMSIM = 32
 #endif
 
 !</constantblock>
@@ -65,7 +61,7 @@ public :: t_ufciData
     ! IN: user-defined ID of the functions which are to be called, where
     !     IfunctionIDs(i) = user-defined ID of the i-th function that is to be
     !                       evaluated
-    integer, dimension(UFCI_MAX_SIM) :: IfunctionIDs = 0
+    integer, dimension(UFCI_NITEMSIM) :: IfunctionIDs = 0
     
     ! ---------- ENTRIES FOR EVALUATION TASK ----------
 

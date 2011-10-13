@@ -31,33 +31,37 @@
 !#
 !# 6.) ppns2D_calcFluxThroughLine
 !#     -> Calculate the flux through a line
+!#
+!# 7.) ppns_initPerfConfig
+!#      -> Initialises the global performance configuration
 !# </purpose>
 !#########################################################################
 
 module pprocnavierstokes
 
-  use fsystem
-  use storage
-  use genoutput
-  use boundary
-  use cubature
-  use triangulation
-  use linearalgebra
-  use linearsystemscalar
-  use linearsystemblock
-  use dofmapping
-  use spatialdiscretisation
-  use derivatives
-  use meshregion
-  use collection
-  use elementpreprocessing
-  use domainintegration
-  use element
   use basicgeometry
   use bcassembly
-  use transformation
+  use boundary
+  use collection
+  use cubature
+  use derivatives
+  use dofmapping
+  use domainintegration
+  use element
+  use elementpreprocessing
   use feevaluation
+  use fsystem
+  use genoutput
+  use linearalgebra
+  use linearsystemblock
+  use linearsystemscalar
+  use meshregion
+  use perfconfig
   use pprocintegrals
+  use spatialdiscretisation
+  use storage
+  use transformation
+  use triangulation
 
   implicit none
 
@@ -91,13 +95,24 @@ module pprocnavierstokes
 
 !<constantblock description="Constants defining the blocking of the calculation.">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of elements to handle simultaneously in volume integration
-  integer, public :: PPNS_NELEMSIM   = 1000
+#ifndef PPNS_NELEMSIM
+  integer, parameter, public :: PPNS_NELEMSIM = 1000
+#endif
 
 !</constantblock>
 
 !</constants>
 
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: ppns_perfconfig
+
+  !************************************************************************
+
+  public :: ppns_initPerfConfig
   public :: ppns2D_bdforces_uniform
   public :: ppns3D_bdforces_uniform
   public :: ppns2D_streamfct_uniform
@@ -106,6 +121,32 @@ module pprocnavierstokes
   public :: ppns2D_calcFluxThroughLine
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ppns_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      ppns_perfconfig = rperfconfig
+    else
+      ppns_perfconfig%NELEMSIM = PPNS_NELEMSIM
+    end if
+  
+  end subroutine ppns_initPerfConfig
 
   !****************************************************************************
 
@@ -2786,7 +2827,7 @@ contains
 !<subroutine>
 
   subroutine ppns2D_bdforces_vol(rvector,rcharfct,Dforces,df1,df2,cformulation,&
-      ffunctionReference,rcollection)
+      ffunctionReference,rcollection,rperfconfig)
 
 !<description>
   ! Calculates the drag-/lift-forces of a function defined by rvector
@@ -2860,6 +2901,10 @@ contains
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -2914,7 +2959,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
 
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
 
@@ -2944,14 +2989,23 @@ contains
     real(dp) :: dpf2
     real(dp), dimension(:,:), pointer :: Dpf1
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => ppns_perfconfig
+    end if
+
     ! Get a pointer to the triangulation - for easier access.
     p_rtriangulation => rcharfct%p_rspatialDiscr%p_rtriangulation
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it's at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPNS_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! Prepare the weighting coefficients
     dpf2 = 2.0_DP
@@ -3056,19 +3110,19 @@ contains
       call elprep_init(revalElementSet)
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPNS_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
 
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
 
-        IELmax = min(NEL,IELset-1+PPNS_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
         ! Calculate the global DOF's into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF's of our NELEMSIM elements simultaneously.
 
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvector%p_rblockDiscr%RspatialDiscr(1), &

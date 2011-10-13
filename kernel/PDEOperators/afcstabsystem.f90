@@ -46,6 +46,9 @@
 !#                          afcsys_failsafeFCTBlock
 !#     -> perform failsafe limiting of FCT type
 !#
+!# 6.) afcsys_initPerfConfig
+!#       -> Initialises the global performance configuration
+!#
 !# </purpose>
 !##############################################################################
 
@@ -60,6 +63,7 @@ module afcstabsystem
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use perfconfig
   use spatialdiscretisation
   use storage
 
@@ -68,6 +72,7 @@ module afcstabsystem
   private
   
   public :: afcsys_initStabilisation
+  public :: afcsys_initPerfConfig
   
   public :: afcsys_buildVectorFCT
   public :: afcsys_buildVectorTVD
@@ -79,42 +84,16 @@ module afcstabsystem
 
 !<constantblock description="Constants defining the blocking of the assembly">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of nodes to handle simultaneously when building matrices
 #ifndef AFCSYS_NEQSIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: AFCSYS_NEQSIM = 128
-#else
-  integer, public            :: AFCSYS_NEQSIM = 128
-#endif
 #endif
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of edges to handle simultaneously when building matrices
 #ifndef AFCSYS_NEDGESIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: AFCSYS_NEDGESIM = 64
-#else
-  integer, public            :: AFCSYS_NEDGESIM = 64
-#endif
-#endif
-  
-  ! Minimum number of nodes for OpenMP parallelisation: If the number of
-  ! nodes is below this value, then no parallelisation is performed.
-#ifndef AFCSYS_NEQMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: AFCSYS_NEQMIN_OMP = 1000
-#else
-  integer, public            :: AFCSYS_NEQMIN_OMP = 1000
-#endif
-#endif
-
-  ! Minimum number of edges for OpenMP parallelisation: If the number of
-  ! edges is below this value, then no parallelisation is performed.
-#ifndef AFCSYS_NEDGEMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: AFCSYS_NEDGEMIN_OMP = 1000
-#else
-  integer, public            :: AFCSYS_NEDGEMIN_OMP = 1000
-#endif
 #endif
 !</constantblock>
 
@@ -142,6 +121,11 @@ module afcstabsystem
 
 !</constants>
 
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: afcsys_perfconfig
+  
   ! ****************************************************************************
 
   interface afcsys_initStabilisation
@@ -172,6 +156,33 @@ module afcstabsystem
   end interface
   
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine afcsys_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      afcsys_perfconfig = rperfconfig
+    else
+      afcsys_perfconfig%NEQSIM = AFCSYS_NEQSIM
+      afcsys_perfconfig%NEDGESIM = AFCSYS_NEDGESIM
+    end if
+  
+  end subroutine afcsys_initPerfConfig
 
   !*****************************************************************************
 
@@ -858,7 +869,7 @@ contains
       dscale, bclear, ioperationSpec, ry, NVARtransformed,&
       fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
       fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
-      fcb_limitEdgewise, fcb_calcCorrection, rcollection)
+      fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the divergence vector for nonlinear
@@ -915,6 +926,10 @@ contains
 
     include 'intf_calcCorrection.inc'
     optional :: fcb_calcCorrection
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -937,6 +952,9 @@ contains
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: nvariable
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1)) then
       call afcsys_buildVectorFCTScalar(&
@@ -944,8 +962,15 @@ contains
           ioperationSpec, ry%RvectorBlock(1), NVARtransformed,&
           fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
           fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
-          fcb_limitEdgewise, fcb_calcCorrection, rcollection)
+          fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
     end if
 
     ! Check if stabilisation is prepared
@@ -1368,7 +1393,7 @@ contains
       
       ! Loop over all edges
       !$omp parallel do default(shared) private(ivar)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       edgeloop: do iedge = 1, NEDGE
         
         ! Check if the antidiffusive flux is directed down the gradient
@@ -1409,7 +1434,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared) private(ivar)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       edgeloop: do iedge = 1, NEDGE
         
         do ivar = 1,NVAR
@@ -1461,7 +1486,7 @@ contains
 
 
       !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Clear P`s
       !$omp sections
@@ -1533,7 +1558,7 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
       !$omp         IEDGEmax,i,idx,iedge,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Clear P`s
       !$omp sections
@@ -1544,9 +1569,9 @@ contains
       !$omp end sections
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -1558,14 +1583,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
           
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -1639,7 +1664,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,Diff)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Clear Q`s
       !$omp sections
@@ -1706,7 +1731,7 @@ contains
       
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Clear Q`s
       !$omp sections
@@ -1717,8 +1742,8 @@ contains
       !$omp end sections
       
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedDataAtEdge(NVARtransformed,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedDataAtEdge(NVARtransformed,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -1730,14 +1755,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
           
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -1947,7 +1972,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,F_ij,R_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
         ! Get node numbers
@@ -2003,22 +2028,22 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedFluxesAtEdge,&
       !$omp         IEDGEmax,R_ij,R_ji,i,idx,iedge,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edges
       !$omp do schedule(static,1)
-      do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+      do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+        ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle 
-        ! at most AFCSYS_NEDGESIM edges simultaneously.
+        ! at most  edges simultaneously.
         
-        IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+        IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
         ! Loop through all edges in the current set
         ! and prepare the auxiliary arrays
@@ -2104,7 +2129,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,F1_ij,F2_ij,R_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
         ! Get node numbers
@@ -2165,23 +2190,23 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedFluxes1AtEdge,&
       !$omp         DtransformedFluxes2AtEdge,IEDGEmax,R_ij,R_ji,i,idx,iedge,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
       
       ! Loop over the edges
       !$omp do schedule(static,1)
-      do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+      do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+        ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle 
-        ! at most AFCSYS_NEDGESIM edges simultaneously.
+        ! at most  edges simultaneously.
         
-        IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+        IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
         ! Loop through all edges in the current set
         ! and prepare the auxiliary arrays
@@ -2277,7 +2302,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2331,7 +2356,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2372,7 +2397,7 @@ contains
       dscale, bclear, ioperationSpec, ry, NVARtransformed,&
       fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
       fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
-      fcb_limitEdgewise, fcb_calcCorrection, rcollection)
+      fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the divergence vector for nonlinear
@@ -2470,6 +2495,10 @@ contains
 
     include 'intf_calcCorrection.inc'
     optional :: fcb_calcCorrection
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2492,6 +2521,14 @@ contains
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: nvariable
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
+    end if
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -2913,7 +2950,7 @@ contains
       
       ! Loop over all edges
       !$omp parallel do default(shared) private(ivar)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       edgeloop: do iedge = 1, NEDGE
         
         ! Check if the antidiffusive flux is directed down the gradient
@@ -2954,7 +2991,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared) private(ivar)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       edgeloop: do iedge = 1, NEDGE
         
         do ivar = 1,NVAR
@@ -3006,7 +3043,7 @@ contains
 
 
       !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Clear P`s
       !$omp sections
@@ -3077,7 +3114,7 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,DtransformedFluxesAtEdge,&
       !$omp         IEDGEmax,i,idx,iedge,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Clear P`s
       !$omp sections
@@ -3088,9 +3125,9 @@ contains
       !$omp end sections
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3102,14 +3139,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -3183,7 +3220,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,Diff)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Clear Q`s
       !$omp sections
@@ -3250,7 +3287,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Clear Q`s
       !$omp sections
@@ -3261,8 +3298,8 @@ contains
       !$omp end sections
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedDataAtEdge(NVARtransformed,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedDataAtEdge(NVARtransformed,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3274,14 +3311,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -3491,7 +3528,7 @@ contains
 
       ! Loop over all edges      
       !$omp parallel do default(shared) private(i,j,F_ij,R_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
         ! Get node numbers
@@ -3548,22 +3585,22 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedFluxesAtEdge,&
       !$omp         IEDGEmax,R_ij,R_ji,i,idx,iedge,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edges
       !$omp do schedule(static,1)
-      do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+      do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+        ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle 
-        ! at most AFCSYS_NEDGESIM edges simultaneously.
+        ! at most  edges simultaneously.
         
-        IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+        IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
         ! Loop through all edges in the current set
         ! and prepare the auxiliary arrays
@@ -3649,7 +3686,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,F1_ij,F2_ij,R_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
 
         ! Get node numbers
@@ -3710,23 +3747,23 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedFluxes1AtEdge,&
       !$omp         DtransformedFluxes2AtEdge,IEDGEmax,R_ij,R_ji,i,idx,iedge,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
-      allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
+      allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,p_rperfconfig%NEDGESIM))
       
       ! Loop over the edges
       !$omp do schedule(static,1)
-      do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+      do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
 
-        ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+        ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
         ! Get the maximum edge number, such that we handle 
-        ! at most AFCSYS_NEDGESIM edges simultaneously.
+        ! at most  edges simultaneously.
         
-        IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+        IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
         ! Loop through all edges in the current set
         ! and prepare the auxiliary arrays
@@ -3822,7 +3859,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3876,7 +3913,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,F_ij)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3913,7 +3950,7 @@ contains
 !<subroutine>
 
   subroutine afcsys_buildVectorTVDBlock(rafcstab, rx, ndim, fcb_calcFlux_sim,&
-      fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection)
+      fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the divergence vector for FEM-TVD schemes.
@@ -3941,6 +3978,10 @@ contains
 
     ! callback function to compute local characteristics
     include 'intf_calcCharacteristics_sim.inc'
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3962,13 +4003,22 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
-
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call afcsys_buildVectorTVDScalar(rafcstab, rx%RvectorBlock(1), ndim,&
           fcb_calcFlux_sim, fcb_calcCharacteristics_sim, dscale, bclear,&
-          ry%RvectorBlock(1), rcollection)
+          ry%RvectorBlock(1), rcollection, rperfconfig)
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
     end if
 
     ! Check if stabilisation is prepared
@@ -4061,10 +4111,10 @@ contains
       !$omp         DfluxesAtEdge,DrighteigenvectorsAtEdge,IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DcharVariablesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DeigenvaluesAtEdge(NVAR,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DcharVariablesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DeigenvaluesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
 
       ! Clear P's and Q's (X-direction)
       !$omp single
@@ -4084,14 +4134,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4172,7 +4222,7 @@ contains
       !$omp end single
       
       ! Allocate some temporal memory
-      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,AFCSYS_NEDGESIM))
+      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
       
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -4184,14 +4234,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4275,10 +4325,10 @@ contains
       !$omp         DfluxesAtEdge,DrighteigenvectorsAtEdge,IEDGEmax,i,idx,iedge,j)
    
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DcharVariablesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DeigenvaluesAtEdge(NVAR,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DcharVariablesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DeigenvaluesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
 
       ! Clear P's and Q's (X-direction)
       !$omp single
@@ -4298,14 +4348,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4381,7 +4431,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Allocate some temporal memory
-      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,AFCSYS_NEDGESIM))
+      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
       
       !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
@@ -4404,14 +4454,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4492,14 +4542,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4583,10 +4633,10 @@ contains
       !$omp         DfluxesAtEdge,DrighteigenvectorsAtEdge,IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DcharVariablesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DeigenvaluesAtEdge(NVAR,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DcharVariablesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DeigenvaluesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
       
       ! Clear P's and Q's (X-direction)
       !$omp single
@@ -4606,14 +4656,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4689,7 +4739,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Allocate some temporal memory
-      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,AFCSYS_NEDGESIM))
+      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
 
       !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
@@ -4712,14 +4762,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4806,14 +4856,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -4894,14 +4944,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5111,7 +5161,7 @@ contains
 !<subroutine>
 
   subroutine afcsys_buildVectorTVDScalar(rafcstab, rx, ndim, fcb_calcFlux_sim,&
-      fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection)
+      fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the divergence vector for FEM-TVD schemes
@@ -5137,6 +5187,10 @@ contains
 
     ! callback function to compute local characteristics
     include 'intf_calcCharacteristics_sim.inc'
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5158,6 +5212,14 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
+    end if
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -5248,10 +5310,10 @@ contains
       !$omp         DfluxesAtEdge,DrighteigenvectorsAtEdge,IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DcharVariablesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DeigenvaluesAtEdge(NVAR,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DcharVariablesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DeigenvaluesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
       
       ! Clear P's and Q's (X-direction)
       !$omp single
@@ -5271,14 +5333,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5359,7 +5421,7 @@ contains
       !$omp end single
       
       ! Allocate some temporal memory
-      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,AFCSYS_NEDGESIM))
+      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -5371,14 +5433,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5462,10 +5524,10 @@ contains
       !$omp         DfluxesAtEdge,DrighteigenvectorsAtEdge,IEDGEmax,i,idx,iedge,j)
       
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DcharVariablesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DeigenvaluesAtEdge(NVAR,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DcharVariablesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DeigenvaluesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
 
       ! Clear P's and Q's (X-direction)
       !$omp single
@@ -5485,14 +5547,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5568,7 +5630,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Allocate some temporal memory
-      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,AFCSYS_NEDGESIM))
+      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
 
       !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
@@ -5591,14 +5653,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5679,14 +5741,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5770,10 +5832,10 @@ contains
       !$omp         DfluxesAtEdge,DrighteigenvectorsAtEdge,IEDGEmax,i,idx,iedge,j)
       
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-      allocate(DcharVariablesAtEdge(NVAR,AFCSYS_NEDGESIM))
-      allocate(DeigenvaluesAtEdge(NVAR,AFCSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DcharVariablesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+      allocate(DeigenvaluesAtEdge(NVAR,p_rperfconfig%NEDGESIM))
       
       ! Clear P's and Q's (X-direction)
       !$omp single
@@ -5793,14 +5855,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
 
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5876,7 +5938,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Allocate some temporal memory
-      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,AFCSYS_NEDGESIM))
+      allocate(DrightEigenvectorsAtEdge(NVAR*NVAR,p_rperfconfig%NEDGESIM))
 
       !$omp single
       Drp = afcstab_limit(Dpp, Dqp, 1.0_DP, 1.0_DP)
@@ -5899,14 +5961,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -5993,14 +6055,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -6081,14 +6143,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, AFCSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -6296,7 +6358,7 @@ contains
 
   subroutine afcsys_buildFluxFCTBlock(rafcstab, rx, fcb_calcFluxFCT_sim,&
       theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-      rmatrix, rxTimeDeriv, rxPredictor, rcollection)
+      rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -6348,6 +6410,10 @@ contains
     ! This vector is required to assemble the fluxes for prelimiting
     ! in some variants of the FCT algorithm.
     type(t_vectorBlock), intent(in), optional :: rxPredictor
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6367,7 +6433,9 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer :: nblocks
     
-
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+   
     ! Check if block vector(s) contains exactly one block
     nblocks = rx%nblocks
     if (present(rxTimeDeriv)) nblocks = max(nblocks, rxTimeDeriv%nblocks)
@@ -6382,13 +6450,14 @@ contains
               fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
               bquickAssembly, ioperationSpec, rmatrix,&
               rxTimeDeriv%RvectorBlock(1), rxPredictor%RvectorBlock(1),&
-              rcollection=rcollection)
+              rcollection=rcollection, rperfconfig=rperfconfig)
         else
           ! ... only the approximate time derivative is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
               bquickAssembly, ioperationSpec, rmatrix,&
-              rxTimeDeriv%RvectorBlock(1), rcollection=rcollection)
+              rxTimeDeriv%RvectorBlock(1), rcollection=rcollection,&
+              rperfconfig=rperfconfig)
         end if
       else
         if (present(rxPredictor)) then
@@ -6396,17 +6465,26 @@ contains
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
               bquickAssembly, ioperationSpec, rmatrix,&
-              rxPredictor=rxPredictor%RvectorBlock(1), rcollection=rcollection)
+              rxPredictor=rxPredictor%RvectorBlock(1), rcollection=rcollection,&
+              rperfconfig=rperfconfig)
         else
           ! ... neither the approximate time derivative nor the predictor is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
               fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
-              bquickAssembly, ioperationSpec, rmatrix, rcollection=rcollection)
+              bquickAssembly, ioperationSpec, rmatrix, rcollection=rcollection,&
+              rperfconfig=rperfconfig)
         end if
       end if
 
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
     end if
 
     !---------------------------------------------------------------------------
@@ -6760,18 +6838,18 @@ contains
         !$omp private(DdataAtEdge,idx,iedge,IEDGEmax)
         
         ! Allocate temporal memory
-        allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
+        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
         
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
           
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -6805,19 +6883,19 @@ contains
         !$omp private(DdataAtEdge,DfluxAtEdge,idx,iedge,IEDGEmax)
         
         ! Allocate temporal memory
-        allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-        allocate(DfluxAtEdge(NVAR,AFCSYS_NEDGESIM))
+        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+        allocate(DfluxAtEdge(NVAR,p_rperfconfig%NEDGESIM))
         
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
           
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -6874,7 +6952,7 @@ contains
       integer :: iedge,i,j
 
       !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -6918,7 +6996,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -6932,7 +7010,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -6951,7 +7029,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -6965,7 +7043,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -6984,7 +7062,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -6998,7 +7076,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7025,7 +7103,7 @@ contains
 
   subroutine afcsys_buildFluxFCTScalar(rafcstab, rx, fcb_calcFluxFCT_sim,&
       theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-      rmatrix, rxTimeDeriv, rxPredictor, rcollection)
+      rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -7076,6 +7154,10 @@ contains
     ! This vector is required to assemble the fluxes for prelimiting
     ! in some variants of the FCT algorithm.
     type(t_vectorScalar), intent(in), optional :: rxPredictor
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -7094,6 +7176,14 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
+    end if
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -7445,18 +7535,18 @@ contains
         !$omp private(DdataAtEdge,idx,iedge,IEDGEmax)
         
         ! Allocate temporal memory
-        allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
+        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
         
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
           
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -7490,19 +7580,19 @@ contains
         !$omp private(DdataAtEdge,DfluxAtEdge,idx,iedge,IEDGEmax)
         
         ! Allocate temporal memory
-        allocate(DdataAtEdge(NVAR,2,AFCSYS_NEDGESIM))
-        allocate(DfluxAtEdge(NVAR,AFCSYS_NEDGESIM))
+        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+        allocate(DfluxAtEdge(NVAR,p_rperfconfig%NEDGESIM))
         
         ! Loop over the edges
         !$omp do schedule(static,1)
-        do IEDGEset = 1, NEDGE, AFCSYS_NEDGESIM
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
           
-          ! We always handle AFCSYS_NEDGESIM edges simultaneously.
+          ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most AFCSYS_NEDGESIM edges simultaneously.
+          ! at most  edges simultaneously.
           
-          IEDGEmax = min(NEDGE, IEDGEset-1+AFCSYS_NEDGESIM)
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -7562,7 +7652,7 @@ contains
       integer :: iedge,i,j
 
       !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -7608,7 +7698,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7622,7 +7712,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7641,7 +7731,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7655,7 +7745,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7674,7 +7764,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7688,7 +7778,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -7716,7 +7806,7 @@ contains
   subroutine afcsys_failsafeFCTBlock(rafcstab, rmatrix, rx, dscale, dtol,&
       ioperationSpec, bisAccepted, dfactor, nsteps, CvariableNames,&
       fcb_extractVariable, fcb_calcFailsafe, rxBackup, rvectorCorr,&
-      rvectorTmp, rcollection)
+      rvectorTmp, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine performs failsafe flux limiting as described in
@@ -7774,6 +7864,10 @@ contains
     ! skipped and deligated to the user-defined callback function
     include 'intf_calcFailsafe.inc'
     optional :: fcb_calcFailsafe
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -7824,6 +7918,9 @@ contains
     integer :: ivariable,nvariables,istep
     logical :: bextractVariables
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if block vector contains only one block.
     if (rx%nblocks .eq. 1) then
       if (present(rxBackup)) then
@@ -7832,18 +7929,24 @@ contains
             ioperationSpec, bisAccepted, dfactor, nsteps,&
             CvariableNames, fcb_extractVariable, fcb_calcFailsafe,&
             rxBackup%RvectorBlock(1),&
-            rvectorCorr, rvectorTmp, rcollection)
+            rvectorCorr, rvectorTmp, rcollection, rperfconfig)
       else
         call afcsys_failsafeFCTScalar(&
             rafcstab, rmatrix, rx%RvectorBlock(1), dscale, dtol,&
             ioperationSpec, bisAccepted, dfactor, nsteps,&
             CvariableNames, fcb_extractVariable, fcb_calcFailsafe,&
             rvectorCorr=rvectorCorr, rvectorTmp=rvectorTmp,&
-            rcollection=rcollection)
+            rcollection=rcollection, rperfconfig=rperfconfig)
       end if
       return
     end if
     
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
+    end if
     
     ! Check if stabilisation provides edge-based structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
@@ -8122,7 +8225,7 @@ contains
       !$omp end parallel sections
 
       !$omp parallel default(shared) private(i,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
    
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -8184,7 +8287,7 @@ contains
       elseif (dscale .eq. 1.0_DP) then
 
         !$omp parallel default(shared) private(i,j,F_ij)&
-        !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
@@ -8216,7 +8319,7 @@ contains
       else ! dscale /= 1.0
 
         !$omp parallel default(shared) private(i,j,F_ij)&
-        !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
@@ -8307,7 +8410,7 @@ contains
   subroutine afcsys_failsafeFCTScalar(rafcstab, rmatrix, rx, dscale, dtol,&
       ioperationSpec, bisAccepted, dfactor, nsteps, CvariableNames,&
       fcb_extractVariable, fcb_calcFailsafe, rxBackup, rvectorCorr,&
-      rvectorTmp, rcollection)
+      rvectorTmp, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine performs failsafe flux limiting as described in
@@ -8356,6 +8459,10 @@ contains
     ! OPTIONAL: Callback function to calculate the failsafe correction
     include 'intf_calcFailsafe.inc'
     optional :: fcb_calcFailsafe
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -8407,6 +8514,15 @@ contains
     real(DP) :: dcorr
     integer :: ivariable,nvariables,istep,ivar,ieq
     logical :: bextractVariables
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsys_perfconfig
+    end if
 
     ! Check if stabilisation provides edge-based structure
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
@@ -8698,7 +8814,7 @@ contains
       !$omp end parallel sections
 
       !$omp parallel default(shared) private(i,j)&
-      !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
    
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -8760,7 +8876,7 @@ contains
       elseif (dscale .eq. 1.0_DP) then
 
         !$omp parallel default(shared) private(i,j,F_ij)&
-        !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
@@ -8792,7 +8908,7 @@ contains
       else ! dscale /= 1.0
 
         !$omp parallel default(shared) private(i,j,F_ij)&
-        !$omp if (NEDGE > AFCSYS_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access

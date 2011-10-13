@@ -57,6 +57,9 @@
 !# 7.) pperr_blockStandardDeviation
 !#     -> Calculate the standard deviation of a block vector
 !#
+!# 8.) pperr_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# </purpose>
 !#########################################################################
 
@@ -79,6 +82,7 @@ module pprocerror
   use linearsystemblock
   use linearsystemscalar
   use mprimitives
+  use perfconfig
   use scalarpde
   use spatialdiscretisation
   use storage
@@ -122,8 +126,11 @@ module pprocerror
 
 !<constantblock description="Constants defining the blocking of the error calculation.">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of elements to handle simultaneously when building vectors
-  integer, public :: PPERR_NELEMSIM   = 256
+#ifndef PPERR_NELEMSIM
+  integer, parameter, public :: PPERR_NELEMSIM = 256
+#endif
   
 !</constantblock>
 
@@ -186,6 +193,14 @@ module pprocerror
     module procedure pperr_scalarObsolete
   end interface
 
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: pperr_perfconfig
+
+  !************************************************************************
+
+  public :: pperr_initPerfConfig
   public :: pperr_scalar
   public :: pperr_scalarVec
   public :: pperr_scalarBoundary2d
@@ -199,8 +214,34 @@ contains
   !****************************************************************************
 
 !<subroutine>
+
+  subroutine pperr_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      pperr_perfconfig = rperfconfig
+    else
+      pperr_perfconfig%NELEMSIM = PPERR_NELEMSIM
+    end if
   
-  subroutine pperr_scalarVec(rerror, frefFunction, rcollection)
+  end subroutine pperr_initPerfConfig
+
+  !****************************************************************************
+
+!<subroutine>
+  
+  subroutine pperr_scalarVec(rerror, frefFunction, rcollection, rperfconfig)
 
 !<description>
   ! This routine calculates the errors of a set of given FE functions given
@@ -219,6 +260,10 @@ contains
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -275,7 +320,7 @@ contains
   ! Pointers to the arrays that recieve th element-wise errors
   real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1
   
-  ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+  ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
 
@@ -286,6 +331,15 @@ contains
   integer(I32) :: cevalTag, celement
   real(DP) :: derrL1, derrL2, derrH1, dom, daux, daux2
   real(DP), dimension(:,:), pointer :: p_Ddetj
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => pperr_perfconfig
+    end if
 
     ! Make sure we have the coefficient vectors
     if(.not. associated(rerror%p_RvecCoeff)) then
@@ -465,8 +519,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM, NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM, NEL)
 
     ! Okay, let us loop over all element distributions
     do icurrentElementDistr = 1, p_rdiscr%inumFEspaces
@@ -520,7 +574,8 @@ contains
       !$omp private(Dbas,DvalDer,DvalFunc,IELmax,Idofs,daux,daux2,&
       !$omp         derrH1,derrL1,derrL2,dom,i,icomp,ider,iel,j,k,p_Dcoeff,&
       !$omp         p_Ddetj,p_DerrH1,p_DerrL1,p_DerrL2,revalElementSet,rintSubset) &
-      !$omp         firstprivate(cevalTag)
+      !$omp         firstprivate(cevalTag)&
+      !$omp if (p_relementDistribution%NEL > p_rperfconfig%NELEMMIN_OMP)
       
       ! Allocate an array for the DOF-mapping
       allocate(Idofs(ndofs,nelementsPerBlock))
@@ -791,7 +846,8 @@ contains
 
   subroutine pperr_scalarDefault (cerrortype, derror, rvectorScalar,&
                            ffunctionReference, rcollection,&
-                           rdiscretisation, relementError, ffunctionWeight)
+                           rdiscretisation, relementError, ffunctionWeight,&
+                           rperfconfig)
 
 !<description>
   ! This routine calculates the error or the norm, respectively, of a
@@ -852,6 +908,10 @@ contains
   ! specifier of the linear form in rdiscretisation to compute the integrals
   ! for the error.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -941,15 +1001,18 @@ contains
         case (NDIM1D)
           call pperr_scalar1d_conf (cerrortype, derror, p_rdiscretisation,&
                                     rvectorScalar, ffunctionReference,&
-                                    rcollection, relementError, ffunctionWeight)
+                                    rcollection, relementError, ffunctionWeight,&
+                                    rperfconfig)
         case (NDIM2D)
           call pperr_scalar2d_conf (cerrortype, derror, p_rdiscretisation,&
                                     rvectorScalar, ffunctionReference,&
-                                    rcollection, relementError, ffunctionWeight)
+                                    rcollection, relementError, ffunctionWeight,&
+                                    rperfconfig)
         case (NDIM3D)
           call pperr_scalar3d_conf (cerrortype, derror, p_rdiscretisation,&
                                     rvectorScalar,ffunctionReference,&
-                                    rcollection, relementError, ffunctionWeight)
+                                    rcollection, relementError, ffunctionWeight,&
+                                    rperfconfig)
         end select
 
       case DEFAULT
@@ -972,7 +1035,8 @@ contains
 
   subroutine pperr_scalarObsolete (rvector, cerrortype, derror,&
                                    ffunctionReference, rcollection,&
-                                   rdiscretisation, relementError)
+                                   rdiscretisation, relementError,&
+                                   rperfconfig)
 
 !<description>
   ! This routine calculates the error or the norm, respectively, of a
@@ -1025,6 +1089,10 @@ contains
   ! specifier of the linear form in rdiscretisation to compute the integrals
   ! for the error.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1042,7 +1110,8 @@ contains
   ! Call the new routine with diffenret ordering of parameters
   call pperr_scalar(cerrortype, derror, rvector,&
                     ffunctionReference, rcollection,&
-                    rdiscretisation, relementError)
+                    rdiscretisation, relementError,&
+                    rperfconfig=rperfconfig)
 
   end subroutine pperr_scalarObsolete
 
@@ -1052,7 +1121,8 @@ contains
 
   subroutine pperr_scalar1d_conf (cerrortype, derror, rdiscretisation,&
                                   rvectorScalar, ffunctionReference,&
-                                  rcollection, relementError, ffunctionWeight)
+                                  rcollection, relementError, ffunctionWeight,&
+                                  rperfconfig)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1083,6 +1153,10 @@ contains
   ! by which the computed error is multipled.
   ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1141,7 +1215,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -1163,6 +1237,14 @@ contains
     ! Pointer to the element-wise error
     real(DP), dimension(:), pointer :: p_Derror
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => pperr_perfconfig
+    end if
 
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
@@ -1186,8 +1268,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM, p_rtriangulation%NEL)
                                
     ! Set the current error to 0 and add the error contributions of each element
     ! to that.
@@ -1261,19 +1343,19 @@ contains
       NEL = p_relementDistribution%NEL
     
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -1851,7 +1933,8 @@ contains
 
   subroutine pperr_scalar2d_conf (cerrortype, derror, rdiscretisation,&
                                   rvectorScalar, ffunctionReference,&
-                                  rcollection, relementError, ffunctionWeight)
+                                  rcollection, relementError, ffunctionWeight,&
+                                  rperfconfig)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1882,6 +1965,10 @@ contains
   ! by which the computed error is multipled.
   ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1940,7 +2027,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -1962,6 +2049,14 @@ contains
     ! Pointer to the element-wise error
     real(DP), dimension(:), pointer :: p_Derror
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => pperr_perfconfig
+    end if
 
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
@@ -1986,8 +2081,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM, p_rtriangulation%NEL)
     
     ! Set the current error to 0 and add the error contributions of each element
     ! to that.
@@ -2061,19 +2156,19 @@ contains
       NEL = p_relementDistribution%NEL
     
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -2654,7 +2749,8 @@ contains
 
   subroutine pperr_scalar3d_conf (cerrortype, derror, rdiscretisation,&
                                   rvectorScalar, ffunctionReference,&
-                                  rcollection, relementError, ffunctionWeight)
+                                  rcollection, relementError, ffunctionWeight,&
+                                  rperfconfig)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -2685,6 +2781,10 @@ contains
   ! by which the computed error is multipled.
   ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2743,7 +2843,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -2765,7 +2865,15 @@ contains
     ! Pointer to the element-wise error
     real(DP), dimension(:), pointer :: p_Derror
 
-
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => pperr_perfconfig
+    end if
+    
     ! Which derivatives of basis functions are needed?
     ! Check the descriptors of the bilinear form and set BDER
     ! according to these.
@@ -2790,8 +2898,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM, p_rtriangulation%NEL)
     
     ! Set the current error to 0 and add the error contributions of each element
     ! to that.
@@ -2865,19 +2973,19 @@ contains
       NEL = p_relementDistribution%NEL
     
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -4236,7 +4344,8 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarErrorEstimate (rvector, rvectorRef, ctype, derror,&
-                                        rdiscretisationRef, relementError)
+                                        rdiscretisationRef, relementError,&
+                                        rperfconfig)
 
 !<description>
   ! This routine calculates the error of a given FE function in
@@ -4267,6 +4376,10 @@ contains
     ! cubature formula specifier of the linear form in rdiscretisation to 
     ! compute the integrals for the error.
     type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationRef
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4307,7 +4420,7 @@ contains
 
     ! Call block version
     call pperr_blockErrorEstimate(rvectorBlock, rvectorBlockRef, ctype,&
-        derror, rdiscretisationRef, relementError)
+        derror, rdiscretisationRef, relementError, rperfconfig)
 
     ! Release auxiliary block discretisations
     call spdiscr_releaseBlockDiscr(rDiscr)
@@ -4324,7 +4437,8 @@ contains
 !<subroutine>
 
   subroutine pperr_blockErrorEstimate (rvector, rvectorRef, ctype, derror,&
-                                       rdiscretisationRef, relementError)
+                                       rdiscretisationRef, relementError,&
+                                       rperfconfig)
 
 !<description>
   ! This routine calculates the error of a given FE function in rvector
@@ -4357,6 +4471,10 @@ contains
     ! cubature formula specifier of the linear form in rdiscretisation to 
     ! compute the integrals for the error.
     type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationRef
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4425,7 +4543,7 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
 
-    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -4436,6 +4554,15 @@ contains
     ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial,IdofsTrialRef
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => pperr_perfconfig
+    end if
+
     ! Get the correct discretisation structure for the solution vector
     p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
     do iblock=2,rvector%nblocks
@@ -4488,8 +4615,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! Set the current error to 0 and add the error contributions of each element to that.
     derror = 0.0_DP
@@ -4582,19 +4709,19 @@ contains
       NEL = p_relementDistribution%NEL
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
   
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
         call dof_locGlobMapping_mult(p_rdiscretisationRef, p_IelementList(IELset:IELmax), &
@@ -4782,7 +4909,8 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalarStandardDeviation (rvector, ddeviation, relementDeviation)
+  subroutine pperr_scalarStandardDeviation (rvector, ddeviation,&
+                                            relementDeviation, rperfconfig)
 
 !<description>
   ! This routine calculates the standard deviation
@@ -4805,6 +4933,10 @@ contains
 !<input>
     ! FE solution vector
     type(t_vectorScalar), intent(in), target :: rvector
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4835,7 +4967,8 @@ contains
     call lsysbl_createVecFromScalar(rvector, rvectorBlock, rDiscr)
 
     ! Call block version
-    call pperr_blockStandardDeviation(rvectorBlock, ddeviation, relementDeviation)
+    call pperr_blockStandardDeviation(rvectorBlock, ddeviation,&
+        relementDeviation, rperfconfig)
 
     ! Release auxiliary block discretisations
     call spdiscr_releaseBlockDiscr(rDiscr)
@@ -4849,7 +4982,8 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_blockStandardDeviation (rvector, ddeviation, relementDeviation)
+  subroutine pperr_blockStandardDeviation (rvector, ddeviation,&
+                                           relementDeviation, rperfconfig)
 
 !<description>
   ! This routine calculates the standard deviation
@@ -4872,6 +5006,10 @@ contains
 !<input>
     ! FE solution block vector
     type(t_vectorBlock), intent(in), target :: rvector
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4946,7 +5084,7 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
     
-    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -4957,6 +5095,15 @@ contains
     ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => pperr_perfconfig
+    end if
+
     ! Get the correct discretisation structure for the solution vector
     p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
     do iblock=2,rvector%nblocks
@@ -4988,8 +5135,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
     ! Set the mathematical expectation of the center of mass to 0
     DmassCenter = 0.0_DP
@@ -5057,19 +5204,19 @@ contains
       NEL = p_relementDistribution%NEL
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
   
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
@@ -5229,19 +5376,19 @@ contains
       NEL = p_relementDistribution%NEL
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPERR_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
   
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 

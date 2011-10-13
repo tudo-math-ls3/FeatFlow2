@@ -22,20 +22,23 @@ module perfconfig
   ! Global performance configuration
   type t_perfconfig
 
-    ! Number of equations to handle simultaneously
+    ! Number of equations to be handled simultaneously
     integer :: NEQSIM   = 32
 
-    ! Number of matrix entries to handle simultaneously
+    ! Number of matrix entries to be handled simultaneously
     integer :: NASIM    = 32
 
-    ! Number of edges to handle simultaneously
+    ! Number of edges to be handled simultaneously
     integer :: NEDGESIM = 32
 
-    ! Number of elements to handle simultaneously
+    ! Number of elements to be handled simultaneously
     integer :: NELEMSIM = 128
 
-    ! Number of patches to handle simultaneously
+    ! Number of patches to be handled simultaneously
     integer :: NPATCHSIM = 100
+
+    ! Number of items to be handles simultaneously
+    integer :: NITEMSIM  = 256
 
     ! OpenMP-Extension: the following settings are lower bounds which
     ! must be satisfied before OpenMP-parallelisation is activated
@@ -54,6 +57,9 @@ module perfconfig
 
     ! Minimal number of patches
     !$ integer :: NPATCHMIN_OMP = 1000
+
+    ! Minimal number of items
+    !$ integer :: NITEMMIN_OMP  = 1000
 
   end type
 

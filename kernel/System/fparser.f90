@@ -259,6 +259,9 @@
 !# 12.) fparser_getFunctionNumber
 !#      -> Return the internal number of the function
 !#
+!# 13.) fparser_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# The following internal routines can be found in this module:
 !#
 !# 1.) CheckSyntax
@@ -360,6 +363,7 @@ module fparser
   use fsystem
   use genoutput
   use io
+  use perfconfig
   use storage
   use stack
   
@@ -367,6 +371,7 @@ module fparser
   
   private
   public :: t_fparser
+  public :: fparser_initPerfConfig
   public :: fparser_init
   public :: fparser_done
   public :: fparser_parseFileForKeyword
@@ -404,13 +409,10 @@ module fparser
 
 !<constantblock description="Global constants for parser">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of items to handle simultaneously when evaluating functions
 #ifndef FPAR_NITEMSIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: FPAR_NITEMSIM       = 256
-#else
-  integer, public            :: FPAR_NITEMSIM       = 256
-#endif
 #endif
 
   ! Length of string
@@ -694,7 +696,40 @@ module fparser
 
 !</types>
 
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: fparser_perfconfig
+  
+  !************************************************************************
+
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      fparser_perfconfig = rperfconfig
+    else
+      fparser_perfconfig%NELEMSIM = FPAR_NITEMSIM
+    end if
+  
+  end subroutine fparser_initPerfConfig
 
   ! *****************************************************************************
   
@@ -1278,7 +1313,7 @@ contains
 !<subroutine>
 
   subroutine fparser_evalFuncBlockByName (rfparser, scompName, idim, DValueBlock,&
-                                          Dresult, DvalueScalar)
+                                          Dresult, DvalueScalar, rperfconfig)
 
 !<description>
     ! Evaluate bytecode of component icomp for the array of values passed in 
@@ -1322,6 +1357,10 @@ contains
     ! Variable values. This is a vector of scalar variables
     ! which is the same for all components of Res, e.g. the time variable.
     real(DP), dimension(:), intent(in), optional :: DvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1338,7 +1377,7 @@ contains
 
     ! Evaluate function by number
     call fparser_evalFunction (rfparser, icomp, idim, DvalueBlock,&
-                               Dresult, DvalueScalar)
+                               Dresult, DvalueScalar, rperfconfig)
 
   end subroutine fparser_evalFuncBlockByName
 
@@ -1407,7 +1446,7 @@ contains
 !<subroutine>
 
   subroutine fparser_evalFuncBlockByNumber (rfparser, icomp, idim, DvalueBlock,&
-                                            Dresult, DvalueScalar)
+                                            Dresult, DvalueScalar, rperfconfig)
 
 !<description>
     ! Evaluate bytecode of component icomp for the array of values passed in 
@@ -1451,6 +1490,10 @@ contains
     ! Variable values. This is a vector of scalar variables
     ! which is the same for all components of Res, e.g. the time variable.
     real(DP), dimension(:), intent(in), optional :: DvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1464,6 +1507,15 @@ contains
     real(DP), dimension(:), allocatable :: DvalueTemp
     integer :: iValSet,iValMax,nvalue,iblockSize,isizeValueScalar,isizeValueBlock
     integer :: EvalErrType
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => fparser_perfconfig
+    end if
 
     ! Check if component is valid
     if (icomp .lt. 1 .or. icomp .gt. rfparser%nncomp) then
@@ -1485,13 +1537,13 @@ contains
         !$omp private(Dstack,iValMax,iblockSize)
         
         ! Allocate temporal memory
-        allocate(Dstack(FPAR_NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
+        allocate(Dstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
 
         !$omp do schedule(static,1)
-        do iValSet = 1, nvalue, FPAR_NITEMSIM
+        do iValSet = 1, nvalue, p_rperfconfig%NITEMSIM
           
           ! Initialization
-          iValMax    = min(iValSet+FPAR_NITEMSIM-1, nvalue)
+          iValMax    = min(iValSet+p_rperfconfig%NITEMSIM-1, nvalue)
           iblockSize = iValMax-iValSet+1
           
           ! Invoke working routine
@@ -1509,13 +1561,13 @@ contains
         !$omp private(Dstack,iValMax,iblockSize)
         
         ! Allocate temporal memory
-        allocate(Dstack(FPAR_NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
+        allocate(Dstack(p_rperfconfig%NITEMSIM,rfparser%Rcomp(icomp)%iStackSize+1))
 
         !$omp do schedule(static,1)
-        do iValSet = 1, nvalue, FPAR_NITEMSIM
+        do iValSet = 1, nvalue, p_rperfconfig%NITEMSIM
           
           ! Initialization
-          iValMax    = min(iValSet+FPAR_NITEMSIM-1, nvalue)
+          iValMax    = min(iValSet+p_rperfconfig%NITEMSIM-1, nvalue)
           iblockSize = iValMax-iValSet+1
 
           ! Invoke working routine

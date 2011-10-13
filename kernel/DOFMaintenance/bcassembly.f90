@@ -61,7 +61,7 @@
 !# 12.) bcasm_newDirichletBConFBD
 !#      -> Discretises dirichlet boundary conditions on a 2D fictitious boundary domain
 !#
-!# 14.) bcasm_getVertInBdRegion
+!# 13.) bcasm_getVertInBdRegion
 !#      -> Determine the vertices in a boundary region
 !#
 !# 14.) bcasm_getEdgesInBdRegion
@@ -69,6 +69,9 @@
 !#
 !# 14.) bcasm_getElementsInBdRegion
 !#      -> Determine the elements in a boundary region
+!#
+!# 15.) bcasn_initPerfConfig
+!#       -> Initialises the global performance configuration
 !#
 !# Some internal routines:
 !#
@@ -94,21 +97,22 @@
 
 module bcassembly
 
-  use fsystem
-  use storage
-  use genoutput
-  use discretebc
-  use discretefbc
-  use element
-  use triangulation
-  use dofmapping
-  use mprimitives
   use basicgeometry
-  use meshregion
-  use spatialdiscretisation
-  use sort
   use boundary
   use collection, only: t_collection
+  use discretebc
+  use discretefbc
+  use dofmapping
+  use element
+  use fsystem
+  use genoutput
+  use meshregion
+  use mprimitives
+  use perfconfig
+  use sort
+  use spatialdiscretisation
+  use storage
+  use triangulation
   
   implicit none
   
@@ -152,14 +156,11 @@ module bcassembly
 
 !<constantblock description="Constants defining the blocking of the assembly">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of entries to handle simultaneously (-> number of points or edges,
   ! depending on the situation what to discretise)
-#ifndef FBCASM_MAXSIM
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: FBCASM_MAXSIM   = 1000
-#else
-  integer, public            :: FBCASM_MAXSIM   = 1000
-#endif
+#ifndef BCASM_NITEMSIM
+  integer, parameter, public :: BCASM_NITEMSIM   = 1000
 #endif
   
 !</constantblock>
@@ -240,8 +241,41 @@ module bcassembly
   interface bcasm_getElementsInBCregion
     module procedure bcasm_getElementsInBdRegion
   end interface
+
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: bcasm_perfconfig
+
+  !*****************************************************************************
   
 contains
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bcasm_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      bcasm_perfconfig = rperfconfig
+    else
+      bcasm_perfconfig%NITEMSIM = BCASM_NITEMSIM
+    end if
+  
+  end subroutine bcasm_initPerfConfig
 
 ! *****************************************************************************
 ! General routines for discretised boundary conditions
@@ -3339,7 +3373,7 @@ contains
 
   subroutine bcasm_newDirichletBConFBD (rblockDiscretisation, &
       Iequations, rdiscreteFBC, &
-      fgetBoundaryValuesFBC,rcollection, ccomplexity)
+      fgetBoundaryValuesFBC,rcollection, ccomplexity, rperfconfig)
   
 !<description>
   ! Creates a discrete version of Dirichlet boundary conditions for a fictitious
@@ -3374,6 +3408,10 @@ contains
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
   integer(I32), intent(in), optional :: ccomplexity
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>  
 
 !<inputoutput>
@@ -3413,6 +3451,15 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtFace
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => bcasm_perfconfig
+    end if
+
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
     
@@ -3490,11 +3537,13 @@ contains
     
     ! Initialise a p_Revaluation structure array for the evaluation
     allocate(p_Revaluation(nequations))
-    allocate(p_Iwhere(FBCASM_MAXSIM*nmaxInfoPerElement))
-    allocate(p_Iinside(FBCASM_MAXSIM*nmaxInfoPerElement))
-    allocate(p_Dwhere(p_rtriangulation%ndim,FBCASM_MAXSIM*nmaxInfoPerElement))
+    allocate(p_Iwhere(p_rperfconfig%NITEMSIM*nmaxInfoPerElement))
+    allocate(p_Iinside(p_rperfconfig%NITEMSIM*nmaxInfoPerElement))
+    allocate(p_Dwhere(p_rtriangulation%ndim,&
+                      p_rperfconfig%NITEMSIM*nmaxInfoPerElement))
     do ieq=1,nequations
-      allocate(p_Revaluation(ieq)%p_Dvalues(FBCASM_MAXSIM*nmaxInfoPerElement,1))
+      allocate(p_Revaluation(ieq)%p_Dvalues(&
+                      p_rperfconfig%NITEMSIM*nmaxInfoPerElement,1))
     end do
     do ieq=1,nequations
       p_Revaluation(ieq)%p_Iinside => p_Iinside
@@ -3519,17 +3568,18 @@ contains
 
       ! Reserve some memory to save temporarily all DOF`s of all elements.
       ndofloc = elem_igetNDofLoc(p_relementDist%celement)
-      allocate (Idofs(ndofloc,FBCASM_MAXSIM))
+      allocate (Idofs(ndofloc,p_rperfconfig%NITEMSIM))
       Idofs(:,:) = 0
       
       ! Get the elements in that distribution
       call storage_getbase_int(p_relementDist%h_IelementList,p_Ielements)
       
-      ! Loop through the elements in sets a FBCASM_MAXSIM.
-      do isubsetStart = 1,p_relementDist%NEL,FBCASM_MAXSIM
+      ! Loop through the elements in sets a p_rperfconfig%NITEMSIM.
+      do isubsetStart = 1,p_relementDist%NEL,p_rperfconfig%NITEMSIM
       
         ! Remaining elements here...
-        isubsetLength = min(p_relementDist%NEL-isubsetStart+1,FBCASM_MAXSIM)
+        isubsetLength = min(p_relementDist%NEL-isubsetStart+1,&
+                            p_rperfconfig%NITEMSIM)
         
         ! Get all the DOF's on all the elements in the current set.
         call dof_locGlobMapping_mult(p_rspatialDiscr, &
@@ -3972,9 +4022,10 @@ contains
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. At first, loop through the vertices in case we have a
 !        ! P1/P2/Q1/Q2 discretisation
-!        do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
+!        do isubsetStart = 1,p_rtriangulation%NVT,p_rperfconfig%NITEMSIM
 !        
-!          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
+!          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,&
+!                              p_rperfconfig%NITEMSIM)
 !        
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
@@ -4031,9 +4082,10 @@ contains
 !          ! Let us start to collect values. This is a rather element-dependent
 !          ! part. At first, loop through the vertices in case we have a
 !          ! P1/P2/Q1/Q2 discretisation
-!          do isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
+!          do isubsetStart = 1,p_rtriangulation%NMT,p_rperfconfig%NITEMSIM
 !          
-!            isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,FBCASM_MAXSIM)
+!            isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,&
+!                                p_rperfconfig%NITEMSIM)
 !          
 !            ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !            ! subset we evaluate.
@@ -4093,9 +4145,10 @@ contains
 !          ! Let us start to collect values. This is a rather element-dependent
 !          ! part. At first, loop through the vertices in case we have a
 !          ! P1/P2/Q1/Q2 discretisation
-!          do isubsetStart = 1,p_rtriangulation%NEL,FBCASM_MAXSIM
+!          do isubsetStart = 1,p_rtriangulation%NEL,p_rperfconfig%NITEMSIM
 !          
-!            isubsetLength = min(p_rtriangulation%NEL-isubsetStart+1,FBCASM_MAXSIM)
+!            isubsetLength = min(p_rtriangulation%NEL-isubsetStart+1,&
+!                                p_rperfconfig%NITEMSIM)
 !          
 !            ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !            ! subset we evaluate.
@@ -4159,9 +4212,10 @@ contains
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. At first, loop through the vertices in case we have a
 !        ! P1/Q1/Q2 discretisation
-!        do isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
+!        do isubsetStart = 1,p_rtriangulation%NMT,p_rperfconfig%NITEMSIM
 !        
-!          isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,FBCASM_MAXSIM)
+!          isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,&
+!                              p_rperfconfig%NITEMSIM)
 !        
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
@@ -4227,9 +4281,10 @@ contains
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. At first, loop through the vertices in case we have a
 !        ! Q1/Q2 discretisation
-!        do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
+!        do isubsetStart = 1,p_rtriangulation%NVT,p_rperfconfig%NITEMSIM
 !        
-!          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
+!          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,&
+!                              p_rperfconfig%NITEMSIM)
 !        
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
@@ -4286,9 +4341,10 @@ contains
 !      
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. 
-!        do isubsetStart = 1,p_rtriangulation%NAT,FBCASM_MAXSIM
+!        do isubsetStart = 1,p_rtriangulation%NAT,p_rperfconfig%NITEMSIM
 !        
-!          isubsetLength = min(p_rtriangulation%NAT-isubsetStart+1,FBCASM_MAXSIM)
+!          isubsetLength = min(p_rtriangulation%NAT-isubsetStart+1,&
+!                              p_rperfconfig%NITEMSIM)
 !        
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.

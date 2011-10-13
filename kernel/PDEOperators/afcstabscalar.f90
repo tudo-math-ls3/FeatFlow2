@@ -93,6 +93,9 @@
 !#      -> Assembles the Jacobian matrix for the stabilisation part of
 !#         symmetric flux limiting.
 !#
+!# 13.) afcsc_initPerfConfig
+!#       -> Initialises the global performance configuration
+!#
 !# </purpose>
 !##############################################################################
 
@@ -107,6 +110,7 @@ module afcstabscalar
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use perfconfig
   use spatialdiscretisation
   use storage
 
@@ -115,6 +119,7 @@ module afcstabscalar
   private
   
   public :: afcsc_initStabilisation
+  public :: afcsc_initPerfConfig
 
   public :: afcsc_buildVectorFCT
   public :: afcsc_buildVectorTVD
@@ -134,48 +139,28 @@ module afcstabscalar
 
 !<constantblock description="Constants defining the blocking of the assembly">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of nodes to handle simultaneously when building matrices
 #ifndef AFCSC_NEQSIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: AFCSC_NEQSIM = 128
-#else
-  integer, public            :: AFCSC_NEQSIM = 128
-#endif
 #endif
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of edges to handle simultaneously when building matrices
 #ifndef AFCSC_NEDGESIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: AFCSC_NEDGESIM = 64
-#else
-  integer, public            :: AFCSC_NEDGESIM = 64
-#endif
-#endif
-  
-  ! Minimum number of nodes for OpenMP parallelisation: If the number of
-  ! nodes is below this value, then no parallelisation is performed.
-#ifndef AFCSC_NEQMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: AFCSC_NEQMIN_OMP = 1000
-#else
-  integer, public            :: AFCSC_NEQMIN_OMP = 1000
-#endif
 #endif
 
-  ! Minimum number of edges for OpenMP parallelisation: If the number of
-  ! edges is below this value, then no parallelisation is performed.
-#ifndef AFCSC_NEDGEMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: AFCSC_NEDGEMIN_OMP = 1000
-#else
-  integer, public            :: AFCSC_NEDGEMIN_OMP = 1000
-#endif
-#endif
 !</constantblock>
 
 !</constants>
 
-  ! ****************************************************************************
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: afcsc_perfconfig
+
+  !*****************************************************************************
   
   interface afcsc_initStabilisation
     module procedure afcsc_initStabByMatrix
@@ -244,6 +229,33 @@ module afcstabscalar
   end interface
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine afcsc_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      afcsc_perfconfig = rperfconfig
+    else
+      afcsc_perfconfig%NEQSIM = AFCSC_NEQSIM
+      afcsc_perfconfig%NEDGESIM = AFCSC_NEDGESIM
+    end if
+  
+  end subroutine afcsc_initPerfConfig
 
   !*****************************************************************************
 
@@ -781,7 +793,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorFCTBlock(rafcstab, rmatrix, rx,&
-      dscale, bclear, ioperationSpec, ry)
+      dscale, bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -809,6 +821,10 @@ contains
     ! combination of different AFCSTAB_FCTALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -830,7 +846,7 @@ contains
     else
       
       call afcsc_buildVectorFCTScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
-          dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1), rperfconfig)
       
     end if
     
@@ -841,7 +857,7 @@ contains
 !<subroutine>
   
   subroutine afcsc_buildVectorFCTScalar(rafcstab, rmatrix, rx,&
-      dscale, bclear, ioperationSpec, ry)
+      dscale, bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -931,6 +947,10 @@ contains
     ! combination of different AFCSTAB_FCTALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -949,7 +969,16 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
-    ! Check if stabilisation is prepeared
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
+    
+    ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorFCTScalar')
@@ -1241,7 +1270,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Check if the antidiffusive flux is directed down the gradient
@@ -1278,7 +1307,7 @@ contains
 
       ! Loop over all edges
       !$omp parallel do default(shared)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Check if the magnitude of the antidiffusive flux is larger
@@ -1327,7 +1356,7 @@ contains
       integer :: i,iedge,igroup,j
       
       !$omp parallel default(shared) private(i,j,f_ij,fp_ij,fm_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Clear P`s
       !$omp sections
@@ -1389,7 +1418,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Initialise Q`s by solution
       !$omp sections
@@ -1552,7 +1581,7 @@ contains
       
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
@@ -1599,7 +1628,7 @@ contains
       
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,f1_ij,f2_ij,r_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions
@@ -1647,7 +1676,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -1699,7 +1728,7 @@ contains
 
 
       !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -1737,7 +1766,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorTVDBlock(rafcstab, rx, dscale,&
-      bclear, ioperationSpec, ry)
+      bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -1762,6 +1791,10 @@ contains
     ! combination of different AFCSTAB_TVDALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1784,7 +1817,7 @@ contains
     else
 
       call afcsc_buildVectorTVDScalar(rafcstab, rx%RvectorBlock(1),&
-          dscale, bclear, ioperationSpec, ry%RvectorBlock(1))
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1), rperfconfig)
       
     end if
 
@@ -1795,7 +1828,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorTVDScalar(rafcstab, rx, dscale,&
-      bclear, ioperationSpec, ry)
+      bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -1833,6 +1866,10 @@ contains
     ! combination of different AFCSTAB_TVDALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1853,6 +1890,14 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
     
     ! Check if stabilisation is prepared
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq.0) .or.&
@@ -1928,7 +1973,7 @@ contains
         
           !$omp parallel default(shared)&
           !$omp private(i,j,d_ij,l_ji,diff,f_ij,fm_ij,fp_ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronize memory access
@@ -1999,7 +2044,7 @@ contains
           
           !$omp parallel default(shared)&
           !$omp private(i,j,f_ij,fm_ij,fp_ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronize memory access
@@ -2047,7 +2092,7 @@ contains
         
         !$omp parallel default(shared)&
         !$omp private(i,j,d_ij,l_ji,diff,f_ij)&
-        !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
@@ -2130,7 +2175,7 @@ contains
 
         !$omp parallel default(shared)&
         !$omp private(i,j,d_ij,l_ji,diff,f_ij)&
-        !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         
         ! Loop over the edge groups and process all edges of one group
         ! in parallel without the need to synchronize memory access
@@ -2177,7 +2222,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorGPBlock(rafcstab, rmatrix,&
-      rx, rx0, theta, dscale, bclear, ioperationSpec, ry)
+      rx, rx0, theta, dscale, bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -2211,6 +2256,10 @@ contains
     ! combination of different AFCSTAB_GPALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2235,7 +2284,7 @@ contains
 
       call afcsc_buildVectorGPScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
           rx0%RvectorBlock(1), theta, dscale, bclear, ioperationSpec,&
-          ry%RvectorBlock(1))
+          ry%RvectorBlock(1), rperfconfig)
       
     end if
   end subroutine afcsc_buildVectorGPBlock
@@ -2245,7 +2294,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorGPScalar(rafcstab, rmatrix,&
-      rx, rx0, theta, dscale, bclear, ioperationSpec, ry)
+      rx, rx0, theta, dscale, bclear, ioperationSpec, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -2291,6 +2340,10 @@ contains
     ! combination of different AFCSTAB_TVDALGO_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2309,6 +2362,14 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
     
     ! Check if stabilisation is prepared
     if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .or.&
@@ -2388,7 +2449,7 @@ contains
       !$omp parallel default(shared)&
       !$omp private(d_ij,df_ij,diff,diff0,diff1,&
       !$omp         f_ij,i,ij,j,l_ij,l_ji,m_ij,p_ij,pf_ij,q_ij,q_ji)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2505,7 +2566,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildVectorSymmBlock(rafcstab, rx, dscale, ry)
+  subroutine afcsc_buildVectorSymmBlock(rafcstab, rx, dscale, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -2521,6 +2582,10 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2542,7 +2607,7 @@ contains
     else
 
       call afcsc_buildVectorSymmScalar(rafcstab,&
-          rx%RvectorBlock(1), dscale, ry%RvectorBlock(1))
+          rx%RvectorBlock(1), dscale, ry%RvectorBlock(1), rperfconfig)
 
     end if
   end subroutine afcsc_buildVectorSymmBlock
@@ -2551,7 +2616,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildVectorSymmScalar(rafcstab, rx, dscale, ry)
+  subroutine afcsc_buildVectorSymmScalar(rafcstab, rx, dscale, ry, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -2567,6 +2632,10 @@ contains
 
     ! scaling factor
     real(DP), intent(in) :: dscale
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2585,6 +2654,14 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
     
     ! Check if stabilisation is prepared
     if ((rafcstab%cafcstabType .ne. AFCSTAB_SYMMETRIC) .or.&
@@ -2658,7 +2735,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(d_ij,diff,f_ij,i,j,s_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2746,7 +2823,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVecLPTBlock(rafcstab, rx, dscale,&
-      bclear, ioperationSpec, ry, rmatrix)
+      bclear, ioperationSpec, ry, rmatrix, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector resulting from the
@@ -2775,6 +2852,10 @@ contains
 
     ! OPTIONAL: lumped mass matrix
     type(t_matrixScalar), intent(in), optional :: rmatrix
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2797,7 +2878,8 @@ contains
     else
 
       call afcsc_buildVecLPTScalar(rafcstab, rx%RvectorBlock(1),&
-          dscale, bclear, ioperationSpec, ry%RvectorBlock(1), rmatrix)
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1),&
+          rmatrix, rperfconfig)
       
     end if
 
@@ -2808,7 +2890,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVecLPTScalar(rafcstab, rx, dscale,&
-      bclear, ioperationSpec, ry, rmatrix)
+      bclear, ioperationSpec, ry, rmatrix, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector resulting from the
@@ -2847,6 +2929,10 @@ contains
 
     ! OPTIONAL: lumped mass matrix
     type(t_matrixScalar), intent(in), optional :: rmatrix
+    
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2864,6 +2950,15 @@ contains
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
 
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -2903,7 +2998,7 @@ contains
     !
     ! 5) Compute edgewise correction factors (Alpha).
     !
-    ! 6) Apply the limited antiddifusive fluxes
+    ! 6) Apply the limited antidifusive fluxes
     !-------------------------------------------------------------------------
     
     if (iand(ioperationSpec, AFCSTAB_LPTALGO_INITALPHA) .ne. 0) then
@@ -3365,7 +3460,7 @@ contains
       
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node numbers
@@ -3418,7 +3513,7 @@ contains
       
       ! Loop over all edges
       !$omp parallel do default(shared) private(i,f_ij,r_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Get node number of the upwind node
@@ -3462,7 +3557,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3512,7 +3607,7 @@ contains
       integer :: i,iedge,igroup,j
 
       !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3550,7 +3645,8 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, rmatrix, rxTimeDeriv, rxPredictor)
+      bclear, bquickAssembly, ioperationSpec, rmatrix, rxTimeDeriv,&
+      rxPredictor, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -3601,6 +3697,10 @@ contains
     ! This vector is required to assemble the fluxes for prelimiting
     ! in some variants of the FCT algorithm.
     type(t_vectorBlock), intent(in), optional :: rxPredictor
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3629,24 +3729,26 @@ contains
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
             rmatrix, rxTimeDeriv=rxTimeDeriv%RvectorBlock(1),&
-            rxPredictor=rxPredictor%RvectorBlock(1))
+            rxPredictor=rxPredictor%RvectorBlock(1), rperfconfig=rperfconfig)
       else
         ! ... only the approximate time derivative is present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            rmatrix, rxTimeDeriv=rxTimeDeriv%RvectorBlock(1))
+            rmatrix, rxTimeDeriv=rxTimeDeriv%RvectorBlock(1),&
+            rperfconfig=rperfconfig)
       end if
     else
       if (present(rxPredictor)) then
         ! ... only the predictor is present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            rmatrix, rxPredictor=rxPredictor%RvectorBlock(1))
+            rmatrix, rxPredictor=rxPredictor%RvectorBlock(1),&
+            rperfconfig=rperfconfig)
       else
         ! ... neither the approximate time derivative nor the predictor is present
         call afcsc_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
             theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-            rmatrix)
+            rmatrix, rperfconfig=rperfconfig)
       end if
     end if
     
@@ -3657,7 +3759,8 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildFluxFCTScalar(rafcstab, rx, theta, tstep, dscale,&
-      bclear, bquickAssembly, ioperationSpec, rmatrix, rxTimeDeriv, rxPredictor)
+      bclear, bquickAssembly, ioperationSpec, rmatrix, rxTimeDeriv,&
+      rxPredictor, rperfconfig)
     
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -3705,6 +3808,10 @@ contains
     ! This vector is required to assemble the fluxes for prelimiting
     ! in some variants of the FCT algorithm.
     type(t_vectorScalar), intent(in), optional :: rxPredictor
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3719,6 +3826,15 @@ contains
     real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -4075,7 +4191,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4088,7 +4204,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4106,7 +4222,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4119,7 +4235,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4137,7 +4253,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4150,7 +4266,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4194,7 +4310,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4208,7 +4324,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4226,7 +4342,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4240,7 +4356,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4258,7 +4374,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4272,7 +4388,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4306,7 +4422,7 @@ contains
       integer :: iedge,i,j
 
       !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -4329,7 +4445,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildFluxLPTBlock(rafcstab, rx, dscale, bclear,&
-      ioperationSpec, rmatrix)
+      ioperationSpec, rmatrix, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -4360,6 +4476,10 @@ contains
     ! OPTIONAL: coefficient matrix which is used instead of the
     ! coefficients at edges provided by the stabilisation structure
     type(t_matrixScalar), intent(in), optional :: rmatrix
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4376,7 +4496,7 @@ contains
 
     ! Call subroutine for scalar vectors
     call afcsc_buildFluxLPTScalar(rafcstab, rx%RvectorBlock(1),&
-        dscale, bclear, ioperationSpec, rmatrix)
+        dscale, bclear, ioperationSpec, rmatrix, rperfconfig)
     
   end subroutine afcsc_buildFluxLPTBlock
 
@@ -4385,7 +4505,7 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildFluxLPTScalar(rafcstab, rx, dscale, bclear,&
-      ioperationSpec, rmatrix)
+      ioperationSpec, rmatrix, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -4413,6 +4533,10 @@ contains
     ! OPTIONAL: coefficient matrix which is used instead of the
     ! coefficients at edges provided by the stabilisation structure
     type(t_matrixScalar), intent(in), optional :: rmatrix
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4428,6 +4552,15 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer, dimension(:,:), pointer :: p_IedgeList
+    
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcsc_perfconfig
+    end if
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -4689,7 +4822,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4703,7 +4836,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4721,7 +4854,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4735,7 +4868,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4753,7 +4886,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4767,7 +4900,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4814,7 +4947,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4845,7 +4978,7 @@ contains
 
         else
           !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4879,7 +5012,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4909,7 +5042,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4943,7 +5076,7 @@ contains
 
         if (bclear) then
           !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -4973,7 +5106,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j,d_ij,f_ij,g_ij,l_ji)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -5034,7 +5167,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -5047,7 +5180,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -5065,7 +5198,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -5078,7 +5211,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -5096,7 +5229,7 @@ contains
         
         if (bclear) then
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices
@@ -5109,7 +5242,7 @@ contains
           !$omp end parallel do
         else
           !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > AFCSC_NEDGEMIN_OMP)
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
           do iedge = 1, NEDGE
             
             ! Determine indices

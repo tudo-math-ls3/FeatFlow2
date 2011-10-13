@@ -41,6 +41,9 @@
 !#     -> Assembles a discrete vector edge-by-edge by the
 !#        group finite element formulation
 !#
+!# 4.) gfsys_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# </purpose>
 !##############################################################################
 
@@ -55,6 +58,7 @@ module groupfemsystem
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use perfconfig
   use spatialdiscretisation
   use storage
   
@@ -62,6 +66,7 @@ module groupfemsystem
 
   private
 
+  public :: gfsys_initPerfConfig
   public :: gfsys_buildOperator
   public :: gfsys_buildVectorNode
   public :: gfsys_buildVectorEdge
@@ -70,66 +75,30 @@ module groupfemsystem
 
 !<constantblock description="Constants defining the blocking of the assembly">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of nodes to handle simultaneously when building matrices
 #ifndef GFSYS_NEQSIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSYS_NEQSIM = 128
-#else
-  integer, public            :: GFSYS_NEQSIM = 128
-#endif
 #endif
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of edges to handle simultaneously when building matrices
 #ifndef GFSYS_NEDGESIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSYS_NEDGESIM = 64
-#else
-  integer, public            :: GFSYS_NEDGESIM = 64
-#endif
 #endif
 
   ! Number of nonzero entries to handle simultaneously when building matrices
 #ifndef GFSYS_NASIM
-#ifndef ENABLE_AUTOTUNE
   integer, parameter, public :: GFSYS_NASIM = 1000
-#else
-  integer, public            :: GFSYS_NASIM = 1000
-#endif
-#endif
-  
-  ! Minimum number of nodes for OpenMP parallelisation: If the number of
-  ! nodes is below this value, then no parallelisation is performed.
-#ifndef GFSYS_NEQMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: GFSYS_NEQMIN_OMP = 1000
-#else
-  integer, public            :: GFSYS_NEQMIN_OMP = 1000
-#endif
-#endif
-
-  ! Minimum number of edges for OpenMP parallelisation: If the number of
-  ! edges is below this value, then no parallelisation is performed.
-#ifndef GFSYS_NEDGEMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: GFSYS_NEDGEMIN_OMP = 1000
-#else
-  integer, public            :: GFSYS_NEDGEMIN_OMP = 1000
-#endif
-#endif
-
-  ! Minimum number of nonzero entries for OpenMP parallelisation: If
-  ! the number of nonzero entries is below this value, then no
-  ! parallelisation is performed.
-#ifndef GFSYS_NAMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: GFSYS_NAMIN_OMP = 1000
-#else
-  integer, public            :: GFSYS_NAMIN_OMP = 1000
-#endif
 #endif
 !</constantblock>
 
 !</constants>
+
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: gfsys_perfconfig
 
   ! ****************************************************************************
 
@@ -156,13 +125,41 @@ module groupfemsystem
 
 contains
 
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsys_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      gfsys_perfconfig = rperfconfig
+    else
+      gfsys_perfconfig%NEQSIM = GFSYS_NEQSIM
+      gfsys_perfconfig%NEDGESIM = GFSYS_NEDGESIM
+      gfsys_perfconfig%NASIM = GFSYS_NASIM
+    end if
+  
+  end subroutine gfsys_initPerfConfig
+
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine gfsys_buildOperatorNodeBlock1(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
-      rcollection, rafcstab, fcb_calcOperatorNodeSys)
+      rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -200,6 +197,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -222,6 +223,9 @@ contains
     integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
     logical :: bisFullMatrix
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcOperatorNodeSys)) then
       
@@ -237,9 +241,16 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
-          rcollection, rafcstab)
+          rcollection, rafcstab, rperfconfig=rperfconfig)
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
 
     ! Check if block matrix exhibits group structure
@@ -355,27 +366,27 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,idx,ij,j,ivar,jvar,ijpos)&
-      !$omp if (size(InodeList) > GFSYS_NAMIN_OMP)
+      !$omp if (size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
       ! allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NASIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
       if (bisFullMatrix) then
-        allocate(Dcoefficients(NVAR*NVAR,1,GFSYS_NASIM))
+        allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
       else
-        allocate(Dcoefficients(NVAR,1,GFSYS_NASIM))
+        allocate(Dcoefficients(NVAR,1,p_rperfconfig%NASIM))
       end if
-      allocate(IdofsAtNode(2,GFSYS_NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
       
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
-      do IAset = 1, size(InodeList), GFSYS_NASIM
+      do IAset = 1, size(InodeList), p_rperfconfig%NASIM
 
-        ! We always handle GFSYS_NASIM matrix entries simultaneously.
+        ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle 
-        ! at most GFSYS_NASIM matrix entries simultaneously.
+        ! at most NASIM matrix entries simultaneously.
         
-        IAmax = min(size(InodeList), IAset-1+GFSYS_NASIM)
+        IAmax = min(size(InodeList), IAset-1+p_rperfconfig%NASIM)
 
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
@@ -515,26 +526,26 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j,ivar,jvar,ijpos)&
-      !$omp if (size(InodeList,2) > GFSYS_NAMIN_OMP)
+      !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NASIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
       if (bisFullMatrix) then
-        allocate(Dcoefficients(NVAR*NVAR,1,GFSYS_NASIM))
+        allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
       else
-        allocate(Dcoefficients(NVAR*NVAR,1,GFSYS_NASIM))
+        allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
       end if
       
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
-      do IAset = 1, size(InodeList,2), GFSYS_NASIM
+      do IAset = 1, size(InodeList,2), p_rperfconfig%NASIM
         
-        ! We always handle GFSYS_NASIM matrix entries simultaneously.
+        ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle 
-        ! at most GFSYS_NASIM matrix entries simultaneously.
+        ! at most NASIM matrix entries simultaneously.
         
-        IAmax = min(size(InodeList,2), IAset-1+GFSYS_NASIM)
+        IAmax = min(size(InodeList,2), IAset-1+p_rperfconfig%NASIM)
         
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
@@ -640,7 +651,7 @@ contains
 
   subroutine gfsys_buildOperatorNodeBlock2(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
-      rcollection, rafcstab, fcb_calcOperatorNodeSys)
+      rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -678,6 +689,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -713,7 +728,8 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx,&
           fcb_calcMatrixDiagSys_sim, dscale, bclear,&
-          rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+          rmatrix%RmatrixBlock(1,1), rcollection, rafcstab,&
+          rperfconfig=rperfconfig)
 
     else
       call output_line('Matrix must not contain more than one block!',&
@@ -729,7 +745,7 @@ contains
 
   subroutine gfsys_buildOperatorNodeBlock3(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
-      rcollection, rafcstab, fcb_calcOperatorNodeSys)
+      rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -767,6 +783,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -801,7 +821,7 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, rcollection,&
-          rafcstab)
+          rafcstab, rperfconfig=rperfconfig)
       
     else
       call output_line('Vector must not contain more than one block!',&
@@ -817,7 +837,7 @@ contains
 
   subroutine gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
-      rcollection, rafcstab, fcb_calcOperatorNodeSys)
+      rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -849,6 +869,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -871,6 +895,9 @@ contains
     integer, dimension(:,:), pointer :: p_InodeList2D
     integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcOperatorNodeSys)) then
       ! Create auxiliary 1-block vector and matrix
@@ -887,6 +914,13 @@ contains
 
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
 
     ! Check if matrix and vector have the same data type
@@ -1024,23 +1058,23 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,IAmax,idx,ij,j)&
-      !$omp if (size(InodeList) > GFSYS_NAMIN_OMP)
+      !$omp if (size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
       ! allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NASIM))
-      allocate(Dcoefficients(MVAR,1,GFSYS_NASIM))
-      allocate(IdofsAtNode(2,GFSYS_NASIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(MVAR,1,p_rperfconfig%NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
       
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
-      do IAset = 1, size(InodeList), GFSYS_NASIM
+      do IAset = 1, size(InodeList), p_rperfconfig%NASIM
 
-        ! We always handle GFSYS_NASIM matrix entries simultaneously.
+        ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle 
-        ! at most GFSYS_NASIM matrix entries simultaneously.
+        ! at most NASIM matrix entries simultaneously.
         
-        IAmax = min(size(InodeList), IAset-1+GFSYS_NASIM)
+        IAmax = min(size(InodeList), IAset-1+p_rperfconfig%NASIM)
 
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
@@ -1132,22 +1166,22 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j)&
-      !$omp if (size(InodeList,2) > GFSYS_NAMIN_OMP)
+      !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NASIM))
-      allocate(Dcoefficients(MVAR,1,GFSYS_NASIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(MVAR,1,p_rperfconfig%NASIM))
       
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
-      do IAset = 1, size(InodeList,2), GFSYS_NASIM
+      do IAset = 1, size(InodeList,2), p_rperfconfig%NASIM
         
-        ! We always handle GFSYS_NASIM matrix entries simultaneously.
+        ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
         ! Get the maximum position of matrix entries, such that we handle 
-        ! at most GFSYS_NASIM matrix entries simultaneously.
+        ! at most NASIM matrix entries simultaneously.
         
-        IAmax = min(size(InodeList,2), IAset-1+GFSYS_NASIM)
+        IAmax = min(size(InodeList,2), IAset-1+p_rperfconfig%NASIM)
         
         ! Loop through all nonzero matrix entries in the current set
         ! and prepare the auxiliary arrays
@@ -1207,7 +1241,7 @@ contains
   subroutine gfsys_buildOperatorEdgeBlock1(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
       dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSys)
+      fcb_calcOperatorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -1255,6 +1289,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSys.inc'
     optional :: fcb_calcOperatorEdgeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1278,6 +1316,9 @@ contains
     integer, dimension(:), pointer :: p_IedgeListIdx
     logical :: bisFullMatrix
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorEdgeSys)) then
 
@@ -1294,11 +1335,19 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
-          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab,&
+          rperfconfig=rperfconfig)
       ! That`s it
       return
     end if
     
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
+    end if
+
     ! Check if block matrix exhibits group structure
     if (rmatrix%imatrixSpec .ne. LSYSBS_MSPEC_GROUPMATRIX) then
       call output_line('Block matrix must have group structure!',&
@@ -1429,26 +1478,26 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IEQmax,i,ia,idx,ijpos,ivar,jvar)&
-      !$omp if (size(IdiagList,2) > GFSYS_NEQMIN_OMP)
+      !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
       if (bisFullMatrix) then
-        allocate(Dcoefficients(NVAR*NVAR,1,GFSYS_NEQSIM))
+        allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NEQSIM))
       else
-        allocate(Dcoefficients(NVAR,1,GFSYS_NEQSIM))
+        allocate(Dcoefficients(NVAR,1,p_rperfconfig%NEQSIM))
       end if
 
       ! Loop over the equations
       !$omp do schedule(static,1)
-      do IEQset = 1, size(IdiagList,2), GFSYS_NEQSIM
+      do IEQset = 1, size(IdiagList,2), p_rperfconfig%NEQSIM
 
-        ! We always handle GFSYS_NEQSIM equations simultaneously.
+        ! We always handle NEQSIM equations simultaneously.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSYS_NEQSIM equations simultaneously.
+        ! at most NEQSIM equations simultaneously.
         
-        IEQmax = min(size(IdiagList,2), IEQset-1+GFSYS_NEQSIM)
+        IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Loop through all equations in the current set
         ! and prepare the auxiliary arrays
@@ -1581,14 +1630,14 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ij,ji,ivar,jvar,ijpos)&
-      !$omp if(size(IedgeList,2) > GFSYS_NEDGEMIN_OMP)
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       if (bisFullMatrix) then
-        allocate(Dcoefficients(NVAR*NVAR,2,GFSYS_NEDGESIM))
+        allocate(Dcoefficients(NVAR*NVAR,2,p_rperfconfig%NEDGESIM))
       else
-        allocate(Dcoefficients(NVAR,2,GFSYS_NEDGESIM))
+        allocate(Dcoefficients(NVAR,2,p_rperfconfig%NEDGESIM))
       end if
 
       ! Loop over the edge groups and process all edges of one group
@@ -1601,14 +1650,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most NEDGESIM edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -1767,14 +1816,14 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtEdge,&
       !$omp         IEDGEmax,idx,iedge,ii,ij,ijpos,ivar,ji,jj,jvar)&
-      !$omp if(size(IedgeList,2) > GFSYS_NEDGEMIN_OMP)
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
       if (bisFullMatrix) then
-        allocate(Dcoefficients(NVAR*NVAR,3,GFSYS_NEDGESIM))
+        allocate(Dcoefficients(NVAR*NVAR,3,p_rperfconfig%NEDGESIM))
       else
-        allocate(Dcoefficients(NVAR,3,GFSYS_NEDGESIM))
+        allocate(Dcoefficients(NVAR,3,p_rperfconfig%NEDGESIM))
       end if
 
       ! Loop over the edge groups and process all edges of one group
@@ -1787,14 +1836,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most NEDGESIM edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -1961,7 +2010,7 @@ contains
   subroutine gfsys_buildOperatorEdgeBlock2(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
       dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSys)
+      fcb_calcOperatorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -2009,6 +2058,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSys.inc'
     optional :: fcb_calcOperatorEdgeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2045,7 +2098,8 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
           fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
-          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab)
+          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab,&
+          rperfconfig=rperfconfig)
     
     else
       call output_line('Matrix must not contain more than one block!',&
@@ -2062,7 +2116,7 @@ contains
   subroutine gfsys_buildOperatorEdgeBlock3(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
       dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSys)
+      fcb_calcOperatorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -2110,6 +2164,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSys.inc'
     optional :: fcb_calcOperatorEdgeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2145,7 +2203,7 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim, dscale,&
-          bclear, rmatrix, rcollection, rafcstab)
+          bclear, rmatrix, rcollection, rafcstab, rperfconfig=rperfconfig)
 
     else
       call output_line('Vector must not contain more than one block!',&
@@ -2162,7 +2220,7 @@ contains
   subroutine gfsys_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
       fcb_calcMatrixDiagSys_sim, fcb_calcMatrixSys_sim,&
       dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSys)
+      fcb_calcOperatorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -2207,6 +2265,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSys.inc'
     optional :: fcb_calcOperatorEdgeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2230,6 +2292,8 @@ contains
     integer, dimension(:,:), pointer :: p_IdiagList,p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
 
     ! Check if user-defined assembly is provided
     if (present(fcb_calcOperatorEdgeSys)) then
@@ -2248,6 +2312,13 @@ contains
 
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
     
     ! Check if matrix and vector have the same data type
@@ -2409,22 +2480,22 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IEQmax,i,ia,idx)&
-      !$omp if (size(IdiagList,2) > GFSYS_NEQMIN_OMP)
+      !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
-      allocate(Dcoefficients(MVAR,1,GFSYS_NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
+      allocate(Dcoefficients(MVAR,1,p_rperfconfig%NEQSIM))
 
       ! Loop over the equations
       !$omp do schedule(static,1)
-      do IEQset = 1, size(IdiagList,2), GFSYS_NEQSIM
+      do IEQset = 1, size(IdiagList,2), p_rperfconfig%NEQSIM
 
-        ! We always handle GFSYS_NEQSIM equations simultaneously.
+        ! We always handle NEQSIM equations simultaneously.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSYS_NEQSIM equations simultaneously.
+        ! at most NEQSIM equations simultaneously.
         
-        IEQmax = min(size(IdiagList,2), IEQset-1+GFSYS_NEQSIM)
+        IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Loop through all equations in the current set
         ! and prepare the auxiliary arrays
@@ -2512,11 +2583,11 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ij,ji)&
-      !$omp if(size(IedgeList,2) > GFSYS_NEDGEMIN_OMP)
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
-      allocate(Dcoefficients(MVAR,2,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(Dcoefficients(MVAR,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2528,14 +2599,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most NEDGESIM edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -2636,11 +2707,11 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ij,ji,ii,jj)&
-      !$omp if(size(IedgeList,2) > GFSYS_NEDGEMIN_OMP)
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
-      allocate(Dcoefficients(MVAR,3,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(Dcoefficients(MVAR,3,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2652,14 +2723,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most NEDGESIM edges simultaneously.
         
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
         
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -2750,7 +2821,7 @@ contains
 
   subroutine gfsys_buildVectorNodeBlock(rgroupFEMSet, rx,&
       fcb_calcVectorSys_sim, dscale, bclear, rvector,&
-      rcollection, rafcstab, fcb_calcVectorNodeSys)
+      rcollection, rafcstab, fcb_calcVectorNodeSys, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete vector by the group
@@ -2786,6 +2857,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcVectorNodeSys.inc'
     optional :: fcb_calcVectorNodeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2806,6 +2881,9 @@ contains
     integer, dimension(:,:), pointer :: p_InodeList2D
     integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined callback function is present
     if (present(fcb_calcVectorNodeSys)) then
 
@@ -2819,9 +2897,16 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildVectorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcVectorSys_sim, dscale, bclear, rvector%RvectorBlock(1),&
-          rcollection, rafcstab)
+          rcollection, rafcstab, rperfconfig=rperfconfig)
       ! That`s it
       return
+    end if
+    
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
 
     ! Check if vectors have the same data type double
@@ -2924,28 +3009,28 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
-      !$omp if(size(InodeList) > GFSYS_NAMIN_OMP)
+      !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
-      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSYS_NEQSIM
+      ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
         
-        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
+        ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
+        ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSYS_NASIM nonzero entries simultaneously.
+        ! NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -2967,11 +3052,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSYS_NASIM
+          ! does not exceed the upper bound NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3064,27 +3149,27 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
-      !$omp if(size(InodeList,2) > GFSYS_NAMIN_OMP)
+      !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSYS_NEQSIM
+      ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
         
-        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
+        ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
+        ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSYS_NASIM nonzero entries simultaneously.
+        ! NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -3106,11 +3191,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSYS_NASIM
+          ! does not exceed the upper bound NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3178,7 +3263,7 @@ contains
 
   subroutine gfsys_buildVectorNodeScalar(rgroupFEMSet, rx,&
       fcb_calcVectorSys_sim, dscale, bclear, rvector,&
-      rcollection, rafcstab, fcb_calcVectorNodeSys)
+      rcollection, rafcstab, fcb_calcVectorNodeSys, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete vector by the group
@@ -3212,6 +3297,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcVectorNodeSys.inc'
     optional :: fcb_calcVectorNodeSys
+    
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3233,6 +3322,9 @@ contains
     integer, dimension(:,:), pointer :: p_InodeList2D
     integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcVectorNodeSys)) then
       ! Create auxiliary 1-block vectors
@@ -3249,6 +3341,13 @@ contains
 
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
 
     ! Check if vectors have the same data type double
@@ -3349,28 +3448,28 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
-      !$omp if(size(InodeList) > GFSYS_NAMIN_OMP)
+      !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
-      allocate(IdofsAtNode(2,GFSYS_NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSYS_NEQSIM
+      ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
         
-        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
+        ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
+        ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSYS_NASIM nonzero entries simultaneously.
+        ! NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -3392,11 +3491,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSYS_NASIM
+          ! does not exceed the upper bound NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3489,27 +3588,27 @@ contains
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,&
       !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
-      !$omp if(size(InodeList,2) > GFSYS_NAMIN_OMP)
+      !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtNode(NVAR,GFSYS_NEQSIM))
-      allocate(Dcoefficients(NVAR,GFSYS_NEQSIM))
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NEQSIM))
+      allocate(Dcoefficients(NVAR,p_rperfconfig%NEQSIM))
 
-      ! Loop over all equations in blocks of size GFSYS_NEQSIM
+      ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, GFSYS_NEQSIM
+      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
         
-        ! We always handle GFSYS_NEQSIM equations by one OpenMP thread.
+        ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
-        ! at most GFSYS_NEQSIM equations by one OpenMP thread.
+        ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+GFSYS_NEQSIM)
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
         ! set of equations [IEQset:IEQmax] and process not more than
-        ! GFSYS_NASIM nonzero entries simultaneously.
+        ! NASIM nonzero entries simultaneously.
         
         ! Initialise the lower and upper bounds of nonzero entries;
         ! note that this is not the matrix position itself but the
@@ -3531,11 +3630,11 @@ contains
           ! Loop over the equations of the current group and include
           ! an equation into the current set of nonzero matrix entries
           ! if the total number of nonzero matrix entries in the set
-          ! does not exceed the upper bound GFSYS_NASIM
+          ! does not exceed the upper bound NASIM
           do while(IAmax .le. IEQmax)
 
-            ! Exit if more than GFSYS_NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. GFSYS_NASIM) exit
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
@@ -3603,7 +3702,7 @@ contains
 
   subroutine gfsys_buildVectorEdgeBlock(rgroupFEMSet, rx,&
       fcb_calcFlux_sim, dscale, bclear, rvector,&
-      rcollection, rafcstab,  fcb_calcVectorEdgeSys)
+      rcollection, rafcstab,  fcb_calcVectorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a vector operator by the group
@@ -3636,6 +3735,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcVectorEdgeSys.inc'
     optional :: fcb_calcVectorEdgeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3656,6 +3759,9 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcVectorEdgeSys)) then
 
@@ -3668,9 +3774,16 @@ contains
 
       call gfsys_buildVectorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcFlux_sim, dscale, bclear, rvector%RvectorBlock(1),&
-          rcollection, rafcstab)
+          rcollection, rafcstab, rperfconfig=rperfconfig)
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
 
     ! Check if vectors have the same data type double
@@ -3760,8 +3873,8 @@ contains
       !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -3773,14 +3886,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most NEDGESIM edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays
@@ -3837,7 +3950,7 @@ contains
 
   subroutine gfsys_buildVectorEdgeScalar(rgroupFEMSet, rx,&
       fcb_calcFlux_sim, dscale, bclear, rvector,&
-      rcollection, rafcstab, fcb_calcVectorEdgeSys)
+      rcollection, rafcstab, fcb_calcVectorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a vector operator by the group
@@ -3870,6 +3983,10 @@ contains
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcVectorEdgeSys.inc'
     optional :: fcb_calcVectorEdgeSys
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3891,6 +4008,9 @@ contains
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
     ! Check if user-defined assembly is provided
     if (present(fcb_calcVectorEdgeSys)) then
       ! Create auxiliary 1-block vector
@@ -3907,6 +4027,13 @@ contains
 
       ! That`s it
       return
+    end if
+
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsys_perfconfig
     end if
 
     ! Check if vectors have the same data type double
@@ -3994,11 +4121,11 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DfluxesAtEdge,IEDGEmax,i,idx,iedge,j)&
-      !$omp if(size(IedgeList,2) > GFSYS_NEDGEMIN_OMP)
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
-      allocate(DfluxesAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -4010,14 +4137,14 @@ contains
         ! Loop over the edges
         !$omp do schedule(static,1)
         do IEDGEset = IedgeListIdx(igroup),&
-                      IedgeListIdx(igroup+1)-1, GFSYS_NEDGESIM
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
           ! Get the maximum edge number, such that we handle 
-          ! at most GFSYS_NEDGESIM edges simultaneously.
+          ! at most NEDGESIM edges simultaneously.
           
-          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+GFSYS_NEDGESIM)
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
           
           ! Loop through all edges in the current set
           ! and prepare the auxiliary arrays

@@ -19,7 +19,7 @@
 !#     -> Calculate the gradient error by comparing the consistent FE
 !#        smoothed gradient obtained by gradient reconstruction
 !#
-!# .) ppgrd_initPerfConfig
+!# 3.) ppgrd_initPerfConfig
 !#      -> Initialises the global performance configuration
 !#
 !# Auxiliary routines, called internally.
@@ -110,6 +110,7 @@ module pprocgradients
   integer, parameter, public :: PPGRD_NELEMSIM   = 1000
 #endif
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of patches to handle simultaneously when performing gradient recovery
 #ifndef PPGRD_NPATCHSIM
   integer, parameter, public :: PPGRD_NPATCHSIM  = 100
@@ -166,7 +167,8 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradient (rvectorScalar,rvectorGradient,cgradType,cgradSubtype)
+  subroutine ppgrd_calcGradient (rvectorScalar,rvectorGradient,cgradType,&
+      cgradSubtype, rperfconfig)
 
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function.
@@ -193,6 +195,10 @@ contains
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_NODEPATCH is taken as default.
   integer, intent(in), optional :: cgradSubtype
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -250,16 +256,17 @@ contains
     select case (imethod)
     case (PPGRD_INTERPOL)
       ! 1st order gradient
-      call ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient)
+      call ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient, rperfconfig)
       
     case (PPGRD_ZZTECHNIQUE)
       ! 2nd order gradient with ZZ.
       ! Standard method is 'nodewise'.
-      call ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,isubmethod)
+      call ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,&
+          isubmethod,rperfconfig)
 
     case (PPGRD_LATECHNIQUE)
       ! 1st order gradient
-      call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar, rvectorGradient)
+      call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar,rvectorGradient,rperfconfig)
       
     case DEFAULT
       call output_line ('Unsupported gradient recovery technique!',&
@@ -274,7 +281,7 @@ contains
 !<subroutine>
 
   subroutine ppgrd_calcGradientError (rvectorScalar, derror, cgradType,&
-                                      cgradSubtype, rerror)
+                                      cgradSubtype, rerror, rperfconfig)
 
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function
@@ -295,6 +302,10 @@ contains
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_NODEPATCH is taken as default.
   integer, intent(in), optional :: cgradSubtype
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -420,13 +431,14 @@ contains
       call lsysbl_createVecBlockByDiscr(rdiscrBlockRef, rgradientRef, .true.)
       
       ! Recover consistent gradient vector
-      call ppgrd_calcGradient (rvectorScalar, rgradient)
+      call ppgrd_calcGradient (rvectorScalar, rgradient, rperfconfig=rperfconfig)
 
       ! Recover smoothed gradient vector
       if (imethod .eq. PPGRD_INTERPOL) then
-        call ppgrd_calcGradInterpP12Q12cnf(rvectorScalar, rgradientRef)
+        call ppgrd_calcGradInterpP12Q12cnf(rvectorScalar, rgradientRef, rperfconfig)
       else
-        call ppgrd_calcGradSuperPatchRecov(rvectorScalar, rgradientRef, isubmethod)
+        call ppgrd_calcGradSuperPatchRecov(rvectorScalar, rgradientRef,&
+            isubmethod, rperfconfig)
       end if
 
       ! Compute estimated gradient error
@@ -551,10 +563,10 @@ contains
       call lsysbl_createVecBlockByDiscr(rdiscrBlockRef, rgradientRef, .true.)
       
       ! Recover consistent gradient vector
-      call ppgrd_calcGradient (rvectorScalar, rgradient)
+      call ppgrd_calcGradient (rvectorScalar, rgradient, rperfconfig=rperfconfig)
 
       ! Recover smoothed gradient vector
-      call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar, rgradientRef)
+      call ppgrd_calcGradLimAvgP1Q1cnf(rvectorScalar, rgradientRef, rperfconfig)
 
       ! Compute estimated gradient error
       call pperr_blockErrorEstimate(rgradient, rgradientRef, PPERR_L2ERROR,&
@@ -582,7 +594,8 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient)
+  subroutine ppgrd_calcGradInterpP12Q12cnf (rvectorScalar,rvectorGradient,&
+      rperfconfig)
 
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function
@@ -593,6 +606,10 @@ contains
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
   type(t_vectorScalar), intent(in) :: rvectorScalar
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -651,7 +668,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dderivatives
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -679,6 +696,14 @@ contains
     ! Discretisation structures for the source- and destination vector(s)
     type(t_spatialDiscretisation), pointer :: p_rdiscrSource, p_rdiscrDest
      
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => ppgrd_perfconfig
+    end if
 
     ! Loop over all blocks of the gradient and over all FE spaces
     do i = 1, min(rvectorGradient%nblocks,&
@@ -715,8 +740,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPGRD_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
     
     ! Array that allows the calculation about the number of elements
     ! meeting in a vertex, based onm DOF`s.
@@ -1068,19 +1093,19 @@ contains
                                 p_IelementList)
                      
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPGRD_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPGRD_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
@@ -1239,7 +1264,8 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,cpatchType)
+  subroutine ppgrd_calcGradSuperPatchRecov (rvectorScalar,rvectorGradient,&
+      cpatchType,rperfconfig)
 
 !<description>
     ! Calculates the recovered gradient of a scalar finite element function
@@ -1255,6 +1281,10 @@ contains
     
     ! The type of patch used to recover the gradient values
     integer, intent(in) :: cpatchType
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1276,7 +1306,6 @@ contains
     integer :: i,j,k,ipoint,idx,idx2,idxsubgroup
     integer(i32) :: icoordSystem
     logical :: bnonparTrial
-
 
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder,BderDest
@@ -1437,6 +1466,14 @@ contains
     ! Auxiliary integers
     integer :: icubp,idim
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => ppgrd_perfconfig
+    end if
 
     ! Loop over all blocks of the gradient and over all FE spaces
     do i = 1, min(rvectorGradient%nblocks,&
@@ -1673,7 +1710,7 @@ contains
       end select
 
       ! Determine actual number of patches in this block
-      npatchesPerBlock = min(PPGRD_NPATCHSIM,NPATCH)
+      npatchesPerBlock = min(p_rperfconfig%NPATCHSIM,NPATCH)
 
       ! Allocate memory for element numbers in patch index array
       allocate(IelementsInPatchIdx(npatchesPerBlock+1))
@@ -1685,17 +1722,17 @@ contains
       if (.not. bisUniform) allocate(Inpoints(npatchesPerBlock))
       
       ! Loop over the patches - blockwise.
-      do PATCHset = 1, NPATCH , PPGRD_NPATCHSIM
+      do PATCHset = 1, NPATCH , p_rperfconfig%NPATCHSIM
         
         !-------------------------------------------------------------------------
         ! Phase 1: Determine all elements in the set of patches
         !-------------------------------------------------------------------------
         
-        ! We always handle PPGRD_NPATCHSIM patches simultaneously.
+        ! We always handle NPATCHSIM patches simultaneously.
         ! How many patches have we actually here?
         ! Get the maximum patch number, such that we handle at most 
-        ! PPGRD_NPATCHSIM patches simultaneously.
-        PATCHmax = min(NPATCH,PATCHset-1+PPGRD_NPATCHSIM)
+        ! NPATCHSIM patches simultaneously.
+        PATCHmax = min(NPATCH,PATCHset-1+p_rperfconfig%NPATCHSIM)
         
         ! Calculate the number of patches currently blocked
         npatchesInCurrentblock = PATCHmax-PATCHset+1
@@ -4120,7 +4157,8 @@ contains
 
 !<subroutine>
 
-  subroutine ppgrd_calcGradLimAvgP1Q1cnf (rvectorScalar,rvectorGradient)
+  subroutine ppgrd_calcGradLimAvgP1Q1cnf (rvectorScalar,rvectorGradient,&
+      rperfconfig)
 
 !<description>
     ! Calculates the recovered gradient of a scalar finite element function
@@ -4133,6 +4171,10 @@ contains
 !<input>
     ! The FE solution vector. Represents a scalar FE function.
     type(t_vectorScalar), intent(in) :: rvectorScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4208,7 +4250,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dderivatives
     
-    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! Number of elements in a block. Normally =NELEMSIM,
     ! except if there are less elements in the discretisation.
     integer :: nelementsPerBlock
     
@@ -4232,6 +4274,15 @@ contains
     
     ! Discretisation structures for the source- and destination vector(s)
     type(t_spatialDiscretisation), pointer :: p_rdiscrSource, p_rdiscrDest
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => ppgrd_perfconfig
+    end if
 
     ! Dimension of triangulation must be less or equal than number of subvectors
     ! in the block vector.
@@ -4312,8 +4363,8 @@ contains
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it is at most
-    ! BILF_NELEMSIM. This is only used for allocating some arrays.
-    nelementsPerBlock = min(PPGRD_NELEMSIM,p_rtriangulation%NEL)
+    ! NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
     
     ! Get a pointer to the KVERT and DCORVG array
     call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
@@ -4479,19 +4530,19 @@ contains
                                 p_IelementList)
 
       ! Loop over the elements - blockwise.
-      do IELset = 1, NEL, PPGRD_NELEMSIM
+      do IELset = 1, NEL, p_rperfconfig%NELEMSIM
       
-        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! We always handle NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
-        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! Get the maximum element number, such that we handle at most NELEMSIM
         ! elements simultaneously.
         
-        IELmax = min(NEL,IELset-1+PPGRD_NELEMSIM)
+        IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
       
         ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
