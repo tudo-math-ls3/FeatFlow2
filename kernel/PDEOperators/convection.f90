@@ -63,6 +63,7 @@ module convection
   use linearsystemblock
   use linearsystemscalar
   use matrixio
+  use perfconfig
   use spatialdiscretisation
   use statistics
   use storage

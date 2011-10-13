@@ -61,6 +61,7 @@ module quicksolver
   use linearalgebra
   use linearsystemscalar
   use mprimitives
+  use perfconfig
 
   implicit none
 

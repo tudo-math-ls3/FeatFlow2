@@ -48,6 +48,7 @@ module analyticprojection
   use linearalgebra
   use linearformevaluation
   use linearsystemscalar
+  use perfconfig
   use scalarpde
   use spatialdiscretisation
   use storage

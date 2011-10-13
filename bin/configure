@@ -233,7 +233,7 @@ use constant SRCLIST_KERNEL =>
     "System/error.f90 System/externalstorage.f90 System/fparser.f90 " .
     "System/fpersistence.f90 System/fsystem.f90 System/genoutput.f90 System/io.f90 " .
     "System/paramlist.f90 System/signals.f90 System/sort.f90 System/statistics.f90 " .
-    "System/storage.f90 System/textstream.f90 System/uuid.f90 " .
+    "System/storage.f90 System/textstream.f90 System/uuid.f90 System/perfconfig.f90 " .
 
     "TimeDependence/timestepping.f90 TimeDependence/timediscretisation.f90 " .
 

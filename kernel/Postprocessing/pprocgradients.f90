@@ -61,6 +61,7 @@ module pprocgradients
   use linearsystemblock
   use linearsystemscalar
   use mprimitives
+  use perfconfig
   use pprocerror
   use spatialdiscretisation
   use storage

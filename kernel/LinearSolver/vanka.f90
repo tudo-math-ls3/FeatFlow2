@@ -170,16 +170,17 @@
 
 module vanka
 
-  use fsystem
-  use storage
-  use genoutput
-  use element
-  use linearsystemscalar
-  use linearsystemblock
-  use spatialdiscretisation
   use dofmapping
+  use element
+  use fsystem
+  use genoutput
+  use linearsystemblock
+  use linearsystemscalar
   use mprimitives
+  use perfconfig
   use quicksolver
+  use spatialdiscretisation
+  use storage
   
   use vanka_navst2d
   use vanka_bouss2d

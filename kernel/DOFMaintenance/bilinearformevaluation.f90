@@ -273,6 +273,7 @@ module bilinearformevaluation
   use genoutput
   use linearalgebra
   use linearsystemscalar
+  use perfconfig
   use mprimitives
   use scalarpde
   use spatialdiscretisation

@@ -94,36 +94,37 @@
 
 module griddeform
 
-  use fsystem
-  use genoutput
-  use storage
   use basicgeometry
-  use geometryaux
-  use boundary
-  use triangulation
-  use triasearch
-  use linearsystemscalar
-  use linearsystemblock
-  use spatialdiscretisation
-  use dofmapping
-  use stdoperators
   use bcassembly
   use bilinearformevaluation
-  use linearformevaluation
-  use spdiscprojection
-  use pprocerror
+  use boundary
   use cubature
   use derivatives
+  use dofmapping
   use element
   use elementpreprocessing
-  use pprocgradients
-  use vectorfilters
-  use matrixfilters
-  use filtersupport 
-  use transformation
-  use linearsolver
   use feevaluation
-  use ucd  
+  use filtersupport 
+  use fsystem
+  use genoutput
+  use geometryaux
+  use linearformevaluation
+  use linearsolver
+  use linearsystemblock
+  use linearsystemscalar
+  use matrixfilters
+  use perfconfig
+  use pprocerror
+  use pprocgradients
+  use spatialdiscretisation
+  use spdiscprojection
+  use stdoperators
+  use storage
+  use transformation
+  use triangulation
+  use triasearch
+  use ucd
+  use vectorfilters
   
   implicit none
   

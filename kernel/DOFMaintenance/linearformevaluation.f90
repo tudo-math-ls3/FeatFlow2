@@ -222,6 +222,7 @@ module linearformevaluation
   use linearsystemblock
   use linearsystemscalar
   use mprimitives
+  use perfconfig
   use scalarpde
   use spatialdiscretisation
   use storage

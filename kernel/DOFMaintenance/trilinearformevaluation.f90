@@ -79,6 +79,7 @@ module trilinearformevaluation
   use genoutput
   use linearalgebra
   use linearsystemscalar
+  use perfconfig
   use scalarpde
   use spatialdiscretisation
   use storage
