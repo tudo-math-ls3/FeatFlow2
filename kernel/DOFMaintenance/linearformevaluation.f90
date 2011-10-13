@@ -83,6 +83,9 @@
 !#      -> Assembles the entries of a vector according to a linear form
 !#         defined in terms of a volume integral.
 !#
+!# 21.) linf_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# It contains the following set of auxiliary routines:
 !#
 !# 1.) linf_buildVectorDble_conf
@@ -295,6 +298,20 @@ module linearformevaluation
 
 !</types>
 
+!<constants>
+
+!<constantblock description="Constants defining the blocking of the assembly">
+
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
+  ! Number of elements to handle simultaneously when building vectors
+#ifndef LINF_NELEMSIM
+  integer, parameter, public :: LINF_NELEMSIM = 256
+#endif
+  
+!</constantblock>
+
+!</constants>
+
   !************************************************************************
   
   ! global performance configuration
@@ -302,6 +319,7 @@ module linearformevaluation
 
   !************************************************************************
 
+  public :: linf_initPerfConfig
   public :: linf_buildVectorScalar
   public :: linf_buildVectorScalar2
   public :: linf_buildVectorScalarBdr1D
@@ -328,6 +346,32 @@ module linearformevaluation
   public :: linf_buildSimpleVector
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      linf_perfconfig = rperfconfig
+    else
+      linf_perfconfig%NELEMSIM = LINF_NELEMSIM
+    end if
+  
+  end subroutine linf_initPerfConfig
 
   !****************************************************************************
 

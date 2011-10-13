@@ -19,6 +19,9 @@
 !#     -> Calculate the gradient error by comparing the consistent FE
 !#        smoothed gradient obtained by gradient reconstruction
 !#
+!# .) ppgrd_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# Auxiliary routines, called internally.
 !#
 !# 1.) ppgrd_calcGradInterpP12Q12cnf
@@ -42,28 +45,28 @@
 
 module pprocgradients
 
-  use fsystem
-  use storage
-  use boundary
-  use genoutput
-  use mprimitives
-  use spatialdiscretisation
-  use storage
-  use triangulation
   use basicgeometry
-  use elementpreprocessing
-  use element
+  use boundary
+  use collection
   use cubature
   use derivatives
   use dofmapping
   use domainintegration
+  use element
+  use elementpreprocessing
   use feevaluation
+  use fsystem
+  use genoutput
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
-  use collection
+  use mprimitives
   use pprocerror
+  use spatialdiscretisation
+  use storage
+  use storage
   use transformation
+  use triangulation
 
   implicit none
 
@@ -100,16 +103,29 @@ module pprocgradients
 
 !<constantblock description="Constants defining the blocking of the error calculation.">
 
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of elements to handle simultaneously when building vectors
-  integer, public :: PPGRD_NELEMSIM   = 1000
+#ifndef PPGRD_NELEMSIM
+  integer, parameter, public :: PPGRD_NELEMSIM   = 1000
+#endif
 
   ! Number of patches to handle simultaneously when performing gradient recovery
-  integer, public :: PPGRD_NPATCHSIM  = 100
+#ifndef PPGRD_NPATCHSIM
+  integer, parameter, public :: PPGRD_NPATCHSIM  = 100
+#endif
   
 !</constantblock>
 
 !</constants>
 
+  !************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: ppgrd_perfconfig
+
+  !************************************************************************
+
+  public :: ppgrd_initPerfConfig
   public :: ppgrd_calcGradient
   public :: ppgrd_calcGradientError
   public :: ppgrd_calcGradInterpP12Q12cnf
@@ -117,6 +133,33 @@ module pprocgradients
   public :: ppgrd_calcGradLimAvgP1Q1cnf
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ppgrd_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      ppgrd_perfconfig = rperfconfig
+    else
+      ppgrd_perfconfig%NELEMSIM = PPGRD_NELEMSIM
+      ppgrd_perfconfig%NPATCHSIM = PPGRD_NPATCHSIM
+    end if
+  
+  end subroutine ppgrd_initPerfConfig
 
   !****************************************************************************
 

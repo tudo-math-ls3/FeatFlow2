@@ -50,6 +50,9 @@
 !#        subroutine is a replacement of the previous version
 !#        bilf_buildMatrixScalar.
 !#
+!# 11.) bilf_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# It contains the following set of auxiliary routines:
 !#
 !# 1.) bilf_createMatStructure9_conf
@@ -398,6 +401,16 @@ module bilinearformevaluation
 
 !</constantblock>
 
+!<constantblock description="Constants defining the blocking of the assembly">
+
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
+  ! Number of elements to handle simultaneously when building matrices
+#ifndef LINF_NELEMSIM
+  integer, parameter, public :: BILF_NELEMSIM = 128
+#endif
+  
+!</constantblock>
+
 !</constants>
 
   !************************************************************************
@@ -407,6 +420,7 @@ module bilinearformevaluation
 
   !************************************************************************
 
+  public :: bilf_initPerfConfig
   public :: bilf_createMatrixStructure
   public :: bilf_buildMatrixScalar
   public :: bilf_buildMatrixScalar2
@@ -422,6 +436,32 @@ module bilinearformevaluation
   public :: bilf_releaseAssemblyData
   
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bilf_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      bilf_perfconfig = rperfconfig
+    else
+      bilf_perfconfig%NELEMSIM = BILF_NELEMSIM
+    end if
+  
+  end subroutine bilf_initPerfConfig
 
   !****************************************************************************
 

@@ -44,6 +44,9 @@
 !#        subroutine is a replacement of the previous version
 !#        trilf_buildMatrixScalar.
 !#
+!# 10.) trilf_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# A 'trilinear form' is in our context a bilinear form whose coefficient
 !# function may depend on a Finite Element function:
 !# <tex>
@@ -173,6 +176,20 @@ module trilinearformevaluation
 
 !</types>
 
+!<constants>
+
+!<constantblock description="Constants defining the blocking of the assembly">
+
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
+  ! Number of elements to handle simultaneously when building matrices
+#ifndef LINF_NELEMSIM
+  integer, parameter, public :: TRILF_NELEMSIM = 128
+#endif
+  
+!</constantblock>
+
+!</constants>
+
   !************************************************************************
   
   ! global performance configuration
@@ -180,6 +197,7 @@ module trilinearformevaluation
   
   !************************************************************************
 
+  public :: trilf_initPerfConfig
   public :: trilf_buildMatrixScalar
   public :: trilf_buildMatrixScalar2
 !  public :: trilf_buildMatrixScalarBdr1D
@@ -191,6 +209,32 @@ module trilinearformevaluation
 !  public :: trilf_assembleSubmeshMat9Bdr2D
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine trilf_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      trilf_perfconfig = rperfconfig
+    else
+      trilf_perfconfig%NELEMSIM = TRILF_NELEMSIM
+    end if
+  
+  end subroutine trilf_initPerfConfig
 
   !****************************************************************************
 

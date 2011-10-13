@@ -20,6 +20,9 @@
 !#  3.) vanka_doneConformal
 !#      -> Clean up the VANKA for conformal discretisations.
 !#
+!# 4.) vanka_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# The following list of routines are all used internally. There is no need to
 !# call them directly.
 !# 
@@ -192,6 +195,7 @@ module vanka
   public :: t_matrixPointer79Vanka
   public :: t_vankaPointer2DNavStOptC
   public :: t_vankaPointer3DNavSt 
+  public :: vanka_initPerfConfig
   public :: vanka_initConformal
   public :: vanka_doneConformal
   public :: vanka_conformal
@@ -745,6 +749,20 @@ module vanka
 
 !</types>
 
+!<constants>
+!<constantblock description="Constants defining the blocking of element sets in VANKA">
+
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
+  ! Number of elements to handle simultaneously in general VANKA
+#ifndef VANKA_NELEMSIM
+  integer, parameter, public :: VANKA_NELEMSIM   = 1000
+#endif
+  
+!</constantblock>
+!</constants>
+
+  
+
   !************************************************************************
   
   ! global performance configuration
@@ -753,6 +771,32 @@ module vanka
   !************************************************************************
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine vanka_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      vanka_perfconfig = rperfconfig
+    else
+      vanka_perfconfig%NELEMSIM = VANKA_NELEMSIM
+    end if
+  
+  end subroutine vanka_initPerfConfig
 
   ! ***************************************************************************
   ! General VANKA for conformal discretisations.

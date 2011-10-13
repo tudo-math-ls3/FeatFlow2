@@ -25,6 +25,9 @@
 !#      -> Assembles the entries of a interpolation matrix based on element-
 !#         wise L2-projection.
 !#
+!# 5.) mlop_initPerfConfig
+!#      -> Initialises the global performance configuration
+!#
 !# ---------------------------------------------------------------------------- \\
 !# A small note on conformal discretisations \\
 !# ----------------------------------------------------------------------------
@@ -85,6 +88,7 @@ module multileveloperators
   
   private
   
+  public :: mlop_initPerfConfig
   public :: mlop_create2LvlMatrixStruct
   public :: mlop_build2LvlMassMatrix
   public :: mlop_build2LvlProlMatrix
@@ -124,6 +128,16 @@ module multileveloperators
 
 !</constantblock>
 
+!<constantblock description="Constants defining the blocking of the assembly">
+
+  ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
+  ! Number of elements to handle simultaneously when building vectors
+#ifndef LINF_NELEMSIM
+  integer, parameter, public :: MLOP_NELEMSIM = 100
+#endif
+  
+!</constantblock>
+
 !</constants>
 
   !************************************************************************
@@ -134,7 +148,32 @@ module multileveloperators
   !************************************************************************
 
 contains
+  
+  !****************************************************************************
 
+!<subroutine>
+
+  subroutine mlop_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      mlop_perfconfig = rperfconfig
+    else
+      mlop_perfconfig%NELEMSIM = MLOP_NELEMSIM
+    end if
+  
+  end subroutine mlop_initPerfConfig
 
   !****************************************************************************
 

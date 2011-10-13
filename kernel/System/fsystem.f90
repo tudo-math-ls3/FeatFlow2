@@ -241,18 +241,6 @@ module fsystem
   
 !</constantblock>
 
-!<constantblock description="Legacy constants">
-
-  integer, parameter :: BILF_NELEMSIM = 128
-  integer, parameter :: LINF_NELEMSIM = 256
-  integer, parameter :: TRILF_NELEMSIM = 128
-  integer, parameter :: MLOP_NELEMSIM = 100
-  integer, parameter :: VANKA_NELEMSIM = 1000
-  
-  !$ integer, parameter :: QSOL_NEQMIN_OMP = 1000
-
-!</constantblock>
-
 !</constants>
 
 !************************************************************************
@@ -353,6 +341,9 @@ module fsystem
     ! Number of elements to handle simultaneously
     integer :: NELEMSIM = 128
 
+    ! Number of patches to handle simultaneously
+    integer :: NPATCHSIM = 100
+
     ! OpenMP-Extension: the following settings are lower bounds which
     ! must be satisfied before OpenMP-parallelisation is activated
 
@@ -367,6 +358,9 @@ module fsystem
 
     ! Minimal number of elements
     !$ integer :: NELEMMIN_OMP = 1000
+
+    ! Minimal number of patches
+    !$ integer :: NPATCHMIN_OMP = 1000
 
   end type
 
