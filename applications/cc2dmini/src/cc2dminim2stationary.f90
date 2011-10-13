@@ -116,6 +116,7 @@ contains
   
     subroutine c2d2_getDefect (ite,rx,rb,rd,p_rcollection)
   
+    use fsystem
     use linearsystemblock
     use collection
     
@@ -136,7 +137,7 @@ contains
     type(t_vectorBlock), intent(in),target        :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(in)               :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
                
   !<inputoutput>
@@ -146,7 +147,7 @@ contains
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    type(t_vectorBlock), intent(inout)            :: rd
+    type(t_vectorBlock), intent(inout), target    :: rd
   !</inputoutput>
   
   !</subroutine>
@@ -521,6 +522,7 @@ contains
 
     subroutine c2d2_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
+    use fsystem
     use linearsystemblock
     use collection
     
@@ -538,7 +540,7 @@ contains
     integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(inout)            :: rd
+    type(t_vectorBlock), intent(inout), target    :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
