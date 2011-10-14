@@ -164,6 +164,7 @@ module afcstabbase
   use linearsystemblock
   use linearsystemscalar
   use paramlist
+  use perfconfig
   use spatialdiscretisation
   use storage
   use triangulation
@@ -173,6 +174,7 @@ module afcstabbase
   private
   public :: t_afcstab
 
+  public :: afcstab_initPerfConfig
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
@@ -664,19 +666,6 @@ module afcstabbase
 
 !</constantblock>
 
-!<constantblock>
-  ! Minimum number of edges for OpenMP parallelisation: If the number of
-  ! edges is below this value, then no parallelisation is performed.
-#ifndef AFCSTAB_NEDGEMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: AFCSTAB_NEDGEMIN_OMP = 1000
-#else
-  integer, public            :: AFCSTAB_NEDGEMIN_OMP = 1000
-#endif
-#endif
-  
-!</constantblock>
-
 !</constants>
 
   ! *****************************************************************************
@@ -823,6 +812,11 @@ module afcstabbase
 !</typeblock>
 !</types>
 
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: afcstab_perfconfig
+
   ! *****************************************************************************
 
   interface afcstab_resizeStabilisation
@@ -866,6 +860,32 @@ module afcstabbase
   end interface
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      afcstab_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(afcstab_perfconfig)
+    end if
+  
+  end subroutine afcstab_initPerfConfig
 
   ! ***************************************************************************
 
@@ -5787,7 +5807,8 @@ contains
 #ifndef USE_OPENMP
   pure&
 #endif
-  subroutine afcstab_combFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha)
+  subroutine afcstab_combFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha,&
+                                    rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -5806,6 +5827,10 @@ contains
 
     ! Number of entries/edges
     integer, intent(in) :: NEDGE
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5817,13 +5842,22 @@ contains
     ! local variables
     integer :: iedge
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
     if (present(Dalpha)) then
       
       if (dscale .eq. 1.0_DP) then
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge)&
                         + Dalpha(iedge) * Dflux1(iedge)
@@ -5834,7 +5868,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge)&
                         - Dalpha(iedge) * Dflux1(iedge)
@@ -5845,7 +5879,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge)&
                         + dscale * Dalpha(iedge) * Dflux1(iedge)
@@ -5860,7 +5894,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge) + Dflux1(iedge)
         end do
@@ -5870,7 +5904,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge) - Dflux1(iedge)
         end do
@@ -5880,7 +5914,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(iedge) = Dflux2(iedge) + dscale * Dflux1(iedge)
         end do
@@ -5899,7 +5933,8 @@ contains
 #ifndef USE_OPENMP
   pure&
 #endif
-  subroutine afcstab_combFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha)
+  subroutine afcstab_combFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha,&
+                                    rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -5918,6 +5953,10 @@ contains
 
     ! Number of entries/edges
     integer, intent(in) :: NEDGE
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -5929,13 +5968,22 @@ contains
     ! local variables
     integer :: iedge
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
     if (present(Falpha)) then
       
       if (fscale .eq. 1.0_SP) then
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(iedge) = Fflux2(iedge)&
                         + Falpha(iedge) * Fflux1(iedge)
@@ -5946,7 +5994,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(iedge) = Fflux2(iedge)&
                         - Falpha(iedge) * Fflux1(iedge)
@@ -5957,7 +6005,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(iedge) = Fflux2(iedge)&
                         + fscale * Falpha(iedge) * Fflux1(iedge)
@@ -5972,7 +6020,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(iedge) = Fflux2(iedge) + Fflux1(iedge)
         end do
@@ -5982,7 +6030,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(iedge) = Fflux2(iedge) - Fflux1(iedge)
         end do
@@ -5992,7 +6040,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(iedge) = Fflux2(iedge) + fscale * Fflux1(iedge)
         end do
@@ -6011,7 +6059,8 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine afcstab_combineFluxesDble(NVAR, NEDGE, dscale, Dflux1, Dflux2, Dalpha)
+    subroutine afcstab_combineFluxesDble(NVAR, NEDGE, dscale, Dflux1, Dflux2,&
+                                         Dalpha, rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -6033,6 +6082,10 @@ contains
 
     ! Global scaling factor for all entries of flux1
     real(DP), intent(in) :: dscale    
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6044,13 +6097,22 @@ contains
     ! local variables
     integer :: iedge
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
     if (present(Dalpha)) then
 
       if (dscale .eq. 1.0_DP) then
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(:,iedge) = Dflux2(:,iedge)&
                           + Dalpha(iedge) * Dflux1(:,iedge)
@@ -6061,7 +6123,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(:,iedge) = Dflux2(:,iedge)&
                           - Dalpha(iedge) * Dflux1(:,iedge)
@@ -6072,7 +6134,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(:,iedge) = Dflux2(:,iedge)&
                           + dscale * Dalpha(iedge) * Dflux1(:,iedge)
@@ -6087,7 +6149,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(:,iedge) = Dflux2(:,iedge)&
                           + Dflux1(:,iedge)
@@ -6098,7 +6160,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(:,iedge) = Dflux2(:,iedge)&
                           - Dflux1(:,iedge)
@@ -6109,7 +6171,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Dflux2(:,iedge) = Dflux2(:,iedge)&
                           + dscale * Dflux1(:,iedge)
@@ -6129,7 +6191,8 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine afcstab_combineFluxesSngl(NVAR, NEDGE, fscale, Fflux1, Fflux2, Falpha)
+    subroutine afcstab_combineFluxesSngl(NVAR, NEDGE, fscale, Fflux1, Fflux2,&
+                                         Falpha, rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -6151,6 +6214,10 @@ contains
 
     ! Number of variables
     integer, intent(in) :: NVAR
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6162,13 +6229,22 @@ contains
     ! local variables
     integer :: iedge
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
     if (present(Falpha)) then
 
       if (fscale .eq. 1.0_SP) then
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(:,iedge) = Fflux2(:,iedge)&
                           + Falpha(iedge) * Fflux1(:,iedge)
@@ -6179,7 +6255,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(:,iedge) = Fflux2(:,iedge)&
                           - Falpha(iedge) * Fflux1(:,iedge)
@@ -6190,7 +6266,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(:,iedge) = Fflux2(:,iedge)&
                           + fscale * Falpha(iedge) * Fflux1(:,iedge)
@@ -6205,7 +6281,7 @@ contains
         
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(:,iedge) = Fflux2(:,iedge)&
                           + Fflux1(:,iedge)
@@ -6216,7 +6292,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(:,iedge) = Fflux2(:,iedge)&
                           - Fflux1(:,iedge)
@@ -6227,7 +6303,7 @@ contains
 
         ! Loop over all edges
         !$omp parallel do default(shared)&
-        !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
         do iedge = 1, NEDGE
           Fflux2(:,iedge) = Fflux2(:,iedge)&
                           + fscale * Fflux1(:,iedge)
@@ -6245,7 +6321,7 @@ contains
 !<subroutine>
 
   subroutine afcstab_upwindOrientationDble(Dcoefficients, IedgeList,&
-      DcoeffsAtEdge, ipos, jpos)
+      DcoeffsAtEdge, ipos, jpos, rperfconfig)
 
 !<description>
     ! This subroutine orients the edges so that the starting node of
@@ -6261,6 +6337,10 @@ contains
 !<input>
     ! Positions of node I and J
     integer, intent(in) :: ipos,jpos
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6284,13 +6364,22 @@ contains
     real(DP) :: daux
     integer :: iedge,iaux,naux,nedge
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
     nedge = size(IedgeList,2)
     naux  = size(DcoeffsAtEdge,1)
     
     select case(size(IedgeList,1))
     case (2)
       !$omp parallel do default(shared) private(iaux,daux)&
-      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
@@ -6315,7 +6404,7 @@ contains
 
     case (6)
       !$omp parallel do default(shared) private(iaux,daux)&
-      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
@@ -6361,7 +6450,7 @@ contains
 !<subroutine>
 
   subroutine afcstab_upwindOrientationSngl(Fcoefficients, IedgeList,&
-      FcoeffsAtEdge, ipos, jpos)
+      FcoeffsAtEdge, ipos, jpos, rperfconfig)
 
 !<description>
     ! This subroutine orients the edges so that the starting node of
@@ -6377,6 +6466,10 @@ contains
 !<input>
     ! Positions of node I and J
     integer, intent(in) :: ipos,jpos
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6400,13 +6493,22 @@ contains
     real(SP) :: faux
     integer :: iedge,iaux,naux,nedge
     
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
     nedge = size(IedgeList,2)
     naux  = size(FcoeffsAtEdge,1)
     
     select case(size(IedgeList,1))
     case (2)
       !$omp parallel do default(shared) private(iaux,faux)&
-      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j
@@ -6431,7 +6533,7 @@ contains
 
     case (6)
       !$omp parallel do default(shared) private(iaux,faux)&
-      !$omp if (NEDGE > AFCSTAB_NEDGEMIN_OMP)
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, nedge
         if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
           ! Swap nodes i <-> j

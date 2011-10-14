@@ -42,12 +42,16 @@
 !#
 !# 11.) lalg_vectorCompMultXXX
 !#      -> Multiply two vectors componentwise
+!#
+!# 12.) lalg_initPerfConfig
+!#       -> Initialises the global performance configuration
 !# </purpose>
 !##############################################################################
 
 module linearalgebra
 
   use fsystem
+  use perfconfig
 
   implicit none
   
@@ -202,6 +206,8 @@ module linearalgebra
 #endif
   end interface
   
+  public :: lalg_initPerfConfig
+
   public :: lalg_copyVector
 
   public :: lalg_copyVectorSngl
@@ -572,19 +578,6 @@ module linearalgebra
 
 !<constants>
 
-!<constantblock description="Constants defining the OpenMP parallelisation">
-
-  ! Minimum number of entries for OpenMP parallelisation: If the number of
-  ! entries is below this value, then no parallelisation is performed.
-#ifndef LINALG_NMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: LINALG_NMIN_OMP = 10000
-#else
-  integer, public            :: LINALG_NMIN_OMP = 10000
-#endif
-#endif
-!</constantblock>
-
 !<constantblock description="Constants identifying vector norms">
 
   ! Sum of the absolute values of entries
@@ -605,8 +598,41 @@ module linearalgebra
 !</constantblock>
 
 !</constants>
+
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: lalg_perfconfig
+  
+  !*****************************************************************************
   
 contains
+
+  ! ****************************************************************************
+
+!<subroutine>
+
+  subroutine lalg_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      lalg_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(lalg_perfconfig)
+    end if
+  
+  end subroutine lalg_initPerfConfig
 
   ! ***************************************************************************
 
@@ -9122,7 +9148,7 @@ contains
 
   ! code for increment not equal to 1
   nincx = n*incx
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = 1,nincx,incx
     qx(i) = qa*qx(i)
   end do
@@ -9137,7 +9163,7 @@ contains
   end do
   if( n .lt. 5 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,5
     qx(i) = qa*qx(i)
     qx(i + 1) = qa*qx(i + 1)
@@ -9207,7 +9233,7 @@ contains
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     qy(i) = qx(i)
     qy(i + 1) = qx(i + 1)
@@ -9283,7 +9309,7 @@ contains
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,4
     qy(i) = qy(i) + qa*qx(i)
     qy(i + 1) = qy(i + 1) + qa*qx(i + 1)
@@ -9544,7 +9570,7 @@ contains
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     dy(i) = real(sx(i),DP)
     dy(i + 1) = real(sx(i + 1),DP)
@@ -9616,7 +9642,7 @@ contains
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     sy(i) = real(dx(i),SP)
     sy(i + 1) = real(dx(i + 1),SP)
@@ -9688,7 +9714,7 @@ end subroutine dscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     qy(i) = real(sx(i),QP)
     qy(i + 1) = real(sx(i + 1),QP)
@@ -9760,7 +9786,7 @@ end subroutine dscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     sy(i) = real(qx(i),SP)
     sy(i + 1) = real(qx(i + 1),SP)
@@ -9832,7 +9858,7 @@ end subroutine qscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     qy(i) = real(dx(i),QP)
     qy(i + 1) = real(dx(i + 1),QP)
@@ -9904,7 +9930,7 @@ end subroutine qscopy
   end do
   if( n .lt. 7 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,7
     dy(i) = real(qx(i),DP)
     dy(i + 1) = real(qx(i + 1),DP)
@@ -9980,7 +10006,7 @@ end subroutine qscopy
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,4
     dy(i) = dy(i) + sa*sx(i)
     dy(i + 1) = dy(i + 1) + sa*sx(i + 1)
@@ -10053,7 +10079,7 @@ end subroutine qscopy
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,4
     qy(i) = qy(i) + sa*sx(i)
     qy(i + 1) = qy(i + 1) + sa*sx(i + 1)
@@ -10126,7 +10152,7 @@ end subroutine qscopy
   end do
   if( n .lt. 4 ) return
 40 mp1 = m + 1
-  !$omp parallel do if(n > LINALG_NMIN_OMP)
+  !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
   do i = mp1,n,4
     qy(i) = qy(i) + da*dx(i)
     qy(i + 1) = qy(i + 1) + da*dx(i + 1)
@@ -10187,7 +10213,7 @@ end subroutine qscopy
       if (n .lt. 5) return
     end if
     mp1 = m + 1
-    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
     do i = mp1,n,5
       sx(i) = sa
       sx(i + 1) = sa
@@ -10199,7 +10225,7 @@ end subroutine qscopy
   else
     ! code for increment not equal to 1
     nincx = n*incx
-    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
     do i = 1,nincx,incx
       sx(i) = sa
     end do
@@ -10259,7 +10285,7 @@ end subroutine qscopy
       if (n .lt. 5) return
     end if
     mp1 = m + 1
-    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
     do i = mp1,n,5
       dx(i) = da
       dx(i + 1) = da
@@ -10271,7 +10297,7 @@ end subroutine qscopy
   else
     ! code for increment not equal to 1
     nincx = n*incx
-    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
     do i = 1,nincx,incx
       dx(i) = da
     end do
@@ -10331,7 +10357,7 @@ end subroutine qscopy
       if (n .lt. 5) return
     end if
     mp1 = m + 1
-    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
     do i = mp1,n,5
       qx(i) = qa
       qx(i + 1) = qa
@@ -10343,7 +10369,7 @@ end subroutine qscopy
   else
     ! code for increment not equal to 1
     nincx = n*incx
-    !$omp parallel do if(n > LINALG_NMIN_OMP)
+    !$omp parallel do if(n > lalg_perfconfig%NITEMMIN_OMP)
     do i = 1,nincx,incx
       qx(i) = qa
     end do

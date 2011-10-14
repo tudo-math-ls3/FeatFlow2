@@ -794,6 +794,7 @@ contains
     if (present(rperfconfig)) then
       vanka_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(vanka_perfconfig)
       vanka_perfconfig%NELEMSIM = VANKA_NELEMSIM
     end if
   

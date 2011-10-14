@@ -143,6 +143,7 @@ contains
     if (present(rperfconfig)) then
       ppns_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(ppns_perfconfig)
       ppns_perfconfig%NELEMSIM = PPNS_NELEMSIM
     end if
   

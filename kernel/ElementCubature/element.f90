@@ -265,12 +265,13 @@
 
 module element
 
-  use fsystem
-  use genoutput
   use basicgeometry
   use derivatives
-  use transformation
+  use fsystem
+  use genoutput
   use mprimitives
+  use perfconfig
+  use transformation
   
   use elementbase
   use element_line1d
@@ -1980,7 +1981,7 @@ contains
 !<subroutine>  
 
   subroutine elem_generic1 (celement, Dcoords, Djac, ddetj, Bder, &
-                                Dpoint, Dbas, ItwistIndex)
+                                Dpoint, Dbas, ItwistIndex, rperfconfig)
 
 !<description>
   ! DEPRECATED!!!
@@ -2040,6 +2041,10 @@ contains
   ! of the element.
   ! Can be omitted if the element does not use this information.
   integer(I32), intent(in), optional :: ItwistIndex
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -2216,7 +2221,7 @@ contains
     reval%p_ItwistIndex => ItwistIndex2
     
     ! Call sim2-wrapper
-    call elem_generic_sim2(celement, reval, Bder, Dbas2)
+    call elem_generic_sim2(celement, reval, Bder, Dbas2, rperfconfig)
     
     ! Copy results to Dbas
     Dbas(:,:) = Dbas2(:,:,1,1)
@@ -2405,7 +2410,8 @@ contains
 !<subroutine>  
 
   subroutine elem_generic_mult (celement, Dcoords, Djac, Ddetj, &
-                                     Bder, Dbas, npoints, Dpoints, itwistIndex)
+                                     Bder, Dbas, npoints, Dpoints,&
+                                     itwistIndex, rperfconfig)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
@@ -2458,6 +2464,10 @@ contains
   ! of the edges in the element.
   ! Can be omitted if the element does not use this information.
   integer(I32), intent(in), optional :: itwistIndex
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -2562,7 +2572,7 @@ contains
       ! Compatibility handling: evaluate all points separately
       do i=1,npoints
         call elem_generic (celement, Dcoords, Djac(:,i), Ddetj(i), Bder, &
-                           Dpoints(:,i), Dbas(:,:,i), ItwistIndex)
+                           Dpoints(:,i), Dbas(:,:,i), ItwistIndex, rperfconfig)
       end do
     end select
 
@@ -2573,7 +2583,8 @@ contains
 !<subroutine>  
 
   subroutine elem_generic_sim1 (celement, Dcoords, Djac, Ddetj, &
-                               Bder, Dbas, npoints, nelements, Dpoints, ItwistIndex)
+                               Bder, Dbas, npoints, nelements, Dpoints,&
+                               ItwistIndex, rperfconfig)
 
 !<description>
   ! DEPRECATED:
@@ -2647,6 +2658,10 @@ contains
   ! Can be omitted if the element does not need it.
   ! Array with DIMENSION(nelements)
   integer(I32), dimension(:), intent(in), optional :: ItwistIndex
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -2673,22 +2688,22 @@ contains
                            Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1_1D)
       call elem_P1_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                           Bder, Dbas, npoints, nelements, Dpoints)
+                           Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_P2_1D)
       call elem_P2_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                           Bder, Dbas, npoints, nelements, Dpoints)
+                           Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_S31_1D)
       call elem_S31_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                            Bder, Dbas, npoints, nelements, Dpoints)
+                            Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_DG_T0_1D)
       call elem_DG_T0_1D_sim (celement, Dcoords, Djac, Ddetj, &
                               Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_DG_T1_1D)
       call elem_DG_T1_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints)
+                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_DG_T2_1D)
       call elem_DG_T2_1D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints)
+                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
     ! 2D elements
     case (EL_P0)
@@ -2696,52 +2711,52 @@ contains
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1,EL_DG_P1_2D)
       call elem_P1_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_P2)
       call elem_P2_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_P1T)
       call elem_P1T_sim (celement, Dcoords, Djac, Ddetj, &
-                         Bder, Dbas, npoints, nelements, Dpoints)
+                         Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_Q0)
       call elem_Q0_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q1,EL_DG_Q1_2D)
       call elem_Q1_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_Q2,EL_DG_Q2_2D)
       call elem_Q2_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
       call elem_EM30_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E030)
       call elem_E030_sim (celement, Dcoords, Djac, Ddetj, &
-                          Bder, Dbas, npoints, nelements, Dpoints)
+                          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_EB30)
       call elem_EB30_sim (celement, Dcoords, Djac, Ddetj, &
-                          Bder, Dbas, npoints, nelements, Dpoints)
+                          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_EM31)
       call elem_EM31_sim (celement, Dcoords, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_E031)
       call elem_E031_sim (celement, Dcoords, Djac, Ddetj, &
-                          Bder, Dbas, npoints, nelements, Dpoints)
+                          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_E050)
       call elem_E050_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
-                          Bder, Dbas, npoints, nelements, Dpoints)
+                          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_EB50)
       call elem_EB50_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
-                          Bder, Dbas, npoints, nelements, Dpoints)
+                          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_DG_T0_2D)
       call elem_DG_T0_2D_sim (celement, Dcoords, Djac, Ddetj, &
                               Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_DG_T1_2D)
       call elem_DG_T1_2D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints)
+                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_DG_T2_2D)
       call elem_DG_T2_2D_sim (celement, Dcoords, Djac, Ddetj, &
-                              Bder, Dbas, npoints, nelements, Dpoints)
+                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
     ! 3D elements
     case (EL_P0_3D)
@@ -2749,34 +2764,34 @@ contains
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P1_3D)
       call elem_P1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_Q0_3D)
       call elem_Q0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Q1_3D)
       call elem_Q1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_Y0_3D)
       call elem_Y0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_Y1_3D)
       call elem_Y1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_R0_3D)
       call elem_R0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_R1_3D)
       call elem_R1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_EM30_3D)
       call elem_EM30_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                          Bder, Dbas, npoints, nelements, Dpoints)
+                          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_E030_3D)
       call elem_E030_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+                        Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_E031_3D)
       call elem_E031_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                        Bder, Dbas, npoints, nelements, Dpoints)
+          Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
     case default
       ! Compatibility handling: evaluate on all elements separately
@@ -2784,13 +2799,15 @@ contains
         do i=1,nelements
           call elem_generic_mult (celement, Dcoords(:,:,i),&
               Djac(:,:,i), Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i), ItwistIndex(i))
+              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i),&
+              ItwistIndex(i), rperfconfig)
         end do
       else
         do i=1,nelements
           call elem_generic_mult (celement, Dcoords(:,:,i),&
               Djac(:,:,i), Ddetj(:,i), &
-              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i))
+              Bder, Dbas(:,:,:,i), npoints, Dpoints(:,:,i),&
+              rperfconfig=rperfconfig)
         end do
       end if
     end select
@@ -2801,7 +2818,7 @@ contains
   
 !<subroutine>  
 
-  subroutine elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
+  subroutine elem_generic_sim2 (celement, revalElementSet, Bder, Dbas, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -2824,6 +2841,10 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in) :: Bder  
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -2863,19 +2884,19 @@ contains
       call elem_P1_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_P2_1D)
       call elem_P2_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_S31_1D)
       call elem_S31_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
         
     case (EL_DG_T0_1D)
       call elem_DG_T0_1D_sim (celement, revalElementSet%p_Dcoords, &
@@ -2887,13 +2908,13 @@ contains
       call elem_DG_T1_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
                               
     case (EL_DG_T2_1D)
       call elem_DG_T2_1D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     ! *****************************************************
     ! 2D triangle elements
@@ -2907,19 +2928,19 @@ contains
       call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_P2)
       call elem_P2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_P1T)
       call elem_P1T_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     ! *****************************************************
     ! 2D quadrilateral elements
@@ -2933,7 +2954,7 @@ contains
       call elem_Q1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
       
       ! New implementation
       !call elem_eval_Q1_2D(celement, revalElementSet, Bder, Dbas)
@@ -2945,7 +2966,7 @@ contains
       call elem_Q2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
 
     case (EL_Q2H_2D)
       call elem_eval_Q2H_2D(celement, revalElementSet, Bder, Dbas)
@@ -2964,13 +2985,13 @@ contains
       call elem_E030_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_EB30)
       call elem_EB30_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_Q1TBNP)
       ! non-parametric variant of EB30
@@ -2990,7 +3011,7 @@ contains
       call elem_E031_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_E032)
       call elem_eval_E032_2D(celement, revalElementSet, Bder, Dbas)
@@ -3000,7 +3021,7 @@ contains
         revalElementSet%p_ItwistIndex, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_EB50)
       !call elem_EB50_sim (celement, revalElementSet%p_Dcoords,&
@@ -3010,7 +3031,7 @@ contains
       !  revalElementSet%p_DpointsRef)
 
       ! New implementation
-      call elem_eval_EB50_2D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_EB50_2D(celement, revalElementSet, Bder, Dbas, rperfconfig)
     
     case (EL_EM50)
       call elem_eval_EN50_2D(celement, revalElementSet, Bder, Dbas)
@@ -3025,13 +3046,13 @@ contains
       call elem_DG_T1_2D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
                               
     case (EL_DG_T2_2D)
       call elem_DG_T2_2D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
 
     ! *****************************************************
     ! 3D tetrahedron elements
@@ -3045,7 +3066,7 @@ contains
       call elem_P1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
 
     ! *****************************************************
     ! 3D hexahedron elements
@@ -3059,10 +3080,10 @@ contains
       call elem_Q1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
 
     case (EL_Q2_3D)
-      call elem_eval_Q2_3D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_Q2_3D(celement, revalElementSet, Bder, Dbas, rperfconfig)
     
     case (EL_QP1_3D)
       call elem_eval_QP1_3D(celement, revalElementSet, Bder, Dbas)
@@ -3074,7 +3095,7 @@ contains
       call elem_EM30_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsReal)
+        revalElementSet%p_DpointsReal, rperfconfig)
 
     case (EL_EN30_3D)
       ! new implementation of 3D EM30
@@ -3084,13 +3105,13 @@ contains
       call elem_E030_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     case (EL_E031_3D)
       call elem_E031_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
         
     case (EL_E050_3D)
       call elem_eval_E050_3D(celement, revalElementSet, Bder, Dbas)
@@ -3113,7 +3134,7 @@ contains
       !  revalElementSet%p_DpointsRef)
 
       ! New implementation
-      call elem_eval_Y1_3D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_Y1_3D(celement, revalElementSet, Bder, Dbas, rperfconfig)
 
     ! *****************************************************
     ! 3D prism elements
@@ -3127,7 +3148,7 @@ contains
       call elem_R1_3D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
-        revalElementSet%p_DpointsRef)
+        revalElementSet%p_DpointsRef, rperfconfig)
     
     
           
@@ -3139,14 +3160,16 @@ contains
             call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-                revalElementSet%p_DpointsReal(:,:,i), revalElementSet%p_ItwistIndex(i))
+                revalElementSet%p_DpointsReal(:,:,i),&
+                revalElementSet%p_ItwistIndex(i), rperfconfig)
           end do
         else
           do i=1,revalElementSet%nelements
             call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-                revalElementSet%p_DpointsRef(:,:,i), revalElementSet%p_ItwistIndex(i))
+                revalElementSet%p_DpointsRef(:,:,i),&
+                revalElementSet%p_ItwistIndex(i), rperfconfig)
           end do
         end if
       else
@@ -3155,14 +3178,14 @@ contains
             call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-                revalElementSet%p_DpointsReal(:,:,i))
+                revalElementSet%p_DpointsReal(:,:,i), rperfconfig=rperfconfig)
           end do
         else
           do i=1,revalElementSet%nelements
             call elem_generic_mult (celement, revalElementSet%p_Dcoords(:,:,i),&
                 revalElementSet%p_Djac(:,:,i), revalElementSet%p_Ddetj(:,i), &
                 Bder, Dbas(:,:,:,i), revalElementSet%npointsPerElement, &
-                revalElementSet%p_DpointsRef(:,:,i))
+                revalElementSet%p_DpointsRef(:,:,i), rperfconfig=rperfconfig)
           end do
         end if
       end if

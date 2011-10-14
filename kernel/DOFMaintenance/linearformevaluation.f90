@@ -369,6 +369,7 @@ contains
     if (present(rperfconfig)) then
       linf_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(linf_perfconfig)
       linf_perfconfig%NELEMSIM = LINF_NELEMSIM
     end if
   

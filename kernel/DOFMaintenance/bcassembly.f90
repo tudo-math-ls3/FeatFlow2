@@ -272,6 +272,7 @@ contains
     if (present(rperfconfig)) then
       bcasm_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(bcasm_perfconfig)
       bcasm_perfconfig%NITEMSIM = BCASM_NITEMSIM
     end if
   

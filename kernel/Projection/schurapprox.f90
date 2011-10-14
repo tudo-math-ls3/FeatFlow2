@@ -26,6 +26,9 @@
 !#     -> Assembles a Schur-complement approximation matrix for a
 !#        2D saddle-point system.
 !#
+!# 2.) schur_initPerfConfig
+!#     -> Initialises the global performance configuration
+!#
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
 !# Detailed information on the approximation assembly variants\\
@@ -95,32 +98,20 @@
 
 module schurapprox
 
-use fsystem
-use genoutput
-use linearsystemscalar
-
-implicit none
-
-private
-
-public :: t_schurApprox
-public :: schur_assembleApprox2D
+  use fsystem
+  use genoutput
+  use linearsystemscalar
+  use perfconfig
+  
+  implicit none
+  
+  private
+  
+  public :: t_schurApprox
+  public :: schur_initPerfConfig
+  public :: schur_assembleApprox2D
 
 !<constants>
-
-!<constantblock>
-
-  ! Minimum number of equations for OpenMP parallelisation: If the number of
-  ! equations is below this value, then no parallelisation is performed.
-#ifndef SCHUR_NEQMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: SCHUR_NEQMIN_OMP = 1000
-#else
-  integer, public            :: SCHUR_NEQMIN_OMP = 1000
-#endif
-#endif
-  
-!</constantblock>
 
 !<constantblock>
 
@@ -191,17 +182,56 @@ public :: schur_assembleApprox2D
 
 !</types>
 
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: schur_perfconfig
+
+  !*****************************************************************************
+
 contains
 
+  ! ****************************************************************************
+
+!<subroutine>
+
+  subroutine schur_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      schur_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(schur_perfconfig)
+    end if
+  
+  end subroutine schur_initPerfConfig
+  
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine schur_assembleApprox2D(rschur)
+  subroutine schur_assembleApprox2D(rschur, rperfconfig)
 
 !<description>
   ! TODO
 !</description>
+
+!<input>
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
 
 !<inputoutput>
   ! A t_schurApprox structure that contains the information of how the
@@ -230,6 +260,10 @@ contains
 
   ! The degree of D
   integer :: ndegree, neq
+
+  
+
+  
 
     ! First of all, let us make sure that all necessary matrices are present.
     if(.not. associated(rschur%p_rmatrixA11)) then
@@ -345,7 +379,7 @@ contains
     ! Okay, the matrices are given and seem to be valid.
 
     ! Do we need to clear S?
-    if(rschur%bclearS) call lsysbl_clearMatrix(rschur%p_rmatrixS)
+    if(rschur%bclearS) call lsyssc_clearMatrix(rschur%p_rmatrixS)
 
     ! If theta is zero, then we have nothing more to do...
     dtheta = rschur%dtheta
@@ -396,14 +430,14 @@ contains
       ! This one is easy.
       call schur_mainDiagonal2D(neq, p_IdiagA, p_DA11, p_DA22, p_IrowB, &
           p_IcolB, p_DB1, p_DB2, p_IrowD, p_IcolD, p_DD1, p_DD2, p_IrowS, &
-          p_IcolS, p_DS, dsf1, dsf2)
+          p_IcolS, p_DS, dsf1, dsf2, rperfconfig)
 
     case(SCHUR_TYPE_LUMP_DIAGONAL)
 
       ! This one is also easy.
       call schur_lumpDiagonal2D(neq, p_IrowA, p_DA11, p_DA22, p_IrowB, &
           p_IcolB, p_DB1, p_DB2, p_IrowD, p_IcolD, p_DD1, p_DD2, p_IrowS, &
-          p_IcolS, p_DS, dsf1, dsf2)
+          p_IcolS, p_DS, dsf1, dsf2, rperfconfig)
 
     case(SCHUR_TYPE_LOCAL_INVERSE)
 
@@ -505,7 +539,7 @@ contains
 
   subroutine schur_mainDiagonal2D(n, p_IdiagA, p_DA11, p_DA22, p_IrowB, p_IcolB, &
              p_DB1, p_DB2, p_IrowD, p_IcolD, p_DD1, p_DD2, p_IrowS, p_IcolS, &
-             p_DS, dsf1, dsf2)
+             p_DS, dsf1, dsf2, rperfconfig)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -543,6 +577,10 @@ contains
 
   ! The scaling factor for D2 * A22^{-1} * B2
   real(DP), intent(in) :: dsf2
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -552,12 +590,21 @@ contains
 
 !</subroutine>
 
+  ! local variables
   integer :: i,j,k,l,idxB,idxD,idxS,inextS
-
   real(DP) :: dDA1, dDA2
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => schur_perfconfig
+  end if
+
     ! Loop over all rows of S/D
-    !$omp parallel do if(n > SCHUR_NEQMIN_OMP)
+    !$omp parallel do if(n > p_rperfconfig%NEQMIN_OMP)&
     !$omp private(j,k,l,idxB,idxD,idxS,inextS,dDA1,dDA2)
     do i = 1, n
 
@@ -638,7 +685,7 @@ contains
 
   subroutine schur_lumpDiagonal2D(n, p_IrowA, p_DA11, p_DA22, p_IrowB, p_IcolB, &
              p_DB1, p_DB2, p_IrowD, p_IcolD, p_DD1, p_DD2, p_IrowS, p_IcolS, &
-             p_DS, dsf1, dsf2)
+             p_DS, dsf1, dsf2, rperfconfig)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -676,6 +723,10 @@ contains
 
   ! The scaling factor for D2 * A22^{-1} * B2
   real(DP), intent(in) :: dsf2
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -685,12 +736,21 @@ contains
 
 !</subroutine>
 
+  ! local variables
   integer :: i,j,k,l,idxB,idxD,idxS,inextS
-
   real(DP) :: dDA1, dDA2
 
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => schur_perfconfig
+  end if
+
     ! Loop over all rows of S/D
-    !$omp parallel do if(n > SCHUR_NEQMIN_OMP)
+    !$omp parallel do if(n > p_rperfconfig%NEQMIN_OMP)&
     !$omp private(j,k,l,idxB,idxD,idxS,inextS,dDA1,dDA2)
     do i = 1, n
 

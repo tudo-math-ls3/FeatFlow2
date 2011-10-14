@@ -459,6 +459,7 @@ contains
     if (present(rperfconfig)) then
       bilf_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(bilf_perfconfig)
       bilf_perfconfig%NELEMSIM = BILF_NELEMSIM
     end if
   

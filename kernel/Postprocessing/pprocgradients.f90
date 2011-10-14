@@ -157,7 +157,8 @@ contains
     if (present(rperfconfig)) then
       ppgrd_perfconfig = rperfconfig
     else
-      ppgrd_perfconfig%NELEMSIM = PPGRD_NELEMSIM
+      call pcfg_initPerfConfig(ppgrd_perfconfig)
+      ppgrd_perfconfig%NELEMSIM  = PPGRD_NELEMSIM
       ppgrd_perfconfig%NPATCHSIM = PPGRD_NPATCHSIM
     end if
   

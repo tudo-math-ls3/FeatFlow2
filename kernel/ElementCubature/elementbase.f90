@@ -7,37 +7,28 @@
 !# This module contains a set of constant definitions and structures which
 !# are used by the different element modules.
 !#
-!# </purpose>
+!# The following routines are available:
 !#
+!# 1.) el_initPerfConfig
+!#     -> Initialises the global performance configuration
+!#
+!# </purpose>
 !##############################################################################
 
 module elementbase
 
-  use fsystem
   use basicgeometry
-  use triangulation
   use derivatives
+  use fsystem
+  use perfconfig
   use transformation
+  use triangulation
 
   implicit none
 
   private
   
 !<constants>
-
-!<constantblock>
-
-  ! Minimum number of elements for OpenMP parallelisation: If the number of
-  ! elements is below this value, then no parallelisation is performed.
-#ifndef EL_NELEMMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: EL_NELEMMIN_OMP = 1000
-#else
-  integer, public            :: EL_NELEMMIN_OMP = 1000
-#endif
-#endif
-  
-!</constantblock>
 
 !<constantblock description="Element evaluation tags. Defines the basis information that is \
 !  necessary to evaluate an element. All tags define bits of a bitfield and can be \
@@ -222,5 +213,43 @@ module elementbase
 !</typeblock>
 
 !</types>
+
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: el_perfconfig
+  
+  !*****************************************************************************
+
+  public :: el_perfconfig
+  public :: el_initPerfConfig
+
+contains
+
+  ! ****************************************************************************
+
+!<subroutine>
+
+  subroutine el_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      el_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(el_perfconfig)
+    end if
+  
+  end subroutine el_initPerfConfig
 
 end module

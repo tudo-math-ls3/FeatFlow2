@@ -178,7 +178,8 @@ contains
     if (present(rperfconfig)) then
       afcsys_perfconfig = rperfconfig
     else
-      afcsys_perfconfig%NEQSIM = AFCSYS_NEQSIM
+      call pcfg_initPerfConfig(afcsys_perfconfig)
+      afcsys_perfconfig%NEQSIM   = AFCSYS_NEQSIM
       afcsys_perfconfig%NEDGESIM = AFCSYS_NEDGESIM
     end if
   

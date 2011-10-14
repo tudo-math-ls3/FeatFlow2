@@ -118,6 +118,9 @@
 !# 27.) trafo_isLinearTrafo
 !#      -> Checks whether transformation is (multi-)linear or not
 !#
+!# 28.) trafo_initPerfConfig
+!#       -> Initialises the global performance configuration
+!#
 !#  FAQ - Some explainations  \\
 !# -------------------------- \\
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -178,31 +181,19 @@
 
 module transformation
 
-  use fsystem
   use basicgeometry
-  use storage
-  use triangulation
+  use fsystem
   use genoutput
   use geometryaux
+  use perfconfig
+  use storage
+  use triangulation
 
   implicit none
   
   private
   
 !<constants>
-!<constantblock>
-  ! Minimum number of elements for OpenMP parallelisation: If the number of
-  ! elements is below this value, then no parallelisation is performed.
-#ifndef TRAFO_NELEMMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: TRAFO_NELEMMIN_OMP = 1000
-#else
-  integer, public            :: TRAFO_NELEMMIN_OMP = 1000
-#endif
-#endif
-  
-!</constantblock>
-
 
 !<constantblock description="Constants for size of auxiliary arrays.">
 
@@ -329,6 +320,13 @@ module transformation
 
 !</constants>
 
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: trafo_perfconfig
+
+  !*****************************************************************************
+
   interface trafo_calcRealCoords
     module procedure trafo_calcRealCoords2D
     module procedure trafo_calcRealCoords_general
@@ -367,8 +365,35 @@ module transformation
   public :: trafo_igetReferenceDimension
   public :: trafo_calcBackTrafo_hexa
   public :: trafo_isLinearTrafo
+  public :: trafo_initPerfConfig
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine trafo_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      trafo_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(trafo_perfconfig)
+    end if
+  
+  end subroutine trafo_initPerfConfig
 
   ! ***************************************************************************
 
@@ -722,7 +747,8 @@ contains
 
 !<subroutine>
 
-  subroutine trafo_getCoords_sim (ctrafoType,rtriangulation,Ielements,Dcoords)
+  subroutine trafo_getCoords_sim (ctrafoType,rtriangulation,Ielements,Dcoords,&
+                                  rperfconfig)
 
 !<description>
   ! This routine fills the Dcoords array with the coordinates (of corners,
@@ -742,6 +768,10 @@ contains
   ! Array with element numbers whose coordinates should be extracted into
   ! Dcoords.
   integer, dimension(:), intent(in) :: Ielements
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -759,6 +789,15 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer :: ipoint
     integer :: iel
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => trafo_perfconfig
+    end if
 
     ! What type of transformation do we have? First decide on the dimension,
     ! then on the actual ID.
@@ -781,7 +820,7 @@ contains
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,2
             Dcoords (1,ipoint,iel) = &
@@ -809,7 +848,7 @@ contains
         ! 2D simplex -> linear triangular transformation. 
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,3
             Dcoords (1:NDIM2D,ipoint,iel) = &
@@ -823,7 +862,7 @@ contains
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,4
             Dcoords (1:NDIM2D,ipoint,iel) = &
@@ -851,7 +890,7 @@ contains
         ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,4
             Dcoords (1:NDIM3D,ipoint,iel) = &
@@ -865,7 +904,7 @@ contains
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,8
             Dcoords (1:NDIM3D,ipoint,iel) = &
@@ -878,7 +917,7 @@ contains
         ! Bilinear transformation for pyramid shaped elements 
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,5
             Dcoords (1:NDIM3D,ipoint,iel) = &
@@ -892,7 +931,7 @@ contains
         ! Bilinear transformation for prismic shaped elements 
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
-        !$omp if(size(Ielements) > TRAFO_NELEMMIN_OMP)
+        !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,size(Ielements)
           do ipoint = 1,6
             Dcoords (1:NDIM3D,ipoint,iel) = &
@@ -1560,7 +1599,7 @@ contains
 !<subroutine>
 
   subroutine trafo_calctrafo_sim (ctrafoType,nelements,npointsPerEl,Dcoords,&
-                                  DpointsRef,Djac,Ddetj,DpointsReal)
+                                  DpointsRef,Djac,Ddetj,DpointsReal,rperfconfig)
 
 !<description>
   ! General transformation support for multiple points on multiple
@@ -1610,6 +1649,10 @@ contains
   !  DpointsRef(2,i,.) = Second barycentric coordinate of point i on an element
   !  DpointsRef(3,i,.) = Third barycentric coordinate of point i on an element
   real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1638,6 +1681,15 @@ contains
   ! auxiliary factors for the bilinear quad mapping
   real(DP), dimension(TRAFO_NAUXJACMAX) :: DjacPrep
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => trafo_perfconfig
+  end if
+
   ! What type of transformation do we have? First decide on the dimension,
   ! then on the actual ID.
   select case (trafo_igetDimension(ctrafoType))
@@ -1652,7 +1704,7 @@ contains
         
         ! Loop over the elements
         !$omp parallel do private(ipt) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,nelements
         
           ! Loop over the points
@@ -1671,7 +1723,7 @@ contains
       
         ! Loop over the elements
         !$omp parallel do private(ipt) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel=1,nelements
           
           ! Loop over the points
@@ -1709,7 +1761,7 @@ contains
       
         ! Loop over the elements
         !$omp parallel do private(ipt,dax,day,dbx,dby,dcx,dcy) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           
           ! Loop over the points
@@ -1749,7 +1801,7 @@ contains
 
         ! Loop over the elements
         !$omp parallel do private(ipt,dax,day,dbx,dby,dcx,dcy) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           
           ! Loop over the points
@@ -1810,7 +1862,7 @@ contains
       
         ! Loop over the elements
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_quad2D(Dcoords(:,:,iel), DjacPrep)
@@ -1829,7 +1881,7 @@ contains
 
         ! Loop over the elements
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_quad2D(Dcoords(:,:,iel), DjacPrep)
@@ -1940,7 +1992,7 @@ contains
       if (.not. present(DpointsReal)) then
       
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_hexa3D(Dcoords(:,:,iel), DjacPrep)
@@ -1958,7 +2010,7 @@ contains
       else
 
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1, nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_hexa3D(Dcoords(:,:,iel), DjacPrep)
@@ -1982,7 +2034,7 @@ contains
       if (.not. present(DpointsReal)) then
       
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_pyra3D(Dcoords(:,:,iel), DjacPrep)
@@ -2000,7 +2052,7 @@ contains
       else
 
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1, nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_pyra3D(Dcoords(:,:,iel), DjacPrep)
@@ -2024,7 +2076,7 @@ contains
       if (.not. present(DpointsReal)) then
       
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_prism3D(Dcoords(:,:,iel), DjacPrep)
@@ -2042,7 +2094,7 @@ contains
       else
 
         !$omp parallel do private(ipt,DjacPrep) &
-        !$omp if(nelements > TRAFO_NELEMMIN_OMP)
+        !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
         do iel = 1, nelements
           ! Prepare the calculation of the Jacobi determinants
           call trafo_prepJac_prism3D(Dcoords(:,:,iel), DjacPrep)
@@ -2208,7 +2260,7 @@ contains
 !<subroutine>
 
   subroutine trafo_calctrafoabs_sim (ctrafoType,nelements,npointsPerEl,Dcoords,&
-                                     DpointsRef,Djac,Ddetj,DpointsReal)
+                                     DpointsRef,Djac,Ddetj,DpointsReal,rperfconfig)
 
 !<description>
   ! General transformation support for multiple points on multiple
@@ -2258,6 +2310,10 @@ contains
   !  DpointsRef(2,i,.) = Second barycentric coordinate of point i on an element
   !  DpointsRef(3,i,.) = Third barycentric coordinate of point i on an element
   real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<output>
@@ -2280,7 +2336,7 @@ contains
 !</subroutine>
 
     call trafo_calctrafo_sim (ctrafoType,nelements,npointsPerEl,Dcoords,&
-                              DpointsRef,Djac,Ddetj,DpointsReal)
+                              DpointsRef,Djac,Ddetj,DpointsReal,rperfconfig)
             
     ! In 1D and 2D, the Jacobian determinant must always be positive.
     ! In 3D it can be negative.

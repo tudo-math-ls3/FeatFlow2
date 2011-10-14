@@ -12,10 +12,11 @@
 
 module element_prism3d
 
-  use fsystem
-  use elementbase
-  use derivatives
   use basicgeometry
+  use derivatives
+  use elementbase
+  use fsystem
+  use perfconfig
 
   implicit none
   
@@ -699,7 +700,8 @@ contains
 #endif
 
   subroutine elem_R1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                             Bder, Dbas, npoints, nelements, Dpoints)
+                             Bder, Dbas, npoints, nelements, &
+                             Dpoints, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -770,6 +772,10 @@ contains
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -793,6 +799,15 @@ contains
   integer :: i   ! point counter
   integer :: j   ! element counter
     
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => el_perfconfig
+  end if
+
   ! Clear the output array
   !Dbas = 0.0_DP
 
@@ -800,7 +815,7 @@ contains
   if (Bder(DER_FUNC3D)) then
   
     !$omp parallel do default(shared) private(i) &
-    !$omp if(nelements > EL_NELEMMIN_OMP)
+    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -824,7 +839,7 @@ contains
       (Bder(DER_DERIV3D_Z))) then
   
     !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz) &
-    !$omp if(nelements > EL_NELEMMIN_OMP)
+    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
       
       ! x-, y- and z-derivatives on reference element

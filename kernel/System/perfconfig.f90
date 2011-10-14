@@ -12,8 +12,9 @@ module perfconfig
 
   implicit none
 
-  public :: t_perfconfig
   private
+  public :: t_perfconfig
+  public :: pcfg_initPerfConfig
 
 !<types>
 
@@ -23,16 +24,16 @@ module perfconfig
   type t_perfconfig
 
     ! Number of equations to be handled simultaneously
-    integer :: NEQSIM   = 32
+    integer :: NEQSIM    = 32
 
     ! Number of matrix entries to be handled simultaneously
-    integer :: NASIM    = 32
+    integer :: NASIM     = 32
 
     ! Number of edges to be handled simultaneously
-    integer :: NEDGESIM = 32
+    integer :: NEDGESIM  = 32
 
     ! Number of elements to be handled simultaneously
-    integer :: NELEMSIM = 128
+    integer :: NELEMSIM  = 128
 
     ! Number of patches to be handled simultaneously
     integer :: NPATCHSIM = 100
@@ -44,16 +45,16 @@ module perfconfig
     ! must be satisfied before OpenMP-parallelisation is activated
 
     ! Minimal number of equations
-    !$ integer :: NEQMIN_OMP   = 1000
+    !$ integer :: NEQMIN_OMP    = 1000
 
     ! Minimal number of matrix entries
-    !$ integer :: NAMIN_OMP    = 1000
+    !$ integer :: NAMIN_OMP     = 1000
 
     ! Minimal number of edges
-    !$ integer :: NEDGEMIN_OMP = 1000
+    !$ integer :: NEDGEMIN_OMP  = 1000
 
     ! Minimal number of elements
-    !$ integer :: NELEMMIN_OMP = 1000
+    !$ integer :: NELEMMIN_OMP  = 1000
 
     ! Minimal number of patches
     !$ integer :: NPATCHMIN_OMP = 1000
@@ -66,5 +67,40 @@ module perfconfig
 !</typeblock>
 
 !</types>
+
+contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine pcfg_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<outpu>
+  ! Performance configuration to be initialised
+    type(t_perfconfig), intent(out) :: rperfconfig
+!</input>
+!</subroutine>
+    
+    rperfconfig%NEQSIM   = 32
+    rperfconfig%NASIM    = 32
+    rperfconfig%NEDGESIM = 32
+    rperfconfig%NELEMSIM = 128
+    rperfconfig%NPATCHSIM = 100
+    rperfconfig%NITEMSIM  = 256
+
+    ! OpenMP-Extension
+    !$ rperfconfig%NEQMIN_OMP    = 1000
+    !$ rperfconfig%NAMIN_OMP     = 1000
+    !$ rperfconfig%NEDGEMIN_OMP  = 1000
+    !$ rperfconfig%NELEMMIN_OMP  = 1000
+    !$ rperfconfig%NPATCHMIN_OMP = 1000
+    !$ rperfconfig%NITEMMIN_OMP  = 1000
+    
+  end subroutine pcfg_initPerfConfig
 
 end module perfconfig

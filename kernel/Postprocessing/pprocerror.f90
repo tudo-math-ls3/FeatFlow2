@@ -232,6 +232,7 @@ contains
     if (present(rperfconfig)) then
       pperr_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(pperr_perfconfig)
       pperr_perfconfig%NELEMSIM = PPERR_NELEMSIM
     end if
   

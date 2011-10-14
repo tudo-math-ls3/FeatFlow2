@@ -249,17 +249,18 @@
 
 module linearsystemblock
 
+  use basicgeometry
+  use discretebc
+  use discretefbc
+  use dofmapping
   use fpersistence
   use fsystem
   use genoutput
-  use storage
-  use basicgeometry
-  use spatialdiscretisation
-  use linearsystemscalar
   use linearalgebra
-  use dofmapping
-  use discretebc
-  use discretefbc
+  use linearsystemscalar
+  use perfconfig
+  use spatialdiscretisation
+  use storage
   use uuid
   
   implicit none
@@ -2532,7 +2533,7 @@ contains
 
 !<subroutine>
   
-  subroutine lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy, btransposed)
+  subroutine lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy, btransposed, rperfconfig)
  
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
@@ -2559,6 +2560,10 @@ contains
   ! (.false.) or with its transpose (.true.) should be performed. If not
   ! given, .false. is assumed.
   logical, optional, intent(in)                     :: btransposed
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2612,15 +2617,19 @@ contains
         ! Only call the MV when there is a scalar matrix that we can use!
         if(.not. btrans) then
           if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
-            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(i,j), rx%RvectorBlock(j), &
-                                      ry%RvectorBlock(i), cx, cyact)
+            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(i,j), &
+                                      rx%RvectorBlock(j), &
+                                      ry%RvectorBlock(i), cx, cyact, &
+                                      rperfconfig=rperfconfig)
             cyact = 1.0_DP
             mvok = YES
           end if
         else
           if (lsysbl_isSubmatrixPresent (rmatrix,j,i)) then
-            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(j,i), rx%RvectorBlock(j), &
-                                      ry%RvectorBlock(i), cx, cyact)
+            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(j,i), &
+                                      rx%RvectorBlock(j), &
+                                      ry%RvectorBlock(i), cx, cyact, &
+                                      rperfconfig=rperfconfig)
             cyact = 1.0_DP
             mvok = YES
           end if
@@ -2645,7 +2654,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_invertedDiagBlockMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  subroutine lsysbl_invertedDiagBlockMatVec (rmatrix,rvectorSrc,dscale,rvectorDst,&
+      rperfconfig)
   
 !<description>
   ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
@@ -2664,6 +2674,10 @@ contains
 
   ! A multiplication factor. Standard value is 1.0_DP
   real(DP), intent(in) :: dscale
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2689,7 +2703,7 @@ contains
       ! Multiply with the inverted diagonal of the submatrix.
       call lsyssc_invertedDiagMatVec (rmatrix%RmatrixBlock(iblock,iblock),&
             rvectorSrc%RvectorBlock(iblock),dscale,&
-            rvectorDst%RvectorBlock(iblock))
+            rvectorDst%RvectorBlock(iblock), rperfconfig)
     end do
 
   end subroutine
@@ -2698,7 +2712,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_invertedDiagScalarMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  subroutine lsysbl_invertedDiagScalarMatVec (rmatrix,rvectorSrc,dscale,rvectorDst,&
+      rperfconfig)
   
 !<description>
   ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
@@ -2717,6 +2732,10 @@ contains
 
   ! A multiplication factor. Standard value is 1.0_DP
   real(DP), intent(in) :: dscale
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2740,7 +2759,7 @@ contains
       ! Multiply with the inverted diagonal of the matrix.
       call lsyssc_invertedDiagMatVec (rmatrix,&
             rvectorSrc%RvectorBlock(iblock),dscale,&
-            rvectorDst%RvectorBlock(iblock))
+            rvectorDst%RvectorBlock(iblock),rperfconfig)
     end do
 
   end subroutine

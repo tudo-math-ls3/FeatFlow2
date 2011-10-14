@@ -261,6 +261,9 @@
 !#      -> Copies the data of a vector from the memory of the
 !#         coprocessor device to the host memory
 !#
+!# 76.) lsyssc_initPerfConfig
+!#       -> Initialises the global performance configuration
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -313,34 +316,21 @@
 
 module linearsystemscalar
 
+  use dofmapping
   use fpersistence
   use fsystem
-  use storage
-  use spatialdiscretisation
-  use dofmapping
   use genoutput
-  use uuid
   use linearalgebra
+  use perfconfig
+  use spatialdiscretisation
+  use storage
+  use uuid
 
   implicit none
   
   private
 
 !<constants>
-
-!<constantblock>
-
-  ! Minimum number of equations for OpenMP parallelisation: If the number of
-  ! equations is below this value, then no parallelisation is performed.
-#ifndef LSYSSC_NEQMIN_OMP
-#ifndef ENABLE_AUTOTUNE
-  integer, parameter, public :: LSYSSC_NEQMIN_OMP = 1000
-#else
-  integer, public            :: LSYSSC_NEQMIN_OMP = 1000
-#endif
-#endif
-  
-!</constantblock>
 
 !<constantblock description="Global constants for scalar vectors/matrices">
 
@@ -815,6 +805,13 @@ module linearsystemscalar
 
 !</types>
 
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: lsyssc_perfconfig
+  
+  !*****************************************************************************
+  
   interface lsyssc_getbase_double
     module procedure lsyssc_getbaseVector_double
     module procedure lsyssc_getbaseMatrixDa_double
@@ -863,6 +860,7 @@ module linearsystemscalar
     module procedure lsyssc_matrixLinearComb2
   end interface lsyssc_matrixLinearComb
 
+  public :: lsyssc_initPerfConfig
   public :: lsyssc_createVector
   public :: lsyssc_createVecByDiscr
   public :: lsyssc_createVecIndMat
@@ -958,6 +956,32 @@ module linearsystemscalar
   public :: lsyssc_calcDimsFromMatrix
 
 contains
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      lsyssc_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(lsyssc_perfconfig)
+    end if
+    
+  end subroutine lsyssc_initPerfConfig
 
   ! ***************************************************************************
   
@@ -3613,7 +3637,7 @@ contains
 
 !<subroutine>
   
-  subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose)
+  subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose, rperfconfig)
   
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
@@ -3639,6 +3663,9 @@ contains
   ! given, .false. is assumed.
   logical, optional, intent(in)                     :: btranspose
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3658,6 +3685,15 @@ contains
     logical :: bvirt_trans
     logical :: btrans
   
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => lsyssc_perfconfig
+    end if
+
     bvirt_trans = .false.
     btrans = .false.
   
@@ -4222,7 +4258,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4235,7 +4271,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4248,7 +4284,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4265,7 +4301,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4278,7 +4314,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4291,7 +4327,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4315,7 +4351,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4333,7 +4369,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4351,7 +4387,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4373,7 +4409,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4391,7 +4427,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4409,7 +4445,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4462,7 +4498,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4475,7 +4511,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4488,7 +4524,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4505,7 +4541,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4518,7 +4554,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4531,7 +4567,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4555,7 +4591,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4573,7 +4609,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4591,7 +4627,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4613,7 +4649,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4631,7 +4667,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4649,7 +4685,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4702,7 +4738,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4715,7 +4751,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4728,7 +4764,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4745,7 +4781,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4758,7 +4794,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4771,7 +4807,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4795,7 +4831,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4813,7 +4849,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4831,7 +4867,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4853,7 +4889,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4871,7 +4907,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4889,7 +4925,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4941,7 +4977,7 @@ contains
           if(cy .eq. 0.0_SP) then
             
             !$omp parallel do private(ia,ftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               ftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4954,7 +4990,7 @@ contains
           else if(cy .eq. 1.0_SP) then
             
             !$omp parallel do private(ia,ftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               ftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4967,7 +5003,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,ftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               ftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4984,7 +5020,7 @@ contains
           if(cy .eq. 0.0_SP) then
             
             !$omp parallel do private(ia,ftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               ftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -4997,7 +5033,7 @@ contains
           else if(cy .eq. 1.0_SP) then
             
             !$omp parallel do private(ia,ftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               ftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5010,7 +5046,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,ftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               ftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5034,7 +5070,7 @@ contains
           if(cy .eq. 0.0_SP) then
             
             !$omp parallel do private(ia,icol,ivar,Fftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Fftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5052,7 +5088,7 @@ contains
           else if(cy .eq. 1.0_SP) then
             
             !$omp parallel do private(ia,icol,ivar,Fftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Fftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5070,7 +5106,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Fftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Fftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5092,7 +5128,7 @@ contains
           if(cy .eq. 0.0_SP) then
             
             !$omp parallel do private(ia,icol,ivar,Fftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Fftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5110,7 +5146,7 @@ contains
           else if(cy .eq. 1.0_SP) then
             
             !$omp parallel do private(ia,icol,ivar,Fftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Fftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5128,7 +5164,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Fftmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Fftmp = 0.0_SP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5181,7 +5217,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5194,7 +5230,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5207,7 +5243,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5224,7 +5260,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5237,7 +5273,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5250,7 +5286,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               dtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5274,7 +5310,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5292,7 +5328,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5310,7 +5346,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5332,7 +5368,7 @@ contains
           if(cy .eq. 0.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5350,7 +5386,7 @@ contains
           else if(cy .eq. 1.0_DP) then
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5368,7 +5404,7 @@ contains
           else   ! arbitrary cy value
             
             !$omp parallel do private(ia,icol,ivar,Ddtmp) default(shared) &
-            !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1, NEQ
               Ddtmp = 0.0_DP
               do ia = Kld(irow), Kld(irow+1)-1
@@ -5415,7 +5451,7 @@ contains
         if (cy .eq. 0.0_DP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5436,7 +5472,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5457,7 +5493,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5482,7 +5518,7 @@ contains
         if(cy .eq. 0.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5503,7 +5539,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5524,7 +5560,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5573,7 +5609,7 @@ contains
         if (cy .eq. 0.0_DP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5594,7 +5630,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5615,7 +5651,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5640,7 +5676,7 @@ contains
         if(cy .eq. 0.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5661,7 +5697,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5682,7 +5718,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5731,7 +5767,7 @@ contains
         if (cy .eq. 0.0_DP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5752,7 +5788,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5773,7 +5809,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5798,7 +5834,7 @@ contains
         if(cy .eq. 0.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5819,7 +5855,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5840,7 +5876,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5889,7 +5925,7 @@ contains
         if (cy .eq. 0.0_SP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5910,7 +5946,7 @@ contains
         else if(cy .eq. 1.0_SP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5931,7 +5967,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5956,7 +5992,7 @@ contains
         if(cy .eq. 0.0_SP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5977,7 +6013,7 @@ contains
         else if(cy .eq. 1.0_SP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -5998,7 +6034,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,jvar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6046,7 +6082,7 @@ contains
         if (cy .eq. 0.0_DP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6065,7 +6101,7 @@ contains
           else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6084,7 +6120,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6107,7 +6143,7 @@ contains
         if(cy .eq. 0.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6126,7 +6162,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6145,7 +6181,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6192,7 +6228,7 @@ contains
         if (cy .eq. 0.0_DP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6211,7 +6247,7 @@ contains
           else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6230,7 +6266,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6253,7 +6289,7 @@ contains
         if(cy .eq. 0.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6272,7 +6308,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6291,7 +6327,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6338,7 +6374,7 @@ contains
         if (cy .eq. 0.0_DP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6357,7 +6393,7 @@ contains
           else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6376,7 +6412,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6399,7 +6435,7 @@ contains
         if(cy .eq. 0.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6418,7 +6454,7 @@ contains
         else if(cy .eq. 1.0_DP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6437,7 +6473,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Ddtmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Ddtmp = 0.0_DP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6484,7 +6520,7 @@ contains
         if (cy .eq. 0.0_SP) then
         
           !$omp parallel do default(shared) private(ia,icol,ivar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6503,7 +6539,7 @@ contains
           else if(cy .eq. 1.0_SP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6522,7 +6558,7 @@ contains
         else   ! arbitrary cy value
           
           !$omp parallel do default(shared) private(ia,icol,ivar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6545,7 +6581,7 @@ contains
         if(cy .eq. 0.0_SP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6564,7 +6600,7 @@ contains
         else if(cy .eq. 1.0_SP) then
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6583,7 +6619,7 @@ contains
         else   ! arbitrary cy value
 
           !$omp parallel do default(shared) private(ia,icol,ivar,Fftmp) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1,NEQ
             Fftmp = 0.0_SP
             do ia = Kld(irow), Kld(irow+1)-1
@@ -6631,7 +6667,7 @@ contains
           
           if (cy .eq. 0.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = cx*Da(irow)*Dx(irow)
             end do
@@ -6639,7 +6675,7 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = Dy(irow) + cx*Da(irow)*Dx(irow)
             end do
@@ -6647,7 +6683,7 @@ contains
 
           else   ! arbitrary cy value
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = cy*Dy(irow) + cx*Da(irow)*Dx(irow) 
             end do
@@ -6659,7 +6695,7 @@ contains
 
           if(cy .eq. 0.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = Da(irow)*Dx(irow) 
             end do
@@ -6667,7 +6703,7 @@ contains
 
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = Dy(irow) + Da(irow)*Dx(irow) 
             end do
@@ -6675,7 +6711,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = cy*Dy(irow) + Da(irow)*Dx(irow) 
             end do
@@ -6694,7 +6730,7 @@ contains
           
           if (cy .eq. 0.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = cx*Da(irow)*Dx(NVAR*(irow-1)+ivar)
@@ -6704,7 +6740,7 @@ contains
           
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = Dy(NVAR*(irow-1)+ivar)&
@@ -6715,7 +6751,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = cy*Dy(NVAR*(irow-1)+ivar)&
@@ -6730,7 +6766,7 @@ contains
 
           if(cy .eq. 0.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = Da(irow)*Dx(NVAR*(irow-1)+ivar)
@@ -6740,7 +6776,7 @@ contains
 
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = Dy(NVAR*(irow-1)+ivar)&
@@ -6751,7 +6787,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = cy*Dy(NVAR*(irow-1)+ivar)&
@@ -6795,7 +6831,7 @@ contains
           
           if (cy .eq. 0.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = real(cx*Da(irow)*Fx(irow),SP)
             end do
@@ -6803,7 +6839,7 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = Fy(irow) + real(cx*Da(irow)*Fx(irow),SP)
             end do
@@ -6811,7 +6847,7 @@ contains
 
           else   ! arbitrary cy value
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = real(cy*Fy(irow) + cx*Da(irow)*Fx(irow),SP)
             end do
@@ -6823,7 +6859,7 @@ contains
 
           if(cy .eq. 0.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = real(Da(irow)*Fx(irow),SP)
             end do
@@ -6831,7 +6867,7 @@ contains
 
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = Fy(irow) + real(Da(irow)*Fx(irow),SP)
             end do
@@ -6839,7 +6875,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = real(cy*Fy(irow) + Da(irow)*Fx(irow),SP)
             end do
@@ -6858,7 +6894,7 @@ contains
           
           if (cy .eq. 0.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = real(cx*Da(irow)*Fx(NVAR*(irow-1)+ivar),SP)
@@ -6868,7 +6904,7 @@ contains
           
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = Fy(NVAR*(irow-1)+ivar)&
@@ -6879,7 +6915,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = real(cy*Fy(NVAR*(irow-1)+ivar)&
@@ -6894,7 +6930,7 @@ contains
 
           if(cy .eq. 0.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = real(Da(irow)*Fx(NVAR*(irow-1)+ivar),SP)
@@ -6904,7 +6940,7 @@ contains
 
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = Fy(NVAR*(irow-1)+ivar)&
@@ -6915,7 +6951,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = real(cy*Fy(NVAR*(irow-1)+ivar)&
@@ -6959,7 +6995,7 @@ contains
           
           if (cy .eq. 0.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = cx*Fa(irow)*Dx(irow)
             end do
@@ -6967,7 +7003,7 @@ contains
             
           else if(cy .eq. 1.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = Dy(irow) + cx*Fa(irow)*Dx(irow)
             end do
@@ -6975,7 +7011,7 @@ contains
 
           else   ! arbitrary cy value
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = cy*Dy(irow) + cx*Fa(irow)*Dx(irow) 
             end do
@@ -6987,7 +7023,7 @@ contains
 
           if(cy .eq. 0.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = Fa(irow)*Dx(irow) 
             end do
@@ -6995,7 +7031,7 @@ contains
 
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = Dy(irow) + Fa(irow)*Dx(irow) 
             end do
@@ -7003,7 +7039,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Dy(irow) = cy*Dy(irow) + Fa(irow)*Dx(irow) 
             end do
@@ -7022,7 +7058,7 @@ contains
           
           if (cy .eq. 0.0_DP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = cx*Fa(irow)*Dx(NVAR*(irow-1)+ivar)
@@ -7032,7 +7068,7 @@ contains
           
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = Dy(NVAR*(irow-1)+ivar)&
@@ -7043,7 +7079,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = cy*Dy(NVAR*(irow-1)+ivar)&
@@ -7058,7 +7094,7 @@ contains
 
           if(cy .eq. 0.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = Fa(irow)*Dx(NVAR*(irow-1)+ivar)
@@ -7068,7 +7104,7 @@ contains
 
           else if(cy .eq. 1.0_DP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = Dy(NVAR*(irow-1)+ivar)&
@@ -7079,7 +7115,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Dy(NVAR*(irow-1)+ivar) = cy*Dy(NVAR*(irow-1)+ivar)&
@@ -7123,7 +7159,7 @@ contains
           
           if (cy .eq. 0.0_SP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = cx*Fa(irow)*Fx(irow)
             end do
@@ -7131,7 +7167,7 @@ contains
             
           else if(cy .eq. 1.0_SP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = Fy(irow) + cx*Fa(irow)*Fx(irow)
             end do
@@ -7139,7 +7175,7 @@ contains
 
           else   ! arbitrary cy value
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = cy*Fy(irow) + cx*Fa(irow)*Fx(irow)
             end do
@@ -7151,7 +7187,7 @@ contains
 
           if(cy .eq. 0.0_SP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = Fa(irow)*Fx(irow)
             end do
@@ -7159,7 +7195,7 @@ contains
 
           else if(cy .eq. 1.0_SP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = Fy(irow) + Fa(irow)*Fx(irow)
             end do
@@ -7167,7 +7203,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               Fy(irow) = cy*Fy(irow) + Fa(irow)*Fx(irow)
             end do
@@ -7186,7 +7222,7 @@ contains
           
           if (cy .eq. 0.0_SP) then
             
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = cx*Fa(irow)*Fx(NVAR*(irow-1)+ivar)
@@ -7196,7 +7232,7 @@ contains
           
           else if(cy .eq. 1.0_SP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = Fy(NVAR*(irow-1)+ivar)&
@@ -7207,7 +7243,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = cy*Fy(NVAR*(irow-1)+ivar)&
@@ -7222,7 +7258,7 @@ contains
 
           if(cy .eq. 0.0_SP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = Fa(irow)*Fx(NVAR*(irow-1)+ivar)
@@ -7232,7 +7268,7 @@ contains
 
           else if(cy .eq. 1.0_SP) then
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = Fy(NVAR*(irow-1)+ivar)&
@@ -7243,7 +7279,7 @@ contains
 
           else   ! arbitrary cy value
 
-            !$omp parallel do default(shared) if(NEQ > LSYSSC_NEQMIN_OMP)
+            !$omp parallel do default(shared) if(NEQ > p_rperfconfig%NEQMIN_OMP)
             do irow = 1,NEQ
               do ivar = 1, NVAR
                 Fy(NVAR*(irow-1)+ivar) = cy*Fy(NVAR*(irow-1)+ivar)&
@@ -7301,7 +7337,7 @@ contains
         if (cx .ne. 1.0_DP) then
           
           !$omp parallel do private(ia,icol,dtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             dtmp = cx*Dx(irow)
             do ia = Kld(irow), Kld(irow+1)-1
@@ -7314,7 +7350,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,dtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7333,7 +7369,7 @@ contains
         if (cx .ne. 1.0_DP) then
           
           !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ivar = 1, NVAR
               Ddtmp(ivar) = cx*Dx(NVAR*(irow-1)+ivar)
@@ -7351,7 +7387,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7411,7 +7447,7 @@ contains
         if (cx .ne. 1.0_DP) then
           
           !$omp parallel do private(ia,icol,dtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             dtmp = cx*Fx(irow)
             do ia = Kld(irow), Kld(irow+1)-1
@@ -7424,7 +7460,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,dtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7443,7 +7479,7 @@ contains
         if (cx .ne. 1.0_DP) then
           
           !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ivar = 1, NVAR
               Ddtmp(ivar) = cx*Fx(NVAR*(irow-1)+ivar)
@@ -7461,7 +7497,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7521,7 +7557,7 @@ contains
         if (cx .ne. 1.0_DP) then
           
           !$omp parallel do private(ia,icol,dtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             dtmp = cx*Dx(irow)
             do ia = Kld(irow), Kld(irow+1)-1
@@ -7534,7 +7570,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,dtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7553,7 +7589,7 @@ contains
         if (cx .ne. 1.0_DP) then
           
           !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ivar = 1, NVAR
               Ddtmp(ivar) = cx*Dx(NVAR*(irow-1)+ivar)
@@ -7571,7 +7607,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,Ddtmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7630,7 +7666,7 @@ contains
         if (cx .ne. 1.0_SP) then
           
           !$omp parallel do private(ia,icol,ftmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             ftmp = cx*Fx(irow)
             do ia = Kld(irow), Kld(irow+1)-1
@@ -7643,7 +7679,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,ftmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -7662,7 +7698,7 @@ contains
         if (cx .ne. 1.0_SP) then
           
           !$omp parallel do private(ia,icol,Fftmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ivar = 1, NVAR
               Fftmp(ivar) = cx*Fx(NVAR*(irow-1)+ivar)
@@ -7680,7 +7716,7 @@ contains
         else   ! cx = 1.0
           
           !$omp parallel do private(ia,icol,Fftmp) default(shared) &
-          !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
           do irow = 1, NEQ
             do ia = Kld(irow), Kld(irow+1)-1
               icol = Kcol(ia)
@@ -13317,7 +13353,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  subroutine lsyssc_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst,&
+                                        rperfconfig)
   
 !<description>
   ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
@@ -13336,6 +13373,10 @@ contains
 
   ! A multiplication factor. Standard value is 1.0_DP
   real(DP), intent(in) :: dscale
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -13353,6 +13394,15 @@ contains
   real(SP), dimension(:), pointer :: p_Fa, p_Fvec, p_Fvec2
   real(DP) :: dmyscale
   real(SP) :: fmyscale
+
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+  
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => lsyssc_perfconfig
+  end if
 
   ! Let us hope, the matrix and the vectors are compatible.
   ! As we multiply with D^{-1}, this forces the matrix to be quadratic 
@@ -13390,7 +13440,7 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
           end do
@@ -13398,7 +13448,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13413,7 +13463,7 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
           end do
@@ -13421,7 +13471,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -13456,7 +13506,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)*&
@@ -13471,7 +13521,7 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
           end do
@@ -13479,7 +13529,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)*&
@@ -13535,7 +13585,7 @@ contains
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13546,7 +13596,7 @@ contains
 
         case (LSYSSC_MATRIXD)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13568,7 +13618,7 @@ contains
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -13579,7 +13629,7 @@ contains
 
         case (LSYSSC_MATRIXD)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -13613,7 +13663,7 @@ contains
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13624,7 +13674,7 @@ contains
 
         case (LSYSSC_MATRIXD)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13646,7 +13696,7 @@ contains
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -13657,7 +13707,7 @@ contains
 
         case (LSYSSC_MATRIXD)
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -13699,7 +13749,7 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
           end do
@@ -13707,7 +13757,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13722,7 +13772,7 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
           end do
@@ -13730,7 +13780,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -13757,7 +13807,7 @@ contains
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
           end do
@@ -13765,7 +13815,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
@@ -13780,7 +13830,7 @@ contains
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
         if (rvectorSrc%NVAR .eq. 1) then
-          !$omp parallel do default(shared) if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp parallel do default(shared) if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
           end do
@@ -13788,7 +13838,7 @@ contains
         else
           NVAR = rvectorSrc%NVAR
           !$omp parallel do default(shared) private(ivar) &
-          !$omp if(rvectorSrc%NEQ > LSYSSC_NEQMIN_OMP)
+          !$omp if(rvectorSrc%NEQ > p_rperfconfig%NEQMIN_OMP)
           do i=1,rvectorSrc%NEQ
             do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
@@ -18471,7 +18521,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_matrixLinearComb2 (rmatrixA,cA,rmatrixB,cB,rmatrixC,&
-      bmemory,bsymb,bnumb,bisExactStructure)
+      bmemory,bsymb,bnumb,bisExactStructure,rperfconfig)
 
     !<description>
     ! Performs a linear combination:
@@ -18523,6 +18573,10 @@ contains
     ! more efficient implementation.
     ! Standard: FALSE
     logical, intent(in), optional :: bisExactStructure
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -18536,7 +18590,7 @@ contains
 !</subroutine>
 
     call lsyssc_matrixLinearComb(rmatrixA,rmatrixB,ca,cb,&
-        bmemory,bsymb,bnumb,bisExactStructure,rmatrixC)
+        bmemory,bsymb,bnumb,bisExactStructure,rmatrixC,rperfconfig)
 
   end subroutine
 
@@ -18545,7 +18599,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_matrixLinearComb (rmatrixA,rmatrixB,ca,cb,&
-      bmemory,bsymb,bnumb,bisExactStructure,rdest)
+      bmemory,bsymb,bnumb,bisExactStructure,rdest,rperfconfig)
 
     !<description>
     ! Performs a linear combination:
@@ -18597,6 +18651,10 @@ contains
     ! more efficient implementation.
     ! Standard: FALSE
     logical, intent(in), optional :: bisExactStructure
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -18619,6 +18677,15 @@ contains
     integer, dimension(:), pointer :: p_KdiagonalB,p_KdiagonalC,p_Kaux
     integer :: h_Kaux,isizeIntl
     logical :: bfast,bmem,bsym,bnum
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => lsyssc_perfconfig
+    end if
 
     ! Set pointer either to the explicitly given destination matrix or
     ! to the second source matrix which serves as destination matrix
@@ -21392,7 +21459,7 @@ contains
       
       ! Compute B := B + A
       !$omp parallel do private(ild,icol) default(shared) &
-      !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+      !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
       do ieq = 1,neq
         do ild = Kld(ieq),Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -21428,7 +21495,7 @@ contains
       
       ! Compute B := B + A
       !$omp parallel do private(ild,icol) default(shared) &
-      !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+      !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
       do ieq = 1,neq
         do ild = Kld(ieq),Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -21465,7 +21532,7 @@ contains
       
       ! Compute B := B + A
       !$omp parallel do private(ild,icol) default(shared) &
-      !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+      !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
       do ieq = 1,neq
         do ild = Kld(ieq),Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -21499,7 +21566,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild,ivar) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           do ivar = 1,nvar
@@ -21512,7 +21579,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           DaB(1,:,ild) = DaB(1,:,ild)+da*DaA(ieq)
@@ -21523,7 +21590,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           DaB(:,1,ild) = DaB(:,1,ild)+da*DaA(ieq)
@@ -21563,7 +21630,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild,ivar) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           do ivar = 1,nvar
@@ -21576,7 +21643,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           FaB(1,:,ild) = FaB(1,:,ild)+fa*FaA(ieq)
@@ -21587,7 +21654,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           FaB(:,1,ild) = FaB(:,1,ild)+fa*FaA(ieq)
@@ -21628,7 +21695,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild,ivar) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           do ivar = 1,nvar
@@ -21641,7 +21708,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           DaB(1,:,ild) = DaB(1,:,ild)+fa*FaA(ieq)
@@ -21652,7 +21719,7 @@ contains
 
         ! Compute B := B + A
         !$omp parallel do private(ild) default(shared) &
-        !$omp if(NEQ > LSYSSC_NEQMIN_OMP)
+        !$omp if(NEQ > p_rperfconfig%NEQMIN_OMP)
         do ieq = 1,neq
           ild = Kdiagonal(ieq)
           DaB(:,1,ild) = DaB(:,1,ild)+fa*FaA(ieq)

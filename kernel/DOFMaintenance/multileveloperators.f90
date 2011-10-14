@@ -171,6 +171,7 @@ contains
     if (present(rperfconfig)) then
       mlop_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(mlop_perfconfig)
       mlop_perfconfig%NELEMSIM = MLOP_NELEMSIM
     end if
   

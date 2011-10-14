@@ -232,6 +232,7 @@ contains
     if (present(rperfconfig)) then
       trilf_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(trilf_perfconfig)
       trilf_perfconfig%NELEMSIM = TRILF_NELEMSIM
     end if
   

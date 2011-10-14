@@ -17,6 +17,7 @@ module element_pyra3d
   use elementbase
   use derivatives
   use transformation
+  use perfconfig
 
   implicit none
   
@@ -683,7 +684,8 @@ contains
 #endif
 
   subroutine elem_Y1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                             Bder, Dbas, npoints, nelements, Dpoints)
+                             Bder, Dbas, npoints, nelements, &
+                             Dpoints, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -754,6 +756,10 @@ contains
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -777,6 +783,15 @@ contains
   integer :: i   ! point counter
   integer :: j   ! element counter
     
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+    
+  if (present(rperfconfig)) then
+    p_rperfconfig => rperfconfig
+  else
+    p_rperfconfig => el_perfconfig
+  end if
+  
   ! Clear the output array
   !Dbas = 0.0_DP
 
@@ -788,7 +803,7 @@ contains
   if (Bder(DER_FUNC3D)) then
   
     !$omp parallel do default(shared) private(i) &
-    !$omp if(nelements > EL_NELEMMIN_OMP)
+    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -813,7 +828,7 @@ contains
       (Bder(DER_DERIV3D_Z))) then
   
     !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz) &
-    !$omp if(nelements > EL_NELEMMIN_OMP)
+    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
       !Dxj = 0.125_DP / Ddetj(:,j)
       
@@ -898,7 +913,7 @@ contains
   pure &
 #endif
 
-  subroutine elem_eval_Y1_3D (celement, reval, Bder, Dbas)
+  subroutine elem_eval_Y1_3D (celement, reval, Bder, Dbas, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -921,6 +936,10 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder  
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -961,12 +980,21 @@ contains
   ! derivatives on reference element
   real(DP), dimension(NBAS,NDIM3D) :: DrefDer
   
+  ! Pointer to the performance configuration
+  type(t_perfconfig), pointer :: p_rperfconfig
+    
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => el_perfconfig
+    end if
+
     ! Calculate function values?
     if(Bder(DER_FUNC3D)) then
       
       ! Loop through all elements
       !$omp parallel do default(shared) private(i,dx,dy,dz) &
-      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
+      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -996,7 +1024,7 @@ contains
 
       ! Loop through all elements
       !$omp parallel do default(shared) private(i,dx,dy,dz,ddet,DrefDer) &
-      !$omp if(reval%nelements > EL_NELEMMIN_OMP)
+      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element

@@ -726,6 +726,7 @@ contains
     if (present(rperfconfig)) then
       fparser_perfconfig = rperfconfig
     else
+      call pcfg_initPerfConfig(fparser_perfconfig)
       fparser_perfconfig%NELEMSIM = FPAR_NITEMSIM
     end if
   

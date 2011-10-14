@@ -146,9 +146,10 @@ contains
     if (present(rperfconfig)) then
       gfsys_perfconfig = rperfconfig
     else
-      gfsys_perfconfig%NEQSIM = GFSYS_NEQSIM
+      call pcfg_initPerfConfig(gfsys_perfconfig)
+      gfsys_perfconfig%NEQSIM   = GFSYS_NEQSIM
       gfsys_perfconfig%NEDGESIM = GFSYS_NEDGESIM
-      gfsys_perfconfig%NASIM = GFSYS_NASIM
+      gfsys_perfconfig%NASIM    = GFSYS_NASIM
     end if
   
   end subroutine gfsys_initPerfConfig
