@@ -196,6 +196,7 @@
 		<File RelativePath="..\..\..\kernel\System\genoutput.f90"/>
 		<File RelativePath="..\..\..\kernel\System\io.f90"/>
 		<File RelativePath="..\..\..\kernel\System\paramlist.f90"/>
+		<File RelativePath="..\..\..\kernel\System\perfconfig.f90"/>
 		<File RelativePath="..\..\..\kernel\System\signals.f90"/>
 		<File RelativePath="..\..\..\kernel\System\sort.f90"/>
 		<File RelativePath="..\..\..\kernel\System\statistics.f90"/>
