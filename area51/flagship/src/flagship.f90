@@ -30,6 +30,7 @@ program flagship
   use signals
   use storage
 
+  use flagship_basic
   use hydro_application
   use mhd_application
   use transport_application
@@ -43,7 +44,8 @@ program flagship
   ! local variables
   character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
   character(LEN=SYS_STRLEN) :: slogdir, slogfile
-  character(LEN=SYS_STRLEN) :: application, sparameterfileName
+  character(LEN=SYS_STRLEN) :: application
+  character(LEN=SYS_STRLEN) :: sparameterfile, sperfconfigfile
   character(LEN=10) :: stime
   character(LEN=8)  :: sdate
   integer, external :: signal_SIGINT, signal_SIGQUIT
@@ -58,7 +60,11 @@ program flagship
   call system_init()
 
   ! Set system halt mode
+#ifdef ENABLE_ERROR_TRACEBACK
   sys_haltmode = SYS_HALT_THROWFPE
+#else
+  sys_haltmode = SYS_HALT_STOP
+#endif
 
   ! Initialize the output system
   ! Use $LOGDIR/$LOGFILE if set, otherwise hardcoded setting based on current time
@@ -114,13 +120,13 @@ program flagship
 
   ! Initialize parameter list from file
   call get_command_argument(command_argument_count(), cbuffer)
-  sparameterfileName = adjustl(cbuffer)
+  sparameterfile = adjustl(cbuffer)
   call parlst_init(rparlist)
-  call parlst_readfromfile(rparlist, trim(sparameterfileName))
+  call parlst_readfromfile(rparlist, trim(sparameterfile))
   call parlst_getvalue_string(rparlist, '', "application", application)
   call sys_tolower(application)
   call output_line('  Application:     '//trim(application))
-  call output_line('  Parameterfile:   '//trim(sparameterfileName))
+  call output_line('  Parameterfile:   '//trim(sparameterfile))
   call output_separator(OU_SEP_STAR)
   call output_lbrk()
   call output_line('The following settings are used for simulation')
@@ -128,6 +134,9 @@ program flagship
   call parlst_info(rparlist)
   call output_separator(OU_SEP_MINUS)
 
+  ! Initialize global performace configurations
+  call parlst_getvalue_string(rparlist, '', 'sperfconfigfile', sperfconfigfile)
+  call flagship_initPerfConfig(sperfconfigfile)
 
   ! Switch to application module
   if (trim(application) .eq. 'transport') then

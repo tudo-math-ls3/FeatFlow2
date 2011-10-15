@@ -16,6 +16,9 @@
 !#
 !# 3.) flagship_updateSolverMatrix
 !#     -> Updates the matrix in the solver structure
+!#
+!# 4.) flagship_initPerfConfig
+!#     -> Initializes performance configurations from file
 !# </purpose>
 !##############################################################################
 
@@ -25,10 +28,25 @@ module flagship_basic
   use fparser
   use genoutput
   use io
+  use perfconfig
   use problem
   use solveraux
   use triangulation
   use ucd
+
+  use linearsystemscalar, only     : lsyssc_initPerfConfig
+  use pprocerror, only             : pperr_initPerfConfig
+  use pprocgradients, only         : ppgrd_initPerfConfig
+  use afcstabbase, only            : afcstab_initPerfConfig
+  use afcstabscalar, only          : afcsc_initPerfConfig
+  use afcstabsystem, only          : afcsys_initPerfConfig
+  use groupfemscalar, only         : gfsc_initPerfConfig
+  use groupfemsystem, only         : gfsys_initPerfConfig
+  use elementbase, only            : el_initPerfConfig
+  use transformation, only         : trafo_initPerfConfig
+  use linearalgebra, only          : lalg_initPerfConfig
+  use bilinearformevaluation, only : bilf_initPerfConfig
+  use linearformevaluation, only   : linf_initPerfConfig
 
   implicit none
 
@@ -36,6 +54,7 @@ module flagship_basic
   public :: flagship_readParserFromFile
   public :: flagship_initUCDexport
   public :: flagship_updateSolverMatrix
+  public :: flagship_initPerfConfig
 
 !<constants>
 
@@ -663,5 +682,95 @@ contains
       end select
     end subroutine updateMatrix
   end subroutine flagship_updateSolverMatrix
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine flagship_initPerfConfig(sfilename, rperfconfig, ssectionName)
+
+!<description>
+    ! This subroutine initializes a performance configuration by the
+    ! values stored in an INI-file. If the optional parameters
+    ! rperfconfig and ssectionName are not present, then the global
+    ! performance configurations of the kernerl modules are
+    ! initialized. Otherwise, the given performance configuration
+    ! rperfconfig is initialized by the values given in section
+    ! ssectionName.
+!</description>
+
+!<input>
+    ! file name
+    character(len=*), intent(in) :: sfilename
+
+    ! OPTIONAL: name of the section
+    character(len=*), intent(in), optional :: ssectionName
+!</input>
+
+!<output>
+    ! OPTIONAL: performance configuration
+    type(t_perfconfig), intent(out), optional :: rperfconfig
+!</output>
+!</subroutine>
+
+    type(t_perfconfig) :: rperfconfigTmp
+
+    if (present(rperfconfig)) then
+      
+      ! Initialize the given performance configuration
+      if (present(ssectionName)) then
+        call pcfg_readPerfConfig(sfilename, ssectionName, rperfconfig)
+      else
+        call pcfg_readPerfConfig(sfilename, '', rperfconfig)
+      end if
+
+    else
+
+      ! Initialize all global performance configurations
+      call pcfg_readPerfConfig(sfilename, 'LSYSSC', rperfconfigTmp)
+      call lsyssc_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'PPERR', rperfconfigTmp)
+      call pperr_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'PPGRD', rperfconfigTmp)
+      call ppgrd_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'AFCSTAB', rperfconfigTmp)
+      call afcstab_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'AFCSC', rperfconfigTmp)
+      call afcsc_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'AFCSYS', rperfconfigTmp)
+      call afcsys_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'GFSC', rperfconfigTmp)
+      call gfsc_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'GFSYS', rperfconfigTmp)
+      call gfsys_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'EL', rperfconfigTmp)
+      call el_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'TRAFO', rperfconfigTmp)
+      call trafo_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'LALG', rperfconfigTmp)
+      call lalg_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'BILF', rperfconfigTmp)
+      call bilf_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'LINF', rperfconfigTmp)
+      call linf_initPerfConfig(rperfConfigTmp)
+
+      call pcfg_readPerfConfig(sfilename, 'FPAR', rperfconfigTmp)
+      call fparser_initPerfConfig(rperfConfigTmp)
+
+    end if
+
+  end subroutine flagship_initPerfConfig
 
 end module flagship_basic
