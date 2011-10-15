@@ -393,6 +393,7 @@ module paramlist
   public :: parlst_readfromsinglefile
   public :: parlst_expandEnvVariables
   public :: parlst_expandSubvars
+  public :: parlst_dumptofile
 
 contains
   
@@ -3761,5 +3762,95 @@ contains
     end do
   
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine parlst_dumpToFile(rparlist, sfilename, cflag)
+
+!<description>
+   ! This subroutine dumps a given parameter list into a text file in
+   ! INI-file form. Note that no additional comments are exported but
+   ! just the tuples `parameter = value` in the corresponding sections.
+!</description>
+
+!<input>
+
+  ! The parameter list.
+  type(t_parlist), intent(in) :: rparlist
+
+  ! The name of the output file
+  character(*), intent(in) :: sfilename
+
+  ! mode: SYS_APPEND or SYS_REPLACE
+  integer, intent(in) :: cflag
+
+!</input>
+!</subroutine>
+    
+    ! local variables
+    character(len=PARLST_LENLINEBUF) :: sbuf
+    integer :: iunit,isection,ivalue,ientry,icount
+    
+    if (rparlist%isectionCount .eq. 0) then
+      call output_line ('Parameter list not initialised', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_dumpToFile')
+      call sys_halt()
+    end if
+    
+    ! Open file for output
+    call io_openFileForWriting(sfilename, iunit, cflag, bformatted=.true.)
+    if (iunit .eq. -1) then
+      call output_line ('Unable to open file for output!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_dumpToFile')
+      call sys_halt()
+    end if
+
+    ! Loop through all sections
+    do isection = 1,rparlist%isectionCount
+      
+      ! Append the section name. May be empty for the unnamed section,
+      ! which is always the first one.
+      if (isection .gt. 1) then
+        ! Empty line before
+        write(iunit,*)
+        write(iunit,*) '['//trim(rparlist%p_Rsections(isection)%ssectionName)//']'
+      end if
+      
+      ! Loop through the values in the section
+      do ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+        
+        ! Do we have one or multiple entries to that parameter?
+        icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
+        if (icount .eq. 0) then
+          ! Write "name=value"
+          call sys_charArrayToString(&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,sbuf)
+          write(iunit,*)&
+              trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+              //" = "//trim(sbuf)
+        else
+          ! Write "name(icount)="
+          write(iunit,*)&
+              trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+              //"("//trim(sys_siL(icount, 10))//") = "
+          ! Write all the entries of that value, one each line.
+          do ientry = 1,icount
+            call sys_charArrayToString(&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
+                p_SentryList(:,ientry),sbuf)
+            write(iunit,*) trim(sbuf)
+          end do
+        end if
+        
+      end do ! ivalue
+      
+    end do ! isection
+    
+    ! Close file
+    close(iunit)
+
+  end subroutine parlst_dumpToFile
 
 end module
