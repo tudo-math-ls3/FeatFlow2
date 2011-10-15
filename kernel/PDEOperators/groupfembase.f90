@@ -2060,7 +2060,7 @@ contains
             else
               ! Loop over selected nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
-                p_DcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(1,ia))
+                p_FcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(1,ia))
               end do
             end if
             
