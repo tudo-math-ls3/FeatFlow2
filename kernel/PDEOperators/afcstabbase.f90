@@ -5845,11 +5845,11 @@ contains
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => afcstab_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => afcstab_perfconfig
+    !$ end if
 
     if (present(Dalpha)) then
       
@@ -5971,11 +5971,11 @@ contains
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => afcstab_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => afcstab_perfconfig
+    !$ end if
 
     if (present(Falpha)) then
       
@@ -6100,11 +6100,11 @@ contains
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => afcstab_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => afcstab_perfconfig
+    !$ end if
 
     if (present(Dalpha)) then
 
@@ -6232,11 +6232,11 @@ contains
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => afcstab_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => afcstab_perfconfig
+    !$ end if
 
     if (present(Falpha)) then
 

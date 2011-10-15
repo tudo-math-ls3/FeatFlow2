@@ -562,11 +562,11 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => el_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => el_perfconfig
+    !$ end if
 
     !if function values are desired
     if (Bder(DER_FUNC1D)) then
@@ -892,11 +892,11 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => el_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => el_perfconfig
+    !$ end if
  
     !if function values are desired
     if (Bder(DER_FUNC1D)) then
@@ -1248,11 +1248,11 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => el_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => el_perfconfig
+    !$ end if
  
     !if function values are desired
     if (Bder(DER_FUNC1D)) then
@@ -2351,11 +2351,11 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => el_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => el_perfconfig
+    !$ end if
 
     !if function values are desired
     if (Bder(DER_FUNC1D)) then
@@ -2695,11 +2695,11 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
     
-    if (present(rperfconfig)) then
-      p_rperfconfig => rperfconfig
-    else
-      p_rperfconfig => el_perfconfig
-    end if
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => el_perfconfig
+    !$ end if
   
     !if function values are desired
     if (Bder(DER_FUNC1D)) then

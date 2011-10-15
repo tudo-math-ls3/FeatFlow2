@@ -776,11 +776,11 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
   
-  if (present(rperfconfig)) then
-    p_rperfconfig => rperfconfig
-  else
-    p_rperfconfig => el_perfconfig
-  end if
+  !$ if (present(rperfconfig)) then
+  !$  p_rperfconfig => rperfconfig
+  !$ else
+  !$  p_rperfconfig => el_perfconfig
+  !$ end if
   
   ! Clear the output array
   !Dbas = 0.0_DP
