@@ -406,7 +406,7 @@ module bilinearformevaluation
 
   ! *** LEGACY CONSTANT, use the more flexible performance configuration ***
   ! Number of elements to handle simultaneously when building matrices
-#ifndef LINF_NELEMSIM
+#ifndef BILF_NELEMSIM
   integer, parameter, public :: BILF_NELEMSIM = 128
 #endif
   
