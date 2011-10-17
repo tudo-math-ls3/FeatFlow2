@@ -42,7 +42,7 @@ module flagship_basic
   use afcstabsystem, only          : afcsys_initPerfConfig
   use groupfemscalar, only         : gfsc_initPerfConfig
   use groupfemsystem, only         : gfsys_initPerfConfig
-  use elementbase, only            : el_initPerfConfig
+  use elementpreprocessing, only   : elprep_initPerfConfig
   use transformation, only         : trafo_initPerfConfig
   use linearalgebra, only          : lalg_initPerfConfig
   use bilinearformevaluation, only : bilf_initPerfConfig
@@ -752,7 +752,7 @@ contains
       call gfsys_initPerfConfig(rperfConfigTmp)
 
       call pcfg_readPerfConfig(sfilename, 'EL', rperfconfigTmp)
-      call el_initPerfConfig(rperfConfigTmp)
+      call elprep_initPerfConfig(rperfConfigTmp)
 
       call pcfg_readPerfConfig(sfilename, 'TRAFO', rperfconfigTmp)
       call trafo_initPerfConfig(rperfConfigTmp)
