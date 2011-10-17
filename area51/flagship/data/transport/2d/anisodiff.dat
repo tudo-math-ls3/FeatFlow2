@@ -219,7 +219,7 @@ iprelimiting = 1
 # 32 = nonlinear symmetric limiting
 # 42 = nonlinear symmetric FEM-LPT
 # 52 = linearised symmetric FEM-LPT
-istabilisation = 30
+istabilisation = 32
 
 
 ################################################################################
