@@ -1272,7 +1272,7 @@ contains
 !<subroutine>
 
   subroutine ppns2D_bdforces_line(rvector,rregion,Dforces,ccub,df1,df2,cformulation,&
-      ffunctionReference,rcollection)
+      ffunctionReference,rcollection,rperfconfig)
 
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
@@ -1345,6 +1345,10 @@ contains
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1576,7 +1580,8 @@ contains
       ! Prepare an element set for evaluation on the current set
       call elprep_prepareSetForEvaluation (revalElementSet, &
           elem_getEvaluationTag(celement), p_rtriangulation, &
-          IcurrentElementSet(1:nelements), ctrafoType, DpointsRef=DpointsRef)
+          IcurrentElementSet(1:nelements), ctrafoType, DpointsRef=DpointsRef,&
+          rperfconfig=rperfconfig)
 
       ! In case, dpf1 is nonconstant, calculate dpf1.
       if (present(ffunctionReference)) then
@@ -1693,7 +1698,8 @@ contains
       ! Prepare an element set for evaluation on the current set
       call elprep_prepareSetForEvaluation (revalElementSet, &
           elem_getEvaluationTag(celement), p_rtriangulation, &
-          IcurrentElementSet(1:nelements), ctrafoType, DpointsRef=DpointsRef)
+          IcurrentElementSet(1:nelements), ctrafoType, DpointsRef=DpointsRef,&
+          rperfconfig=rperfconfig)
 
       ! Calculate the values of the basis functions.
       call elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
@@ -3142,7 +3148,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
 
         ! In case, dpf1 is nonconstant, calculate dpf1.

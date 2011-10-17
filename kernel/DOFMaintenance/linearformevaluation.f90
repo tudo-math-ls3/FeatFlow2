@@ -793,7 +793,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Now it is time to call our coefficient function to calculate the
@@ -1059,7 +1059,7 @@ contains
             ! Assemble the data all elements
             call linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
                 iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                fcoeff_buildVectorScBdr1D_sim, rcollection)
+                fcoeff_buildVectorScBdr1D_sim, rcollection, rperfconfig)
           
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -1105,7 +1105,7 @@ contains
               ! Assemble the data for one element
               call linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
                   iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                  fcoeff_buildVectorScBdr1D_sim, rcollection)
+                  fcoeff_buildVectorScBdr1D_sim, rcollection, rperfconfig)
               
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
@@ -1504,7 +1504,7 @@ contains
             ! Assemble the data all elements
             call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
                 iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                fcoeff_buildVectorBlBdr1D_sim, rcollection)
+                fcoeff_buildVectorBlBdr1D_sim, rcollection, rperfconfig)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -1550,7 +1550,7 @@ contains
               ! Assemble the data for one element
               call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
                   ibdc, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                  fcoeff_buildVectorBlBdr1D_sim, rcollection)
+                  fcoeff_buildVectorBlBdr1D_sim, rcollection, rperfconfig)
               
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)
@@ -2225,7 +2225,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
-          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp))
+          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => p_revalElementSet%p_Ddetj
       
       ! Now it is time to call our coefficient function to calculate the
@@ -2557,7 +2557,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
-          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp))
+          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => p_revalElementSet%p_Ddetj
       
       ! Now it is time to call our coefficient function to calculate the
@@ -2705,7 +2705,7 @@ contains
   
   subroutine linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
-      fcoeff_buildVectorScBdr1D_sim, rcollection)
+      fcoeff_buildVectorScBdr1D_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -2730,6 +2730,9 @@ contains
   include 'intf_coefficientVectorScBdr1D.inc'
   optional :: fcoeff_buildVectorScBdr1D_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2833,7 +2836,8 @@ contains
     ! coordinates of the points on the cells.
     call elprep_prepareSetForEvaluation (p_revalElementSet,&
         cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
-        IelementList, rvectorAssembly%ctrafoType, DpointsRef=DpointsRef)
+        IelementList, rvectorAssembly%ctrafoType, DpointsRef=DpointsRef,&
+        rperfconfig=rperfconfig)
     
     ! Now it is time to call our coefficient function to calculate the
     ! function values in the cubature points:
@@ -3192,7 +3196,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
-          DpointsRef=DpointsRef)
+          DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! Now it is time to call our coefficient function to calculate the
@@ -3362,7 +3366,7 @@ contains
   
   subroutine linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
-      fcoeff_buildVectorBlBdr1D_sim, rcollection)
+      fcoeff_buildVectorBlBdr1D_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -3387,6 +3391,9 @@ contains
   include 'intf_coefficientVectorBlBdr1D.inc'
   optional :: fcoeff_buildVectorBlBdr1D_sim 
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3494,7 +3501,7 @@ contains
     call elprep_prepareSetForEvaluation (p_revalElementSet,&
         cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
         IelementList, rvectorAssembly%ctrafoType, &
-        DpointsRef=DpointsRef)
+        DpointsRef=DpointsRef, rperfconfig=rperfconfig)
     
     ! Now it is time to call our coefficient function to calculate the
     ! function values in the cubature points:
@@ -3858,7 +3865,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
-          DpointsRef=DpointsRef)
+          DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! Now it is time to call our coefficient function to calculate the
@@ -4221,7 +4228,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rvector%p_rblockDiscr%RspatialDiscr(1)%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
-          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp))
+          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => p_revalElementSet%p_Ddetj
       
       ! Now it is time to call our coefficient function to calculate the
@@ -4369,7 +4376,7 @@ contains
   
   subroutine linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
-      fcoeff_buildVectorBlBdr1D_sim, rcollection)
+      fcoeff_buildVectorBlBdr1D_sim, rcollection, rperfconfig)
 
 !<description>
 
@@ -4393,7 +4400,10 @@ contains
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
   optional :: fcoeff_buildVectorBlBdr1D_sim 
-  
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4502,7 +4512,7 @@ contains
     call elprep_prepareSetForEvaluation (p_revalElementSet,&
         cevaluationTag, rvector%p_rblockDiscr%RspatialDiscr(1)%p_rtriangulation, &
         IelementList, rvectorAssembly%ctrafoType, &
-        DpointsRef=DpointsRef)
+        DpointsRef=DpointsRef, rperfconfig=rperfconfig)
     
     ! Now it is time to call our coefficient function to calculate the
     ! function values in the cubature points:
@@ -4868,7 +4878,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rvector%p_rblockDiscr%RspatialDiscr(1)%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
-          DpointsRef=DpointsRef)
+          DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! Now it is time to call our coefficient function to calculate the
@@ -5629,7 +5639,7 @@ contains
             ! Assemble the data all elements
             call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
                 rvectorBlock, iboundaryComp, IelementList, IelementOrientation,&
-                fcoeff_buildVectorBlBdr1D_sim, rcollection)
+                fcoeff_buildVectorBlBdr1D_sim, rcollection, rperfconfig)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -5675,7 +5685,7 @@ contains
               ! Assemble the data for one element
               call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvectorBlock,&
                   ibdc, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                  fcoeff_buildVectorBlBdr1D_sim, rcollection)
+                  fcoeff_buildVectorBlBdr1D_sim, rcollection, rperfconfig)
               
               ! Release the assembly structure.
               call linf_doneAssembly(rvectorAssembly)

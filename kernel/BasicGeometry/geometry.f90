@@ -6026,7 +6026,7 @@ end subroutine
 !</subroutine>
 
   ! We need one local variable for distance calculation
-  real(DP) :: ddistance,dvalue
+  real(DP) :: dvalue
   real(DP), dimension(NDIM3D) :: Dpoint,Dtrans
   Dpoint(:)=Dcoords(:)
   

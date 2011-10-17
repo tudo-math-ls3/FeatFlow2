@@ -425,7 +425,6 @@ contains
   integer, dimension(:), pointer :: p_cpreSmoothMthd          
   integer, dimension(:), pointer :: p_cpostSmoothMthd          
   integer, dimension(:), pointer :: p_cintSmoothMthd            
-  real(dp), dimension(:), pointer :: p_DblendPar            
   
   rgriddefInfo%p_rboundary => rboundary
   
@@ -670,7 +669,7 @@ contains
 !</subroutine>
   
   ! Local variables
-  integer :: i,idupFlag
+  integer :: idupFlag
   
   
   ! assign the pointer on this level
@@ -1130,7 +1129,7 @@ contains
   ! local variables
   
   ! maximum number of correction steps (local instance)
-  integer:: idupFlag, NEL, NVT, NLMAX
+  integer:: NEL, NVT, NLMAX
 
   ! get these numbers 
   NLMAX = rgriddefInfo%iminDefLevel
@@ -1200,17 +1199,12 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: nmaxCorrSteps, NLMAX,NLMIN,ilevelODE,idef,i
+  integer :: nmaxCorrSteps, NLMAX,NLMIN,idef,i
   ! A scalar matrix and vector. The vector accepts the RHS of the problem
   ! in scalar form.
-  type(t_vectorScalar) , pointer :: p_Df2
   integer, dimension(:), pointer :: p_nadapStepsReally
   real(dp), dimension(:), pointer :: p_DblendPar    
   integer, dimension(:), pointer :: p_ilevelODE  
-  
-  ! weighting parameter for Laplacian smoothing of the vector field
-  real(dp) :: dscale1,dscale2
-
   
   ! We deform on level nlmax
   NLMAX = rgriddefInfo%iminDefLevel
@@ -1289,7 +1283,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ilevel,idef
+    integer :: idef
     
     integer,dimension(:), pointer :: p_calcAdapSteps
     
@@ -1368,10 +1362,7 @@ contains
 
     ! local variables
     real(dp), dimension(:,:), pointer :: Dresults
-    ! scaling factor for monitor function (exact case only)
-    real(dp) :: dscalefmon
-    ! scaling factor for the reciprocal of the blended monitor function (exact case only)
-    real(dp) :: dscalefmonInv
+
     ! weighting parameter for Laplacian smoothing of the vector field
     real(dp) :: dscale1,dscale2
     logical :: bBlending
@@ -1384,7 +1375,7 @@ contains
     type(t_blockDiscretisation) :: rDubDiscretisation   
     
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner, p_rcoarseGridSolver, p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -1596,10 +1587,8 @@ contains
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_DareaLevel
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Darea
-    real(DP), dimension(:), pointer :: p_DareaProj    
     integer :: iel
     real(DP), dimension(NDIM2D,TRIA_MAXNVE2D) :: Dpoints
     integer :: ive
@@ -1711,17 +1700,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_DareaLevel
     real(DP), dimension(:), pointer :: p_Darea
-    real(DP), dimension(:), pointer :: p_DareaProj
     real(DP), dimension(:), pointer :: p_DelementVolume    
     integer :: iel
-    integer :: ive
     type(t_vectorScalar) :: rvectorAreaQ0 
     type(t_vectorBlock) :: rvectorAreaBlockQ0
     type(t_blockDiscretisation) :: rprjDiscretisation
     type(t_blockDiscretisation), pointer :: rdiscretisation   
-    real(DP), dimension(NDIM3D,TRIA_MAXNVE3D) :: Dpoints
     
     rdiscretisation => rgriddefInfo%p_rhLevels(iLevel)%rdiscretisation
     
@@ -1786,7 +1771,6 @@ contains
 !</subroutine>
 
   ! local variables
-  integer, dimension(:,:), pointer :: p_IverticesAtElement
   real(DP), dimension(:,:), pointer :: p_DvertexCoords
   real(DP), dimension(:), pointer :: p_Dentries
   integer :: ive
@@ -2014,10 +1998,10 @@ contains
 
   ! Allocateable arrays for the values of the basis functions - 
   ! for test space.
-  real(dp), dimension(:,:,:,:), allocatable, target :: DbasTest,DbasFunc
+  real(dp), dimension(:,:,:,:), allocatable, target :: DbasTest
   
   ! Number of local degees of freedom for test functions
-  integer :: indofTest,indofFunc
+  integer :: indofTest
   
   type(t_vectorScalar), pointer :: rvectorArea,rvectorMon
   
@@ -2062,9 +2046,6 @@ contains
   ! Number of elements in the current element distribution
   integer :: NEL
 
-  ! Pointer to the values of the function that are computed by the callback routine.
-  real(dp), dimension(:,:,:), allocatable :: Dcoefficients
-  
   ! Number of elements in a block. Normally =NELEMSIM,
   ! except if there are less elements in the discretisation.
   integer :: nelementsPerBlock
@@ -2074,7 +2055,7 @@ contains
   type(t_evalElementSet) :: rintSubset
   
   ! An allocateable array accepting the doF`s of a set of elements.
-  integer, dimension(:,:), allocatable, target :: IdofsTest,IdofFunc
+  integer, dimension(:,:), allocatable, target :: IdofsTest
 
   ! Type of transformation from the reference to the real element 
   integer :: ctrafoType
@@ -2210,8 +2191,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (rintSubset,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
-            
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => rintSubset%p_Ddetj
 
         ! In the next loop, we do not have to evaluate the coordinates
@@ -2460,11 +2440,7 @@ contains
   
   ! A pointer to an element-number list
   integer, dimension(:), pointer :: p_IelementList
-  
-  ! A small vector holding only the additive controbutions of
-  ! one element
-  real(dp), dimension(el_maxnbas) :: DlocalData
-  
+    
   ! An array that takes coordinates of the cubature formula on the reference element
   real(dp), dimension(:,:), allocatable :: p_DcubPtsRef
 
@@ -2661,8 +2637,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalSubset,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
-          
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)          
       p_Ddetj => revalSubset%p_Ddetj
       
       ! Calculate the values of the basis functions.
@@ -2861,9 +2836,9 @@ contains
   ! local variables
   real(dp), dimension(:,:), pointer :: p_DvertexCoordsReal
   real(dp), dimension(:,:), pointer :: p_DvertexCoords
-  real(dp), dimension(:), pointer :: p_DvertexParametersReal
-  real(dp), dimension(:), pointer :: p_DvertexParameters
-  integer :: i,NLMAX
+!   real(dp), dimension(:), pointer :: p_DvertexParametersReal
+!   real(dp), dimension(:), pointer :: p_DvertexParameters
+  integer :: NLMAX
   
   NLMAX=rgriddefInfo%NLMAX
   
@@ -2932,7 +2907,7 @@ contains
   real(dp) :: dx, dy, dx_old, dy_old
 
   ! time and step size for ODE solving
-  real(dp) :: dtime, dstepSize,deps,dist
+  real(dp) :: dtime, dstepSize,deps
 
   ! level diference between PDE and PDE level
   integer:: ilevDiff
@@ -3138,7 +3113,7 @@ contains
   real(dp) :: dx, dy, dz, dx_old, dy_old, dz_old,dx_old1,dy_old1,dz_old1
 
   ! time and step size for ODE solving
-  real(dp) :: dtime, dstepSize,deps,dist
+  real(dp) :: dtime, dstepSize,deps
 
   ! level diference between PDE and PDE level
   integer:: ilevDiff
@@ -4630,7 +4605,6 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !</subroutine>
 
   ! local variables
-  integer :: cnonmesh
   integer :: ieltype,indof,nve,ibas
   integer :: iel
   integer, dimension(:), pointer :: p_IelementDistr
@@ -4785,10 +4759,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_DareaLevel
     real(dp), dimension(:,:), pointer :: p_DvertexCoords
     real(dp), dimension(:), pointer :: p_Darea
-    real(dp), dimension(:), pointer :: p_DareaProj    
     integer :: iel
     real(dp), dimension(ndim2d,tria_maxnve2d) :: Dpoints
     integer :: ive,NLMAX
@@ -4960,7 +4932,6 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   integer, dimension(:), pointer :: p_cpreSmoothMthd          
   integer, dimension(:), pointer :: p_cpostSmoothMthd          
   integer, dimension(:), pointer :: p_cintSmoothMthd            
-  real(dp), dimension(:), pointer :: p_DblendPar            
   
   rgriddefInfo%dblendPar = 1.0_dp
   
@@ -5237,17 +5208,12 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 !</subroutine>
 
   ! local variables
-  integer :: nmaxCorrSteps, NLMAX,NLMIN,ilevelODE,idef,i
+  integer :: nmaxCorrSteps, NLMAX,NLMIN,idef,i
   ! A scalar matrix and vector. The vector accepts the RHS of the problem
   ! in scalar form.
-  type(t_vectorScalar) , pointer :: p_Df2
   integer, dimension(:), pointer :: p_nadapStepsReally
   real(dp), dimension(:), pointer :: p_DblendPar    
   integer, dimension(:), pointer :: p_ilevelODE  
-  
-  ! weighting parameter for Laplacian smoothing of the vector field
-  real(dp) :: dscale1,dscale2
-
   
   ! We deform on level nlmax
   NLMAX = rgriddefInfo%iminDefLevel
@@ -5343,10 +5309,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
     ! local variables
     real(dp), dimension(:,:), pointer :: Dresults
-    ! scaling factor for monitor function (exact case only)
-    real(dp) :: dscalefmon
-    ! scaling factor for the reciprocal of the blended monitor function (exact case only)
-    real(dp) :: dscalefmonInv
+
     ! weighting parameter for Laplacian smoothing of the vector field
     real(dp) :: dscale1,dscale2
     logical :: bBlending
@@ -5359,7 +5322,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     type(t_blockDiscretisation) :: rDubDiscretisation   
     
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner, p_rcoarseGridSolver, p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -5584,7 +5547,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   real(DP), dimension(3) :: DQP,DP2
 !-------------------------------------------------------    
   
-  integer :: NLMAX,i,j,iVindex,ied,iel,iedge,v1,v2,iVert,iface,ive,iae
+  integer :: NLMAX,i,iVindex,ied,iel,iedge,v1,v2,iVert,iface
   integer :: nmt,nvt
   
   NLMAX = rgriddefInfo%NLMAX

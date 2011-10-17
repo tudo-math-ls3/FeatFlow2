@@ -1074,7 +1074,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! If the matrix has nonconstant coefficients c(x,y) , calculate the 
@@ -1880,7 +1880,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
-          rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp))
+          rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => p_revalElementSet%p_Ddetj
 
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.

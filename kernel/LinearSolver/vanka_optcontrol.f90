@@ -1257,7 +1257,7 @@ contains
   real(DP), dimension(:,:), pointer :: DS1, DS2
   integer, dimension(:), pointer :: Ipiv
   integer, dimension(:,:), pointer :: IdofsP,KentryLocalB,KentryLocalA11
-  integer, dimension(:,:), pointer :: KentryLocalA12,KentryLocalC,KentryLocalD
+  integer, dimension(:,:), pointer :: KentryLocalA12,KentryLocalD
   real(DP), dimension(:,:), pointer :: DaFull
   integer, dimension(:), pointer :: IdofsU,IdofsP1
   real(DP), dimension(:), pointer :: Ddefect
@@ -1270,10 +1270,8 @@ contains
   
   ! local variables
   logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bHaveC
-  integer :: idxu,idxp,idofp,idofu,i,j,id1,id2,ndofu,ndofp,info,ielidx,iter
+  integer :: idxu,idxp,idofp,idofu,i,j,id1,ndofu,ndofp,info,ielidx,iter
   integer :: idxprimal,idxdual,ndofslocal,idxu1,idxv1,idxp1,idxu2,idxv2,idxp2
-  real(DP) :: daux1,daux2,daux4,daux5
-  real(DP) :: dp1,dp2
   
     ! Get the pointers to the vector data
     call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvecU1)

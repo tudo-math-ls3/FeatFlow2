@@ -609,7 +609,7 @@ contains
         
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation (revalElementSet, cevalTag, p_rtria, &
-            p_IelementList(IELset:IELmax), ctrafoType, DcubPts)
+            p_IelementList(IELset:IELmax), ctrafoType, DcubPts, rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
         
         ! Remove the ref-points eval tag for the next loop iteration
@@ -1373,7 +1373,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
 
         ! In the next loop, we do not have to evaluate the coordinates
@@ -2186,7 +2186,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
 
         ! In the next loop, we do not have to evaluate the coordinates
@@ -3003,7 +3003,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
 
         ! In the next loop, we do not have to evaluate the coordinates
@@ -4733,7 +4733,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
             
         ! In the next loop, we do not have to evaluate the coordinates
@@ -5226,7 +5226,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
         p_DcubPtsReal => revalElementSet%p_DpointsReal
             
@@ -5398,7 +5398,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
         p_DcubPtsReal => revalElementSet%p_DpointsReal
 

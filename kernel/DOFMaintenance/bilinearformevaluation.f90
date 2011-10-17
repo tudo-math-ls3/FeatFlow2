@@ -506,7 +506,7 @@ contains
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -656,7 +656,7 @@ contains
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -4667,7 +4667,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
@@ -5698,7 +5698,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
-          rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp))
+          rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => p_revalElementSet%p_Ddetj
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
@@ -5958,7 +5958,7 @@ contains
   
   subroutine bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
       iboundaryComp, IelementList, IelementOrientation, cconstrType,&
-      fcoeff_buildMatrixScBdr1D_sim, rcollection)
+      fcoeff_buildMatrixScBdr1D_sim, rcollection, rperfconfig)
   
 !<description>
 
@@ -5987,6 +5987,9 @@ contains
   include 'intf_coefficientMatrixScBdr1D.inc'
   optional :: fcoeff_buildMatrixScBdr1D_sim
   
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -6139,7 +6142,8 @@ contains
     ! on the cells.
     call elprep_prepareSetForEvaluation (p_revalElementSet,&
         cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
-        IelementList, rmatrixAssembly%ctrafoType, DpointsRef=DpointsRef)
+        IelementList, rmatrixAssembly%ctrafoType, DpointsRef=DpointsRef,&
+        rperfconfig=rperfconfig)
     
     ! If the matrix has nonconstant coefficients, calculate the coefficients now.
     if (.not. rmatrixAssembly%rform%ballCoeffConstant) then
@@ -6677,7 +6681,7 @@ contains
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
           IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
-          DpointsRef=DpointsRef)
+          DpointsRef=DpointsRef, rperfconfig=rperfconfig)
       p_Dcoords => p_revalElementSet%p_Dcoords
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
@@ -7357,7 +7361,7 @@ contains
             ! Assemble the data for all elements
             call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
                 iboundaryComp, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+                ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection, rperfconfig)
           
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
@@ -7404,7 +7408,7 @@ contains
               ! Assemble the data for all elements
               call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
                   ibdc, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
-                  ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection)
+                  ccType, fcoeff_buildMatrixScBdr1D_sim, rcollection, rperfconfig)
 
               ! Release the assembly structure.
               call bilf_doneAssembly(rmatrixAssembly)

@@ -7,11 +7,6 @@
 !# This module contains a set of constant definitions and structures which
 !# are used by the different element modules.
 !#
-!# The following routines are available:
-!#
-!# 1.) el_initPerfConfig
-!#     -> Initialises the global performance configuration
-!#
 !# </purpose>
 !##############################################################################
 
@@ -206,6 +201,9 @@ module elementbase
     ! release of memory in cleanup routines. 
     logical :: bforeignCoords = .false.
   
+    ! Pointer to a performance pointer
+    type(t_perfconfig), pointer :: p_rperfconfig => null()
+
   end type
 
   public :: t_evalElementSet
@@ -213,43 +211,5 @@ module elementbase
 !</typeblock>
 
 !</types>
-
-  !*****************************************************************************
-  
-  ! global performance configuration
-  type(t_perfconfig), target, save :: el_perfconfig
-  
-  !*****************************************************************************
-
-  public :: el_perfconfig
-  public :: el_initPerfConfig
-
-contains
-
-  ! ****************************************************************************
-
-!<subroutine>
-
-  subroutine el_initPerfConfig(rperfconfig)
-
-!<description>
-  ! This routine initialises the global performance configuration
-!</description>
-
-!<input>
-  ! OPTIONAL: performance configuration that should be used to initialise
-  ! the global performance configuration. If not present, the values of
-  ! the legacy constants is used.
-  type(t_perfconfig), intent(in), optional :: rperfconfig
-!</input>
-!</subroutine>
-
-    if (present(rperfconfig)) then
-      el_perfconfig = rperfconfig
-    else
-      call pcfg_initPerfConfig(el_perfconfig)
-    end if
-  
-  end subroutine el_initPerfConfig
 
 end module

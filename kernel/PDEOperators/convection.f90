@@ -387,7 +387,7 @@ contains
  subroutine conv_upwind2d (rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity, &
-                           IvelocityComp)
+                           IvelocityComp, rperfconfig)
 
 !<description>
   ! Standard 1st order upwinding method to set up the convection operator
@@ -466,6 +466,10 @@ contains
   ! must be in rsolution\%RvectorBlock(1) and the Y-velocity in
   ! rsolution\%RvectorBlock(2).
   integer, dimension(2), intent(in), optional :: IvelocityComp
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -614,7 +618,7 @@ contains
                     rmatrix,rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
                     cdef, rconfig%dupsam, rconfig%dnu, rconfig%dtheta, &
                     rconfig%bALE, &
-                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity)
+                    p_DsolX,p_DsolY,p_DdefectX,p_DdefectY, DmeshVelocity, rperfconfig)
 
     else
 
@@ -622,7 +626,7 @@ contains
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix,rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
                     cdef, rconfig%dupsam, rconfig%dnu, rconfig%dtheta, &
-                    rconfig%bALE, DmeshVelocity=DmeshVelocity)
+                    rconfig%bALE, DmeshVelocity=DmeshVelocity, rperfconfig=rperfconfig)
 
       !!! DEBUG:
       !call matio_writeMatrixHR (rmatrix, 'matrix',&
@@ -639,8 +643,8 @@ contains
   subroutine conv_upwind2dALE_Q1Tdouble ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,rtriangulation,cdef, &
-                  dupsam,dnu,dtheta, bALE, &
-                  Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
+                  dupsam,dnu,dtheta,bALE, &
+                  Du1,Du2,Ddef1,Ddef2,DmeshVelocity,rperfconfig)
 !<description>
   ! Standard 1st order upwinding method to set up the convection operator
   !
@@ -767,6 +771,9 @@ contains
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
 
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2165,7 +2172,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -3154,7 +3161,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -4662,7 +4669,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -7055,7 +7062,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -8551,7 +8558,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-          ctrafoType, p_DcubPtsRef(:,1:ncubp))
+          ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -10035,7 +10042,7 @@ contains
 !<subroutine>
 
   subroutine conv_JumpStabilisation1d ( &
-      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation)
+      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation, rperfconfig)
 
 !<description>
   ! Edge oriented stabilisation technique. Wrapper routine.
@@ -10080,6 +10087,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -10169,8 +10180,9 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,&
+          rconfig%dtheta,rconfig%ccubType,rconfig%dnu,rdiscretisation,&
+          rperfconfig=rperfconfig)
       end if
 
 !    else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
@@ -10206,7 +10218,8 @@ contains
 !<subroutine>
 
   subroutine conv_JumpStabilisation2d ( &
-      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation,InodeList)
+      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation,&
+      InodeList, rperfconfig)
 
 !<description>
   ! Edge oriented stabilisation technique. Wrapper routine.
@@ -10255,6 +10268,10 @@ contains
   ! OPTIONAL: List of edges/faces where the operator should be computed.
   ! If not present, the operator will be computed on all edges/faces.
   integer, dimension(:), intent(in), optional :: InodeList
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -10334,7 +10351,7 @@ contains
           call jstab_matvecUEOJumpStabilBlk2d ( &
               rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%ccubType,&
               rconfig%dnu,rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
-              rdiscretisation,InodeList)
+              rdiscretisation,InodeList,rperfconfig)
         end if
 
       end if
@@ -10343,7 +10360,7 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
           rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu,rdiscretisation,InodeList)
+          rconfig%ccubType,rconfig%dnu,rdiscretisation,InodeList,rperfconfig)
       end if
 
     else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
@@ -10354,7 +10371,7 @@ contains
           call jstab_matvecReacJumpStabilBlk2d ( &
               rconfig%dgamma,rconfig%ccubType,rconfig%dnu,&
               rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
-              rdiscretisation)
+              rdiscretisation,rperfconfig)
         end if
 
       end if
@@ -10363,7 +10380,7 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcReacJumpStabilisation (&
           rmatrix,rconfig%dgamma,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+          rconfig%ccubType,rconfig%dnu,rdiscretisation, rperfconfig)
       end if
 
     else
@@ -10379,7 +10396,7 @@ contains
 !<subroutine>
 
   subroutine conv_JumpStabilisation3d ( &
-      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation)
+      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation, rperfconfig)
 
 !<description>
   ! Edge oriented stabilisation technique. Wrapper routine.
@@ -10424,6 +10441,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -10513,8 +10534,9 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,&
+          rconfig%dtheta,rconfig%ccubType,rconfig%dnu,rdiscretisation,&
+          rperfconfig=rperfconfig)
       end if
 
     else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
@@ -10534,7 +10556,8 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcReacJumpStabilisation (&
           rmatrix,rconfig%dgamma,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+          rconfig%ccubType,rconfig%dnu,rdiscretisation,&
+        rperfconfig=rperfconfig)
       end if
 
     else
@@ -11145,7 +11168,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
         p_Ddetj => revalElementSet%p_Ddetj
 
         ! Calculate the values of the basis functions.

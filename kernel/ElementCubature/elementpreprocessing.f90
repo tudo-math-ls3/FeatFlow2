@@ -14,15 +14,18 @@
 !# 1.) elprep_init
 !#     -> Initialises an element evaluation structure with default values.
 !#
-!# 2.) elprep_prepareForEvaluation
+!# 2.) elprep_initPerfConfig
+!#     -> Initialises the global performance configuration.
+!#
+!# 3.) elprep_prepareForEvaluation
 !#     -> Prepares an element for the evaluation on a single point in a 
 !#        single cell.
 !#
-!# 3.) elprep_prepareSetForEvaluation
+!# 4.) elprep_prepareSetForEvaluation
 !#     -> Prepares an element for the evaluation on multiple points on multiple
 !#        cells.
 !#
-!# 4.) elprep_releaseElementSet
+!# 5.) elprep_releaseElementSet
 !#     -> Releases an evaluation set for multiple points on multiple elements.
 !#
 !#  Frequently Asked Questions  \\
@@ -65,23 +68,32 @@
 
 module elementpreprocessing
 
-  use fsystem
-  use storage
-  use genoutput
-  use triangulation
-  use element
   use basicgeometry
   use derivatives
+  use element
+  use fsystem
+  use genoutput
+  use perfconfig
+  use storage
   use transformation
+  use triangulation
   
   implicit none
   
   private
   
   public :: elprep_init
+  public :: elprep_initPerfConfig
   public :: elprep_prepareSetForEvaluation
   public :: elprep_releaseElementSet
   public :: elprep_prepareForEvaluation
+
+  !*****************************************************************************
+  
+  ! global performance configuration
+  type(t_perfconfig), target, save :: el_perfconfig
+  
+  !*****************************************************************************
 
 contains
 
@@ -109,10 +121,37 @@ contains
 
   !************************************************************************
   
+!<subroutine>
+
+  subroutine elprep_initPerfConfig(rperfconfig)
+
+!<description>
+  ! This routine initialises the global performance configuration
+!</description>
+
+!<input>
+  ! OPTIONAL: performance configuration that should be used to initialise
+  ! the global performance configuration. If not present, the values of
+  ! the legacy constants is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+!</subroutine>
+
+    if (present(rperfconfig)) then
+      el_perfconfig = rperfconfig
+    else
+      call pcfg_initPerfConfig(el_perfconfig)
+    end if
+  
+  end subroutine elprep_initPerfConfig
+
+  ! ****************************************************************************
+
 !<subroutine>  
 
   subroutine elprep_prepareSetForEvaluation (revalElementSet, cevaluationTag, &
-      rtriangulation, IelementList, ctrafoType, Dpoints, DpointsRef, DpointsReal, Dcoords)
+      rtriangulation, IelementList, ctrafoType, Dpoints, DpointsRef, &
+      DpointsReal, Dcoords, rperfconfig)
 
 !<description>
   ! This subroutine prepares a t_evalElementSet structure to be used for
@@ -185,6 +224,10 @@ contains
   ! If not specified, the routine will automatically set up that array
   ! using rtriangulation.
   real(DP), dimension(:,:,:), target, optional :: Dcoords
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target :: rperfconfig
 !</input>
   
 !<inputoutput>
@@ -219,7 +262,14 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
       call sys_halt()
     end if
-    
+  
+    ! Set the performance configuration
+  !  if (present(rperfconfig)) then
+      revalElementSet%p_rperfconfig => rperfconfig
+  !  else
+  !    revalElementSet%p_rperfconfig => el_perfconfig
+  !  end if
+  
     ! Probably save pointers to DpointsRef/DpointsReal.
     ! The default initialisation of the structure ensures that
     ! bforeignPointsRef/bforeignPointsReal is initialised, even in an
@@ -540,6 +590,8 @@ contains
     revalElementSet%npointsPerElement = 0
     revalElementSet%nelements = 0
 
+    nullify(revalElementSet%p_rperfconfig)
+
   end subroutine
 
   !************************************************************************
@@ -610,7 +662,7 @@ contains
 ! </subroutine>
 
     integer(I32), dimension(:), pointer :: p_ItwistIndex
-    
+
     ! Calculate the transformation
     if (iand(cevaluationTag,EL_EVLTAG_COORDS      ) .ne. 0) then
       if (.not. present(Dcoords)) then

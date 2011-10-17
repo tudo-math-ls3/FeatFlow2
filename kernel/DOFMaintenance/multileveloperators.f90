@@ -1871,11 +1871,11 @@ contains
         call elprep_prepareSetForEvaluation (relementSetCoarse,&
             cevalTagCoarse, p_rtriaCoarse, &
             p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
-            ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpCoarse))
+            ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpCoarse), rperfconfig=rperfconfig)
 
         call elprep_prepareSetForEvaluation (relementSetFine,&
             cevalTagFine, p_rtriaFine, p_IelementRef(1:NELF), &
-            ctrafoFine, p_DcubPtsRefFine(:,1:ncubpFine))
+            ctrafoFine, p_DcubPtsRefFine(:,1:ncubpFine), rperfconfig=rperfconfig)
         p_Ddetj => relementSetFine%p_Ddetj
         
         ! Calculate the values of the basis functions.
@@ -2491,11 +2491,11 @@ contains
         call elprep_prepareSetForEvaluation (relementSetCoarse,&
             cevalTagCoarse, p_rtriaCoarse, &
             p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
-            ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpCoarse))
+            ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpCoarse), rperfconfig=rperfconfig)
 
         call elprep_prepareSetForEvaluation (relementSetFine,&
             cevalTagFine, p_rtriaFine, p_IelementRef(1:NELF), &
-            ctrafoFine, p_DcubPtsRefFine(:,1:ncubpFine))
+            ctrafoFine, p_DcubPtsRefFine(:,1:ncubpFine), rperfconfig=rperfconfig)
         p_Ddetj => relementSetFine%p_Ddetj
         
         ! Calculate the values of the basis functions.
@@ -3167,11 +3167,11 @@ contains
         call elprep_prepareSetForEvaluation (relementSetCoarse,&
             cevalTagCoarse, p_rtriaCoarse, &
             p_IelementList(nelementsDone+1:nelementsDone+nelementsToDo), &
-            ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpCoarse))
+            ctrafoCoarse, p_DcubPtsRefCoarse(:,1:ncubpCoarse), rperfconfig=rperfconfig)
 
         call elprep_prepareSetForEvaluation (relementSetFine,&
             cevalTagFine, p_rtriaFine, p_IelementRef(1:NELF), &
-            ctrafoFine, p_DcubPtsRefFine(:,1:ncubpFine))
+            ctrafoFine, p_DcubPtsRefFine(:,1:ncubpFine), rperfconfig=rperfconfig)
         p_Ddetj => relementSetFine%p_Ddetj
         
         ! Calculate the values of the basis functions.

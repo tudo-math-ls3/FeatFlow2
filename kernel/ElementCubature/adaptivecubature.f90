@@ -29,15 +29,15 @@
 
 module adaptivecubature
 
-  use fsystem
   use basicgeometry
+  use collection
   use cubature
-  use genoutput
   use element
   use elementpreprocessing
-  
+  use fsystem
+  use genoutput
+  use perfconfig  
   use triangulation
-  use collection
 
   implicit none
 
@@ -53,7 +53,7 @@ contains
 !<subroutine>
 
   subroutine adcub_determineSummedCubature(ccubType,depsRel,depsAbs,rtriangulation,&
-      Ielements,ffunctionRefSimple,rcollection)
+      Ielements,ffunctionRefSimple,rcollection,rperfconfig)
 
 !<description>
   ! Determines an adaptive cubature formula which is accurate enough
@@ -94,6 +94,10 @@ contains
   
   ! OPTIONAL: Collection structure to be passed to ffunctionReference.
   type(t_collection), intent(inout), optional :: rcollection
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !</subroutine>
@@ -108,7 +112,7 @@ contains
     
     ! Determine the initial value of the integral.
     call adcub_integrateFunction(dvalueinit,ccurrentcubtype,rtriangulation,&
-        Ielements,ffunctionRefSimple,rcollection)
+        Ielements,ffunctionRefSimple,rcollection,rperfconfig)
     dvalue = dvalueinit
         
     ! Now refine the integration until the error is small enough.
@@ -117,7 +121,7 @@ contains
       ccurrentcubtype = cub_getSummedCubType(ccubType,icubref)
       dvalue2 = dvalue
       call adcub_integrateFunction(dvalue,ccurrentcubtype,rtriangulation,&
-          Ielements,ffunctionRefSimple,rcollection)
+          Ielements,ffunctionRefSimple,rcollection,rperfconfig)
       
       derror = (dvalue-dvalue2) / (2**icubref - 1)
       
@@ -145,7 +149,7 @@ contains
 !<subroutine>
 
   subroutine adcub_integrateFunction(dvalue,ccubType,rtriangulation,Ielements,&
-      ffunctionRefSimple,rcollection)
+      ffunctionRefSimple,rcollection,rperfconfig)
 
 !<description>
   ! Integrates a scalar function ffunctionReference on a set of elements
@@ -170,6 +174,10 @@ contains
   
   ! OPTIONAL: Collection structure to be passed to ffunctionReference.
   type(t_collection), intent(inout), optional :: rcollection
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -249,7 +257,7 @@ contains
       ! Prepare the element set to calculate information of the transformation.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, rtriangulation, Ielements(IELset:IELmax), &
-          ctrafoType, DpointsRef(:,:))
+          ctrafoType, DpointsRef(:,:), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! In the next loop, we do not have to evaluate the coordinates

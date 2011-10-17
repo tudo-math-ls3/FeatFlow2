@@ -746,9 +746,8 @@ contains
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in) :: rperfconfig
 !</input>
   
 !<output>
@@ -773,15 +772,6 @@ contains
   ! A matrix for the inverse jacobian matrix
   real(DP), dimension(9) :: Dinv
     
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-  
-  !$ if (present(rperfconfig)) then
-  !$  p_rperfconfig => rperfconfig
-  !$ else
-  !$  p_rperfconfig => el_perfconfig
-  !$ end if
-  
   ! Clear the output array
   !Dbas = 0.0_DP
 
@@ -789,7 +779,7 @@ contains
   if (Bder(DER_FUNC3D)) then
     
     !$omp parallel do default(shared) private(i) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -809,7 +799,7 @@ contains
       (Bder(DER_DERIV3D_Z))) then
   
     !$omp parallel do default(shared) private(i,dxj,Dinv) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
 
       ! Since the jacobian matrix (and therefore also its determinant) is

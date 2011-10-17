@@ -46,22 +46,23 @@
 
 module jumpstabilisation
 
-  use fsystem
-  use genoutput
-  use storage
-  use linearsystemscalar
-  use linearsystemblock
-  use cubature
-  use triangulation
-  use spatialdiscretisation
-  use domainintegration
-  use derivatives
   use basicgeometry
+  use bilinearformevaluation
+  use cubature
+  use derivatives
   use dofmapping
+  use domainintegration
   use element
   use elementpreprocessing
+  use fsystem
+  use genoutput
+  use linearsystemblock
+  use linearsystemscalar
+  use perfconfig
+  use spatialdiscretisation
+  use storage
   use transformation
-  use bilinearformevaluation
+  use triangulation
   
   implicit none
   
@@ -80,7 +81,7 @@ contains
 
   subroutine jstab_calcUEOJumpStabilisation (&
       rmatrix,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,&
-      InodeList)
+      InodeList,rperfconfig)
 
 !<description>
   ! Edge oriented stabilisation technique. This routine incorporates the
@@ -117,6 +118,10 @@ contains
   ! OPTIONAL: List of edges/faces where the operator should be computed.
   ! If not present, the operator will be computed on all edges/faces.
   integer, dimension(:), intent(in), optional :: InodeList
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -148,17 +153,18 @@ contains
     case (BGEOM_SHAPE_LINE)
       ! 1D line element
       call jstab_ueoJumpStabil1d_m_unidble (&
-          rmatrix,dgamma,dgammastar,dtheta,dnu,rdiscretisation)
+          rmatrix,dgamma,dgammastar,dtheta,dnu,rdiscretisation,rperfconfig)
 
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
       call jstab_ueoJumpStabil2d_m_unidble (&
-          rmatrix,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,InodeList)
+          rmatrix,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,&
+          InodeList,rperfconfig)
 
     case (BGEOM_SHAPE_HEXA)
       ! 3D hexahedron element
       call jstab_ueoJumpStabil3d_m_unidble (&
-          rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
+          rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
     
     case default
       call output_line ('Unsupported element.', &
@@ -174,8 +180,8 @@ contains
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil2d_m_unidble ( &
-      rmatrixScalar,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,&
-      InodeList)
+      rmatrixScalar,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,&
+      rdiscretisation,InodeList,rperfconfig)
       
 !<description>
   ! Unified edge oriented jump stabilisation.
@@ -226,6 +232,10 @@ contains
   ! OPTIONAL: List of edges where the operator should be computed.
   ! If not present, the operator will be computed on all edges.
   integer, dimension(:), intent(in), optional :: InodeList
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
   
 !<inputoutput>
@@ -646,7 +656,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
-          ctrafoType,DpointsRef=p_DcubPtsRef)
+          ctrafoType,DpointsRef=p_DcubPtsRef, rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -984,7 +994,7 @@ contains
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil3d_m_unidble ( &
-      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
+      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
       
 !<description>
   ! Unified edge oriented jump stabilisation, 3D version for uniform
@@ -1028,6 +1038,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
   
 !<inputoutput>
@@ -1205,7 +1219,8 @@ contains
 
       ! Prepare the element evaluation structure
       call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, Iel, &
-                                           ctrafo, DpointsRef=DcubPts3D)
+                                           ctrafo, DpointsRef=DcubPts3D,&
+                                           rperfconfig=rperfconfig)
       
       ! Evaluate the element
       call elem_generic_sim2(celement, reval, Bder, Dbas)
@@ -1378,7 +1393,7 @@ contains
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil1d_m_unidble ( &
-      rmatrixScalar,dgamma,dgammastar,dtheta,dnu,rdiscretisation)
+      rmatrixScalar,dgamma,dgammastar,dtheta,dnu,rdiscretisation,rperfconfig)
       
 !<description>
   ! Unified edge oriented jump stabilisation, 1D version for uniform
@@ -1418,6 +1433,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
   
 !<inputoutput>
@@ -1566,7 +1585,8 @@ contains
 
       ! Prepare the element evaluation structure
       call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, Iel, &
-                                           ctrafo, DpointsRef=DcubPts1D)
+                                           ctrafo, DpointsRef=DcubPts1D,&
+                                           rperfconfig=rperfconfig)
       
       ! Evaluate the element
       call elem_generic_sim2(celement, reval, Bder, Dbas)
@@ -1700,7 +1720,7 @@ contains
   subroutine jstab_matvecUEOJumpStabilBlk2d ( &
       dgamma,dgammastar,deojEdgeExp,ccubType,dnu,&
       rtemplateMat,rx,ry,cx,cy,rdiscretisation,&
-      InodeList)
+      InodeList, rperfconfig)
 !<description>
   ! Unified edge oriented jump stabilisation.
   !
@@ -1762,6 +1782,10 @@ contains
   ! OPTIONAL: List of edges where the operator should be computed.
   ! If not present, the operator will be computed on all edges.
   integer, dimension(:), intent(in), optional :: InodeList
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2187,7 +2211,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
-          ctrafoType,DpointsRef=p_DcubPtsRef)
+          ctrafoType, DpointsRef=p_DcubPtsRef, rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -2363,7 +2387,7 @@ contains
 !<subroutine>
 
   subroutine jstab_calcReacJumpStabilisation (&
-      rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+      rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
 
 !<description>
   ! Edge oriented stabilisation technique. This routine incorporates the
@@ -2389,6 +2413,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -2420,12 +2448,12 @@ contains
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
       call jstab_reacJumpStabil2d_m_unidbl (&
-        rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+        rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
 
     case (BGEOM_SHAPE_HEXA)
       ! 3D hexahedron element
       call jstab_reacJumpStabil3d_m_unidbl (&
-        rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+        rmatrix,dgamma,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
     
     case default
       call output_line ('Unsupported element.', &
@@ -2441,7 +2469,7 @@ contains
 !<subroutine>
 
   subroutine jstab_reacJumpStabil2d_m_unidbl ( &
-      rmatrixScalar,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+      rmatrixScalar,dgamma,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
 !<description>
   ! Unified edge oriented jump stabilisation.
   !
@@ -2480,6 +2508,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
   
 !<inputoutput>
@@ -2693,7 +2725,7 @@ contains
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Do not calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
@@ -2869,7 +2901,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
-          ctrafoType,DpointsRef=p_DcubPtsRef)
+          ctrafoType, DpointsRef=p_DcubPtsRef, rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.
@@ -3030,7 +3062,7 @@ contains
 !<subroutine>
 
   subroutine jstab_reacJumpStabil3d_m_unidbl ( &
-      rmatrixScalar,dgamma,dtheta,ccubType,dnu,rdiscretisation)
+      rmatrixScalar,dgamma,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
       
 !<description>
   ! Unified edge oriented jump stabilisation, 3D version for uniform
@@ -3071,6 +3103,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
   
 !<inputoutput>
@@ -3246,7 +3282,8 @@ contains
 
       ! Prepare the element evaluation structure
       call elprep_prepareSetForEvaluation (reval, cevalTag, p_rtria, Iel, &
-                                           ctrafo, DpointsRef=DcubPts3D)
+                                           ctrafo, DpointsRef=DcubPts3D,&
+                                           rperfconfig=rperfconfig)
       
       ! Evaluate the element
       call elem_generic_sim2(celement, reval, Bder, Dbas)
@@ -3410,7 +3447,7 @@ contains
 
   subroutine jstab_matvecReacJumpStabilBlk2d ( &
                   dgamma,ccubType,dnu,&
-                  rtemplateMat,rx,ry,cx,cy,rdiscretisation)
+                  rtemplateMat,rx,ry,cx,cy,rdiscretisation,rperfconfig)
 !<description>
   ! Unified edge oriented jump stabilisation.
   !
@@ -3460,6 +3497,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -3860,7 +3901,7 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (revalElementSet,&
           cevaluationTag, p_rtriangulation, p_IelementsAtEdge (1:IELcount,IMT), &
-          ctrafoType,DpointsRef=p_DcubPtsRef)
+          ctrafoType, DpointsRef=p_DcubPtsRef, rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
       ! Calculate the values of the basis functions.

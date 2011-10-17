@@ -54,6 +54,7 @@ module feevaluation
   use linearsystemblock
   use linearsystemscalar
   use mprimitives
+  use perfconfig
   use spatialdiscretisation
   use spdiscprojection
   use storage
@@ -1518,7 +1519,7 @@ contains
 !<subroutine>
 
   subroutine fevl_evaluate_sim1 (iderType, Dvalues, rvectorScalar, Dpoints, &
-      Ielements, DpointsRef)
+      Ielements, DpointsRef, rperfconfig)
                                       
 !<description>
   ! This is a rather general finite element evaluation
@@ -1548,6 +1549,10 @@ contains
   ! If not specified, the coordinates are automatically calculated.
   ! DIMENSION(1..ndim,1..npoints,1..nelements)
   real(DP), dimension(:,:,:), intent(in), target, optional :: DpointsRef
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1667,7 +1672,7 @@ contains
     ! Get the coordinates of the corners of the elements
     call elprep_prepareSetForEvaluation (revalElementSet,&
         EL_EVLTAG_COORDS, p_rtriangulation, Ielements, ctrafoType,&
-        DpointsRef=DpointsRef,DpointsReal=Dpoints)
+        DpointsRef=DpointsRef,DpointsReal=Dpoints,rperfconfig=rperfconfig)
 
     ! Get the coordinates of all points on the reference element
     if (present(DpointsRef)) then
@@ -1703,7 +1708,7 @@ contains
     ! Prepare the element set for the evaluation
     call elprep_prepareSetForEvaluation (revalElementSet,&
         cevaluationTag, p_rtriangulation, Ielements, ctrafoType,&
-        DpointsRef=p_DpointsRef,DpointsReal=Dpoints)
+        DpointsRef=p_DpointsRef,DpointsReal=Dpoints,rperfconfig=rperfconfig)
     
     ! Calculate the values of the basis functions in the given points.
     allocate(Dbas(indof,&
@@ -4257,7 +4262,7 @@ contains
 
 !<subroutine>
 
-  subroutine fevl_getVectorMagnitude (rvector,dumax)
+  subroutine fevl_getVectorMagnitude (rvector,dumax,rperfconfig)
                                       
 !<description>
   ! Routine to calculate the vector magnitude of a FE vector field.
@@ -4266,6 +4271,10 @@ contains
 !<input>
   ! A given finite element vector field. May be e.g. a velocity field.
   type(t_vectorBlock), intent(in) :: rvector
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -4327,7 +4336,8 @@ contains
     
       ! Calculate the VecMag value by projection into the vertices.
       ! We project each component separately and sum up in p_Dvalues2.
-      call spdp_projectToVertices (rvector%RvectorBlock(1), p_Dvalues, DER_FUNC)
+      call spdp_projectToVertices (rvector%RvectorBlock(1), p_Dvalues,&
+                                   DER_FUNC, rperfconfig)
       
       ! If there is more than one block...
       if (rvector%nblocks .gt. 1) then
@@ -4339,7 +4349,8 @@ contains
         end do
       
         do i=2,rvector%nblocks
-          call spdp_projectToVertices (rvector%RvectorBlock(i), p_Dvalues2, DER_FUNC)
+          call spdp_projectToVertices (rvector%RvectorBlock(i), p_Dvalues2,&
+                                       DER_FUNC, rperfconfig)
 
           do j=1,size(p_Dvalues)
             p_Dvalues(j) = p_Dvalues(j) + p_Dvalues2(j)**2

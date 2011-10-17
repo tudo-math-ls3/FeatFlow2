@@ -46,15 +46,16 @@
 
 module dofmapping
 
-  use fsystem
-  use storage
-  use genoutput
   use basicgeometry
-  use spatialdiscretisation
-  use triangulation
   use element
   use elementpreprocessing
+  use fsystem
+  use genoutput
+  use perfconfig
+  use spatialdiscretisation
+  use storage
   use transformation
+  use triangulation
   
   implicit none
   
@@ -2676,12 +2677,18 @@ contains
 
 !<subroutine>
 
-  subroutine dof_calcDofCoords(rdiscretisation)
+  subroutine dof_calcDofCoords(rdiscretisation, rperfconfig)
 
 !<description>
     ! This subroutine computes the coordinates of the global DOF`s
     ! of the given discretisation structure rdiscretisation
 !</description>
+
+!<input>
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
 
 !<inputoutput>
     ! discretisation structure
@@ -2699,7 +2706,7 @@ contains
     integer, dimension(2) :: Isize
     integer :: icurrentElementDistr,idof,ndofLoc
     integer(I32) :: cevaluationTag,ctrafoType
-    integer :: i,iel
+    integer :: iel
 
     ! Initialize coordinates of the global DOF`s
     Isize =(/ rdiscretisation%ndimension,&
@@ -2750,7 +2757,7 @@ contains
       ! coordinates of the points on the cells.
       call elprep_prepareSetForEvaluation(revalElementSet,&
           cevaluationTag, rdiscretisation%p_rtriangulation,&
-          p_IelementList, ctrafoType, DcubPtsRef)
+          p_IelementList, ctrafoType, DcubPtsRef, rperfconfig=rperfconfig)
       
       ! Distribute data global degrees of freedom
       do iel = 1,size(p_IelementList)
@@ -2772,12 +2779,18 @@ contains
 
 !<subroutine>
 
-  subroutine dof_calcDofCoordsBlock(rdiscretisation)
+  subroutine dof_calcDofCoordsBlock(rdiscretisation, rperfconfig)
 
 !<description>
     ! This subroutine computes the coordinates of the global DOF`s
     ! of the given block discretisation structure rdiscretisation
 !</description>
+
+!<input>
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
 
 !<inputoutput>
     ! block discretisation structure
@@ -2790,7 +2803,7 @@ contains
 
     ! Loop over all scalar spatial discretisation structures
     do i = 1, rdiscretisation%ncomponents
-      call dof_calcDofCoords(rdiscretisation%RspatialDiscr(i))
+      call dof_calcDofCoords(rdiscretisation%RspatialDiscr(i), rperfconfig)
     end do
 
   end subroutine

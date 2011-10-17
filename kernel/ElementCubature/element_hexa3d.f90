@@ -853,9 +853,8 @@ contains
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in) :: rperfconfig
 !</input>
   
 !<output>
@@ -880,15 +879,6 @@ contains
   integer :: i   ! point counter
   integer :: j   ! element counter
     
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-  
-  !$ if (present(rperfconfig)) then
-  !$  p_rperfconfig => rperfconfig
-  !$ else
-  !$  p_rperfconfig => el_perfconfig
-  !$ end if
-
   ! Clear the output array
   !Dbas = 0.0_DP
 
@@ -900,7 +890,7 @@ contains
   if (Bder(DER_FUNC3D)) then
   
     !$omp parallel do default(shared) private(i) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -932,7 +922,7 @@ contains
       (Bder(DER_DERIV3D_Z))) then
   
     !$omp parallel do default(shared) private(i,Dxj,Dhelp,djx,djy,djz) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 0.125_DP / Ddetj(1:npoints,j)
       
@@ -1547,9 +1537,8 @@ contains
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in) :: rperfconfig
 !</input>
   
 !<output>
@@ -1575,15 +1564,6 @@ contains
   integer :: i   ! point counter
   integer :: j   ! element counter
     
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-  
-  !$ if (present(rperfconfig)) then
-  !$  p_rperfconfig => rperfconfig
-  !$ else
-  !$  p_rperfconfig => el_perfconfig
-  !$ end if
-
   ! Clear the output array
   !Dbas = 0.0_DP
 
@@ -1595,7 +1575,7 @@ contains
   if (Bder(DER_FUNC3D)) then
   
     !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -1622,7 +1602,7 @@ contains
       (Bder(DER_DERIV3D_Z))) then
   
     !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,dxj) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0_DP / Ddetj(1:npoints,j)
       
@@ -2229,9 +2209,8 @@ contains
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in) :: rperfconfig
 !</input>
   
 !<output>
@@ -2258,15 +2237,6 @@ contains
   
   integer :: i   ! point counter
   integer :: j   ! element counter
-    
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-  
-  !$ if (present(rperfconfig)) then
-  !$  p_rperfconfig => rperfconfig
-  !$ else
-  !$  p_rperfconfig => el_perfconfig
-  !$ end if
 
   ! Clear the output array
   !Dbas = 0.0_DP
@@ -2279,7 +2249,7 @@ contains
   if (Bder(DER_FUNC3D)) then
   
     !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
     
       do i=1,npoints
@@ -2306,7 +2276,7 @@ contains
       (Bder(DER_DERIV3D_Z))) then
   
     !$omp parallel do default(shared) private(i,dx,dy,dz,djx,djy,djz,Dhelp,Dxj) &
-    !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
     do j=1,nelements
       Dxj(:) = 1.0_DP / Ddetj(1:npoints,j)
       
@@ -2863,7 +2833,7 @@ contains
 !<subroutine>  
 
   pure subroutine elem_EM30_3D_mult (celement, Dcoords, Djac, Ddetj, &
-                                    Bder, Dbas, npoints, Dpoints)
+                                     Bder, Dbas, npoints, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3184,8 +3154,7 @@ contains
   pure&
 #endif
   subroutine elem_EM30_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                                    Bder, Dbas, npoints, nelements, Dpoints,&
-                                    rperfconfig)
+                               Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3257,9 +3226,8 @@ contains
   !  Dpoints(:,:,j) = Coordinates of all points on element j
   real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in) :: rperfconfig
 !</input>
   
 !<output>
@@ -3295,22 +3263,13 @@ contains
   integer :: i,j,k,l
   logical :: bsuccess
   
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-  
-  !$ if (present(rperfconfig)) then
-  !$  p_rperfconfig => rperfconfig
-  !$ else
-  !$  p_rperfconfig => el_perfconfig
-  !$ end if
-
   ! Loop over all elements
   !$omp parallel do default(shared)&
   !$omp private(P,PP1,PP2,PP3,PP4,PP5,PS1,PS2,PQ1,PQ2,PQ3,A,B,&
   !$omp         CA1,CA2,CA3,CB1,CB2,CB3,CC1,CC2,CC3,CD1,CD2,CD3,&
   !$omp         CD4,CD5,CD6,CE1,CE2,CE3,CE4,CE5,CE6,COB,V,F,&
   !$omp         dx,dy,dz,i,k,l,bsuccess)&
-  !$omp if(nelements > p_rperfconfig%NELEMMIN_OMP)
+  !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
   do j=1, nelements
   
     ! Initialise the vertex-coordinates
@@ -3549,7 +3508,7 @@ contains
   pure &
 #endif
 
-  subroutine elem_eval_Q1_3D (celement, reval, Bder, Dbas, rperfconfig)
+  subroutine elem_eval_Q1_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3572,10 +3531,6 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder  
-
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -3639,21 +3594,12 @@ contains
   real(DP), parameter :: Q1 = 1.0_DP
   real(DP), parameter :: Q8 = 0.125_DP
 
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-    
-    !$ if (present(rperfconfig)) then
-    !$  p_rperfconfig => rperfconfig
-    !$ else
-    !$  p_rperfconfig => el_perfconfig
-    !$ end if
-
     ! Calculate function values?
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do default(shared) private(i,dx,dy,dz) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -3684,8 +3630,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do default(shared) private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -3780,7 +3726,7 @@ contains
   pure &
 #endif
 
-  subroutine elem_eval_Q2_3D (celement, reval, Bder, Dbas, rperfconfig)
+  subroutine elem_eval_Q2_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3803,10 +3749,6 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder  
-
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -3904,21 +3846,12 @@ contains
   real(DP), parameter :: Q4 = 0.25_DP
   real(DP), parameter :: Q8 = 0.125_DP
   
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-  
-    !$ if (present(rperfconfig)) then
-    !$  p_rperfconfig => rperfconfig
-    !$ else
-    !$  p_rperfconfig => el_perfconfig
-    !$ end if
-
     ! Calculate function values?
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do default(shared) private(i,dx,dy,dz,dx2,dy2,dz2,daux) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -3974,8 +3907,9 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dx2,dy2,dz2,daux,ddet,DrefDer) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do default(shared)&
+      !$omp private(i,dx,dy,dz,dx2,dy2,dz2,daux,ddet,DrefDer) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -4191,6 +4125,8 @@ contains
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
+      !$omp parallel do default(shared) private(i)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -4205,6 +4141,7 @@ contains
         end do ! i
       
       end do ! j
+      !$omp end parallel do
 
     end if
 
@@ -4212,6 +4149,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
+      !$omp parallel do default(shared) private(i,ddet)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -4259,6 +4198,7 @@ contains
         end do ! i
 
       end do ! j
+      !$omp end parallel do
           
     end if
 
@@ -4342,6 +4282,10 @@ contains
                        3,7,8,4, 1,4,8,5, 5,8,7,6/), (/4,NFACES/))
 
     ! Loop through all elements
+    !$omp parallel do default(shared)&
+    !$omp private(i,iface,DXM,DYM,DZM,CA1,CB1,CC1,CA2,CB2,CC2,CA3,CB3,CC3,&
+    !$omp         dx,dy,dz,ddet,cg)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
     do j = 1, reval%nelements
     
       ! Loop through all points on the current element
@@ -4496,6 +4440,7 @@ contains
       end do ! i
 
     end do ! j
+    !$omp end parallel do
         
   end subroutine
 
@@ -4507,7 +4452,7 @@ contains
   pure &
 #endif
 
-  subroutine elem_eval_E030_3D (celement, reval, Bder, Dbas, rperfconfig)
+  subroutine elem_eval_E030_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -4530,10 +4475,6 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder  
-
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -4601,21 +4542,12 @@ contains
   real(DP), parameter :: Q4 = 0.25_DP
   real(DP), parameter :: Q6 = 1.0_DP / 6.0_DP
 
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-    
-    !$ if (present(rperfconfig)) then
-    !$  p_rperfconfig => rperfconfig
-    !$ else
-    !$  p_rperfconfig => el_perfconfig
-    !$ end if
-
     ! Calculate function values?
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dxy,dyz) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -4648,8 +4580,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do default(shared) private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -4738,7 +4670,7 @@ contains
   pure &
 #endif
 
-  subroutine elem_eval_E031_3D (celement, reval, Bder, Dbas, rperfconfig)
+  subroutine elem_eval_E031_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -4761,10 +4693,6 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder  
-
-  ! OPTIONAL: local performance configuration. If not given, the
-  ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<output>
@@ -4827,21 +4755,12 @@ contains
   real(DP), parameter :: Q3 = 1.0_DP / 3.0_DP
   real(DP), parameter :: Q6 = 1.0_DP / 6.0_DP
 
-  ! Pointer to the performance configuration
-  type(t_perfconfig), pointer :: p_rperfconfig
-    
-    !$ if (present(rperfconfig)) then
-    !$  p_rperfconfig => rperfconfig
-    !$ else
-    !$  p_rperfconfig => el_perfconfig
-    !$ end if
-
     ! Calculate function values?
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,dxy,dyz) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do defaulT(shared) private(i,dx,dy,dz,dxy,dyz) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Loop through all points on the current element
@@ -4874,8 +4793,8 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
-      !$omp parallel do private(i,dx,dy,dz,ddet,DrefDer) &
-      !$omp if(reval%nelements > p_rperfconfig%NELEMMIN_OMP)
+      !$omp parallel do defaulT(shared) private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 
         ! Loop through all points on the current element
@@ -5107,6 +5026,10 @@ contains
     end do
 
     ! Loop over all elements
+    !$omp parallel do default(shared)&
+    !$omp private(Da,Dat,Dc,DfacePoints,DfaceWeights,Dr,Ds,Dvert,bsuccess,&
+    !$omp         derx,dery,derz,dt,dx,dx1,dy,dy1,dz,dz1,i,ipt,j)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
     do iel = 1, reval%nelements
     
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -5307,6 +5230,7 @@ contains
       end if ! derivatives evaluation
       
     end do ! iel
+    !$omp end parallel do
     
   end subroutine
   
@@ -5463,6 +5387,9 @@ contains
     if(Bder(DER_FUNC3D)) then
     
       ! Loop through all elements
+      !$omp parallel do default(shared)&
+      !$omp private(i,itwist,Dtm,dx,dy,dz,dx2,dy2,dz2,DL)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Get the six twist matrices for this element
@@ -5524,6 +5451,7 @@ contains
         end do ! i
       
       end do ! j
+      !$omp end parallel do
 
     end if
 
@@ -5531,6 +5459,9 @@ contains
     if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
 
       ! Loop through all elements
+      !$omp parallel do default(shared)&
+      !$omp private(i,itwist,Dtm,dx,dy,dz,dx2,dy2,dz2,DL,DrefDer,ddet)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
       
         ! Get the six twist matrices for this element
@@ -5697,6 +5628,7 @@ contains
         end do ! i
 
       end do ! j
+      !$omp end parallel do
           
     end if
 
@@ -5901,6 +5833,12 @@ contains
     end do
 
     ! Loop over all elements
+    !$omp parallel do default(shared)&
+    !$omp private(Da,Dat,DfaceArea,DfacePoints,DfaceWeights,DhexaPoints,&
+    !$omp         DhexaWeights,DjacPrep,DjacTrafo,Dr,Ds,Dtm,Dvert,bsuccess,&
+    !$omp         derx,dery,derz,dhexaVol,dt,dx,dx1,dy,dy1,dz,dz1,i,ipt,&
+    !$omp         itwist,j,k)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
     do iel = 1, reval%nelements
     
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -6242,6 +6180,7 @@ contains
       end if ! derivatives evaluation
       
     end do ! iel
+    !$omp end parallel do
 
   end subroutine
 

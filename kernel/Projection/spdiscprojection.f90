@@ -32,19 +32,20 @@
 
 module spdiscprojection
 
-  use fsystem
-  use genoutput
-  use storage
   use basicgeometry
-  use triangulation
-  use spatialdiscretisation
   use derivatives
-  use linearalgebra
+  use dofmapping
   use element
   use elementpreprocessing
-  use dofmapping
-  use linearsystemscalar
+  use fsystem
+  use genoutput
+  use linearalgebra
   use linearsystemblock
+  use linearsystemscalar
+  use perfconfig
+  use spatialdiscretisation
+  use storage
+  use triangulation
   
   implicit none
 
@@ -61,7 +62,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_projectSolutionScalar (rsourceVector,rdestVector)
+  subroutine spdp_projectSolutionScalar (rsourceVector,rdestVector,rperfconfig)
   
 !<description>
   ! This routine 'converts' a given scalar solution vector rsourceVector to
@@ -75,6 +76,10 @@ contains
 !<input>
   ! The source vector to be projected.
   type(t_vectorScalar), intent(in) :: rsourceVector
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -208,7 +213,7 @@ contains
       case default
         ! Fallback to projection into the cells.
         call lsyssc_getbase_double (rdestVector,p_Ddest)
-        call spdp_projectToCells (rsourceVector, p_Ddest)
+        call spdp_projectToCells (rsourceVector, p_Ddest, rperfconfig=rperfconfig)
 
       end select
 
@@ -290,7 +295,7 @@ contains
       case default
         ! Fallback to projection into the vertices.
         call lsyssc_getbase_double (rdestVector,p_Ddest)
-        call spdp_projectToVertices (rsourceVector, p_Ddest)
+        call spdp_projectToVertices (rsourceVector, p_Ddest, rperfconfig=rperfconfig)
 
       end select
     
@@ -345,7 +350,7 @@ contains
       case default
         ! Fallback to projection into the vertices.
         call lsyssc_getbase_double (rdestVector,p_Ddest)
-        call spdp_projectToVertices (rsourceVector, p_Ddest)
+        call spdp_projectToVertices (rsourceVector, p_Ddest, rperfconfig=rperfconfig)
         
       end select
 
@@ -964,7 +969,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_projectSolution (rsourceVector,rdestVector)
+  subroutine spdp_projectSolution (rsourceVector,rdestVector,rperfconfig)
   
 !<description>
   ! This routine 'converts' a given solution vector rsourceVector to
@@ -977,6 +982,10 @@ contains
 !<input>
   ! The source vector to be projected.
   type(t_vectorBlock), intent(in) :: rsourceVector
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<output>
@@ -1001,7 +1010,7 @@ contains
     ! Apply spdp_projectSolutionScalar to every subvector, that is all
     do i=1,rsourceVector%nblocks
       call spdp_projectSolutionScalar (rsourceVector%RvectorBlock(i),&
-                                       rdestVector%RvectorBlock(i))
+                                       rdestVector%RvectorBlock(i), rperfconfig)
     end do
 
   end subroutine
@@ -1010,7 +1019,7 @@ contains
 
 !<subroutine>
   subroutine spdp_stdProjectionToP1Q1Scalar (rsourceVector,&
-      rdestVector,rdestDiscretisation)
+      rdestVector,rdestDiscretisation,rperfconfig)
   
 !<description>
   ! This routine 'converts' a given scalar solution vector rsourceVector to
@@ -1040,6 +1049,10 @@ contains
 !<input>
   ! The source vector to be projected.
   type(t_vectorScalar), intent(in) :: rsourceVector
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1085,7 +1098,7 @@ contains
     end if
     
     ! Project the solution to the $P_1$ / $Q_1$ space.
-    call spdp_projectSolutionScalar (rsourceVector,rdestVector)
+    call spdp_projectSolutionScalar (rsourceVector,rdestVector, rperfconfig)
 
   end subroutine
   
@@ -1093,7 +1106,7 @@ contains
 
 !<subroutine>
 
-  subroutine spdp_projectToVertices (rvector, p_Dvalues, ideriv)
+  subroutine spdp_projectToVertices (rvector, p_Dvalues, ideriv, rperfconfig)
   
 !<description>
   ! This routines projects a vector from primal space to the vertices of the
@@ -1109,6 +1122,10 @@ contains
   ! OPTIONAL: A derivative quantifier specifying which derivative is to be
   ! projected onto the vertices. If not given, DER_FUNC is used.
   integer, optional, intent(in) :: ideriv
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1233,7 +1250,7 @@ contains
         
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation(reval, cevalTag, p_rtria, &
-            p_IcurEL, ctrafo, Dcorners(:,1:NVE))
+            p_IcurEL, ctrafo, Dcorners(:,1:NVE), rperfconfig=rperfconfig)
         
         ! Evaluate the element
         call elem_generic_sim2(celement, reval, Bder, Dbas)
@@ -1305,7 +1322,7 @@ contains
 
 !<subroutine>
 
-  subroutine spdp_projectToCells (rvector, p_Dvalues, ideriv)
+  subroutine spdp_projectToCells (rvector, p_Dvalues, ideriv, rperfconfig)
   
 !<description>
   ! This routines projects a vector from primal space to the cells of the
@@ -1321,6 +1338,10 @@ contains
   ! OPTIONAL: A derivative quantifier specifying which derivative is to be
   ! projected onto the vertices. If not given, DER_FUNC is used.
   integer, optional, intent(in) :: ideriv
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -1440,7 +1461,7 @@ contains
         
         ! Prepare the element for evaluation
         call elprep_prepareSetForEvaluation(reval, cevalTag, p_rtria, &
-            p_IcurEL, ctrafo, DmidPoint)
+            p_IcurEL, ctrafo, DmidPoint, rperfconfig=rperfconfig)
         
         ! Evaluate the element
         call elem_generic_sim2(celement, reval, Bder, Dbas)

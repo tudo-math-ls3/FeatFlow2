@@ -705,7 +705,7 @@ contains
         ! on the cells.
         call elprep_prepareSetForEvaluation (revalElementSet,&
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+            ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
 
         ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
