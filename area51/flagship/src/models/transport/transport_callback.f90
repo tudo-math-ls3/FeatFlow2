@@ -2617,7 +2617,7 @@ contains
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                   rtimestep%theta, rtimestep%dStep, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-                  rproblemLevel%Rmatrix(consistentMassMatrix),&
+                  rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
                   rxPredictor=p_rpredictor)
             else
               ! Assemble explicit part of the raw-antidiffusive fluxes
@@ -2731,7 +2731,7 @@ contains
                   rproblemLevel%Rafcstab(convectionAFC), rsolution,&
                   rtimestep%theta, rtimestep%dStep, 1.0_DP,&
                   .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
-                  rproblemLevel%Rmatrix(consistentMassMatrix),&
+                  rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
                   rxPredictor=p_rpredictor)
             else
               ! Assemble explicit part of the raw-antidiffusive fluxes

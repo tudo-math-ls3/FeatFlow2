@@ -736,7 +736,7 @@ contains
 !<subroutine>
 
   subroutine hydro_calcDivVecScDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection)
+      fcb_calcFluxSys_sim, rcollection)
 
     use afcstabbase
     use collection
@@ -762,8 +762,8 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>
@@ -1038,7 +1038,7 @@ contains
 !<subroutine>
 
   subroutine hydro_calcDivVecScDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection)
+      fcb_calcFluxSys_sim, rcollection)
 
     use afcstabbase
     use collection
@@ -1065,8 +1065,8 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>
@@ -1438,7 +1438,7 @@ contains
 !<subroutine>
 
   subroutine hydro_calcDivVecRoeDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection)
+      fcb_calcFluxSys_sim, rcollection)
 
     use afcstabbase
     use collection
@@ -1463,8 +1463,8 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>
@@ -1911,7 +1911,7 @@ contains
 !<subroutine>
 
   subroutine hydro_calcDivVecRoeDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection)
+      fcb_calcFluxSys_sim, rcollection)
 
     use afcstabbase
     use collection
@@ -1937,8 +1937,8 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>
@@ -2222,7 +2222,7 @@ contains
 !<subroutine>
 
   subroutine hydro_calcDivVecRusDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection)
+      fcb_calcFluxSys_sim, rcollection)
 
     use afcstabbase
     use collection
@@ -2247,8 +2247,8 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>
@@ -2534,7 +2534,7 @@ contains
 !<subroutine>
 
   subroutine hydro_calcDivVecRusDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection)
+      fcb_calcFluxSys_sim, rcollection)
 
     use afcstabbase
     use collection
@@ -2560,8 +2560,8 @@ contains
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include '../../../../../kernel/PDEOperators/intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>

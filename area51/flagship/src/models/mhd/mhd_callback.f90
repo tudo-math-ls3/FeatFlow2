@@ -2081,7 +2081,7 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    integer :: inviscidAFC, lumpedMassMatrix, consistentMassMatrix
+    integer :: inviscidAFC, inviscidGFEM, lumpedMassMatrix, consistentMassMatrix
     integer :: idissipationtype, imassantidiffusiontype
 
     ! Get parameters from parameter list
@@ -2091,6 +2091,8 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedmassmatrix)
     call parlst_getvalue_int(p_rparlist, ssectionName,&
@@ -2113,18 +2115,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTScDiss1d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTScDiss1d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTScDiss1d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTScDiss1d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2133,18 +2137,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTScDiss2d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTScDiss2d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTScDiss2d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTScDiss2d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2153,18 +2159,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTScDiss3d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTScDiss3d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTScDiss3d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTScDiss3d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2180,18 +2188,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRoeDiss1d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTRoeDiss1d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRoeDiss1d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTRoeDiss1d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2200,18 +2210,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRoeDiss2d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTRoeDiss2d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRoeDiss2d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTRoeDiss2d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2220,18 +2232,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRoeDiss3d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTRoeDiss3d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRoeDiss3d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTRoeDiss3d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rcollection=rcollection)
         end if
@@ -2247,18 +2261,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRusDiss1d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTRusDiss1d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRusDiss1d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTRusDiss1d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         end if
@@ -2267,18 +2283,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRusDiss2d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTRusDiss2d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRusDiss2d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTRusDiss2d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         end if
@@ -2287,18 +2305,20 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRusDiss3d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              mhd_calcFluxFCTRusDiss3d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         else
           call afcsys_buildFluxFCT(&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, mhd_calcFluxFCTRusDiss3d_sim,&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              mhd_calcFluxFCTRusDiss3d_sim,&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
         end if

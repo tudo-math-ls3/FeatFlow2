@@ -1966,7 +1966,7 @@ contains
         call afcsc_buildFluxFCT(rafcstab, rvectorHigh,&
             0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
             AFCSTAB_FCTFLUX_EXPLICIT,&
-            p_rconsistentMassMatrix, rvectorHigh)
+            rmatrix=p_rconsistentMassMatrix, rxTimeDeriv=rvectorHigh)
 
         ! Apply flux correction to solution profile
         call afcsc_buildVectorFCT(rafcstab,&
