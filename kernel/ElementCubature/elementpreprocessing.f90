@@ -264,11 +264,11 @@ contains
     end if
   
     ! Set the performance configuration
-  !  if (present(rperfconfig)) then
+    if (present(rperfconfig)) then
       revalElementSet%p_rperfconfig => rperfconfig
-  !  else
-  !    revalElementSet%p_rperfconfig => el_perfconfig
-  !  end if
+    else
+      revalElementSet%p_rperfconfig => el_perfconfig
+    end if
   
     ! Probably save pointers to DpointsRef/DpointsReal.
     ! The default initialisation of the structure ensures that
