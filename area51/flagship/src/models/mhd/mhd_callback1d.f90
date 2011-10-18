@@ -2177,6 +2177,10 @@ contains
         ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
         rj = DENSITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
         
+        ! Compute total pressures
+        pi = TOTALPRESSURE3(DdataAtEdge,IDX3,1,idx,0,0,0)
+        pj = TOTALPRESSURE3(DdataAtEdge,IDX3,2,idx,0,0,0)
+        
         ! Compute enthalpies
         hi = (TOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)+pi)/ri
         hj = (TOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)+pj)/rj
