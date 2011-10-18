@@ -1398,9 +1398,9 @@ contains
       edgeloop: do iedge = 1, NEDGE
         
         ! Check if the antidiffusive flux is directed down the gradient
-        !   $f_ij*(u_i-u_j) < 0$
+        !   $F_{ij}*(u_i-u_j) < 0$
         ! and if its magnitude is larger than an absolute tolerance
-        !  $ |f_ij| > tol$
+        !  $ |F_{ij}| > tol$
         ! In this case, cancel the flux completely.
         do ivar = 1, NVAR
           if ((Dflux(ivar,iedge)*DfluxPrel(ivar,iedge) .lt. 0.0_DP) .and.&
@@ -1444,7 +1444,7 @@ contains
           ! than an absolute tolerance; otherwise no prelimiting is done
           if (abs(Dflux(ivar,iedge)) .gt. AFCSTAB_PRELIMABS) then
             ! Check if the antidiffusive flux is directed down the gradient
-            !   $f_ij*fp_ij < 0$
+            !   $F_{ij}*fp_ij < 0$
             if (Dflux(ivar,iedge)*DfluxPrel(ivar,iedge) .lt. 0.0_DP) then
               ! Then, cancel the antidiffusive flux completely
               Dalpha(iedge) = 0.0_DP
@@ -1452,7 +1452,7 @@ contains
             elseif (abs(Dflux(ivar,iedge)) .gt. abs(DfluxPrel(ivar,iedge))) then
               ! Check if the magnitude of the raw antidiffusive flux
               ! exceeds the magnitude of the prelimiting flux
-              !   $|f_ij| > |fp_ij|$
+              !   $|F_{ij}| > |fp_ij|$
               ! then set the correction factor as follows
               Dalpha(iedge) = min(Dalpha(iedge),&
                                   DfluxPrel(ivar,iedge)/Dflux(ivar,iedge))
@@ -3950,7 +3950,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildVectorTVDBlock(rafcstab, rx, ndim, fcb_calcFlux_sim,&
+  subroutine afcsys_buildVectorTVDBlock(rafcstab, rx, ndim, fcb_calcFluxSys_sim,&
       fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
 
 !<description>
@@ -3975,7 +3975,7 @@ contains
     logical, intent(in) :: bclear
 
     ! callback function to compute local fluxes
-    include 'intf_calcFlux_sim.inc'
+    include 'intf_calcFluxSys_sim.inc'
 
     ! callback function to compute local characteristics
     include 'intf_calcCharacteristics_sim.inc'
@@ -4010,7 +4010,7 @@ contains
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call afcsys_buildVectorTVDScalar(rafcstab, rx%RvectorBlock(1), ndim,&
-          fcb_calcFlux_sim, fcb_calcCharacteristics_sim, dscale, bclear,&
+          fcb_calcFluxSys_sim, fcb_calcCharacteristics_sim, dscale, bclear,&
           ry%RvectorBlock(1), rcollection, rperfconfig)
       return
     end if
@@ -4161,7 +4161,7 @@ contains
           !-----------------------------------------------------------------------
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4375,7 +4375,7 @@ contains
           !-----------------------------------------------------------------------
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4683,7 +4683,7 @@ contains
           !-----------------------------------------------------------------------
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5161,7 +5161,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildVectorTVDScalar(rafcstab, rx, ndim, fcb_calcFlux_sim,&
+  subroutine afcsys_buildVectorTVDScalar(rafcstab, rx, ndim, fcb_calcFluxSys_sim,&
       fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
 
 !<description>
@@ -5184,7 +5184,7 @@ contains
     logical, intent(in) :: bclear
 
     ! callback function to compute local fluxes
-    include 'intf_calcFlux_sim.inc'
+    include 'intf_calcFluxSys_sim.inc'
 
     ! callback function to compute local characteristics
     include 'intf_calcCharacteristics_sim.inc'
@@ -5360,7 +5360,7 @@ contains
           !-----------------------------------------------------------------------
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5574,7 +5574,7 @@ contains
           !-----------------------------------------------------------------------
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5882,7 +5882,7 @@ contains
           !-----------------------------------------------------------------------
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -6357,15 +6357,16 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildFluxFCTBlock(rafcstab, rx, fcb_calcFluxFCT_sim,&
-      theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-      rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
+  subroutine afcsys_buildFluxFCTBlock(rafcstab, rx, theta, tstep, dscale,&
+      bclear, bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
+      rgroupFEMSet, rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
-    ! FEM-FCT schemes.  If the vectors contain only one block, then
-    ! the scalar counterpart of this routine is called with the scalar
-    ! subvectors.
+    ! algebraic flux correction of FCT-type with or without the
+    ! contribution of the consistent mass matrix.  If the vectors
+    ! contain only one block, then the scalar counterpart of this
+    ! routine is called with the scalar subvectors.
 !</description>
 
 !<input>
@@ -6398,8 +6399,12 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
-    ! Callback functions to compute antidiffusive fluxes
-    include 'intf_calcFluxFCT_sim.inc'
+    ! OPTIONAL: callback functions to compute antidiffusive fluxes
+    include 'intf_calcFluxFCTSys_sim.inc'
+    optional :: fcb_calcFluxFCTSys_sim
+
+    ! OPTIONAL: group finite element set
+    type(t_groupFEMSet), intent(in), optional :: rgroupFEMSet
 
     ! OPTIONAL: mass matrix
     type(t_matrixScalar), intent(in), optional :: rmatrix
@@ -6430,9 +6435,11 @@ contains
     real(DP), dimension(:), pointer :: p_Dmatrix,p_Dx
     real(DP), dimension(:), pointer :: p_DxTimeDeriv, p_DxPredictor
     real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
     integer :: nblocks
+    logical :: buseCallback
     
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -6448,32 +6455,32 @@ contains
         if (present(rxPredictor)) then
           ! ... both approximate time derivative and predictor are present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
-              bquickAssembly, ioperationSpec, rmatrix,&
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
               rxTimeDeriv%RvectorBlock(1), rxPredictor%RvectorBlock(1),&
-              rcollection=rcollection, rperfconfig=rperfconfig)
+              rcollection, rperfconfig)
         else
           ! ... only the approximate time derivative is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
-              bquickAssembly, ioperationSpec, rmatrix,&
-              rxTimeDeriv%RvectorBlock(1), rcollection=rcollection,&
-              rperfconfig=rperfconfig)
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
+              rxTimeDeriv%RvectorBlock(1),&
+              rcollection=rcollection, rperfconfig=rperfconfig)
         end if
       else
         if (present(rxPredictor)) then
           ! ... only the predictor is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
-              bquickAssembly, ioperationSpec, rmatrix,&
-              rxPredictor=rxPredictor%RvectorBlock(1), rcollection=rcollection,&
-              rperfconfig=rperfconfig)
+              theta, tstep, dscale, bclear,  bquickAssembly, ioperationSpec,&
+              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
+              rxPredictor=rxPredictor%RvectorBlock(1),&
+              rcollection=rcollection, rperfconfig=rperfconfig)
         else
           ! ... neither the approximate time derivative nor the predictor is present
           call afcsys_buildFluxFCTScalar(rafcstab, rx%RvectorBlock(1),&
-              fcb_calcFluxFCT_sim, theta, tstep, dscale, bclear,&
-              bquickAssembly, ioperationSpec, rmatrix, rcollection=rcollection,&
-              rperfconfig=rperfconfig)
+              theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
+              fcb_calcFluxFCTSys_sim, rgroupFEMSet, rmatrix,&
+              rcollection=rcollection, rperfconfig=rperfconfig)
         end if
       end if
 
@@ -6498,9 +6505,8 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)     .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .eq. 0) .and.&
-        (rafcstab%cafcstabType .ne. AFCSTAB_LINFCT_MASS)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call output_line('Stabilisation does not provide edge data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTBlock')
       call sys_halt()
@@ -6518,7 +6524,6 @@ contains
 
     ! Set pointers
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
     call lsysbl_getbase_double(rx, p_Dx)
     
     ! What kind of stabilisation are we?
@@ -6531,6 +6536,31 @@ contains
       ! Set pointers
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+
+      ! Use callback routine?
+      if (present(fcb_calcFluxFCTSys_sim) .and. present(rgroupFEMSet)) then
+
+        ! Check if group finite element set and stabilisation structure are compatible
+        if ((rafcstab%NEQ   .ne. rgroupFEMSet%NEQ) .or.&
+            (rafcstab%NEDGE .ne. rgroupFEMSet%NEDGE)) then
+          call output_line('Stabilisation and group finite element set are not compatible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTBlock')
+          call sys_halt()
+        end if
+        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        buseCallback = .true.
+      else
+        
+        ! Check if stabilisation provides edge data
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
+          call output_line('Stabilisation does not provide edge data!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTBlock')
+          call sys_halt()
+        end if
+        
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        buseCallback = .false.       
+      end if
 
       !-------------------------------------------------------------------------
       ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
@@ -6550,13 +6580,19 @@ contains
                 
         if (theta .ne. 1.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij}^n = (1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
-          call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-            rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
-            bclear, p_Dflux0)
+          ! $$ F_{ij}^n = (1-\theta)\Delta t D_{ij}^n(U_i^n-U_j^n) $$
+          if (buseCallback) then
+            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
+                bclear, p_Dflux0)
+          else
+            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                bclear, p_Dflux0)
+          end if
         elseif (.not.bquickAssembly .and. bclear) then
           ! Clear the explicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij}^n = 0 $$
+          ! $$ F_{ij}^n = 0 $$
           call lalg_clearVector(p_Dflux0, rafcstab%NEDGE)
           ! if bquickAssembly = TRUE then this step can be skipped
         end if
@@ -6573,10 +6609,14 @@ contains
           ! We have to store the raw-antidiffusive fluxes based on the
           ! initial solution without contribution of the consistent
           ! mass matrix and without scaling by the implicitness parameter
-          ! $$ f_{ij} = \Delta t d_{ij}^n(u_i^n-u_j^n) $$
-          call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
-              .true., p_DfluxPrel)
+          ! $$ F_{ij} = \Delta t D_{ij}^n(U_i^n-U_j^n) $$
+          if (buseCallback) then
+            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
+          else
+            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, .true., p_DfluxPrel)
+          end if
 
         elseif (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
           
@@ -6594,9 +6634,15 @@ contains
                   rafcstab%NEQ, rafcstab%NVAR, p_DxPredictor, p_DfluxPrel)
             elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
-              call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                  rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_DxPredictor, dscale,&
-                  .true., p_DfluxPrel)
+              if (buseCallback) then
+                call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                    rafcstab%NVAR, p_DcoeffsAtEdge, p_DxPredictor, dscale,&
+                    .true., p_DfluxPrel)
+              else
+                call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                    rafcstab%NVAR, p_Dcoefficients, p_DxPredictor, dscale,&
+                    .true., p_DfluxPrel)
+              end if
             else
               call output_line('Invalid type of prelimiting!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTBlock')
@@ -6618,7 +6664,7 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
 
           ! Assemble the explicit part of the mass-antidiffusive fluxes
-          ! $$ f_{ij}^n := f_{ij}^n - m_{ij}(u_i^n-u_j^n) $$
+          ! $$ F_{ij}^n := F_{ij}^n - M_{ij}(U_i^n-U_j^n) $$
           call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep,&
               .false., p_Dflux0)
@@ -6665,10 +6711,16 @@ contains
         
         if (theta .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
-          call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale*theta,&
-              bclear, p_Dflux)
+          ! $$ F_{ij} = \theta\Delta t D_{ij}(U_i-U_j) $$
+          if (buseCallback) then
+            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*theta,&
+                bclear, p_Dflux)
+          else
+            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*theta,&
+                bclear, p_Dflux)
+          end if
         end if
         
         if (bquickAssembly) then
@@ -6704,7 +6756,7 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
 
           ! Assemble the implicit part of the mass-antidiffusive fluxes
-          ! $$ f_{ij}^m := f_{ij}^m + m_{ij}(u_i^m-u_j^m) $$
+          ! $$ F_{ij}^m := F_{ij}^m + M_{ij}(U_i^m-U_j^m) $$
           call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, dscale/tstep,&
               .false., p_Dflux)
@@ -6727,10 +6779,40 @@ contains
       ! Set pointer
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
 
-      ! Assemble spatial part of raw-antidiffusive fluxes
-      call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-          rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+      ! Use callback routine?
+      if (present(fcb_calcFluxFCTSys_sim) .and. present(rgroupFEMSet)) then
 
+        ! Check if group finite element set and stabilisation structure are compatible
+        if ((rafcstab%NEQ   .ne. rgroupFEMSet%NEQ) .or.&
+            (rafcstab%NEDGE .ne. rgroupFEMSet%NEDGE)) then
+          call output_line('Stabilisation and group finite element set are not compatible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTBlock')
+          call sys_halt()
+        end if
+        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        buseCallback = .true.
+      else
+        
+        ! Check if stabilisation provides edge data
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
+          call output_line('Stabilisation does not provide edge data!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTBlock')
+          call sys_halt()
+        end if
+        
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        buseCallback = .false.       
+      end if
+
+      ! Assemble spatial part of raw-antidiffusive fluxes
+      if (buseCallback) then
+        call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+      else
+        call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, bclear, p_Dflux)
+      end if
+      
       !-------------------------------------------------------------------------
 
       if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
@@ -6806,14 +6888,136 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
+    ! Assemble raw antidiffusive fluxes using the coefficients
+    ! supplied by the edge-by-edge array DcoefficientsAtEdge
+    
+    subroutine doFluxesByCoeffsDble(IedgeList, NEDGE, NEQ, NVAR,&
+        DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
+      
+      ! input parameters
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      logical, intent(in) :: bclear
+      
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux
+      
+      ! local variables
+      integer :: iedge,i,j
+      
+      if (dscale .eq. 0.0_DP) then
+        
+        if (bclear) call lalg_clearVector(Dflux)
+        
+      elseif (dscale .eq. 1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(i,:)-Dx(j,:))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = Dflux(:,iedge)&
+                + DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(i,:)-Dx(j,:))
+          end do
+          !$omp end parallel do
+        end if
+        
+      elseif (dscale .eq. -1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(j,:)-Dx(i,:))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = Dflux(:,iedge)&
+                + DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(j,:)-Dx(i,:))
+          end do
+          !$omp end parallel do
+        end if
+        
+      else
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = dscale * DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(i,:)-Dx(j,:))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = Dflux(:,iedge)&
+                + dscale * DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(i,:)-Dx(j,:))
+          end do
+          !$omp end parallel do
+        end if
+        
+      end if
+      
+    end subroutine doFluxesByCoeffsDble
+
+    !**************************************************************
     ! Assemble raw antidiffusive fluxes without
     ! contribution of the consistent mass matrix.
 
-    subroutine doFluxesDble(IedgeList, NEDGE, NEQ, NVAR,&
-        DmatrixCoeffsAtEdge, Dx, dscale, bclear, Dflux)
+    subroutine doFluxesByCallbackDble(IedgeList, NEDGE, NEQ, NVAR,&
+        DcoeffsAtEdge, Dx, dscale, bclear, Dflux)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE,NEQ,NVAR
@@ -6865,9 +7069,9 @@ contains
           end do
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFluxFCT_sim(&
+          call fcb_calcFluxFCTSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               Dflux(:,IEDGEset:IEDGEmax), rcollection)
@@ -6911,9 +7115,9 @@ contains
           end do
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFluxFCT_sim(&
+          call fcb_calcFluxFCTSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -6936,39 +7140,8 @@ contains
 
       end if
 
-    end subroutine doFluxesDble
+    end subroutine doFluxesByCallbackDble
     
-    !**************************************************************
-    ! Assemble fluxes for classical prelimiting.
-
-      subroutine doDifferencesDble(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
-      
-      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE,NEQ,NVAR
-      
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
-
-      ! local variables
-      integer :: iedge,i,j
-
-      !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IedgeList(1,iedge)
-        j  = IedgeList(2,iedge)
-        
-        ! Compute solution difference; in contrast to the literature,
-        ! we compute the solution difference $u_i-u_j$ and check if
-        ! $F_{ij}(U_i-U_j)<0$ in the prelimiting step.
-        Dflux(:,iedge) = Dx(i,:)-Dx(j,:)
-      end do
-      !$omp end parallel do
-
-    end subroutine doDifferencesDble
-
     !**************************************************************
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the CSR-matrix Dmatrix
@@ -7095,6 +7268,40 @@ contains
       end if
 
     end subroutine doFluxesByMatrixDble
+    
+    !**************************************************************
+    ! Assemble fluxes for classical prelimiting.
+
+#ifndef USE_OPENMP
+    pure&
+#endif
+    subroutine doDifferencesDble(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
+      
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
+
+      ! local variables
+      integer :: iedge,i,j
+
+      !$omp parallel do default(shared) private(i,j)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IedgeList(1,iedge)
+        j  = IedgeList(2,iedge)
+        
+        ! Compute solution difference; in contrast to the literature,
+        ! we compute the solution difference $u_i-u_j$ and check if
+        ! $F_{ij}(U_i-U_j)<0$ in the prelimiting step.
+        Dflux(:,iedge) = Dx(i,:)-Dx(j,:)
+      end do
+      !$omp end parallel do
+
+    end subroutine doDifferencesDble
 
   end subroutine afcsys_buildFluxFCTBlock
 
@@ -7102,9 +7309,9 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildFluxFCTScalar(rafcstab, rx, fcb_calcFluxFCT_sim,&
-      theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
-      rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
+  subroutine afcsys_buildFluxFCTScalar(rafcstab, rx, theta, tstep, dscale,&
+      bclear, bquickAssembly, ioperationSpec, fcb_calcFluxFCTSys_sim,&
+      rgroupFEMSet, rmatrix, rxTimeDeriv, rxPredictor, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -7142,8 +7349,12 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
-    ! Callback functions to compute antidiffusive fluxes
-    include 'intf_calcFluxFCT_sim.inc'
+    ! OPTIONAL: callback functions to compute antidiffusive fluxes
+    include 'intf_calcFluxFCTSys_sim.inc'
+    optional :: fcb_calcFluxFCTSys_sim
+
+    ! OPTIONAL: group finite element set
+    type(t_groupFEMSet), intent(in), optional :: rgroupFEMSet
 
     ! OPTIONAL: mass matrix
     type(t_matrixScalar), intent(in), optional :: rmatrix
@@ -7174,9 +7385,11 @@ contains
     real(DP), dimension(:), pointer :: p_Dmatrix,p_Dx
     real(DP), dimension(:), pointer :: p_DxTimeDeriv, p_DxPredictor
     real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
-    
+    logical :: buseCallback
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
     
@@ -7194,9 +7407,8 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)     .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .eq. 0) .and.&
-        (rafcstab%cafcstabType .ne. AFCSTAB_LINFCT_MASS)) then
+    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTScalar')
       call sys_halt()
@@ -7214,7 +7426,6 @@ contains
     
     ! Set pointers
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
     call lsyssc_getbase_double(rx, p_Dx)
     
     ! What kind of stabilisation are we?
@@ -7227,6 +7438,31 @@ contains
       ! Set pointers
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+
+      ! Use callback routine?
+      if (present(fcb_calcFluxFCTSys_sim) .and. present(rgroupFEMSet)) then
+
+        ! Check if group finite element set and stabilisation structure are compatible
+        if ((rafcstab%NEQ   .ne. rgroupFEMSet%NEQ) .or.&
+            (rafcstab%NEDGE .ne. rgroupFEMSet%NEDGE)) then
+          call output_line('Stabilisation and group finite element set are not compatible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTScalar')
+          call sys_halt()
+        end if
+        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        buseCallback = .true.
+      else
+        
+        ! Check if stabilisation provides edge data
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
+          call output_line('Stabilisation does not provide edge data!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTScalar')
+          call sys_halt()
+        end if
+        
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        buseCallback = .false.       
+      end if
 
       !-------------------------------------------------------------------------
       ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
@@ -7246,13 +7482,19 @@ contains
                 
         if (theta .ne. 1.0_DP) then
           ! Assemble the explicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij}^n = (1-\theta)\Delta t d_{ij}^n(u_i^n-u_j^n) $$
-          call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-            rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
-            bclear, p_Dflux0)
+          ! $$ F_{ij}^n = (1-\theta)\Delta t D_{ij}^n(U_i^n-U_j^n) $$
+          if (buseCallback) then
+            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
+                bclear, p_Dflux0)
+          else
+            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                bclear, p_Dflux0)
+          end if
         elseif (.not.bquickAssembly .and. bclear) then
           ! Clear the explicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij}^n = 0 $$
+          ! $$ F_{ij}^n = 0 $$
           call lalg_clearVector(p_Dflux0, rafcstab%NEDGE)
           ! if bquickAssembly = TRUE then this step can be skipped
         end if
@@ -7269,10 +7511,14 @@ contains
           ! We have to store the raw-antidiffusive fluxes based on the
           ! initial solution without contribution of the consistent
           ! mass matrix and without scaling by the implicitness parameter
-          ! $$ f_{ij} = \Delta t d_{ij}^n(u_i^n-u_j^n) $$
-          call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
-              .true., p_DfluxPrel)
+          ! $$ F_{ij} = \Delta t D_{ij}^n(U_i^n-U_j^n) $$
+          if (buseCallback) then
+            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
+          else
+            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, .true., p_DfluxPrel)
+          end if
 
         elseif (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
           
@@ -7290,9 +7536,15 @@ contains
                   rafcstab%NEQ, rafcstab%NVAR, p_DxPredictor, p_DfluxPrel)
             elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
-              call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-                  rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_DxPredictor, dscale,&
-                  .true., p_DfluxPrel)
+              if (buseCallback) then
+                call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                    rafcstab%NVAR, p_DcoeffsAtEdge, p_DxPredictor, dscale,&
+                    .true., p_DfluxPrel)
+              else
+                call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                    rafcstab%NVAR, p_Dcoefficients, p_DxPredictor, dscale,&
+                    .true., p_DfluxPrel)
+              end if
             else
               call output_line('Invalid type of prelimiting!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTScalar')
@@ -7314,7 +7566,7 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
 
           ! Assemble the explicit part of the mass-antidiffusive fluxes
-          ! $$ f_{ij}^n := f_{ij}^n - m_{ij}(u_i^n-u_j^n) $$
+          ! $$ F_{ij}^n := F_{ij}^n - M_{ij}(U_i^n-U_j^n) $$
           call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep,&
               .false., p_Dflux0)
@@ -7361,10 +7613,16 @@ contains
         
         if (theta .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
-          ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
-          call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale*theta,&
-              bclear, p_Dflux)
+          ! $$ F_{ij} = \theta\Delta t D_{ij}(U_i-U_j) $$
+          if (buseCallback) then
+            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*theta,&
+                bclear, p_Dflux)
+          else
+            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*theta,&
+                bclear, p_Dflux)
+          end if
         end if
         
         if (bquickAssembly) then
@@ -7400,7 +7658,7 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
 
           ! Assemble the implicit part of the mass-antidiffusive fluxes
-          ! $$ f_{ij}^m := f_{ij}^m + m_{ij}(u_i^m-u_j^m) $$
+          ! $$ F_{ij}^m := F_{ij}^m + M_{ij}(U_i^m-U_j^m) $$
           call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, dscale/tstep,&
               .false., p_Dflux)
@@ -7423,9 +7681,39 @@ contains
       ! Set pointer
       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
 
+      ! Use callback routine?
+      if (present(fcb_calcFluxFCTSys_sim) .and. present(rgroupFEMSet)) then
+
+        ! Check if group finite element set and stabilisation structure are compatible
+        if ((rafcstab%NEQ   .ne. rgroupFEMSet%NEQ) .or.&
+            (rafcstab%NEDGE .ne. rgroupFEMSet%NEDGE)) then
+          call output_line('Stabilisation and group finite element set are not compatible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTScalar')
+          call sys_halt()
+        end if
+        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        buseCallback = .true.
+      else
+        
+        ! Check if stabilisation provides edge data
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES) .eq. 0) then
+          call output_line('Stabilisation does not provide edge data!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildFluxFCTScalar')
+          call sys_halt()
+        end if
+        
+        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        buseCallback = .false.       
+      end if
+
       ! Assemble spatial part of raw-antidiffusive fluxes
-      call doFluxesDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
-          rafcstab%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+      if (buseCallback) then
+        call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
+      else
+        call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, bclear, p_Dflux)
+      end if
 
       !-------------------------------------------------------------------------
 
@@ -7503,175 +7791,130 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble raw antidiffusive fluxes without
-    ! contribution of the consistent mass matrix
-
-    subroutine doFluxesDble(IedgeList, NEDGE, NEQ, NVAR,&
-        DmatrixCoeffsAtEdge, Dx, dscale, bclear, Dflux)
+    ! Assemble raw antidiffusive fluxes using the coefficients
+    ! supplied by the edge-by-edge array DcoefficientsAtEdge
+    
+    subroutine doFluxesByCoeffsDble(IedgeList, NEDGE, NEQ, NVAR,&
+        DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
       
+      ! input parameters
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE,NEQ,NVAR
       logical, intent(in) :: bclear
-
+      
+      ! input/output parameters
       real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux
-
-      ! auxiliary arrays
-      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
-      real(DP), dimension(:,:), pointer :: DfluxAtEdge
       
       ! local variables
-      integer :: idx,iedge,IEDGEset,IEDGEmax
-
-
+      integer :: iedge,i,j
+      
       if (dscale .eq. 0.0_DP) then
         
         if (bclear) call lalg_clearVector(Dflux)
-
-      elseif (bclear) then
-
-        !$omp parallel default(shared)&
-        !$omp private(DdataAtEdge,idx,iedge,IEDGEmax)
         
-        ! Allocate temporal memory
-        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+      elseif (dscale .eq. 1.0_DP) then
         
-        ! Loop over the edges
-        !$omp do schedule(static,1)
-        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
-          
-          ! We always handle  edges simultaneously.
-          ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
-          ! at most  edges simultaneously.
-          
-          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
-          
-          ! Loop through all edges in the current set
-          ! and prepare the auxiliary arrays
-          do idx = 1, IEDGEmax-IEDGEset+1
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
             
-            ! Get actual edge number
-            iedge = idx+IEDGEset-1
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
-            ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
-            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(:,i)-Dx(:,j))
           end do
-          
-          ! Use callback function to compute internodal fluxes
-          call fcb_calcFluxFCT_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IedgeList(:,IEDGEset:IEDGEmax),&
-              dscale, IEDGEmax-IEDGEset+1,&
-              Dflux(:,IEDGEset:IEDGEmax), rcollection)
-        end do
-        !$omp end do
-        
-        ! Deallocate temporal memory
-        deallocate(DdataAtEdge)
-        !$omp end parallel
-
-      else   ! bclear = .false.
-
-        !$omp parallel default(shared)&
-        !$omp private(DdataAtEdge,DfluxAtEdge,idx,iedge,IEDGEmax)
-        
-        ! Allocate temporal memory
-        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
-        allocate(DfluxAtEdge(NVAR,p_rperfconfig%NEDGESIM))
-        
-        ! Loop over the edges
-        !$omp do schedule(static,1)
-        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
-          
-          ! We always handle  edges simultaneously.
-          ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
-          ! at most  edges simultaneously.
-          
-          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
-          
-          ! Loop through all edges in the current set
-          ! and prepare the auxiliary arrays
-          do idx = 1, IEDGEmax-IEDGEset+1
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
             
-            ! Get actual edge number
-            iedge = idx+IEDGEset-1
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
             
-            ! Fill auxiliary arrays
-            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
-            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = Dflux(:,iedge)&
+                + DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(:,i)-Dx(:,j))
           end do
-          
-          ! Use callback function to compute internodal fluxes
-          call fcb_calcFluxFCT_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IedgeList(:,IEDGEset:IEDGEmax),&
-              dscale, IEDGEmax-IEDGEset+1,&
-              DfluxAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
-
-          ! Loop through all edges in the current set
-          do idx = 1, IEDGEmax-IEDGEset+1
-            
-            ! Get actual edge number
-            iedge = idx+IEDGEset-1
-
-            ! Add antidiffusive fluxes            
-            Dflux(:,iedge) = Dflux(:,iedge) + DfluxAtEdge(:,idx)
-          end do
-        end do
-        !$omp end do
+          !$omp end parallel do
+        end if
         
-        ! Deallocate temporal memory
-        deallocate(DdataAtEdge, DfluxAtEdge)
-        !$omp end parallel
-
+      elseif (dscale .eq. -1.0_DP) then
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(:,j)-Dx(:,i))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = Dflux(:,iedge)&
+                + DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(:,j)-Dx(:,i))
+          end do
+          !$omp end parallel do
+        end if
+        
+      else
+        
+        if (bclear) then
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = dscale * DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(:,i)-Dx(:,j))
+          end do
+          !$omp end parallel do
+        else
+          !$omp parallel do default(shared) private(i,j)&
+          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+          do iedge = 1, NEDGE
+            
+            ! Determine indices
+            i = IedgeList(1,iedge)
+            j = IedgeList(2,iedge)
+            
+            ! Compute raw antidiffusive flux
+            Dflux(:,iedge) = Dflux(:,iedge)&
+                + dscale * DcoefficientsAtEdge(1:NVAR,iedge) * (Dx(:,i)-Dx(:,j))
+          end do
+          !$omp end parallel do
+        end if
+        
       end if
-
-    end subroutine doFluxesDble
-
-    !**************************************************************
-    ! Assemble fluxes for classical prelimiting.
-
-#ifndef USE_OPENMP
-    pure&
-#endif
-        subroutine doDifferencesDble(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE,NEQ,NVAR
-      
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
-
-      ! local variables
-      integer :: iedge,i,j
-
-      !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IedgeList(1,iedge)
-        j  = IedgeList(2,iedge)
-        
-        ! Compute solution difference; in contrast to the literature,
-        ! we compute the solution difference $u_i-u_j$ and check if
-        ! $F_{ij}(U_i-U_j)<0$ in the prelimiting step.
-        Dflux(:,iedge) = Dx(:,i)-Dx(:,j)
-      end do
-      !$omp end parallel do
-
-    end subroutine doDifferencesDble
+    end subroutine doFluxesByCoeffsDble
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes using the coefficients
-    ! supplied by the CSR-matrix Dmatrix
+    ! supplied by the CSR-matrix stored in Dmatrix
 
     subroutine doFluxesByMatrixDble(IedgeList, NEDGE, NEQ, NVAR,&
         Dmatrix, Dx, dscale, bclear, Dflux)
@@ -7797,6 +8040,174 @@ contains
       end if
       
     end subroutine doFluxesByMatrixDble
+
+    !**************************************************************
+    ! Assemble raw antidiffusive fluxes with aid of callback function
+
+    subroutine doFluxesByCallbackDble(IedgeList, NEDGE, NEQ, NVAR,&
+        DcoeffsAtEdge, Dx, dscale, bclear, Dflux)
+      
+      ! input parameters
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      logical, intent(in) :: bclear
+
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux
+
+      ! auxiliary arrays
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DfluxAtEdge
+      
+      ! local variables
+      integer :: idx,iedge,IEDGEset,IEDGEmax
+
+
+      if (dscale .eq. 0.0_DP) then
+        
+        if (bclear) call lalg_clearVector(Dflux)
+
+      elseif (bclear) then
+
+        !$omp parallel default(shared)&
+        !$omp private(DdataAtEdge,idx,iedge,IEDGEmax)
+        
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+        
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
+          
+          ! We always handle  edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most  edges simultaneously.
+          
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+          end do
+          
+          ! Use callback function to compute internodal fluxes
+          call fcb_calcFluxFCTSys_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              Dflux(:,IEDGEset:IEDGEmax), rcollection)
+        end do
+        !$omp end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        !$omp end parallel
+
+      else   ! bclear = .false.
+
+        !$omp parallel default(shared)&
+        !$omp private(DdataAtEdge,DfluxAtEdge,idx,iedge,IEDGEmax)
+        
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,p_rperfconfig%NEDGESIM))
+        allocate(DfluxAtEdge(NVAR,p_rperfconfig%NEDGESIM))
+        
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = 1, NEDGE, p_rperfconfig%NEDGESIM
+          
+          ! We always handle  edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most  edges simultaneously.
+          
+          IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IedgeList(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IedgeList(2,iedge))
+          end do
+          
+          ! Use callback function to compute internodal fluxes
+          call fcb_calcFluxFCTSys_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DfluxAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          ! Loop through all edges in the current set
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+
+            ! Add antidiffusive fluxes            
+            Dflux(:,iedge) = Dflux(:,iedge) + DfluxAtEdge(:,idx)
+          end do
+        end do
+        !$omp end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge, DfluxAtEdge)
+        !$omp end parallel
+
+      end if
+
+    end subroutine doFluxesByCallbackDble
+
+    !**************************************************************
+    ! Assemble fluxes for classical prelimiting.
+
+#ifndef USE_OPENMP
+    pure&
+#endif
+    subroutine doDifferencesDble(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
+
+      ! local variables
+      integer :: iedge,i,j
+
+      !$omp parallel do default(shared) private(i,j)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IedgeList(1,iedge)
+        j  = IedgeList(2,iedge)
+        
+        ! Compute solution difference; in contrast to the literature,
+        ! we compute the solution difference $u_i-u_j$ and check if
+        ! $F_{ij}(U_i-U_j)<0$ in the prelimiting step.
+        Dflux(:,iedge) = Dx(:,i)-Dx(:,j)
+      end do
+      !$omp end parallel do
+
+    end subroutine doDifferencesDble
 
   end subroutine afcsys_buildFluxFCTScalar
 

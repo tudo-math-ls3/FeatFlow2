@@ -4,7 +4,7 @@
 
 !<subroutine>
     
-  subroutine fcb_calcFlux_sim(DdataAtEdge, DcoeffsAtEdge,&
+  subroutine fcb_calcFluxFCTSys_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
     use fsystem
@@ -48,13 +48,13 @@
 
 !<output>
   ! Internodal fluxes for all edges under consideration
-  !   DIMENSION(nvar,2,nedges)
+  !   DIMENSION(nvar,nedges)
   ! with nvar the number of variables at each endpoint
-  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
+  real(DP), dimension(:,:), intent(out) :: DfluxesAtEdge
 !</output>
 
 !</subroutine>
 
-  end subroutine fcb_calcFlux_sim
+  end subroutine fcb_calcFluxFCTSys_sim
 
   end interface

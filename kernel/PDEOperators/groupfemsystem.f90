@@ -3702,7 +3702,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildVectorEdgeBlock(rgroupFEMSet, rx,&
-      fcb_calcFlux_sim, dscale, bclear, rvector,&
+      fcb_calcFluxSys_sim, dscale, bclear, rvector,&
       rcollection, rafcstab,  fcb_calcVectorEdgeSys, rperfconfig)
 
 !<description>
@@ -3731,7 +3731,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback function to compute local fluxes
-    include 'intf_calcFlux_sim.inc'
+    include 'intf_calcFluxSys_sim.inc'
 
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcVectorEdgeSys.inc'
@@ -3767,14 +3767,14 @@ contains
     if (present(fcb_calcVectorEdgeSys)) then
 
       call fcb_calcVectorEdgeSys(rgroupFEMSet, rx, rvector,&
-          dscale, bclear, fcb_calcFlux_sim, rcollection, rafcstab)
+          dscale, bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
       ! That`s it
       return
     
     elseif ((rx%nblocks .eq. 1) .and. (rvector%nblocks .eq. 1)) then
 
       call gfsys_buildVectorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcFlux_sim, dscale, bclear, rvector%RvectorBlock(1),&
+          fcb_calcFluxSys_sim, dscale, bclear, rvector%RvectorBlock(1),&
           rcollection, rafcstab, rperfconfig=rperfconfig)
       ! That`s it
       return
@@ -3909,7 +3909,7 @@ contains
           end do
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -3950,7 +3950,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildVectorEdgeScalar(rgroupFEMSet, rx,&
-      fcb_calcFlux_sim, dscale, bclear, rvector,&
+      fcb_calcFluxSys_sim, dscale, bclear, rvector,&
       rcollection, rafcstab, fcb_calcVectorEdgeSys, rperfconfig)
 
 !<description>
@@ -3979,7 +3979,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute local fluxes
-    include 'intf_calcFlux_sim.inc'
+    include 'intf_calcFluxSys_sim.inc'
 
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcVectorEdgeSys.inc'
@@ -4020,7 +4020,7 @@ contains
       
       ! Call user-defined assembly
       call fcb_calcVectorEdgeSys(rgroupFEMSet, rxBlock, rvectorBlock,&
-          dscale, bclear, fcb_calcFlux_sim, rcollection, rafcstab)
+          dscale, bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
       
       ! Release auxiliary 1-block vectors
       call lsysbl_releaseVector(rxBlock)
@@ -4160,7 +4160,7 @@ contains
           end do
           
           ! Use callback function to compute internodal fluxes
-          call fcb_calcFlux_sim(&
+          call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&

@@ -5,7 +5,7 @@
 !<subroutine>
 
   subroutine fcb_calcVectorEdgeSys(rgroupFEMSet, rx, ry, dscale, bclear,&
-      fcb_calcFlux_sim, rcollection, rafcstab)
+      fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
@@ -34,8 +34,8 @@
     logical, intent(in) :: bclear
 
     ! OPTIONAL: callback function to compute local fluxes
-    include 'intf_calcFlux_sim.inc'
-    optional :: fcb_calcFlux_sim
+    include 'intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
 !</input>
 
 !<inputoutput>
