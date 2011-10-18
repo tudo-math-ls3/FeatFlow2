@@ -227,7 +227,7 @@ contains
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
-  type(t_perfconfig), intent(in), target :: rperfconfig
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
   
 !<inputoutput>
