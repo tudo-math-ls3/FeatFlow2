@@ -857,8 +857,12 @@ contains
  
 !<subroutine>  
 
-  pure subroutine elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, &
-                           Dpoint, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, &
+                      Dpoint, Dbas)
 
   !<description>
   ! This subroutine calculates the values of the basic functions of the
@@ -9043,7 +9047,11 @@ contains
   
 !<subroutine>  
 
- pure subroutine elem_eval_Q1_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+ subroutine elem_eval_Q1_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9208,7 +9216,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EM11_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EM11_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9412,7 +9424,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Q2_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Q2_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9600,7 +9616,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Q2H_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Q2H_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9805,7 +9825,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_QP1_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_QP1_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9922,7 +9946,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_E030_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_E030_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -10093,7 +10121,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EB30_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EB30_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -10273,7 +10305,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Q1TBNP_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Q1TBNP_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -10642,7 +10678,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EN30_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EN30_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -10920,7 +10960,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EN31_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EN31_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -11106,7 +11150,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_E032_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_E032_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -11791,7 +11839,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EN50_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EN50_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
