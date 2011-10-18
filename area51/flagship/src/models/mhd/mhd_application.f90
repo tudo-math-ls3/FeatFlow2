@@ -1408,6 +1408,9 @@ contains
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
             p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
 
+        ! Adjust number of variables
+        p_rgroupFEMSet%NVAR = mhd_getNVAR(rproblemLevel)
+
         ! Compute number of matrices to by copied
         nmatrices = 0
         if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
@@ -1447,7 +1450,7 @@ contains
     end if
 
     ! Initialise/Resize stabilisation structure for the inviscid term
-    ! by duplicating parts of the template group finite element set
+    ! by duplicating parts of the corresponding group finite element set
     if (inviscidAFC > 0) then
       if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
@@ -1482,13 +1485,12 @@ contains
         end select
 
         ! Initialise stabilisation structure
-        call afcsys_initStabilisation(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+        call afcsys_initStabilisation(p_rgroupFEMSet,&
             rproblemLevel%Rafcstab(inviscidAFC), p_rdiscretisation, NVARtransformed)
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+            p_rgroupFEMSet)
       end if
     end if
 
@@ -1529,6 +1531,9 @@ contains
           rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
           p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
 
+      ! Adjust number of variables
+      p_rgroupFEMSet%NVAR = mhd_getNVAR(rproblemLevel)
+
       ! Copy constant coefficient matrices to group finite element set
       nmatrices = 0
       if (coeffMatrix_CXX > 0) then
@@ -1564,7 +1569,7 @@ contains
     end if
 
     ! Initialise/Resize stabilisation structure for the inviscid term
-    ! by duplicating parts of the template group finite element set
+    ! by duplicating parts of the corresponding group finite element set
     if (viscousAFC > 0) then
       if (rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
           .eq. AFCSTAB_UNDEFINED) then
@@ -1587,13 +1592,12 @@ contains
         end do
         
         ! Initialise stabilisation structure
-        call afcsys_initStabilisation(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+        call afcsys_initStabilisation(p_rgroupFEMSet,&
             rproblemLevel%Rafcstab(viscousAFC), p_rdiscretisation, NVARtransformed)
       else
         ! Resize stabilisation structure
         call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(viscousAFC),&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+            p_rgroupFEMSet)
       end if
     end if
 
