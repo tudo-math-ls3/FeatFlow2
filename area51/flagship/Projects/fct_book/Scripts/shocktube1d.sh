@@ -22,7 +22,7 @@
 export outputdir="fct_book/Shocktube1D_noEntropyfix"
 
 # Export executable
-export program="flagship-pc64-nehalem-linux-intel-goto2"
+export program="flagship-pc64-penryn-linux-intel-goto"
 
 # Specify types of artificial dissipation
 IDISSIPATIONTYPE=( '1' '2' '3' )
@@ -43,14 +43,14 @@ loworder()
 
 failsafe()
 {
-    # Failsafe correction without main limiter
+    # Failsafe correction for pressure and velocity without main limiter
     (eval $1/$program $1/data/fct_book/1d/shocktube_Failsafe-NoMass.dat) &
     (eval $1/$program $1/data/fct_book/1d/shocktube_Failsafe-WithMass.dat) &
 }
 
 failsafeall()
 {
-    # Failsafe correction without main limiter
+    # Failsafe correction for density, pressure and velocity without main limiter
     (eval $1/$program $1/data/fct_book/1d/shocktube_FailsafeAll-NoMass.dat) &
     (eval $1/$program $1/data/fct_book/1d/shocktube_FailsafeAll-WithMass.dat) &
 }
@@ -65,6 +65,7 @@ linfct1_nofailsafe()
 	export limvar1=${LIMVAR1[${k}]}
 	export limvar=${LIMVAR[${k}]}
 	
+	# Linearised FCT limiter with synchronisation and without failsafe feature
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT1-NoFailsafe-NoMass.dat) &
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT1-NoFailsafe-WithMass.dat) &
     done
@@ -80,8 +81,27 @@ linfct1_withfailsafe()
 	export limvar1=${LIMVAR1[${k}]}
 	export limvar=${LIMVAR[${k}]}
 	
+	# Linearised FCT limiter with synchronisation and with
+	# failsafe feature applied to pressure and velocity
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT1-WithFailsafe-NoMass.dat) &
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT1-WithFailsafe-WithMass.dat) &
+    done
+}
+
+linfct1_withfailsafeall()
+{
+    LIMVAR1=( 'density' 'density,pressure' 'density,energy' )
+    LIMVAR=( 'r' 'rp' 'rE' )
+    for (( k=0;k<${#LIMVAR[@]};k++)); do
+	
+        # Export settings for flux limiting
+	export limvar1=${LIMVAR1[${k}]}
+	export limvar=${LIMVAR[${k}]}
+	
+	# Linearised FCT limiter with synchronisation and with
+	# failsafe feature applied to density, pressure and velocity
+	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT1-WithFailsafeAll-NoMass.dat) &
+	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT1-WithFailsafeAll-WithMass.dat) &
     done
 }
 
@@ -97,6 +117,8 @@ linfct2_nofailsafe()
 	export limvar2=${LIMVAR2[${k}]}
 	export limvar=${LIMVAR[${k}]}
 	
+	# Linearised FCT limiter without synchronisation and without
+	# failsafe feature
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT2-NoFailsafe-NoMass.dat) &
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT2-NoFailsafe-WithMass.dat) &
     done
@@ -114,8 +136,29 @@ linfct2_withfailsafe()
 	export limvar2=${LIMVAR2[${k}]}
 	export limvar=${LIMVAR[${k}]}
 	
+        # Linearised FCT limiter without synchronisation and with
+        # failsafe feature applied to pressure and velocity
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT2-WithFailsafe-NoMass.dat) &
 	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT2-WithFailsafe-WithMass.dat) &
+    done
+}
+
+linfct2_withfailsafeall()
+{
+    LIMVAR1=( 'density' 'density' )
+    LIMVAR2=( 'pressure' 'energy' )
+    LIMVAR=( 'r,p' 'r,E' )
+    for (( k=0;k<${#LIMVAR[@]};k++)); do
+	
+        # Export settings for flux limiting
+	export limvar1=${LIMVAR1[${k}]}
+	export limvar2=${LIMVAR2[${k}]}
+	export limvar=${LIMVAR[${k}]}
+	
+        # Linearised FCT limiter without synchronisation and with
+        # failsafe feature applied to density, pressure and velocity
+	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT2-WithFailsafeAll-NoMass.dat) &
+	(eval $1/$program $1/data/fct_book/1d/shocktube_LinFCT2-WithFailsafeAll-WithMass.dat) &
     done
 }
 
@@ -160,6 +203,10 @@ for (( i=0;i<${#IDISSIPATIONTYPE[@]};i++)); do
 		    echo "Computing solution with FCT1 with failsafe feature"
 		    linfct1_withfailsafe "`pwd`"
 		    ;;
+		linfct1_withfailsafeall)
+		    echo "Computing solution with FCT1 with failsafe feature for all variables"
+		    linfct1_withfailsafeall "`pwd`"
+		    ;;
 		linfct2_nofailsafe)
 		    echo "Computing solution with FCT2 without failsafe feature"
 		    linfct2_nofailsafe "`pwd`"
@@ -168,10 +215,17 @@ for (( i=0;i<${#IDISSIPATIONTYPE[@]};i++)); do
 		    echo "Computing solution with FCT2 with failsafe feature"
 		    linfct2_withfailsafe "`pwd`"
 		    ;;
+		linfct2_withfailsafeall)
+		    echo "Computing solution with FCT2 with failsafe feature for all variables"
+		    linfct2_withfailsafeall "`pwd`"
+		    ;;
 		*)
 		    echo "Invalid benchmark!"
 		    ;;
-	    esac	    
+	    esac
 	done
+        
+        # Wait for unfinished jobs
+        wait $!
     done
 done
