@@ -5,7 +5,7 @@
 #               Default parameters for hydrodynamic application in 2D          #
 #                                                                              #
 ################################################################################
-
+sperfconfigfile = "../../perfconfig/default.pcfg"
 
 ################################################################################
 [Hydro]
