@@ -481,26 +481,34 @@ module afcstabbase
 
 !<constantblock description="Bitfield identifiers for TVD-algorithm">
 
+  ! Initialize the edgewise correction factors by unity
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_INITALPHA    = 2_I32**0
+  
   ! Compute the raw-antidiffusive fluxes
-  integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADFLUXES     = 2_I32**0
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADFLUXES     = 2_I32**1
 
   ! Compute the sums of antidiffusive increments
-  integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADINCREMENTS = 2_I32**1
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_ADINCREMENTS = 2_I32**2
 
   ! Compute the local solution bounds
-  integer(I32), parameter, public :: AFCSTAB_TVDALGO_BOUNDS       = 2_I32**2
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_BOUNDS       = 2_I32**3
   
   ! Compute the nodal correction factors
-  integer(I32), parameter, public :: AFCSTAB_TVDALGO_LIMIT        = 2_I32**3
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_LIMITNODAL   = 2_I32**4
+
+  ! Compute edgewise correction factors
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_LIMITEDGE    = 2_I32**5
 
   ! Correct raw antidiffusive fluxes and apply them
-  integer(I32), parameter, public :: AFCSTAB_TVDALGO_CORRECT      = 2_I32**4
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_CORRECT      = 2_I32**6
 
   ! FEM-TVD algorithm without application of the corrected fluxes
-  integer(I32), parameter, public :: AFCSTAB_TVDALGO_PREPARE   = AFCSTAB_TVDALGO_ADFLUXES +&
+  integer(I32), parameter, public :: AFCSTAB_TVDALGO_PREPARE   = AFCSTAB_TVDALGO_INITALPHA +&
+                                                                 AFCSTAB_TVDALGO_ADFLUXES +&
                                                                  AFCSTAB_TVDALGO_ADINCREMENTS +&
                                                                  AFCSTAB_TVDALGO_BOUNDS +&
-                                                                 AFCSTAB_TVDALGO_LIMIT
+                                                                 AFCSTAB_TVDALGO_LIMITNODAL +&
+                                                                 AFCSTAB_TVDALGO_LIMITEDGE
 
   ! Standard FEM-TVD algorithm
   integer(I32), parameter, public :: AFCSTAB_TVDALGO_STANDARD = AFCSTAB_TVDALGO_PREPARE +&

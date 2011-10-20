@@ -1259,24 +1259,24 @@ contains
       if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
           call fcb_limitEdgewise(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
-              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrTransfDble(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              p_Dx, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+              p_Dx, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
           call doLimitEdgewiseConstrainedDble(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+              p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
 
       else
@@ -2816,19 +2816,19 @@ contains
       if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
           call fcb_limitEdgewise(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
-              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+              p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrTransfDble(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
-              p_Dx, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+              p_Dx, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
           call doLimitEdgewiseConstrainedDble(p_IedgeList,&

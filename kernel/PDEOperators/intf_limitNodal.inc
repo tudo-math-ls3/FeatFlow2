@@ -5,7 +5,7 @@
 !<subroutine>
 
   subroutine fcb_limitNodal(NEQ, NVAR, dscale,&
-        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm, rcollection)
+        Dpp, Dpm, Dqp, Dqm, Drp, Drm, ML, rcollection)
 
     use fsystem
     use collection
@@ -27,8 +27,8 @@
     ! Local bounds
     real(DP), dimension(NVAR,NEQ), intent(in) :: Dqp,Dqm
 
-    ! Lumped mass matrix
-    real(DP), dimension(:), intent(in) :: ML
+    ! OPTIONAL: lumped mass matrix
+    real(DP), dimension(:), intent(in), optional :: ML
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale

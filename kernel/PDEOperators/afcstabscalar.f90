@@ -794,7 +794,9 @@ contains
 !<subroutine>
 
   subroutine afcsc_buildVectorFCTBlock(rafcstab, rmatrix, rx,&
-      dscale, bclear, ioperationSpec, ry, rperfconfig)
+      dscale, bclear, ioperationSpec, ry,&
+      fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
+      fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -823,6 +825,22 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! OPTIONAL: callback functions to overwrite the standard operations
+    include 'intf_calcADIncrements.inc'
+    optional :: fcb_calcADIncrements
+
+    include 'intf_calcBounds.inc'
+    optional :: fcb_calcBounds
+
+    include 'intf_limitNodal.inc'
+    optional :: fcb_limitNodal
+
+    include 'intf_limitEdgewise.inc'
+    optional :: fcb_limitEdgewise
+
+    include 'intf_calcCorrection.inc'
+    optional :: fcb_calcCorrection
+
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
     type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -834,7 +852,10 @@ contains
     
     ! destination vector
     type(t_vectorBlock), intent(inout) :: ry
-    !</inputoutput>
+
+    ! OPTIONAL collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
 !</subroutine>
 
     ! Check if block vectors contain exactly one block
@@ -847,7 +868,9 @@ contains
     else
       
       call afcsc_buildVectorFCTScalar(rafcstab, rmatrix, rx%RvectorBlock(1),&
-          dscale, bclear, ioperationSpec, ry%RvectorBlock(1), rperfconfig)
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1),&
+          fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
+          fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
       
     end if
     
@@ -858,7 +881,9 @@ contains
 !<subroutine>
   
   subroutine afcsc_buildVectorFCTScalar(rafcstab, rmatrix, rx,&
-      dscale, bclear, ioperationSpec, ry, rperfconfig)
+      dscale, bclear, ioperationSpec, ry,&
+      fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
+      fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -949,6 +974,22 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! OPTIONAL: callback functions to overwrite the standard operations
+    include 'intf_calcADIncrements.inc'
+    optional :: fcb_calcADIncrements
+
+    include 'intf_calcBounds.inc'
+    optional :: fcb_calcBounds
+
+    include 'intf_limitNodal.inc'
+    optional :: fcb_limitNodal
+
+    include 'intf_limitEdgewise.inc'
+    optional :: fcb_limitEdgewise
+
+    include 'intf_calcCorrection.inc'
+    optional :: fcb_calcCorrection
+
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
     type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -960,6 +1001,9 @@ contains
     
     ! destination vector
     type(t_vectorScalar), intent(inout) :: ry
+
+    ! OPTIONAL collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1011,7 +1055,7 @@ contains
     !
     ! 2) Prelimit the antidiffusive fluxes (alpha).
     !
-    ! 3) Compute the antidiffusive increments (Pp, Pm)
+    ! 3) Compute the antidiffusive increments (Pp, Pm).
     !
     ! 4) Compute the local solution bounds (Qp, Qm).
     !
@@ -1101,15 +1145,33 @@ contains
         
         ! Compute sums of antidiffusive increments
         ! based on the prelimiting fluxes
-        call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
-            rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
+        if (present(fcb_calcADIncrements)) then
+          ! User-defined callback routine
+          call fcb_calcADIncrements(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ,&
+              p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
+        end if
+
       else
+        
         ! Compute sums of antidiffusive increments
         ! based on the raw-antidiffusive fluxes
-        call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
-            rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        if (present(fcb_calcADIncrements)) then
+          ! User-defined callback routine
+          call fcb_calcADIncrements(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ, &
+              p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        end if
       end if
-
+      
       ! Set specifiers
       rafcstab%istabilisationSpec =&
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
@@ -1130,9 +1192,17 @@ contains
       end if
       
       ! Compute bounds
-      call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
-
+      if (present(fcb_calcBounds)) then
+        ! User-supplied callback routine
+        call fcb_calcBounds(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ,&
+            p_Dx, p_Dqp, p_Dqm, rcollection=rcollection)
+      else
+        ! Standard routine
+        call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
+      end if
+      
       ! Set specifiers
       rafcstab%istabilisationSpec =&
           ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
@@ -1156,10 +1226,16 @@ contains
       call lsyssc_getbase_double(rmatrix, p_ML)
 
       ! Compute nodal correction factors
-      if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+      if (present(fcb_limitNodal)) then
+        ! User-supplied callback routine
+        call fcb_limitNodal(rafcstab%NEQ, 1, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_ML, rcollection)
+      elseif (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+        ! Standard routine without constraints
         call doLimitNodalDble(rafcstab%NEQ, dscale,&
             p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
+        ! Standard routine with constraints
         call doLimitNodalConstrainedDble(rafcstab%NEQ, dscale,&
             p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
@@ -1175,9 +1251,12 @@ contains
       ! 6) Compute edgewise correction factors
       !-------------------------------------------------------------------------
 
-      ! Check if stabilisation provides nodal correction factors
-      if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provide nodal correction factors!',&
+      ! Check if stabilisation provides raw antidiffusive fluxes
+      ! and nodal correction factors
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0) .or.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0)) then
+        call output_line('Stabilisation does not provide antidiffusive fluxes '//&
+            'and/or nodal correction factors!',&
             OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorFCTScalar')
         call sys_halt()
       end if
@@ -1192,13 +1271,34 @@ contains
 
       ! Compute edgewise correction factors
       if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
+        
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doLimitEdgewiseConstrainedDble(p_IedgeList,&
-            rafcstab%NEDGE, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        
+        if (present(fcb_limitEdgewise)) then
+          ! User-supplied callback routine
+          call fcb_limitEdgewise(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ, &
+              p_Dx, p_Dflux, p_Dalpha, p_Drp, p_Drm, DfluxConstr=p_DfluxPrel,&
+              rcollection=rcollection)
+        else
+          ! Standard routine
+          call doLimitEdgewiseConstrainedDble(p_IedgeList,&
+              rafcstab%NEDGE, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        end if
+        
       else
-        call doLimitEdgewiseDble(p_IedgeList,&
-            rafcstab%NEDGE, p_Dflux, p_Dpp, p_Dpm, p_Drp, p_Drm, p_Dalpha)
+        
+        if (present(fcb_limitEdgewise)) then
+          ! User-supplied callback routine
+          call fcb_limitEdgewise(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ,&
+              p_Dx, p_Dflux, p_Dalpha, p_Drp, p_Drm, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doLimitEdgewiseDble(p_IedgeList,&
+              rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        end if
       end if
 
       ! Set specifier
@@ -1236,15 +1336,36 @@ contains
 
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
+
+        ! Set pointer
         call lsyssc_getbase_double(rmatrix, p_ML)
-        call doCorrectScaleByMassDble(p_IedgeListIdx, p_IedgeList,&
-            rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+
+        if (present(fcb_calcCorrection)) then
+          ! User-supplied callback routine
+          call fcb_calcCorrection(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, rafcstab%NEQ, dscale,&
+              p_Dx, p_Dalpha, p_Dflux, p_Dy, p_ML, rcollection)
+        else
+          ! Standard routine
+          call doCorrectScaleByMassDble(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+        end if
+
       else
-        call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
-            rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
+
+        if (present(fcb_calcCorrection)) then
+          ! User-supplied callback routine
+          call fcb_calcCorrection(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, rafcstab%NEQ, dscale,&
+              p_Dx, p_Dalpha, p_Dflux, p_Dy, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
+        end if
       end if
     end if
-
+    
   contains
 
     ! Here, the working routines follow
@@ -1256,6 +1377,7 @@ contains
     subroutine doStdPrelimitDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, DfluxPrel, Dalpha)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -1293,6 +1415,7 @@ contains
     subroutine doMinModPrelimitDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, DfluxPrel, Dalpha)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -1339,6 +1462,7 @@ contains
     subroutine doADIncrementsDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -1407,6 +1531,7 @@ contains
     
     subroutine doBoundsDble(IedgeListIdx, IedgeList, NEDGE, Dx, Dqp, Dqm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -1463,13 +1588,14 @@ contains
     subroutine doLimitNodalDble(NEQ, dscale,&
         ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
+      ! input parameters
       real(DP), dimension(:), intent(in) :: ML,Dx
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ
       
-      ! The nodal correction factors for positive/negative fluxes
-      real(DP), dimension(:), intent(inout) :: Drp,Drm
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
       real(DP) :: diff
@@ -1513,12 +1639,13 @@ contains
     subroutine doLimitNodalConstrainedDble(NEQ, dscale,&
         ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: ML,Dx
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ
       
-      ! The nodal correction factors for positive/negative fluxes
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
@@ -1561,11 +1688,11 @@ contains
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of antidiffusive fluxes
     
-    subroutine doLimitEdgewiseDble(IedgeList,&
-        NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
+    subroutine doLimitEdgewiseDble(IedgeList, NEDGE,&
+        Dflux, Drp, Drm, Dalpha)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux
-      real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
@@ -1613,14 +1740,16 @@ contains
     ! nodal correction factors and the sign of a pair of explicit
     ! and implicit raw antidiffusive fluxes
     
-    subroutine doLimitEdgewiseConstrainedDble(IedgeList,&
-        NEDGE, Dflux1, Dflux2, Drp, Drm, Dalpha)
+    subroutine doLimitEdgewiseConstrainedDble(IedgeList, NEDGE,&
+        Dflux1, Dflux2, Drp, Drm, Dalpha)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(:), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
       ! local variables
@@ -1664,12 +1793,14 @@ contains
     subroutine doCorrectDble(IedgeListIdx, IedgeList,&
         NEDGE, dscale, Dalpha, Dflux, Dy)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dalpha,Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dy
       
       ! local variables
@@ -1715,12 +1846,14 @@ contains
     subroutine doCorrectScaleByMassDble(IedgeListIdx,&
         IedgeList, NEDGE, dscale, ML, Dalpha, Dflux, Dy)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: ML,Dalpha,Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
-      
+    
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dy
       
       ! local variables
@@ -1766,8 +1899,11 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildVectorTVDBlock(rafcstab, rx, dscale,&
-      bclear, ioperationSpec, ry, rperfconfig)
+  subroutine afcsc_buildVectorTVDBlock(rafcstab, rx, dscale, bclear,&
+      ioperationSpec, ry, fcb_calcADFluxes, fcb_calcADIncrements,&
+      fcb_calcBounds, fcb_limitNodal, fcb_limitEdgewise,&
+      fcb_calcCorrection, rcollection, rperfconfig)
+      
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -1793,6 +1929,25 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! OPTIONAL: callback functions to overwrite the standard operations
+    include 'intf_calcADFluxes.inc'
+    optional :: fcb_calcADFluxes
+
+    include 'intf_calcADIncrements.inc'
+    optional :: fcb_calcADIncrements
+
+    include 'intf_calcBounds.inc'
+    optional :: fcb_calcBounds
+
+    include 'intf_limitNodal.inc'
+    optional :: fcb_limitNodal
+
+    include 'intf_limitEdgewise.inc'
+    optional :: fcb_limitEdgewise
+
+    include 'intf_calcCorrection.inc'
+    optional :: fcb_calcCorrection
+
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
     type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -1804,6 +1959,9 @@ contains
 
     ! destination vector
     type(t_vectorBlock), intent(inout) :: ry    
+
+    ! OPTIONAL collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1818,7 +1976,10 @@ contains
     else
 
       call afcsc_buildVectorTVDScalar(rafcstab, rx%RvectorBlock(1),&
-          dscale, bclear, ioperationSpec, ry%RvectorBlock(1), rperfconfig)
+          dscale, bclear, ioperationSpec, ry%RvectorBlock(1),&
+          fcb_calcADFluxes, fcb_calcADIncrements, fcb_calcBounds,&
+          fcb_limitNodal, fcb_limitEdgewise, fcb_calcCorrection,&
+          rcollection, rperfconfig)
       
     end if
 
@@ -1828,8 +1989,10 @@ contains
 
 !<subroutine>
 
-  subroutine afcsc_buildVectorTVDScalar(rafcstab, rx, dscale,&
-      bclear, ioperationSpec, ry, rperfconfig)
+  subroutine afcsc_buildVectorTVDScalar(rafcstab, rx, dscale, bclear,&
+      ioperationSpec, ry, fcb_calcADFluxes, fcb_calcADIncrements,&
+      fcb_calcBounds, fcb_limitNodal, fcb_limitEdgewise,&
+      fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
@@ -1868,6 +2031,25 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! OPTIONAL: callback functions to overwrite the standard operations
+    include 'intf_calcADFluxes.inc'
+    optional :: fcb_calcADFluxes
+
+    include 'intf_calcADIncrements.inc'
+    optional :: fcb_calcADIncrements
+
+    include 'intf_calcBounds.inc'
+    optional :: fcb_calcBounds
+
+    include 'intf_limitNodal.inc'
+    optional :: fcb_limitNodal
+
+    include 'intf_limitEdgewise.inc'
+    optional :: fcb_limitEdgewise
+
+    include 'intf_calcCorrection.inc'
+    optional :: fcb_calcCorrection
+
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
     type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -1879,6 +2061,9 @@ contains
 
     ! destination vector
     type(t_vectorScalar), intent(inout) :: ry
+
+    ! OPTIONAL collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1887,9 +2072,10 @@ contains
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm
     real(DP), dimension(:), pointer :: p_Dqp,p_Dqm
     real(DP), dimension(:), pointer :: p_Drp,p_Drm
-    real(DP), dimension(:), pointer :: p_Dx,p_Dy,p_Dflux
+    real(DP), dimension(:), pointer :: p_Dx,p_Dy,p_Dalpha,p_Dflux
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
+    logical :: bquickPrepare,bquickCorrect
     
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -1901,10 +2087,8 @@ contains
     end if
     
     ! Check if stabilisation is prepared
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq.0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq.0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq.0)) then
-      call output_line('Stabilisation does not provide required structures!',&
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
       call sys_halt()
     end if
@@ -1922,26 +2106,360 @@ contains
     call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
     call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
     call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
     call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rx, p_Dx)
     call lsyssc_getbase_double(ry, p_Dy)
+
+    !---------------------------------------------------------------------------
+    ! The FEM-FCT algorithm is split into the following steps which
+    ! can be skipped and performed externally by the user:
+    !
+    ! 1) Initialise the edgewise correction factors (alpha).
+    !
+    ! 2) Compute the raw antidiffusive fluxes (Flux).
+    !
+    ! 3) Compute the antidiffusive increments (Pp, Pm).
+    !
+    ! 4) Compute the local solution bounds (Qp, Qm).
+    !
+    ! 5) Compute the nodal correction factors (Rp, Rm).
+    !
+    ! 6) Compute edgewise correction factors (Alpha).
+    !
+    ! 7) Apply the limited antiddifusive fluxes.
+    !
+    ! Note that steps 2)-4) can be performed simultaneously within a single
+    ! loop over the edges to increase performance. This also applies to 6)-7)
+    !-------------------------------------------------------------------------
     
-    ! Perform flux limiting of TVD-type
-    call doLimitDble(p_IedgeListIdx, p_IedgeList,&
-        p_DcoefficientsAtEdge, p_Dx, dscale, rafcstab%NEDGE,&
-        p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dflux, p_Dy)
+    if (iand(ioperationSpec, AFCSTAB_TVDALGO_INITALPHA) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 1) Initialise the edgewise correction factors by unity
+      !-------------------------------------------------------------------------
+            
+      ! Initialise alpha by unity
+      call lalg_setVector(p_Dalpha, 1.0_DP)
+    end if
+
+
+    if ((iand(ioperationSpec, AFCSTAB_TVDALGO_ADFLUXES)     .ne. 0) .and.&
+        (iand(ioperationSpec, AFCSTAB_TVDALGO_ADINCREMENTS) .ne. 0) .and.&
+        (iand(ioperationSpec, AFCSTAB_TVDALGO_BOUNDS)       .ne. 0)) then
+      !-------------------------------------------------------------------------
+      ! 2)-4) Compute raw antidiffusive fluxes, sums of antidiffusive
+      !       increments, and local solution bounds simultaneously
+      !-------------------------------------------------------------------------
+      
+      ! Check if stabilisation is prepared
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0)) then
+        call output_line('Stabilisation does not provide required structures!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+        call sys_halt()
+      end if
+
+      ! Check that no user-defined callback routinee are given
+      if (.not.present(fcb_calcADFluxes)     .and.&
+          .not.present(fcb_calcADIncrements) .and.&
+          .not.present(fcb_calcBounds)) then
+        
+        ! Use quick prepare routine
+        call doQuickPrepareDble(p_IedgeListIdx, p_IedgeList,&
+            rafcstab%NEDGE, p_DcoefficientsAtEdge, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Dflux)
+
+        bquickPrepare = .true.
+
+        ! Set specifier
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+      else
+        bquickPrepare = .false.
+      end if
+    end if
+    
+    ! Perform 2)-4) step-by-step?
+    if (.not.bquickPrepare) then
+      if (iand(ioperationSpec, AFCSTAB_TVDALGO_ADFLUXES) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! 2) Compute raw antidiffusive fluxes
+        !-----------------------------------------------------------------------
+
+        ! Check if stabilisation is prepared
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0)) then
+          call output_line('Stabilisation does not provide required structures!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+          call sys_halt()
+        end if
+
+        if (present(fcb_calcADFluxes)) then
+          ! User-supplied callback routine
+          call fcb_calcADFluxes(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ,&
+              dscale, p_Dx, p_Dflux, rcollection)
+        else
+          ! Standard routine
+          call doADFluxesDble(p_IedgeListIdx, p_IedgeList, rafcstab%NEDGE,&
+              p_DcoefficientsAtEdge, p_Dx, dscale, p_Dflux)
+        end if
+
+        ! Set specifier
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
+      end if
+
+
+      if (iand(ioperationSpec, AFCSTAB_TVDALGO_ADINCREMENTS) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! 3) Compute sums of antidiffusive increments
+        !-----------------------------------------------------------------------
+
+        ! Check if stabilisation is prepared
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+          call output_line('Stabilisation does not provide required structures!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+          call sys_halt()
+        end if
+
+        ! Check if stabilisation provides raw antidiffusive fluxes
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+          call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+          call sys_halt()
+        end if
+        
+        if (present(fcb_calcADIncrements)) then
+          ! User-supplied callback routine
+          call fcb_calcADIncrements(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ, &
+              p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doADIncrementsDble(p_IedgeListIdx, p_IedgeList, rafcstab%NEDGE,&
+              p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        end if
+        
+        ! Set specifier
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+      end if
+
+
+      if (iand(ioperationSpec, AFCSTAB_TVDALGO_BOUNDS) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! 4) Compute local solution bounds
+        !-----------------------------------------------------------------------
+
+        ! Check if stabilisation is prepared
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+          call output_line('Stabilisation does not provide required structures!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+          call sys_halt()
+        end if
+
+        ! Check if stabilisation provides raw antidiffusive fluxes
+        if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+          call output_line('Stabilisation does not provide antidiffusive fluxes!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+          call sys_halt()
+        end if
+
+        if (present(fcb_calcBounds)) then
+          ! User-supplied callback routine
+          call fcb_calcBounds(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ,&
+              p_Dx, p_Dqp, p_Dqm, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doBoundsDble(p_IedgeListIdx, p_IedgeList, rafcstab%NEDGE,&
+              p_Dflux, p_Dalpha, p_Dqp, p_Dqm)
+        end if
+
+        ! Set specifier
+        rafcstab%istabilisationSpec =&
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
+      end if
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_TVDALGO_LIMITNODAL) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! 5) Compute nodal correction factors
+      !-------------------------------------------------------------------------
+      
+      ! Check if stabilisation provides antidiffusive increments and local bounds
+      if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
+          (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)   .eq. 0)) then
+        call output_line('Stabilisation does not provide increments and/or bounds!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+        call sys_halt()
+      end if
+
+      ! Compute nodal correction factors
+      if (present(fcb_limitNodal)) then
+        ! User-supplied callback routine
+        call fcb_limitNodal(rafcstab%NEQ, 1, 1.0_DP,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection=rcollection)
+      else
+        ! Apply the standard nodal limiter
+        !$omp parallel sections
+        !$omp section
+        p_Drp = afcstab_limit(p_Dpp, p_Dqp, 0.0_DP, 1.0_DP)
+        
+        !$omp section
+        p_Drm = afcstab_limit(p_Dpm, p_Dqm, 0.0_DP, 1.0_DP)
+        !$omp end parallel sections
+      end if
+        
+      ! Set specifier
+      rafcstab%istabilisationSpec =&
+          ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
+    end if
+
+    
+     if ((iand(ioperationSpec, AFCSTAB_TVDALGO_LIMITEDGE) .ne. 0) .and.&
+         (iand(ioperationSpec, AFCSTAB_TVDALGO_CORRECT)   .ne. 0)) then
+       !------------------------------------------------------------------------
+       ! 6)-7) Compute edgewise correction factors and apply correction
+       !------------------------------------------------------------------------
+
+       ! Check if stabilisation is prepared
+        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+          call output_line('Stabilisation does not provide required structures!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+          call sys_halt()
+        end if
+
+        ! Check that no user-defined callback rouintes are given
+        if (.not.(present(fcb_limitEdgewise)) .and.&
+            .not.(present(fcb_calcCorrection))) then
+          
+          ! Check if stabilisation provides raw antidiffusive fluxes
+          ! and nodal correction factors
+          if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0) .or.&
+              (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0)) then
+            call output_line('Stabilisation does not provide antidiffusive fluxes '//&
+                'and/or nodal correction factors!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+            call sys_halt()
+          end if
+          
+          ! Use quick correction routin
+          call doQuickCorrectDble(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha, p_Dy)
+          
+          bquickCorrect = .true.
+          
+          ! Set specifier
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
+        else
+          bquickCorrect = .false.
+        end if
+      end if
+
+      
+      ! Perform 6)-7) step-by-step
+      if (.not.bquickCorrect) then
+        if (iand(ioperationSpec, AFCSTAB_TVDALGO_LIMITEDGE) .ne. 0) then
+          !---------------------------------------------------------------------
+          ! 6) Compute edgewise correction factors
+          !---------------------------------------------------------------------
+
+          ! Check if stabilisation is prepared
+          if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+              (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+            call output_line('Stabilisation does not provide required structures!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+            call sys_halt()
+          end if
+          
+          ! Check if stabilisation provides raw antidiffusive fluxes
+          ! and nodal correction factors
+          if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0) .or.&
+              (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0)) then
+            call output_line('Stabilisation does not provide antidiffusive fluxes '//&
+                'and/or nodal correction factors!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+            call sys_halt()
+          end if
+          
+          if (present(fcb_limitEdgewise)) then
+            ! User-supplied callback routine
+            call fcb_limitEdgewise(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ, &
+                p_Dx, p_Dflux, p_Dalpha, p_Drp, p_Drm, rcollection=rcollection)
+          else
+            ! Standard routine
+            call doLimitEdgewiseDble(p_IedgeList,&
+                rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+          end if
+          
+          ! Set specifier
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
+        end if
+
+
+        if (iand(ioperationSpec, AFCSTAB_TVDALGO_CORRECT) .ne. 0) then
+          !---------------------------------------------------------------------
+          ! 7) Apply limited antidiffusive fluxes
+          !---------------------------------------------------------------------
+
+          ! Check if stabilisation is prepared
+          if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)        .eq. 0) .and.&
+              (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+            call output_line('Stabilisation does not provide required structures!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+            call sys_halt()
+          end if
+
+          ! Check if stabilisation provides raw antidiffusive fluxes
+          ! and edgewise correction factors
+          if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0) .or.&
+              (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0)) then
+            call output_line('Stabilisation does not provide antidiffusive fluxes '//&
+                'and/or edgewise correction factors!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
+            call sys_halt()
+          end if
+
+          if (present(fcb_calcCorrection)) then
+            ! User-supplied callback routine
+            call fcb_calcCorrection(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, rafcstab%NEQ, 1, 1, rafcstab%NEQ, dscale,&
+                p_Dx, p_Dalpha, p_Dflux, p_Dy, rcollection=rcollection)
+          else
+            ! Standard routine
+            call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Dalpha, p_Dflux, p_Dy)
+          end if
+        end if
+      end if
     
   contains
 
     ! Here, the working routine follows
     
     !**************************************************************
-    ! The upwind-biased FEM-TVD limiting procedure
-    
-    subroutine doLimitDble(IedgeListIdx, IedgeList,&
-        DcoefficientsAtEdge, Dx, dscale, NEDGE,&
-        Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dy)
-      
+    ! Assemble the raw antidiffusive fluxes, the sums of antidiffusive
+    ! increments and the local bounds simultaneously
+
+    subroutine doQuickPrepareDble(IedgeListIdx, IedgeList, NEDGE,&
+        DcoefficientsAtEdge, Dx, dscale, Dpp, Dpm, Dqp, Dqm, Dflux)
+
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
@@ -1949,272 +2467,415 @@ contains
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), dimension(:), intent(inout) :: Dflux,Dy
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Dpp,Dpm,Dqp,Dqm,Dflux
       
       ! local variables
       real(DP) :: d_ij,diff,f_ij,fm_ij,fp_ij,l_ji
       integer :: i,iedge,igroup,j
+
+      !$omp parallel default(shared)&
+      !$omp private(d_ij,diff,f_ij,fm_ij,fp_ij,i,iedge,j,l_ji)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+
+      ! Clear P`s and Q`s
+      !$omp sections
+      !$omp section
+      call lalg_clearVectorDble(Dpp)
+      !$omp section
+      call lalg_clearVectorDble(Dpm)
+      !$omp section
+      call lalg_clearVectorDble(Dqp)
+      !$omp section
+      call lalg_clearVectorDble(Dqm)
+      !$omp end sections     
       
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+        
+        ! Loop over the edges
+        !$omp do
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+          
+          ! Determine indices
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
+              
+          ! Determine coefficients
+          d_ij = DcoefficientsAtEdge(1,iedge)
+          l_ji = DcoefficientsAtEdge(3,iedge)
+          
+          ! Determine solution difference
+          diff = Dx(i)-Dx(j)
+          
+          ! Prelimit the antidiffusive flux
+          ! F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
+          f_ij = dscale*min(d_ij,l_ji)*diff
+          
+          ! And store it
+          Dflux(iedge) = f_ij
+          
+          ! Separate fluxes into positive/negative contributions
+          fp_ij = max(0.0_DP,f_ij)
+          fm_ij = min(0.0_DP,f_ij)
+          
+          ! Assemble P`s accordingly
+          Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
+          Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
+          
+          ! Assemble Q`s
+          Dqp(i) = Dqp(i) - fm_ij   ! += max(0.0_DP,-f_ij)
+          Dqp(j) = Dqp(j) + fp_ij   ! += max(0.0_DP, f_ij)
+          Dqm(i) = Dqm(i) - fp_ij   ! += min(0.0_DP,-f_ij)
+          Dqm(j) = Dqm(j) + fm_ij   ! += min(0.0_DP, f_ij)
+        end do
+        !$omp end do
+      end do ! igroup
+      !$omp end parallel
       
-      if ((iand(ioperationSpec, AFCSTAB_TVDALGO_ADINCREMENTS) .ne. 0) .and.&
-          (iand(ioperationSpec, AFCSTAB_TVDALGO_BOUNDS)       .ne. 0)) then
+    end subroutine doQuickPrepareDble
+
+    !**************************************************************
+    ! Assemble the raw antidiffusive fluxes
+
+    subroutine doADFluxesDble(IedgeListIdx, IedgeList, NEDGE,&
+        DcoefficientsAtEdge, Dx, dscale, Dflux)
+
+      ! input parameters
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+      
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Dflux
+      
+      ! local variables
+      real(DP) :: d_ij,diff,f_ij,l_ji
+      integer :: i,iedge,igroup,j
+
+      !$omp parallel default(shared)&
+      !$omp private(d_ij,diff,f_ij,i,iedge,j,l_ji)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
         
-        ! Clear nodal vectors
-        call lalg_clearVectorDble(Dpp)
-        call lalg_clearVectorDble(Dpm)
-        call lalg_clearVectorDble(Dqp)
-        call lalg_clearVectorDble(Dqm)
-
-        if (iand(ioperationSpec, AFCSTAB_TVDALGO_ADFLUXES) .ne. 0) then
-
-          ! Assemble antidiffusive fluxes, sums of antidiffusive
-          ! increments and the upper and lower bounds simultaneously
-          ! to achieve higher efficiency.
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
         
-          !$omp parallel default(shared)&
-          !$omp private(i,j,d_ij,l_ji,diff,f_ij,fm_ij,fp_ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        ! Loop over the edges
+        !$omp do
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
-          ! Loop over the edge groups and process all edges of one group
-          ! in parallel without the need to synchronize memory access
-          do igroup = 1, size(IedgeListIdx)-1
-            
-            ! Do nothing for empty groups
-            if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-            
-            ! Loop over the edges
-            !$omp do
-            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
-              ! Determine indices
-              i = IedgeList(1,iedge)
-              j = IedgeList(2,iedge)
-              
-              ! Determine coefficients
-              d_ij = DcoefficientsAtEdge(1,iedge)
-              l_ji = DcoefficientsAtEdge(3,iedge)
-              
-              ! Determine solution difference
-              diff = Dx(i)-Dx(j)
-              
-              ! Prelimit the antidiffusive flux
-              ! F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
-              f_ij = dscale*min(d_ij,l_ji)*diff
-              
-              ! And store it
-              Dflux(iedge) = f_ij
-
-              ! Separate fluxes into positive/negative contributions
-              fp_ij = max(0.0_DP,f_ij)
-              fm_ij = min(0.0_DP,f_ij)
-              
-              ! Assemble P`s accordingly
-              Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
-              Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
-              
-              ! Assemble Q`s
-              Dqp(i) = Dqp(i) - fm_ij   ! += max(0.0_DP,-f_ij)
-              Dqp(j) = Dqp(j) + fp_ij   ! += max(0.0_DP, f_ij)
-              Dqm(i) = Dqm(i) - fp_ij   ! += min(0.0_DP,-f_ij)
-              Dqm(j) = Dqm(j) + fm_ij   ! += min(0.0_DP, f_ij)
-            end do
-            !$omp end do
-          end do ! igroup
-          !$omp end parallel
-
-          ! Set specifier
-          rafcstab%istabilisationSpec =&
-              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
-          rafcstab%istabilisationSpec =&
-              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
-          rafcstab%istabilisationSpec =&
-              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+          ! Determine indices
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
-        else
+          ! Determine coefficients
+          d_ij = DcoefficientsAtEdge(1,iedge)
+          l_ji = DcoefficientsAtEdge(3,iedge)
+          
+          ! Determine solution difference
+          diff = Dx(i)-Dx(j)
+          
+          ! Prelimit the antidiffusive flux
+          ! F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
+          f_ij = dscale*min(d_ij,l_ji)*diff
+          
+          ! And store it
+          Dflux(iedge) = f_ij
+        end do
+        !$omp end do
+      end do ! igroup
+      !$omp end parallel
+      
+    end subroutine doADFluxesDble
 
-          ! Check if stabilisation is prepared
-          if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES) .eq.0) then
-            call output_line('Stabilisation does not provide antidiffusive fluxes!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
-            call sys_halt()
+    !**************************************************************
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes
+
+    subroutine doADIncrementsDble(IedgeListIdx, IedgeList, NEDGE,&
+        Dflux, Dalpha, Dpp, Dpm)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dflux,Dalpha
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+      
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Dpp,Dpm
+      
+      ! local variables
+      real(DP) :: f_ij
+      integer :: i,iedge,igroup
+
+      !$omp parallel default(shared) private(i,iedge,f_ij)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+
+      ! Clear P`s
+      !$omp sections
+      !$omp section
+      call lalg_clearVectorDble(Dpp)
+      !$omp section
+      call lalg_clearVectorDble(Dpm)
+      !$omp end sections     
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+        
+        ! Loop over the edges
+        !$omp do
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+          
+          ! Determine index
+          i = IedgeList(1,iedge)
+
+          ! Apply multiplicative correction factor
+          f_ij = Dalpha(iedge) * Dflux(iedge)
+
+          ! Assemble P`s accordingly
+          Dpp(i) = Dpp(i) + max(0.0_DP, f_ij)
+          Dpm(i) = Dpm(i) + min(0.0_DP, f_ij)
+        end do
+        !$omp end do
+      end do ! igroup
+      !$omp end parallel
+      
+    end subroutine doADIncrementsDble
+    
+    !**************************************************************
+    ! Assemble the sums of antidiffusive increments for the given
+    ! antidiffusive fluxes
+
+    subroutine doBoundsDble(IedgeListIdx, IedgeList, NEDGE,&
+        Dflux, Dalpha, Dqp, Dqm)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dflux,Dalpha
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+      
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Dqp,Dqm
+      
+      ! local variables
+      real(DP) :: f_ij,fm_ij,fp_ij
+      integer :: i,iedge,igroup,j
+
+      !$omp parallel default(shared) private(f_ij,fm_ij,fp_ij,i,iedge,j)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+
+      ! Clear Q`s
+      !$omp sections
+      !$omp section
+      call lalg_clearVectorDble(Dqp)
+      !$omp section
+      call lalg_clearVectorDble(Dqm)
+      !$omp end sections     
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+        
+        ! Loop over the edges
+        !$omp do
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+          
+          ! Determine indices
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
+
+          ! Apply multiplicative correction factor
+          f_ij = Dalpha(iedge) * Dflux(iedge)
+
+          ! Separate fluxes into positive/negative contributions
+          fp_ij = max(0.0_DP,f_ij)
+          fm_ij = min(0.0_DP,f_ij)
+
+          ! Assemble Q`s
+          Dqp(i) = Dqp(i) - fm_ij   ! += max(0.0_DP,-f_ij)
+          Dqp(j) = Dqp(j) + fp_ij   ! += max(0.0_DP, f_ij)
+          Dqm(i) = Dqm(i) - fp_ij   ! += min(0.0_DP,-f_ij)
+          Dqm(j) = Dqm(j) + fm_ij   ! += min(0.0_DP, f_ij)
+        end do
+        !$omp end do
+      end do ! igroup
+      !$omp end parallel
+      
+    end subroutine doBoundsDble
+
+    !**************************************************************
+    ! Perform edgewise limiting and apply limited antidiffusive fluxes
+
+    subroutine doQuickCorrectDble(IedgeListIdx, IedgeList, NEDGE,&
+        Dflux, Drp, Drm, Dalpha, Dy)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dflux,Drp,Drm
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+      
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Dy
+
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Dalpha
+
+      ! local variables
+      real(DP) :: f_ij
+      integer :: i,iedge,igroup,j
+
+      !$omp parallel default(shared) private(i,j,f_ij)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+        
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+        
+        ! Loop over the edges
+        !$omp do
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
+          
+          ! Determine indices
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
+          
+          ! Get precomputed raw antidiffusive flux
+          f_ij = Dflux(iedge)
+          
+          ! Determine upwind correction factor
+          if (f_ij .gt. 0.0_DP) then
+            Dalpha(iedge) = Drp(i)
+          else
+            Dalpha(iedge) = Drm(i)
           end if
           
-          ! Assemble antidiffusive fluxes, sums of antidiffusive
-          ! increments and the upper and lower bounds simultaneously
+          ! Limit raw antidiffusive fluxe
+          f_ij = Dalpha(iedge) * f_ij
           
-          !$omp parallel default(shared)&
-          !$omp private(i,j,f_ij,fm_ij,fp_ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          
-          ! Loop over the edge groups and process all edges of one group
-          ! in parallel without the need to synchronize memory access
-          do igroup = 1, size(IedgeListIdx)-1
-            
-            ! Do nothing for empty groups
-            if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-            
-            ! Loop over the edges
-            !$omp do
-            do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-              
-              ! Determine indices
-              i = IedgeList(1,iedge)
-              j = IedgeList(2,iedge)
-              
-              ! Get antidiffusive flux
-              f_ij = Dflux(iedge)
-              
-              ! Assemble P`s accordingly
-              Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
-              Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
-              
-              ! Assemble Q`s
-              Dqp(i) = Dqp(i) - fm_ij   ! += max(0.0_DP,-f_ij)
-              Dqp(j) = Dqp(j) + fp_ij   ! += max(0.0_DP, f_ij)
-              Dqm(i) = Dqm(i) - fp_ij   ! += min(0.0_DP,-f_ij)
-              Dqm(j) = Dqm(j) + fm_ij   ! += min(0.0_DP, f_ij)
-            end do
-            !$omp end do
-          end do ! igroup
-          !$omp end parallel
-          
-          ! Set specifier
-          rafcstab%istabilisationSpec =&
-              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)
-          rafcstab%istabilisationSpec =&
-              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS)
+          ! Update the vector
+          Dy(i) = Dy(i)+f_ij
+          Dy(j) = Dy(j)-f_ij
+        end do
+        !$omp end do
+        
+      end do ! igroup
+      !$omp end parallel
 
+    end subroutine doQuickCorrectDble
+
+    !**************************************************************
+    ! Perform edgewise limiting
+    
+    subroutine doLimitEdgewiseDble(IedgeList, NEDGE,&
+        Dflux, Drp, Drm, Dalpha)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dflux,Drp,Drm
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, intent(in) :: NEDGE
+      
+      ! output parameters
+      real(DP), dimension(:), intent(out) :: Dalpha
+
+      ! local variables
+      real(DP) :: f_ij
+      integer :: i,iedge
+
+      ! Loop over all edges
+      !$omp parallel do default(shared) private(i,f_ij)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, NEDGE
+        
+        ! Determine index
+        i = IedgeList(1,iedge)
+        
+        ! Get precomputed raw antidiffusive flux
+        f_ij = Dflux(iedge)
+          
+        ! Determine upwind correction factor
+        if (f_ij .gt. 0.0_DP) then
+          Dalpha(iedge) = Drp(i)
+        else
+          Dalpha(iedge) = Drm(i)
         end if
+      end do
+      !$omp end parallel do
 
-      elseif (iand(ioperationSpec, AFCSTAB_TVDALGO_ADFLUXES) .ne. 0) then
+    end subroutine doLimitEdgewiseDble
 
-        ! Assemble antidiffusive fluxes
+    !**************************************************************
+    ! Correct the antidiffusive fluxes and apply them
+    
+    subroutine doCorrectDble(IedgeListIdx, IedgeList, NEDGE,&
+        Dalpha, Dflux, Dy)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dalpha,Dflux
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: NEDGE
+      
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Dy
+      
+      ! local variables
+      real(DP) :: f_ij
+      integer :: i,iedge,igroup,j
+
+      !$omp parallel default(shared) private(i,j,f_ij)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronize memory access
+      do igroup = 1, size(IedgeListIdx)-1
+
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
         
-        !$omp parallel default(shared)&
-        !$omp private(i,j,d_ij,l_ji,diff,f_ij)&
-        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-        
-        ! Loop over the edge groups and process all edges of one group
-        ! in parallel without the need to synchronize memory access
-        do igroup = 1, size(IedgeListIdx)-1
+        ! Loop over all edges
+        !$omp do
+        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
           
-          ! Do nothing for empty groups
-          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+          ! Get node numbers
+          i = IedgeList(1,iedge)
+          j = IedgeList(2,iedge)
           
-          ! Loop over the edges
-          !$omp do
-          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-            
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-            
-            ! Determine coefficients
-            d_ij = DcoefficientsAtEdge(1,iedge)
-            l_ji = DcoefficientsAtEdge(3,iedge)
-            
-            ! Determine solution difference
-            diff = dscale*(Dx(i)-Dx(j))
-            
-            ! Prelimit the antidiffusive flux
-            ! F`_IJ=MIN(-P_IJ,L_JI)(DX_I-DX_J)
-            f_ij = min(d_ij,l_ji)*diff
-            
-            ! And store it
-            Dflux(iedge) = f_ij
-          end do
-          !$omp end do
-        end do ! igroup
-        !$omp end parallel
+          ! Correct antidiffusive flux
+          f_ij = Dalpha(iedge) * Dflux(iedge)
           
-        ! Set specifier
-        rafcstab%istabilisationSpec =&
-            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)
-
-      end if
-
-      !-------------------------------------------------------------------------
-
-      if (iand(ioperationSpec, AFCSTAB_TVDALGO_LIMIT) .ne. 0) then
+          ! Apply limited antidiffusive fluxes
+          Dy(i) = Dy(i) + f_ij
+          Dy(j) = Dy(j) - f_ij
+        end do
+        !$omp end do
         
-        ! Check if stabilisation is prepared
-        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODEBOUNDS)  .eq.0) .or.&
-            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADINCREMENTS).eq.0)) then
-          call output_line('Stabilisation does not provide bounds or increments!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
-          call sys_halt()
-        end if
-
-        ! Apply the nodal limiter
-        
-        !$omp parallel sections
-        !$omp section
-        Drp = afcstab_limit(Dpp, Dqp, 0.0_DP, 1.0_DP)
-
-        !$omp section
-        Drm = afcstab_limit(Dpm, Dqm, 0.0_DP, 1.0_DP)
-        !$omp end parallel sections
-
-        ! Set specifier
-        rafcstab%istabilisationSpec =&
-            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER)
-        
-      end if
-
-      !-------------------------------------------------------------------------
-
-      if (iand(ioperationSpec, AFCSTAB_TVDALGO_CORRECT) .ne. 0) then
-        
-        ! Check if stabilisation is prepared
-        if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_NODELIMITER) .eq.0) .or.&
-            (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_ADFLUXES)    .eq.0)) then
-          call output_line('Stabilisation does not provide fluxes or limiting factors!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorTVDScalar')
-          call sys_halt()
-        end if
-
-        !$omp parallel default(shared)&
-        !$omp private(i,j,d_ij,l_ji,diff,f_ij)&
-        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-        
-        ! Loop over the edge groups and process all edges of one group
-        ! in parallel without the need to synchronize memory access
-        do igroup = 1, size(IedgeListIdx)-1
-          
-          ! Do nothing for empty groups
-          if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-          
-          ! Loop over the edges
-          !$omp do
-          do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-            
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-            
-            ! Get precomputed raw antidiffusive flux
-            f_ij = Dflux(iedge)
-            
-            ! Apply correction factor and store limited flux
-            if (f_ij .gt. 0.0_DP) then
-              f_ij = Drp(i)*f_ij
-            else
-              f_ij = Drm(i)*f_ij
-            end if
-            
-            ! Update the vector
-            Dy(i) = Dy(i)+f_ij
-            Dy(j) = Dy(j)-f_ij
-          end do
-          !$omp end do
-          
-        end do ! igroup
-        !$omp end parallel
-        
-      end if
-
-    end subroutine doLimitDble
+      end do ! igroup
+      !$omp end parallel
+    
+    end subroutine doCorrectDble
     
   end subroutine afcsc_buildVectorTVDScalar
 
@@ -2425,6 +3086,7 @@ contains
         DcoefficientsAtEdge, MC, Dx, Dx0, theta, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dflux0, Dy)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0
       real(DP), intent(in) :: theta,dscale
@@ -2432,6 +3094,7 @@ contains
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(:), intent(inout) :: Dflux,Dflux0,Dy
       
@@ -2713,6 +3376,7 @@ contains
         DcoefficientsAtEdge, Dx, dscale, NEDGE,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dflux, Dy)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
@@ -2720,6 +3384,7 @@ contains
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), dimension(:), intent(inout) :: Dflux,Dy
 
@@ -3207,6 +3872,7 @@ contains
     subroutine doADIncrementsSymmDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -3275,6 +3941,7 @@ contains
     subroutine doADIncrementsUpwDble(IedgeListIdx, IedgeList,&
         NEDGE, Dflux, Dalpha, Dpp, Dpm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -3285,7 +3952,7 @@ contains
       ! On exit:  the edge-wise correction factor with prelimiting
       real(DP), dimension(:), intent(inout) :: Dalpha
 
-      ! The sums of positive/negative antidiffusive increments
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Dpp,Dpm
       
       ! local variables
@@ -3335,12 +4002,13 @@ contains
     
     subroutine doBoundsDble(IedgeListIdx, IedgeList, NEDGE, Dx, Dqp, Dqm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
-      ! The local upper/lower bounds computed from Dx
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Dqp,Dqm
       
       ! local variables
@@ -3391,11 +4059,12 @@ contains
     subroutine doLimitNodalConstrainedDble(NEQ, Dq, Dx,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dq,Dx
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
       integer, intent(in) :: NEQ
       
-      ! The nodal correction factors for positive/negative fluxes
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Drp,Drm
       
       ! local variables
@@ -3443,6 +4112,7 @@ contains
     subroutine doLimitEdgewiseSymmDble(IedgeList,&
         NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
@@ -3496,6 +4166,7 @@ contains
     subroutine doLimitEdgewiseUpwDble(IedgeList,&
         NEDGE, Dflux, Dpp, Dpm, Drp, Drm, Dalpha)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dpp,Dpm
       real(DP), dimension(:), intent(in) :: Drp,Drm
@@ -3545,12 +4216,14 @@ contains
     subroutine doCorrectDble(IedgeListIdx, IedgeList,&
         NEDGE, dscale, Dalpha, Dflux, Dy)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dalpha,Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dy
       
       ! local variables
@@ -3595,12 +4268,14 @@ contains
     subroutine doCorrectScaleByMassDble(IedgeListIdx, IedgeList,&
         NEDGE, dscale, ML, Dalpha, Dflux, Dy)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: ML,Dalpha,Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dy
       
       ! local variables
@@ -4636,10 +5311,12 @@ contains
 
     subroutine doDifferencesDble(IedgeList, NEDGE, Dx, Dflux)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Dflux
 
       ! local variables
@@ -5027,12 +5704,14 @@ contains
     subroutine doFluxesByMatrixDble(IedgeList, NEDGE,&
         Dmatrix, Dx, dscale, bclear, Dflux)
       
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dmatrix, Dx
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dflux
 
       ! local variables
@@ -5150,13 +5829,15 @@ contains
     subroutine doFluxesUpwindBiasedDble(IedgeList, NEDGE,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
-      
+    
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dflux
 
       ! local variables
@@ -5371,6 +6052,7 @@ contains
     subroutine doFluxesSymmetricDble(IedgeList, NEDGE,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), intent(in) :: dscale
@@ -5378,6 +6060,7 @@ contains
       integer, intent(in) :: NEDGE
       logical, intent(in) :: bclear
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dflux
 
             ! local variables
@@ -5491,12 +6174,14 @@ contains
     subroutine doBoundsByMatrixDble(IedgeListIdx, IedgeList,&
         NEDGE, Dmatrix, DboundsAtEdge, Dq)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DboundsAtEdge
       real(DP), dimension(:), intent(in) :: Dmatrix
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Dq
 
       ! local variables
@@ -5536,12 +6221,14 @@ contains
     subroutine doBoundsByCoeffDble(IedgeListIdx, IedgeList,&
         NEDGE, DcoefficientsAtEdge, DboundsAtEdge, Dq)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:,:), intent(in) :: DboundsAtEdge
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
       integer, intent(in) :: NEDGE
       
+      ! output parameters
       real(DP), dimension(:), intent(out) :: Dq
 
       ! local variables
@@ -5782,6 +6469,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -5789,6 +6477,7 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       
       ! local variables
@@ -5859,6 +6548,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, MC, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -5866,6 +6556,7 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       
       ! local variables
@@ -6220,6 +6911,7 @@ contains
         Dx, Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
@@ -6231,6 +6923,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -6340,6 +7033,7 @@ contains
         DcoefficientsAtEdge, Dx, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         iedge, iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
@@ -6888,6 +7582,7 @@ contains
         Drm, theta, tstep, hstep, NEQ, NEDGE, NNVEDGE, bisExtended,&
         bisMat7, Ksep, Jac)
     
+      ! input/ parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep
@@ -6899,6 +7594,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -7011,6 +7707,7 @@ contains
         theta, tstep, hstep, iedge, iloc, k, Dpploc, Dpmloc,&
         Dqploc, Dqmloc, Dfluxloc, Dfluxloc0, Kloc)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: theta,tstep,hstep
@@ -7669,6 +8366,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
@@ -7676,6 +8374,7 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
@@ -7807,6 +8506,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, MC, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
@@ -7814,6 +8514,7 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
@@ -7944,6 +8645,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
@@ -7951,6 +8653,7 @@ contains
       integer, dimension(:), intent(in)   :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
@@ -8082,6 +8785,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
@@ -8089,6 +8793,7 @@ contains
       integer, dimension(:), intent(in)   :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
@@ -8220,6 +8925,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
@@ -8227,6 +8933,7 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
@@ -8360,6 +9067,7 @@ contains
         DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
@@ -8367,6 +9075,7 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
@@ -8867,6 +9576,7 @@ contains
         DcoeffX, Dx, Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
@@ -8878,6 +9588,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -9014,6 +9725,7 @@ contains
         Dpp, Dpm, Dqp, Dqm, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
@@ -9025,6 +9737,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -9157,6 +9870,7 @@ contains
         Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
@@ -9168,6 +9882,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -9298,6 +10013,7 @@ contains
         Dpp, Dpm, Dqp, Dqm, c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
         iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dpp,Dpm,Dqp,Dqm,C_ij,C_ji
       real(DP), intent(in) :: tstep,hstep
@@ -9952,9 +10668,12 @@ contains
     ! is moved to the given column k. For efficiency reasons, only
     ! those entries are considered which are present in column k.
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
+      
+      ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
 
+      ! input/output parameters
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
@@ -9982,6 +10701,7 @@ contains
         Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
@@ -9994,6 +10714,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -10137,6 +10858,7 @@ contains
         Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
@@ -10149,6 +10871,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -10292,6 +11015,7 @@ contains
         Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
@@ -10304,6 +11028,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -10446,6 +11171,7 @@ contains
         iedge, i, j, ij, ji, iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc,&
         Dfluxloc, Dfluxloc0, Kloc)
       
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,Dx,Dx0,Dflux,Dflux0,Dpp,Dpm,Dqp,Dqm,C_ij,C_ji
       real(DP), intent(in) :: theta,tstep,hstep
@@ -11143,6 +11869,7 @@ contains
         Dqp, Dqm, Drp, Drm, dscale, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dflux,Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: dscale,hstep
@@ -11154,6 +11881,7 @@ contains
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
       
@@ -11270,6 +11998,7 @@ contains
         Dpm, Dqp, Dqm, hstep, iedge, i, j, iloc, k, Dpploc, Dpmloc, Dqploc,&
         Dqmloc, Dfluxloc, Kloc)
 
+      ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: Dx,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: hstep
