@@ -146,21 +146,27 @@ for (( i=0;i<${#IDISSIPATIONTYPE[@]};i++)); do
 		    ;;
 		failsafe)
 		    echo "Computing solution with failsafe as main limiter"
+		    failsafe "`pwd`"
 		    ;;
 		failsafeall)
 		    echo "Computing solution with failsafe for all variables as main limiter"
+		    failsafeall "`pwd`"
 		    ;;
 		linfct1_nofailsafe)
 		    echo "Computing solution with FCT1 without failsafe feature"
+		    linfct1_nofailsafe "`pwd`"
 		    ;;
 		linfct1_withfailsafe)
 		    echo "Computing solution with FCT1 with failsafe feature"
+		    linfct1_withfailsafe "`pwd`"
 		    ;;
 		linfct2_nofailsafe)
 		    echo "Computing solution with FCT2 without failsafe feature"
+		    linfct2_nofailsafe "`pwd`"
 		    ;;
 		linfct2_withfailsafe)
 		    echo "Computing solution with FCT2 with failsafe feature"
+		    linfct2_withfailsafe "`pwd`"
 		    ;;
 		*)
 		    echo "Invalid benchmark!"
