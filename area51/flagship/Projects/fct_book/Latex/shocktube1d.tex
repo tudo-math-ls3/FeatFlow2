@@ -1,0 +1,67 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\author{Matthias M\"oller}
+\title{Shocktube convergence study}
+
+\usepackage[left=20mm,right=10mm,top=5mm,bottom=5mm]{geometry}
+
+\newcommand{\benchmark}[1]{
+\section{#1}
+
+\begin{minipage}{0.5\textwidth}
+\begin{center}
+Grid level 2
+\smallskip
+
+\includegraphics[width=\textwidth]{#1-Nlev2-rgb.pdf}
+\bigskip
+
+Grid level 4
+\smallskip
+
+\includegraphics[width=\textwidth]{#1-Nlev4-rgb.pdf}
+\bigskip
+
+Grid level 6
+\smallskip
+
+\includegraphics[width=\textwidth]{#1-Nlev6-rgb.pdf}
+\end{center}
+\end{minipage}%
+\begin{minipage}{0.5\textwidth}
+\begin{center}
+Grid level 3
+\smallskip
+
+\includegraphics[width=\textwidth]{#1-Nlev3-rgb.pdf}
+\bigskip
+
+Grid level 5
+\smallskip
+
+\includegraphics[width=\textwidth]{#1-Nlev5-rgb.pdf}
+\bigskip
+
+Grid level 7
+\smallskip
+
+\includegraphics[width=\textwidth]{#1-Nlev7-rgb.pdf}
+\end{center}
+\end{minipage}
+
+\newpage
+}
+
+\begin{document}
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\input{shocktube1d.input}
+
+\end{document}

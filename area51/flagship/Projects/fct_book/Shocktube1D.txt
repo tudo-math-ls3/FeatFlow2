@@ -1,0 +1,50 @@
+#!/bin/bash
+
+#-------------------------------------------------------------------------------
+# Protocol file for convergence study of Sod's shock tube problem in 1D
+#-------------------------------------------------------------------------------
+
+# Computation of results in GMV-format
+cd ~/nobackup/Featflow2/area51/flagship
+./Projects/fct_book/Scripts/shocktube1d.sh loworder
+./Projects/fct_book/Scripts/shocktube1d.sh failsafe
+./Projects/fct_book/Scripts/shocktube1d.sh failsafeall
+./Projects/fct_book/Scripts/shocktube1d.sh linfct1_nofailsafe
+./Projects/fct_book/Scripts/shocktube1d.sh linfct1_withfailsafe
+./Projects/fct_book/Scripts/shocktube1d.sh linfct1_withfailsafeall
+./Projects/fct_book/Scripts/shocktube1d.sh linfct2_nofailsafe
+./Projects/fct_book/Scripts/shocktube1d.sh linfct2_withfailsafe
+./Projects/fct_book/Scripts/shocktube1d.sh linfct2_withfailsafeall
+
+# Change into output directory
+cd fct_book/Shocktube1D
+
+# Remove ".00001." from filenames
+mv "*.00001.*" "#1.gmv"
+
+# Generation of files in CSV-format using Paraview
+module purge
+module load paraview
+./../../Projects/fct_book/Paraview/gmv2csv.py *.gmv
+
+# Convert "*0.csv" introduced by gmv2csv.py into "*.csv"
+mmv "*0.csv" "#1.csv"
+
+
+# Generate figures and error norms by Matlab
+module load matlab
+matlab
+
+# In Matlab perform the following tasks
+# >  addpath('../../Projects/fct_book/Matlab')
+# >  allerrors('.','csv')
+# >  allpics('.','csv')
+
+# Convert EPS-figures into PDF-files
+find . -name "*.eps" -type f -exec epstopdf {} \;
+
+# Generate LaTeX file with all figures
+module load texlive
+find . -name "*2-rgb.pdf" -print | sort | sed -e 's,^\./,\\benchmark{,; s/-Nlev2-rgb.pdf/}/;' > shocktube1d.input
+pdflatex ../../Projects/fct_book/Latex/shocktube1d.tex
+pdflatex ../../Projects/fct_book/Latex/shocktube1d.tex

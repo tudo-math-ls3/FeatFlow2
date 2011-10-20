@@ -19,7 +19,7 @@
 #------------------------------------------------------------------------------
 
 # Export output directory
-export outputdir="fct_book/Shocktube1D_noEntropyfix"
+export outputdir="fct_book/Shocktube1D"
 
 # Export executable
 export program="flagship-pc64-penryn-linux-intel-goto"

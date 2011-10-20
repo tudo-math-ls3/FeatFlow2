@@ -1,18 +1,38 @@
 function allerrors(dirname,extname)
 
 files=dir([dirname '/*.' extname]);
-fid=fopen([dirname '/convstudy.table'], 'w');
+fid=0;
 
 for i=1:size(files),
     
     % Check if we start with a new sequence
     if ~isempty(findstr(files(i).name,'Nlev2')),
-        fprintf(fid, '\n\n%s\n', files(i).name);
+        % Close previous file?
+        if fid~=0,
+            % Write Latex table footer
+            fprintf(fid, '\\hline\n');
+            fprintf(fid, '\\end{tabular}\n');
+            fprintf(fid, '\\end{table}\n');
+            
+            % Close output file
+            fclose(fid);
+        end
+        % Open output file
+        fid=fopen([dirname '/' strrep(files(i).name, '-Nlev2.csv', '') '.tex' ...
+                  ], 'w');
         
         % Clear arrays
         Rho_err1=[];
         P_err1  =[];
         U_err1  =[];
+        
+        % Write Latex table header
+        fprintf(fid, '\\begin{table}\n');
+        fprintf(fid, '\\begin{tabular}{llllll}\n');
+        fprintf(fid, '\\hline\n');
+        fprintf(fid, ['$E_1(\\rho)$ & $p(\\rho)$ & $E_1(u)$ & $p(u)$ & ' ...
+                      '$E_1(p)$ & $p(p)$\\\\\n']);
+        fprintf(fid, '\\hline\n');
     end
     
     % Compute L1-errors
@@ -21,11 +41,11 @@ for i=1:size(files),
     % File export
     if isempty(Rho_err1),
         % Write errors
-        fprintf(fid, '%10.4e \t %10.4e \t %10.4e \t %10.4e \t %10.4e \t %10.4e\n', ...
+        fprintf(fid, '%10.4e & %10.4e & %10.4e & %10.4e & %10.4e & %10.4e\\\\\n', ...
             rho_err1, 0, u_err1, 0, p_err1, 0);
     else
         % Write errors and convergence rate
-        fprintf(fid, '%10.4e \t %10.4e \t %10.4e \t %10.4e \t %10.4e \t %10.4e\n', ...
+        fprintf(fid, '%10.4e & %10.4e & %10.4e & %10.4e & %10.4e & %10.4e\\\\\n', ...
             rho_err1, log2(Rho_err1(end)/rho_err1), ...
             u_err1,   log2(U_err1(end)/u_err1), ...
             p_err1,   log2(P_err1(end)/p_err1));
@@ -37,4 +57,4 @@ for i=1:size(files),
     U_err1   = [U_err1 u_err1];
 end
 
-fclose(fid);
+%fclose(fid);
