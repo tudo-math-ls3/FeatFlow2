@@ -1139,7 +1139,7 @@ contains
     ! Compute the fluxes for the raw mass antidiffusion
     call afcsc_buildFluxFCT(rafcstab, rvectorAux,&
         0.0_DP, 0.0_DP, 1.0_DP, .true., .true.,&
-        AFCSTAB_FCTFLUX_EXPLICIT, rmatrixMass, rvectorAux)
+        AFCSTAB_FCTFLUX_EXPLICIT, rmatrix=rmatrixMass)
 
     ! Apply flux correction to improve the low-order L2-projection
     call afcsc_buildVectorFCT(rafcstab,&
