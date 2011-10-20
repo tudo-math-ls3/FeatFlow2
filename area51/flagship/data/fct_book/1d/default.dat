@@ -5,6 +5,7 @@
 #               Default parameters for hydrodynamic application in 1D          #
 #                                                                              #
 ################################################################################
+
 sperfconfigfile = "../../perfconfig/default.pcfg"
 
 ################################################################################
@@ -16,6 +17,18 @@ Discretisation = 1
 
 # Position of the stabilization for the inviscid term
 InviscidAFC = 1
+
+# Position of the stabilization for the iviscous term
+ViscousAFC = 2
+
+# Position of the group finite element block for the inviscid term
+InviscidGFEM = 1
+
+# Position of the group finite element block for the viscous term
+ViscousGFEM = 2
+
+# Position of the template group finite element block
+TemplateGFEM = 3
 
 # Position of the template matrix in the scalar matrix structure
 TemplateMatrix = 3
