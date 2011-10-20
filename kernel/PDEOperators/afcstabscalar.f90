@@ -50,7 +50,7 @@
 !#         linearity-preserving flux correction
 !#
 !# 7.) afcsc_buildFluxFCT = afcsc_buildFluxFCTScalar /
-! #                         afcsc_buildFluxFCTBlock
+!#                          afcsc_buildFluxFCTBlock
 !#     -> Assembles the raw antidiffusive flux for AFC stabilisation of FCT type
 !#
 !# 8.) afcsc_buildFluxLPT = afcsc_buildFluxLPTScalar /
@@ -65,7 +65,7 @@
 !#     -> Assembles the Jacobian matrix for the stabilisation part of FCT
 !#        type; For the first two routines, the velocity is assumed
 !#        to be linear which simplifies the evaluation of the
-!#        Jacobian matrix significantly.  For the second two
+!#        Jacobian matrix significantly. For the second two
 !#        routines, the velocity can be arbitrary.
 !#
 !# 10.) afcsc_buildJacobianTVD = afcsc_buildJacLinearTVDScalar /
@@ -75,7 +75,7 @@
 !#      -> Assembles the Jacobian matrix for the stabilisation part of TVD
 !#         type; For the first two routines, the velocity is assumed
 !#         to be linear which simplifies the evaluation of the
-!#         Jacobian matrix significantly.  For the second two
+!#         Jacobian matrix significantly. For the second two
 !#         routines, the velocity can be arbitrary.
 !#
 !# 11.) afcsc_buildJacobianGP = afcsc_buildJacLinearGPScalar /
@@ -1771,7 +1771,7 @@ contains
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
-    ! of FEM-TVD type.  Note that this routine serves as a wrapper for
+    ! of FEM-TVD type. Note that this routine serves as a wrapper for
     ! block vectors. If there is only one block, then the corresponding
     ! scalar routine is called. Otherwise, an error is thrown.
 !</description>
@@ -2227,9 +2227,9 @@ contains
 
 !<description>
     ! This subroutine assembles the vector and applies stabilisation
-    ! of FEM-GP type.  Note that this routine serves as a wrapper for
+    ! of FEM-GP type. Note that this routine serves as a wrapper for
     ! block vectors. If there is only one block, then the corresponding
-    ! scalar routine is called.  Otherwise, an error is thrown.
+    ! scalar routine is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -2306,7 +2306,7 @@ contains
     !     D. Kuzmin, On the design of general-purpose flux 
     !     limiters for implicit FEM with a consistent mass matrix.
     !     I. Scalar convection.
-    !     J. Comput. Phys.  219  (2006) 513-531.
+    !     J. Comput. Phys. 219  (2006) 513-531.
     !
     ! Note however, that is is quite expensive and not recommended as
     ! a standard limiter. In fact, it is only implemented to
@@ -3926,7 +3926,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.       
+        buseCallback = .false.      
       end if
 
       !-------------------------------------------------------------------------
@@ -5584,10 +5584,10 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  Note that the velocity is assumed
-    ! to be linear.  Note that this routine serves as a wrapper for
+    ! scalar convection equation. Note that the velocity is assumed
+    ! to be linear. Note that this routine serves as a wrapper for
     ! block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 
@@ -5647,7 +5647,7 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  Note that the velocity is assumed
+    ! scalar convection equation. Note that the velocity is assumed
     ! to be linear.
 !</description>
 
@@ -5940,10 +5940,10 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  Note that the velocity is assumed
-    ! to be linear.  Note that this routine serves as a wrapper for
+    ! scalar convection equation. Note that the velocity is assumed
+    ! to be linear. Note that this routine serves as a wrapper for
     ! block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 
@@ -6584,10 +6584,10 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  Note that the velocity is assumed
-    ! to be linear.  Note that this routine serves as a wrapper for
+    ! scalar convection equation. Note that the velocity is assumed
+    ! to be linear. Note that this routine serves as a wrapper for
     ! block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 
@@ -7368,10 +7368,10 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  The velocity is assumed to be
-    ! nonlinear/arbitrary.  Note that this routine serves as a wrapper
+    ! scalar convection equation. The velocity is assumed to be
+    ! nonlinear/arbitrary. Note that this routine serves as a wrapper
     ! for block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 
@@ -7442,8 +7442,8 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  The velocity is assumed to be
-    ! nonlinear/arbitrary.  This routine will also work for linear
+    ! scalar convection equation. The velocity is assumed to be
+    ! nonlinear/arbitrary. This routine will also work for linear
     ! velocities but then it is inefficient since the solution
     ! perturbation does not affect the velocity.
 !</description>
@@ -8503,10 +8503,10 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  The velocity is assumed to be
-    ! nonlinear/arbitrary.  Note that this routine serves as a wrapper
+    ! scalar convection equation. The velocity is assumed to be
+    ! nonlinear/arbitrary. Note that this routine serves as a wrapper
     ! for block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 
@@ -9293,7 +9293,7 @@ contains
 
     !**************************************************************
     ! Update the local coefficients for FEM-TVD,
-    ! whereby the matrix can be stored in format 7 or 9.    
+    ! whereby the matrix can be stored in format 7 or 9.   
     subroutine updateJacobianMat79_TVD(DcoefficientsAtEdge, Dx,&
         Dpp, Dpm, Dqp, Dqm, c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
         iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
@@ -9589,10 +9589,10 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete transport operator for a
-    ! scalar convection equation.  The velocity is assumed to be
-    ! nonlinear/arbitrary.  Note that this routine serves as a wrapper
+    ! scalar convection equation. The velocity is assumed to be
+    ! nonlinear/arbitrary. Note that this routine serves as a wrapper
     ! for block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 
@@ -10865,9 +10865,9 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
     ! stabilisation part of the discrete diffusion operator for a
-    ! scalar convection equation.  Note that this routine serves as a
+    ! scalar convection equation. Note that this routine serves as a
     ! wrapper for block vectors. If there is only one block, then the
-    ! corresponding scalar routine is called.  Otherwise, an error is
+    ! corresponding scalar routine is called. Otherwise, an error is
     ! thrown.
 !</description>
 

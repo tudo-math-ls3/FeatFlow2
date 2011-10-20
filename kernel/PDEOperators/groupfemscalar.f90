@@ -3303,7 +3303,7 @@ contains
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
-    ! is called.  Otherwise, an error is thrown.
+    ! is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -3827,7 +3827,7 @@ contains
     !
     ! Note that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
-    ! is called.  Otherwise, an error is thrown.
+    ! is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -4231,9 +4231,9 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
     ! part of the discrete transport operator for a scalar convection
-    ! equation.  Note that this routine serves as a wrapper for block
+    ! equation. Note that this routine serves as a wrapper for block
     ! vectors. If there is only one block, then the corresponding
-    ! scalar routine is called.  Otherwise, an error is thrown.
+    ! scalar routine is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>

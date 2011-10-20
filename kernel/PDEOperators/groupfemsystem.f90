@@ -2832,7 +2832,6 @@ contains
     !
     ! This routine supports only node-by-node assembly.
     !
-    ! This subroutine assembles the divergence vector for block vectors.
     ! If the vector contains only one block, then the scalar
     ! counterpart of this routine is called with the scalar subvector.
 !</description>
@@ -3273,8 +3272,6 @@ contains
     ! computed by calling a user-defined callback function.
     !
     ! This routine supports only node-by-node assembly.
-    !
-    ! This subroutine assembles the divergence vector for scalar vectors.
 !</description>
 
 !<input>
@@ -3711,6 +3708,8 @@ contains
     ! values of the vector rx (e.g. the solution vector) and they are
     ! computed by calling a user-defined callback function.
     !
+    ! This routine supports only edge-by-edge assembly.
+    !
     ! If the vector contains only one block, then the scalar
     ! counterpart of this routine is called with the scalar subvector.
 !</description>
@@ -3958,6 +3957,8 @@ contains
     ! finite element formulation. The vector entries may depend on the
     ! values of the vector rx (e.g. the solution vector) and they are
     ! computed by calling a user-defined callback function.
+    !
+    ! This routine supports only edge-by-edge assembly.
     !
     ! Note that the vectors are required as scalar vectors which are
     ! stored in the interleave format.

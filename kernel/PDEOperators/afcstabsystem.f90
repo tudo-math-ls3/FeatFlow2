@@ -873,9 +873,9 @@ contains
       fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
-    ! This subroutine assembles the divergence vector for nonlinear
-    ! FEM-FCT schemes.  If the vectors contain only one block, then
-    ! the scalar counterpart of this routine is called with the scalar
+    ! This subroutine assembles the vector for nonlinear FEM-FCT
+    ! schemes. If the vectors contain only one block, then the scalar
+    ! counterpart of this routine is called with the scalar
     ! subvectors. Consider the documentation of subroutine
     ! 'afcsys_buildVectorFCTScalar' for further details.
 !</description>
@@ -937,7 +937,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! divergence vector
+    ! destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL collection structure
@@ -981,7 +981,7 @@ contains
       call sys_halt()
     end if
 
-    ! Clear divergence vector?
+    ! Clear vector?
     if (bclear) call lsysbl_clearVector(ry)
 
     ! Set pointers
@@ -1012,7 +1012,7 @@ contains
     !
     ! 5) Compute the nodal correction factors (Rp, Rm).
     !
-    ! 6) Apply the limited antidifusive fluxes to the divergence
+    ! 6) Apply the limited antidifusive fluxes to the vector
     !
     !    Step 6) may be split into the following substeps
     !
@@ -2401,10 +2401,10 @@ contains
       fcb_limitEdgewise, fcb_calcCorrection, rcollection, rperfconfig)
 
 !<description>
-    ! This subroutine assembles the divergence vector for nonlinear
-    ! FEM-FCT schemes.  Note that the vectors are required as scalar
-    ! vectors which are stored in the interleave format. The idea of
-    ! flux corrected transport can be traced back to the early SHASTA
+    ! This subroutine assembles the vector for nonlinear FEM-FCT
+    ! schemes. Note that the vectors are required as scalar vectors
+    ! which are stored in the interleave format. The idea of flux
+    ! corrected transport can be traced back to the early SHASTA
     ! algorithm by Boris and Bock in the early 1970s. Zalesak
     ! suggested a fully multi-dimensional generalisation of this
     ! approach and paved the way for a large family of FCT algorithms.
@@ -2506,7 +2506,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! divergence vector
+    ! destination vector
     type(t_vectorScalar), intent(inout) :: ry
 
     ! OPTIONAL collection structure
@@ -2538,7 +2538,7 @@ contains
       call sys_halt()
     end if
 
-    ! Clear divergence vector?
+    ! Clear vector?
     if (bclear) call lsyssc_clearVector(ry)
 
     ! Set pointers
@@ -2569,7 +2569,7 @@ contains
     !
     ! 5) Compute the nodal correction factors (Rp, Rm).
     !
-    ! 6) Apply the limited antidifusive fluxes to the divergence
+    ! 6) Apply the limited antidifusive fluxes to the vector
     !
     !    Step 6) may be split into the following substeps
     !
@@ -3954,8 +3954,8 @@ contains
       fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
 
 !<description>
-    ! This subroutine assembles the divergence vector for FEM-TVD schemes.
-    ! If the vectors contain only one block, then the scalar counterpart
+    ! This subroutine assembles the vector for FEM-TVD schemes. If
+    ! the vectors contain only one block, then the scalar counterpart
     ! of this routine is called with the scalar subvectors.
 !</description>
 
@@ -3989,7 +3989,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! divergence vector
+    ! destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
@@ -4079,7 +4079,7 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble divergence vector for low-order operator plus
+    ! Assemble vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 1D
 
     subroutine doLimitTVD_1D(IedgeListIdx, IedgeList,&
@@ -4293,7 +4293,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble divergence vector for low-order operator plus
+    ! Assemble vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 2D
 
     subroutine doLimitTVD_2D(IedgeListIdx, IedgeList,&
@@ -4601,7 +4601,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble divergence vector for low-order operator plus
+    ! Assemble vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 3D
 
     subroutine doLimitTVD_3D(IedgeListIdx, IedgeList,&
@@ -5165,7 +5165,7 @@ contains
       fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
 
 !<description>
-    ! This subroutine assembles the divergence vector for FEM-TVD schemes
+    ! This subroutine assembles the vector for FEM-TVD schemes.
 !</description>
 
 !<input>
@@ -5198,7 +5198,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! divergence vector
+    ! destination vector
     type(t_vectorScalar), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
@@ -5278,7 +5278,7 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble divergence vector for low-order operator plus
+    ! Assemble vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 1D
 
     subroutine doLimitTVD_1D(IedgeListIdx, IedgeList,&
@@ -5492,7 +5492,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble divergence vector for low-order operator plus
+    ! Assemble vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 2D
 
     subroutine doLimitTVD_2D(IedgeListIdx, IedgeList,&
@@ -5800,7 +5800,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble divergence vector for low-order operator plus
+    ! Assemble vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 3D
 
     subroutine doLimitTVD_3D(IedgeListIdx, IedgeList,&
@@ -6364,7 +6364,7 @@ contains
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
     ! algebraic flux correction of FCT-type with or without the
-    ! contribution of the consistent mass matrix.  If the vectors
+    ! contribution of the consistent mass matrix. If the vectors
     ! contain only one block, then the scalar counterpart of this
     ! routine is called with the scalar subvectors.
 !</description>
@@ -6559,7 +6559,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.       
+        buseCallback = .false.     
       end if
 
       !-------------------------------------------------------------------------
@@ -6801,7 +6801,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.       
+        buseCallback = .false.     
       end if
 
       ! Assemble spatial part of raw-antidiffusive fluxes
@@ -7461,7 +7461,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.       
+        buseCallback = .false.     
       end if
 
       !-------------------------------------------------------------------------
@@ -7703,7 +7703,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.       
+        buseCallback = .false.     
       end if
 
       ! Assemble spatial part of raw-antidiffusive fluxes
