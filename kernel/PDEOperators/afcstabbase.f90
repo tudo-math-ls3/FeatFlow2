@@ -664,7 +664,7 @@ module afcstabbase
 
   ! Absolute tolerance for stabilisation
 #ifndef AFCSTAB_EPSABS
-  real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-16
+  real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-8
 #endif 
 
   ! Relative tolerance for stabilisation
