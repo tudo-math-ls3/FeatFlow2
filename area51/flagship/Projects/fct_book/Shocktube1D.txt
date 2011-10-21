@@ -15,16 +15,19 @@ cd ~/nobackup/Featflow2/area51/flagship
 ./Projects/fct_book/Scripts/shocktube1d.sh linfct2_nofailsafe
 ./Projects/fct_book/Scripts/shocktube1d.sh linfct2_withfailsafe
 ./Projects/fct_book/Scripts/shocktube1d.sh linfct2_withfailsafeall
+./Projects/fct_book/Scripts/shocktube1d.sh linfct3_nofailsafe
+./Projects/fct_book/Scripts/shocktube1d.sh linfct3_withfailsafe
+./Projects/fct_book/Scripts/shocktube1d.sh linfct3_withfailsafeall
 
 # Change into output directory
 cd fct_book/Shocktube1D
 
 # Remove ".00001." from filenames
-mv "*.00001.*" "#1.gmv"
+mmv "*.00001.*" "#1.gmv"
 
 # Generation of files in CSV-format using Paraview
 module purge
-module load paraview
+module load paraview/3.10.1-osmesa-no-x11
 ./../../Projects/fct_book/Paraview/gmv2csv.py *.gmv
 
 # Convert "*0.csv" introduced by gmv2csv.py into "*.csv"
@@ -32,6 +35,7 @@ mmv "*0.csv" "#1.csv"
 
 
 # Generate figures and error norms by Matlab
+module purge
 module load matlab
 matlab
 
@@ -40,11 +44,18 @@ matlab
 # >  allerrors('.','csv')
 # >  allpics('.','csv')
 
+
 # Convert EPS-figures into PDF-files
+module purge
+module load texlive
 find . -name "*.eps" -type f -exec epstopdf {} \;
 
 # Generate LaTeX file with all figures
-module load texlive
-find . -name "*2-rgb.pdf" -print | sort | sed -e 's,^\./,\\benchmark{,; s/-Nlev2-rgb.pdf/}/;' > shocktube1d.input
+echo "\part{Scalar dissipation}" > shocktube1d.input
+find . -name "*1-**2-rgb.pdf" -print | sort | sed -e 's,^\./,\\benchmark{,; s/-Nlev2-rgb.pdf/}/;' >> shocktube1d.input
+echo "\part{Tensorial dissipation of Roe-type}" >> shocktube1d.input
+find . -name "*2-**2-rgb.pdf" -print | sort | sed -e 's,^\./,\\benchmark{,; s/-Nlev2-rgb.pdf/}/;' >> shocktube1d.input
+echo "\part{Scalar dissipation of Rusanov-type}" >> shocktube1d.input
+find . -name "*3-**2-rgb.pdf" -print | sort | sed -e 's,^\./,\\benchmark{,; s/-Nlev2-rgb.pdf/}/;' >> shocktube1d.input
 pdflatex ../../Projects/fct_book/Latex/shocktube1d.tex
 pdflatex ../../Projects/fct_book/Latex/shocktube1d.tex

@@ -12,7 +12,6 @@ for i=1:size(files),
             % Write Latex table footer
             fprintf(fid, '\\hline\n');
             fprintf(fid, '\\end{tabular}\n');
-            fprintf(fid, '\\end{table}\n');
             
             % Close output file
             fclose(fid);
@@ -27,7 +26,6 @@ for i=1:size(files),
         U_err1  =[];
         
         % Write Latex table header
-        fprintf(fid, '\\begin{table}\n');
         fprintf(fid, '\\begin{tabular}{llllll}\n');
         fprintf(fid, '\\hline\n');
         fprintf(fid, ['$E_1(\\rho)$ & $p(\\rho)$ & $E_1(u)$ & $p(u)$ & ' ...
@@ -57,4 +55,9 @@ for i=1:size(files),
     U_err1   = [U_err1 u_err1];
 end
 
-%fclose(fid);
+% Write Latex table footer
+fprintf(fid, '\\hline\n');
+fprintf(fid, '\\end{tabular}\n');
+
+% Close output file
+fclose(fid);

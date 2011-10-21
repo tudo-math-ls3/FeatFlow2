@@ -91,7 +91,7 @@ nfailsafe = 4
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
-  dnsity
+  density
   pressure
   velocity_x
 
