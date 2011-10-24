@@ -633,8 +633,9 @@ contains
   function bdraux_getNELAtRegion(rboundaryRegion, rtriangulation) result(NELbdc)
 
 !<description>
-    ! This function calculates the number of elements which are
-    ! adjacent to the boundary using the given triangulation.
+    ! This function calculates an upper bound for the number of
+    ! elements which are adjacent to the boundary using the given
+    ! triangulation. 
 !</description>
 
 !<input>
