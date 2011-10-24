@@ -68,7 +68,7 @@ contains
     ! A discretisation structure
     type(t_spatialdiscretisation), intent(in) :: rdiscretisation
     
-    ! OPTIOANL: Element type to be considered. If not present, then
+    ! OPTIONAL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
 
@@ -153,7 +153,7 @@ contains
     ! A discretisation structure
     type(t_spatialdiscretisation), intent(in) :: rdiscretisation
 
-    ! OPTIOANL: Element type to be considered. If not present, then
+    ! OPTIONAL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
 
@@ -431,7 +431,7 @@ contains
     ! A discretisation structure
     type(t_spatialdiscretisation), intent(in) :: rdiscretisation
 
-    ! OPTIOANL: Element type to be considered. If not present, then
+    ! OPTIONAL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
     integer(I32), intent(in), optional :: celement
 
