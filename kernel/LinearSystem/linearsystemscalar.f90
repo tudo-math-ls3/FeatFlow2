@@ -27631,7 +27631,7 @@ contains
 !<subroutine>
 
   subroutine lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
-      Iselection, IrowList, IcolList)
+      IdofList, IdofsTest, IdofsTrial)
 
 !<description>
     ! This subroutine calculates the dimensions of the matrix:
@@ -27640,13 +27640,13 @@ contains
     ! - number of columns NCOLS
     ! - number of edges NEDGE (=0 if NEQ /= NCOLS)
     !
-    ! If the optional parameters Iselection, IrowList or IcolList are
+    ! If the optional parameters IdofList, IdofsTest or IdofsTrial are
     ! given, then their entries are used as restriction set.
     !
-    ! If Iselection is given, then its entries are used both for rows
-    ! and columns. If IrowList AND IcolList are given, then different
+    ! If IdofList is given, then its entries are used both for rows
+    ! and columns. If IdofsTest AND IdofsTrial are given, then different
     ! restriction sets are considered for the rows and the columns.
-    ! If either IrowList OR IcolList are given, then it is assumed
+    ! If either IdofsTest OR IdofsTrial are given, then it is assumed
     ! that only the rows or columns are restricted.
 !</description>
 
@@ -27654,11 +27654,11 @@ contains
     ! Scalar matrix
     type(t_matrixScalar), intent(in) :: rmatrix
 
-    ! OPTIONAL: a list of degress of freedoms to which the edge
+    ! OPTIONAL: a list of degress of freedom to which the edge
     ! structure should be restricted.
-    integer, dimension(:), intent(in), optional :: Iselection
-    integer, dimension(:), intent(in), optional :: IrowList
-    integer, dimension(:), intent(in), optional :: IcolList
+    integer, dimension(:), intent(in), optional :: IdofList
+    integer, dimension(:), intent(in), optional :: IdofsTest
+    integer, dimension(:), intent(in), optional :: IdofsTrial
 !</intput>
 
 !<output>
@@ -27687,9 +27687,9 @@ contains
       call sys_halt()
     end if
 
-    if (.not.(present(Iselection)) .and.&
-        .not.(present(IrowList)) .and.&
-        .not.(present(IcolList))) then
+    if (.not.(present(IdofList))  .and.&
+        .not.(present(IdofsTest)) .and.&
+        .not.(present(IdofsTrial))) then
 
       na    = rmatrix%NA
       neq   = rmatrix%NEQ
@@ -27703,46 +27703,46 @@ contains
       
     else
       
-      if (present(Iselection)) then
+      if (present(IdofList)) then
         
         ! Use the same set of restrictions for rows and columns
         allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
         BisActiveRow=.false.;  BisActiveColumn => BisActiveRow
 
         ! Set number of rows and columns
-        neq = size(Iselection); ncols = neq
+        neq = size(IdofList); ncols = neq
 
         ! Generate set of active rows
-        do i = 1, size(Iselection)
-          BisActiveRow(Iselection(i)) = .true.
+        do i = 1, size(IdofList)
+          BisActiveRow(IdofList(i)) = .true.
         end do
 
-      elseif (present(IrowList)) then
+      elseif (present(IdofsTest)) then
 
-        ! Use IrowList as restrictions for rows
+        ! Use IdofsTest as restrictions for rows
         allocate(BisActiveRow(rmatrix%NEQ))
         BisActiveRow=.false.
 
         ! Set number of rows
-        neq = size(IrowList)
+        neq = size(IdofsTest)
 
         ! Generate set of active rows
-        do i = 1, size(IrowList)
-          BisActiveRow(IrowList(i)) = .true.
+        do i = 1, size(IdofsTest)
+          BisActiveRow(IdofsTest(i)) = .true.
         end do
         
-        if (present(IcolList)) then
+        if (present(IdofsTrial)) then
 
-          ! Use IcolList as restrictions for rows
+          ! Use IdofsTrial as restrictions for columns
           allocate(BisActiveColumn(rmatrix%NCOLS))
           BisActiveColumn=.false.
           
           ! Set number of columns
-          ncols = size(IcolList)
+          ncols = size(IdofsTrial)
 
           ! Generate set of active columns
-          do i = 1, size(IcolList)
-            BisActiveColumn(IcolList(i)) = .true.
+          do i = 1, size(IdofsTrial)
+            BisActiveColumn(IdofsTrial(i)) = .true.
           end do
 
         else
@@ -27756,18 +27756,18 @@ contains
 
         end if
 
-      elseif (present(IcolList)) then
+      elseif (present(IdofsTrial)) then
 
-        ! Use IcolList as restrictions for rows
+        ! Use IdofsTrial as restrictions for columns
         allocate(BisActiveColumn(rmatrix%NCOLS))
         BisActiveColumn=.false.
         
         ! Set number of columns
-        ncols = size(IcolList)
+        ncols = size(IdofsTrial)
 
         ! Generate set of active columns
-        do i = 1, size(IcolList)
-          BisActiveColumn(IcolList(i)) = .true.
+        do i = 1, size(IdofsTrial)
+          BisActiveColumn(IdofsTrial(i)) = .true.
         end do
 
         ! Mark all rows active
@@ -27835,7 +27835,7 @@ contains
       end select
       
       ! Deallocate temporal memory
-      if (present(Iselection)) then
+      if (present(IdofList)) then
         deallocate(BisActiveRow)
         nullify(BisActiveColumn)
       else
