@@ -308,7 +308,7 @@ module spatialdiscretisation
     ! Only available if bprecompiledDofMapping=true.
     integer :: h_IelementDofs = ST_NOHANDLE
     
-    ! List of starting indices. p_IelementDofIdx(iel) apecifies the index
+    ! List of starting indices. p_IelementDofIdx(iel) specifies the index
     ! in p_IelementDofs where the global DOF`s of element iel start.
     ! DIMENSION(nelements+1).
     ! Only available if bprecompiledDofMapping=true.
