@@ -262,7 +262,13 @@
 !#         coprocessor device to the host memory
 !#
 !# 76.) lsyssc_initPerfConfig
-!#       -> Initialises the global performance configuration
+!#      -> Initialises the global performance configuration
+!#
+!# 77.) lsyssc_createMatrixSymmPart
+!#      -> Create the symmetric part of the matrix
+!#
+!# 78.) lsyssc_createMatrixAsymmPart
+!#      -> Create the antisymmetric part of the matrix
 !#
 !# Sometimes useful auxiliary routines:
 !#
@@ -940,6 +946,9 @@ module linearsystemscalar
   public :: lsyssc_getbase_KrowIdx
   public :: lsyssc_copyH2D_Vector
   public :: lsyssc_copyD2H_Vector
+  public :: lsyssc_createMatrixSymmPart
+  public :: lsyssc_createMatrixAsymmPart
+
 
   public :: lsyssc_rebuildKdiagonal 
   public :: lsyssc_infoMatrix
@@ -1560,7 +1569,7 @@ contains
           LSYSSC_MATRIX9ROWC)
       lsyssc_isExplicitMatrix1D = .true.
       
-    case DEFAULT
+    case default
       lsyssc_isExplicitMatrix1D = .false.
       
     end select
@@ -1615,7 +1624,7 @@ contains
       call storage_getbase_double (rmatrix%h_Da,p_Ddata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
     case (LSYSSC_MATRIXD)
       call storage_getbase_double (rmatrix%h_Da,p_Ddata,rmatrix%NA*rmatrix%NVAR)
-    case DEFAULT
+    case default
       call storage_getbase_double (rmatrix%h_Da,p_Ddata,rmatrix%NA)
     end select
 
@@ -1669,7 +1678,7 @@ contains
       call storage_getbase_single (rmatrix%h_Da,p_Fdata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
     case(LSYSSC_MATRIXD)
       call storage_getbase_single (rmatrix%h_Da,p_Fdata,rmatrix%NA*rmatrix%NVAR)
-    case DEFAULT
+    case default
       call storage_getbase_single (rmatrix%h_Da,p_Fdata,rmatrix%NA)
     end select
 
@@ -1723,7 +1732,7 @@ contains
       call storage_getbase_int (rmatrix%h_Da,p_Idata,rmatrix%NA*rmatrix%NVAR)
     case(LSYSSC_MATRIXD)
       call storage_getbase_int (rmatrix%h_Da,p_Idata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
-    case DEFAULT
+    case default
       call storage_getbase_int (rmatrix%h_Da,p_Idata,rmatrix%NA)
     end select
 
@@ -2978,7 +2987,7 @@ contains
             call sys_halt()
           end if
 
-        case DEFAULT
+        case default
           print *, "lsyssc_resizeMatrixDirect: Unsupported interleave matrix format!"
           call sys_halt()
         end select
@@ -3107,14 +3116,14 @@ contains
             if (bclear) call storage_clear(rmatrix%h_Da)
           end if
           
-        case DEFAULT
+        case default
           print *, "lsyssc_resizeMatrixDirect: Unsupported interleave matrix format!"
           call sys_halt()
         end select
         
       end if
       
-    case DEFAULT
+    case default
       print *, "lsyssc_resizeMatrixDirect: Unsupported matrix format!"
       call sys_halt()
     end select
@@ -3536,7 +3545,7 @@ contains
     ! Perform the scalar product
     res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
     
-  case DEFAULT
+  case default
     print *,'lsyssc_scalarProduct: Not supported precision combination'
     call sys_halt()
   end select
@@ -3623,7 +3632,7 @@ contains
     ! Perform the scalar product
     res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
     
-  case DEFAULT
+  case default
     print *,'lsyssc_scalarProduct: Not supported precision combination'
     call sys_halt()
   end select
@@ -3788,7 +3797,7 @@ contains
             call lsyssc_LAX79DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
 
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
@@ -3819,13 +3828,13 @@ contains
             call lsyssc_LAX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR)
 
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
           
-        case DEFAULT
+        case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
@@ -3854,7 +3863,7 @@ contains
             call lsyssc_LAX9rowcDbleDble (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,rmatrix%nnzrows,rx%NVAR)
           
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
@@ -3889,7 +3898,7 @@ contains
               call lsyssc_LAX79INTLDDbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
               
-            case DEFAULT
+            case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
               call sys_halt()
@@ -3910,13 +3919,13 @@ contains
               call lsyssc_LAX79INTLDDbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
               
-            case DEFAULT
+            case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
               call sys_halt()
             end select
             
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
@@ -3943,7 +3952,7 @@ contains
               call lsyssc_LAX79INTLDSnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
               
-            case DEFAULT
+            case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
               call sys_halt()
@@ -3964,19 +3973,19 @@ contains
               call lsyssc_LAX79INTLDSnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR)
               
-            case DEFAULT
+            case default
               call output_line('Invalid interleave matrix format!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
               call sys_halt()
             end select
             
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
 
-        case DEFAULT
+        case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
@@ -4010,7 +4019,7 @@ contains
             call lsyssc_LATXDDbleSngl (p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
           
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
@@ -4040,19 +4049,19 @@ contains
             call lsyssc_LATXDSnglSngl (p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR)
           
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
 
-        case DEFAULT
+        case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
         
-      case DEFAULT
+      case default
         call output_line('Invalid matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
         call sys_halt()
@@ -4103,7 +4112,7 @@ contains
             call lsyssc_LTX79DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
 
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
@@ -4133,13 +4142,13 @@ contains
             call lsyssc_LTX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR)
 
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
           
-        case DEFAULT
+        case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
@@ -4173,7 +4182,7 @@ contains
             call lsyssc_LATXDDbleSngl (p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR)
           
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
@@ -4203,19 +4212,19 @@ contains
             call lsyssc_LATXDSnglSngl (p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR)
             
-          case DEFAULT
+          case default
             call output_line('Invalid combination of matrix/vector precision!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
             call sys_halt()
           end select
           
-        case DEFAULT
+        case default
           call output_line('Invalid matrix precision!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
           call sys_halt()
         end select
         
-      case DEFAULT
+      case default
         call output_line('Invalid matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
         call sys_halt()
@@ -7933,7 +7942,7 @@ contains
         call allocDestinationVector (rx,ry)
       end if
     
-    case DEFAULT
+    case default
     
       print *,'lsyssc_duplicateVector: cdupContent unknown!'
       call sys_halt()
@@ -7993,7 +8002,7 @@ contains
         call lsyssc_getbase_single(ry,p_Fdest)
         call lalg_copyVectorSngl (p_Fsource,p_Fdest)  
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_duplicateVector')
         call sys_halt()
@@ -8292,7 +8301,7 @@ contains
           call storage_new('lsyssc_duplicateMatrix', 'Da', &
               rdestMatrix%NA*rdestMatrix%NVAR,rsourceMatrix%cdataType, &
               rdestMatrix%h_Da, ST_NEWBLOCK_NOINIT)
-        case DEFAULT
+        case default
           print *, 'lsyssc_duplicateMatrix: wrong matrix format of interleaved matrix'
           call sys_halt()
         end select
@@ -8322,7 +8331,7 @@ contains
             print *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(Da)!'
             call sys_halt()
           end if
-        case DEFAULT
+        case default
           if (isize .lt. rdestMatrix%NA) then
             print *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(Da)!'
             call sys_halt()
@@ -8442,7 +8451,7 @@ contains
             print *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(Da)!'
             call sys_halt()
           end if
-        case DEFAULT
+        case default
           if (isize .lt. rdestMatrix%NA) then
             print *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(Da)!'
             call sys_halt()
@@ -9034,7 +9043,7 @@ contains
                         (isize .lt. rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR)
             case (LSYSSC_MATRIXD)
               bremove = bremove .or. (isize .lt. rdestMatrix%NA*rdestMatrix%NVAR)
-            case DEFAULT
+            case default
               print *, 'copyContent: wrong interleave matrix format'
               call sys_halt()
             end select
@@ -9287,7 +9296,7 @@ contains
       else
         call lalg_setVectorSngl (p_Fdata,real(dvalue,SP))
       end if
-    case DEFAULT
+    case default
       print *,'lsyssc_clearMatrix: Unsupported Data type!'
       call sys_halt()
     end select
@@ -9358,7 +9367,7 @@ contains
         do i=1,rmatrix%NEQ
           p_Fdata(p_Kdiagonal(i)) = 1.0_SP
         end do
-      case DEFAULT
+      case default
         print *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
         call sys_halt()
       end select
@@ -9382,7 +9391,7 @@ contains
         do i=1,rmatrix%NEQ
           p_Fdata(p_Kdiagonal(i)) = 1.0_SP
         end do
-      case DEFAULT
+      case default
         print *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
         call sys_halt()
       end select
@@ -9406,7 +9415,7 @@ contains
         do i=1,rmatrix%NEQ
           p_Fdata(i*(rmatrix%NEQ-1)+i) = 1.0_SP
         end do
-      case DEFAULT
+      case default
         print *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
         call sys_halt()
       end select
@@ -9420,12 +9429,12 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rmatrix,p_Fdata)
         p_Fdata(:) = 1.0_SP
-      case DEFAULT
+      case default
         print *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
         call sys_halt()
       end select
     
-    case DEFAULT
+    case default
       print *,'lsyssc_initialiseIdentityMatrix: Unsupported matrix format!'
       call sys_halt()
     
@@ -9572,7 +9581,7 @@ contains
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIX7
           
-        case DEFAULT
+        case default
           print *,'lsyssc_convertMatrix: Unsupported data type!'
           call sys_halt()
         end select
@@ -9612,7 +9621,7 @@ contains
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
           
-        case DEFAULT
+        case default
           print *,'lsyssc_convertMatrix: Unsupported data type!'
           call sys_halt()
         end select
@@ -9640,7 +9649,7 @@ contains
         rmatrix%h_Kld = ST_NOHANDLE
       end if
       
-    case DEFAULT
+    case default
       print *,'lsyssc_convertMatrix: Cannot convert matrix!'
       call sys_halt()
     end select
@@ -9706,7 +9715,7 @@ contains
           
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9
           
-        case DEFAULT
+        case default
           print *,'lsyssc_convertMatrix: Unsupported data type!'
           call sys_halt()
         end select
@@ -9746,7 +9755,7 @@ contains
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
           
-        case DEFAULT
+        case default
           print *,'lsyssc_convertMatrix: Unsupported data type!'
           call sys_halt()
         end select
@@ -9772,7 +9781,7 @@ contains
         rmatrix%h_Kld = ST_NOHANDLE
       end if
       
-    case DEFAULT
+    case default
       print *,'lsyssc_convertMatrix: Cannot convert matrix!'
       call sys_halt()
     end select
@@ -9960,7 +9969,7 @@ contains
             call lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
                 
-          case DEFAULT
+          case default
             print *, 'lsyssc_convertMatrix: Unsupported interleave matrix!'
             call sys_halt()
           end select
@@ -9974,14 +9983,14 @@ contains
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
           
-        case DEFAULT
+        case default
           print *,'lsyssc_convertMatrix: Unsupported data type!'
           call sys_halt()
         end select
 
       end if
 
-    case DEFAULT
+    case default
       print *,'lsyssc_convertMatrix: Cannot convert matrix!'
       call sys_halt()
     end select
@@ -10048,25 +10057,25 @@ contains
             call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
                 
-          case DEFAULT
+          case default
             print *, 'lsyssc_convertMatrix: Unsupported interleave matrix format!'
             call sys_halt()
           end select
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
           
-        case DEFAULT
+        case default
           print *,'lsyssc_convertMatrix: Unsupported data type!'
           call sys_halt()
         end select
         
       end if
 
-    case DEFAULT
+    case default
       print *,'lsyssc_convertMatrix: Cannot convert matrix!'
       call sys_halt()
     end select
 
-  case DEFAULT
+  case default
     print *,'lsyssc_convertMatrix: Cannot convert matrix!'
     call sys_halt()
   end select
@@ -10147,6 +10156,888 @@ contains
     end if
 
   end subroutine lsyssc_copyD2H_Vector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createMatrixSymmPart(rmatrix, dscale, rmatrixDest)
+
+!<description>
+    ! This subroutine computes the symmetric parts dscale*(A+A^T) of the
+    ! matrix rmatrix. If rmatrixDest is not present then the resulting
+    ! matrix is stored in rmatrix.
+!</description>
+
+!<input>
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! Source matrix
+    type(t_matrixScalar), intent(inout), target :: rmatrix
+
+    ! OPTIONAL: destination matrix
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrixDest
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_matrixScalar), pointer :: p_rmatrix
+    real(DP), dimension(:), pointer :: p_Da,p_Db
+    real(SP), dimension(:), pointer :: p_Fa,p_Fb
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal,p_Ksep
+    integer :: h_Ksep
+
+    ! Check if matrix is a square matrix
+    if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+      call output_line('Matrix is not a square matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
+      call sys_halt()
+    end if
+    
+    ! Check if destination matrix is present
+    if (present(rmatrixDest)) then
+      ! Check if source and destination matrix are compatible
+      call lsyssc_isMatrixCompatible(rmatrix, rmatrixDest)
+      p_rmatrix => rmatrixDest
+    else
+      p_rmatrix => rmatrix
+    end if
+
+    ! What matrix format are we?
+    select case(rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIXD)
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lalg_scaleVector(p_Da, 2._DP*dscale)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lalg_scaleVector(p_Fa, real(2._SP*dscale,SP))
+      end select
+
+    case (LSYSSC_MATRIX1)
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lsyssc_getbase_double(p_rmatrix, p_Db)
+        call calcSymmPartMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, dscale, p_Da, p_Db)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lsyssc_getbase_single(p_rmatrix, p_Fb)
+        call calcSymmPartMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, real(dscale,SP), p_Fa, p_Fb)
+      end select
+
+    case (LSYSSC_MATRIX7)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lsyssc_getbase_double(p_rmatrix, p_Db)
+        call calcSymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep, 1, dscale, p_Da, p_Db)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lsyssc_getbase_single(p_rmatrix, p_Fb)
+        call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep, 1, real(dscale,SP), p_Fa, p_Fb)
+      end select
+
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+
+    case (LSYSSC_MATRIX7INTL)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      
+      ! What interleave matrix format are we?
+      select case(rmatrix%cinterleavematrixFormat)
+
+      case (LSYSSC_MATRIXD)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcSymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+                                    rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+                                    rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+
+      case (LSYSSC_MATRIX1)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcSymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+                                    rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+                                    rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+        
+      case default
+        call output_line('Invalid interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
+        call sys_halt()
+      end select
+      
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+      
+    case (LSYSSC_MATRIX9)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+      
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lsyssc_getbase_double(p_rmatrix, p_Db)
+        call calcSymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  1, dscale, p_Da, p_Db)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lsyssc_getbase_single(p_rmatrix, p_Fb)
+        call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                  1, real(dscale,SP), p_Fa, p_Fb)
+      end select
+
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+      
+    case (LSYSSC_MATRIX9INTL)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+      
+      ! What interleave matrix format are we?
+      select case(rmatrix%cinterleavematrixFormat)
+
+      case (LSYSSC_MATRIXD)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcSymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+
+      case (LSYSSC_MATRIX1)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcSymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                    rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+        
+      case default
+        call output_line('Invalid interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
+        call sys_halt()
+      end select
+      
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_createMatrixSymmPart')
+      call sys_halt()
+    end select
+    
+  contains
+
+    ! Here, the working routines follow
+    
+    !**************************************************************
+    ! Compute symmetric part for dense matrix stored in matrix format 1
+
+    subroutine calcSymmPartMat1Dble(NEQ, NCOLS, dscale, Da, Db)
+
+      ! input parameters
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEQ,NCOLS
+
+      ! input/output parameters
+      real(DP), dimension(NEQ,NCOLS), intent(inout) :: Da,Db
+
+      ! local variables
+      integer :: i,j
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        Db(i,i) = dscale * 2._DP * Da(i,i)
+        do j = i+1, NCOLS
+          Db(i,j) = dscale * (Da(i,j) + Da(j,i))
+          Db(j,i) = Db(i,j)
+        end do
+      end do
+
+    end subroutine calcSymmPartMat1Dble
+
+    !**************************************************************
+    ! Compute symmetric part for dense matrix stored in matrix format 1
+
+    subroutine calcSymmPartMat1Sngl(NEQ, NCOLS, fscale, Fa, Fb)
+
+      ! input parameters
+      real(SP), intent(in) :: fscale
+      integer, intent(in) :: NEQ,NCOLS
+
+      ! input/output parameters
+      real(SP), dimension(NEQ,NCOLS), intent(inout) :: Fa,Fb
+
+      ! local variables
+      integer :: i,j
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        Fb(i,i) = fscale * 2._SP * Fa(i,i)
+        do j = i+1, NCOLS
+          Fb(i,j) = fscale * (Fa(i,j) + Fa(j,i))
+          Fb(j,i) = Fb(i,j)
+        end do
+      end do
+
+    end subroutine calcSymmPartMat1Sngl
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 7
+
+    subroutine calcSymmPartMat7Dble(Kld, Kcol, Ksep, NVAR, dscale, Da, Db)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(DP), dimension(NVAR,*), intent(inout) :: Da,Db
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kld(i)
+        Db(:,ii) = dscale * 2._DP * Da(:,ii)
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          Db(:,ij) = dscale * (Da(:,ij) + Da(:,ji))
+          Db(:,ji) = Db(:,ij)
+        end do
+      end do
+      
+    end subroutine calcSymmPartMat7Dble
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 7
+
+    subroutine calcSymmPartMat7Sngl(Kld, Kcol, Ksep, NVAR, fscale, Fa, Fb)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      real(SP), intent(in) :: fscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(SP), dimension(NVAR,*), intent(inout) :: Fa,Fb
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kld(i)
+        Fb(:,ii) = fscale * 2._SP * Fa(:,ii)
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          Fb(:,ij) = fscale * (Fa(:,ij) + Fa(:,ji))
+          Fb(:,ji) = Fb(:,ij)
+        end do
+      end do
+      
+    end subroutine calcSymmPartMat7Sngl
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 9
+
+    subroutine calcSymmPartMat9Dble(Kld, Kcol, Kdiagonal, Ksep, NVAR, dscale, Da, Db)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(DP), dimension(NVAR,*), intent(inout) :: Da,Db
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kdiagonal(i)
+        Db(:,ii) = dscale * 2._DP * Da(:,ii)
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          Db(:,ij) = dscale * (Da(:,ij) + Da(:,ji))
+          Db(:,ji) = Db(:,ij)
+        end do
+      end do
+      
+    end subroutine calcSymmPartMat9Dble
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 9
+
+    subroutine calcSymmPartMat9Sngl(Kld, Kcol, Kdiagonal, Ksep, NVAR, fscale, Fa, Fb)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(SP), intent(in) :: fscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(SP), dimension(NVAR,*), intent(inout) :: Fa,Fb
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kdiagonal(i)
+        Fb(:,ii) = fscale * 2._SP * Fa(:,ii)
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          Fb(:,ij) = fscale * (Fa(:,ij) + Fa(:,ji))
+          Fb(:,ji) = Fb(:,ij)
+        end do
+      end do
+      
+    end subroutine calcSymmPartMat9Sngl
+
+  end subroutine lsyssc_createMatrixSymmPart
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createMatrixAsymmPart(rmatrix, dscale, rmatrixDest)
+
+!<description>
+    ! This subroutine computes the antisymmetric parts dscale*(A-A^T)
+    ! of the matrix rmatrix. If rmatrixDest is not present then the
+    ! resulting matrix is stored in rmatrix.
+!</description>
+
+!<input>
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! Source matrix
+    type(t_matrixScalar), intent(inout), target :: rmatrix
+
+    ! OPTIONAL: destination matrix
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrixDest
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_matrixScalar), pointer :: p_rmatrix
+    real(DP), dimension(:), pointer :: p_Da,p_Db
+    real(SP), dimension(:), pointer :: p_Fa,p_Fb
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal,p_Ksep
+    integer :: h_Ksep
+
+    ! Check if matrix is a square matrix
+    if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+      call output_line('Matrix is not a square matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
+      call sys_halt()
+    end if
+    
+    ! Check if destination matrix is present
+    if (present(rmatrixDest)) then
+      ! Check if source and destination matrix are compatible
+      call lsyssc_isMatrixCompatible(rmatrix, rmatrixDest)
+      p_rmatrix => rmatrixDest
+    else
+      p_rmatrix => rmatrix
+    end if
+
+    ! What matrix format are we?
+    select case(rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIXD)
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lalg_scaleVector(p_Da, 2._DP*dscale)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lalg_scaleVector(p_Fa, real(2._SP*dscale,SP))
+      end select
+
+    case (LSYSSC_MATRIX1)
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lsyssc_getbase_double(p_rmatrix, p_Db)
+        call calcAsymmPartMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, dscale, p_Da, p_Db)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lsyssc_getbase_single(p_rmatrix, p_Fb)
+        call calcAsymmPartMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, real(dscale,SP), p_Fa, p_Fb)
+      end select
+
+    case (LSYSSC_MATRIX7)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lsyssc_getbase_double(p_rmatrix, p_Db)
+        call calcAsymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep, 1, dscale, p_Da, p_Db)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lsyssc_getbase_single(p_rmatrix, p_Fb)
+        call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep, 1, real(dscale,SP), p_Fa, p_Fb)
+      end select
+
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+
+    case (LSYSSC_MATRIX7INTL)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      
+      ! What interleave matrix format are we?
+      select case(rmatrix%cinterleavematrixFormat)
+
+      case (LSYSSC_MATRIXD)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcAsymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+                                     rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+                                     rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+
+      case (LSYSSC_MATRIX1)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcAsymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+                                     rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+                                     rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+        
+      case default
+        call output_line('Invalid interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
+        call sys_halt()
+      end select
+      
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+      
+    case (LSYSSC_MATRIX9)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+      
+      select case(rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call lsyssc_getbase_double(p_rmatrix, p_Db)
+        call calcAsymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                   1, dscale, p_Da, p_Db)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call lsyssc_getbase_single(p_rmatrix, p_Fb)
+        call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                   1, real(dscale,SP), p_Fa, p_Fb)
+      end select
+
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+      
+    case (LSYSSC_MATRIX9INTL)
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrix%NEQ+1)
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+      
+      ! What interleave matrix format are we?
+      select case(rmatrix%cinterleavematrixFormat)
+
+      case (LSYSSC_MATRIXD)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcAsymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+
+      case (LSYSSC_MATRIX1)
+        select case(rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Da)
+          call lsyssc_getbase_double(p_rmatrix, p_Db)
+          call calcAsymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fa)
+          call lsyssc_getbase_single(p_rmatrix, p_Fb)
+          call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+                                     rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
+        end select
+        
+      case default
+        call output_line('Invalid interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
+        call sys_halt()
+      end select
+      
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_createMatrixAsymmPart')
+      call sys_halt()
+    end select
+    
+  contains
+
+    ! Here, the working routines follow
+    
+    !**************************************************************
+    ! Compute symmetric part for dense matrix stored in matrix format 1
+
+    subroutine calcAsymmPartMat1Dble(NEQ, NCOLS, dscale, Da, Db)
+
+      ! input parameters
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEQ,NCOLS
+
+      ! input/output parameters
+      real(DP), dimension(NEQ,NCOLS), intent(inout) :: Da,Db
+
+      ! local variables
+      integer :: i,j
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        Db(i,i) = 0._DP
+        do j = i+1, NCOLS
+          Db(i,j) = dscale * (Da(i,j) - Da(j,i))
+          Db(j,i) = Db(i,j)
+        end do
+      end do
+
+    end subroutine calcAsymmPartMat1Dble
+
+    !**************************************************************
+    ! Compute symmetric part for dense matrix stored in matrix format 1
+
+    subroutine calcAsymmPartMat1Sngl(NEQ, NCOLS, fscale, Fa, Fb)
+
+      ! input parameters
+      real(SP), intent(in) :: fscale
+      integer, intent(in) :: NEQ,NCOLS
+
+      ! input/output parameters
+      real(SP), dimension(NEQ,NCOLS), intent(inout) :: Fa,Fb
+
+      ! local variables
+      integer :: i,j
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        Fb(i,i) = 0._SP
+        do j = i+1, NCOLS
+          Fb(i,j) = fscale * (Fa(i,j) - Fa(j,i))
+          Fb(j,i) = Fb(i,j)
+        end do
+      end do
+
+    end subroutine calcAsymmPartMat1Sngl
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 7
+
+    subroutine calcAsymmPartMat7Dble(Kld, Kcol, Ksep, NVAR, dscale, Da, Db)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(DP), dimension(NVAR,*), intent(inout) :: Da,Db
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kld(i)
+        Db(:,ii) = 0._DP
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          Db(:,ij) = dscale * (Da(:,ij) - Da(:,ji))
+          Db(:,ji) = Db(:,ij)
+        end do
+      end do
+      
+    end subroutine calcAsymmPartMat7Dble
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 7
+
+    subroutine calcAsymmPartMat7Sngl(Kld, Kcol, Ksep, NVAR, fscale, Fa, Fb)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      real(SP), intent(in) :: fscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(SP), dimension(NVAR,*), intent(inout) :: Fa,Fb
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kld(i)
+        Fb(:,ii) = 0._SP
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Ksep(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          Fb(:,ij) = fscale * (Fa(:,ij) - Fa(:,ji))
+          Fb(:,ji) = Fb(:,ij)
+        end do
+      end do
+      
+    end subroutine calcAsymmPartMat7Sngl
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 9
+
+    subroutine calcAsymmPartMat9Dble(Kld, Kcol, Kdiagonal, Ksep, NVAR, dscale, Da, Db)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(DP), dimension(NVAR,*), intent(inout) :: Da,Db
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kdiagonal(i)
+        Db(:,ii) = 0._DP
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          Db(:,ij) = dscale * (Da(:,ij) - Da(:,ji))
+          Db(:,ji) = Db(:,ij)
+        end do
+      end do
+      
+    end subroutine calcAsymmPartMat9Dble
+
+    !**************************************************************
+    ! Compute symmetric part for CRS matrix stored in matrix format 9
+
+    subroutine calcAsymmPartMat9Sngl(Kld, Kcol, Kdiagonal, Ksep, NVAR, fscale, Fa, Fb)
+
+      ! input parameters
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(SP), intent(in) :: fscale
+      integer, intent(in) :: NVAR
+
+      ! input/output parameters
+      real(SP), dimension(NVAR,*), intent(inout) :: Fa,Fb
+      integer, dimension(:), intent(inout) :: Ksep
+
+      ! local variables
+      integer :: i,ii,ij,j,ji
+
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+
+        ! Diagonal entry
+        ii = Kdiagonal(i)
+        Fb(:,ii) = 0._SP
+
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J, that is, the upper
+        ! right triangular part of the matrix is traversed
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          Fb(:,ij) = fscale * (Fa(:,ij) - Fa(:,ji))
+          Fb(:,ji) = Fb(:,ij)
+        end do
+      end do
+      
+    end subroutine calcAsymmPartMat9Sngl 
+
+  end subroutine lsyssc_createMatrixAsymmPart
 
   !****************************************************************************
 
@@ -10707,7 +11598,7 @@ contains
     case (ST_SINGLE)   
       call lsyssc_getbase_single(rvector,p_Fdata)
       call lsyssc_getbase_single(rtemp,p_Fdata2)
-    case DEFAULT
+    case default
       print *,'lsyssc_sortVectorInSitu: unsuppported data type'
       call sys_halt()
     end select
@@ -10731,7 +11622,7 @@ contains
         ! Then sort back. Use the inverse permutation.
         call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
         
-      case DEFAULT
+      case default
         print *,'lsyssc_sortVectorInSitu: unsuppported data type'
         call sys_halt()
         
@@ -10767,7 +11658,7 @@ contains
         ! Then sort back. Use the inverse permutation.
         call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
         
-      case DEFAULT
+      case default
         print *,'lsyssc_sortVectorInSitu: unsuppported data type'
         call sys_halt()
         
@@ -10795,7 +11686,7 @@ contains
       ! Then do the sorting with the given permutation.
       call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(1:NEQ))
       
-    case DEFAULT
+    case default
       print *,'lsyssc_sortVectorInSitu: unsuppported data type'
       call sys_halt()
       
@@ -11177,7 +12068,7 @@ contains
               call lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
               call lsyssc_sortMat9Ent_single (p_Fdata,p_FdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)        
-            case DEFAULT
+            case default
               print *,'lsyssc_sortMatrix: Unsupported data type.'
               call sys_halt()
             end select
@@ -11214,7 +12105,7 @@ contains
               call lsyssc_sortMat9_single (p_Fdata,p_FdataTmp,p_Kcol, p_KcolTmp, &
                                            p_Kld, p_KldTmp, p_Kdiag, &
                                            Itr1, Itr2, NEQ)        
-            case DEFAULT
+            case default
               print *,'lsyssc_sortMatrix: Unsupported data type.'
               call sys_halt()
             end select
@@ -11281,7 +12172,7 @@ contains
               call lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
               call lsyssc_sortMat7Ent_single (p_Fdata,p_FdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)        
-            case DEFAULT
+            case default
               print *,'lsyssc_sortMatrix: Unsupported data type.'
               call sys_halt()
             end select
@@ -11317,7 +12208,7 @@ contains
               call lsyssc_sortMat7_single (p_Fdata,p_FdataTmp,p_Kcol, p_KcolTmp, &
                                           p_Kld, p_KldTmp, &
                                           Itr1, Itr2, NEQ)        
-            case DEFAULT
+            case default
               print *,'lsyssc_sortMatrix: Unsupported data type.'
               call sys_halt()
             end select
@@ -11353,7 +12244,7 @@ contains
             call lsyssc_getbase_single (rmatrix,p_Fdata)
             call lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
             call lalg_vectorSortSngl (p_FdataTmp, p_Fdata, Itr1)
-          case DEFAULT
+          case default
             print *,'lsyssc_sortMatrix: Unsupported data type.'
             call sys_halt()
           end select
@@ -11363,7 +12254,7 @@ contains
 
         end if
 
-      case DEFAULT
+      case default
         print *,'lsyssc_sortMatrix: Unsupported matrix format!'
         call sys_halt()
         
@@ -13342,7 +14233,7 @@ contains
     call lsyssc_getbase_single (rx,p_Fdata)
     lsyssc_vectorNorm = lalg_norm(p_Fdata,cnorm,iposMax) 
     
-  case DEFAULT
+  case default
     print *,'lsyssc_vectorNorm: Unsupported data type!'
     call sys_halt()
   end select
@@ -13481,7 +14372,7 @@ contains
           !$omp end parallel do
         end if
         
-      case DEFAULT
+      case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
@@ -13539,13 +14430,13 @@ contains
           !$omp end parallel do
         end if
         
-      case DEFAULT
+      case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix precision!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
@@ -13605,7 +14496,7 @@ contains
           end do
           !$omp end parallel do
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleaved matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
@@ -13638,13 +14529,13 @@ contains
           end do
           !$omp end parallel do
 
-        case DEFAULT
+        case default
           call output_line('Unsupported interleaved matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
         
-      case DEFAULT
+      case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
@@ -13683,7 +14574,7 @@ contains
           end do
           !$omp end parallel do
         
-        case DEFAULT
+        case default
           call output_line('Unsupported interleaved matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
@@ -13716,19 +14607,19 @@ contains
           end do
           !$omp end parallel do
         
-        case DEFAULT
+        case default
           call output_line('Unsupported interleaved matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
 
-      case DEFAULT
+      case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix precision!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
@@ -13790,7 +14681,7 @@ contains
           !$omp end parallel do
         end if
         
-      case DEFAULT
+      case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
@@ -13848,19 +14739,19 @@ contains
           !$omp end parallel do
         end if
         
-      case DEFAULT
+      case default
         call output_line('Unsupported vector precision!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
 
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix precision!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
     end select
 
-  case DEFAULT
+  case default
     call output_line('Unsupported matrix format!',&
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
     call sys_halt()
@@ -13937,7 +14828,7 @@ contains
     call lsyssc_getbase_single(rx,p_Fdata)
     call lalg_scaleVector(p_Fdata,real(c,SP))  
 
-  case DEFAULT
+  case default
     print *,'lsyssc_scaleVector: Unsupported data type!'
     call sys_halt()
   end select
@@ -13990,7 +14881,7 @@ contains
       call lalg_setVectorSngl (p_Ssource,real(dvalue,SP))
     end if
 
-  case DEFAULT
+  case default
     print *,'lsyssc_clearVector: Unsupported data type!'
     call sys_halt()
   end select
@@ -14079,7 +14970,7 @@ contains
     
     call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
   
-  case DEFAULT
+  case default
     print *,'lsyssc_vectorLinearComb: Unsupported data type!'
     call sys_halt()
   end select
@@ -14180,7 +15071,7 @@ contains
 !      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
 !      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 !
-!    CASE DEFAULT
+!    CASE default
 !      PRINT *,'lsyssc_copyMatrix: Unsupported data type!'
 !      CALL sys_halt()
 !    END SELECT
@@ -14216,7 +15107,7 @@ contains
 !      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
 !      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 !
-!    CASE DEFAULT
+!    CASE default
 !      PRINT *,'storage_copyMatrix: Unsupported data type!'
 !      CALL sys_halt()
 !    END SELECT
@@ -14246,12 +15137,12 @@ contains
 !      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
 !      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 !
-!    CASE DEFAULT
+!    CASE default
 !      PRINT *,'storage_copyMatrix: Unsupported data type!'
 !      CALL sys_halt()
 !    END SELECT
 !
-!  CASE DEFAULT
+!  CASE default
 !    PRINT *,'lsyssc_copyMatrix: Unsupported matrix format!'
 !    CALL sys_halt()
 !  END SELECT
@@ -15611,7 +16502,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
 
-      case DEFAULT
+      case default
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
@@ -15625,7 +16516,7 @@ contains
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
       
-    case DEFAULT ! = LSYSSC_TR_ALL 
+    case default ! = LSYSSC_TR_ALL 
     
     end select
   
@@ -15688,7 +16579,7 @@ contains
       call lsyssc_getbase_single(rdestMatrix,p_Fa2)
       call lalg_copyVectorSngl (p_Fa1,p_Fa2)
 
-    case DEFAULT
+    case default
       print *,'lsyssc_transposeMatrix: Unsupported data type!'
       call sys_halt()
       
@@ -15993,7 +16884,7 @@ contains
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrixScalar,p_Fa)
           call lalg_setVectorSngl (p_Fa,1.0_SP)
-        case DEFAULT
+        case default
           print *,'lsyssc_allocEmptyMatrix: Unknown data type!'
           call sys_halt()
         end select
@@ -16015,7 +16906,7 @@ contains
         case (LSYSSC_MATRIXD)
           call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
               NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_ZERO)
-        case DEFAULT
+        case default
           print *, 'lsyssc_allocEmptyMatrix: Unsupported interl' // &
                    'eave matrix format'
           call sys_halt()
@@ -16029,7 +16920,7 @@ contains
         case (LSYSSC_MATRIXD)
           call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
               NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
-        case DEFAULT
+        case default
           print *, 'lsyssc_allocEmptyMatrix: Unsupported interl' // &
                    'eave matrix format'
           call sys_halt()
@@ -16045,7 +16936,7 @@ contains
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrixScalar,p_Fa)
           call lalg_setVectorSngl (p_Fa,1.0_SP)
-        case DEFAULT
+        case default
           print *,'lsyssc_allocEmptyMatrix: Unknown data type!'
           call sys_halt()
         end select
@@ -16120,7 +17011,7 @@ contains
       call storage_new ('lsyssc_createDiagMatrixStruc', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
           
-    case DEFAULT
+    case default
     
       print *,'lsyssc_createDiagMatrix: unsupported matrix format!'
       call sys_halt()
@@ -16278,7 +17169,7 @@ contains
           end do
         end do
       
-      case DEFAULT
+      case default
         print *,'lsyssc_lumpMatrixScalar: Unsupported matrix precision'
         call sys_halt()
       end select
@@ -16320,12 +17211,12 @@ contains
           end do
         end do
       
-      case DEFAULT
+      case default
         print *,'lsyssc_lumpMatrixScalar: Unsupported matrix precision'
         call sys_halt()
       end select
       
-    case DEFAULT
+    case default
       print *,'lsyssc_lumpMatrixScalar: Unsupported matrix format'
       call sys_halt()
     end select
@@ -16371,7 +17262,7 @@ contains
     ! Nothing to do
   case (LSYSSC_MATRIX1)
     call removeOffdiags_format1 (rmatrix) 
-  case DEFAULT
+  case default
     print *,'lsyssc_clearOffdiags: Unsupported matrix format'
     call sys_halt()
   end select
@@ -16434,7 +17325,7 @@ contains
       
       end do
       
-    case DEFAULT
+    case default
       print *,'removeOffdiags_format9: Unsupported matrix precision!'
       call sys_halt()
       
@@ -16484,7 +17375,7 @@ contains
       
       end do
       
-    case DEFAULT
+    case default
       print *,'removeOffdiags_format7: Unsupported matrix precision!'
       call sys_halt()
     end select
@@ -16549,7 +17440,7 @@ contains
         end if
       end do
       
-    case DEFAULT
+    case default
       print *,'removeOffdiags_format7: Unsupported matrix precision!'
       call sys_halt()
     end select
@@ -16596,7 +17487,7 @@ contains
     call lsyssc_getbase_single(rmatrix,p_Fdata)
     call lalg_scaleVector(p_Fdata,real(c,SP))  
 
-  case DEFAULT
+  case default
     print *,'lsyssc_scaleMatrix: Unsupported data type!'
     call sys_halt()
   end select
@@ -16766,7 +17657,7 @@ contains
               call do_mat1mat1mulDbleSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,DaA,FaB,DaC)
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -16789,12 +17680,12 @@ contains
               call do_mat1mat1mulSnglSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,FaB,FaC)
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
 
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
@@ -16850,7 +17741,7 @@ contains
               call do_mat1matDmulDbleSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,DaA,FaB,DaC)
 
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -16873,18 +17764,18 @@ contains
               call do_mat1matDmulSnglSngl(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,FaA,FaB,FaC)
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
         
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
+      case default
         print *, 'lsyssc_multMatMat: Unsupported data type!'
         call sys_halt()
       end select
@@ -16943,7 +17834,7 @@ contains
               call lsyssc_getbase_double(rmatrixC,DaC)
               DaC=DaA*FaB
 
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -16964,12 +17855,12 @@ contains
               call lsyssc_getbase_single(rmatrixC,FaC)
               FaC=FaA*FaB
 
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
             
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
@@ -17025,7 +17916,7 @@ contains
               call do_matDmat1mulDbleSngl(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,DaA,FaB,DaC)
 
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -17048,12 +17939,12 @@ contains
               call do_matDmat1mulSnglSngl(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,FaA,FaB,FaC)
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
         
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
@@ -17132,7 +18023,7 @@ contains
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               end if
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -17173,18 +18064,18 @@ contains
                     &,rmatrixB%NEQ,FaC,KldC,KcolC)
               end if
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
             
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
         end if
 
-      case DEFAULT
+      case default
         print *, 'lsyssc_multMatMat: Unsupported data type!'
         call sys_halt()
       end select
@@ -17268,7 +18159,7 @@ contains
                     &,rmatrixA%NEQ,FaB,DaC,KldC,KcolC)
               end if
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -17309,12 +18200,12 @@ contains
                     &,rmatrixA%NEQ,FaB,FaC,KldC,KcolC)
               end if
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
 
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
@@ -17434,7 +18325,7 @@ contains
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,DaC,Daux)
               
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
@@ -17465,25 +18356,25 @@ contains
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,FaC,Faux)
 
-            case DEFAULT
+            case default
               print *, 'lsyssc_multMatMat: Unsupported data type!'
               call sys_halt()
             end select
             
-          case DEFAULT
+          case default
             print *, 'lsyssc_multMatMat: Unsupported data type!'
             call sys_halt()
           end select
         end if
         
-      case DEFAULT
+      case default
         print *, 'lsyssc_multMatMat: Unsupported data type!'
         call sys_halt()
       end select
             
       !--------------------------------------------------------------
       
-    case DEFAULT
+    case default
       print *, 'lsyssc_multMatMat: Unsupported data type!'
       call sys_halt()
     end select
@@ -22860,7 +23751,7 @@ contains
         case (LSYSSC_MATRIXD)
           call output_line ('Da memory usage:         '//&
               trim(sys_sdL(100/real(isize,DP)*rmatrix%NA*rmatrix%NVAR,2))//'%')
-        case DEFAULT
+        case default
           call output_line ('Da memory usage:         '//trim(sys_sdL(100/real(isize,DP)*rmatrix%NA,2))//'%')
         end select
     end if
@@ -23281,7 +24172,7 @@ contains
       call lsyssc_getbase_int(rvector2, p_Idata2)
       call do_spreadInt(p_Idata1, rvector2%NVAR, rvector2%NEQ, p_Idata2)
       
-    case DEFAULT
+    case default
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
       call sys_halt()
@@ -23406,7 +24297,7 @@ contains
         call do_spreadInt(p_Idata1, rmatrix2%NVAR, rmatrix2%NVAR,&
                           rmatrix2%NA, p_Idata2)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
         call sys_halt()
@@ -23432,13 +24323,13 @@ contains
         call do_spreadInt(p_Idata1, rmatrix2%NVAR, 1,&
                           rmatrix2%NA, p_Idata2)
 
-      case DEFAULT
+      case default
         call output_line('Unsupported data type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
         call sys_halt()
       end select
       
-    case DEFAULT
+    case default
       call output_line('Unsupported matrix format!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadMatrix')
       call sys_halt()
@@ -23592,7 +24483,7 @@ contains
       call lsyssc_getbase_int(rvector2, p_Idata2)
       call do_packInt(p_Idata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Idata2)
       
-    case DEFAULT
+    case default
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
       call sys_halt()
