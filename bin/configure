@@ -177,8 +177,8 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/list.f90 DataStructures/octree.f90 DataStructures/quadtree.f90 DataStructures/stack.f90 " .
     "DataStructures/numbersets.f90 DataStructures/geneticalgorithm.f90  " .
 
-    "DOFMaintenance/bcassembly.f90 DOFMaintenance/bilinearformevaluation.f90 " .
-    "DOFMaintenance/extstdassemblyinfo.f90 " .
+    "DOFMaintenance/bcassembly.f90  DOFMaintenance/bcassemblybase.f90 " .
+    "DOFMaintenance/bilinearformevaluation.f90 DOFMaintenance/extstdassemblyinfo.f90 " .
     "DOFMaintenance/discretebc.f90 DOFMaintenance/discretefbc.f90 DOFMaintenance/dofmapping.f90 " .
     "DOFMaintenance/domainintegration.f90 DOFMaintenance/feevaluation.f90 " .
     "DOFMaintenance/linearformevaluation.f90 DOFMaintenance/matrixfilters.f90 " .

@@ -32,6 +32,7 @@ module ccboundaryconditionparser
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection

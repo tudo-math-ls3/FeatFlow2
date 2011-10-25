@@ -42,7 +42,7 @@ module timerhsevaluation
   use derivatives
   use scalarpde
   use linearformevaluation
-  use bcassembly
+  use bcassemblybase
   
   use spatialdiscretisation
   use timediscretisation

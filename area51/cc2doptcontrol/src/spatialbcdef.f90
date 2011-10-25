@@ -31,6 +31,7 @@ module spatialbcdef
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
@@ -387,7 +388,7 @@ contains
               rcoll%IquickAccess(1) = ibctyp
               
               ! Primal BC's
-              if ((cbctype .eq. CCDISCBC_PRIMAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) THEN
+              if ((cbctype .eq. CCDISCBC_PRIMAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) then
               
                 ! If the type is a double precision value, set the DquickAccess(4)
                 ! to that value so it can quickly be accessed.
@@ -465,7 +466,7 @@ contains
               end if
               
               ! Dual BC's
-              if ((cbctype .eq. CCDISCBC_DUAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) THEN
+              if ((cbctype .eq. CCDISCBC_DUAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) then
 
                 ! Now the same thing again, this time separately for primal and dual
                 ! variables.
@@ -594,7 +595,7 @@ contains
               rcoll%IquickAccess(1) = ibctyp
               
               ! Primal BC's
-              if ((cbctype .eq. CCDISCBC_PRIMAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) THEN
+              if ((cbctype .eq. CCDISCBC_PRIMAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) then
                 ! If the type is a double precision value, set the DquickAccess(4)
                 ! to that value so it can quickly be accessed.
                 if (sbdex1 .ne. '') then
@@ -670,7 +671,7 @@ contains
               end if
               
               ! Dual BC's
-              if ((cbctype .eq. CCDISCBC_DUAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) THEN
+              if ((cbctype .eq. CCDISCBC_DUAL) .or. (cbctype .eq. CCDISCBC_PRIMALDUAL)) then
               
                 ! Now the same thing again, this time separately for primal and dual
                 ! variables.

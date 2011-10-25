@@ -111,7 +111,7 @@ module spacematvecassembly
   use derivatives
   use matrixfilters
   use vectorfilters
-  use bcassembly
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
@@ -2784,8 +2784,8 @@ contains
             rform%Idescriptors(2,1) = DER_FUNC
 
             ! In this case, we have nonconstant coefficients.
-            rform%ballCoeffConstant = .FALSE.
-            rform%BconstantCoeff(:) = .FALSE.
+            rform%ballCoeffConstant = .false.
+            rform%BconstantCoeff(:) = .false.
 
             ! Prepare a collection structure to be passed to the callback
             ! routine. We attach the vector T in the quick-access variables
@@ -2812,7 +2812,7 @@ contains
             ! data.
             ! The collection is passed as additional parameter. That's the way
             ! how we get the vector to the callback routine.
-            call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,1),&
+            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
                 coeff_ProjMass,rcollection)
 
             ! Now, set up A25, depending on lambda_2.
@@ -2820,7 +2820,7 @@ contains
             rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
             rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
 
-            call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,2),&
+            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
                 coeff_ProjMass,rcollection)
             
             ! Now we can forget about the collection again.
@@ -2883,8 +2883,8 @@ contains
             rform%Idescriptors(2,1) = DER_FUNC
 
             ! In this case, we have nonconstant coefficients.
-            rform%ballCoeffConstant = .FALSE.
-            rform%BconstantCoeff(:) = .FALSE.
+            rform%ballCoeffConstant = .false.
+            rform%BconstantCoeff(:) = .false.
 
             ! Prepare a collection structure to be passed to the callback
             ! routine. We attach the vector T in the quick-access variables
@@ -2916,7 +2916,7 @@ contains
             ! data.
             ! The collection is passed as additional parameter. That's the way
             ! how we get the vector to the callback routine.
-            call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,1),&
+            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
                 coeff_ProjMassCollect,rcollection)
                 
             ! Assemble a submesh matrix on the elements in the list
@@ -2941,7 +2941,7 @@ contains
             ! Create a new element list
             rcollection%IquickAccess(3) = 0
 
-            call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,2),&
+            call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
                 coeff_ProjMassCollect,rcollection)
             
             select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%cconstraintsType)
@@ -4353,8 +4353,8 @@ contains
           rform%Idescriptors(2,1) = DER_FUNC
 
           ! In this case, we have nonconstant coefficients.
-          rform%ballCoeffConstant = .FALSE.
-          rform%BconstantCoeff(:) = .FALSE.
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff(:) = .false.
 
           ! Prepare a collection structure to be passed to the callback
           ! routine. We attach the vector T in the quick-access variables
@@ -4381,7 +4381,7 @@ contains
           ! data.
           ! The collection is passed as additional parameter. That's the way
           ! how we get the vector to the callback routine.
-          call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(1,1),&
+          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(1,1),&
               coeff_ProjMass,rcollection)
 
           ! Now, set up A22, depending on lambda_2.
@@ -4389,7 +4389,7 @@ contains
           rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2
           rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2
 
-          call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(2,2),&
+          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(2,2),&
               coeff_ProjMass,rcollection)
           
           ! Now we can forget about the collection again.
@@ -4456,8 +4456,8 @@ contains
           rform%Idescriptors(2,1) = DER_FUNC
 
           ! In this case, we have nonconstant coefficients.
-          rform%ballCoeffConstant = .FALSE.
-          rform%BconstantCoeff(:) = .FALSE.
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff(:) = .false.
 
           ! Prepare a collection structure to be passed to the callback
           ! routine. We attach the vector T in the quick-access variables
@@ -4489,7 +4489,7 @@ contains
           ! data.
           ! The collection is passed as additional parameter. That's the way
           ! how we get the vector to the callback routine.
-          call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(1,1),&
+          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(1,1),&
               coeff_ProjMassCollect,rcollection)
               
           ! Assemble a submesh matrix on the elements in the list
@@ -4516,7 +4516,7 @@ contains
           ! Create a new element list
           rcollection%IquickAccess(3) = 0
 
-          call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(2,2),&
+          call bilf_buildMatrixScalar (rform,.true.,rtempmatrix%RmatrixBlock(2,2),&
               coeff_ProjMassCollect,rcollection)
           
           ! Assemble a submesh matrix on the elements in the list

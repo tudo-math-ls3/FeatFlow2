@@ -40,7 +40,7 @@
 module pprocnavierstokes
 
   use basicgeometry
-  use bcassembly
+  use bcassemblybase
   use boundary
   use collection
   use cubature

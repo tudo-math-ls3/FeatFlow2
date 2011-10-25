@@ -33,6 +33,7 @@ module ccboundaryconditionparser
   use vectorfilters
   use discretebc
   use bcassembly
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
@@ -1193,7 +1194,7 @@ contains
     ! We use the default initialisation of rfictBoundaryRegion and only
     ! change the name of the component.
     Iequations = (/1,2/)    ! 1=x, 2=y-velocity
-     CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
+     call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
          rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC2,rcollection)
 
   end subroutine  

@@ -17,6 +17,7 @@ module elemdbg2d_test1
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use bcassemblybase
   use linearalgebra
   use dofmapping
   use basicgeometry
@@ -596,7 +597,7 @@ contains
       ! Probably write the mesh to disc
       if (iwritemesh .eq. 1) then
         call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'ucd/sol2d_'//TRIM(sys_siL(ilvl,5))//'.gmv')
+                          'ucd/sol2d_'//trim(sys_siL(ilvl,5))//'.gmv')
 
         ! Project the solution to the vertices
         allocate (p_Ddata(rtriangulation%NVT))
@@ -608,7 +609,7 @@ contains
         deallocate(p_Ddata)
       else if (iwritemesh .eq. 2) then
         call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                          'ucd/sol2d_'//TRIM(sys_siL(ilvl,5))//'.vtk')
+                          'ucd/sol2d_'//trim(sys_siL(ilvl,5))//'.vtk')
 
         ! Project the solution to the vertices
         allocate (p_Ddata(rtriangulation%NVT))

@@ -34,6 +34,7 @@ module ccboundaryconditionparser
   use vectorfilters
   use discretebc
   use bcassembly
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection

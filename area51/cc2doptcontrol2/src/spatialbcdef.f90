@@ -31,6 +31,7 @@ module spatialbcdef
   use discretebc
   use discretefbc
   use bcassembly
+  use bcassemblybase
   use triangulation
   use spatialdiscretisation
   use paramlist
@@ -583,7 +584,7 @@ contains
                     
                     if (iprimaldual .eq. 1) then
                       ! Primal BC's
-                      if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
                       
                         ! If the type is a double precision value, set the DquickAccess(4)
                         ! to that value so it can quickly be accessed.
@@ -681,7 +682,7 @@ contains
                     if (iprimaldual .eq. 2) then
                     
                       ! Dual BC's
-                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
 
                         ! Now the same thing again, this time separately for primal and dual
                         ! variables.
@@ -833,7 +834,7 @@ contains
                     if (iprimaldual .eq. 1) then
                     
                       ! Primal BC's
-                      if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
                         ! If the type is a double precision value, set the DquickAccess(4)
                         ! to that value so it can quickly be accessed.
                         if (sbdex1 .ne. '') then
@@ -929,7 +930,7 @@ contains
                     if (iprimaldual .eq. 2) then
                     
                       ! Dual BC's
-                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
                       
                         ! Now the same thing again, this time separately for primal and dual
                         ! variables.
@@ -1055,7 +1056,7 @@ contains
                     if (iprimaldual .eq. 1) then
                     
                       ! Primal BC's
-                      if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      if ((cbctype .eq. CCSPACE_PRIMAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
                         ! If the type is a double precision value, set the DquickAccess(4)
                         ! to that value so it can quickly be accessed.
                         if (sbdex1 .ne. '') then
@@ -1205,7 +1206,7 @@ contains
                     if (iprimaldual .eq. 2) then
                     
                       ! Dual BC's
-                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) THEN
+                      if ((cbctype .eq. CCSPACE_DUAL) .or. (cbctype .eq. CCSPACE_PRIMALDUAL)) then
                       
                         ! Now the same thing again, this time separately for primal and dual
                         ! variables.
