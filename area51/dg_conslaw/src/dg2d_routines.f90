@@ -14111,7 +14111,7 @@ contains
 
 
 
-    ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,elementsperblock)
+    ! Allocate space for the flux variables DIM(ialbet,ncubp,elementsperblock)
     allocate(DfluxValues(rlocalMatrixAssembly(1)%rform%itermcount,ncubp,rlocalMatrixAssembly(1)%nelementsPerBlock))
 
     !    ! Get some more pointers to local data.

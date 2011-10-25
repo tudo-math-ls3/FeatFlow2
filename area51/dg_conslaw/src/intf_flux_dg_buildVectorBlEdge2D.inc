@@ -8,13 +8,10 @@
   !<subroutine>
 
     subroutine flux_dg_buildVectorBlEdge2D_sim (&
-!              Dcoefficients,&
-!              DsolVals,&
 			  DfluxValues,&
 			  rvectorSolBlock,&
 			  IelementList,&
               normal,&
-!              DpointsReal,&
               rintSubSet,&
               rcollection )
     
@@ -30,19 +27,11 @@
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
+    ! These are the flux vectors (for each block) * normal vector.
   !</description>
     
   !<input>
-!  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
-  real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
   real(DP), dimension(:,:), intent(in) :: normal
-!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
   type(t_vectorBlock), intent(in) :: rvectorSolBlock
@@ -51,7 +40,8 @@
   !</input>
   
   !<output>
-!  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  ! Dimension: nblocks,nterms,ncubpoints,nedges
+  real(DP), dimension(:,:,:,:), intent(out) :: DfluxValues
   !</output>
     
   !</subroutine>

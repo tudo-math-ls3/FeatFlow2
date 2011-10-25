@@ -78,7 +78,7 @@ contains
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
-    integer, parameter :: nvar2d = 1
+    integer, parameter :: nvar2d = 4
 
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -2845,11 +2845,10 @@ contains
                 !call lsysbl_copyMatrix (rmatrixABlock,rmatrixBlock)
                 call lsysbl_duplicateMatrix (rmatrixABlock,rmatrixBlock,&
                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+                                     
                 do i = 1, nvar2d
-
                    call lsyssc_matrixLinearComb (rmatrixMC,rmatrixABlock%RmatrixBlock(i,i),1.0_dp/dt,1.0_dp,&
                         .false.,.false.,.true.,.false.)
-
                 end do
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
@@ -2889,11 +2888,14 @@ contains
 
                 ! Create a BiCGStab-solver.
                 nullify(p_rpreconditioner)
-                CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+                call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+                !call linsol_initILU0(p_rpreconditioner)
                 !call linsol_initJacobi (p_rpreconditioner)
                 call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)!,RfilterChain)
                 !call linsol_initUMFPACK4 (p_rsolverNode)
                 !call linsol_initGMRES (p_rsolverNode,50,p_rpreconditioner)
+                !call linsol_initILU0(p_rsolverNode)
+                !call linsol_initMILUs1x1 (p_rsolverNode,0,0.0_DP)
 
                 ! Set the output level of the solver to 2 for some output
                 p_rsolverNode%ioutputLevel = 2
@@ -2902,6 +2904,9 @@ contains
                 ! the residual is reached.
                 p_rsolverNode%depsRel = 1.0e-8
                 p_rsolverNode%depsAbs = 1.0e-10
+                
+                ! Set the maximum number of iteratons
+                p_rsolverNode%nmaxIterations = 5000
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
@@ -2911,7 +2916,7 @@ contains
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
                 ! This does not work on all compilers, since the compiler would have
                 ! to create a temp array on the stack - which does not always work!
-                Rmatrices = (/rmatrixBlock/)
+                Rmatrices = (/rmatrixABlock/)
                 call linsol_setMatrices(p_RsolverNode,Rmatrices)
 
                 ! Initialise structure/data of the solver. This allows the
@@ -3265,13 +3270,14 @@ contains
 
                 ! Create a BiCGStab-solver.
                 nullify(p_rpreconditioner)
+                !call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
                 !call linsol_initGMRES (p_rpreconditioner,1)
                 !call linsol_initBiCGStab (p_rpreconditioner)
-                !call linsol_initJacobi (p_rpreconditioner)
+                call linsol_initJacobi (p_rpreconditioner)
                 !call linsol_initSOR (p_rpreconditioner, 0.15_dp)
                 !call linsol_initILU0(p_rpreconditioner)
-                call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
-                !call linsol_initGMRES (p_rsolverNode,10,p_rpreconditioner)
+                !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
+                call linsol_initGMRES (p_rsolverNode,50,p_rpreconditioner)
                 !call linsol_initUMFPACK4 (p_rsolverNode)
                 
 

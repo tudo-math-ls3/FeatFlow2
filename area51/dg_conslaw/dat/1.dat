@@ -1,6 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
+nlmin = 1
 nlmax = 8
 
 
@@ -46,13 +47,13 @@ triname = ./pre/QUAD.tri
 # 2: DG T2
 # 3: DG Q1
 # 4: DG Q2
-FEkind = 2
+FEkind = 0
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 1000000.0
+dt = 1.0
 
 # Final time
 ttfinal = 3.0
@@ -82,7 +83,7 @@ limiter = 0
 #  8: Implicit Euler equations
 #  9: Implicit linear convection Newton-like implementation
 # 10: Implicit Euler equations Newton-like implementation
-timestepping = 9
+timestepping = 10
 
 # What type to build the RHS
 rhstype = 1

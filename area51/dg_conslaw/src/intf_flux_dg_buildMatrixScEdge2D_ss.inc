@@ -8,14 +8,11 @@
   !<subroutine>
 
     subroutine flux_dg_buildMatrixScEdge2D_sim (&
-!              Dcoefficients,&
-!              DsolVals,&
 			  DfluxValues,&
 			  rvectorSol,&
 			  IelementList,&
 			  Dside,&
               normal,&
-!              DpointsReal,&
               rintSubSet,&
               rcollection )
     
@@ -29,31 +26,29 @@
     use linearsystemscalar
     
   !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the values of flux*normal on the edges of the elements.
   !</description>
     
   !<input>
-!  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
-  real(DP), dimension(:,:,:), intent(out) :: DfluxValues
   real(DP), dimension(:,:), intent(in) :: normal
-!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
-  type(t_collection), intent(inout), target, optional :: rcollection
   type(t_vectorScalar), intent(in) :: rvectorSol
   integer, dimension(:), intent(in) :: IelementList
-  real(DP), dimension(:,:), intent(out) :: Dside
-    
   !</input>
   
+  !<inputoutput>
+  type(t_collection), intent(inout), target, optional :: rcollection
+  !</inputoutput>
+  
   !<output>
-!  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  ! The flux vector * normal vector
+  ! Dimension: nterms,ncubp,nedges
+  ! DfluxValues(iterm, icubp, iedge)
+  real(DP), dimension(:,:,:), intent(out) :: DfluxValues
+  ! The coefficients for the DOFs from each side of the edge
+  ! Dimension: 2 sides,nterms
+  real(DP), dimension(:,:), intent(out) :: Dside
   !</output>
     
   !</subroutine>
@@ -61,16 +56,3 @@
     end subroutine
     
   end interface
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
