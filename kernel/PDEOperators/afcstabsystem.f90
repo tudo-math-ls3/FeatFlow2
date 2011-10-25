@@ -948,7 +948,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
-    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0,p_DfluxPrel
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_DfluxPrel
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: nvariable
@@ -2517,7 +2517,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
-    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0,p_DfluxPrel
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_DfluxPrel
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: nvariable
@@ -2833,7 +2833,7 @@ contains
           ! Standard routine without flux transformation
           call doLimitEdgewiseConstrainedDble(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+              p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
 
       else

@@ -1935,7 +1935,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
     integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    integer, dimension(:), pointer :: p_InodeList1D
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -2000,20 +2000,18 @@ contains
         ! Check if only a subset of the matrix is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
           ! Assemble operator node-by-node
-          call doOperatorDble(p_InodeListIdx, p_InodeList1D,&
-              p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+          call doOperatorDble(p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
+              dscale, bclear, p_Ddata)
         else
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
           
           ! Assemble selected part of the operator node-by-node
-          call doOperatorDbleSel(p_InodeListIdx, p_InodeList2D,&
-              p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+          call doOperatorDbleSel(p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
+              dscale, bclear, p_Ddata)
         end if
 
       case default
@@ -2035,15 +2033,15 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDble(InodeListIdx, InodeList,&
-        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+    subroutine doOperatorDble(InodeList, DcoeffsAtNode, Dx,&
+        dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
+      integer, dimension(:), intent(in) :: InodeList
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
@@ -2143,8 +2141,8 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDbleSel(InodeListIdx, InodeList,&
-        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+    subroutine doOperatorDbleSel(InodeList, DcoeffsAtNode, Dx,&
+        dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
@@ -2152,7 +2150,6 @@ contains
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: InodeList
-      integer, dimension(:), intent(in) :: InodeListIdx
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata

@@ -221,7 +221,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Dx
     integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    integer, dimension(:), pointer :: p_InodeList1D
     logical :: bisFullMatrix
 
     ! Pointer to the performance configuration
@@ -298,22 +298,20 @@ contains
         ! Check if only a subset of the matrix is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
           
           ! Assemble operator node-by-node
           call doOperatorDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
-              p_InodeListIdx, p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale,&
-              bclear, bisFullMatrix, rarray)
+              p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
+              bisFullMatrix, rarray)
         else
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
           
           ! Assemble selected part of the operator node-by-node
           call doOperatorDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
-              p_InodeListIdx, p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale,&
-              bclear, bisFullMatrix, rarray)
+              p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
+              bisFullMatrix, rarray)
         end if
         
         ! Deallocate temporal memory
@@ -336,15 +334,15 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDble(NEQ, NVAR, InodeListIdx, InodeList,&
-        DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
+    subroutine doOperatorDble(NEQ, NVAR, InodeList, DcoeffsAtNode,&
+        Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
+      integer, dimension(:), intent(in) :: InodeList
       integer, intent(in) :: NEQ,NVAR
       logical, intent(in) :: bisFullMatrix
 
@@ -497,8 +495,8 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDbleSel(NEQ, NVAR, InodeListIdx, InodeList,&
-        DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
+    subroutine doOperatorDbleSel(NEQ, NVAR, InodeList, DcoeffsAtNode,&
+        Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -506,7 +504,6 @@ contains
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: InodeList
-      integer, dimension(:), intent(in) :: InodeListIdx
       integer, intent(in) :: NEQ,NVAR
       logical, intent(in) :: bisFullMatrix
 
