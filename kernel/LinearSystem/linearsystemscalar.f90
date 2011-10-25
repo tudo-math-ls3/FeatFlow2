@@ -27687,6 +27687,7 @@ contains
       call sys_halt()
     end if
 
+    ! Do we have any restrictions?
     if (.not.(present(IdofList))  .and.&
         .not.(present(IdofsTest)) .and.&
         .not.(present(IdofsTrial))) then
@@ -27703,11 +27704,12 @@ contains
       
     else
       
+      ! Do we have a common list of DOFs for rows and columns?
       if (present(IdofList)) then
         
         ! Use the same set of restrictions for rows and columns
         allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
-        BisActiveRow=.false.;  BisActiveColumn => BisActiveRow
+        BisActiveRow=.false.; BisActiveColumn => BisActiveRow
 
         ! Set number of rows and columns
         neq = size(IdofList); ncols = neq
@@ -27717,70 +27719,48 @@ contains
           BisActiveRow(IdofList(i)) = .true.
         end do
 
-      elseif (present(IdofsTest)) then
-
-        ! Use IdofsTest as restrictions for rows
+      else ! use individual lists of DOFs for rows and columns
+        
         allocate(BisActiveRow(rmatrix%NEQ))
-        BisActiveRow=.false.
-
-        ! Set number of rows
-        neq = size(IdofsTest)
-
-        ! Generate set of active rows
-        do i = 1, size(IdofsTest)
-          BisActiveRow(IdofsTest(i)) = .true.
-        end do
+        allocate(BisActiveColumn(rmatrix%NCOLS))
+        
+        if (present(IdofsTest)) then
+          ! Set number of rows
+          neq = size(IdofsTest)
+          
+          ! Generate set of active rows
+          BisActiveRow=.false.
+          do i = 1, size(IdofsTest)
+            BisActiveRow(IdofsTest(i)) = .true.
+          end do
+        else
+          ! Set number of rows
+          neq = rmatrix%NEQ
+          
+          ! No restriction for rows
+          BisActiveRow=.true.
+        end if
         
         if (present(IdofsTrial)) then
-
-          ! Use IdofsTrial as restrictions for columns
-          allocate(BisActiveColumn(rmatrix%NCOLS))
-          BisActiveColumn=.false.
-          
           ! Set number of columns
           ncols = size(IdofsTrial)
-
+          
           ! Generate set of active columns
+          BisActiveColumn=.false.
           do i = 1, size(IdofsTrial)
             BisActiveColumn(IdofsTrial(i)) = .true.
           end do
-
         else
-
-          ! Mark all columns active
-          allocate(BisActiveColumn(rmatrix%NCOLS))
-          BisActiveColumn=.true.
-
           ! Set number of columns
           ncols = rmatrix%NCOLS
-
+          
+          ! No restriction for columns
+          BisActiveColumn=.true.
         end if
-
-      elseif (present(IdofsTrial)) then
-
-        ! Use IdofsTrial as restrictions for columns
-        allocate(BisActiveColumn(rmatrix%NCOLS))
-        BisActiveColumn=.false.
-        
-        ! Set number of columns
-        ncols = size(IdofsTrial)
-
-        ! Generate set of active columns
-        do i = 1, size(IdofsTrial)
-          BisActiveColumn(IdofsTrial(i)) = .true.
-        end do
-
-        ! Mark all rows active
-        allocate(BisActiveRow(rmatrix%NEQ))
-        BisActiveRow=.true.
-
-        ! Set number of rows
-        neq = rmatrix%NEQ
-
       end if
-       
+      
       !-------------------------------------------------------------------------
-
+      
       ! Initialisation
       na = 0
       
