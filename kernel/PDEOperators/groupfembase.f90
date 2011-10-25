@@ -11,8 +11,10 @@
 !# The following routines are available:
 !#
 !# 1.) gfem_initGroupFEMSet = gfem_initGFEMSetDirect /
-!#                            gfem_initGFEMSetByMatrix
+!#                            gfem_initGFEMSetByMatrix /
 !#     -> Initialises a group finite element structure.
+!#
+!# 1a.) gfem_initGroupFEMSetBoundary = gfem_initGFEMSetByMatrixBdr
 !#
 !# 2.) gfem_initGroupFEMBlock
 !#     -> Initialises a block of group finite element structures.
@@ -78,7 +80,7 @@
 !# 21.) gfem_getbase_DcoeffsAtDiag / gfem_getbase_FcoeffsAtDiag
 !#      -> Returns pointer to the coefficients at matrix diagonal
 !#
-!# 22.) gfem_getbase_IdofList
+!# 22.) gfem_getbase_IdofsTest / gfem_getbase_IdofsTrial
 !#      -> Returns pointer to the list of restricted DOFs
 !#
 !# 23.) gfem_genNodeList
@@ -142,6 +144,8 @@
 
 module groupfembase
 
+  use bcassemblybase
+  use boundary
   use fsystem
   use genoutput
   use linearalgebra
@@ -155,6 +159,7 @@ module groupfembase
 
   public :: t_groupFEMSet,t_groupFEMBlock,t_array
   public :: gfem_initGroupFEMSet
+  public :: gfem_initGroupFEMSetBoundary
   public :: gfem_initGroupFEMBlock
   public :: gfem_releaseGroupFEMSet
   public :: gfem_releaseGroupFEMBlock
@@ -178,7 +183,8 @@ module groupfembase
   public :: gfem_getbase_FcoeffsAtEdge
   public :: gfem_getbase_DcoeffsAtDiag
   public :: gfem_getbase_FcoeffsAtDiag
-  public :: gfem_getbase_IdofList
+  public :: gfem_getbase_IdofsTest
+  public :: gfem_getbase_IdofsTrial
   public :: gfem_genNodeList
   public :: gfem_genEdgeList
   public :: gfem_genDiagList
@@ -227,7 +233,7 @@ module groupfembase
 !<constantblock description="Bitfield identifiers for properties of the \
 !                            group finite element set">
 
-  ! List of restricted DOFs has been computed: IdofList
+  ! List of restricted DOFs has been computed: IdofsTest/IdofsTrial
   integer(I32), parameter, public :: GFEM_HAS_DOFLIST  = 2_I32**1
 
   ! Edge-based structure has been computed: IedgeListIdx, IedgeList
@@ -257,7 +263,7 @@ module groupfembase
   ! Duplicate atomic structure
   integer(I32), parameter, public :: GFEM_DUP_STRUCTURE = 2_I32**16
   
-  ! Duplicate list of restricted DOFs: IdofList
+  ! Duplicate list of restricted DOFs: IdofsTest/IdofsTrial
   integer(I32), parameter, public :: GFEM_DUP_DOFLIST   = GFEM_HAS_DOFLIST
 
   ! Duplicate diagonal pointers: IdiagList
@@ -293,7 +299,7 @@ module groupfembase
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between group finite element structures">
   
-  ! Share list of restricted DOFs: IdofList
+  ! Share list of restricted DOFs: IdofsTest/IdofsTrial
   integer(I32), parameter, public :: GFEM_SHARE_DOFLIST  = GFEM_HAS_DOFLIST
 
   ! Share diagonal pointers: IdiagList
@@ -368,9 +374,15 @@ module groupfembase
     ! Number of precomputed coefficients stored in CoeffsAtEdge.
     integer :: ncoeffsAtEdge = 0
 
-    ! Handle to list of DOFs to which the global matrix is restricted
-    integer :: h_IdofList = ST_NOHANDLE
+    ! Handle to slist of DOFs to which the global matrix is restricted
+    integer :: h_IdofsTest  = ST_NOHANDLE
+    integer :: h_IdofsTrial = ST_NOHANDLE
 
+    ! Flag: if TRUE, then the restriction of trial and test spaces are
+    ! the same. If FALSE, there are different restrictions for trial
+    ! and test spaces.
+    logical :: bidenticalTrialAndTest = .false.
+    
     ! Handle to diagonal positions of the underlying matrix
     ! IdiagList(1,1:NEQ) : the node number i of the equation ieq
     ! IdiagList(2,1:NEQ) : the position of the diagonal entry ii that
@@ -399,21 +411,33 @@ module groupfembase
     integer :: h_IedgeList = ST_NOHANDLE
     
     ! Handle to index pointer for node structure
+    !
+    ! If no restriction of DOFs is used:
     ! InodeListIdx(1:NEQ+1) : the index separator of the node list
     !
     ! All nodes in Inode List contributing to equation ieq are given by
     ! InodeList( InodeListIdx(ieq) : InodeListIdx(ieq+1)-1 )
+    !
+    ! OR
+    !
+    ! If restriction of DOFs is used:
+    ! InodeListIdx(1,1:NEQ+1) : the index separator of the node list
+    ! InodeListIdx(2,1:NEQ+1) : the equation number of the node
+    ! InodeListIdx(3,1:NEQ+1) : the global position ia of the matrix entry
     integer :: h_InodeListIdx = ST_NOHANDLE
 
     ! Handle to nodal structure
+    !
+    ! If no restriction of DOFs is used:
     ! InodeList(1:NA)   : the global column number of the node j 
     !
     ! OR
     !
+    ! If restriction of DOFs is used:
     ! InodeList(1,1:NA) : the global column number of the node j
     ! InodeList(2,1:NA) : the global position ia of the matrix entry
     !
-    ! Example: If there is no restriction to s selected subset of
+    ! Example: If there is no restriction to a selected subset of
     ! degrees of freedom then InodeList(ia) -> column number of ia.
     ! If only a restricted subset of degrees of freedom is considered
     ! then InodeList(:,ia) -> (/ j, ia /), where ia is the global
@@ -484,6 +508,10 @@ module groupfembase
     module procedure gfem_initGFEMSetByMatrix
   end interface gfem_initGroupFEMSet
 
+  interface gfem_initGroupFEMSetBoundary
+    module procedure gfem_initGFEMSetByMatrixBdry
+  end interface
+
   interface gfem_resizeGroupFEMSet
     module procedure gfem_resizeGFEMSetDirect
     module procedure gfem_resizeGFEMSetByMatrix
@@ -502,6 +530,11 @@ module groupfembase
   interface gfem_isVectorCompatible
     module procedure gfem_isVectorCompatibleSc
     module procedure gfem_isVectorCompatibleBl
+  end interface
+
+  interface gfem_getbase_InodeListIdx
+    module procedure gfem_getbase_InodeListIdx1D
+    module procedure gfem_getbase_InodeListIdx2D
   end interface
 
   interface gfem_getbase_InodeList
@@ -583,16 +616,24 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
-      ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType, IdofList)
+  subroutine gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix,&
+      ncoeffsAtDiag, ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType,&
+      bidenticalTrialAndTest, IdofsTest, IdofsTrial)
 
 !<description>
     ! This subroutine initialises a set of degrees of freedom for
     ! using the group finite element formulation indirectly by
     ! deriving all information from the scalar template matrix.
-    ! If IdofList is given, then its entries are used as degrees
-    ! of freedom to which the group finite element set should be
-    ! restricted to.
+    !
+    ! If IdofsTest AND IdofTrial are given, then the group finite
+    ! element set is restricted to the specified degrees of freedom in
+    ! test and trial space, respectively. By this mechanism, it is
+    ! possible to select only those degrees of freedom from the test
+    ! space (=rows in the matrix) located within a boundary region and
+    ! all neighbouring degrees of freedom along the boundary from the
+    ! trial space (=columns of the matrix).  If only IdofsTest OR
+    ! IdofTrial are given, then it is assumed that no restriction
+    ! applies to the counterpart unless bidenticalTrialAndTest=TRUE.
 !</description>
 
 !<input>
@@ -611,9 +652,15 @@ contains
     ! If not present, ST_DOUBLE will be used
     integer, intent(in), optional :: cdataType
 
-    ! OPTIONAL: a list of degress of freedoms to which the
+    ! OPTIONAL: flag which states whether the restriction of degrees
+    ! of freedom from the test and trial spaces are identical.
+    ! If not present, bidenticalTrialAndTest=FALSE
+    logical, intent(in), optional :: bidenticalTrialAndTest
+
+    ! OPTIONAL: lists of degress of freedoms to which the
     ! group finite element set should be restricted.
-    integer, dimension(:), intent(in), optional :: IdofList
+    integer, dimension(:), intent(in), optional :: IdofsTest
+    integer, dimension(:), intent(in), optional :: IdofsTrial
 !</input>
 
 !<output>
@@ -623,36 +670,233 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,neq,ncols,nedge
+    logical :: bisIdenticalTrialAndTest
+    
+    bisIdenticalTrialAndTest = .false.
+    if (present(bidenticalTrialAndTest))&
+        bisIdenticalTrialAndTest = bidenticalTrialAndTest
+
+    if (bisIdenticalTrialAndTest .and.&
+        present (IdofsTest) .and. present(IdofsTrial)) then
+      call output_line('Different DOF list must not be given if '//&
+          'bidenticalTrialAndTest=TRUE!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfem_initGFEMSetByMatrix')
+      call sys_halt()
+    end if
     
     ! Calculate dimensions of matrix (possibly with restriction)
-    call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)
+    if (present (IdofsTest) .and. present(IdofsTrial)) then
+      ! Use individual restrictions for trial and test space
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+          IdofsTest=IdofsTest, IdofsTrial=IdofsTrial)
+    elseif (present (IdofsTest)) then
+      if (bisIdenticalTrialAndTest) then
+        ! Use IdofTest restriction for trial and test space
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            IdofList=IdofsTest)
+      else
+        ! Use IdofTest restriction only for test space and leave the
+        ! trial space unrestricted
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            IdofsTest=IdofsTest)
+      end if
+    elseif (present (IdofsTrial)) then
+      if (bisIdenticalTrialAndTest) then
+        ! Use IdofTrial restriction for trial and test space
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            IdofList=IdofsTrial)
+      else
+        ! Use IdofTrial restriction only for trial space and leave the
+        ! trial space unrestricted
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            IdofsTrial=IdofsTrial)
+      end if
+    else
+      ! Calculate dimensions of matrix without restriction
+      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
+    end if
     
     ! Call initialisation routine
     call gfem_initGroupFEMSet(rgroupFEMSet, na, neq, nedge, rmatrix%NVAR,&
         ncoeffsAtDiag, ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType)
+
+    ! Set flag for identical restrictions applied to trial and test spaces
+    rgroupFEMSet%bidenticalTrialAndTest = bisIdenticalTrialAndTest
 
     ! Initialise array for consistency checks
     rgroupFEMSet%Iconsistency(1) = rmatrix%NA
     rgroupFEMSet%Iconsistency(2) = rmatrix%NEQ
     rgroupFEMSet%Iconsistency(3) = rmatrix%NCOLS
     
-    ! Set handle to restricted DOF list
-    if (present(IdofList)) then
-      call storage_new('gfem_initGFEMSetByMatrix', 'IdofList',&
-          size(IdofList), ST_INT, rgroupFEMSet%h_IdofList,&
+    ! Set handle to restricted DOF list for test space
+    if (present(IdofsTest)) then
+      call storage_new('gfem_initGFEMSetByMatrix', 'IdofsTest',&
+          size(IdofsTest), ST_INT, rgroupFEMSet%h_IdofsTest,&
           ST_NEWBLOCK_NOINIT)
       
       ! Copy list of restricted DOFs
-      call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
-      call lalg_copyVector(IdofList, p_IdofList)
+      call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+      call lalg_copyVector(IdofsTest, p_IdofsTest)
       
+      ! DOF list for trial and test spaces are identical
+      if (rgroupFEMSet%bidenticalTrialAndTest)&
+          rgroupFEMSet%h_IdofsTrial = rgroupFEMSet%h_IdofsTest
+
+      ! Set specifier
+      rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
+    end if
+    
+    ! Set handle to restricted DOF list for trial space
+    if (present(IdofsTrial)) then
+      call storage_new('gfem_initGFEMSetByMatrix', 'IdofsTrial',&
+          size(IdofsTrial), ST_INT, rgroupFEMSet%h_IdofsTrial,&
+          ST_NEWBLOCK_NOINIT)
+      
+      ! Copy list of restricted DOFs
+      call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+      call lalg_copyVector(IdofsTrial, p_IdofsTrial)
+      
+      ! DOF list for trial and test spaces are identical
+      if (rgroupFEMSet%bidenticalTrialAndTest)&
+          rgroupFEMSet%h_IdofsTest = rgroupFEMSet%h_IdofsTrial
+
       ! Set specifier
       rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
     end if
     
   end subroutine gfem_initGFEMSetByMatrix
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_initGFEMSetByMatrixBdry(rgroupFEMSet, rmatrix,&
+      ncoeffsAtDiag, ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType,&
+      rregionTest, rregionTrial, brestrictToBoundary)
+
+!<description>
+    ! This subroutine initialises a set of degrees of freedom for
+    ! using the group finite element formulation indirectly by
+    ! deriving all information from the scalar template matrix.
+    !
+    ! This routine consideres only degrees of freedom for the test
+    ! AND trial spaces which are adjacent to the boundary regions
+    ! rregionTest and rregionTrial, respectively. If rregionTest
+    ! or rregionTrial is not present then no restriction applies to
+    ! the test and trial space, respectively.
+    !
+    ! If the optional argument brestrictToBoundary is true, then
+    ! an unrestricted test or trial space is restricted to the
+    ! whole boundary.
+!</description>
+
+!<input>
+    ! Scalar template matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Number of precomputed coefficients
+    integer, intent(in) :: ncoeffsAtDiag
+    integer, intent(in) :: ncoeffsAtNode
+    integer, intent(in) :: ncoeffsAtEdge
+
+    ! Type of assembly
+    integer, intent(in) :: cassembly
+
+    ! OPTIONAL: data type
+    ! If not present, ST_DOUBLE will be used
+    integer, intent(in), optional :: cdataType
+    
+    ! OPTIONAL: boundary regions for the test and trial spaces
+    type(t_boundaryRegion), intent(in), optional :: rregionTest
+    type(t_boundaryRegion), intent(in), optional :: rregionTrial
+
+    ! OPTIONAL: if present test and trial spaces which  are not
+    ! restricted by a boundary region are restricted to the whole boundary
+    logical, intent(in), optional :: brestrictToBoundary
+!</input>
+    
+!<output>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(out) :: rgroupFEMSet
+!</output>
+!</subroutine>
+    
+    ! local variable
+    integer, dimension(:), pointer :: p_IdofsTrial,p_IdofsTest
+    integer :: h_IdofsTest,h_IdofsTrial
+    logical :: bboundary
+    
+    bboundary = .false.
+    if (present(brestrictToBoundary)) bboundary=brestrictToBoundary
+
+    ! Initialise handles
+    h_IdofsTest  = ST_NOHANDLE
+    h_IdofsTrial = ST_NOHANDLE
+
+    ! Use rregionTest to restrict the test space?
+    if (present(rregionTest)) then
+      ! Calculate the list of DOF`s on the boundary region rregion
+      ! and use it to restrict the degrees of freedom of the test space
+      call bcasm_getDOFsInBDRegion(rmatrix%p_rspatialDiscrTest, rregionTest, h_IdofsTest)
+      call storage_getbase_int(h_IdofsTest, p_IdofsTest)
+    elseif (bboundary) then
+      ! Calculate the list of DOF`s on the boundary and use it to
+      ! restrict the degrees of freedom of the test space
+      call bcasm_getDOFsOnBoundary(rmatrix%p_rspatialDiscrTest, h_IdofsTest)
+      call storage_getbase_int(h_IdofsTest, p_IdofsTest)
+    end if
+
+    ! Use rregionTrial to restrict the trial space?
+    if (present(rregionTrial)) then
+      ! Calculate the list of DOF`s on the boundary region rregion
+      ! and use it to restrict the degrees of freedom of the trial space
+      call bcasm_getDOFsInBDRegion(rmatrix%p_rspatialDiscrTrial, rregionTrial, h_IdofsTrial)
+      call storage_getbase_int(h_IdofsTrial, p_IdofsTrial)
+    elseif (bboundary) then
+      ! Calculate the list of DOF`s on the boundary and use it to
+      ! restrict the degrees of freedom of the trial space
+      call bcasm_getDOFsOnBoundary(rmatrix%p_rspatialDiscrTrial, h_IdofsTrial)
+      call storage_getbase_int(h_IdofsTrial, p_IdofsTrial)
+    end if
+    
+    if (h_IdofsTest .ne. ST_NOHANDLE) then
+      if (h_IdofsTrial .ne. ST_NOHANDLE) then
+        ! Initialise group finite element set using different lists of
+        ! degrees of freedom for the trial and test space, respectively
+        call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
+            ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType, .false.,&
+            IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+        ! Free temporal memory
+        call storage_free(h_IdofsTest)
+        call storage_free(h_IdofsTrial)
+      else
+        ! Initialise group finite element set using the list of
+        ! degrees of freedom for the test space only
+        call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
+            ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType, .false.,&
+            IdofsTest=p_IdofsTest)
+        ! Free temporal memory
+        call storage_free(h_IdofsTest)
+      end if
+    else
+      if (h_IdofsTrial .ne. ST_NOHANDLE) then
+        ! Initialise group finite element set using the list of
+        ! degrees of freedom for the trial space only
+        call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
+            ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType, .false.,&
+            IdofsTrial=p_IdofsTrial)
+        ! Free temporal memory
+        call storage_free(h_IdofsTrial)
+      else
+        ! Initialise group finite element set without restriction
+        call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
+            ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType)
+      end if
+    end if
+    
+  end subroutine gfem_initGFEMSetByMatrixBdry
 
   ! ***************************************************************************
 
@@ -724,12 +968,16 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Release list of restricted DOFs
+    ! Release lists of restricted DOFs
     if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_DOFLIST)) then
-      if (rgroupFEMSet%h_IdofList .ne. ST_NOHANDLE)&
-          call storage_free(rgroupFEMSet%h_IdofList)
+      if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
+          call storage_free(rgroupFEMSet%h_IdofsTest)
+      if(.not.(rgroupFEMSet%bidenticalTrialAndTest) .and.&
+          rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE)&
+          call storage_free(rgroupFEMSet%h_IdofsTrial)
     end if
-    rgroupFEMSet%h_IdofList = ST_NOHANDLE
+    rgroupFEMSet%h_IdofsTest  = ST_NOHANDLE
+    rgroupFEMSet%h_IdofsTrial = ST_NOHANDLE
 
     ! Release diagonal structure
     if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_DIAGLIST)) then
@@ -909,6 +1157,7 @@ contains
             end if
           end if
         else
+          ! Resize array
           call storage_realloc('gfem_resizeGFEMSetDirect',&
               rgroupFEMSet%NA, rgroupFEMSet%h_InodeList,&
               ST_NEWBLOCK_NOINIT, .false.)
@@ -975,12 +1224,23 @@ contains
       !-----------------------------------------------------------------------
       if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE) then
         if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODELIST)) then
-          call storage_getsize(rgroupFEMSet%h_InodeListIdx, isize)
-          if (rgroupFEMSet%NEQ+1 .ne. isize) then
-            call output_line('Handle h_InodeListIdx '//&
-                'is shared and cannot be resized!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
-            call sys_halt()
+          call storage_getdimension(rgroupFEMSet%h_InodeListIdx, idimension)
+          if (idimension .eq. 1) then
+            call storage_getsize(rgroupFEMSet%h_InodeListIdx, isize)
+            if (rgroupFEMSet%NEQ+1 .ne. isize) then
+              call output_line('Handle h_InodeListIdx '//&
+                  'is shared and cannot be resized!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
+              call sys_halt()
+            end if
+          else
+            call storage_getsize(rgroupFEMSet%h_InodeListIdx, Isize2D)
+            if (rgroupFEMSet%NEQ+1 .ne. Isize2D(2)) then
+              call output_line('Handle h_InodeListIdx '//&
+                  'is shared and cannot be resized!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'gfem_resizeGFEMSetDirect')
+              call sys_halt()
+            end if
           end if
         else
           ! Resize array
@@ -1091,27 +1351,37 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix, IdofList)
+  subroutine gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix,&
+      bidenticalTrialAndTest, IdofsTest, IdofsTrial)
 
 !<description>
     ! This subroutine resizes a set of degrees of freedom for
     ! using the group finite element formulation indirectly by
     ! deriving all information from the scalar template matrix.
-    ! If IdofList is given, then its entries are used as degrees
-    ! of freedom to which the group finite elment set should be
-    ! restricted to. Note that shared data cannot be resized!
-    ! Moreover, specifying IdofList is only admissible if the
-    ! group finite element set rgroupFEMSet does not share a list
-    ! of restricted DOFs.
+    !
+    ! If IdofsTest AND IdofTrial are given, then the group finite
+    ! element set is restricted to the specified degrees of freedom in
+    ! test and trial space, respectively. By this mechanism, it is
+    ! possible to select only those degrees of freedom from the test
+    ! space (=rows in the matrix) located within a boundary region and
+    ! all neighbouring degrees of freedom along the boundary from the
+    ! trial space (=columns of the matrix). If only IdofsTest OR
+    ! IdofTrial are given, then it is assumed that no restriction
+    ! applies to the counterpart unless bidenticalTrialAndTest=TRUE.
 !</description>
 
 !<input>
     ! Scalar template matrix
     type(t_matrixScalar), intent(in) :: rmatrix
 
-    ! OPTIONAL: a list of degress of freedoms to which the
+    ! OPTIONAL: flag which states whether the restriction of degrees
+    ! of freedom from the test and trial spaces are identical
+    logical, intent(in), optional :: bidenticalTrialAndTest
+
+    ! OPTIONAL: lists of degress of freedoms to which the
     ! group finite element set should be restricted.
-    integer, dimension(:), intent(in), optional, target :: IdofList
+    integer, dimension(:), intent(in), optional, target :: IdofsTest
+    integer, dimension(:), intent(in), optional, target :: IdofsTrial
 !</input>
 
 !<inputoutput>
@@ -1121,43 +1391,153 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,neq,ncols,nedge
-
+    logical :: bisIdenticalTrialAndTest
+    
+    bisIdenticalTrialAndTest = .true.
+    if (present(bidenticalTrialAndTest))&
+        bisIdenticalTrialAndTest = bidenticalTrialAndTest
+    
+    if (bisIdenticalTrialAndTest .and.&
+        present (IdofsTest) .and. present(IdofsTrial)) then
+      call output_line('Different DOF lsit must not be given if '//&
+          'bidenticalTrialAndTest=TRUE!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfem_resizeGFEMSetByMatrix')
+      call sys_halt()
+    end if
+    
+    ! Set flag
+    rgroupFEMSet%bidenticalTrialAndTest = bisIdenticalTrialAndTest
+    
     ! Do we have a list of restricted DOFs?
-    if (present(IdofList)) then
+    if (present(IdofsTest) .or. present(IdofsTrial)) then
+
       ! Check if list of restricted DOFs is shared with another set
       if (check(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_DOFLIST)) then
         call output_line('List of restricted DOFs is not owned by structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_resizeGFEMSetByMatrix')
         call sys_halt()
-      else   
-        ! Calculate dimensions of matrix with restriction
-        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, IdofList)
 
-        ! Set handle to restricted DOF list
-        if (rgroupFEMSet%h_IdofList .eq. ST_NOHANDLE) then
-          call storage_new('gfem_resizeGFEMSetByMatrix', 'IdofList',&
-              size(IdofList), ST_INT, rgroupFEMSet%h_IdofList,&
-              ST_NEWBLOCK_NOINIT)
-        else
-          call storage_realloc('gfem_resizeGFEMSetByMatrix',&
-              size(IdofList), rgroupFEMSet%h_IdofList,&
-              ST_NEWBLOCK_NOINIT, .false.)
+      else
+
+        ! Calculate dimensions of matrix with restriction
+        if (present (IdofsTest) .and. present(IdofsTrial)) then
+          ! Use individual restrictions for trial and test space
+          call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+              IdofsTest=IdofsTest, IdofsTrial=IdofsTrial)
+        elseif (present (IdofsTest)) then
+          if (rgroupFEMSet%bidenticalTrialAndTest) then
+            ! Use IdofTest restriction for trial and test space
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofList=IdofsTest)
+          else
+            ! Use IdofList restriction only for test space and leave the
+            ! trial space unrestricted
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTest=IdofsTest)
+          end if
+        elseif (present (IdofsTrial)) then
+          if (rgroupFEMSet%bidenticalTrialAndTest) then
+            ! Use IdofTrial restriction for trial and test space
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofList=IdofsTrial)
+          else
+            ! Use IdofList restriction only for trial space and leave the
+            ! trial space unrestricted
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTrial=IdofsTrial)
+          end if
         end if
         
-        ! Copy list of restricted DOFs
-        call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
-        call lalg_copyVector(IdofList, p_IdofList)
-        
-        ! Set specifier
-        rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
+        ! Set handle to restricted DOF list for test space
+        if (present(IdofsTest)) then
+          if (rgroupFEMSet%h_IdofsTest .eq. ST_NOHANDLE) then
+            call storage_new('gfem_resizeGFEMSetByMatrix', 'IdofsTest',&
+                size(IdofsTest), ST_INT, rgroupFEMSet%h_IdofsTest,&
+                ST_NEWBLOCK_NOINIT)
+          else
+            call storage_realloc('gfem_resizeGFEMSetByMatrix',&
+                size(IdofsTest), rgroupFEMSet%h_IdofsTest,&
+                ST_NEWBLOCK_NOINIT, .false.)
+          end if
+          
+          ! Copy list of restricted DOFs
+          call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+          call lalg_copyVector(IdofsTest, p_IdofsTest)
+          
+          ! DOF list for trial and test spaces are identical
+          if (rgroupFEMSet%bidenticalTrialAndTest)&
+              rgroupFEMSet%h_IdofsTrial = rgroupFEMSet%h_IdofsTest
+          
+          ! Set specifier
+          rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
+        end if
+
+        ! Set handle to restricted DOF list for trial space
+        if (present(IdofsTrial)) then
+          if (rgroupFEMSet%h_IdofsTrial .eq. ST_NOHANDLE) then
+            call storage_new('gfem_resizeGFEMSetByMatrix', 'IdofsTrial',&
+                size(IdofsTrial), ST_INT, rgroupFEMSet%h_IdofsTrial,&
+                ST_NEWBLOCK_NOINIT)
+          else
+            call storage_realloc('gfem_resizeGFEMSetByMatrix',&
+                size(IdofsTrial), rgroupFEMSet%h_IdofsTrial,&
+                ST_NEWBLOCK_NOINIT, .false.)
+          end if
+          
+          ! Copy list of restricted DOFs
+          call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+          call lalg_copyVector(IdofsTrial, p_IdofsTrial)
+          
+          ! DOF list for trial and trial spaces are identical
+          if (rgroupFEMSet%bidenticalTrialAndTest)&
+              rgroupFEMSet%h_IdofsTest = rgroupFEMSet%h_IdofsTrial
+          
+          ! Set specifier
+          rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)
+        end if
       end if
       
     elseif (check(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST)) then
       ! Calculate dimensions of matrix with internally defined restriction
-      call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
-      call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, p_IdofList)
+
+      if (rgroupFEMSet%bidenticalTrialAndTest) then
+        call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+        ! Use p_IdofTest restriction for trial and test space
+        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+            IdofList=p_IdofsTest)
+      else
+        if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE) then
+          call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+          
+          if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE) then
+            call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+            ! Use individual restrictions for trial and test space
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+          else
+            ! Use p_IdofList restriction only for test space and leave the
+            ! trial space unrestricted
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTest=p_IdofsTest)
+          end if
+          
+        else
+          
+          if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE) then
+            call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+            ! Use p_IdofTrial restriction only for trial space and leave the
+            ! trial space unrestricted
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTrial=p_IdofsTrial)
+          else
+            ! Calculate dimensions of matrix without restriction
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
+          end if
+        end if
+      end if
+      
     else
       ! Calculate dimensions of matrix without restriction
       call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
@@ -1229,26 +1609,37 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_resizeGFEMBlockByMatrix(rgroupFEMBlock, rmatrix, IdofList)
+  subroutine gfem_resizeGFEMBlockByMatrix(rgroupFEMBlock, rmatrix,&
+      bidenticalTrialAndTest, IdofsTest, IdofsTrial)
 
 !<description>
     ! This subroutine resizes a block of sets of degrees of freedom
     ! for using the group finite element formulation indirectly by
     ! deriving all information from the scalar template matrix.
-    ! If IdofList is given, then its entries are used as degrees
-    ! of freedom to which the group finite elment set should be
-    ! restricted to. Note that IdofList is only admissible if the
-    ! blocks of group finite element sets rgroupFEMBlock do not
-    ! share a list of restricted DOFs.
+    !
+    ! If IdofsTest AND IdofTrial are given, then the group finite
+    ! element set is restricted to the specified degrees of freedom in
+    ! test and trial space, respectively. By this mechanism, it is
+    ! possible to select only those degrees of freedom from the test
+    ! space (=rows in the matrix) located within a boundary region and
+    ! all neighbouring degrees of freedom along the boundary from the
+    ! trial space (=columns of the matrix). If only IdofsTest OR
+    ! IdofTrial are given, then it is assumed that no restriction
+    ! applies to the counterpart unless bidenticalTrialAndTest=TRUE.
 !</description>
 
 !<input>
     ! Scalar template matrix
     type(t_matrixScalar), intent(in) :: rmatrix
     
-    ! OPTIONAL: a list of degress of freedoms to which the
+    ! OPTIONAL: flag which states whether the restriction of degrees
+    ! of freedom from the test and trial spaces are identical
+    logical, intent(in), optional :: bidenticalTrialAndTest
+
+    ! OPTIONAL: lists of degress of freedoms to which the
     ! group finite element set should be restricted.
-    integer, dimension(:), intent(in), optional :: IdofList
+    integer, dimension(:), intent(in), optional, target :: IdofsTest
+    integer, dimension(:), intent(in), optional, target :: IdofsTrial
 !</input>
 
 !<inputoutput>
@@ -1262,7 +1653,7 @@ contains
     
     do i = 1, rgroupFEMBlock%nblocks
       call gfem_resizeGroupFEMSet(rgroupFEMBlock%RgroupFEMBlock(i),&
-          rmatrix, IdofList)
+          rmatrix, bidenticalTrialAndTest, IdofsTest, IdofsTrial)
     end do
 
   end subroutine gfem_resizeGFEMBlockByMatrix
@@ -1327,14 +1718,42 @@ contains
       ! Remove existing data owned by the destination structure
       if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_DOFLIST)&
           .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_DOFLIST)) then
-        call storage_free(rgroupFEMSetDest%h_IdofList)
+        ! Do we have the same DOFs for test and trial space?
+        if (rgroupFEMSetDest%bidenticalTrialAndTest) then
+          if (rgroupFEMSetDest%h_IdofsTest .ne. ST_NOHANDLE) then
+            call storage_free(rgroupFEMSetDest%h_IdofsTest)
+            rgroupFEMSetDest%h_IdofsTrial = ST_NOHANDLE
+          end if
+        else
+          if (rgroupFEMSetDest%h_IdofsTest .ne. ST_NOHANDLE)&
+              call storage_free(rgroupFEMSetDest%h_IdofsTest)
+          if (rgroupFEMSetDest%h_IdofsTrial .ne. ST_NOHANDLE)&
+              call storage_free(rgroupFEMSetDest%h_IdofsTrial)
+        end if
       end if
       
       ! Copy content from source to destination structure
       if (check(rgroupFEMSetSrc%isetSpec, GFEM_HAS_DOFLIST)) then
-        call storage_copy(rgroupFEMSetSrc%h_IdofList,&
-            rgroupFEMSetDest%h_IdofList)
+        ! Do we have the same DOFs for test and trial space?
+        if (rgroupFEMSetSrc%bidenticalTrialAndTest) then
+          if (rgroupFEMSetSrc%h_IdofsTest .ne. ST_NOHANDLE) then
+            call storage_copy(rgroupFEMSetSrc%h_IdofsTest,&
+                rgroupFEMSetDest%h_IdofsTest)
+            rgroupFEMSetDest%h_IdofsTrial = rgroupFEMSetSrc%h_IdofsTrial
+          end if
+        else
+          if (rgroupFEMSetSrc%h_IdofsTest .ne. ST_NOHANDLE)&
+              call storage_copy(rgroupFEMSetSrc%h_IdofsTest,&
+              rgroupFEMSetDest%h_IdofsTest)
+          if (rgroupFEMSetSrc%h_IdofsTrial .ne. ST_NOHANDLE)&
+              call storage_copy(rgroupFEMSetSrc%h_IdofsTrial,&
+              rgroupFEMSetDest%h_IdofsTrial)
+        end if
       end if
+
+      ! Set flag of the destination structure
+      rgroupFEMSetDest%bidenticalTrialAndTest =&
+          rgroupFEMSetSrc%bidenticalTrialAndTest
       
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
@@ -1628,12 +2047,28 @@ contains
     if (check(idupFlag, GFEM_DUP_DOFLIST)) then
       ! Remove existing data owned by the destination structure
       if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_DOFLIST)&
-          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_DIAGLIST)) then
-        call storage_free(rgroupFEMSetDest%h_IdiagList)
+          .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_DOFLIST)) then
+        ! Do we have the same DOFs for test and trial space?
+        if (rgroupFEMSetDest%bidenticalTrialAndTest) then
+          if (rgroupFEMSetDest%h_IdofsTest .ne. ST_NOHANDLE) then
+            call storage_free(rgroupFEMSetDest%h_IdofsTest)
+            rgroupFEMSetDest%h_IdofsTrial = ST_NOHANDLE
+          end if
+        else
+          if (rgroupFEMSetDest%h_IdofsTest .ne. ST_NOHANDLE)&
+              call storage_free(rgroupFEMSetDest%h_IdofsTest)
+          if (rgroupFEMSetDest%h_IdofsTrial .ne. ST_NOHANDLE)&
+              call storage_free(rgroupFEMSetDest%h_IdofsTrial)
+        end if
       end if
       
       ! Copy handle from source to destination structure
-      rgroupFEMSetDest%h_IdofList = rgroupFEMSetSrc%h_IdofList
+      rgroupFEMSetDest%h_IdofsTest  = rgroupFEMSetSrc%h_IdofsTest
+      rgroupFEMSetDest%h_IdofsTrial = rgroupFEMSetSrc%h_IdofsTrial
+
+      ! Set flag of the destination structure
+      rgroupFEMSetDest%bidenticalTrialAndTest =&
+          rgroupFEMSetSrc%bidenticalTrialAndTest
 
       ! Adjust specifier of the destination structure
       rgroupFEMSetDest%isetSpec = ior(rgroupFEMSetDest%isetSpec,&
@@ -1650,7 +2085,7 @@ contains
       ! Remove existing data owned by the destination structure
       if (checkOwner(rgroupFEMSetDest%iduplicationFlag, GFEM_SHARE_DOFLIST)&
           .and.check(rgroupFEMSetDest%isetSpec, GFEM_HAS_DOFLIST)) then
-        call storage_free(rgroupFEMSetDest%h_IdofList)
+        call storage_free(rgroupFEMSetDest%h_IdiagList)
       end if
 
       ! Copy handle from source to destination structure
@@ -1890,7 +2325,7 @@ contains
     real(SP), dimension(:,:), pointer :: p_FcoeffsAtDiag,p_FcoeffsAtNode
     real(SP), dimension(:), pointer :: p_Fdata
     integer, dimension(:,:), pointer :: p_IedgeList,p_InodeList,p_IdiagList
-    integer, dimension(:), pointer :: p_Iposition,p_IdofList,p_InodeListIdx
+    integer, dimension(:), pointer :: p_Iposition
     integer, dimension(2) :: Isize2D
     integer, dimension(3) :: Isize3D
     integer :: cinit,ia,iedge,ieq,ii,ij,imatrix,ipos,ji,nmatrices,nmaxpos
@@ -1944,9 +2379,7 @@ contains
       end if
 
       ! Set pointers
-      call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
       if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .ne. 0) then
-        call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
         call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
       end if
       
@@ -2291,7 +2724,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,ncols,nedge,neq
     logical :: bexpensive
 
@@ -2320,8 +2753,24 @@ contains
         
       else   ! consider list of restricted DOFs
         
-        call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
-        call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge, p_IdofList)
+        call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+        call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+        if (associated(p_idofsTest)) then
+          if (associated(p_idofsTrial)) then
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+          else
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTest=p_IdofsTest)
+          end if
+        else
+          if (associated(p_idofsTrial)) then
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge,&
+                IdofsTrial=p_IdofsTrial)
+          else
+            call lsyssc_calcDimsFromMatrix(rmatrix, na, neq, ncols, nedge)
+          end if
+        end if
         
         ! Matrix/group finite element set must have the same size
         if ((rgroupFEMSet%NA    .ne. na)           .or.&
@@ -2399,7 +2848,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer :: na,ncols,nedge,neq
     logical :: bexpensive
     
@@ -2459,9 +2908,26 @@ contains
         
       else   ! consider list of restricted DOFs
         
-        call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
-        call lsyssc_calcDimsFromMatrix(rmatrix%RmatrixBlock(1,1),&
-            na, neq, ncols, nedge, p_IdofList)
+        call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+        call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+        if (associated(p_idofsTest)) then
+          if (associated(p_idofsTrial)) then
+            call lsyssc_calcDimsFromMatrix(rmatrix%RmatrixBlock(1,1),&
+                na, neq, ncols, nedge, IdofsTest=p_IdofsTest,&
+                IdofsTrial=p_IdofsTrial)
+          else
+            call lsyssc_calcDimsFromMatrix(rmatrix%RmatrixBlock(1,1),&
+                na, neq, ncols, nedge, IdofsTest=p_IdofsTest)
+          end if
+        else
+          if (associated(p_idofsTrial)) then
+            call lsyssc_calcDimsFromMatrix(rmatrix%RmatrixBlock(1,1),&
+                na, neq, ncols, nedge, IdofsTrial=p_IdofsTrial)
+          else
+            call lsyssc_calcDimsFromMatrix(rmatrix%RmatrixBlock(1,1),&
+                na, neq, ncols, nedge)
+          end if
+        end if
         
         ! Matrix/group finite element set must have the same size
         if ((rgroupFEMSet%NVAR  .ne. rmatrix%nblocksPerCol) .or.&
@@ -2673,7 +3139,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+  subroutine gfem_getbase_InodeListIdx1D(rgroupFEMSet, p_InodeListIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for the nodal structure
@@ -2701,7 +3167,41 @@ contains
     call storage_getbase_int(rgroupFEMSet%h_InodeListIdx,&
         p_InodeListIdx, rgroupFEMSet%NEQ+1)
 
-  end subroutine gfem_getbase_InodeListIdx
+  end subroutine gfem_getbase_InodeListIdx1D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_getbase_InodeListIdx2D(rgroupFEMSet, p_InodeListIdx)
+
+!<description>
+    ! Returns a pointer to the index pointer for the nodal structure
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the nodal index structure
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    integer, dimension(:,:), pointer :: p_InodeListIdx
+!</output>
+!</subroutine>
+
+    ! Do we have a node structure at all?
+    if (rgroupFEMSet%h_InodeListIdx .eq. ST_NOHANDLE) then
+      nullify(p_InodeListIdx)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_int2d(rgroupFEMSet%h_InodeListIdx,&
+        p_InodeListIdx, rgroupFEMSet%NEQ+1)
+    
+  end subroutine gfem_getbase_InodeListIdx2D
 
   !*****************************************************************************
 
@@ -3055,10 +3555,10 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
+  subroutine gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
 
 !<description>
-    ! Returns a pointer to the list of restricted DOFs
+    ! Returns a pointer to the list of restricted DOFs from test space
 !</description>
 
 !<input>
@@ -3067,22 +3567,55 @@ contains
 !</input>
 
 !<output>
-    ! Pointer to the list of restricted DOFs
+    ! Pointer to the list of restricted DOFs from test space
     ! NULL() if the structure rgroupFEMSet does not provide it.
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest
 !</output>
 !</subroutine>
 
     ! Do we have edge data at all?
-    if (rgroupFEMSet%h_IdofList .eq. ST_NOHANDLE) then
-      nullify(p_IdofList)
+    if (rgroupFEMSet%h_IdofsTest .eq. ST_NOHANDLE) then
+      nullify(p_IdofsTest)
       return
     end if
     
     ! Get the array
-    call storage_getbase_int(rgroupFEMSet%h_IdofList, p_IdofList)
+    call storage_getbase_int(rgroupFEMSet%h_IdofsTest, p_IdofsTest)
 
-  end subroutine gfem_getbase_IdofList
+  end subroutine gfem_getbase_IdofsTest
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
+
+!<description>
+    ! Returns a pointer to the list of restricted DOFs from trial space
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the list of restricted DOFs from trial space
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    integer, dimension(:), pointer :: p_IdofsTrial
+!</output>
+!</subroutine>
+
+    ! Do we have edge data at all?
+    if (rgroupFEMSet%h_IdofsTrial .eq. ST_NOHANDLE) then
+      nullify(p_IdofsTrial)
+      return
+    end if
+    
+    ! Get the array
+    call storage_getbase_int(rgroupFEMSet%h_IdofsTrial, p_IdofsTrial)
+
+  end subroutine gfem_getbase_IdofsTrial
 
   !*****************************************************************************
 
@@ -3090,7 +3623,7 @@ contains
 
   subroutine gfem_genNodeList(rmatrix, rgroupFEMSet)
 
-!<description>IdofList
+!<description>
     ! This subroutine stores the list of degress of freedom to the
     ! group finite element set. If no list of degrees of freedom is
     ! provided, then the corresponding data structure is deallocated.
@@ -3108,11 +3641,11 @@ contains
 !</subroutine>
 
     ! local variables
-    logical, dimension(:), allocatable :: BisActive
-    integer, dimension(:,:), pointer :: p_InodeList
-    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    logical, dimension(:), allocatable :: BisActiveRow,BisActiveColumn
+    integer, dimension(:,:), pointer :: p_InodeList2D,p_InodeListIdx2D
+    integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest,p_IdofsTrial
     integer, dimension(2) :: Isize2D
     integer :: idx,ieq,iidx,ij,isize,jcol
     
@@ -3171,11 +3704,11 @@ contains
         end if
         
         ! Set pointers
-        call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+        call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
         call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
         ! Initialise counter and index pointer
-        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+        idx = 1; iidx = 1; p_InodeListIdx1D(1) = 1
         
         ! Loop over all equations
         do ieq = 1, rmatrix%NEQ
@@ -3194,7 +3727,7 @@ contains
           end do
           
           ! Set starting position of new node
-          p_InodeListIdx(iidx) = idx
+          p_InodeListIdx1D(iidx) = idx
         end do
 
         ! Set state of structure
@@ -3246,7 +3779,8 @@ contains
     else   ! use list of DOFs for restriction
 
       ! Set pointer
-      call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
+      call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
+      call gfem_getbase_IdofsTrial(rgroupFEMSet, p_IdofsTrial)
       
       ! Allocate memory for node list if required
       if (rgroupFEMSet%h_InodeList .eq. ST_NOHANDLE) then
@@ -3267,75 +3801,88 @@ contains
       
       ! Allocate memory for index pointer to node list if required
       if (rgroupFEMSet%h_InodeListIdx .eq. ST_NOHANDLE) then
+        Isize2D = (/3,rgroupFEMSet%NEQ+1/)
         call storage_new('gfem_genNodeList', 'InodeListIdx',&
-            rgroupFEMSet%NEQ+1, ST_INT, rgroupFEMSet%h_InodeListIdx,&
+            Isize2D, ST_INT, rgroupFEMSet%h_InodeListIdx,&
             ST_NEWBLOCK_NOINIT)
       else
-        call storage_getsize(rgroupFEMSet%h_InodeListIdx, isize)
-        if (isize .ne. rgroupFEMSet%NEQ+1) then
+        call storage_getsize(rgroupFEMSet%h_InodeListIdx, Isize2D)
+        if (Isize2D(2) .ne. rgroupFEMSet%NEQ+1) then
           call storage_free(rgroupFEMSet%h_InodeListIdx)
+          Isize2D = (/3,rgroupFEMSet%NEQ+1/)
           call storage_new('gfem_genNodeList', 'InodeListIdx',&
-              rgroupFEMSet%NEQ+1, ST_INT, rgroupFEMSet%h_InodeListIdx,&
+              Isize2D, ST_INT, rgroupFEMSet%h_InodeListIdx,&
               ST_NEWBLOCK_NOINIT)
         end if
       end if
 
       ! Set pointers
-      call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
-      call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
+      call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
+      call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
 
       ! General node data structure
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
         
-        ! Generate set of active degrees of freedom
-        allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS))); BisActive=.false.
-        do idx = 1, size(p_IdofList)
-          BisActive(p_IdofList(idx))=.true.
-        end do
+        ! Generate set of active degrees of freedom for the test space
+        allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTest)) then
+          BisActiveRow=.false.
+          do idx = 1, size(p_IdofsTest)
+            BisActiveRow(p_IdofsTest(idx))=.true.
+          end do
+        else
+          BisActiveRow=.true.
+        end if
 
+        ! Generate set of active degrees of freedom for the trial space
+        allocate(BisActiveColumn(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTrial)) then
+          BisActiveColumn=.false.
+          do idx = 1, size(p_IdofsTrial)
+            BisActiveColumn(p_IdofsTrial(idx))=.true.
+          end do
+        else
+          BisActiveColumn=.true.
+        end if
+        
         ! Initialise counter and index pointer
-        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+        idx = 1; iidx = 1; p_InodeListIdx2D(1,1) = 1
 
         ! Loop over all equations
         do ieq = 1, rmatrix%NEQ
           
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(ieq)) cycle
+          if (.not.BisActiveRow(ieq)) cycle
+
+          ! Store equation number
+          p_InodeListIdx2D(2,iidx) = ieq
+          p_InodeListIdx2D(3,iidx) = rmatrix%NCOLS*(ieq-1)+ieq
 
           ! Increase index counter
           iidx = iidx+1
-
-          ! Set column number and matrix position corresponding to
-          ! equation number ieq, i.e. the one to which all other nodes
-          ! in the current row contribute
-          p_InodeList(1,idx) = ieq
-          p_InodeList(2,idx) = rmatrix%NCOLS*(ieq-1)+ieq
-
-          ! Increase counter
-          idx = idx+1
-
+          
           ! Loop over all matrix entries in current row
           do jcol = 1, rmatrix%NCOLS
             
             ! Check if this column belongs to an active DOF
-            if (.not.BisActive(jcol) .or. ieq.eq.jcol) cycle
+            if (.not.BisActiveColumn(jcol)) cycle
 
             ! Set column number and matrix position
-            p_InodeList(1,idx) = jcol
-            p_InodeList(2,idx) = rmatrix%NCOLS*(ieq-1)+jcol
+            p_InodeList2D(1,idx) = jcol
+            p_InodeList2D(2,idx) = rmatrix%NCOLS*(ieq-1)+jcol
             
             ! Increase counter
             idx = idx+1
           end do
-
+          
           ! Set starting position of new node
-          p_InodeListIdx(iidx) = idx
+          p_InodeListIdx2D(1,iidx) = idx
         end do
-               
+        
         ! Deallocate temporal memory
-        deallocate(BisActive)
-
+        deallocate(BisActiveRow,BisActiveColumn)
+        
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
                                     GFEM_HAS_NODELIST)
@@ -3346,47 +3893,67 @@ contains
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         
-        ! Generate set of active degrees of freedom
-        allocate(BisActive(rmatrix%NEQ)); BisActive=.false.
-        do idx = 1, size(p_IdofList)
-          BisActive(p_IdofList(idx))=.true.
-        end do
+        ! Generate set of active degrees of freedom for the test space
+        allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTest)) then
+          BisActiveRow=.false.
+          do idx = 1, size(p_IdofsTest)
+            BisActiveRow(p_IdofsTest(idx))=.true.
+          end do
+        else
+          BisActiveRow=.true.
+        end if
+
+        ! Generate set of active degrees of freedom for the trial space
+        allocate(BisActiveColumn(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTrial)) then
+          BisActiveColumn=.false.
+          do idx = 1, size(p_IdofsTrial)
+            BisActiveColumn(p_IdofsTrial(idx))=.true.
+          end do
+        else
+          BisActiveColumn=.true.
+        end if
 
         ! Initialise counter and index pointer
-        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+        idx = 1; iidx = 1; p_InodeListIdx2D(1,1) = 1
         
         ! Loop over all rows
         do ieq = 1, size(p_Kld)-1
 
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(ieq)) cycle
+          if (.not.BisActiveRow(ieq)) cycle
+
+          ! Store equation number
+          p_InodeListIdx2D(2,iidx) = ieq
+          p_InodeListIdx2D(3,iidx) = p_Kld(ieq)
 
           ! Increase index counter
           iidx = iidx+1
-
-          ! Loop over all matrix entries in current row
+          
+          ! Loop over all off-diagonal matrix entries in current row
           do ij = p_Kld(ieq), p_Kld(ieq+1)-1
 
             ! Get column number
             jcol = p_Kcol(ij)
 
             ! Check if this column belongs to an active DOF
-            if (.not.BisActive(jcol)) cycle
+            if (.not.BisActiveColumn(jcol)) cycle
 
             ! Set column number and matrix position
-            p_InodeList(1,idx) = jcol
-            p_InodeList(2,idx) = ij
+            p_InodeList2D(1,idx) = jcol
+            p_InodeList2D(2,idx) = ij
             
             ! Increase counter
             idx = idx+1
           end do
 
           ! Set starting position of new node
-          p_InodeListIdx(iidx) = idx
+          p_InodeListIdx2D(1,iidx) = idx
         end do
 
         ! Deallocate temporal memory
-        deallocate(BisActive)
+        deallocate(BisActiveRow,BisActiveColumn)
 
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
@@ -3399,70 +3966,67 @@ contains
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
         
-        ! Generate set of active degrees of freedom
-        allocate(BisActive(rmatrix%NEQ)); BisActive=.false.
-        do idx = 1, size(p_IdofList)
-          BisActive(p_IdofList(idx))=.true.
-        end do
-     
+        ! Generate set of active degrees of freedom for the test space
+        allocate(BisActiveRow(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTest)) then
+          BisActiveRow=.false.
+          do idx = 1, size(p_IdofsTest)
+            BisActiveRow(p_IdofsTest(idx))=.true.
+          end do
+        else
+          BisActiveRow=.true.
+        end if
+
+        ! Generate set of active degrees of freedom for the trial space
+        allocate(BisActiveColumn(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTrial)) then
+          BisActiveColumn=.false.
+          do idx = 1, size(p_IdofsTrial)
+            BisActiveColumn(p_IdofsTrial(idx))=.true.
+          end do
+        else
+          BisActiveColumn=.true.
+        end if
+
         ! Initialise counter and index pointer
-        idx = 1; iidx = 1; p_InodeListIdx(1) = 1
+        idx = 1; iidx = 1; p_InodeListIdx2D(1,1) = 1
         
         ! Loop over all rows
         do ieq = 1, size(p_Kld)-1
 
           ! Check if this row belongs to an active DOF
-          if (.not.BisActive(ieq)) cycle
+          if (.not.BisActiveRow(ieq)) cycle
+
+          ! Store equation number and absolute matrix position
+          p_InodeListIdx2D(2,iidx) = ieq
+          p_InodeListIdx2D(3,iidx) = p_Kdiagonal(ieq)
 
           ! Increase index counter
           iidx = iidx+1
-
-          ! Set row number and matrix position of diagonal entry
-          p_InodeList(1,idx) = p_Kcol(p_Kdiagonal(ieq))
-          p_InodeList(2,idx) = p_Kdiagonal(ieq)
-
-          ! Increase counter
-          idx = idx+1
           
-          ! Loop over all left off-diagonal matrix entries in current row
-          do ij = p_Kld(ieq), p_Kdiagonal(ieq)-1
-
+          ! Loop over all matrix entries in current row
+          do ij = p_Kld(ieq), p_Kld(ieq+1)-1
+            
             ! Get column number
             jcol = p_Kcol(ij)
-
+            
             ! Check if this column belongs to an active DOF
-            if (.not.BisActive(jcol)) cycle
-
+            if (.not.BisActiveColumn(jcol)) cycle
+                        
             ! Set column number and matrix position
-            p_InodeList(1,idx) = jcol
-            p_InodeList(2,idx) = ij
-
-            ! Increase counter
-            idx = idx+1
-          end do
-
-          ! Loop over all right off-diagonal matrix entries in current row
-          do ij = p_Kdiagonal(ieq)+1, p_Kld(ieq+1)-1
-            ! Get column number
-            jcol = p_Kcol(ij)
-
-            ! Check if this column belongs to an active DOF
-            if (.not.BisActive(jcol)) cycle
-
-            ! Set column number and matrix position
-            p_InodeList(1,idx) = jcol
-            p_InodeList(2,idx) = ij
-
+            p_InodeList2D(1,idx) = jcol
+            p_InodeList2D(2,idx) = ij
+            
             ! Increase counter
             idx = idx+1
           end do
 
           ! Set starting position of new node
-          p_InodeListIdx(iidx) = idx
+          p_InodeListIdx2D(1,iidx) = idx
         end do
 
         ! Deallocate temporal memory
-        deallocate(BisActive)
+        deallocate(BisActiveRow,BisActiveColumn)
 
         ! Set state of structure
         rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec,&
@@ -3514,7 +4078,7 @@ contains
 
     ! local variables
     !$ integer, dimension(:,:), pointer :: p_IedgeList
-    integer, dimension(:), pointer :: p_IedgeListIdx,p_IdofList
+    integer, dimension(:), pointer :: p_IedgeListIdx,p_IdofsTest
 
     ! Check if edge structure is owned by the structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGELIST) .eq.&
@@ -3546,15 +4110,25 @@ contains
 
     else
 
+      ! Check if the same restriction applies to the degrees of
+      ! freedom from the test and trial space. Otherwise, the
+      ! edge-based structure cannot be generated and a error thrown
+      if (.not.(rgroupFEMSet%bidenticalTrialAndTest)) then
+        call output_line('List of restricted DOFs must be identical '//&
+            ' for test and trial space!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_genEdgeList')
+        call sys_halt()
+      end if
+      
       ! Set pointer
-      call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
+      call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
       
       ! Generate edge list for a matrix which is structurally symmetric,
       ! i.e. edge (i,j) exists if and only if edge (j,i) exists without
       ! storing the diagonal edges (i,i).
       call lsyssc_genEdgeList(rmatrix, rgroupFEMSet%h_IedgeList,&
           LSYSSC_EDGELIST_NODESANDPOS, .true., .true., rgroupFEMSet%NEDGE,&
-          p_IdofList)
+          p_IdofsTest)
       
     end if
 
@@ -3595,7 +4169,7 @@ contains
 
   subroutine gfem_genDiagList(rmatrix, rgroupFEMSet)
 
-!<description>IdofList
+!<description>
     ! This subroutine stores the diagonal pointer
 !</description>
 
@@ -3613,7 +4187,7 @@ contains
     ! local variables
     logical, dimension(:), allocatable :: BisActive
     integer, dimension(:,:), pointer :: p_IdiagList
-    integer, dimension(:), pointer :: p_IdofList
+    integer, dimension(:), pointer :: p_IdofsTest
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer, dimension(2) :: Isize
     integer :: idx,ieq
@@ -3725,17 +4299,22 @@ contains
 
       ! Set pointer
       call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
-      call gfem_getbase_IdofList(rgroupFEMSet, p_IdofList)
+      call gfem_getbase_IdofsTest(rgroupFEMSet, p_IdofsTest)
       
       ! What matrix type are we?
       select case(rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX1)
 
         ! Generate set of active degrees of freedom
-        allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS))); BisActive=.false.
-        do idx = 1, size(p_IdofList)
-          BisActive(p_IdofList(idx))=.true.
-        end do
+        allocate(BisActive(max(rmatrix%NEQ,rmatrix%NCOLS)))
+        if (associated(p_IdofsTest)) then
+          BisActive=.false.
+          do idx = 1, size(p_IdofsTest)
+            BisActive(p_IdofsTest(idx))=.true.
+          end do
+        else
+          BisActive=.true.
+        end if
 
         ! Initialise index
         idx = 0
@@ -3773,11 +4352,16 @@ contains
         end if
         
         ! Generate set of active degrees of freedom
-        allocate(BisActive(rmatrix%NEQ)); BisActive=.false.
-        do idx = 1, size(p_IdofList)
-          BisActive(p_IdofList(idx))=.true.
-        end do
-
+        allocate(BisActive(rmatrix%NEQ))
+        if (associated(p_IdofsTest)) then
+          BisActive=.false.
+          do idx = 1, size(p_IdofsTest)
+            BisActive(p_IdofsTest(idx))=.true.
+          end do
+        else
+          BisActive=.true.
+        end if
+        
         ! Initialise index
         idx = 0
         
@@ -3850,7 +4434,9 @@ contains
     call output_line('ncoeffsAtDiag:       '//trim(sys_siL(rgroupFEMSet%ncoeffsAtDiag,15)))
     call output_line('ncoeffsAtNode:       '//trim(sys_siL(rgroupFEMSet%ncoeffsAtNode,15)))
     call output_line('ncoeffsAtEdge:       '//trim(sys_siL(rgroupFEMSet%ncoeffsAtEdge,15)))
-    call checkAndOutputHandle('IdofList:            ', rgroupFEMSet%h_IdofList)
+    call output_line('bidentTrialAndTest:  '//merge('TRUE ','FALSE', rgroupFEMSet%bidenticalTrialAndTest))
+    call checkAndOutputHandle('IdofsTest:           ', rgroupFEMSet%h_IdofsTest)
+    call checkAndOutputHandle('IdofsTrial:          ', rgroupFEMSet%h_IdofsTrial)
     call checkAndOutputHandle('IdiagList:           ', rgroupFEMSet%h_IdiagList)
     call checkAndOutputHandle('IedgeListIdx:        ', rgroupFEMSet%h_IedgeListIdx)
     call checkAndOutputHandle('IedgeList:           ', rgroupFEMSet%h_IedgeList)

@@ -894,7 +894,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
     integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    integer, dimension(:), pointer :: p_InodeList1D
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -964,22 +964,18 @@ contains
           ! Check if only a subset of the matrix is required
           if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
             ! Set pointers
-            call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
             
             ! Assemble operator node-by-node
             call doOperatorDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
-                p_InodeListIdx, p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale,&
-                bclear, p_Ddata)
+                p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           else
             ! Set pointers
-            call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
             
             ! Assemble selected part of the operator node-by-node
             call doOperatorDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
-                p_InodeListIdx, p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale,&
-                bclear, p_Ddata)
+                p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           end if
 
         case (LSYSSC_MATRIXD)
@@ -987,22 +983,18 @@ contains
           ! Check if only a subset of the matrix is required
           if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
             ! Set pointers
-            call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
             
             ! Assemble operator node-by-node
             call doOperatorDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
-                p_InodeListIdx, p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale,&
-                bclear, p_Ddata)
+                p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           else
             ! Set pointers
-            call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
             
             ! Assemble selected part of the operator node-by-node
             call doOperatorDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
-                p_InodeListIdx, p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale,&
-                bclear, p_Ddata)
+                p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           end if
 
         case default
@@ -1030,7 +1022,7 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDble(NEQ, NA, NVAR, MVAR, InodeListIdx, InodeList,&
+    subroutine doOperatorDble(NEQ, NA, NVAR, MVAR, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -1038,7 +1030,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
+      integer, dimension(:), intent(in) :: InodeList
       integer, intent(in) :: NEQ,NA,NVAR,MVAR
 
       ! input/output parameters
@@ -1138,7 +1130,7 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node without stabilisation
 
-    subroutine doOperatorDbleSel(NEQ, NA, NVAR, MVAR, InodeListIdx, InodeList,&
+    subroutine doOperatorDbleSel(NEQ, NA, NVAR, MVAR, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -1147,7 +1139,6 @@ contains
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: InodeList
-      integer, dimension(:), intent(in) :: InodeListIdx
       integer, intent(in) :: NEQ,NA,NVAR,MVAR
 
       ! input/output parameters
@@ -2878,8 +2869,8 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
-    integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    integer, dimension(:,:), pointer :: p_InodeListIdx2D,p_InodeList2D
+    integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -2944,21 +2935,21 @@ contains
         ! Check if only a subset of the vector is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
           ! Assemble vector node-by-node
           call doVectorDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
-              p_InodeListIdx, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
+              p_InodeListIdx1D, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
               dscale, bclear, p_Ddata)
         else
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
 
           ! Assemble selected part of the vector node-by-node
           call doVectorDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
-              p_InodeListIdx, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
+              p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
               dscale, bclear, p_Ddata)
         end if
         
@@ -3127,8 +3118,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: InodeListIdx
-      integer, dimension(:,:), intent(in) :: InodeList
+      integer, dimension(:,:), intent(in) :: InodeListIdx,InodeList
       integer, intent(in) :: NEQ,NVAR
 
       ! input/output parameters
@@ -3157,14 +3147,14 @@ contains
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -3178,7 +3168,7 @@ contains
         IAmax = IEQset
 
         ! Also initialise the absolute position of first nonzero entry
-        IApos = InodeListIdx(IEQset)
+        IApos = InodeListIdx(1,IEQset)
         
         ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
@@ -3195,11 +3185,11 @@ contains
           do while(IAmax .le. IEQmax)
 
             ! Exit if more than NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
+            if (InodeListIdx(1,IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
-            do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
+            do ia = InodeListIdx(1,IAmax), InodeListIdx(1,IAmax+1)-1
               
               ! Update local index
               idx = idx+1
@@ -3227,10 +3217,10 @@ contains
           do i = IAset, IAmax-1
             
             ! Get actual node number
-            ieq = InodeList(1,InodeListIdx(i))
+            ieq = InodeListIdx(2,i)
             
             ! Loop over all contributions to this equation
-            do ia = InodeListIdx(i), InodeListIdx(i+1)-1
+            do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
               
               ! Update local index
               idx = idx+1
@@ -3242,7 +3232,7 @@ contains
           
           ! Proceed with next nonzero entries in current set
           IAset = IAmax
-          IApos = InodeListIdx(IASet)
+          IApos = InodeListIdx(1,IASet)
           
         end do
       end do
@@ -3317,8 +3307,8 @@ contains
     type(t_vectorBlock) :: rxBlock,rvectorBlock
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
-    integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeListIdx,p_InodeList1D
+    integer, dimension(:,:), pointer :: p_InodeListIdx2D,p_InodeList2D
+    integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -3383,19 +3373,19 @@ contains
         ! Check if only a subset of the vector is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
           ! Assemble vector node-by-node
-          call doVectorDble(rx%NEQ, rx%NVAR, p_InodeListIdx, p_InodeList1D,&
+          call doVectorDble(rx%NEQ, rx%NVAR, p_InodeListIdx1D, p_InodeList1D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         else
           ! Set pointers
-          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx)
+          call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
 
           ! Assemble selected part of the vector node-by-node
-          call doVectorDbleSel(rx%NEQ, rx%NVAR, p_InodeListIdx, p_InodeList2D,&
+          call doVectorDbleSel(rx%NEQ, rx%NVAR, p_InodeListIdx2D, p_InodeList2D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         end if
         
@@ -3564,8 +3554,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
       real(DP), intent(in) :: dscale
       logical, intent(in) :: bclear
-      integer, dimension(:), intent(in) :: InodeListIdx
-      integer, dimension(:,:), intent(in) :: InodeList
+      integer, dimension(:,:), intent(in) :: InodeListIdx,InodeList
       integer, intent(in) :: NEQ,NVAR
 
       ! input/output parameters
@@ -3594,14 +3583,14 @@ contains
 
       ! Loop over all equations in blocks of size NEQSIM
       !$omp do schedule(static,1)
-      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
         ! Get the maximum equation number, such that we handle 
         ! at most NEQSIM equations by one OpenMP thread.
 
-        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
         
         ! Since the number of nonzero entries per equation is not
         ! fixed we need to iterate over all equations in the current
@@ -3615,7 +3604,7 @@ contains
         IAmax = IEQset
 
         ! Also initialise the absolute position of first nonzero entry
-        IApos = InodeListIdx(IEQset)
+        IApos = InodeListIdx(1,IEQset)
         
         ! Repeat until all equation in the current set have been processed
         do while (IAset .le. IEQmax)
@@ -3632,11 +3621,11 @@ contains
           do while(IAmax .le. IEQmax)
 
             ! Exit if more than NASIM nonzero entries would be processed
-            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
+            if (InodeListIdx(1,IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
             
             ! Loop through all nonzero matrix entries in the current
             ! equation and prepare the auxiliary arrays for it
-            do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
+            do ia = InodeListIdx(1,IAmax), InodeListIdx(1,IAmax+1)-1
               
               ! Update local index
               idx = idx+1
@@ -3664,10 +3653,10 @@ contains
           do i = IAset, IAmax-1
             
             ! Get actual node number
-            ieq = InodeList(1,InodeListIdx(i))
+            ieq = InodeListIdx(2,i)
             
             ! Loop over all contributions to this equation
-            do ia = InodeListIdx(i), InodeListIdx(i+1)-1
+            do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
               
               ! Update local index
               idx = idx+1
@@ -3679,7 +3668,7 @@ contains
           
           ! Proceed with next nonzero entries in current set
           IAset = IAmax
-          IApos = InodeListIdx(IASet)
+          IApos = InodeListIdx(1,IASet)
           
         end do
       end do
