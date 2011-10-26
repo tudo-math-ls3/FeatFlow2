@@ -89,6 +89,7 @@ module bcassembly
   use fsystem
   use genoutput
   use meshregion
+  use mprimitives
   use perfconfig
   use sort
   use spatialdiscretisation
