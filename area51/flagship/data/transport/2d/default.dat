@@ -27,6 +27,12 @@ DiffusionGFEM = 2
 # Position of the template group finite element block
 TemplateGFEM = 3
 
+# Position of the group finite element block for the primal boundary
+PrimalBdrGFEM = 4
+
+# Position of the group finite element block for the dual boundary
+DualBdrGFEM = 5
+
 # Position of the stabilization for the convective term
 ConvectionAFC = 1
 
