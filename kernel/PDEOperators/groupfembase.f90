@@ -15,6 +15,7 @@
 !#     -> Initialises a group finite element structure.
 !#
 !# 1a.) gfem_initGroupFEMSetBoundary = gfem_initGFEMSetByMatrixBdr
+!#      -> Initialises a group finite element structure on the boundary
 !#
 !# 2.) gfem_initGroupFEMBlock
 !#     -> Initialises a block of group finite element structures.
@@ -28,6 +29,9 @@
 !# 5.) gfem_resizeGroupFEMSet = gfem_resizeGFEMSetDirect /
 !#                              gfem_resizeGFEMSetByMatrix
 !#     -> Resizes a group finite element structure.
+!#
+!# 5a.) gfem_resizeGroupFEMSetBoundary = gfem_resizeGFEMSetByMatrixBdr
+!#     -> Resizes a group finite element structure on the boundary
 !#
 !# 6.) gfem_resizeGroupFEMBlock = gfem_resizeGFEMBlockDirect /
 !#                                gfem_resizeGFEMBlockByMatrix
@@ -45,7 +49,8 @@
 !# 10.) gfem_duplicateGroupFEMBlock
 !#      -> Duplicates a block of group finite element structures
 !#
-!# 11.)  gfem_initCoeffsFromMatrix
+!# 11.)  gfem_initCoeffsFromMatrix = gfem_initCoeffsFromMatrix1 /
+!#                                   gfem_initCoeffsFromMatrix2
 !#       -> Initialises precomputed coefficients from matrix
 !#
 !# 12.) gfem_isMatrixCompatible = gfem_isMatrixCompatibleSc /
@@ -164,6 +169,7 @@ module groupfembase
   public :: gfem_releaseGroupFEMSet
   public :: gfem_releaseGroupFEMBlock
   public :: gfem_resizeGroupFEMSet
+  public :: gfem_resizeGroupFEMSetBoundary
   public :: gfem_resizeGroupFEMBlock
   public :: gfem_copyGroupFEMSet
   public :: gfem_copyGroupFEMBlock
@@ -517,9 +523,18 @@ module groupfembase
     module procedure gfem_resizeGFEMSetByMatrix
   end interface
 
+  interface gfem_resizeGroupFEMSetBoundary
+    module procedure gfem_resizeGFEMSetByMatrixBdry
+  end interface
+
   interface gfem_resizeGroupFEMBlock
     module procedure gfem_resizeGFEMBlockDirect
     module procedure gfem_resizeGFEMBlockByMatrix
+  end interface
+
+  interface gfem_initCoeffsFromMatrix
+    module procedure gfem_initCoeffsFromMatrix1
+    module procedure gfem_initCoeffsFromMatrix2
   end interface
 
   interface gfem_isMatrixCompatible
@@ -1572,6 +1587,119 @@ contains
 
 !<subroutine>
 
+  subroutine gfem_resizeGFEMSetByMatrixBdry(rgroupFEMSet, rmatrix,&
+      rregionTest, rregionTrial, brestrictToBoundary)
+
+!<description>
+    ! This subroutine resizes a set of degrees of freedom for
+    ! using the group finite element formulation indirectly by
+    ! deriving all information from the scalar template matrix.
+    !
+    ! This routine consideres only degrees of freedom for the test
+    ! AND trial spaces which are adjacent to the boundary regions
+    ! rregionTest and rregionTrial, respectively. If rregionTest
+    ! or rregionTrial is not present then no restriction applies to
+    ! the test and trial space, respectively.
+    !
+    ! If the optional argument brestrictToBoundary is true, then
+    ! an unrestricted test or trial space is restricted to the
+    ! whole boundary.
+!</description>
+
+!<input>
+    ! Scalar template matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+    
+    ! OPTIONAL: boundary regions for the test and trial spaces
+    type(t_boundaryRegion), intent(in), optional :: rregionTest
+    type(t_boundaryRegion), intent(in), optional :: rregionTrial
+
+    ! OPTIONAL: if present test and trial spaces which  are not
+    ! restricted by a boundary region are restricted to the whole boundary
+    logical, intent(in), optional :: brestrictToBoundary
+!</input>
+    
+!<inputoutput>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
+!</innputoutput>
+!</subroutine>
+
+    ! local variable
+    integer, dimension(:), pointer :: p_IdofsTrial,p_IdofsTest
+    integer :: h_IdofsTest,h_IdofsTrial
+    logical :: bboundary
+    
+    bboundary = .false.
+    if (present(brestrictToBoundary)) bboundary=brestrictToBoundary
+
+    ! Initialise handles
+    h_IdofsTest  = ST_NOHANDLE
+    h_IdofsTrial = ST_NOHANDLE
+
+    ! Use rregionTest to restrict the test space?
+    if (present(rregionTest)) then
+      ! Calculate the list of DOF`s on the boundary region rregion
+      ! and use it to restrict the degrees of freedom of the test space
+      call bcasm_getDOFsInBDRegion(rmatrix%p_rspatialDiscrTest, rregionTest, h_IdofsTest)
+      call storage_getbase_int(h_IdofsTest, p_IdofsTest)
+    elseif (bboundary) then
+      ! Calculate the list of DOF`s on the boundary and use it to
+      ! restrict the degrees of freedom of the test space
+      call bcasm_getDOFsOnBoundary(rmatrix%p_rspatialDiscrTest, h_IdofsTest)
+      call storage_getbase_int(h_IdofsTest, p_IdofsTest)
+    end if
+
+    ! Use rregionTrial to restrict the trial space?
+    if (present(rregionTrial)) then
+      ! Calculate the list of DOF`s on the boundary region rregion
+      ! and use it to restrict the degrees of freedom of the trial space
+      call bcasm_getDOFsInBDRegion(rmatrix%p_rspatialDiscrTrial, rregionTrial, h_IdofsTrial)
+      call storage_getbase_int(h_IdofsTrial, p_IdofsTrial)
+    elseif (bboundary) then
+      ! Calculate the list of DOF`s on the boundary and use it to
+      ! restrict the degrees of freedom of the trial space
+      call bcasm_getDOFsOnBoundary(rmatrix%p_rspatialDiscrTrial, h_IdofsTrial)
+      call storage_getbase_int(h_IdofsTrial, p_IdofsTrial)
+    end if
+    
+    if (h_IdofsTest .ne. ST_NOHANDLE) then
+      if (h_IdofsTrial .ne. ST_NOHANDLE) then
+        ! Resize group finite element set using different lists of
+        ! degrees of freedom for the trial and test space, respectively
+        call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix, .false.,&
+            IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+        ! Free temporal memory
+        call storage_free(h_IdofsTest)
+        call storage_free(h_IdofsTrial)
+      else
+        ! Resize group finite element set using the list of
+        ! degrees of freedom for the test space only
+        call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix, .false.,&
+            IdofsTest=p_IdofsTest)
+        ! Free temporal memory
+        call storage_free(h_IdofsTest)
+      end if
+    else
+      if (h_IdofsTrial .ne. ST_NOHANDLE) then
+        ! Resize group finite element set using the list of
+        ! degrees of freedom for the trial space only
+        call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix, .false.,&
+            IdofsTrial=p_IdofsTrial)
+        ! Free temporal memory
+        call storage_free(h_IdofsTrial)
+      else
+        ! Resize group finite element set without restriction
+        call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix)
+      end if
+    end if
+
+  end subroutine gfem_resizeGFEMSetByMatrixBdry
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine gfem_resizeGFEMBlockDirect(rgroupFEMBlock, NA, NEQ, NEDGE)
 
 !<description>
@@ -2285,8 +2413,52 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
+  
+  subroutine gfem_initCoeffsFromMatrix1(rgroupFEMSet, rmatrix, iposition,&
+      cinitcoeffs)
 
-  subroutine gfem_initCoeffsFromMatrix(rgroupFEMSet, Rmatrices, Iposition,&
+!<description>
+    ! This subroutine initialises the arrays of precomputed
+    ! coefficient with the data given by the matrices. Depending on
+    ! the type of assembly, the coefficients are stored in
+    ! CoeffsAtNode, CoefssAtDiag and/or CoeffsAtEdge.
+!</description>
+
+!<input>
+    ! Scalar coefficient matrices
+    type(t_matrixScalar), intent(in) :: rmatrix
+    
+    ! OPTIONAL: integer which indicate the positions of the given
+    ! matrices. If this parameter is not given, then the matrix is
+    ! stored at position one.
+    integer, intent(in), optional :: iposition
+
+    ! OPTIONAL: specifier that determines which coefficient arrays
+    ! sould be initialised. If not given, then the decision is based
+    ! on the assembly type specified in the group finite element set
+    integer, intent(in), optional :: cinitcoeffs
+!</input>
+
+!<inputoutpu>
+    ! group finite element set
+    type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
+!</inputoutput>
+!</subroutine>
+
+    if (present(iposition)) then
+      call gfem_initCoeffsFromMatrix2(rgroupFEMSet, (/rmatrix/), (/iposition/),&
+          cinitcoeffs)
+    else
+      call gfem_initCoeffsFromMatrix2(rgroupFEMSet, (/rmatrix/), (/iposition/))
+    end if
+
+  end subroutine gfem_initCoeffsFromMatrix1
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_initCoeffsFromMatrix2(rgroupFEMSet, Rmatrices, Iposition,&
       cinitcoeffs)
 
 !<description>
@@ -2353,7 +2525,7 @@ contains
     ! Check if array Rmatrices and Iposition have the same size
     if (nmatrices .ne. size(p_Iposition)) then
       call output_line('size(Rmatrices) /= size(Iposition)!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
       call sys_halt()
     end if
     
@@ -2366,7 +2538,7 @@ contains
       ! Check if structure provides node-based structure and coefficient array
       if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_NODELIST) .eq. 0) then
         call output_line('Group finite element set does not provide required data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end if
       
@@ -2374,7 +2546,7 @@ contains
       call storage_getsize(rgroupFEMSet%h_CoeffsAtNode, Isize2D)
       if (Isize2D(1) .lt. nmaxpos) then
         call output_line('NMAXPOS exceeds dimension of CoeffsAtNode!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end if
 
@@ -2438,7 +2610,7 @@ contains
             
           case default
             call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
             call sys_halt()
           end select
         end do
@@ -2499,7 +2671,7 @@ contains
             
           case default
             call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
             call sys_halt()
           end select
         end do
@@ -2509,7 +2681,7 @@ contains
         
       case default
         call output_line('Unsupported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end select
     end if
@@ -2525,7 +2697,7 @@ contains
       if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
           (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end if
 
@@ -2534,7 +2706,7 @@ contains
       call storage_getsize(rgroupFEMSet%h_CoeffsAtEdge, Isize3D)
       if ((Isize2D(1) .lt. nmaxpos) .or. (Isize3D(1) .lt. nmaxpos)) then
         call output_line('NMAXPOS exceeds dimension of CoeffsAtDiag/CoefssAtEdge!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end if
 
@@ -2602,7 +2774,7 @@ contains
 
           case default
             call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
             call sys_halt()
           end select
         end do
@@ -2670,7 +2842,7 @@ contains
 
           case default
             call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+                OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
             call sys_halt()
           end select
         end do
@@ -2681,12 +2853,12 @@ contains
         
       case default
         call output_line('Unsupported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfem_initCoeffsFromMatrix2')
         call sys_halt()
       end select
     end if
 
-  end subroutine gfem_initCoeffsFromMatrix
+  end subroutine gfem_initCoeffsFromMatrix2
 
   !*****************************************************************************
 
