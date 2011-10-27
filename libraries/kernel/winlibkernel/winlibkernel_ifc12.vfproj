@@ -89,6 +89,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_sdcoefficient.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_ufci.inc"/></Filter>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassembly.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassemblybase.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bilinearformevaluation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\boundaryaux.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretebc.f90"/>
