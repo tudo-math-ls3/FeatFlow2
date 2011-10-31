@@ -142,7 +142,7 @@
 # ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv3.fbconf
 # ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv3.fbconf
 # ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt3_lv3.fbconf
-# ./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv3.fbconf
+# ./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt4_lv3.fbconf
 
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt1_lv4.fbconf
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 6000 ./tests/cc2d_bench2_q2_reference4_dt2_lv4.fbconf
@@ -158,3 +158,49 @@
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt2_lv6.fbconf
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt3_lv6.fbconf
 # ./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --vmem 10000 ./tests/cc2d_bench2_q2_reference4_dt4_lv6.fbconf
+
+#./bin/lido_schedule_tests2 -w 03:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q1t_org_reference4_dt1_lv6.fbconf
+#./bin/lido_schedule_tests2 -w 06:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q1t_org_reference4_dt2_lv6.fbconf
+#./bin/lido_schedule_tests2 -w 12:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q1t_org_reference4_dt3_lv6.fbconf
+
+#./bin/lido_schedule_tests2 -w 08:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q2_reference4_dt1_lv6.fbconf
+#./bin/lido_schedule_tests2 -w 16:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q2_reference4_dt2_lv6.fbconf
+#./bin/lido_schedule_tests2 -w 32:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q2_reference4_dt3_lv6.fbconf
+#./bin/lido_schedule_tests2 -w 48:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q2_reference4_dt4_lv6.fbconf
+
+# Still missing:
+#./bin/lido_schedule_tests2 -w 24:00:00 --consecutive --altmake 1 -c 2 --email michael.koester@mathematik.tu-dortmund.de --vmem 4000 ./tests/cc2d_bench2_q1t_org_reference4_dt4_lv6.fbconf
+
+
+
+# 10h | 1h
+#./bin/lido_schedule_tests2 -w 01:00:00 --altmake 1 --email michael.koester@mathematik.tu-dortmund.de -c 2 cc2d_bench2_reference_q1t_org2_step4_dt1-lv3-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt2-lv3-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt3-lv3-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt4-lv3-DTMIN1
+
+# 48h | 6h
+#./bin/lido_schedule_tests2 -w 06:00:00 --altmake 1 --email michael.koester@mathematik.tu-dortmund.de -c 2 cc2d_bench2_reference_q1t_org2_step4_dt1-lv4-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt2-lv4-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt3-lv4-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt4-lv4-DTMIN1
+
+# 220h | 30h
+#./bin/lido_schedule_tests2 -w 30:00:00 --altmake 1 --email michael.koester@mathematik.tu-dortmund.de -c 2 cc2d_bench2_reference_q1t_org2_step4_dt1-lv5-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt2-lv5-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt3-lv5-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt4-lv5-DTMIN1
+
+# 1000h | 150h
+#./bin/lido_schedule_tests2 -w 150:00:00 --altmake 1 --email michael.koester@mathematik.tu-dortmund.de -c 2 cc2d_bench2_reference_q1t_org2_step4_dt1-lv6-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt2-lv6-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt3-lv6-DTMIN1 cc2d_bench2_reference_q1t_org2_step4_dt4-lv6-DTMIN1
+
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt1_lv3.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv3.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv3.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt1_lv4.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv4.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv4.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt1_lv5.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv5.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv5.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt1_lv6.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv6.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt1_lv6.fbconf
+#
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt2_lv3.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv3.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv3.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt2_lv4.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv4.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv4.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt2_lv5.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv5.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv5.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt2_lv6.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv6.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt2_lv6.fbconf
+#
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt3_lv3.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv3.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv3.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt3_lv4.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv4.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv4.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt3_lv5.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv5.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv5.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt3_lv6.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv6.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt3_lv6.fbconf
+#
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt4_lv3.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv3.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv3.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt4_lv4.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv4.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv4.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt4_lv5.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv5.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv5.fbconf
+#./bin/generate_tests.pl ./tests/cc2d_bench2_reference_q1t_org2_step4_dt4_lv6.fbgen ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv6.fbdef ./tests/cc2d_bench2_q1t_org2_reference4_dt4_lv6.fbconf

@@ -1,0 +1,86 @@
+# Base name of the test-set. Shall be unique.
+
+testname = cc2d_bench2_reference_q1t_org2_step4_dt4-lv5
+
+# Test-id for the tests.
+# ="": Determine test-id automatically (default)
+
+testid = cc2d_bench2_reference_q1t_org2_step4_dt4-lv$(LV)-DTMIN$(%DTMIN)
+
+# A comment for the test which may take several lines. Each line must end
+# with a double-backslash if the comment continues in the next line.
+# the comment is included with comment characters at the beginning of the file.
+
+comment = bench1 reference calculation. Test example 3.
+
+# Application
+# If empty (""), this is not printed.
+
+appl = cc2d
+
+# Test class.
+# If empty (""), this is not printed.
+
+class = DEFAULT
+
+# An optional description of the test set.
+# May optionally contain references to the variables below.
+
+descr = cc2d_bench2_reference, Q2, Level $(LV), Step 1, Substep $(%DTMIN)
+
+# Data file that is used by the application to provide parameters.
+# May optionally contain references to the variables below.
+
+# sinus-type inflow.
+
+datfile = "./data/apps_cc2d/master_bench.dat"
+
+# Name + Path of one or multiple include file which is included prior to 
+# every test. If multiple include files are to be defined, there must be
+# one line "testinclude = "..." " for each include file.
+# May optionally contain references to the variables below.
+
+testinclude = "cc2d_bench1.defaults"
+
+# The variables.
+#
+# Constants
+
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_CWRITEFINALSOLUTION. = 2
+
+# Special smoother
+
+LINEARSOLVER_ISMOOTHERTYPE = 2
+SMOOTHER_DOMEGA = 1.0
+
+# Special settings for this subtest
+#
+# STEP 4
+# ------
+# Final step. We finally compute 10 seconds on each level with timestep 
+# size 1/1600. This gives us the reference result.
+
+DISCRETISATION_IUPWIND. = 0
+DISCRETISATION_DUPSAM. = 0.0
+TIMEDISCRETISATION_DTIMESTEP. = 0.000625
+
+# Read the previous solution if it exists
+#
+# PREVIOUSINDEX~ = `expr $(%DTMIN) - 1`
+# PREVIOUSDIR~ = "cc2d_bench2_reference_q1t_org_step1-lv$(LV)-DTMIN$(PREVIOUSINDEX)"
+# DISCRETISATION_CTYPEINITIALSOLUTION. = `expr 2 \\* \\( $(%DTMIN) \\> 1 \\)`
+
+LV:MGLEVELS = 5
+
+DISCRETISATION_CTYPEINITIALSOLUTION = 2
+DISCRETISATION_SINITIALSOLUTIONFILENAME. = "./logs/$(PREVIOUSDIR)/solution"
+
+DTMIN:TIMEDISCRETISATION_DTIMEINIT = 0.0
+STEPSIZE~ = 10
+TIMEDISCRETISATION_DTIMEMAX. = 10.0
+
+DISCRETISATION_IINITIALSOLUTIONLEVEL. = 0
+PREVIOUSINDEX~ = `expr $(%DTMIN) - 1`
+PREVIOUSDIR!~ = "cc2d_bench2_reference_q1t_org_step3-lv$(LV)-DTMIN120", \
+  "cc2d_bench2_reference_q1t_org2_step4_dt4-lv$(LV)-DTMIN$(PREVIOUSINDEX)"

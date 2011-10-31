@@ -1,0 +1,87 @@
+# Base name of the test-set. Shall be unique.
+
+testname = cc2d_bench3_reference_q1t_org
+
+# Test-id for the tests.
+# ="": Determine test-id automatically (default)
+
+testid = cc2d_bench3_reference_q1t_org-lv$(LV)-DTMIN$(%DTMIN)
+
+# A comment for the test which may take several lines. Each line must end
+# with a double-backslash if the comment continues in the next line.
+# the comment is included with comment characters at the beginning of the file.
+
+comment = bench1 reference calculation. Test example 3.
+
+# Application
+# If empty (""), this is not printed.
+
+appl = cc2d
+
+# Test class.
+# If empty (""), this is not printed.
+
+class = DEFAULT
+
+# An optional description of the test set.
+# May optionally contain references to the variables below.
+
+descr = cc2d_bench3_reference, Q2, Level $(LV), Substep $(%DTMIN)
+
+# Data file that is used by the application to provide parameters.
+# May optionally contain references to the variables below.
+
+# sinus-type inflow.
+
+datfile = "./data/apps_cc2d/master_bench_sin.dat"
+
+# Name + Path of one or multiple include file which is included prior to 
+# every test. If multiple include files are to be defined, there must be
+# one line "testinclude = "..." " for each include file.
+# May optionally contain references to the variables below.
+
+testinclude = "cc2d_bench3.defaults"
+
+# The variables.
+#
+# Constants
+
+# 8 seconds simulation time, small timestep.
+TIMEDISCRETISATION_DTIMESTEP. = 0.000625
+
+# Crank-Nicolson, time dependent.
+TIMEDISCRETISATION_ITIMEDEPENDENCE. = 1
+TIMEDISCRETISATION_DTIMESTEPTHETA. = 0.5
+
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.025
+
+# Q2/QP1, no stabilisation
+DISCRETISATION_IELEMENTTYPE. = 4
+DISCRETISATION_IUPWIND. = 0
+DISCRETISATION_DUPSAM. = 0.0
+
+# Solver settings
+LINEARSOLVER_ISMOOTHERTYPE. = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE. = 2
+SMOOTHER_DOMEGA. = 1.0
+
+NONLINEAR_ITYPEPRECONDITIONING. = 2
+NONLINEAR_DEPSD. = 1E-12
+NONLINEAR_DEPSDIV. = 1E-12
+
+# Actual test configuration
+
+# Level
+LV:MGLEVELS = 1
+
+# Start/End-time
+DTMIN:TIMEDISCRETISATION_DTIMEINIT = 0.0
+TIMEDISCRETISATION_DTIMEMAX. = 8.0
+
+# Read the previous solution if it exists
+PREVIOUSINDEX~ = `expr $(%DTMIN) - 1`
+PREVIOUSDIR~ = "cc2d_bench3_reference_q1t_org-lv$(LV)-DTMIN$(PREVIOUSINDEX)"
+
+DISCRETISATION_CTYPEINITIALSOLUTION. = `expr 2 \\* \\( $(%DTMIN) \\> 1 \\)`
+DISCRETISATION_SINITIALSOLUTIONFILENAME. = "./logs/$(PREVIOUSDIR)/solution"
+DISCRETISATION_CWRITEFINALSOLUTION. = 2
