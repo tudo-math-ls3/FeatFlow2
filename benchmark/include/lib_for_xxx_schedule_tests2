@@ -1287,7 +1287,6 @@ fb_createBenchmarkJobfileForAll()
   
   # 2.) Get the basic LOG directory
   LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
-  LOG_FILE=$PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
   
   # 3.) Get a temp filename for ID's.
   tempidfile="`fb_createTempFBConf`"
@@ -1305,9 +1304,16 @@ fb_createBenchmarkJobfileForAll()
   for testid in $ALLTESTS
     do
       # Convert to benchmark jobfiles.
+      
+      # Get the source file of the test
       sourcefile="$tempfilename.$testid"
+      
       if test -f "$sourcefile"
         then
+          # Get the corresponding LOG file
+          LOG_FILE=$PWD/$LOG_BASE_DIRECTORY/output.$testid
+
+          # Get the filename of the jobfile and create a script
           fb_getJobfileName $testid 0
           fb_scriptToBenchmarkJobfile "$sourcefile" "$JOBFILE" "$LOG_FILE"
           
