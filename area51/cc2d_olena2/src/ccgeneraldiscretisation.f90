@@ -2043,6 +2043,12 @@ contains
             rproblem%RlevelInfo(ilev)%rasmTempl%rmatrixMassPressure,&
             fcoeff_solProjection,rcollection)
         
+        ! Concentration
+        rcollection%IquickAccess(1) = 4
+        call anprj_analytL2projectionByMass (rvector1%RvectorBlock(4),&
+            rproblem%RlevelInfo(ilev)%rasmTempl%rmatrixMassConcentration,&
+            fcoeff_solProjection,rcollection)
+
         ! rvector2 is not needed anymore, as well as the temporary discretisation.
         call lsysbl_releaseVector (rvector2)
         call spdiscr_releaseBlockDiscr (rdiscretisationInitSol)
@@ -2241,6 +2247,47 @@ contains
             call output_line(&
                 'Cannot compute L2 projection, solver broke down. Using zero!')
             call lsysbl_clearVector (rvector)
+
+
+          else
+            ! -----
+            ! Finally for the concentration. For that one we have to reinitialise the solver,
+            ! the matrices,...
+            call lsysbl_releaseVector (rsingleRHS)
+            call lsysbl_releaseVector (rsingleSol)
+            call lsysbl_releaseVector (rvector2)
+            call lsysbl_releaseMatrix (Rmatrices(1))
+
+            if (rproblem%MSHOW_Initialisation .ge. 1) &
+              call output_line('Solving L2 projection for C...')
+
+            ! Attach a new matrix.
+            call lsysbl_createMatFromScalar(&
+                rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixConcentration,Rmatrices(1))
+
+            call linsol_doneData (p_rsolverNode,ierror)
+            call linsol_doneStructure (p_rsolverNode,ierror)
+
+            call linsol_setMatrices (p_rsolverNode,Rmatrices)
+            
+            call linsol_initStructure (p_rsolverNode,ierror)
+            call linsol_initData (p_rsolverNode,ierror)
+            
+            ! Create references to the pressure part and solve.
+            call lsysbl_createVecFromScalar(rvector1%RvectorBlock(4),rsingleRHS)
+            call lsysbl_createVecFromScalar(rvector%RvectorBlock(4),rsingleSol)
+            call lsysbl_duplicateVector (rsingleSol,rvector2,&
+                LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+            
+            call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
+       
+            if (p_rsolverNode%iresult .ne. 0) then
+              ! Cancel, there is something wrong.
+              call output_line(&
+                  'Cannot compute L2 projection, solver broke down. Using zero!')
+              call lsysbl_clearVector (rvector)
+            end if
+
           end if
         end if
       end if
