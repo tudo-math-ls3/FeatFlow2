@@ -2263,7 +2263,7 @@ contains
 
             ! Attach a new matrix.
             call lsysbl_createMatFromScalar(&
-                rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixConcentration,Rmatrices(1))
+                rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassConcentration,Rmatrices(1))
 
             call linsol_doneData (p_rsolverNode,ierror)
             call linsol_doneStructure (p_rsolverNode,ierror)
