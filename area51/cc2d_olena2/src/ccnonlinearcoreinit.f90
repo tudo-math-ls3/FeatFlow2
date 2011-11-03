@@ -1412,11 +1412,13 @@ contains
     ! Check if we have Neumann boundary components. If not, the matrices
     ! may have to be changed, depending on the solver.
     rprecSpecials%bneedPressureDiagonalBlock = &
-      .not. rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary
+      (.not. rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary)
 
     ! If there are no Neumann BC`s, the pressure is indefinite.
+    ! If dmu is nonzero, the pressure is definite!
     rprecSpecials%bpressureIndefinite = &
-      .not. rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary
+      (.not. rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary) &
+      .and. (rproblem%rphysics%dmuWeight .eq. 0.0_DP)
 
   end subroutine
 
