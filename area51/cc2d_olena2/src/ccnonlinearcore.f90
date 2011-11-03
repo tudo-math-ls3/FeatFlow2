@@ -1566,7 +1566,7 @@ contains
       ! local variables
       real(DP), dimension(5) :: Dresiduals
       real(DP) :: dresOld,drhoNL,ddelP,ddelU,dtmp,dresU,dresDIV,dres,dresINIT,dresC
-      real(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES,depsC,ddelC
+      real(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES,depsC,ddelC,depsCR
       integer, dimension(5) :: Cnorms
 
       ! Calculate norms of the solution/defect vector
