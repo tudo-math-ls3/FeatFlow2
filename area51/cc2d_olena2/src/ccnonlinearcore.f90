@@ -475,7 +475,7 @@ module ccnonlinearcore
     real(DP), dimension(5) :: DresidualCorr = 0.0_DP
     
     ! Auxiliary variable: Convergence criteria of the nonlinear solver
-    real(DP), dimension(6) :: DepsNL = 0.0_DP
+    real(DP), dimension(7) :: DepsNL = 0.0_DP
     
     ! Auxiliary variable: Last calculated damping parameter
     real(DP) :: domegaNL = 0.0_DP
@@ -1026,7 +1026,7 @@ contains
     type(t_vectorBlock) :: rtemp1,rtemp2
     integer :: ierror
     type(t_linsolNode), pointer :: p_rsolverNode,p_rcgrSolver
-    integer, dimension(3) :: Cnorms
+    integer, dimension(4) :: Cnorms
     
     integer :: i
     real(DP) :: dresInit,dres,dtempdef
@@ -1566,7 +1566,7 @@ contains
       ! local variables
       real(DP), dimension(5) :: Dresiduals
       real(DP) :: dresOld,drhoNL,ddelP,ddelU,dtmp,dresU,dresDIV,dres,dresINIT,dresC
-      real(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES,depsC
+      real(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES,depsC,ddelC
       integer, dimension(5) :: Cnorms
 
       ! Calculate norms of the solution/defect vector
@@ -1659,6 +1659,10 @@ contains
         dtmp = Dresiduals(3)
         if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
         ddelP = rnonlinearIteration%DresidualCorr(3)/dtmp
+
+        dtmp = Dresiduals(4)
+        if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
+        ddelC = rnonlinearIteration%DresidualCorr(4)/dtmp
         
         ! Check if the nonlinear iteration can prematurely terminate.
         !        
@@ -1670,13 +1674,14 @@ contains
         depsPR  = rnonlinearIteration%DepsNL(4)
         depsRES = rnonlinearIteration%DepsNL(5)*dresINIT ! -> ddampingD
         depsC   = rnonlinearIteration%DepsNL(6)
+        depsCR  = rnonlinearIteration%DepsNL(7)
         
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
         bdivergence = .not. (dres/dresINIT .lt. 1E5)
         
         ! Check for convergence
-        if((ddelU .le. depsUR) .and. (ddelP .le. depsPR).and. &
+        if((ddelU .le. depsUR) .and. (ddelP .le. depsPR).and. (ddelC .le. depsCR).and.&
            (dresU .le. depsD)  .and. (dresC .le. depsC) .and. &
            (dresDiv .le. depsDiv) .and. (dres .le. depsRES)) then
           bconvergence = .true.

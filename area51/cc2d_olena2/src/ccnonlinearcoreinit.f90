@@ -349,6 +349,9 @@ contains
 
     call parlst_getvalue_double (p_rsection, 'depsC', &
                                  rnonlinearIteration%DepsNL(6), 0.1_DP)
+
+    call parlst_getvalue_double (p_rsection, 'depsCR', &
+                                 rnonlinearIteration%DepsNL(7), 0.1_DP)
       
     ! Set up a filter that modifies the block vectors/matrix
     ! according to boundary conditions. This filter chain is applied to each
