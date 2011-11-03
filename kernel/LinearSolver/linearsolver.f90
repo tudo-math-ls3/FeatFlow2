@@ -707,6 +707,7 @@ module linearsolver
   end interface
   
   public :: linsol_initProjMultigrid2Level
+  public :: linsol_initProjMultigrid2
 
 ! *****************************************************************************
 ! *****************************************************************************
