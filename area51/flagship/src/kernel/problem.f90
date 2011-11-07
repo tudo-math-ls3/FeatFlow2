@@ -61,6 +61,9 @@
 !# 16.) problem_setSpec
 !#      -> Sets the problem specification of one or more levels
 !#
+!# 17.) problem_combineDescriptors
+!#      -> Combine two different problem descriptors
+!#
 !# </purpose>
 !##############################################################################
 
@@ -103,6 +106,7 @@ module problem
   public :: problem_infoLevel
   public :: problem_getLevel
   public :: problem_setSpec
+  public :: problem_combineDescriptors
 
   !*****************************************************************************
 
@@ -1318,4 +1322,71 @@ contains
 
   end subroutine problem_setSpec
 
+  !*****************************************************************************
+
+!<function>
+
+  function problem_combineDescriptors(rproblemDescriptor1,&
+                                      rproblemDescriptor2) result(rproblemDescriptor)
+
+!<description>
+    ! This function combines the given problem descriptors into a new
+    ! one which comprises both descriptors.
+!</description>
+  
+!<input>
+    ! Problem descriptors to be combined
+    type(t_problemDescriptor), intent(in) :: rproblemDescriptor1,rproblemDescriptor2
+!</input>
+
+!<result>
+    ! Combined problem descriptor
+    type(t_problemDescriptor) :: rproblemDescriptor
+!</result>
+!</function>
+
+    ! Spatial dimension
+    if (rproblemDescriptor1%ndimension .ne. rproblemDescriptor2%ndimension) then
+      call output_line('Spatial dimensions must be identical!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'problem_combineDescriptors')
+      call sys_halt()
+    else
+      rproblemDescriptor%ndimension = rproblemDescriptor1%ndimension
+    end if
+
+    ! Triangulation
+    if ((rproblemDescriptor1%trifile .ne. rproblemDescriptor2%trifile) .or.&
+        (rproblemDescriptor1%prmfile .ne. rproblemDescriptor2%prmfile)) then
+      call output_line('Triangulations must be identical!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'problem_combineDescriptors')
+      call sys_halt()
+    else
+      rproblemDescriptor%trifile = rproblemDescriptor1%trifile
+      rproblemDescriptor%prmfile = rproblemDescriptor1%prmfile
+    end if
+    
+    ! Minimum/maximum problem level
+    rproblemDescriptor%nlmax = max(rproblemDescriptor1%nlmax,&
+                                   rproblemDescriptor2%nlmax)
+    rproblemDescriptor%nlmin = min(rproblemDescriptor1%nlmin,&
+                                   rproblemDescriptor2%nlmin)
+
+    ! Discretisations, etc.
+    rproblemDescriptor%ndiscretisation = max(rproblemDescriptor1%ndiscretisation,&
+                                             rproblemDescriptor2%ndiscretisation)
+    rproblemDescriptor%nafcstab        = max(rproblemDescriptor1%nafcstab,&
+                                             rproblemDescriptor2%nafcstab)
+    rproblemDescriptor%ngroupfemBlock  = max(rproblemDescriptor1%ngroupfemBlock,&
+                                             rproblemDescriptor2%ngroupfemBlock)
+    rproblemDescriptor%nmatrixScalar   = max(rproblemDescriptor1%nmatrixScalar,&
+                                             rproblemDescriptor2%nmatrixScalar)
+    rproblemDescriptor%nmatrixBlock    = max(rproblemDescriptor1%nmatrixBlock,&
+                                             rproblemDescriptor2%nmatrixBlock)
+    rproblemDescriptor%nvectorScalar   = max(rproblemDescriptor1%nvectorScalar,&
+                                             rproblemDescriptor2%nvectorScalar)
+    rproblemDescriptor%nvectorBlock    = max(rproblemDescriptor1%nvectorBlock,&
+                                             rproblemDescriptor2%nvectorBlock)
+
+
+  end function problem_combineDescriptors
 end module problem
