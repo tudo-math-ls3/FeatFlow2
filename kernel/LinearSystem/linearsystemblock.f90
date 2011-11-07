@@ -2815,8 +2815,8 @@ contains
   integer :: i
   
   if (rx%h_Ddata .eq. ST_NOHANDLE) then
-    call output_line('Releasing unused vector.',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_releaseVector')
+    call output_line('Releasing unused vector!',&
+        OU_CLASS_WARNING,OU_MODE_STD,'lsysbl_releaseVector')
   end if
   
   ! Release the data - if the handle is not a copy of another vector!

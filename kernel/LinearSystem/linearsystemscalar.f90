@@ -9457,7 +9457,7 @@ contains
 
   if (rvector%h_Ddata .eq. ST_NOHANDLE) then
     call output_line('Releasing unused vector!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_releaseVector')
+        OU_CLASS_WARNING,OU_MODE_STD,'lsyssc_releaseVector')
   end if
   
   ! Clean up the data structure.
