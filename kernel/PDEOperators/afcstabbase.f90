@@ -52,12 +52,10 @@
 !# 12.) afcstab_getbase_IsubdiagEdge
 !#      -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 13.) afcstab_getbase_DcoeffsAtEdge = afcstab_getbase_DcoeffsAtEdge /
-!#                                      afcstab_getbase_FcoeffsAtEdge
+!# 13.) afcstab_getbase_DcoeffsAtEdge / afcstab_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 14.) afcstab_getbase_DboundsAtEdge = afcstab_getbase_DboundsAtEdge /
-!#                                      afcstab_getbase_FboundsAtEdge
+!# 14.) afcstab_getbase_DboundsAtEdge / afcstab_getbase_FboundsAtEdge
 !#      -> Returns pointer to the bounds at edges
 !#
 !# 15.) afcstab_genEdgeList
@@ -69,66 +67,81 @@
 !# 17.) afcstab_genExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 18.) afcstab_copyH2D_IedgeList
-!#      -> Copies the edge structure from the host memory
-!#         to the device memory.
-!#
-!# 19.) afcstab_copyD2H_IedgeList
-!#      -> Copies the edge structure from the device memory
-!#         to the host memory.
-!#
-!# 20.) afcstab_allocInternalData
+!# 18.) afcstab_allocInternalData
 !#      -> Allocates internal data of the stabilisation structure
 !#
-!# 21.) afcstab_allocEdgeStructure
+!# 19.) afcstab_allocEdgeStructure
 !#      -> Allocates the edge data structure
 !#
-!# 22.) afcstab_allocCoeffsAtEdge
+!# 20.) afcstab_allocCoeffsAtEdge
 !#      -> Allocates the coefficients at edge data structure
 !#
-!# 23.) afcstab_allocVectorsPQR
+!# 21.) afcstab_allocVectorsPQR
 !#      -> Allocates the nodal vectors P, Q, and R each for '+' and '-'
 !#
-!# 24.) afcstab_allocFlux
+!# 22.) afcstab_allocFlux
 !#      -> Allocates the edge-wise flux vector flux
 !#
-!# 25.) afcstab_allocFlux0
+!# 23.) afcstab_allocFlux0
 !#      -> Allocates the edge-wise flux vector flux0
 !#
-!# 26.) afcstab_allocFluxPrel
+!# 24.) afcstab_allocFluxPrel
 !#      -> Allocates the edge-wise flux vector fluxPrel
 !#
-!# 27.) afcstab_allocAlpha
+!# 25.) afcstab_allocAlpha
 !#      -> Allocates the edge-wise correction factors alpha
 !#
-!# 28.) afcstab_allocBoundsAtEdge
+!# 26.) afcstab_allocBoundsAtEdge
 !#      -> Allocates the bounds at edge data structure
 !#
-!# 29.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
+!# 27.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
 !#                               afcstab_buildBoundsLPT2D /
 !#                               afcstab_buildBoundsLPT3D
 !#
-!# 30.) afcstab_limit = afcstab_limitUnboundedDble /
+!# 28.) afcstab_limit = afcstab_limitUnboundedDble /
 !#                      afcstab_limitUnboundedSngl /
 !#                      afcstab_limitBoundedDble /
 !#                      afcstab_limitBoundedSngl
 !#      -> Compute the nodal correction factors, i.e., the ratio of
 !#         admissible solution increments and raw antidiffusion
 !#
-!# 31.) afcstab_combineFluxes = afcstab_combFluxesDble /
+!# 29.) afcstab_combineFluxes = afcstab_combFluxesDble /
 !#                              afcstab_combFluxesSngl
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 32.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
+!# 30.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 33.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
+!# 31.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
 !#                                  afcstab_upwindOrientationSngl
 !#      -> Swap edge orientation so that the starting edge is located upwind
 !#
-!# 34.) afcstab_infoStabilisation
+!# 32.) afcstab_infoStabilisation
 !#      -> Outputs information about the stabilisation structure
 !#
+!# 33.) afcstab_copyH2D_IedgeListIdx
+!#      -> Copies the edge index structure from the host memory
+!#         to the device memory.
+!#
+!# 34.) afcstab_copyD2H_IedgeListIdx
+!#      -> Copies the edge index structure from the device memory
+!#         to the host memory.
+!#
+!# 35.) afcstab_copyH2D_IedgeList
+!#      -> Copies the edge structure from the host memory
+!#         to the device memory.
+!#
+!# 36.) afcstab_copyD2H_IedgeList
+!#      -> Copies the edge structure from the device memory
+!#         to the host memory.
+!#
+!# 37.) afcstab_copyH2D_CoeffsAtEdge
+!#      -> Copies the edge data from the host memory
+!#         to the device memory.
+!#
+!# 38.) afcstab_copyD2H_CoeffsAtEdge
+!#      -> Copies the edge structure from the device memory
+!#         to the host memory.
 !# </purpose>
 !##############################################################################
 module afcstabbase
@@ -167,17 +180,13 @@ module afcstabbase
   public :: afcstab_getbase_IsubdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdge
   public :: afcstab_getbase_DcoeffsAtEdge
-  public :: afcstab_getbase_DboundsAtEdge
   public :: afcstab_getbase_FcoeffsAtEdge
+  public :: afcstab_getbase_DboundsAtEdge
   public :: afcstab_getbase_FboundsAtEdge
 
   public :: afcstab_genEdgeList
   public :: afcstab_genOffdiagEdges
   public :: afcstab_genExtSparsity
-
-  public :: afcstab_copyD2H_IedgeList
-  public :: afcstab_copyH2D_IedgeList
-
   public :: afcstab_buildBoundsLPT
 
   public :: afcstab_allocInternalData
@@ -195,6 +204,13 @@ module afcstabbase
   public :: afcstab_combineFluxesDble
   public :: afcstab_combineFluxesSngl
   public :: afcstab_upwindOrientation
+
+  public :: afcstab_copyD2H_IedgeListIdx
+  public :: afcstab_copyH2D_IedgeListIdx
+  public :: afcstab_copyD2H_IedgeList
+  public :: afcstab_copyH2D_IedgeList
+  public :: afcstab_copyD2H_CoeffsAtEdge
+  public :: afcstab_copyH2D_CoeffsAtEdge
    
   ! *****************************************************************************
 
@@ -729,7 +745,7 @@ module afcstabbase
     integer :: h_IsubdiagEdges = ST_NOHANDLE
 
     ! Handle to coefficient at edge structure
-    integer :: h_CoefficientsAtEdge = ST_NOHANDLE
+    integer :: h_CoeffsAtEdge = ST_NOHANDLE
 
     ! Handle to bounds at edges (i.e. off-diagonal entries)
     integer :: h_BoundsAtEdge = ST_NOHANDLE
@@ -970,9 +986,9 @@ contains
 
     ! Release edge values
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES) .and.&
-        (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE))&
-        call storage_free(rafcstab%h_CoefficientsAtEdge)
-    rafcstab%h_CoefficientsAtEdge = ST_NOHANDLE
+        (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE))&
+        call storage_free(rafcstab%h_CoeffsAtEdge)
+    rafcstab%h_CoeffsAtEdge = ST_NOHANDLE
 
     ! Release edge bounds
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEBOUNDS) .and.&
@@ -1439,18 +1455,18 @@ contains
 
       ! Resize array of edge data and clear specification
       !-------------------------------------------------------------------------
-      if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+      if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)) then
-          call storage_getsize(rafcstab%h_CoefficientsAtEdge, Isize2D)
+          call storage_getsize(rafcstab%h_CoeffsAtEdge, Isize2D)
           if (rafcstab%NEDGE .ne. Isize2D(2)) then
-            call output_line('Handle h_CoefficientsAtEdge '//&
+            call output_line('Handle h_CoeffsAtEdge '//&
                 'is shared and cannot be resized!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
             call sys_halt()
           end if
         else
           call storage_realloc('afcstab_resizeStabDirect',&
-              rafcstab%NEDGE, rafcstab%h_CoefficientsAtEdge,&
+              rafcstab%NEDGE, rafcstab%h_CoeffsAtEdge,&
               ST_NEWBLOCK_NOINIT, .false.)
 
           ! Reset specifier
@@ -1759,8 +1775,8 @@ contains
     if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)) then
       ! Copy content from source to destination structure
-      call storage_copy(rafcstabSrc%h_CoefficientsAtEdge,&
-          rafcstabDest%h_CoefficientsAtEdge)
+      call storage_copy(rafcstabSrc%h_CoeffsAtEdge,&
+          rafcstabDest%h_CoeffsAtEdge)
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES))
@@ -2064,9 +2080,9 @@ contains
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)) then
       ! Remove existing data owned by the destination structure
       if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_EDGEVALUES)))&
-          call storage_free(rafcstabDest%h_CoefficientsAtEdge)
+          call storage_free(rafcstabDest%h_CoeffsAtEdge)
       ! Copy handle from source to destination structure
-      rafcstabDest%h_CoefficientsAtEdge = rafcstabSrc%h_CoefficientsAtEdge
+      rafcstabDest%h_CoeffsAtEdge = rafcstabSrc%h_CoeffsAtEdge
       ! Adjust specifier of the destination structure
       rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
           iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES))
@@ -2547,7 +2563,7 @@ contains
     call checkAndOutputHandle('IsuperdiagEdgesIdx:             ', rafcstab%h_IsuperdiagEdgesIdx)
     call checkAndOutputHandle('IsubdiagEdgesIdx:               ', rafcstab%h_IsubdiagEdgesIdx)
     call checkAndOutputHandle('IsubdiagEdges:                  ', rafcstab%h_IsubdiagEdges)
-    call checkAndOutputHandle('CoefficientsAtEdge:             ', rafcstab%h_CoefficientsAtEdge)
+    call checkAndOutputHandle('CoefficientsAtEdge:             ', rafcstab%h_CoeffsAtEdge)
     call checkAndOutputHandle('BoundsAtEdge:                   ', rafcstab%h_BoundsAtEdge)
 
     if (associated(rafcstab%p_rvectorAlpha)) then
@@ -2889,14 +2905,14 @@ contains
 !</subroutine>
 
     ! Do we have double-valued edge data at all?
-    if ((rafcstab%h_CoefficientsAtEdge .eq. ST_NOHANDLE) .or.&
+    if ((rafcstab%h_CoeffsAtEdge .eq. ST_NOHANDLE) .or.&
         (rafcstab%NEDGE                .eq. 0)) then
       nullify(p_DcoefficientsAtEdge)
       return
     end if
     
     ! Get the array
-    call storage_getbase_double2D(rafcstab%h_CoefficientsAtEdge,&
+    call storage_getbase_double2D(rafcstab%h_CoeffsAtEdge,&
         p_DcoefficientsAtEdge, rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_DcoeffsAtEdge
@@ -2924,14 +2940,14 @@ contains
 !</subroutine>
 
     ! Do we have double-valued edge data at all?
-    if ((rafcstab%h_CoefficientsAtEdge .eq. ST_NOHANDLE) .or.&
+    if ((rafcstab%h_CoeffsAtEdge .eq. ST_NOHANDLE) .or.&
         (rafcstab%NEDGE                .eq. 0)) then
       nullify(p_FcoefficientsAtEdge)
       return
     end if
     
     ! Get the array
-    call storage_getbase_single2D(rafcstab%h_CoefficientsAtEdge,&
+    call storage_getbase_single2D(rafcstab%h_CoeffsAtEdge,&
         p_FcoefficientsAtEdge, rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_FcoeffsAtEdge
@@ -3286,61 +3302,6 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_IedgeList(rafcstab, btranspose)
-
-!<description>
-    ! This subroutine copies the edge structure from the
-    ! host memory to the memory of the coprocessor device. If no
-    ! device is available, then an error is thrown.
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
-!</input>
-!</subroutine>
-
-
-    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
-
-  end subroutine afcstab_copyH2D_IedgeList
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_copyD2H_IedgeList(rafcstab, btranspose)
-
-!<description>
-    ! This subroutine copies the edge structure from the
-    ! memory of the coprocessor device to the host memory. If no
-    ! device is available, then an error is thrown.
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
-!</input>
-!</subroutine>
-
-    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
-
-  end subroutine afcstab_copyD2H_IedgeList
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine afcstab_allocInternalData(rafcstab, ballocCoefficients,&
       rblockDiscretisation, rdiscretisation)
     
@@ -3627,10 +3588,10 @@ contains
 
     rafcstab%ncoeffsAtEdge = ncoeffsAtEdge
     Isize = (/rafcstab%ncoeffsAtEdge, rafcstab%NEDGE/)
-    if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_CoefficientsAtEdge)
+    if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_CoeffsAtEdge)
     call storage_new('afcstab_allocCoeffsAtEdge', 'DcoefficientsAtEdge',&
-        Isize, cType, rafcstab%h_CoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
+        Isize, cType, rafcstab%h_CoeffsAtEdge, ST_NEWBLOCK_NOINIT)
     
     ! Set ownership
     rafcstab%iduplicationFlag = iand(rafcstab%iduplicationFlag,&
@@ -6213,5 +6174,167 @@ contains
     end select
     
   end subroutine afcstab_upwindOrientationSngl
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyH2D_IedgeListIdx(rafcstab, btranspose)
+
+!<description>
+    ! This subroutine copies the edge index structure from the
+    ! host memory to the memory of the coprocessor device. If no
+    ! device is available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine afcstab_copyH2D_IedgeListIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyD2H_IedgeListIdx(rafcstab, btranspose)
+
+!<description>
+    ! This subroutine copies the edge index structure from the
+    ! memory of the coprocessor device to the host memory. If no
+    ! device is available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine afcstab_copyD2H_IedgeListIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyH2D_IedgeList(rafcstab, btranspose)
+
+!<description>
+    ! This subroutine copies the edge structure from the
+    ! host memory to the memory of the coprocessor device. If no
+    ! device is available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IedgeList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine afcstab_copyH2D_IedgeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyD2H_IedgeList(rafcstab, btranspose)
+
+!<description>
+    ! This subroutine copies the edge structure from the
+    ! memory of the coprocessor device to the host memory. If no
+    ! device is available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_IedgeList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine afcstab_copyD2H_IedgeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyH2D_CoeffsAtEdge(rafcstab, btranspose)
+
+!<description>
+    ! This subroutine copies the edge data from the host memory to the
+    ! memory of the coprocessor device. If no device is available,
+    ! then an error is thrown.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_CoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine afcstab_copyH2D_CoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_copyD2H_CoeffsAtEdge(rafcstab, btranspose)
+
+!<description>
+    ! This subroutine copies the edge data from the memory of the
+    ! coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rafcstab%h_CoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine afcstab_copyD2H_CoeffsAtEdge
   
 end module afcstabbase

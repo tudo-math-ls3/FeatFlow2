@@ -435,7 +435,7 @@ contains
           bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
           
           ! Check if coefficients should be stored in stabilisation
-          if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+          if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
             
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_DOUBLE) then
@@ -510,7 +510,7 @@ contains
           bsymm = .not.(rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED)
           
           ! Check if coefficients should be stored in stabilisation
-          if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+          if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
             
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_SINGLE) then
@@ -3379,7 +3379,7 @@ contains
           end if
           
           ! Check if coefficients should be stored in stabilisation
-          if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+          if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
             
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_DOUBLE) then
@@ -4722,7 +4722,7 @@ contains
           end if
           
           ! Check if coefficients should be stored in stabilisation
-          if (rafcstab%h_CoefficientsAtEdge .ne. ST_NOHANDLE) then
+          if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE) then
             
             ! Check if stabilisation has the same data type
             if (rafcstab%cdataType .ne. ST_DOUBLE) then
