@@ -1358,17 +1358,17 @@ fb_runBenchmarkOnLiDO() {
 fb_runBenchmark() {
     mpi="$1"  # IN
 
-    if [ "$mpi" = "mpi" ]; then
-	test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
-    else
-	test $DEBUG -gt 0 && echo "# Running benchmark"
-    fi
-
     if [ "$ARCH""x" != "LiDOx" ]; then
         # Create script that control and actually runs the benchmark tests
 	fb_createTestSuiteScript "$mpi"
 
     	fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
+
+	if [ "$mpi" = "mpi" ]; then
+	    test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
+	else
+	    test $DEBUG -gt 0 && echo "# Running benchmark"
+	fi
 
 	# It would be great if we could directly access all variables
 	# defined within the 'runtests' script (i.e. number of successful
