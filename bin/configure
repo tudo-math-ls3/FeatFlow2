@@ -355,6 +355,12 @@ my %defaults = (
     OBJDIR_LIB           => "",
     OPENMP               => "NO",
     OPT                  => "YES",
+    PRECC                => "",
+    PRECXX               => "",
+    PRECUDA              => "",
+    PREF77               => "",
+    PREF90               => "",
+    PRELD                => "",
     PROGRAMFILE          => "DETERMINED_ON_DEMAND_IF_UNSET",
     RANLIB               => "",
     RELINK_ALWAYS        => "YES",
@@ -455,6 +461,12 @@ GetOptions (
             "openmp:s"                      => \$cl{'OPENMP'},
             "opt:s"                         => \$cl{'OPT'},
             "parallel"                      => sub { $cl{'MPI'} = "yes" },
+            "precc=s{0,}"                   => \$cl{'PRECC'},
+            "precxx=s{0,}"                  => \$cl{'PRECXX'},
+            "precuda=s{0,}"                 => \$cl{'PRECUDA'},
+            "pref77=s{0,}"                  => \$cl{'PREF77'},
+            "pref90=s{0,}"                  => \$cl{'PREF90'},
+            "preld=s{0,}"                   => \$cl{'PRELD'},
             "programfile=s"                 => \$cl{'PROGRAMFILE'},
             "ranlib=s"                      => \$cl{'RANLIB'},
             "relink-always!"                => \$cl{'RELINK_ALWAYS'},
@@ -633,6 +645,12 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --objdir-lib-prefix=\"" . $cl{'objdirlibprefix'}         . "\"" if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'});
     $options .= " --openmp=\""         . $cl{'OPENMP'}                     . "\"" if (defined($cl{'OPENMP'}) && $cl{'OPENMP'});
     $options .= " --opt=\""            . $cl{'OPT'}                        . "\"" if (defined($cl{'OPT'}) && $cl{'OPT'});
+    $options .= " --precc=\""          . $cl{'PRECC'}                      . "\"" if (defined($cl{'PRECC'}) && $cl{'PRECC'});
+    $options .= " --precxx=\""         . $cl{'PRECXX'}                     . "\"" if (defined($cl{'PRECXX'}) && $cl{'PRECXX'});
+    $options .= " --precuda=\""        . $cl{'PRECUDA'}                    . "\"" if (defined($cl{'PRECUDA'}) && $cl{'PRECUDA'});
+    $options .= " --pref77=\""         . $cl{'PREF77'}                     . "\"" if (defined($cl{'PREF77'}) && $cl{'PREF77'});
+    $options .= " --pref90=\""         . $cl{'PREF90'}                     . "\"" if (defined($cl{'PREF90'}) && $cl{'PREF90'});
+    $options .= " --preld=\""          . $cl{'PRELD'}                      . "\"" if (defined($cl{'PRELD'}) && $cl{'PRELD'});
     # --parallel skipped as it is an alternative for --mode=".." only
     $options .= " --ranlib=\""         . $cl{'ranlib'}                     . "\"" if (defined($cl{'RANLIB'}) && $cl{'RANLIB'});
     $options .= " --relink-always"                                                if (defined($cl{'RELINK_ALWAYS'}) && $cl{'RELINK_ALWAYS'} eq "YES");
@@ -1557,6 +1575,7 @@ sub create_feastAppMakefile {
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
 		       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
 		       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'PRECC', 'PRECXX', 'PRECUDA', 'PREF77', 'PREF90', 'PRELD',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
 		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
 	$colwidth = &max(length($entry), $colwidth);
@@ -1566,6 +1585,7 @@ sub create_feastAppMakefile {
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC', 'CFLAGSCOPROC',
 		       'CFLAGSCXX', 'CFLAGSCUDA', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX',
 		       'CUDA', 'F77', 'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
+		       'PRECC', 'PRECXX', 'PRECUDA', 'PREF77', 'PREF90', 'PRELD',
 		       'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
 		       'MPILIBS', 'RANLIB', 'SRCEXTRA') {
 	# Determine type of variable: scalar or array
@@ -2228,7 +2248,7 @@ sub create_feastAppMakefile {
         "\$(APPNAME): | \$(OBJDIR) \$(LIB)\n" .
         "\$(APPNAME): \$(OBJ)\n" .
         "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)>\"\n" .
-        "\t\$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n" .
         "ifneq (\$(MESSAGE),)\n" .
         "\t\@\$(MESSAGE)\n" .
         "endif\n\n" .
@@ -2243,7 +2263,7 @@ sub create_feastAppMakefile {
         "#  shortcut the build.)\n" .
         "link: | \$(OBJDIR)\n" .
         "\t\@echo \"# Linking FEAT2 application <\$(APPNAME)>\"\n" .
-        "\t\$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n\n" .
+        "\t\$(PRELD) \$(LD) \$(LDFLAGS) \$(OBJ) \$(LIBDIR) \$(LIBS) -o \$(APPNAME)\n\n" .
 
     # Global dependencies for object files
         "# Global dependencies for object files\n" .
@@ -2261,7 +2281,7 @@ sub create_feastAppMakefile {
         "# Compile statement for each object file from Fortran 77 source\n" .
         "\$(OBJF77): | \$(OBJDIR)\n" .
         "\$(OBJF77):\n" .
-        "\t\$(F77) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+        "\t\$(PREF77) \$(F77) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
 
     # Create build rule for object files from Fortran 90 source
 #        "# Additional global dependencies for object files from Fortran 90 sources\n" .
@@ -2276,14 +2296,14 @@ sub create_feastAppMakefile {
 #        "ifneq (,\$(findstring NEC Fortran IA-64 Compiler,\$(COMPILERVERSION)))\n" .
 #        "ifneq (,\$(findstring Revision 6.1,\$(COMPILERVERSION)))\n" .
 #        "\$(OBJDIR)/linearsystem.o \$(OBJDIR)/masterservice.o \$(OBJDIR)/storage.o \$(OBJDIR)/visoutput.o:\n" .
-#        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(subst -O3,-O2,\$(CFLAGSF90)) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n" .
+#        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(subst -O3,-O2,\$(CFLAGSF90)) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n" .
 #        "endif\n" .
 #        "endif\n\n" .
 
 	"# Create build rule for object files from Fortran 90 source\n" .
         "\$(OBJF90): | \$(OBJDIR)\n" .
         "\$(OBJF90):\n" .
-        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
 
     # Create separate rule for source file containing program
         "# Compile statement for source file containing program start\n" .
@@ -2291,7 +2311,7 @@ sub create_feastAppMakefile {
         "#  and, hence, we should not try to move a .mod file as we do with any module.)\n" .
         "\$(OBJPRG): | \$(OBJDIR)\n" .
         "\$(OBJPRG):\n" .
-        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
 
     # Include implicit rules for files only needed for specific
     # build IDs. They are listed in $(SRCEXTRA) and are supposed
@@ -2304,7 +2324,7 @@ sub create_feastAppMakefile {
     # Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP
 	"# Generic rule for *.f files out of SRCEXTRA and SRCEXTRA_APP\n" .
 	"\$(patsubst %.f, \$(OBJDIR)/%.o, \$(filter %.f, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-	"\t\$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+	"\t\$(PREF77) \$(F77) \$(APPONLYFLAGS) \$(CFLAGSF77) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP
 	"# Generic rule for *.f90 files out of SRCEXTRA and SRCEXTRA_APP\n" .
@@ -2322,22 +2342,22 @@ sub create_feastAppMakefile {
 	"# them from being compiled prematurely, e.g. in a highly parallel make run\n" .
 	"# (make -j N, with N>32 or N missing).\n" .
 	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
-	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP
 	"# Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP\n" .
 	"\$(patsubst %.c, \$(OBJDIR)/%.o, \$(filter %.c, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-        "\t\$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+        "\t\$(PRECC) \$(CC) \$(APPONLYFLAGS) \$(CFLAGSC) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).c, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP
 	"# Generic rule for *.cc files out of SRCEXTRA and SRCEXTRA_APP\n" .
 	"\$(patsubst %.cc, \$(OBJDIR)/%.o, \$(filter %.cc, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-	"\t\$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+	"\t\$(PRECXX) \$(CXX) \$(APPONLYFLAGS) \$(CFLAGSCXX) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cc, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP
 	"# Generic rule for *.cu files out of SRCEXTRA and SRCEXTRA_APP\n" .
 	"\$(patsubst %.cu, \$(OBJDIR)/%.o, \$(filter %.cu, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
-	"\t\$(CUDA) \$(APPONLYFLAGS) \$(CFLAGSCUDA) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cu, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+	"\t\$(PRECUDA) \$(CUDA) \$(APPONLYFLAGS) \$(CFLAGSCUDA) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cu, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # All files listed in $(SRCEXTRA) and $(SRCEXTRA_APP) should be
     # compiled, but depending on its extension with a separate
@@ -2573,8 +2593,8 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building unified coproc library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tCC=\"\$(CC)\" \\\n" .
-	"\t\tCUDA=\"\$(CUDA)\" \\\n" .
+        "\t\tCC=\"\$(PRECC) \$(CC)\" \\\n" .
+	"\t\tCUDA=\"\$(PRECUDA) \$(CUDA)\" \\\n" .
         "\t\tOPT=\"\$(OPT)\" \\\n" .
         "\t\tCFLAGSCOPROC_FROM_FEAT2=\"\$(CFLAGSCOPROC)\" \\\n" .
         "\t\tCFLAGSCUDA=\"\$(CFLAGSCUDA)\" \\\n" .
@@ -2603,7 +2623,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building metis library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tCC=\"\$(CC)\" CFLAGSC=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tCC=\"\$(PRECC) \$(CC)\" CFLAGSC=\"\$(CFLAGSC)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2619,7 +2639,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building umfpack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tCC=\"\$(CC)\" CXXVERSION=\"\$(CXXVERSION)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tCC=\"\$(PRECC) \$(CC)\" CXXVERSION=\"\$(CXXVERSION)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" ID=\"\$(ID)\")\n\n" .
 
@@ -2635,7 +2655,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building amd library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tCC=\"\$(CC)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
+        "\t\tCC=\"\$(PRECC) \$(CC)\" CFLAGS=\"\$(CFLAGSC)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2651,7 +2671,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building blas library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2670,7 +2690,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building lapack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tF95=\"\$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2686,7 +2706,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building splib library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2702,7 +2722,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building inshape library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
@@ -2943,19 +2963,19 @@ sub create_feastAppMakefile {
         "\t\@+\\\n" .
         "\tadditionalflags=\"APPONLYFLAGS  = \$(APPONLYFLAGS)\"; \\\n" .
         "\tmessage=\"\"; \\\n" .
-        "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(F77)\"; \\\n" .
+        "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(PREF77) \$(F77)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(F77VERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_F77_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_F77_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
-        "\tCOMPILERNAME=\"F90\"; COMPILER=\"\$(F90)\"; \\\n" .
+        "\tCOMPILERNAME=\"F90\"; COMPILER=\"\$(PREF90) \$(F90)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(F90VERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_F90_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_F90_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
-        "\tCOMPILERNAME=\"C\"; COMPILER=\"\$(CC)\"; \\\n" .
+        "\tCOMPILERNAME=\"C\"; COMPILER=\"\$(PRECC) \$(CC)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(CCVERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CC_INFO).version\";  \$(version-info-compiler-foo); \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CC_INFO).ls\";       \$(ls-lLd-for-compiler-foo); \\\n" .
-        "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(CXX)\"; \\\n" .
+        "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(PRECXX) \$(CXX)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(CXXVERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
@@ -3024,16 +3044,16 @@ sub create_feastAppMakefile {
         "\t\@+\\\n" .
         "\tadditionalflags=\"\"; \\\n" .
         "\tmessage=\"\"; \\\n" .
-        "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(F77)\"; \\\n" .
+        "\tCOMPILERNAME=\"F77\"; COMPILER=\"\$(PREF77) \$(F77)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(F77VERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_F77_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
-        "\tCOMPILERNAME=\"F90\"; COMPILER=\"\$(F90)\"; \\\n" .
+        "\tCOMPILERNAME=\"F90\"; COMPILER=\"\$(PREF90) \$(F90)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(F90VERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_F90_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
-        "\tCOMPILERNAME=\"C\"; COMPILER=\"\$(CC)\"; \\\n" .
+        "\tCOMPILERNAME=\"C\"; COMPILER=\"\$(PRECC) \$(CC)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(CCVERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CC_INFO).version\";  \$(version-info-compiler-foo); \\\n" .
-        "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(CXX)\"; \\\n" .
+        "\tCOMPILERNAME=\"C++\"; COMPILER=\"\$(PRECXX) \$(CXX)\"; \\\n" .
         "\tCOMPILERVERSION=\"\$(CXXVERSION)\"; \\\n" .
         "\tFILE=\"\$(DIR)/\$(FILE_CXX_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
@@ -5072,6 +5092,12 @@ sub show_help {
         "                    Controls whether to use no (but including debugging\n" .
         "                    symbols), good or expensive compiler optimisation\n" .
         "                    (default: " . lc($defaults{'OPT'}) . ").\n" .
+	"--precc=<file>      Command to prepand to the C compiler\n" .
+	"--precxx=<file>     Command to prepand to the C++ compiler\n" .
+	"--precuda=<file>    Command to prepand to the Cuda compiler\n" .
+	"--pref77=<file>     Command to prepand to the Fortran 77 compiler\n" .
+	"--pref90=<file>     Command to prepand to the Fortran 90 compiler\n" .
+	"--preld=<file>      Command to prepand to the Linker\n" .
         "--programfile=<file>\n" .
 	"                    Set application's program file to <file>\n" .
 	"                    (Reason: Parsing to build a minimal list of required \n" .
