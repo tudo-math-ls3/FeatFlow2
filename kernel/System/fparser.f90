@@ -245,7 +245,7 @@
 !#                            fparser_evalFuncScalarByNumber /
 !#                            fparser_evalFuncBlockByName /
 !#                            fparser_evalFuncBlockByNumber
-!#     -> Evaluate bytecode
+!#     -> Evaluate precompiled bytecode
 !#
 !# 9.) fparser_ErrorMsg
 !#     -> Get error message from function parser
@@ -381,6 +381,8 @@ module fparser
   public :: fparser_release
   public :: fparser_parseFunction
   public :: fparser_evalFunction
+  public :: fparser_evalFuncBlockByName2
+  public :: fparser_evalFuncBlockByNumber2
   public :: fparser_ErrorMsg
   public :: fparser_PrintByteCode
   public :: fparser_getFunctionNumber
@@ -392,7 +394,7 @@ module fparser
   interface fparser_evalFunction
     module procedure fparser_evalFuncScalarByName
     module procedure fparser_evalFuncScalarByNumber
-    module procedure fparser_evalFuncBlockByName
+    module procedure fparser_evalFuncBlockByName   
     module procedure fparser_evalFuncBlockByNumber
   end interface
 
@@ -1385,6 +1387,86 @@ contains
   ! *****************************************************************************
 
 !<subroutine>
+
+  subroutine fparser_evalFuncBlockByName2 (rfparser, scompName, n1, n2, DValueBlock,&
+                                           n3, Dresult, DvalueScalar, rperfconfig)
+
+!<description>
+    ! Evaluate bytecode of component icomp for the array of values passed in 
+    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working 
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! global stack memory if required. In some situations, there a variables,
+    ! such as nodal coordinates, which are different for each component of 
+    ! the resulting vector and those which are the same, e.g., time variable.
+    ! The latter ones can be passed to the ValScalar argument which is used
+    ! uniformly for each component of Res.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and DvalueScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then DvalueBlock=[x,y] and
+    ! DvalueScalar=[t] works fine.
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser),  intent(in) :: rfparser
+
+    ! Function name
+    character(LEN=*), intent(in) :: scompName
+
+    ! Array dimensions
+    integer, intent(in) :: n1,n2,n3
+
+    ! Variable values (must have the same dimension as Dresult)
+    real(DP), dimension(n1,n2), intent(in) :: DvalueBlock
+
+    ! Variable values. This is a vector of scalar variables
+    ! which is the same for all components of Res, e.g. the time variable.
+    real(DP), dimension(:), intent(in), optional :: DvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+    ! Evaluated function
+    real(DP), dimension(n3), intent(out) :: Dresult
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer :: icomp
+
+    ! Lookup function by name
+    icomp = fparser_getFunctionNumber(rfparser, scompName)
+
+    ! Evaluate function by number
+    if (n1 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 1, DvalueBlock,&
+                                 Dresult, DvalueScalar, rperfconfig)
+    elseif (n2 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 2, DvalueBlock,&
+                                 Dresult, DvalueScalar, rperfconfig)
+    else
+      call output_line('Invalid array dimensions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlockByName2')
+      call sys_halt()
+    end if
+ 
+  end subroutine fparser_evalFuncBlockByName2
+
+  ! *****************************************************************************
+
+!<subroutine>
   
   subroutine fparser_evalFuncScalarByNumber (rfparser, icomp, Dvalue, dresult)
 
@@ -1661,6 +1743,80 @@ contains
 
   end subroutine fparser_evalFuncBlockByNumber
   
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_evalFuncBlockByNumber2 (rfparser, icomp, n1, n2, DvalueBlock,&
+                                             n3, Dresult, DvalueScalar, rperfconfig)
+
+!<description>
+    ! Evaluate bytecode of component icomp for the array of values passed in 
+    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working 
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! global stack memory if required. In some situations, there a variables,
+    ! such as nodal coordinates, which are different for each component of 
+    ! the resulting vector and those which are the same, e.g., time variable.
+    ! The latter ones can be passed to the ValScalar argument which is used
+    ! uniformly for each component of Res.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and ValScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then DvalueBlock=[x,y] and
+    ! DvalueScalar=[t] works fine.
+!</description>
+
+!<input>
+    ! Function parser
+    type (t_fparser),  intent(in) :: rfparser
+
+    ! Function identifier
+    integer, intent(in) :: icomp
+
+    ! Array dimensions
+    integer, intent(in) :: n1,n2,n3
+
+    ! Variable values (must have the same dimension as Dresult)
+    real(DP), dimension(n1,n2), intent(in) :: DvalueBlock
+
+    ! Variable values. This is a vector of scalar variables
+    ! which is the same for all components of Res, e.g. the time variable.
+    real(DP), dimension(:), intent(in), optional :: DvalueScalar
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+    ! Evaluated function
+    real(DP), dimension(n3), intent(out) :: Dresult
+!</output>
+!</subroutine>
+
+    ! Evaluate function by number
+    if (n1 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 1, DvalueBlock,&
+                                 Dresult, DvalueScalar, rperfconfig)
+    elseif (n2 .eq. n3) then
+      call fparser_evalFunction (rfparser, icomp, 2, DvalueBlock,&
+                                 Dresult, DvalueScalar, rperfconfig)
+    else
+      call output_line('Invalid array dimensions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'fparser_evalFuncBlockByNumber2')
+      call sys_halt()
+    end if
+
+  end subroutine fparser_evalFuncBlockByNumber2
+
   ! *****************************************************************************
 
 !<function>
