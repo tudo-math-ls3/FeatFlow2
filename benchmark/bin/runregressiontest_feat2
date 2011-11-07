@@ -1137,7 +1137,7 @@ fb_configureBenchmark() {
     (echo "Hostname          : $HOSTNAME";
      echo "Compiler suite    : $COMPILERNAME";
      echo "Test suite        : $TESTSUITE";
-     test "$mpi" == "mpi" && echo "Using MPI         : yes";
+     test "$mpi" = "mpi" && echo "Using MPI         : yes";
      echo "Benchmark dir     : $BENCHMARKDIR";
      echo "") >> $GLOBALLOG
 
@@ -1150,7 +1150,7 @@ fb_configureBenchmark() {
     # and do the real configuring
     fb_banner "CONFIGURE" >> $GLOBALLOG
 
-    if [ "$mpi" == "mpi" ]; then
+    if [ "$mpi" = "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Configuring benchmark applications (with MPI)"
     else
 	test $DEBUG -gt 0 && echo "# Configuring benchmark applications"
@@ -1187,7 +1187,7 @@ fb_compileBenchmark() {
 
     fb_banner "COMPILE" >> $GLOBALLOG
 
-    if [ "$mpi" == "mpi" ]; then
+    if [ "$mpi" = "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Compiling benchmark applications (with MPI)"
     else
 	test $DEBUG -gt 0 && echo "# Compiling benchmark applications"
@@ -1233,7 +1233,7 @@ fb_createTestSuiteScript() {
 
     fb_banner "CREATING TEST SUITE SCRIPT" >> $GLOBALLOG
 
-    if [ "$mpi" == "mpi" ]; then
+    if [ "$mpi" = "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Creating test suite script (with MPI)"
     else
 	test $DEBUG -gt 0 && echo "# Creating test suite script"
@@ -1269,7 +1269,7 @@ fb_runBenchmarkOnLiDO() {
 #	return
 #    fi
 
-    if [ "$mpi" == "mpi" ]; then
+    if [ "$mpi" = "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Submitting MPI benchmark jobs to the queue on LiDO"
     else
 	test $DEBUG -gt 0 && echo "# Submitting serial benchmark jobs to the queue on LiDO"
@@ -1294,7 +1294,7 @@ fb_runBenchmarkOnLiDO() {
     fi
 
     # Now wait till all jobs have finished
-    if [ "$mpi" == "mpi" ]; then
+    if [ "$mpi" = "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Waiting for the MPI benchmark jobs on LiDO to finish"
     else
 	test $DEBUG -gt 0 && echo "# Waiting for the serial benchmark jobs on LiDO to finish"
@@ -1358,7 +1358,7 @@ fb_runBenchmarkOnLiDO() {
 fb_runBenchmark() {
     mpi="$1"  # IN
 
-    if [ "$mpi" == "mpi" ]; then
+    if [ "$mpi" = "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
     else
 	test $DEBUG -gt 0 && echo "# Running benchmark"
