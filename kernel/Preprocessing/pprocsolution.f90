@@ -14,8 +14,7 @@
 !# 2.) ppsol_releasePGM
 !#     -> Releases a Portable Graymap.
 !#
-!# 3.) ppsol_initArrayPGM = ppsol_initArrayPGM_Dble /
-!#                          ppsol_initArrayPGM_Sngl
+!# 3.) ppsol_initArrayPGMDble / ppsol_initArrayPGMSngl
 !#     -> Initialises a 2D double array from a Portable Graymap image
 !# </purpose>
 !#########################################################################
@@ -60,17 +59,11 @@ module pprocsolution
 
 !</typeblock>
 !</types>
-
-  interface ppsol_initArrayPGM
-    module procedure ppsol_initArrayPGM_Dble
-    module procedure ppsol_initArrayPGM_Sngl
-  end interface ppsol_initArrayPGM
   
   public :: ppsol_readPGM
   public :: ppsol_releasePGM
-  public :: ppsol_initArrayPGM
-  public :: ppsol_initArrayPGM_Dble
-  public :: ppsol_initArrayPGM_Sngl
+  public :: ppsol_initArrayPGMDble
+  public :: ppsol_initArrayPGMSngl
   
 contains
   
@@ -89,7 +82,7 @@ contains
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(in)     :: ifile
+    integer(I32), intent(in) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
@@ -97,7 +90,7 @@ contains
 
 !<output>
     ! portable graymap
-    type(t_pgm), intent(out)     :: rpgm
+    type(t_pgm), intent(out) :: rpgm
 !</output>
 !</subroutine>
     
@@ -170,7 +163,7 @@ contains
       character(LEN=*), intent(inout) :: cbuffer
 
       character(LEN=1) :: c
-      integer          :: ipos
+      integer :: ipos
 
       ipos = 1
       
@@ -238,7 +231,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGM_Dble(rpgm, Dpoints, Ddata, Dbounds)
+  subroutine ppsol_initArrayPGMDble(rpgm, Dpoints, Ddata, Dbounds)
 
 !<description>
     ! Initialises a 2D double array by a Portable Graymap image
@@ -246,10 +239,10 @@ contains
 
 !<input>
     ! portable graymap image
-    type(t_pgm), intent(in)              :: rpgm
+    type(t_pgm), intent(in) :: rpgm
 
     ! coordinates of 2D array
-    real(DP), dimension(:,:), intent(in) :: Dpoints
+    real(DP), dimension(2,*), intent(in) :: Dpoints
 
     ! OPTIONAL: coordinates of the bounding box
     ! If not present, then the bounding box is calculated internally
@@ -259,7 +252,7 @@ contains
 
 !<output>
     ! double data array
-    real(DP), dimension(:), intent(out)  :: Ddata
+    real(DP), dimension(:), intent(out) :: Ddata
 !</output>
 !</subroutine>
 
@@ -308,13 +301,13 @@ contains
 
       Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
     end do
-  end subroutine ppsol_initArrayPGM_Dble
+  end subroutine ppsol_initArrayPGMDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGM_Sngl(rpgm, Dpoints, Fdata, Dbounds)
+  subroutine ppsol_initArrayPGMSngl(rpgm, Dpoints, Fdata, Dbounds)
 
 !<description>
     ! Initialises a 2D single array by a Portable Graymap image
@@ -322,10 +315,10 @@ contains
 
 !<input>
     ! portable graymap image
-    type(t_pgm), intent(in)              :: rpgm
+    type(t_pgm), intent(in) :: rpgm
 
     ! coordinates of 2D array
-    real(DP), dimension(:,:), intent(in) :: Dpoints
+    real(DP), dimension(2,*), intent(in) :: Dpoints
 
     ! OPTIONAL: coordinates of the bounding box
     ! If not present, then the bounding box is calculated internally
@@ -335,7 +328,7 @@ contains
 
 !<output>
     ! single data array
-    real(SP), dimension(:), intent(out)  :: Fdata
+    real(SP), dimension(:), intent(out) :: Fdata
 !</output>
 !</subroutine>
 
@@ -384,5 +377,6 @@ contains
 
       Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
-  end subroutine ppsol_initArrayPGM_Sngl
+  end subroutine ppsol_initArrayPGMSngl 
+
 end module pprocsolution
