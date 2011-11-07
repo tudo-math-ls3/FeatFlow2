@@ -308,6 +308,26 @@ fb_readargs() {
 		shift
 		;;
 
+	    --no-checkout)
+		CHECKOUT="no"
+		shift
+		;;
+
+	    --no-cleanup-feat2-object-files)
+		CLEANUPOBJFILES="no"
+		shift
+		;;
+
+	    --no-compare-feat2-checkouts)
+		COMPAREFEAT2CHECKOUTS="no"
+		shift
+		;;
+
+	    --no-compile-only)
+		COMPILEONLY="no"
+		shift
+		;;
+
 	    --slave|-s*)
 		CHECKOUT="no"
 		CLEANUPOBJFILES="no"
