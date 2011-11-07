@@ -27,8 +27,8 @@
 
 extern "C"
 {
-  int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
-				      unsigned long * h_IverticesAtEdge,
+  int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DcoeffsAtEdge,
+				      unsigned long * h_IedgeList,
 				      unsigned long * h_Dx,
 				      unsigned long * h_Dy,
 				      double * dscale,
@@ -39,8 +39,8 @@ extern "C"
 				      int * nmatcoeff,
 				      int * nedges,
 				      int * iedgeset);
-  int FNAME(hydro_calcfluxscdissdisp2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge,
-					     unsigned long * h_IverticesAtEdge,
+  int FNAME(hydro_calcfluxscdissdisp2d_cuda)(unsigned long * h_DcoeffsAtEdge,
+					     unsigned long * h_IedgeList,
 					     unsigned long * h_Dx,
 					     unsigned long * h_Dy,
 					     double * dscale,
@@ -55,8 +55,8 @@ extern "C"
 
 /*******************************************************************************/
 template <int isystemformat>
-__global__ void hydro_calcFluxScDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
-					       int * IverticesAtEdge,
+__global__ void hydro_calcFluxScDissDiSp2d_knl(double * DcoeffsAtEdge,
+					       int * IedgeList,
 					       double * Dx,
 					       double * Dy,
 					       double dscale,
@@ -72,8 +72,8 @@ __global__ void hydro_calcFluxScDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
   if (idx<nedges)
   {
     // Get positions of edge endpoints (idx starts at zero)
-    int i = IDX2T(IverticesAtEdge,1,iedgeset+idx,4,nedge);
-    int j = IDX2T(IverticesAtEdge,2,iedgeset+idx,4,nedge);
+    int i = IDX2T(IedgeList,1,iedgeset+idx,6,nedge);
+    int j = IDX2T(IedgeList,2,iedgeset+idx,6,nedge);
 
     // Get solution values at edge endpoints
     double DdataAtEdge[2*NVAR2D];
@@ -179,10 +179,10 @@ __global__ void hydro_calcFluxScDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
 
     // Compute skew-symmetric coefficient
     double a[HYDRO_NDIM];
-    a[0] = RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
-			IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge));
-    a[1] = RCONST(0.5)*(IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
-			IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge));
+    a[0] = RCONST(0.5)*(IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+			IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge));
+    a[1] = RCONST(0.5)*(IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)-
+			IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge));
 
     // Compute densities
     double ri = DENSITY3(DdataAtEdge,IDX3,1,1,NVAR2D,2,1);
@@ -223,28 +223,28 @@ __global__ void hydro_calcFluxScDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
 #ifdef HYDRO_USE_IBP
     double DfluxesAtEdge[2*NVAR2D];
     IDX3(DfluxesAtEdge,1,1,1,NVAR2D,2,1) = dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[0]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[0]-
-       IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[0]-
-       IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[0] + Diff[0]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[0]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[0]-
+       IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[0]-
+       IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[0] + Diff[0]);
     
     IDX3(DfluxesAtEdge,2,1,1,NVAR2D,2,1) = dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[1]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[1]-
-       IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[1]-
-       IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[1] + Diff[1]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[1]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[1]-
+       IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[1]-
+       IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[1] + Diff[1]);
     
     IDX3(DfluxesAtEdge,3,1,1,NVAR2D,2,1) = dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[2]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[2]-
-       IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[2]-
-       IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[2] + Diff[2]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[2]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[2]-
+       IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[2]-
+       IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[2] + Diff[2]);
     
     IDX3(DfluxesAtEdge,4,1,1,NVAR2D,2,1) = dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[3]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[3]-
-       IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[3]-
-       IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[3] + Diff[3]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxj[3]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyj[3]-
+       IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fxi[3]-
+       IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fyi[3] + Diff[3]);
     
 
     IDX3(DfluxesAtEdge,1,2,1,NVAR2D,2,1) = -IDX3(DfluxesAtEdge,1,1,1,NVAR2D,2,1);
@@ -254,37 +254,37 @@ __global__ void hydro_calcFluxScDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
 #else
     double DfluxesAtEdge[2*NVAR2D];    
     IDX3(DfluxesAtEdge,1,1,1,NVAR2D,2,1) = dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[0]+
-       IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[0] + Diff[0]);
+      (IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[0]+
+       IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[0] + Diff[0]);
 
     IDX3(DfluxesAtEdge,2,1,1,NVAR2D,2,1) = dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[1]+
-       IDX3T(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[1] + Diff[1]);
+      (IDX3T(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[1]+
+       IDX3T(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[1] + Diff[1]);
     
     IDX3(DfluxesAtEdge,3,1,1,NVAR2D,2,1) = dscale *
-      (IDX3(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[2]+
-       IDX3(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[2] + Diff[2]);
+      (IDX3(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[2]+
+       IDX3(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[2] + Diff[2]);
     
     IDX3(DfluxesAtEdge,4,1,1,NVAR2D,2,1) = dscale *
-      (IDX3(DmatrixCoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[3]+
-       IDX3(DmatrixCoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[3] + Diff[3]);
+      (IDX3(DcoeffsAtEdge,1,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[3]+
+       IDX3(DcoeffsAtEdge,2,1,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[3] + Diff[3]);
 
     
     IDX3(DfluxesAtEdge,1,2,1,NVAR2D,2,1) = -dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[0]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[0] + Diff[0]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[0]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[0] + Diff[0]);
 
     IDX3(DfluxesAtEdge,2,2,1,NVAR2D,2,1) = -dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[1]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[1] + Diff[1]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[1]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[1] + Diff[1]);
     
     IDX3(DfluxesAtEdge,3,2,1,NVAR2D,2,1) = -dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[2]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[2] + Diff[2]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[2]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[2] + Diff[2]);
     
     IDX3(DfluxesAtEdge,4,2,1,NVAR2D,2,1) = -dscale *
-      (IDX3T(DmatrixCoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[3]+
-       IDX3T(DmatrixCoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[3] + Diff[3]);
+      (IDX3T(DcoeffsAtEdge,1,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fx_ij[3]+
+       IDX3T(DcoeffsAtEdge,2,2,iedgeset+idx,HYDRO_NDIM,nmatcoeff,nedge)*Fy_ij[3] + Diff[3]);
 #endif
     
     //--------------------------------------------------------------------------
@@ -320,8 +320,8 @@ __global__ void hydro_calcFluxScDissDiSp2d_knl(double * DmatrixCoeffsAtEdge,
 
 /*******************************************************************************/
 
-int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
-				    unsigned long * h_IverticesAtEdge,
+int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DcoeffsAtEdge,
+				    unsigned long * h_IedgeList,
 				    unsigned long * h_Dx,
 				    unsigned long * h_Dy,
 				    double * dscale,
@@ -331,8 +331,8 @@ int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
 {
   double * d_Dx = (double*)(*h_Dx);
   double * d_Dy = (double*)(*h_Dy);
-  double * d_DmatrixCoeffsAtEdge = (double*)(*h_DmatrixCoeffsAtEdge);
-  int * d_IverticesAtEdge = (int*)(*h_IverticesAtEdge);
+  double * d_DcoeffsAtEdge = (double*)(*h_DcoeffsAtEdge);
+  int * d_IedgeList = (int*)(*h_IedgeList);
   
   // Define number of threads per block
   int blocksize = 128;
@@ -342,15 +342,15 @@ int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
   grid.x = (unsigned)ceil((*nedges)/(double)(block.x));
 
   if (*nblocks == 1) {
-    hydro_calcFluxScDissDiSp2d_knl<0><<<grid, block>>>(d_DmatrixCoeffsAtEdge,
-						       d_IverticesAtEdge,
+    hydro_calcFluxScDissDiSp2d_knl<0><<<grid, block>>>(d_DcoeffsAtEdge,
+						       d_IedgeList,
 						       d_Dx, d_Dy, (*dscale), 
 						       (*neq), (*nvar),
 						       (*nedge), (*nmatcoeff),
 						       (*nedges), (*iedgeset));
   } else {
-    hydro_calcFluxScDissDiSp2d_knl<1><<<grid, block>>>(d_DmatrixCoeffsAtEdge,
-						       d_IverticesAtEdge,
+    hydro_calcFluxScDissDiSp2d_knl<1><<<grid, block>>>(d_DcoeffsAtEdge,
+						       d_IedgeList,
 						       d_Dx, d_Dy, (*dscale), 
 						       (*neq), (*nvar),
 						       (*nedge), (*nmatcoeff),
@@ -360,8 +360,8 @@ int hydro_calcFluxScDissDiSp2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
   return 0;
 }
 
-int FNAME(hydro_calcfluxscdissdisp2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge,
-					   unsigned long * h_IverticesAtEdge,
+int FNAME(hydro_calcfluxscdissdisp2d_cuda)(unsigned long * h_DcoeffsAtEdge,
+					   unsigned long * h_IedgeList,
 					   unsigned long * h_Dx,
 					   unsigned long * h_Dy,
 					   double * dscale,
@@ -369,7 +369,7 @@ int FNAME(hydro_calcfluxscdissdisp2d_cuda)(unsigned long * h_DmatrixCoeffsAtEdge
 					   int * nedge,   int * nmatcoeff,
 					   int * nedges,  int * iedgeset)
 {
-  return hydro_calcFluxScDissDiSp2d_cuda(h_DmatrixCoeffsAtEdge, h_IverticesAtEdge,
+  return hydro_calcFluxScDissDiSp2d_cuda(h_DcoeffsAtEdge, h_IedgeList,
 					 h_Dx, h_Dy, dscale, nblocks, neq, nvar,
 					 nedge, nmatcoeff, nedges, iedgeset);
 }
