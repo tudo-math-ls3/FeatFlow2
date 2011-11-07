@@ -456,7 +456,7 @@ contains
       ! We need the nodal block vector for the low-order predictor
       allocate(rafcstab%p_rvectorPredictor)
       if (present(rspatialDiscretisation)) then
-        call lsyssc_createVecByDiscr(rspatialDiscretisation,&
+        call lsyssc_createVector(rspatialDiscretisation,&
             rvectorTmp, rafcstab%NVAR, .false., rafcstab%cdataType)
       else
         call lsyssc_createVector(rvectorTmp,&
@@ -809,7 +809,7 @@ contains
       ! We need the nodal block vector for the low-order predictor
       allocate(rafcstab%p_rvectorPredictor)
       if (present(rspatialDiscretisation)) then
-        call lsyssc_createVecByDiscr(rspatialDiscretisation,&
+        call lsyssc_createVector(rspatialDiscretisation,&
             rvectorTmp, rafcstab%NVAR, .false., rafcstab%cdataType)
       else
         call lsyssc_createVector(rvectorTmp,&

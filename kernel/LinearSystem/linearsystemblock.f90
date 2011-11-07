@@ -315,27 +315,27 @@ module linearsystemblock
     type(t_uuid) :: ruuid
     
     ! Total number of equations in the vector
-    integer                    :: NEQ = 0
+    integer :: NEQ = 0
     
     ! Handle identifying the vector entries or = ST_NOHANDLE if not
     ! allocated.
-    integer                    :: h_Ddata = ST_NOHANDLE
+    integer :: h_Ddata = ST_NOHANDLE
 
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
     ! in a larger memory block allocated on the heap.
-    integer                    :: iidxFirstEntry = 1
+    integer :: iidxFirstEntry = 1
 
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE. The subvectors are all of the same type.
-    integer                    :: cdataType = ST_DOUBLE
+    integer :: cdataType = ST_DOUBLE
 
     ! Is set to true, if the handle h_Ddata belongs to another vector,
     ! i.e. when this vector shares data with another vector.
-    logical                    :: bisCopy   = .false.
+    logical :: bisCopy   = .false.
 
     ! Number of blocks allocated in RvectorBlock
-    integer                    :: nblocks = 0
+    integer :: nblocks = 0
     
     ! Pointer to a block discretisation structure that specifies
     ! the discretisation of all the subblocks in the vector.
@@ -349,7 +349,7 @@ module linearsystemblock
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBC
     ! can be set to NULL().
-    type(t_discreteBC), pointer  :: p_rdiscreteBC => null()
+    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components.
@@ -358,7 +358,7 @@ module linearsystemblock
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
     ! can be set to NULL().
-    type(t_discreteFBC), pointer  :: p_rdiscreteBCfict => null()
+    type(t_discreteFBC), pointer :: p_rdiscreteBCfict => null()
     
     ! A 1D array with scalar vectors for all the blocks.
     ! The handle identifier inside of these blocks are set to h_Ddata.
@@ -388,18 +388,18 @@ module linearsystemblock
     ! Total number of equations = rows in the whole matrix.
     ! This usually coincides with NCOLS. NCOLS > NEQ indicates, that 
     ! at least one block row in the block matrix is completely zero.
-    integer                    :: NEQ         = 0
+    integer :: NEQ         = 0
 
     ! Total number of columns in the whole matrix.
     ! This usually coincides with NEQ. NCOLS < NEQ indicates, that
     ! at least one block column in the block matrix is completely zero.
-    integer                    :: NCOLS       = 0
+    integer :: NCOLS       = 0
     
     ! Number of blocks per row.
-    integer                    :: nblocksPerRow = 0
+    integer :: nblocksPerRow = 0
     
     ! Number of blocks per column.
-    integer                    :: nblocksPerCol = 0
+    integer :: nblocksPerCol = 0
 
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSBS_MSPEC_xxxx constants and specifies
@@ -422,17 +422,17 @@ module linearsystemblock
     ! Flag: Trial and Test functions in all element distributions
     ! are the same. If FALSE, there is at least one element distribution
     ! with different trial and test functions.
-    logical                          :: bidenticalTrialAndTest = .true.
+    logical :: bidenticalTrialAndTest = .true.
 
     ! A pointer to discretised boundary conditions for real boundary 
     ! components. If no boundary conditions are specified, p_rdiscreteBC
     ! can be set to NULL().
-    type(t_discreteBC), pointer  :: p_rdiscreteBC => null()
+    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components. If no fictitious boundary conditions are specified, 
     ! p_rdiscreteBCfict can be set to NULL().
-    type(t_discreteFBC), pointer  :: p_rdiscreteBCfict => null()
+    type(t_discreteFBC), pointer :: p_rdiscreteBCfict => null()
     
     ! A 2D array with scalar matrices for all the blocks.
     ! A submatrix is assumed to be empty (zero-block) if the corresponding
@@ -450,16 +450,20 @@ module linearsystemblock
   interface lsysbl_createVectorBlock
     module procedure lsysbl_createVecBlockDirect 
     module procedure lsysbl_createVecBlockDirectIntl
+    module procedure lsysbl_createVecBlockDirectIntl2
     module procedure lsysbl_createVecBlockDirectDims
+    module procedure lsysbl_createVecBlockDirectDims2
     module procedure lsysbl_createVecBlockIndirect 
     module procedure lsysbl_createVecBlockIndMat
     module procedure lsysbl_createVecBlockByDiscr
     module procedure lsysbl_createVecBlockByDiscrIntl
+    module procedure lsysbl_createVecBlockByDiscrIntl2
   end interface
 
   public :: lsysbl_createVectorBlock
   public :: lsysbl_createVecBlockDirect
   public :: lsysbl_createVecBlockDirectIntl
+  public :: lsysbl_createVecBlockDirectIntl2
   public :: lsysbl_createVecBlockDirectDims
   public :: lsysbl_createVecBlockIndirect
   public :: lsysbl_createVecBlockIndMat
@@ -469,13 +473,17 @@ module linearsystemblock
   interface lsysbl_resizeVectorBlock
     module procedure lsysbl_resizeVecBlockDirect
     module procedure lsysbl_resizeVecBlockDirectDims
+    module procedure lsysbl_resizeVecBlockIndMat
     module procedure lsysbl_resizeVecBlockIndirect
+    module procedure lsysbl_resizeVecBlockByDiscr
   end interface
   
   public :: lsysbl_resizeVectorBlock
-  public :: lsysbl_resizeVecBlockIndMat
+  public :: lsysbl_resizeVecBlockDirect
   public :: lsysbl_resizeVecBlockDirectDims
+  public :: lsysbl_resizeVecBlockIndMat
   public :: lsysbl_resizeVecBlockIndirect
+  public :: lsysbl_resizeVecBlockByDiscr
 
   interface lsysbl_assignDiscreteBC
     module procedure lsysbl_assignDiscreteBCMat
@@ -627,7 +635,8 @@ contains
       bcompatible = .false.
       return
     else
-      print *,'Vectors not compatible, different size!'
+      call output_line('Vectors not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
       call sys_halt()
     end if
   end if
@@ -637,7 +646,8 @@ contains
       bcompatible = .false.
       return
     else
-      print *,'Vectors not compatible, different block structure!'
+      call output_line('Vectors not compatible, different block structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
       call sys_halt()
     end if
   end if
@@ -649,7 +659,8 @@ contains
         bcompatible = .false.
         return
       else
-        print *,'Vectors not compatible, different block structure!'
+        call output_line('Vectors not compatible, different block structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
         call sys_halt()
       end if
     end if
@@ -665,7 +676,8 @@ contains
           bcompatible = .false.
           return
         else
-          print *,'Vectors not compatible, differently sorted!'
+          call output_line('Vectors not compatible, differently sorted!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
           call sys_halt()
         end if
       end if
@@ -676,7 +688,8 @@ contains
           bcompatible = .false.
           return
         else
-          print *,'Vectors not compatible, differently sorted!'
+          call output_line('Vectors not compatible, differently sorted!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
           call sys_halt()
         end if
       end if
@@ -716,7 +729,7 @@ contains
   ! to the matrix rmatrix.
   ! =FALSE: Check whether matrix-vector product $A*x$ is possible
   ! =TRUE : Check whether matrix-vector product $x^T*A = A^T*x$ is possible
-  logical, intent(in)              :: btransposed
+  logical, intent(in) :: btransposed
 !</input>
 
 !<output>
@@ -747,7 +760,8 @@ contains
       bcompatible = .false.
       return
     else
-      print *,'Vector/Matrix not compatible, different size!'
+      call output_line('Vector/Matrix not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
       call sys_halt()
     end if
   end if
@@ -763,7 +777,8 @@ contains
       bcompatible = .false.
       return
     else
-      print *,'Vector/Matrix not compatible, different block structure!'
+      call output_line('Vector/Matrix not compatible, different block structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
       call sys_halt()
     end if
   end if
@@ -777,7 +792,8 @@ contains
 !      bcompatible = .FALSE.
 !      RETURN
 !    ELSE
-!      PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
+!      CALL OUTPUT_LINE('Vector/Matrix not compatible, different boundary conditions!',&
+!          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
 !      CALL sys_halt()
 !    END IF
 !  END IF
@@ -790,7 +806,8 @@ contains
 !      bcompatible = .FALSE.
 !      RETURN
 !    ELSE
-!      PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
+!      CALL OUTPUT_LINE('Vector/Matrix not compatible, different fict. boundary conditions!',&
+!          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
 !      CALL sys_halt()
 !    END IF
 !  END IF
@@ -817,7 +834,8 @@ contains
 !            bcompatible = .FALSE.
 !            RETURN
 !          ELSE
-!            PRINT *,'Vector/Matrix not compatible, different discretisation!'
+!            CALL OUTPUT_LINE('Vector/Matrix not compatible, different discretisation!',&
+!          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
 !            CALL sys_halt()
 !          END IF
 !        END IF
@@ -829,7 +847,8 @@ contains
             bcompatible = .false.
             return
           else
-            print *,'Vector/Matrix not compatible, different block structure!'
+            call output_line('Vector/Matrix not compatible, different block structure!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
             call sys_halt()
           end if
         end if
@@ -840,7 +859,8 @@ contains
             bcompatible = .false.
             return
           else
-            print *,'Vector/Matrix not compatible, different block structure!'
+            call output_line('Vector/Matrix not compatible, different block structure!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
             call sys_halt()
           end if
         end if
@@ -858,7 +878,8 @@ contains
             bcompatible = .false.
             return
           else
-            print *,'Vector/Matrix not compatible, differently sorted!'
+            call output_line('Vector/Matrix not compatible, differently sorted!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
             call sys_halt()
           end if
         end if
@@ -869,7 +890,8 @@ contains
             bcompatible = .false.
             return
           else
-            print *,'Vector/Matrix not compatible, differently sorted!'
+            call output_line('Vector/Matrix not compatible, differently sorted!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
             call sys_halt()
           end if
         end if
@@ -915,7 +937,8 @@ contains
 
   ! Check that the vector is really double precision
   if (rvector%cdataType .ne. ST_DOUBLE) then
-    print *,'lsysbl_getbase_double: Vector is of wrong precision!'
+    call output_line('Vector is of wrong precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getbase_double')
     call sys_halt()
   end if
 
@@ -965,7 +988,8 @@ contains
 
   ! Check that the vector is really double precision
   if (rvector%cdataType .ne. ST_DOUBLE) then
-    print *,'lsysbl_getbase_doubleFixed: Vector is of wrong precision!'
+    call output_line('Vector is of wrong precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getbase_doubleFixed')
     call sys_halt()
   end if
 
@@ -1012,7 +1036,8 @@ contains
 
   ! Check that the vector is really double precision
   if (rvector%cdataType .ne. ST_SINGLE) then
-    print *,'lsysbl_getbase_single: Vector is of wrong precision!'
+    call output_line('Vector is of wrong precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getbase_single')
     call sys_halt()
   end if
 
@@ -1062,7 +1087,8 @@ contains
 
   ! Check that the vector is really double precision
   if (rvector%cdataType .ne. ST_SINGLE) then
-    print *,'lsysbl_getbase_singleFixed: Vector is of wrong precision!'
+    call output_line('Vector is of wrong precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getbase_singleFixed')
     call sys_halt()
   end if
 
@@ -1109,7 +1135,8 @@ contains
 
   ! Check that the vector is really integer
   if (rvector%cdataType .ne. ST_INT) then
-    print *,'lsysbl_getbase_int: Vector is of wrong precision!'
+    call output_line('Vector is of wrong precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getbase_int')
     call sys_halt()
   end if
 
@@ -1159,7 +1186,8 @@ contains
 
   ! Check that the vector is really integer
   if (rvector%cdataType .ne. ST_INT) then
-    print *,'lsysbl_getbase_intFixed: Vector is of wrong precision!'
+    call output_line('Vector is of wrong precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_getbase_intFixed')
     call sys_halt()
   end if
 
@@ -1178,7 +1206,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirect (rx, Isize, bclear, cdataType)
+  subroutine lsysbl_createVecBlockDirect (rx, Isize, bclear, cdataType, NEQMAX)
   
 !<description>
   ! Initialises the vector block structure rx. Isize is an array
@@ -1186,19 +1214,31 @@ contains
   ! Memory is allocated on the heap to hold vectors of the size
   ! according to Isize.
   !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+  !
   ! Remark: There is no block discretisation structure attached to the vector!
 !</description>
 
 !<input>
   ! An array with length-tags for the different blocks
-  integer, dimension(:), intent(in)         :: Isize
+  integer, dimension(:), intent(in) :: Isize
   
-  ! Optional: If set to YES, the vector will be filled with zero initially.
-  logical, intent(in), optional             :: bclear
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(in),optional              :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+
 !</input>
 
 !<output>
@@ -1211,17 +1251,19 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,n
+  integer :: i,iisize,n
   integer :: cdata
   
   cdata = ST_DOUBLE
   if (present(cdataType)) cdata = cdataType
-  
+  iisize = max(0,sum(Isize))
+  if (present(NEQMAX)) iisize=max(iisize,NEQMAX)
+
   ! rx is initialised by INTENT(out) with the most common data.
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', sum(Isize), cdata, &
+  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', iisize, cdata, &
                     rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
@@ -1234,20 +1276,20 @@ contains
   n=1
   do i = 1,size(Isize)
     if (Isize(i) .gt. 0) then
-      rx%RvectorBlock(i)%NEQ = Isize(i)
+      rx%RvectorBlock(i)%NEQ            = Isize(i)
       rx%RvectorBlock(i)%iidxFirstEntry = n
-      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
-      rx%RvectorBlock(i)%cdataType = rx%cdataType
-      rx%RvectorBlock(i)%bisCopy = .true.
+      rx%RvectorBlock(i)%h_Ddata        = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType      = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy        = .true.
       n = n+Isize(i)
     else
-      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%NEQ            = 0
       rx%RvectorBlock(i)%iidxFirstEntry = 0
-      rx%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
+      rx%RvectorBlock(i)%h_Ddata        = ST_NOHANDLE
     end if
   end do
   
-  rx%NEQ = n-1
+  rx%NEQ     = n-1
   rx%nblocks = size(Isize)
   
   ! The data of the vector belongs to us (we created the handle), 
@@ -1268,7 +1310,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirectIntl (rx, Isize, Invar, bclear, cdataType)
+  subroutine lsysbl_createVecBlockDirectIntl (rx, Isize, Invar, bclear,&
+                                              cdataType, NEQMAX)
   
 !<description>
   ! Initialises the vector block structure rx. Isize and Invar are
@@ -1276,22 +1319,35 @@ contains
   ! Memory is allocated on the heap to hold vectors of the size
   ! according to Isize*Invar.
   !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+  !
   ! Remark: There is no block discretisation structure attached to the vector!
 !</description>
 
 !<input>
+
   ! An array with length-tags for the different blocks
-  integer, dimension(:), intent(in)         :: Isize
+  integer, dimension(:), intent(in) :: Isize
   
   ! An array with the number of local variables for the different blocks
-  integer, dimension(:), intent(in)         :: Invar
+  integer, dimension(:), intent(in) :: Invar
 
-  ! Optional: If set to YES, the vector will be filled with zero initially.
-  logical, intent(in), optional             :: bclear
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(in),optional              :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+
 !</input>
 
 !<output>
@@ -1304,24 +1360,26 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,n
+  integer :: i,iisize,n
   integer :: cdata
   
-  cdata = ST_DOUBLE
-  if (present(cdataType)) cdata = cdataType
-
   ! Both length arrays must have the same dimension
   if (size(Isize) .ne. size(Invar)) then
     call output_line('Length arrays must have the same size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createVecBlockDirectIntl')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createVecBlockDirectIntl')
     call sys_halt()
   end if
+  
+  cdata = ST_DOUBLE
+  if (present(cdataType)) cdata = cdataType
+  iisize = max(0,sum(Isize*Invar))
+  if (present(NEQMAX)) iisize=max(iisize,NEQMAX)
   
   ! rx is initialised by INTENT(out) with the most common data.
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirectIntl', 'Vector', sum(Isize*Invar),&
+  call storage_new ('lsysbl_createVecBlockDirectIntl', 'Vector', iisize,&
                     cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
@@ -1334,21 +1392,21 @@ contains
   n=1
   do i = 1,size(Isize)
     if (Isize(i) .gt. 0) then
-      rx%RvectorBlock(i)%NEQ = Isize(i)
-      rx%RvectorBlock(i)%NVAR = Invar(i)
+      rx%RvectorBlock(i)%NEQ            = Isize(i)
+      rx%RvectorBlock(i)%NVAR           = Invar(i)
       rx%RvectorBlock(i)%iidxFirstEntry = n
-      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
-      rx%RvectorBlock(i)%cdataType = rx%cdataType
-      rx%RvectorBlock(i)%bisCopy = .true.
+      rx%RvectorBlock(i)%h_Ddata        = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType      = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy        = .true.
       n = n+Isize(i)*Invar(i)
     else
-      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%NEQ            = 0
       rx%RvectorBlock(i)%iidxFirstEntry = 0
-      rx%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
+      rx%RvectorBlock(i)%h_Ddata        = ST_NOHANDLE
     end if
   end do
   
-  rx%NEQ = n-1
+  rx%NEQ     = n-1
   rx%nblocks = size(Isize)
   
   ! The data of the vector belongs to us (we created the handle), 
@@ -1364,36 +1422,49 @@ contains
   end if
   
   end subroutine
-  
+
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockDirectDims (rx, isize, iblocks, bclear, cdataType)
+  subroutine lsysbl_createVecBlockDirectIntl2 (rx, Isize, NVAR, bclear,&
+                                               cdataType, NEQMAX)
   
 !<description>
-  ! Initialises the vector block structure rx. Isize is an integer
-  ! which describes the length of each block. Iblocks denotes the
-  ! number of similar vector blocks.
-  ! Memory is allocated on the heap to hold vectors of the size
-  ! according to Isize.
+  ! Initialises the vector block structure rx. Isize is an array of
+  ! integers containing the length of the individual blocks. Memory
+  ! is allocated on the heap to hold vectors of the size according to
+  ! Isize*NVAR, that is, each block has NVAR variables.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
   !
   ! Remark: There is no block discretisation structure attached to the vector!
 !</description>
 
 !<input>
-  ! An integer describing the length of each block
-  integer, intent(in) :: isize
 
-  ! An integer describing the number of vector blocks
-  integer, intent(in) :: iblocks
+  ! An array with length-tags for the different blocks
+  integer, dimension(:), intent(in) :: Isize
   
-  ! Optional: If set to YES, the vector will be filled with zero initially.
-  logical, intent(in), optional             :: bclear
+  ! The number of local variables of each block
+  integer, intent(in) :: NVAR
+
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(in),optional              :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+
 !</input>
 
 !<output>
@@ -1406,19 +1477,129 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,n
+  integer :: i,iisize,n
   integer :: cdata
   
   cdata = ST_DOUBLE
   if (present(cdataType)) cdata = cdataType
+  iisize = max(0,sum(Isize)*NVAR)
+  if (present(NEQMAX)) iisize=max(iisize,NEQMAX)
+
+  ! rx is initialised by INTENT(out) with the most common data.
+  ! What is missing is the data array.
+  !
+  ! Allocate one large vector holding all data.
+  call storage_new ('lsysbl_createVecBlockDirectIntl', 'Vector', iisize,&
+                    cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+  rx%cdataType = cdata
+  
+  ! Initialise the sub-blocks. Save a pointer to the starting address of
+  ! each sub-block.
+  ! Denote in the subvector that the handle belongs to us - not to
+  ! the subvector.
+  allocate(rx%RvectorBlock(size(Isize)))
+  
+  n=1
+  do i = 1,size(Isize)
+    if (Isize(i) .gt. 0) then
+      rx%RvectorBlock(i)%NEQ            = Isize(i)
+      rx%RvectorBlock(i)%NVAR           = NVAR
+      rx%RvectorBlock(i)%iidxFirstEntry = n
+      rx%RvectorBlock(i)%h_Ddata        = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType      = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy        = .true.
+      n = n+Isize(i)*NVAR
+    else
+      rx%RvectorBlock(i)%NEQ            = 0
+      rx%RvectorBlock(i)%iidxFirstEntry = 0
+      rx%RvectorBlock(i)%h_Ddata        = ST_NOHANDLE
+    end if
+  end do
+  
+  rx%NEQ     = n-1
+  rx%nblocks = size(Isize)
+  
+  ! The data of the vector belongs to us (we created the handle), 
+  ! not to somebody else.
+  rx%bisCopy = .false.
+  
+  ! Warning: do not reformulate the following check into one IF command
+  ! as this might give problems with some compilers!
+  if (present(bclear)) then
+    if (bclear) then
+      call lsysbl_clearVector (rx)
+    end if
+  end if
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createVecBlockDirectDims (rx, isize, iblocks, bclear,&
+                                              cdataType, NEQMAX)
+  
+!<description>
+  ! Initialises the vector block structure rx. Isize is an integer
+  ! which describes the length of each block. Iblocks denotes the
+  ! number of similar vector blocks.
+  ! Memory is allocated on the heap to hold vectors of the size
+  ! according to Isize.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+  !
+  ! Remark: There is no block discretisation structure attached to the vector!
+!</description>
+
+!<input>
+  ! An integer describing the length of each block
+  integer, intent(in) :: isize
+
+  ! An integer describing the number of vector blocks
+  integer, intent(in) :: iblocks
+  
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
+  logical, intent(in), optional :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+!</input>
+
+!<output>
+  
+  ! Destination structure. Memory is allocated for each of the blocks.
+  type(t_vectorBlock),intent(out) :: rx
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,iisize,n
+  integer :: cdata
+  
+  cdata = ST_DOUBLE
+  if (present(cdataType)) cdata = cdataType
+  iisize = max(0,isize*iblocks)
+  if (present(NEQMAX)) iisize=max(iisize,NEQMAX)
   
   ! rx is initialised by INTENT(out) with the most common data.
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
   call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
-                      isize*iblocks, cdata, &
-                      rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+                      iisize, cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
@@ -1430,21 +1611,134 @@ contains
   n=1
   do i = 1,iblocks
     if (isize .gt. 0) then
-      rx%RvectorBlock(i)%NEQ = isize
+      rx%RvectorBlock(i)%NEQ            = isize
       rx%RvectorBlock(i)%iidxFirstEntry = n
-      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
-      rx%RvectorBlock(i)%cdataType = rx%cdataType
-      rx%RvectorBlock(i)%bisCopy = .true.
-      rx%RvectorBlock(i)%cdataType = cdata
+      rx%RvectorBlock(i)%h_Ddata        = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType      = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy        = .true.
+      rx%RvectorBlock(i)%cdataType      = cdata
       n = n+isize
     else
-      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%NEQ            = 0
       rx%RvectorBlock(i)%iidxFirstEntry = 0
-      rx%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
+      rx%RvectorBlock(i)%h_Ddata        = ST_NOHANDLE
     end if
   end do
   
-  rx%NEQ = n-1
+  rx%NEQ     = n-1
+  rx%nblocks = iblocks
+  
+  ! The data of the vector belongs to us (we created the handle), 
+  ! not to somebody else.
+  rx%bisCopy = .false.
+  
+  ! Warning: do not reformulate the following check into one IF command
+  ! as this might give problems with some compilers!
+  if (present(bclear)) then
+    if (bclear) then
+      call lsysbl_clearVector (rx)
+    end if
+  end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createVecBlockDirectDims2 (rx, isize, iblocks, NVAR, bclear,&
+                                               cdataType, NEQMAX)
+  
+!<description>
+  ! Initialises the vector block structure rx. Isize is an integer
+  ! which describes the length of each block. Iblocks denotes the
+  ! number of similar vector blocks.
+  ! Memory is allocated on the heap to hold vectors of the size
+  ! according to Isize.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+  !
+  ! Remark: There is no block discretisation structure attached to the vector!
+!</description>
+
+!<input>
+  ! An integer describing the length of each block
+  integer, intent(in) :: isize
+
+  ! An integer describing the number of vector blocks
+  integer, intent(in) :: iblocks
+  
+  ! The number of local variables of each block
+  integer, intent(in) :: NVAR
+
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
+  logical, intent(in), optional :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+!</input>
+
+!<output>
+  
+  ! Destination structure. Memory is allocated for each of the blocks.
+  type(t_vectorBlock),intent(out) :: rx
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i,iisize,n
+  integer :: cdata
+  
+  cdata = ST_DOUBLE
+  if (present(cdataType)) cdata = cdataType
+  iisize = max(0,isize*iblocks*NVAR)
+  if (present(NEQMAX)) iisize=max(iisize,NEQMAX)
+  
+  ! rx is initialised by INTENT(out) with the most common data.
+  ! What is missing is the data array.
+  !
+  ! Allocate one large vector holding all data.
+  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
+                      iisize, cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+  rx%cdataType = cdata
+  
+  ! Initialise the sub-blocks. Save a pointer to the starting address of
+  ! each sub-block.
+  ! Denote in the subvector that the handle belongs to us - not to
+  ! the subvector.
+  allocate(rx%RvectorBlock(iblocks))
+  
+  n=1
+  do i = 1,iblocks
+    if (isize .gt. 0) then
+      rx%RvectorBlock(i)%NEQ            = isize
+      rx%RvectorBlock(i)%NVAR           = NVAR
+      rx%RvectorBlock(i)%iidxFirstEntry = n
+      rx%RvectorBlock(i)%h_Ddata        = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType      = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy        = .true.
+      rx%RvectorBlock(i)%cdataType      = cdata
+      n = n+isize*NVAR
+    else
+      rx%RvectorBlock(i)%NEQ            = 0
+      rx%RvectorBlock(i)%iidxFirstEntry = 0
+      rx%RvectorBlock(i)%h_Ddata        = ST_NOHANDLE
+    end if
+  end do
+  
+  rx%NEQ     = n-1
   rx%nblocks = iblocks
   
   ! The data of the vector belongs to us (we created the handle), 
@@ -1465,27 +1759,38 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockIndirect (rtemplate,rx,bclear,cdataType)
+  subroutine lsysbl_createVecBlockIndirect (rtemplate,rx,bclear,cdataType,NEQMAX)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplate is an
   ! existing block vector structure.
   ! Memory is allocated on the heap for rx, the different components
   ! of rx will have the same size as the corresponding ones in rtemplate.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
   ! A template vector structure
   type(t_vectorBlock),intent(in) :: rtemplate
   
-  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(in), optional             :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, the new vector will
   ! receive the same data type as rtemplate.
-  integer, intent(in),optional              :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<output>
@@ -1498,7 +1803,7 @@ contains
 !</subroutine>
 
   integer :: cdata,i
-  integer :: n
+  integer :: n,iNEQ
   
   cdata = rtemplate%cdataType
   if (present(cdataType)) cdata = cdataType
@@ -1512,9 +1817,13 @@ contains
   if (rx%nblocks <= 0) return
   allocate(rx%RvectorBlock(rx%nblocks))
   rx%RvectorBlock = rtemplate%RvectorBlock
+
+  ! Set working dimensions
+  iNEQ = rtemplate%NEQ
+  if (present(NEQMAX)) iNEQ = max(iNEQ,NEQMAX)
   
   ! Allocate one large new vector holding all data.
-  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, cdata, &
+  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', iNEQ, cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
@@ -1528,7 +1837,7 @@ contains
     rx%RvectorBlock%cdataType = cdata
                      
     ! Put the new handle to all subvectors
-    rx%RvectorBlock(:)%h_Ddata = rx%h_Ddata
+    rx%RvectorBlock%h_Ddata = rx%h_Ddata
   
     ! Note in the subvectors, that the handle belongs to somewhere else... to us!
     rx%RvectorBlock%bisCopy = .true.
@@ -1538,7 +1847,7 @@ contains
   n = 1
   do i=1,rx%nblocks
     rx%RvectorBlock(i)%iidxFirstEntry = n
-    n = n + rx%RvectorBlock(i)%NEQ
+    n = n + rx%RvectorBlock(i)%NEQ*rx%RvectorBlock(i)%NVAR
   end do
   
   ! Our handle belongs to us, so it is not a copy of another vector.
@@ -1558,8 +1867,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockByDiscr (rblockDiscretisation,rx,bclear,&
-                                           cdataType)
+  subroutine lsysbl_createVecBlockByDiscr (rblockDiscretisation, rx, bclear,&
+                                           cdataType, NEQMAX)
   
 !<description>
   ! Initialises the vector block structure rx based on a block discretisation
@@ -1568,6 +1877,14 @@ contains
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
   ! is calculated according to the number of DOF`s indicated by the
   ! spatial discretisation structures in rblockDiscretisation.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
@@ -1575,13 +1892,16 @@ contains
   ! for all the subblocks in rx.
   type(t_blockDiscretisation),intent(in), target :: rblockDiscretisation
   
-  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(in), optional             :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(in),optional              :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<output>
@@ -1608,7 +1928,7 @@ contains
   end do
   
   ! Create a new vector with that block structure
-  call lsysbl_createVecBlockDirect (rx, Isize(:), bclear, cdataType)
+  call lsysbl_createVecBlockDirect (rx, Isize(:), bclear, cdataType, NEQMAX)
   
   ! Initialise further data of the block vector
   rx%p_rblockDiscr => rblockDiscretisation
@@ -1627,8 +1947,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockByDiscrIntl (rblockDiscretisation,Invar,rx,&
-                                               bclear, cdataType)
+  subroutine lsysbl_createVecBlockByDiscrIntl (rblockDiscretisation, Invar, rx,&
+                                               bclear, cdataType, NEQMAX)
   
 !<description>
   ! Initialises the vector block structure rx based on a block discretisation
@@ -1637,6 +1957,14 @@ contains
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
   ! is calculated according to the number of DOF`s indicated by the
   ! spatial discretisation structures in rblockDiscretisation.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
@@ -1645,15 +1973,18 @@ contains
   type(t_blockDiscretisation),intent(in), target :: rblockDiscretisation
   
   ! An array with the number of local variables for the different blocks
-  integer, dimension(:), intent(in)         :: Invar
+  integer, dimension(:), intent(in) :: Invar
 
-  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(in), optional             :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(in),optional              :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<output>
@@ -1680,7 +2011,90 @@ contains
   end do
   
   ! Create a new vector with that block structure
-  call lsysbl_createVecBlockDirectIntl (rx, Isize(:), Invar, bclear, cdataType)
+  call lsysbl_createVecBlockDirectIntl (rx, Isize(:), Invar, bclear, cdataType, NEQMAX)
+  
+  ! Initialise further data of the block vector
+  rx%p_rblockDiscr => rblockDiscretisation
+  
+  ! Initialise further data in the subblocks
+  do i=1,rblockDiscretisation%ncomponents
+    rx%RvectorBlock(i)%p_rspatialDiscr=> &
+      rblockDiscretisation%RspatialDiscr(i)
+  end do
+  
+  deallocate(Isize)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_createVecBlockByDiscrIntl2 (rblockDiscretisation, NVAR, rx,&
+                                                bclear, cdataType, NEQMAX)
+  
+!<description>
+  ! Initialises the vector block structure rx based on a block discretisation
+  ! structure rblockDiscretisation. 
+  !
+  ! Memory is allocated on the heap for rx. The size of the subvectors in rx
+  ! is calculated according to the number of DOF`s indicated by the
+  ! spatial discretisation structures in rblockDiscretisation.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+!</description>
+  
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  type(t_blockDiscretisation),intent(in), target :: rblockDiscretisation
+  
+  ! The number of local variables of each block
+  integer, intent(in) :: NVAR
+
+  ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
+  ! Otherwise the content of rx is undefined.
+  logical, intent(in), optional :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated for each of the blocks.
+  ! A pointer to rblockDiscretisation is saved to rx.
+  type(t_vectorBlock),intent(out) :: rx
+!</output>
+  
+!</subroutine>
+
+  integer :: cdata,i
+  integer, dimension(:), allocatable :: Isize
+  
+  cdata = ST_DOUBLE
+  if (present(cdataType)) cdata = cdataType
+  
+  allocate(Isize(max(1,rblockDiscretisation%ncomponents)))
+  
+  ! Loop to the blocks in the block discretisation. Calculate size (#DOF`s)
+  ! of all the subblocks.
+  Isize(1) = 0             ! Initialisation in case ncomponents=0
+  do i=1,rblockDiscretisation%ncomponents
+    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscr(i))
+  end do
+  
+  ! Create a new vector with that block structure
+  call lsysbl_createVecBlockDirectIntl2 (rx, Isize(:), NVAR, bclear, cdataType, NEQMAX)
   
   ! Initialise further data of the block vector
   rx%p_rblockDiscr => rblockDiscretisation
@@ -1700,7 +2114,7 @@ contains
 !<subroutine>
 
   subroutine lsysbl_createMatBlockByDiscr (rblockDiscretisationTrial,rmatrix,&
-      rblockDiscretisationTest)
+                                           rblockDiscretisationTest)
   
 !<description>
   ! Initialises the matrix block structure rmatrix based on a block 
@@ -1856,7 +2270,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear, btransposed,cdataType)
+  subroutine lsysbl_createVecBlockIndMat (rtemplateMat, rx, bclear,&
+                                          btransposed, cdataType, NEQMAX)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplateMat is an
@@ -1868,6 +2283,14 @@ contains
   ! blocks in rtemplateMat.
   ! The sorting strategies of the subvectors are initialised
   ! with the sorting strategies of the column blocks of rtemplateMat.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
@@ -1876,7 +2299,7 @@ contains
   
   ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(in), optional   :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: If not specified or set to FALSE, the vector will be
   ! created as 'right' vector of the matrix (so matrix vector multiplication
@@ -1887,7 +2310,10 @@ contains
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(in),optional :: cdataType
+  integer, intent(in), optional :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<output>
@@ -1912,18 +2338,19 @@ contains
     end if
     
     if (btrans) then
-      nbpc = rtemplateMat%nblocksPerRow
-      nbpr = rtemplateMat%nblocksPerCol
-      NEQ = rtemplateMat%NCOLS
+      nbpc  = rtemplateMat%nblocksPerRow
+      nbpr  = rtemplateMat%nblocksPerCol
+      NEQ   = rtemplateMat%NCOLS
       NCOLS = rtemplateMat%NEQ
     else
-      nbpc = rtemplateMat%nblocksPerCol
-      nbpr = rtemplateMat%nblocksPerRow
-      NEQ = rtemplateMat%NEQ
+      nbpc  = rtemplateMat%nblocksPerCol
+      nbpr  = rtemplateMat%nblocksPerRow
+      NEQ   = rtemplateMat%NEQ
       NCOLS = rtemplateMat%NCOLS
     end if
     
     rx%NEQ = NCOLS
+    if (present(NEQMAX)) NCOLS = max(NCOLS,NEQMAX)
 
     ! Allocate one large vector holding all data.
     call storage_new ('lsysbl_createVecBlockIndMat', 'Vector', &
@@ -1944,13 +2371,13 @@ contains
       do j = 1, nbpc
       
         if (btrans) then
-          NEQ = rtemplateMat%RmatrixBlock(i,j)%NCOLS
+          NEQ   = rtemplateMat%RmatrixBlock(i,j)%NCOLS
           NCOLS = rtemplateMat%RmatrixBlock(i,j)%NEQ
-          NVAR = rtemplateMat%RmatrixBlock(i,j)%NVAR
+          NVAR  = rtemplateMat%RmatrixBlock(i,j)%NVAR
         else
-          NEQ = rtemplateMat%RmatrixBlock(j,i)%NEQ
+          NEQ   = rtemplateMat%RmatrixBlock(j,i)%NEQ
           NCOLS = rtemplateMat%RmatrixBlock(j,i)%NCOLS
-          NVAR = rtemplateMat%RmatrixBlock(j,i)%NVAR
+          NVAR  = rtemplateMat%RmatrixBlock(j,i)%NVAR
         end if
       
         ! Check if the matrix is not empty
@@ -1963,7 +2390,7 @@ contains
           ! Take the handle of the complete-solution vector, but set the index of
           ! the first entry to a value >= 1 - so that it points to the first
           ! entry in the global solution vector!
-          rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+          rx%RvectorBlock(i)%h_Ddata        = rx%h_Ddata
           rx%RvectorBlock(i)%iidxFirstEntry = n
           
           ! Give the vector the discretisation of the matrix
@@ -2000,7 +2427,7 @@ contains
           ! Set the data type
           rx%RvectorBlock(i)%cdataType = cdata
           
-          n = n+NCOLS
+          n = n + NCOLS*NVAR
           
           ! Finish this loop, continue with the next column
           exit
@@ -2019,7 +2446,7 @@ contains
       
     end do
     
-    rx%nblocks = nbpr
+    rx%nblocks   = nbpr
     rx%cdataType = cdata
 
     ! Transfer the boundary conditions and block discretisation pointers
@@ -2150,7 +2577,8 @@ contains
     ! There must be at least some compatibility between the matrix
     ! and the vector!
     if ((NCOLS .ne. rx%NEQ) .or. (nbpr .ne. rx%nblocks)) then
-      print *,'lsysbl_assignDiscrIndirectMat error: Matrix/Vector incompatible!'
+      call output_line('Matrix/Vector incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_assignDiscrIndirectMat')
       call sys_halt()
     end if
 
@@ -2387,7 +2815,8 @@ contains
   integer :: i
   
   if (rx%h_Ddata .eq. ST_NOHANDLE) then
-    print *,'lsysbl_releaseVector warning: releasing unused vector.'
+    call output_line('Releasing unused vector.',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_releaseVector')
   end if
   
   ! Release the data - if the handle is not a copy of another vector!
@@ -2424,7 +2853,7 @@ contains
   
 !<inputoutput>
   ! Block matrix to be released
-  type(t_matrixBlock), intent(inout)                :: rMatrix
+  type(t_matrixBlock), intent(inout) :: rMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2471,12 +2900,12 @@ contains
   
 !<input>
   ! Matrix row which should be released.
-  integer, intent(in)                               :: irow
+  integer, intent(in) :: irow
 !</input>
   
 !<inputoutput>
   ! Block matrix to be released (partially)
-  type(t_matrixBlock), intent(inout)                :: rMatrix
+  type(t_matrixBlock), intent(inout) :: rMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2506,12 +2935,12 @@ contains
   
 !<input>
   ! Matrix column which should be released.
-  integer, intent(in)                               :: icolumn
+  integer, intent(in) :: icolumn
 !</input>
   
 !<inputoutput>
   ! Block matrix to be released (partially)
-  type(t_matrixBlock), intent(inout)                :: rMatrix
+  type(t_matrixBlock), intent(inout) :: rMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2545,21 +2974,21 @@ contains
 !<input>
   
   ! Block matrix
-  type(t_matrixBlock), intent(in)                   :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 
   ! Block vector to multiply with the matrix.
-  type(t_vectorBlock), intent(in)                   :: rx
+  type(t_vectorBlock), intent(in) :: rx
   
   ! Multiplicative factor for rx
-  real(DP), intent(in)                              :: cx
+  real(DP), intent(in) :: cx
 
   ! Multiplicative factor for ry
-  real(DP), intent(in)                              :: cy
+  real(DP), intent(in) :: cy
   
   ! OPTIONAL: Specifies whether a multiplication with the matrix itself
   ! (.false.) or with its transpose (.true.) should be performed. If not
   ! given, .false. is assumed.
-  logical, optional, intent(in)                     :: btransposed
+  logical, optional, intent(in) :: btransposed
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2569,7 +2998,7 @@ contains
 !<inputoutput>
   
   ! Additive vector. Receives the result of the matrix-vector multiplication
-  type(t_vectorBlock), intent(inout)                :: ry
+  type(t_vectorBlock), intent(inout) :: ry
   
 !</inputoutput>
 
@@ -2807,13 +3236,15 @@ contains
   call storage_getsize (ry%h_Ddata, isize)
   NEQ = rx%NEQ
   if (isize .lt. NEQ) then
-    print *,'lsysbl_copyVector: Destination vector too small!'
+    call output_line('Destination vector too small!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVector')
     call sys_halt()
   end if
   
   if (rx%cdataType .ne. ry%cdataType) then
-    print *,'lsysbl_copyVector: Destination vector has different type ' // &
-            'than source vector!'
+    call output_line('Destination vector has different type ' // &
+        'than source vector!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVector')
     call sys_halt()
   end if
   
@@ -3019,7 +3450,8 @@ contains
     call lalg_scaleVectorSngl (p_Fdata,real(c,SP))  
 
   case DEFAULT
-    print *,'lsysbl_scaleVector: Unsupported data type!'
+    call output_line('Unsupported data type!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_scaleVector')
     call sys_halt()
   end select
   
@@ -3072,7 +3504,8 @@ contains
     end if
 
   case DEFAULT
-    print *,'lsysbl_clearVector: Unsupported data type!'
+    call output_line('Unsupported data type!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_clearVector')
     call sys_halt()
   end select
   
@@ -3094,13 +3527,13 @@ contains
   
 !<input>
   ! First source vector
-  type(t_vectorBlock), intent(in)    :: rx
+  type(t_vectorBlock), intent(in) :: rx
   
   ! Scaling factor for Dx
-  real(DP), intent(in)               :: cx
+  real(DP), intent(in) :: cx
 
   ! Scaling factor for Dy
-  real(DP), intent(in)               :: cy
+  real(DP), intent(in) :: cy
 !</input>
 
 !<inputoutput>
@@ -3125,7 +3558,8 @@ contains
   end if
 
   if (rx%cdataType .ne. ry%cdataType) then
-    print *,'lsysbl_vectorLinearComb: different data types not supported!'
+    call output_line('Different data types not supported!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb')
     call sys_halt()
   end if
   
@@ -3157,7 +3591,8 @@ contains
     call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
   
   case DEFAULT
-    print *,'lsysbl_vectorLinearComb: Unsupported data type!'
+    call output_line('Unsupported data type!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb')
     call sys_halt()
   end select
 
@@ -3176,10 +3611,10 @@ contains
   
 !<input>
   ! First vector
-  type(t_vectorBlock), intent(in)                  :: rx
+  type(t_vectorBlock), intent(in) :: rx
 
   ! Second vector
-  type(t_vectorBlock), intent(in)                  :: ry
+  type(t_vectorBlock), intent(in) :: ry
 
 !</input>
 
@@ -3204,12 +3639,14 @@ contains
   res = 0.0_DP
   
   if ( (rx%NEQ .eq. 0) .or. (ry%NEQ .eq. 0) .or. (rx%NEQ .ne. rx%NEQ)) then
-    print *,'Error in lsysbl_scalarProduct: Vector dimensions wrong!'
+    call output_line('Vector dimensions wrong!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_scalarProduct')
     call sys_halt()
   end if
 
   if (rx%cdataType .ne. ry%cdataType) then
-    print *,'lsysbl_scalarProduct: Data types different!'
+    call output_line('Data types different!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_scalarProduct')
     call sys_halt()
   end if
 
@@ -3238,7 +3675,8 @@ contains
     res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
 
   case default
-    print *,'lsysbl_scalarProduct: Not supported precision combination'
+    call output_line('Not supported precision combination',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_scalarProduct')
     call sys_halt()
   end select
   
@@ -3259,7 +3697,7 @@ contains
   
 !<input>
   ! Vector to calculate the norm of.
-  type(t_vectorBlock), intent(in)                  :: rx
+  type(t_vectorBlock), intent(in) :: rx
 
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   integer, intent(in) :: cnorm
@@ -3285,7 +3723,8 @@ contains
 
   ! Is there data at all?
   if (rx%h_Ddata .eq. ST_NOHANDLE) then
-    print *,'Error in lsysbl_vectorNorm: Vector empty!'
+    call output_line('Vector empty!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorNorm')
     call sys_halt()
   end if
   
@@ -3302,7 +3741,8 @@ contains
     lsysbl_vectorNorm = lalg_norm (p_Fdata,cnorm,iposMax) 
     
   case DEFAULT
-    print *,'lsysbl_vectorNorm: Unsupported data type!'
+    call output_line('Unsupported data type!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorNorm')
     call sys_halt()
   end select
   
@@ -3325,11 +3765,11 @@ contains
   
 !<input>
   ! Vector to calculate the norm of.
-  type(t_vectorBlock), intent(in)                   :: rx
+  type(t_vectorBlock), intent(in) :: rx
 
   ! Identifier list. For every subvector in rx, this identifies the norm 
   ! to calculate. Each entry is a LINALG_NORMxxxx constants.
-  integer, dimension(:), intent(in)                 :: Cnorms
+  integer, dimension(:), intent(in) :: Cnorms
 !</input>
 
 !<output>
@@ -3598,7 +4038,8 @@ contains
           
         case DEFAULT
         
-          print *,'lsysbl_createScalarFromVec: Invalid data type!'
+          call output_line('Invalid data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_createScalarFromVec')
           call sys_halt()
           
         end select
@@ -3661,13 +4102,15 @@ contains
 !      CALL storage_getbase_double (rvector%h_Ddata,p_Fdata)
 !      length = SIZE(p_Fdata)-rvector%iidxFirstEntry+1
 !    CASE DEFAULT
-!      PRINT *,'lsysbl_enforceStructure: Unsupported data type'
+!      CALL OUTPUT_LINE('Unsupported data type',&
+!          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_enforceStructure')
 !      CALL sys_halt()
 !    END SELECT
     
     ! Only basic check: there must be enough memory.
     if (rvector%NEQ .lt. rtemplateVec%NEQ) then
-      print *,'lsysbl_enforceStructure: Destination vector too small!'
+      call output_line('Destination vector too small!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_enforceStructure')
       call sys_halt()
     end if
   
@@ -3752,7 +4195,8 @@ contains
 !
     ! Only basic check: there must be enough memory.
     if (rvector%NEQ .lt. sum(Isize)) then
-      print *,'lsysbl_enforceStructureDirect: Destination vector too small!'
+      call output_line('Destination vector too small!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_enforceStructureDirect')
       call sys_halt()
     end if
   
@@ -3824,7 +4268,8 @@ contains
 
     ! Check that the destination vector can handle this structure
     if (dof_igetNDofGlobBlock(rdiscretisation) .gt. iidx) then
-      print *,'lsysbl_enforceStructureDiscr: Destination vector too small!'
+      call output_line('Destination vector too small!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_enforceStructureDiscr')
       call sys_halt()
     end if
 
@@ -4014,28 +4459,28 @@ contains
   
 !<input>
   ! Source matrix.
-  type(t_matrixBlock), intent(in)               :: rsourceMatrix
+  type(t_matrixBlock), intent(in) :: rsourceMatrix
   
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. This duplication flag is applied to all submatrices
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
   !   Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   structural data as rsourceMatrix and therefore shares the same structure.
-  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of 
   !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
   !   If rdestMatrix already contains allocated memory, structural data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the structure; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
@@ -4043,33 +4488,33 @@ contains
   !   rsourceMatrix and is therefore a third matrix sharing the same structure
   !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
   !   other matrix have the same structure).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(in)                            :: cdupStructure
+  integer, intent(in) :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from 
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed.
-  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   matrix content data as rsourceMatrix and therefore shares the same content.
-  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the content of rsourceMatrix.
   !   If necessary, new memory is allocated for the content.
   !   If rdestMatrix already contains allocated memory, content data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the content; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
@@ -4077,18 +4522,18 @@ contains
   !   rsourceMatrix and is therefore a third matrix sharing the same content
   !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
   !   other matrix have the same content).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(in)                            :: cdupContent
+  integer, intent(in) :: cdupContent
 !</input>
 
 !<output>
   ! Destination matrix.
-  type(t_matrixBlock), intent(inout)            :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 !</output>  
 
 !</subroutine>
@@ -4179,26 +4624,26 @@ contains
   ! Duplication flag that decides on how to set up the structure
   ! of ry. Not all flags are possible!
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Ignore the structure of rx
+  ! LSYSSC_DUP_IGNORE : Ignore the structure of rx
   ! LSYSSC_DUP_COPY or
   ! LSYSSC_DUP_COPYOVERWRITE or
-  ! LSYSSC_DUP_TEMPLATE   : Structural data is copied from rx
+  ! LSYSSC_DUP_TEMPLATE : Structural data is copied from rx
   !   to ry (NEQ, sorting strategy, pointer to discretisation structure).
-  integer, intent(in)                            :: cdupStructure
+  integer, intent(in) :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of ry. Not all flags are possible!
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Ignore the content of rx.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing content from 
+  ! LSYSSC_DUP_IGNORE : Ignore the content of rx.
+  ! LSYSSC_DUP_REMOVE : Removes any existing content from 
   !   ry if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS    : Removes any existing content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing content from 
   !   ry if there is any. No memory is released, handles are simply
   !   dismissed.
-  ! LSYSSC_DUP_SHARE      : ry receives the same handles for
+  ! LSYSSC_DUP_SHARE : ry receives the same handles for
   !   content data as rx and therefore shares the same content.
   !   If necessary, the old data in ry is released.
-  ! LSYSSC_DUP_COPY       : ry gets a copy of the content of rx.
+  ! LSYSSC_DUP_COPY : ry gets a copy of the content of rx.
   !   If necessary, new memory is allocated for the content.
   !   If ry already contains allocated memory that belongs
   !   to that vector, content/structure data is simply copied from rx
@@ -4213,7 +4658,7 @@ contains
   !   The ownership of the content/data arrays is not respected, i.e. if the
   !   destination vector is not the owner, the actual owner of the data arrays is
   !   modified, too!
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
   !   rx belongs to rx, ry gets a copy
   !   of the content; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the content of rx belongs to another
@@ -4221,10 +4666,10 @@ contains
   !   rx and is therefore a third vector sharing the same content
   !   (the same as LSYSSC_DUP_SHARE, so rx, ry and the 
   !   other vector have the same content).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  integer, intent(in)                            :: cdupContent
+  integer, intent(in) :: cdupContent
 !</input>
 
 !<inputoutput>
@@ -4434,7 +4879,8 @@ contains
 
     case DEFAULT
     
-      print *,'lsysbl_duplicateVector: cdupContent unknown!'
+      call output_line('cdupContent unknown!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_enforceStructureDiscr')
       call sys_halt()
     
     end select
@@ -4570,14 +5016,14 @@ contains
 
 !<input>
   ! Source vector defining the sorting strategy.
-  type(t_vectorBlock), intent(in)               :: rvectorSrc
+  type(t_vectorBlock), intent(in) :: rvectorSrc
 !</input>
 
 !<inputoutput>
   ! Destination vector; is resorted according to the sort strategy in rvectorSrc
   ! or is unsorted, if rvectorSrc is unsorted.
   ! Must have the same size as rvectorSrc.
-  type(t_vectorBlock), intent(inout)            :: rvectorDst
+  type(t_vectorBlock), intent(inout) :: rvectorDst
 
   ! A scalar temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as the longest subvector in rvector.
@@ -4615,18 +5061,18 @@ contains
 
 !<input>
   ! Source matrix defining the sorting strategy.
-  type(t_matrixBlock), intent(in)               :: rmatrixSrc
+  type(t_matrixBlock), intent(in) :: rmatrixSrc
 !</input>
 
 !<inputoutput>
   ! Destination vector; is resorted according to the sort strategy in rmatrixSrc
   ! or is unsorted, if rmatrixSrc is unsorted.
   ! Must have the same size (NEQ) as rmatrixSrc.
-  type(t_vectorBlock), intent(inout)            :: rvectorDst
+  type(t_vectorBlock), intent(inout) :: rvectorDst
 
   ! A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvectorDst.
-  type(t_vectorScalar), intent(inout)            :: rtemp
+  type(t_vectorScalar), intent(inout) :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -4719,7 +5165,7 @@ contains
   
 !<input>
   ! Block matrix to check
-  type(t_matrixBlock), intent(in)                  :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<result>
@@ -4759,7 +5205,7 @@ contains
   
 !<input>
   ! Block vector to check
-  type(t_vectorBlock), intent(in)                  :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !<result>
@@ -5055,7 +5501,7 @@ contains
   
 !<input>
   ! Source matrix.
-  type(t_matrixBlock), intent(in)               :: rsourceMatrix
+  type(t_matrixBlock), intent(in) :: rsourceMatrix
   
   ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to 
   ! position (1,1) into rdestMatrix. Default value is =1.
@@ -5084,28 +5530,28 @@ contains
   !   whether dscaleFactor=0.0 or not. Standard.
   ! FALSE: Submatrices of the source matrix will only be copied if
   !   dscaleFacor <> 0.0.
-  logical, intent(in), optional                  :: bignoreScaleFactors
+  logical, intent(in), optional :: bignoreScaleFactors
 
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. This duplication flag is applied to all submatrices
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
   !   Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   structural data as rsourceMatrix and therefore shares the same structure.
-  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of 
   !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
   !   If rdestMatrix already contains allocated memory, structural data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the structure; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
@@ -5113,33 +5559,33 @@ contains
   !   rsourceMatrix and is therefore a third matrix sharing the same structure
   !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
   !   other matrix have the same structure).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(in)                            :: cdupStructure
+  integer, intent(in) :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from 
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed.
-  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   matrix content data as rsourceMatrix and therefore shares the same content.
-  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the content of rsourceMatrix.
   !   If necessary, new memory is allocated for the content.
   !   If rdestMatrix already contains allocated memory, content data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the content; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
@@ -5147,13 +5593,13 @@ contains
   !   rsourceMatrix and is therefore a third matrix sharing the same content
   !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
   !   other matrix have the same content).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(in)                            :: cdupContent
+  integer, intent(in) :: cdupContent
 !</input>
 
 !<inputoutput>
@@ -5163,7 +5609,7 @@ contains
   ! as specified by cdupStructure/cdubContent.
   ! If the matrix exists but the block count does not match, the matrix
   ! is released and recreated in the correct size.
-  type(t_matrixBlock), intent(inout)            :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 !</inputoutput>  
 
 !</subroutine>
@@ -5351,18 +5797,18 @@ contains
   !   whether dscaleFactor=0.0 or not. Standard.
   ! FALSE: Submatrices of the source matrix will only be copied if
   !   dscaleFacor <> 0.0.
-  logical, intent(in), optional                  :: bignoreScaleFactors
+  logical, intent(in), optional :: bignoreScaleFactors
 
 !</input>
 
 !<inputoutput>
   ! Source matrix.
-  type(t_matrixBlock), intent(inout)            :: rsourceMatrix
+  type(t_matrixBlock), intent(inout) :: rsourceMatrix
 
   ! Destination matrix. 
   ! If necessary, this matrix is regenerated based on the size of the matrix
   ! part to be extracted from rsourceMatrix
-  type(t_matrixBlock), intent(inout)            :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 !</inputoutput>  
 
 !</subroutine>
@@ -5493,7 +5939,7 @@ contains
   
 !<input>
   ! The block matrix.
-  type(t_matrixBlock), intent(in)               :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
   
   ! Submatrix row to be checked
   integer, intent(in) :: irow
@@ -5574,32 +6020,32 @@ contains
     integer, dimension(:), intent(in) :: Isize
 
     ! Whether to fill the vector with zero initially
-    logical, intent(in)               :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(in), optional     :: bcopy
+    logical, intent(in), optional :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer, intent(in), optional     :: NEQMAX
+    integer, intent(in), optional :: NEQMAX
 
 !</input>
 
 !<inputoutput>
 
     ! Block vector structure
-    type(t_vectorBlock), intent(inout)             :: rx
+    type(t_vectorBlock), intent(inout) :: rx
 
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock)                 :: rxTmp
-    real(DP), dimension(:), pointer     :: p_Ddata,p_DdataTmp
-    real(SP), dimension(:), pointer     :: p_Fdata,p_FDataTmp
-    integer, dimension(:), pointer      :: p_Idata,p_IdataTmp
+    type(t_vectorBlock) :: rxTmp
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataTmp
+    real(SP), dimension(:), pointer :: p_Fdata,p_FDataTmp
+    integer, dimension(:), pointer :: p_Idata,p_IdataTmp
     integer :: iNEQ,iisize,i,n
-    logical              :: bdocopy
+    logical :: bdocopy
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     if (rx%bisCopy) then
@@ -5609,15 +6055,24 @@ contains
     end if
     
     ! Check, if vector has been initialized before
-    if (rx%NEQ == 0 .or. rx%h_Ddata == ST_NOHANDLE) then
-      call output_line(' A vector can only be resized if it has been created correctly!',&
+    if (rx%NEQ .eq. 0 .or. rx%h_Ddata .eq. ST_NOHANDLE) then
+      call output_line('A vector can only be resized if it has been created correctly!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
+      call sys_halt()
+    end if
+
+    ! Check, if number of subvectors equals size(Isize)
+    if (rx%nblocks .ne. size(Isize)) then
+      call output_line('Dimension of Isize does not match number of blocks!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
       call sys_halt()
     end if
 
     ! Set working dimensions
-    iNEQ = max(0,sum(Isize))
-    if (present(NEQMAX)) iNEQ = max(iNEQ,NEQMAX)
+    iNEQ = 0
+    do i=1,rx%nblocks
+      iNEQ = iNEQ + max(0,Isize(i))*rx%Rvectorblock(i)%NVAR
+    end do
 
     ! Set copy/clear attributes
     bdocopy = (.not.bclear)
@@ -5642,8 +6097,9 @@ contains
     call storage_getsize(rx%h_Ddata, iisize)
 
     ! Update the global NEQ.
-    rx%NEQ = max(0,sum(Isize))
-
+    rx%NEQ = iNEQ
+    if (present(NEQMAX)) iNEQ = max(iNEQ,NEQMAX)
+    
     ! Do we really have to reallocate the vector physically?
     if (rx%NEQ > iisize) then
 
@@ -5666,7 +6122,7 @@ contains
         ! Compute new size, i.e. MAX(0,NEQ,NEQMAX)
         iisize = iNEQ
 
-        if (iisize == 0) then
+        if (iisize .eq. 0) then
           ! If nothing is left, then the vector can also be release
           call lsysbl_releaseVector(rx)
           call lsysbl_releaseVector(rxTmp)
@@ -5685,16 +6141,9 @@ contains
     ! Restore the structure of the scalar subvectors
     n=1
     do i=1,rx%nblocks
-
-      ! Check that Isize(i) is a multiple of NVAR
-      if (mod(Isize(i), rx%RvectorBlock(i)%NVAR) .ne. 0) then
-        call output_line('Size of the scalar subvector is not a multiple of NVAR!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockDirect')
-        call sys_halt()
-      end if
-      rx%RvectorBlock(i)%NEQ = Isize(i)/rx%RvectorBlock(i)%NVAR
+      rx%RvectorBlock(i)%NEQ            = Isize(i)
       rx%RvectorBlock(i)%iidxFirstEntry = n
-      n = n + rx%RvectorBlock(i)%NEQ
+      n = n + rx%RvectorBlock(i)%NEQ*rx%RvectorBlock(i)%NVAR
 
       ! Remove any sorting strategy 
       rx%RvectorBlock(i)%isortStrategy      = 0
@@ -5773,43 +6222,126 @@ contains
 !<input>
     
     ! Integer with desired length of all vector blocks
-    integer, intent(in)               :: isize
+    integer, intent(in) :: isize
 
     ! Whether to fill the vector with zero initially
-    logical, intent(in)               :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(in), optional     :: bcopy
+    logical, intent(in), optional :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer, intent(in), optional     :: NEQMAX
+    integer, intent(in), optional :: NEQMAX
 
 !</input>
 
 !<inputoutput>
 
     ! Block vector structure
-    type(t_vectorBlock), intent(inout)             :: rx
+    type(t_vectorBlock), intent(inout) :: rx
 
 !</inputoutput>
 
 !</subroutine>
     
     ! local variabls
-    integer, dimension(max(rx%nblocks,1)) :: Isubsize
+    integer, dimension(:), allocatable :: Isubsize
 
+    allocate(Isubsize(max(1,rx%nblocks)))
+    
     ! Fill auxiliary vector Iisize
     Isubsize(1:rx%nblocks) = isize
 
     ! Call the direct resize routine
     call lsysbl_resizeVecBlockDirect(rx, Isubsize(1:rx%nblocks), bclear, bcopy, NEQMAX)
+    
+    deallocate(Isubsize)
+
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine lsysbl_resizeVecBlockIndirect (rx, rTemplate, bclear, bcopy)
+  subroutine lsysbl_resizeVecBlockByDiscr(rblockDiscretisation, rx, bclear,&
+                                          bcopy, NEQMAX)
+
+!<description>
+  ! Resize the vector block structure rx based on a block discretisation
+  ! structure rblockDiscretisation. 
+  !
+  ! Memory is allocated on the heap for rx. The size of the subvectors in rx
+  ! is calculated according to the number of DOF`s indicated by the
+  ! spatial discretisation structures in rblockDiscretisation.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
+!</description>
+
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  type(t_blockDiscretisation),intent(in), target :: rblockDiscretisation
+
+  ! Whether to fill the vector with zero initially
+  logical, intent(in) :: bclear
+
+  ! OPTIONAL: Whether to copy the content of the vector to the resized one
+  logical, intent(in), optional :: bcopy
+
+  ! OPTIONAL: Maximum length of the vector
+  integer, intent(in), optional :: NEQMAX
+
+!</input>
+
+!<inputoutput>
+
+  ! Block vector structure
+  type(t_vectorBlock), intent(inout) :: rx
+
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    integer, dimension(:), allocatable :: Isize
+
+    allocate(Isize(max(1,rblockDiscretisation%ncomponents)))
+  
+    ! Loop to the blocks in the block discretisation. Calculate size (#DOF`s)
+    ! of all the subblocks.
+    Isize(1) = 0             ! Initialisation in case ncomponents=0
+    do i=1,rblockDiscretisation%ncomponents
+      Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscr(i))
+    end do
+
+    ! Resize block vector
+    call lsysbl_resizeVecBlockDirect(rx, Isize, bclear, bcopy, NEQMAX)
+
+    ! Attach block discretisation structure
+    rx%p_rblockDiscr => rblockDiscretisation
+    
+    ! Attach spatial discretisation structures to the subblocks
+    do i=1,rblockDiscretisation%ncomponents
+      rx%RvectorBlock(i)%p_rspatialDiscr=> &
+          rblockDiscretisation%RspatialDiscr(i)
+    end do
+    
+    deallocate(Isize)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_resizeVecBlockIndirect (rx, rTemplate, bclear, bcopy, NEQMAX)
 
 !<description>
   ! Resize the vector block structure rx so that is resembles that of
@@ -5825,30 +6357,35 @@ contains
   ! If the parameter bclear=.TRUE., then the resized vector is cleared.
   ! Otherwise it is left 'as is'.
   !
-  ! Remark: In contrast to scalar vectors where the content of the vector
-  ! can be copied upon resize this is not possible for block vectors.
-  ! Theoretically, this would be possible. However, some subvectors may
-  ! have increased whereas other may have decreased, so that an additional
-  ! vector is mandatory to reorganize the global array. This is not efficient.
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
 
 !<input>
 
     ! Template block vector structure
-    type(t_vectorBlock), intent(in)                :: rTemplate
+    type(t_vectorBlock), intent(in) :: rTemplate
 
     ! Whether to fill the vector with zero initially
-    logical, intent(in)                            :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(in), optional                  :: bcopy
+    logical, intent(in), optional :: bcopy
+
+    ! OPTIONAL: Maximum length of the vector
+    integer, intent(in), optional :: NEQMAX
 
 !</input>
 
 !<inputoutput>
 
     ! Block vector structure
-    type(t_vectorBlock), intent(inout)             :: rx
+    type(t_vectorBlock), intent(inout) :: rx
 
 !</inputoutput>
 
@@ -5856,12 +6393,12 @@ contains
 
     ! local variabls
     integer, dimension(max(rx%nblocks,1)) :: Isize
-    integer :: NEQMAX
+    integer :: iNEQMAX
     integer :: i
 
     ! Check if vector is initialized
-    if (rx%NEQ == 0 .or. rx%h_Ddata == ST_NOHANDLE) then
-      call lsysbl_createVectorBlock(rTemplate, rx, bclear)
+    if (rx%NEQ .eq. 0 .or. rx%h_Ddata .eq. ST_NOHANDLE) then
+      call lsysbl_createVectorBlock(rTemplate, rx, bclear, NEQMAX)
       
     else
       
@@ -5881,14 +6418,15 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndirect')
           call sys_halt()
         end if
-        Isize(i) = rTemplate%RvectorBlock(i)%NEQ*rTemplate%RvectorBlock(i)%NVAR
+        Isize(i) = rTemplate%RvectorBlock(i)%NEQ
       end do
 
       ! Get current size of global vector
-      call storage_getsize(rTemplate%h_Ddata,NEQMAX)
+      call storage_getsize(rTemplate%h_Ddata,iNEQMAX)
+      if (present(NEQMAX)) iNEQMAX = max(iNEQMAX,NEQMAX)
       
       ! Resize vector directly
-      call lsysbl_resizeVecBlockDirect(rx, Isize(1:rx%nblocks), bclear, bcopy, NEQMAX)
+      call lsysbl_resizeVecBlockDirect(rx, Isize(1:rx%nblocks), bclear, bcopy, iNEQMAX)
     end if
 
   end subroutine
@@ -5897,7 +6435,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_resizeVecBlockIndMat (rtemplateMat, rx, bclear, bcopy)
+  subroutine lsysbl_resizeVecBlockIndMat (rtemplateMat, rx, bclear, bcopy, NEQMAX)
 
 !<description>
     ! Resize the vector block structure rx so that it is compatible with
@@ -5913,23 +6451,28 @@ contains
     ! If the parameter bclear=.TRUE., then the resized vector is cleared.
     ! Otherwise it is left 'as is'.
     !
-    ! Remark: In contrast to scalar vectors where the content of the vector
-    ! can be copied upon resize this is not possible for block vectors.
-    ! Theoretically, this would be possible. However, some subvectors may
-    ! have increased whereas other may have decreased, so that an additional
-    ! vector is mandatory to reorganize the global array. This is not efficient.
+    ! Note, if the optional parameter NEQMAX is given, then memory is
+    ! allocated for a vector of length NEQMAX but only length NEQ is
+    ! assigned to the vector. The vector can be resized arbitrarily.
+    ! Note that no memory reallocation is required if NEQ < NEQMAX.
+    ! In order to keep the actual size of the memory transparent from
+    ! the user, NEQMAX is not stored directly. It can only be obtained,
+    ! by getting the size of the associated storage block.
 !</description>
 
 !<input>
     ! A template matrix structure
-    type(t_matrixBlock), intent(in)    :: rtemplateMat
+    type(t_matrixBlock), intent(in) :: rtemplateMat
 
     ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
     ! Otherwise the content of rx is undefined.
-    logical, intent(in), optional      :: bclear
+    logical, intent(in), optional :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(in), optional      :: bcopy
+    logical, intent(in), optional :: bcopy
+
+    ! OPTIONAL: Maximum length of the vector
+    integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<inputoutput>
@@ -5940,16 +6483,17 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock)                 :: rxTmp
-    real(DP), dimension(:), pointer     :: p_Ddata,p_DdataTmp
-    real(SP), dimension(:), pointer     :: p_Fdata,p_FDataTmp
+    type(t_vectorBlock) :: rxTmp
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataTmp
+    real(SP), dimension(:), pointer :: p_Fdata,p_FDataTmp
     integer, dimension(:), pointer :: p_Idata,p_IdataTmp
     integer :: isize,i,j,n
-    logical              :: bdocopy
+    logical :: bdocopy
 
     ! Check, that the vector is not a copy of another (possibly larger) vector
     if (rx%bisCopy) then
-      print *, "lsysbl_resizeVecBlockIndMat: A copied vector cannot be resized!"
+      call output_line( 'A copied vector cannot be resized!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndMat')
       call sys_halt()
     end if
 
@@ -5958,16 +6502,16 @@ contains
     if (present(bcopy)) bdocopy = (bdocopy .and. bcopy)
 
     ! Check if vector exists?
-    if (rx%NEQ == 0 .or.&
-        rx%h_DData == ST_NOHANDLE) then
-
-      call lsysbl_createVecBlockIndMat(rtemplateMat,rx,bclear)
+    if (rx%NEQ     .eq. 0 .or.&
+        rx%h_DData .eq. ST_NOHANDLE) then
+      call lsysbl_createVecBlockIndMat(rtemplateMat,rx,bclear,NEQMAX=NEQMAX)
 
     else
       
       ! Check if vector/matrix are compatible
       if (rx%nblocks .ne. rtemplateMat%nblocksPerRow) then
-        print *, "lsysbl_resizeVecBlockIndMat: Matrix/Vector incompatible!"
+        call output_line( 'Matrix/Vector incompatible!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_resizeVecBlockIndMat')
         call sys_halt()
       end if
 
@@ -5995,8 +6539,11 @@ contains
       ! Do we really have to reallocate the vector physically?
       if (rx%NEQ > isize) then
 
+        isize = rx%NEQ
+        if (present(NEQMAX)) isize = max(isize,NEQMAX)
+
         ! Yes, reallocate memory for handle h_Ddata
-        call storage_realloc('lsysbl_resizeVecBlockIndMat', rx%NEQ, rx%h_Ddata, &
+        call storage_realloc('lsysbl_resizeVecBlockIndMat', isize, rx%h_Ddata, &
             ST_NEWBLOCK_NOINIT, bdocopy)
       end if
 
@@ -6035,7 +6582,8 @@ contains
             ! the subvector.
             rx%RvectorBlock(i)%bisCopy = .true.
             
-            n = n+rtemplateMat%RmatrixBlock(j,i)%NCOLS
+            n = n+rtemplateMat%RmatrixBlock(j,i)%NCOLS&
+                 *rtemplateMat%RmatrixBlock(j,i)%NVAR
             
             ! Finish this loop, continue with the next column
             exit
@@ -6353,21 +6901,21 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
   !   Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   structural data as rsourceMatrix and therefore shares the same structure.
-  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of 
   !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
   !   If rdestMatrix already contains allocated memory, structural data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the structure; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
@@ -6375,33 +6923,33 @@ contains
   !   rsourceMatrix and is therefore a third matrix sharing the same structure
   !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
   !   other matrix have the same structure).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(in)                            :: cdupStructure
+  integer, intent(in) :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from 
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed.
-  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   matrix content data as rsourceMatrix and therefore shares the same content.
-  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the content of rsourceMatrix.
   !   If necessary, new memory is allocated for the content.
   !   If rdestMatrix already contains allocated memory, content data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the content; new memory is allocated if necessary (the same as 
   !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
@@ -6409,22 +6957,22 @@ contains
   !   rsourceMatrix and is therefore a third matrix sharing the same content
   !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
   !   other matrix have the same content).
-  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(in)                            :: cdupContent
+  integer, intent(in) :: cdupContent
   
   ! X- and Y-position in the destination matrix where rsourceMatrix
   ! should be put to.
-  integer, intent(in)                            :: iy,ix
+  integer, intent(in) :: iy,ix
 !</input>
 
 !<inputoutput>
   ! Destination matrix where the source matrix should be put into. 
-  type(t_matrixBlock), intent(inout)             :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 !</inputoutput>  
   
 !</subroutine>
@@ -7299,7 +7847,7 @@ contains
 
 !<inputoutput>
   ! Matrix to be changed matrix.
-  type(t_matrixBlock), intent(inout)            :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
 !</inputoutput>  
 
 !</subroutine>
@@ -7334,7 +7882,7 @@ contains
   
 !<output>
   ! Vector to be changed matrix.
-  type(t_vectorBlock), intent(inout)            :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</output>  
 
 !</subroutine>
@@ -7396,7 +7944,7 @@ contains
   !   whether dscaleFactor=0.0 or not. Standard.
   ! FALSE: Submatrices of the source matrix will only be copied if
   !   dscaleFacor <> 0.0.
-  logical, intent(in), optional                  :: bignoreScaleFactors
+  logical, intent(in), optional :: bignoreScaleFactors
 !</input>
 
 !<inputoutput>
@@ -7511,8 +8059,8 @@ contains
   ! Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
   ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix,
-  ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0,
-  ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
+  ! LSYSSC_SETM_ZERO : Clear the matrix / fill it with 0.0,
+  ! LSYSSC_SETM_ONE : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
   integer, intent(in) :: iclear
