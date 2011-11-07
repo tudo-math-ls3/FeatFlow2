@@ -616,7 +616,7 @@ fb_customise() {
 		# default build ID (Intel compiler suite)
 		pc64-opteron-linux-intel-*|*)
 		    modules=""
-		    modules="$modules intel/cce/10.1.021 intel/fce/10.1.021"
+		    modules="$modules intel/cce/10.1.023 intel/fce/10.1.023"
 #		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
 		    LIDOJOBNAMEPREFIX=fb-intel
 		    COMPILERNAME="Intel 10.1"
@@ -776,9 +776,9 @@ fb_customise() {
 		# default build ID
 		pc64-opteron-linux-intel-*|*)
 		    modules=""
-		    modules="$modules intel/cce/10.1.021 intel/fce/10.1.021"
+		    modules="$modules intel/cce/10.1.023 intel/fce/10.1.023"
 #		    modules="$modules intel/cce/9.1.045 intel/fce/9.1.040"
-		    modules="$modules gotoblas tetex/3.0"
+		    modules="$modules gotoblas"
 		    COMPILERNAME="Intel 10.1"
 		    COMPILEWITHPROCS=2
 		    CREATEDOCU="yes"
