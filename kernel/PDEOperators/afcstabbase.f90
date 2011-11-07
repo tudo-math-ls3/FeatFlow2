@@ -149,8 +149,11 @@
 !#                                  afcstab_upwindOrientationSngl
 !#      -> Swap edge orientation so that the starting edge is located upwind
 !#
-!# 39.) afcstb_infoStabilisation
+!# 39.) afcstab_infoStabilisation
 !#      -> Outputs information about the stabilisation structure
+!#
+!# 40.) afcstab_allocInternalData
+!#      -> Allocates internal data of the stabilisation structure
 !#
 !# </purpose>
 !##############################################################################
@@ -211,6 +214,7 @@ module afcstabbase
 
   public :: afcstab_buildBoundsLPT
 
+  public :: afcstab_allocInternalData
   public :: afcstab_allocEdgeStructure
   public :: afcstab_allocCoeffsAtEdge
   public :: afcstab_allocBoundsAtEdge
@@ -3919,9 +3923,223 @@ contains
 
   end subroutine afcstab_copyD2H_DmatCoeffAtEdge
 
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_allocInternalData(rafcstab, ballocCoefficients,&
+      rblockDiscretisation, rdiscretisation)
+    
+!<description>
+    ! This subroutine allocates the internal data structures of the
+    ! stabilisation structure rafcstab.
+    ! Note that this routine does no error checking, and thus, should
+    ! not be called from user-defined routine directly.
+    ! This routine doe not generate auxiliary data structures such as
+    ! the edge-based structure. Depending on the specified type of
+    ! stabilisation auxiliary arrays such as the antidiffusive fluxes
+    ! or the upper and lower bounds are allocated.  
+!</description>
+
+!<input>
+    ! Flag: if.true. then auxiliary coefficients are allocated
+    logical, intent(in) :: ballocCoefficients
+
+    ! OPTIONAL: block discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
+
+    ! OPTIONAL: spatial discretisation structure which is used to
+    ! create auxiliary 1-block vectors, e.g., for the predictor
+    type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+
+    ! local variables
+    type(t_vectorScalar) :: rvector
+
+    ! What kind of stabilisation are we?
+    select case(rafcstab%cafcstabType)
+      
+    case (AFCSTAB_GALERKIN,&
+          AFCSTAB_UPWIND,&
+          AFCSTAB_DMP)
+
+      ! No internal data structures are required
+
+      !-------------------------------------------------------------------------
+      
+    case (AFCSTAB_NLINFCT_EXPLICIT,&
+          AFCSTAB_NLINFCT_IMPLICIT,&
+          AFCSTAB_NLINFCT_ITERATIVE)
+
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
+      if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+      
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      ! We need the edgewise vector for the prelimited fluxes (if any)
+      ! or for the semi-implicit version of the FCT algorithm
+      if ((rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) .or.&
+          (rafcstab%cafcstabType     .eq. AFCSTAB_NLINFCT_IMPLICIT)) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+      
+      ! We need the nodal vector for the predictor
+      allocate(rafcstab%p_rvectorPredictor)
+
+      if (present(rblockDiscretisation)) then
+        ! Create block vector by block discretisation
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
+      elseif (present(rdiscretisation)) then
+        ! Create scalar vector by spatial discretisation and convert
+        ! it into a 1-block vector afterwards
+        call lsyssc_createVector(rdiscretisation, rvector, .false.,&
+            rafcstab%cdataType)
+        call lsysbl_convertVecFromScalar(rvector, rafcstab%p_rvectorPredictor)
+        call lsyssc_releaseVector(rvector)
+      else
+        ! Create 1-block vector directly
+        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+            rafcstab%NEQ, 1, .false., rafcstab%cdataType)
+      end if
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_TVD,&
+          AFCSTAB_GP)
+      
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
+      if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+      
+      ! We need the 3 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux0(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_LINFCT,&
+          AFCSTAB_LINFCT_MASS)
+      
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
+      if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
+
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      ! We need the edgewise vector if raw antidiffusive fluxes should be prelimited
+      if (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
+        call afcstab_allocFluxPrel(rafcstab)
+      end if
+
+      !-------------------------------------------------------------------------
+      
+    case (AFCSTAB_SYMMETRIC)
+      
+      ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
+      if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,2)
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      call afcstab_allocVectorsPQR(rafcstab)
+      
+      ! We need the edgewise vector for the fluxes
+      call afcstab_allocFlux(rafcstab)
+      
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_NLINLPT_MASS,&
+          AFCSTAB_LINLPT_MASS)
+
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      ! and one extra nodal vector Q
+      call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
+      
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      ! We need the nodal vector for the predictor
+      if (present(rblockDiscretisation)) then
+        ! Create block vector by block discretisation
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
+      elseif (present(rdiscretisation)) then
+        ! Create scalar vector by spatial discretisation and convert
+        ! it into a 1-block vector afterwards
+        call lsyssc_createVector(rdiscretisation, rvector, .false.,&
+            rafcstab%cdataType)
+        call lsysbl_convertVecFromScalar(rvector, rafcstab%p_rvectorPredictor)
+        call lsyssc_releaseVector(rvector)
+      else
+        ! Create 1-block vector directly
+        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+            rafcstab%NEQ, 1, .false., rafcstab%cdataType)
+      end if
+
+      !-------------------------------------------------------------------------
+      
+    case (AFCSTAB_NLINLPT_UPWINDBIASED,&
+          AFCSTAB_LINLPT_UPWINDBIASED)
+
+      ! Handle for DcoefficientsAtEdge: (/d_ij,k_ij,k_ji/)
+      if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,3)
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      ! and one extra nodal vector Q
+      call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
+      
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      !-------------------------------------------------------------------------
+
+    case (AFCSTAB_NLINLPT_SYMMETRIC,&
+          AFCSTAB_LINLPT_SYMMETRIC)
+
+      ! Handle for DcoefficientsAtEdge: (/d_ij,s_ij/)
+      if (ballocCoefficients) call afcstab_allocCoeffsAtEdge(rafcstab,2)
+      
+      ! We need the 6 nodal vectors P, Q and R each for '+' and '-'
+      ! and one extra nodal vector Q
+      call afcstab_allocVectorsPQR(rafcstab, ballocCommonQ=.true.)
+      
+      ! We need the 2 edgewise vectors for the correction factors and the fluxes
+      call afcstab_allocAlpha(rafcstab)
+      call afcstab_allocFlux(rafcstab)
+      
+      !-------------------------------------------------------------------------
+      
+    case DEFAULT
+      call output_line('Invalid type of stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_allocInternalData')
+      call sys_halt()
+    end select
+    
+  end subroutine afcstab_allocInternalData
+
   !*****************************************************************************
 
-  !<subroutine>
+!<subroutine>
 
   subroutine afcstab_allocEdgeStructure(rafcstab, ndata)
 
