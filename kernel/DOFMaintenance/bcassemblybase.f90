@@ -815,19 +815,19 @@ contains
       ndofs = icounttotal
     end if
     
-    ! Calcel if there are no DOF's.
+    ! Cancel if there are no DOF's.
     if (icounttotal .eq. 0) return
     
     ! Allocate and fetch the DOF's.
     if (h_Idofs .eq. ST_NOHANDLE) then
-      call storage_new("bcasm_getDOFsInBDRegion", "h_Idofs", &
+      call storage_new('bcasm_getDOFsInBDRegion', 'h_Idofs', &
           icounttotal, ST_INT, h_Idofs, ST_NEWBLOCK_NOINIT)
       call storage_getbase_int (h_Idofs,p_Idofs)
     else
       call storage_getbase_int (h_Idofs,p_Idofs)
       if (size(p_Idofs) .lt. icount) then
-        call output_line ("Output array not large enough!", &
-                          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_getDOFsOnBoundary")
+        call output_line ('Output array not large enough!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getDOFsOnBoundary')
         call sys_halt()
       end if
     end if
@@ -1192,8 +1192,8 @@ contains
         end if
 
       case default
-      
-        print *,'bcasm_getDOFsInBDRegion: Unsupported element!'
+        call output_line('Unsupported element!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getDOFsInBDRegion')
         call sys_halt()
       
       end select
@@ -1224,7 +1224,7 @@ contains
         ! Allocate arrays for storing these DOF`s and their values - if values are
         ! computed.
         if (h_Idofs .eq. ST_NOHANDLE) then
-          call storage_new("bcasm_getDOFsInBDRegion", "h_Idofs", &
+          call storage_new('bcasm_getDOFsInBDRegion', 'h_Idofs', &
               icount, ST_INT, h_Idofs, ST_NEWBLOCK_NOINIT)
           call storage_getbase_int (h_Idofs,p_Idofs)
         else
@@ -1234,8 +1234,8 @@ contains
 
       if (associated(p_Idofs)) then
         if (size(p_Idofs) .lt. icount) then
-          call output_line ("Output array not large enough!", &
-                            OU_CLASS_ERROR,OU_MODE_STD,"bcasm_getDOFsInBDRegion")
+          call output_line ('Output array not large enough!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getDOFsInBDRegion')
           call sys_halt()
         end if
     
