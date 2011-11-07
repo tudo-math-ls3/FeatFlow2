@@ -28,132 +28,106 @@
 !# 5.) afcstab_duplicateStabilisation
 !#     -> Duplicate (parts of) a stabilisation structure
 !#
-!# 6.) afcstab_initMatrixCoeffs
-!#     -> Initialises the auxiliary matrix coefficients
-!#
-!# 7.) afcstab_copyMatrixCoeffs
-!#     -> Copies auxiliary matrix coefficients into stabilisation structure
-!#
-!# 8.) afcstab_isMatrixCompatible = afcstab_isMatrixCompatibleSc /
+!# 6.) afcstab_isMatrixCompatible = afcstab_isMatrixCompatibleSc /
 !#                                  afcstab_isMatrixCompatibleBl
 !#     -> Checks whether a matrix and a stabilisation structure are compatible
 !#
-!# 9.) afcstab_isVectorCompatible = afcstab_isVectorCompatibleSc /
+!# 7.) afcstab_isVectorCompatible = afcstab_isVectorCompatibleSc /
 !#                                  afcstab_isVectorCompatibleBl
 !#     -> Checks whether a vector and a stabilisation structure are compatible
 !#
-!# 10.) afcstab_getbase_IedgeListIdx
-!#      -> Returns pointer to the index pointer for the
-!#         edge structure
+!# 8.) afcstab_getbase_IedgeListIdx
+!#     -> Returns pointer to the index pointer for the edge structure
 !#
-!# 11.) afcstab_getbase_IedgeList
-!#      -> Returns pointer to the edge structure
+!# 9.) afcstab_getbase_IedgeList
+!#     -> Returns pointer to the edge structure
 !#
-!# 12.) afcstab_getbase_IsupdiagEdgeIdx
-!#      -> Returns pointer to the index pointer for the
-!#         superdiagonal edge numbers
+!# 10.) afcstab_getbase_IsupdiagEdgeIdx
+!#      -> Returns pointer to the index pointer for the superdiagonal edge numbers
 !#
-!# 13.) afcstab_getbase_IsubdiagEdgeIdx
+!# 11.) afcstab_getbase_IsubdiagEdgeIdx
 !#      -> Returns pointer to the index pointer for the
 !#         subdiagonal edge numbers
 !#
-!# 14.) afcstab_getbase_IsubdiagEdge
+!# 12.) afcstab_getbase_IsubdiagEdge
 !#      -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 15.) afcstab_getbase_DcoeffsAtEdge = afcstab_getbase_DcoeffsAtEdge /
+!# 13.) afcstab_getbase_DcoeffsAtEdge = afcstab_getbase_DcoeffsAtEdge /
 !#                                      afcstab_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 16.) afcstab_getbase_DmatCoeffAtNode = afcstab_getbase_DmatCoeffAtNode /
-!#                                        afcstab_getbase_FmatCoeffAtNode
-!#      -> Returns pointer to the diagonal entries
-!#         of the auxiliary constant matrix coefficients
-!#
-!# 17.) afcstab_getbase_DmatCoeffAtEdge = afcstab_getbase_DmatCoeffAtEdge /
-!#                                        afcstab_getbase_FmatCoeffAtEdge
-!#      -> Returns pointer to the off-diagonal entries
-!#         of the auxiliary constant matrix coefficients
-!#
-!# 18.) afcstab_getbase_DboundsAtEdge = afcstab_getbase_DboundsAtEdge /
+!# 14.) afcstab_getbase_DboundsAtEdge = afcstab_getbase_DboundsAtEdge /
 !#                                      afcstab_getbase_FboundsAtEdge
 !#      -> Returns pointer to the bounds at edges
 !#
-!# 19.) afcstab_genEdgeList
+!# 15.) afcstab_genEdgeList
 !#      -> Generates the standard edge data structure
 !#
-!# 20.) afcstab_genOffdiagEdges
+!# 16.) afcstab_genOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 21.) afcstab_genExtSparsity
+!# 17.) afcstab_genExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 22.) afcstab_copyH2D_IedgeList
+!# 18.) afcstab_copyH2D_IedgeList
 !#      -> Copies the edge structure from the host memory
 !#         to the device memory.
 !#
-!# 23.) afcstab_copyD2H_IedgeList
+!# 19.) afcstab_copyD2H_IedgeList
 !#      -> Copies the edge structure from the device memory
 !#         to the host memory.
 !#
-!# 24.) afcstab_copyH2D_DmatCoeffAtEdge
-!# -> Copies the off-diagonal entries of the auxiliary constant matrix
-!#         coefficients from the host memory to the device memory.
+!# 20.) afcstab_allocInternalData
+!#      -> Allocates internal data of the stabilisation structure
 !#
-!# 25.) afcstab_copyD2H_DmatCoeffAtEdge
-!#      -> Copies the off-diagonal entries of the auxiliary constant matrix
-!#         coefficients from the device memory to the host memory.
-!#
-!# 26.) afcstab_allocEdgeStructure
+!# 21.) afcstab_allocEdgeStructure
 !#      -> Allocates the edge data structure
 !#
-!# 27.) afcstab_allocCoeffsAtEdge
+!# 22.) afcstab_allocCoeffsAtEdge
 !#      -> Allocates the coefficients at edge data structure
 !#
-!# 28.) afcstab_allocVectorsPQR
+!# 23.) afcstab_allocVectorsPQR
 !#      -> Allocates the nodal vectors P, Q, and R each for '+' and '-'
 !#
-!# 29.) afcstab_allocFlux
+!# 24.) afcstab_allocFlux
 !#      -> Allocates the edge-wise flux vector flux
 !#
-!# 30.) afcstab_allocFlux0
+!# 25.) afcstab_allocFlux0
 !#      -> Allocates the edge-wise flux vector flux0
 !#
-!# 31.) afcstab_allocFluxPrel
+!# 26.) afcstab_allocFluxPrel
 !#      -> Allocates the edge-wise flux vector fluxPrel
 !#
-!# 32.) afcstab_allocAlpha
+!# 27.) afcstab_allocAlpha
 !#      -> Allocates the edge-wise correction factors alpha
 !#
-!# 33.) afcstab_allocBoundsAtEdge
+!# 28.) afcstab_allocBoundsAtEdge
 !#      -> Allocates the bounds at edge data structure
 !#
-!# 34.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
+!# 29.) afcstab_buildBoundsLPT = afcstab_buildBoundsLPT1D /
 !#                               afcstab_buildBoundsLPT2D /
 !#                               afcstab_buildBoundsLPT3D
 !#
-!# 35.) afcstab_limit = afcstab_limitUnboundedDble /
+!# 30.) afcstab_limit = afcstab_limitUnboundedDble /
 !#                      afcstab_limitUnboundedSngl /
 !#                      afcstab_limitBoundedDble /
 !#                      afcstab_limitBoundedSngl
 !#      -> Compute the nodal correction factors, i.e., the ratio of
 !#         admissible solution increments and raw antidiffusion
 !#
-!# 36.) afcstab_combineFluxes = afcstab_combFluxesDble /
+!# 31.) afcstab_combineFluxes = afcstab_combFluxesDble /
 !#                              afcstab_combFluxesSngl
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 37.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
+!# 32.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 38.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
+!# 33.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
 !#                                  afcstab_upwindOrientationSngl
 !#      -> Swap edge orientation so that the starting edge is located upwind
 !#
-!# 39.) afcstab_infoStabilisation
+!# 34.) afcstab_infoStabilisation
 !#      -> Outputs information about the stabilisation structure
-!#
-!# 40.) afcstab_allocInternalData
-!#      -> Allocates internal data of the stabilisation structure
 !#
 !# </purpose>
 !##############################################################################
@@ -183,8 +157,6 @@ module afcstabbase
   public :: afcstab_resizeStabilisation
   public :: afcstab_copyStabilisation
   public :: afcstab_duplicateStabilisation
-  public :: afcstab_initMatrixCoeffs
-  public :: afcstab_copyMatrixCoeffs
   public :: afcstab_isMatrixCompatible
   public :: afcstab_isVectorCompatible
   public :: afcstab_infoStabilisation
@@ -195,12 +167,8 @@ module afcstabbase
   public :: afcstab_getbase_IsubdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdge
   public :: afcstab_getbase_DcoeffsAtEdge
-  public :: afcstab_getbase_DmatCoeffAtNode
-  public :: afcstab_getbase_DmatCoeffAtEdge
   public :: afcstab_getbase_DboundsAtEdge
   public :: afcstab_getbase_FcoeffsAtEdge
-  public :: afcstab_getbase_FmatCoeffAtNode
-  public :: afcstab_getbase_FmatCoeffAtEdge
   public :: afcstab_getbase_FboundsAtEdge
 
   public :: afcstab_genEdgeList
@@ -208,9 +176,7 @@ module afcstabbase
   public :: afcstab_genExtSparsity
 
   public :: afcstab_copyD2H_IedgeList
-  public :: afcstab_copyD2H_DmatCoeffAtEdge
   public :: afcstab_copyH2D_IedgeList
-  public :: afcstab_copyH2D_DmatCoeffAtEdge
 
   public :: afcstab_buildBoundsLPT
 
@@ -382,14 +348,11 @@ module afcstabbase
   ! Low-order predictor has been computed
   integer(I32), parameter, public :: AFCSTAB_HAS_PREDICTOR        = 2_I32**11
 
-  ! Auxiliary matrix coefficients have been attached
-  integer(I32), parameter, public :: AFCSTAB_HAS_MATRIXCOEFFS     = 2_I32**12
-
   ! Transformed nodal solution values have been computed
-  integer(I32), parameter, public :: AFCSTAB_HAS_NODEVALUES       = 2_I32**13
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODEVALUES       = 2_I32**12
 
   ! Slope-based bounds have been computed
-  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEBOUNDS       = 2_I32**14
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEBOUNDS       = 2_I32**13
 
 !</constantblock>
 
@@ -426,9 +389,6 @@ module afcstabbase
   ! Duplicate low-order predictor
   integer(I32), parameter, public :: AFCSTAB_DUP_PREDICTOR        = AFCSTAB_HAS_PREDICTOR
     
-  ! Duplicate auxiliary matrix coefficients
-  integer(I32), parameter, public :: AFCSTAB_DUP_MATRIXCOEFFS     = AFCSTAB_HAS_MATRIXCOEFFS
-
   ! Duplicate transformed nodal solution values
   integer(I32), parameter, public :: AFCSTAB_DUP_NODEVALUES       = AFCSTAB_HAS_NODEVALUES
 
@@ -470,9 +430,6 @@ module afcstabbase
 
   ! Share low-order predictor
   integer(I32), parameter, public :: AFCSTAB_SHARE_PREDICTOR        = AFCSTAB_DUP_PREDICTOR
-
-  ! Share auxiliary matrix coefficients
-  integer(I32), parameter, public :: AFCSTAB_SHARE_MATRIXCOEFFS     = AFCSTAB_DUP_MATRIXCOEFFS
 
   ! Share transformed nodal solution values
   integer(I32), parameter, public :: AFCSTAB_SHARE_NODEVALUES       = AFCSTAB_DUP_NODEVALUES
@@ -743,11 +700,7 @@ module afcstabbase
     ! in terms of conservative variables. 
     integer :: NVARtransformed = 1
 
-    ! Number of different matrix coefficients stored in
-    ! DmatrixCoeffsAtNode and DmatrixCoeffsAtEdge, respectively.
-    integer :: nmatrixCoeffs = 0
-
-    ! Number of different coefficients stored in DCoefficientsAtEdge
+    ! Number of different coefficients stored in CoefficientsAtEdge
     integer :: ncoeffsAtEdge = 0
 
     ! Handle to index pointer for edge structure
@@ -777,14 +730,6 @@ module afcstabbase
 
     ! Handle to coefficient at edge structure
     integer :: h_CoefficientsAtEdge = ST_NOHANDLE
-
-
-    ! Handle to auxiliary matrix data at nodes (i.e. diagonal entries)
-    integer :: h_DmatrixCoeffsAtNode = ST_NOHANDLE
-
-    ! Handle to auxiliary matrix data at edges (i.e. off-diagonal entries)
-    integer :: h_DmatrixCoeffsAtEdge = ST_NOHANDLE
-
 
     ! Handle to bounds at edges (i.e. off-diagonal entries)
     integer :: h_BoundsAtEdge = ST_NOHANDLE
@@ -1048,16 +993,6 @@ contains
     rafcstab%h_IsubdiagEdgesIdx = ST_NOHANDLE
     rafcstab%h_IsubdiagEdges = ST_NOHANDLE
     
-    ! Release matrix data
-    if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
-      if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
-      if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
-    end if
-    rafcstab%h_DmatrixCoeffsAtNode = ST_NOHANDLE
-    rafcstab%h_DmatrixCoeffsAtEdge = ST_NOHANDLE
-
     ! Release antidiffusive fluxes
     if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_ADFLUXES)) then
       if (associated(rafcstab%p_rvectorFlux0)) then
@@ -1161,7 +1096,6 @@ contains
     rafcstab%NVARtransformed    = 1
     rafcstab%NEDGE              = 0
     rafcstab%NNVEDGE            = 0
-    rafcstab%nmatrixCoeffs      = 0
     rafcstab%ncoeffsAtEdge      = 0
 
   contains
@@ -1266,28 +1200,6 @@ contains
           ! Reset specifier
           rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
                                              not(AFCSTAB_HAS_OFFDIAGONALEDGES))
-        end if
-      end if
-
-      ! Resize matrix data at nodes and clear specification
-      !-------------------------------------------------------------------------
-      if (rafcstab%h_DmatrixCoeffsAtNode .ne. ST_NOHANDLE) then
-        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
-          call storage_getsize(rafcstab%h_IsubdiagEdgesIdx, Isize2D)
-          if (rafcstab%NEQ .ne. Isize2D(2)) then
-            call output_line('Handle h_DmatrixCoeffsAtNode '//&
-                'is shared and cannot be resized!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
-            call sys_halt()
-          end if
-        else
-          call storage_realloc('afcstab_resizeStabDirect',&
-              rafcstab%NEQ, rafcstab%h_DmatrixCoeffsAtNode,&
-              ST_NEWBLOCK_NOINIT, .false.)
-
-          ! Reset specifier
-          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
-                                             not(AFCSTAB_HAS_MATRIXCOEFFS))
         end if
       end if
 
@@ -1569,28 +1481,6 @@ contains
         end if
       end if
       
-      ! Resize matrix data at edges and clear specification
-      !-------------------------------------------------------------------------
-      if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE) then
-        if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS)) then
-          call storage_getsize(rafcstab%h_DmatrixCoeffsAtEdge, Isize2D)
-          if (rafcstab%NEDGE .ne. Isize2D(2)) then
-            call output_line('Handle h_DmatrixCoeffsAtEdge '//&
-                'is shared and cannot be resized!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'afcstab_resizeStabDirect')
-            call sys_halt()
-          end if
-        else
-          call storage_realloc('afcstab_resizeStabDirect',&
-              rafcstab%NEDGE, rafcstab%h_DmatrixCoeffsAtEdge,&
-              ST_NEWBLOCK_NOINIT, .false.)
-          
-          ! Reset specifier
-          rafcstab%istabilisationSpec = iand(rafcstab%istabilisationSpec,&
-                                             not(AFCSTAB_HAS_MATRIXCOEFFS))
-        end if
-      end if
-
       ! Resize edge vectors for the correction factor and clear specification
       !-------------------------------------------------------------------------
       if(associated(rafcstab%p_rvectorAlpha)) then
@@ -1895,22 +1785,6 @@ contains
       ! Reset ownership
       rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
           not(AFCSTAB_SHARE_OFFDIAGONALEDGES))
-    end if
-
-    ! Copy matrix data at nodes and edges
-    if (check(idupFlag, AFCSTAB_DUP_MATRIXCOEFFS) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)) then
-      ! Copy content from source to destination structure
-      call storage_copy(rafcstabSrc%h_DmatrixCoeffsAtNode,&
-          rafcstabDest%h_DmatrixCoeffsAtNode)
-      call storage_copy(rafcstabSrc%h_DmatrixCoeffsAtEdge,&
-          rafcstabDest%h_DmatrixCoeffsAtEdge)
-      ! Adjust specifier of the destination structure
-      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS))
-      ! Reset ownership
-      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          not(AFCSTAB_SHARE_MATRIXCOEFFS))
     end if
 
     ! Copy transformed nodal solution values
@@ -2238,25 +2112,6 @@ contains
           AFCSTAB_SHARE_OFFDIAGONALEDGES)
     end if
 
-    ! Duplicate matrix data
-    if (check(idupFlag, AFCSTAB_DUP_MATRIXCOEFFS) .and.&
-        check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)) then
-      ! Remove existing data owned by the destination structure
-      if (.not.(check(rafcstabDest%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS))) then
-        call storage_free(rafcstabDest%h_DmatrixCoeffsAtNode)
-        call storage_free(rafcstabDest%h_DmatrixCoeffsAtEdge)
-      end if
-      ! Copy handles from source to destination structure
-      rafcstabDest%h_DmatrixCoeffsAtNode = rafcstabSrc%h_DmatrixCoeffsAtNode
-      rafcstabDest%h_DmatrixCoeffsAtEdge = rafcstabSrc%h_DmatrixCoeffsAtEdge
-      ! Adjust specifier of the destination structure
-      rafcstabDest%istabilisationSpec = ior(rafcstabDest%istabilisationSpec,&
-          iand(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS))
-      ! Set ownership to shared
-      rafcstabDest%iduplicationFlag = iand(rafcstabDest%iduplicationFlag,&
-          AFCSTAB_SHARE_MATRIXCOEFFS)
-    end if
-
     ! Duplicate transformed nodal solution values
     if (check(idupFlag, AFCSTAB_DUP_NODEVALUES) .and.&
         check(rafcstabSrc%istabilisationSpec, AFCSTAB_HAS_NODEVALUES)) then
@@ -2412,245 +2267,6 @@ contains
     end function check
 
   end subroutine afcstab_duplicateStabilisation
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_initMatrixCoeffs(rafcstab, n)
-
-!<description>
-    ! This subroutine initialises the arrays DmatrixCoeffsAtNode and
-    ! DmatrixCoeffsAtEdge to store auxiliary data for n matrices.
-!</description>
-
-!<input>
-    ! Number of auxliary matrices to store at most
-    integer, intent(in) :: n
-!</input>
-
-!<inputoutpu>
-    ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    integer, dimension(2) :: Isize2D
-    integer, dimension(3) :: Isize3D
-
-    if (n .le. 0) then
-      call output_line('Number of matrices to be stored must be positive!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'afcstab_initMatrixCoeffs')
-      return
-    end if
-
-    ! Check if stabilisation has been initialised
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_initMatrixCoeffs')
-      call sys_halt()
-    end if
-
-    ! Remove auxiliary matrix data if present and not shared with others
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .ne. 0) then
-      if (iand(rafcstab%iduplicationFlag, AFCSTAB_SHARE_MATRIXCOEFFS) .eq. 0) then
-        call storage_free(rafcstab%h_DmatrixCoeffsAtNode)
-        call storage_free(rafcstab%h_DmatrixCoeffsAtEdge)
-      end if
-    end if
-
-    ! Initialise auxiliary coefficients at nodes for n matrices
-    if (rafcstab%NEQ .gt. 0) then
-      Isize2D = (/n, rafcstab%NEQ/)   
-      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtNode', Isize2D,&
-          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtNode, ST_NEWBLOCK_ZERO)
-    end if
-
-    ! Initialise auxiliary coefficients at edges for n matrices
-    if (rafcstab%NEDGE .gt. 0) then
-      Isize3D = (/n, 2, rafcstab%NEDGE/)  
-      call storage_new('afcstab_initMatrixCoeffs', 'DmatrixCoeffsAtEdge', Isize3D,&
-          ST_DOUBLE, rafcstab%h_DmatrixCoeffsAtEdge, ST_NEWBLOCK_ZERO)
-    end if
-
-    ! Store number of auxiliary matrices
-    rafcstab%nmatrixCoeffs = n
-
-  end subroutine afcstab_initMatrixCoeffs
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_CopyMatrixCoeffs(rafcstab, Rmatrices, Iposition)
-
-!<description>
-    ! This subroutine copies the data of the given matrices into the
-    ! arrays DmatrixCoeffsAtNode and DmatrixCoeffsAtEdge of the
-    ! stabilisation structure. If these arrays are not allocated then
-    ! they are allocated by this routine in correct size.
-!</description>
-
-!<input>
-    ! Array of scalar coefficient matrices
-    type(t_matrixScalar), dimension(:), intent(in) :: Rmatrices
-
-    ! OPTIONAL: Array of integers which indicate the positions of the
-    ! given matrices. If this parameter is not given, then the
-    ! matrices are stored starting at position one.
-    integer, dimension(:), intent(in), optional, target :: Iposition
-!</input>
-
-!<inputoutpu>
-    ! Stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-    real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
-    real(DP), dimension(:), pointer :: p_Ddata
-    integer, dimension(:,:), pointer :: p_IedgeList
-    integer, dimension(:), pointer :: p_Iposition, p_Kdiagonal
-    integer, dimension(2) :: Isize2D
-    integer, dimension(3) :: Isize3D
-    integer :: i,ij,ji,iedge,ipos,imatrix,nmatrices,nmaxpos
-
-
-    ! Check if stabilisation has been initialised
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_INITIALISED) .eq. 0) then
-      call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
-      call sys_halt()
-    end if
-
-    ! Check if stabilisation provides edge-based structure
-    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST) .eq. 0) then
-      call afcstab_genEdgeList(Rmatrices(1), rafcstab)
-    end if
-
-    ! Set number of matrices
-    nmatrices = size(Rmatrices)
-
-    ! Set pointer to matrix positions
-    if (present(Iposition)) then
-      p_Iposition => Iposition
-    else
-      allocate(p_Iposition(size(Rmatrices)))
-      do imatrix = 1, nmatrices
-        p_Iposition(imatrix) = imatrix
-      end do
-    end if
-
-    ! Set maximum position
-    nmaxpos = maxval(p_Iposition)
-
-    ! Check if array Rmatrices and Iposition have the same size
-    if (nmatrices .ne. size(p_Iposition)) then
-      call output_line('size(Rmatrices) /= size(Iposition)!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
-      call sys_halt()
-    end if
-
-    ! Note that only double precision matrices are supported
-    if (Rmatrices(1)%cdataType .ne. rafcstab%cdataType) then
-      call output_line('Matrix precision is incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
-      call sys_halt()
-    end if
-    
-    ! Check if first matrix is compatible with the stabilisation structure
-    call afcstab_isMatrixCompatible(rafcstab, Rmatrices(1))
-
-    ! Check if other matrices are compatible to the first one
-    do imatrix = 2, nmatrices
-      call lsyssc_isMatrixCompatible(Rmatrices(1), Rmatrices(imatrix))
-    end do
-    
-    ! Check if auxiliary data arrays for matrix coefficients are initialised
-    if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
-        (rafcstab%h_DmatrixCoeffsAtEdge .eq. ST_NOHANDLE)) then
-      call afcstab_initMatrixCoeffs(rafcstab, nmaxpos)
-    else
-      call storage_getsize(rafcstab%h_DmatrixCoeffsAtNode, Isize2D)
-      call storage_getsize(rafcstab%h_DmatrixCoeffsAtEdge, Isize3D)
-      if ((nmaxpos .gt. Isize2D(2)) .or. (nmaxpos .gt. Isize3D(3))) then
-        call output_line('Number of matrices exceeds pre-initialised arrays!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'afcstab_CopyMatrixCoeffs')
-        call sys_halt()
-      end if
-    end if
-    
-    ! Set pointers
-    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    call storage_getbase_double2D(rafcstab%h_DmatrixCoeffsAtNode, p_DmatrixCoeffsAtNode)
-    call storage_getbase_double3D(rafcstab%h_DmatrixCoeffsAtEdge, p_DmatrixCoeffsAtEdge)
-
-    ! Associate data of each matrix separateky
-    do imatrix = 1, nmatrices
-      
-      ! Get matrix position
-      ipos = p_Iposition(imatrix)
-
-      ! What kind of matrix are we?
-      select case(Rmatrices(imatrix)%cmatrixFormat)
-      case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
-        !-------------------------------------------------------------------------
-        ! Matrix format 7 and 9
-        !-------------------------------------------------------------------------
-        
-        ! Set pointer to matrix data
-        call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-        
-        ! Set diagonal pointer
-        if (Rmatrices(imatrix)%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-          call lsyssc_getbase_Kld(Rmatrices(imatrix), p_Kdiagonal)
-        else
-          call lsyssc_getbase_Kdiagonal(Rmatrices(imatrix), p_Kdiagonal)
-        end if
-
-        ! Loop over all rows and copy diagonal entries
-        do i = 1, rafcstab%NEQ
-          p_DmatrixCoeffsAtNode(ipos,i) = p_Ddata(p_Kdiagonal(i))
-        end do
-        
-        ! Loop over all edges and copy off-diagonal entries
-        do iedge = 1, rafcstab%NEDGE
-          ij = p_IedgeList(3,iedge)
-          ji = p_IedgeList(4,iedge)
-          p_DmatrixCoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
-          p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
-        end do
-
-      case(LSYSSC_MATRIX1)
-        !-------------------------------------------------------------------------
-        ! Matrix format 1
-        !-------------------------------------------------------------------------
-        
-        ! Set pointer to matrix data
-        call lsyssc_getbase_double(Rmatrices(imatrix), p_Ddata)
-
-        ! Loop over all rows and copy diagonal entries
-        do i = 1, rafcstab%NEQ
-          p_DmatrixCoeffsAtNode(ipos,i) = p_Ddata(rafcstab%NEQ*(i-1)+i)
-        end do
-        
-        ! Loop over all edges and copy off-diagonal entries
-        do iedge = 1, rafcstab%NEDGE
-          ij = p_IedgeList(3,iedge)
-          ji = p_IedgeList(4,iedge)
-          p_DmatrixCoeffsAtEdge(ipos,1,iedge) = p_Ddata(ij)
-          p_DmatrixCoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
-        end do
-
-      end select
-    end do
-
-    ! Set specifier for auxiliary matrix coefficients
-    rafcstab%istabilisationSpec =&
-        ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS)
-
-  end subroutine afcstab_CopyMatrixCoeffs
 
   !*****************************************************************************
 
@@ -2904,7 +2520,6 @@ contains
     call checkAndOutput('AFCSTAB_SHARE_NODELIMITER:      ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_NODELIMITER)
     call checkAndOutput('AFCSTAB_SHARE_EDGELIMITER:      ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGELIMITER)
     call checkAndOutput('AFCSTAB_SHARE_PREDICTOR:        ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_PREDICTOR)
-    call checkAndOutput('AFCSTAB_SHARE_MATRIXCOEFFS:     ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_MATRIXCOEFFS)
     call checkAndOutput('AFCSTAB_SHARE_NODEVALUES:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_NODEVALUES)
     call checkAndOutput('AFCSTAB_SHARE_EDGEBOUNDS:       ',rafcstab%iduplicationFlag,AFCSTAB_SHARE_EDGEBOUNDS)
     call output_line('istabilisationSpec:             '//trim(sys_siL(rafcstab%istabilisationSpec,15)))
@@ -2919,7 +2534,6 @@ contains
     call checkAndOutput('AFCSTAB_HAS_NODELIMITER:        ',rafcstab%istabilisationSpec,AFCSTAB_HAS_NODELIMITER)
     call checkAndOutput('AFCSTAB_HAS_EDGELIMITER:        ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGELIMITER)
     call checkAndOutput('AFCSTAB_HAS_PREDICTOR:          ',rafcstab%istabilisationSpec,AFCSTAB_HAS_PREDICTOR)
-    call checkAndOutput('AFCSTAB_HAS_MATRIXCOEFFS:       ',rafcstab%istabilisationSpec,AFCSTAB_HAS_MATRIXCOEFFS)
     call checkAndOutput('AFCSTAB_HAS_NODEVALUES:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_NODEVALUES)
     call checkAndOutput('AFCSTAB_HAS_EDGEBOUNDS:         ',rafcstab%istabilisationSpec,AFCSTAB_HAS_EDGEBOUNDS)
     call output_line('NEQ:                            '//trim(sys_siL(rafcstab%NEQ,15)))
@@ -2927,7 +2541,6 @@ contains
     call output_line('NNVEDGE:                        '//trim(sys_siL(rafcstab%NNVEDGE,15)))
     call output_line('NVAR:                           '//trim(sys_siL(rafcstab%NVAR,15)))
     call output_line('NVARtransformed:                '//trim(sys_siL(rafcstab%NVARtransformed,15)))
-    call output_line('nmatrixCoeffs:                  '//trim(sys_siL(rafcstab%nmatrixCoeffs,15)))
     call output_line('ncoeffsAtEdge:                  '//trim(sys_siL(rafcstab%ncoeffsAtEdge,15)))
     call checkAndOutputHandle('IedgeListIdx:                   ', rafcstab%h_IedgeListIdx)
     call checkAndOutputHandle('IedgeList:                      ', rafcstab%h_IedgeList)
@@ -2935,8 +2548,6 @@ contains
     call checkAndOutputHandle('IsubdiagEdgesIdx:               ', rafcstab%h_IsubdiagEdgesIdx)
     call checkAndOutputHandle('IsubdiagEdges:                  ', rafcstab%h_IsubdiagEdges)
     call checkAndOutputHandle('CoefficientsAtEdge:             ', rafcstab%h_CoefficientsAtEdge)
-    call checkAndOutputHandle('DmatrixCoeffsAtNode:            ', rafcstab%h_DmatrixCoeffsAtNode)
-    call checkAndOutputHandle('DmatrixCoeffsAtEdge:            ', rafcstab%h_DmatrixCoeffsAtEdge)
     call checkAndOutputHandle('BoundsAtEdge:                   ', rafcstab%h_BoundsAtEdge)
 
     if (associated(rafcstab%p_rvectorAlpha)) then
@@ -3324,146 +2935,6 @@ contains
         p_FcoefficientsAtEdge, rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_FcoeffsAtEdge
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_DmatCoeffAtNode(rafcstab,p_DmatrixCoeffsAtNode)
-
-!<description>
-    ! Returns a pointer to the matrix coefficients at nodes
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! Pointer to the matrix coefficients at nodes
-    ! NULL() if the stabilisation structure does not provide it.
-    real(DP), dimension(:,:), pointer :: p_DmatrixCoeffsAtNode
-!</output>
-!</subroutine>
-
-    ! Do we have matrix coefficients at nodes data at all?
-    if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEQ                   .eq. 0)) then
-      nullify(p_DmatrixCoeffsAtNode)
-      return
-    end if
-    
-    ! Get the array
-    call storage_getbase_double2D(rafcstab%h_DmatrixCoeffsAtNode,&
-        p_DmatrixCoeffsAtNode,rafcstab%NEQ)
-
-  end subroutine afcstab_getbase_DmatCoeffAtNode
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_FmatCoeffAtNode(rafcstab,p_FmatrixCoeffsAtNode)
-
-!<description>
-    ! Returns a pointer to the matrix coefficients at nodes
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! Pointer to the matrix coefficients at nodes
-    ! NULL() if the stabilisation structure does not provide it.
-    real(SP), dimension(:,:), pointer :: p_FmatrixCoeffsAtNode
-!</output>
-!</subroutine>
-
-    ! Do we have matrix coefficients at nodes data at all?
-    if ((rafcstab%h_DmatrixCoeffsAtNode .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEQ                   .eq. 0)) then
-      nullify(p_FmatrixCoeffsAtNode)
-      return
-    end if
-    
-    ! Get the array
-    call storage_getbase_single2D(rafcstab%h_DmatrixCoeffsAtNode,&
-        p_FmatrixCoeffsAtNode,rafcstab%NEQ)
-
-  end subroutine afcstab_getbase_FmatCoeffAtNode
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_DmatCoeffAtEdge(rafcstab,p_DmatrixCoeffsAtEdge)
-
-!<description>
-    ! Returns a pointer to the matrix coefficients at edges
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! Pointer to the matrix coefficients at edges
-    ! NULL() if the stabilisation structure does not provide it.
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
-!</output>
-!</subroutine>
-
-    ! Do we have matrix coefficients at edges data at all?
-    if ((rafcstab%h_DmatrixCoeffsAtEdge .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEDGE                 .eq. 0)) then
-      nullify(p_DmatrixCoeffsAtEdge)
-      return
-    end if
-    
-    ! Get the array
-    call storage_getbase_double3D(rafcstab%h_DmatrixCoeffsAtEdge,&
-        p_DmatrixCoeffsAtEdge,rafcstab%NEDGE)
-
-  end subroutine afcstab_getbase_DmatCoeffAtEdge
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_getbase_FmatCoeffAtEdge(rafcstab,p_FmatrixCoeffsAtEdge)
-
-!<description>
-    ! Returns a pointer to the matrix coefficients at edges
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-!</input>
-
-!<output>
-    ! Pointer to the matrix coefficients at edges
-    ! NULL() if the stabilisation structure does not provide it.
-    real(SP), dimension(:,:,:), pointer :: p_FmatrixCoeffsAtEdge
-!</output>
-!</subroutine>
-
-    ! Do we have matrix coefficients at edges data at all?
-    if ((rafcstab%h_DmatrixCoeffsAtEdge .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEDGE                 .eq. 0)) then
-      nullify(p_FmatrixCoeffsAtEdge)
-      return
-    end if
-    
-    ! Get the array
-    call storage_getbase_single3D(rafcstab%h_DmatrixCoeffsAtEdge,&
-        p_FmatrixCoeffsAtEdge,rafcstab%NEDGE)
-
-  end subroutine afcstab_getbase_FmatCoeffAtEdge
 
   !*****************************************************************************
 
@@ -3867,63 +3338,6 @@ contains
   end subroutine afcstab_copyD2H_IedgeList
 
   !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, btranspose)
-
-!<description>
-    ! This subroutine copies the off-diagonal entries of the auxiliary
-    ! constant matrix coefficients from the host memory to the memory
-    ! of the coprocessor device. If no device is available, then an
-    ! error is thrown.
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
-!</input>
-!</subroutine>
-
-
-    if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
-
-  end subroutine afcstab_copyH2D_DmatCoeffAtEdge
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine afcstab_copyD2H_DmatCoeffAtEdge(rafcstab, btranspose)
-
-!<description>
-    ! This subroutine copies the off-diagonal entries of the auxiliary
-    ! constant matrix coefficients from the memory of the coprocessor
-    ! device to the host memory. If no device is available, then an
-    ! error is thrown.
-!</description>
-
-!<input>
-    ! Stabilisation structure
-    type(t_afcstab), intent(in) :: rafcstab
-
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
-!</input>
-!</subroutine>
-
-    if (rafcstab%h_DmatrixCoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_DmatrixCoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
-
-  end subroutine afcstab_copyD2H_DmatCoeffAtEdge
-
-!*****************************************************************************
 
 !<subroutine>
 

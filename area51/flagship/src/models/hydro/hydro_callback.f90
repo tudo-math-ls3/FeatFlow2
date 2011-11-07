@@ -5699,19 +5699,25 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorTVD(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM1D,&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution, NDIM1D,&
               hydro_calcFluxGalNoBdr1d_sim,&
               hydro_calcCharacteristics1d_sim, dscale, bclear, rvector, rcollection)
           
         case (NDIM2D)
           call afcsys_buildVectorTVD(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM2D,&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution, NDIM2D,&
               hydro_calcFluxGalNoBdr2d_sim,&
               hydro_calcCharacteristics2d_sim, dscale, bclear, rvector, rcollection)
           
         case (NDIM3D)
           call afcsys_buildVectorTVD(&
-              rproblemLevel%Rafcstab(inviscidAFC), rsolution, NDIM3D,&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
+              rsolution, NDIM3D,&
               hydro_calcFluxGalNoBdr3d_sim,&
               hydro_calcCharacteristics3d_sim, dscale, bclear, rvector, rcollection)
         end select

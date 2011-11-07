@@ -3573,8 +3573,9 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildVectorTVDBlock(rafcstab, rx, ndim, fcb_calcFluxSys_sim,&
-      fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
+  subroutine afcsys_buildVectorTVDBlock(rafcstab, rgroupFEMSet, rx, ndim,&
+      fcb_calcFluxSys_sim, fcb_calcCharacteristics_sim, dscale, bclear, ry,&
+      rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector for FEM-TVD schemes. If
@@ -3583,6 +3584,9 @@ contains
 !</description>
 
 !<input>
+    ! group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -3623,7 +3627,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
@@ -3632,8 +3636,8 @@ contains
     
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
-      call afcsys_buildVectorTVDScalar(rafcstab, rx%RvectorBlock(1), ndim,&
-          fcb_calcFluxSys_sim, fcb_calcCharacteristics_sim, dscale, bclear,&
+      call afcsys_buildVectorTVDScalar(rafcstab, rgroupFEMSet, rx%RvectorBlock(1),&
+          ndim, fcb_calcFluxSys_sim, fcb_calcCharacteristics_sim, dscale, bclear,&
           ry%RvectorBlock(1), rcollection, rperfconfig)
       return
     end if
@@ -3653,8 +3657,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)     .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .eq. 0)) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST).eq. 0) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildVectorTVDBlock')
       call sys_halt()
@@ -3663,11 +3666,10 @@ contains
     ! Clear vector?
     if (bclear) call lsysbl_clearVector(ry)
 
-
     ! Set pointers
+    call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
     call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
@@ -3681,15 +3683,15 @@ contains
     select case(ndim)
     case (NDIM1D)
       call doLimitTVD_1D(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
+          rafcstab%NEQ, rx%nblocks, p_DcoeffsAtEdge, p_Dx, dscale,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
     case (NDIM2D)
       call doLimitTVD_2D(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
+          rafcstab%NEQ, rx%nblocks, p_DcoeffsAtEdge, p_Dx, dscale,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
     case (NDIM3D)
       call doLimitTVD_3D(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEQ, rx%nblocks, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
+          rafcstab%NEQ, rx%nblocks, p_DcoeffsAtEdge, p_Dx, dscale,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
     end select
 
@@ -3706,12 +3708,12 @@ contains
     ! algebraic flux correction of TVD-type in 1D
 
     subroutine doLimitTVD_1D(IedgeListIdx, IedgeList,&
-        NEQ, NVAR, DmatrixCoeffsAtEdge, Dx, dscale,&
+        NEQ, NVAR, DcoeffsAtEdge, Dx, dscale,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dy)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -3786,7 +3788,7 @@ contains
           ! Use callback function to compute internodal fluxes
           call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -3823,7 +3825,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(1, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -3895,7 +3897,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -3920,12 +3922,12 @@ contains
     ! algebraic flux correction of TVD-type in 2D
 
     subroutine doLimitTVD_2D(IedgeListIdx, IedgeList,&
-        NEQ, NVAR, DmatrixCoeffsAtEdge, Dx, dscale,&
+        NEQ, NVAR, DcoeffsAtEdge, Dx, dscale,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dy)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -4000,7 +4002,7 @@ contains
           ! Use callback function to compute internodal fluxes
           call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -4037,7 +4039,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(1, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4115,7 +4117,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4137,7 +4139,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(2, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4203,7 +4205,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4228,12 +4230,12 @@ contains
     ! algebraic flux correction of TVD-type in 3D
 
     subroutine doLimitTVD_3D(IedgeListIdx, IedgeList,&
-        NEQ, NVAR, DmatrixCoeffsAtEdge, Dx, dscale,&
+        NEQ, NVAR, DcoeffsAtEdge, Dx, dscale,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dy)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -4308,7 +4310,7 @@ contains
           ! Use callback function to compute internodal fluxes
           call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -4345,7 +4347,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(1, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4423,7 +4425,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4445,7 +4447,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(2, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4517,7 +4519,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4539,7 +4541,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(3, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -4605,7 +4607,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(3, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -4633,11 +4635,11 @@ contains
     pure&
 #endif
     subroutine doBoundsAndIncrements_sim(idirection, NVAR,&
-        DmatrixCoeffsAtEdge, DcharVariablesAtEdge,&
+        DcoeffsAtEdge, DcharVariablesAtEdge,&
         DeigenvaluesAtEdge, IedgeList, Dpp, Dpm, Dqp, Dqm)
 
       ! input parameters
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), dimension(:,:), intent(in) :: DcharVariablesAtEdge,DeigenvaluesAtEdge
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: idirection, NVAR
@@ -4655,11 +4657,11 @@ contains
       do idx = 1, size(DcharVariablesAtEdge,2)
         
         ! Compute unidirectional antidiffusive fluxes 
-        Daux1 = (DmatrixCoeffsAtEdge(idirection,2,idx)-&
-                 DmatrixCoeffsAtEdge(idirection,1,idx))*&
+        Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
+                 DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
-        Daux2 = (DmatrixCoeffsAtEdge(idirection,1,idx)+&
-                 DmatrixCoeffsAtEdge(idirection,2,idx))*&
+        Daux2 = (DcoeffsAtEdge(idirection,1,idx)+&
+                 DcoeffsAtEdge(idirection,2,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
         Dflux = -max(0.0_DP, min(abs(Daux1)-Daux2,&
                                  2.0_DP*abs(Daux1)))*DcharVariablesAtEdge(:,idx)
@@ -4701,11 +4703,11 @@ contains
     pure&
 #endif
     subroutine doLimitADFluxes_sim(idirection, NVAR, dscale, Drp, Drm,&
-        DmatrixCoeffsAtEdge, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+        DcoeffsAtEdge, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
         DrightEigenvectorsAtEdge, IedgeList, Dy)
 
       ! input parameters
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), dimension(:,:), intent(in) :: DcharVariablesAtEdge,DeigenvaluesAtEdge
       real(DP), dimension(:,:), intent(in) :: DrighteigenvectorsAtEdge,Drp,Drm
       real(DP), intent(in) :: dscale
@@ -4726,11 +4728,11 @@ contains
       do idx = 1, size(DcharVariablesAtEdge,2)
         
         ! Compute unidirectional antidiffusive fluxes 
-        Daux1 = (DmatrixCoeffsAtEdge(idirection,2,idx)-&
-                 DmatrixCoeffsAtEdge(idirection,1,idx))*&
+        Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
+                 DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
-        Daux2 = (DmatrixCoeffsAtEdge(idirection,1,idx)+&
-                 DmatrixCoeffsAtEdge(idirection,2,idx))*&
+        Daux2 = (DcoeffsAtEdge(idirection,1,idx)+&
+                 DcoeffsAtEdge(idirection,2,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
         Dflux = -max(0.0_DP, min(abs(Daux1)-Daux2,&
                                  2.0_DP*abs(Daux1)))*DcharVariablesAtEdge(:,idx)
@@ -4784,14 +4786,18 @@ contains
 
 !<subroutine>
 
-  subroutine afcsys_buildVectorTVDScalar(rafcstab, rx, ndim, fcb_calcFluxSys_sim,&
-      fcb_calcCharacteristics_sim, dscale, bclear, ry, rcollection, rperfconfig)
+  subroutine afcsys_buildVectorTVDScalar(rafcstab, rgroupFEMSet, rx, ndim,&
+      fcb_calcFluxSys_sim, fcb_calcCharacteristics_sim, dscale, bclear, ry,&
+      rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the vector for FEM-TVD schemes.
 !</description>
 
 !<input>
+    ! group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
 
@@ -4832,7 +4838,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
-    real(DP), dimension(:,:,:), pointer :: p_DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
@@ -4853,8 +4859,7 @@ contains
     end if
 
     ! Check if stabilisation provides edge-based data structures structure
-    if ((iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST)     .eq. 0) .or.&
-        (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_MATRIXCOEFFS) .eq. 0)) then
+    if (iand(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIST) .eq. 0) then
       call output_line('Stabilisation does not provide edge-based data structures!',&
           OU_CLASS_ERROR,OU_MODE_STD,'afcsys_buildVectorTVDScalar')
       call sys_halt()
@@ -4864,9 +4869,9 @@ contains
     if (bclear) call lsyssc_clearVector(ry)
 
     ! Set pointers
+    call gfem_getbase_DcoeffsAtEdge(rgroupFEMset, p_DcoeffsAtEdge)
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
-    call afcstab_getbase_DmatCoeffAtEdge(rafcstab, p_DmatrixCoeffsAtEdge)
     call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
     call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
     call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
@@ -4880,15 +4885,15 @@ contains
     select case(ndim)
     case (NDIM1D)
       call doLimitTVD_1D(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEQ, rx%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
+          rafcstab%NEQ, rx%NVAR, p_DcoeffsAtEdge, p_Dx, dscale,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
     case (NDIM2D)
       call doLimitTVD_2D(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEQ, rx%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
+          rafcstab%NEQ, rx%NVAR, p_DcoeffsAtEdge, p_Dx, dscale,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
     case (NDIM3D)
       call doLimitTVD_3D(p_IedgeListIdx, p_IedgeList,&
-          rafcstab%NEQ, rx%NVAR, p_DmatrixCoeffsAtEdge, p_Dx, dscale,&
+          rafcstab%NEQ, rx%NVAR, p_DcoeffsAtEdge, p_Dx, dscale,&
           p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
     end select
 
@@ -4905,12 +4910,12 @@ contains
     ! algebraic flux correction of TVD-type in 1D
 
     subroutine doLimitTVD_1D(IedgeListIdx, IedgeList,&
-        NEQ, NVAR, DmatrixCoeffsAtEdge, Dx, dscale,&
+        NEQ, NVAR, DcoeffsAtEdge, Dx, dscale,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dy)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -4985,7 +4990,7 @@ contains
           ! Use callback function to compute internodal fluxes
           call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -5022,7 +5027,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(1, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5094,7 +5099,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -5119,12 +5124,12 @@ contains
     ! algebraic flux correction of TVD-type in 2D
 
     subroutine doLimitTVD_2D(IedgeListIdx, IedgeList,&
-        NEQ, NVAR, DmatrixCoeffsAtEdge, Dx, dscale,&
+        NEQ, NVAR, DcoeffsAtEdge, Dx, dscale,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dy)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -5199,7 +5204,7 @@ contains
           ! Use callback function to compute internodal fluxes
           call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -5236,7 +5241,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(1, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5314,7 +5319,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -5336,7 +5341,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(2, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5402,7 +5407,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -5427,12 +5432,12 @@ contains
     ! algebraic flux correction of TVD-type in 3D
 
     subroutine doLimitTVD_3D(IedgeListIdx, IedgeList,&
-        NEQ, NVAR, DmatrixCoeffsAtEdge, Dx, dscale,&
+        NEQ, NVAR, DcoeffsAtEdge, Dx, dscale,&
         Dpp, Dpm, Dqp, Dqm, Drp, Drm, Dy)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
@@ -5507,7 +5512,7 @@ contains
           ! Use callback function to compute internodal fluxes
           call fcb_calcFluxSys_sim(&
               DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
               DfluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1), rcollection)
@@ -5544,7 +5549,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(1, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5622,7 +5627,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(1, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -5644,7 +5649,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(2, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5716,7 +5721,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(2, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -5738,7 +5743,7 @@ contains
           ! Assemble the upper and lower bounds Q and the sums of
           ! antidiffusive contributions P for the set of edges
           call doBoundsAndIncrements_sim(3, NVAR,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               IedgeList(:,IEDGEset:IEDGEmax),&
@@ -5804,7 +5809,7 @@ contains
           
           ! Apply limited characteristic fluxes to global vector
           call doLimitADFluxes_sim(3, NVAR, dscale, Drp, Drm,&
-              DmatrixCoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               DcharVariablesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DeigenvaluesAtEdge(:,1:IEDGEmax-IEDGEset+1),&
               DrightEigenvectorsAtEdge(:,1:IEDGEmax-IEDGEset+1),&
@@ -5831,11 +5836,11 @@ contains
     pure&
 #endif
     subroutine doBoundsAndIncrements_sim(idirection, NVAR,&
-        DmatrixCoeffsAtEdge, DcharVariablesAtEdge,&
+        DcoeffsAtEdge, DcharVariablesAtEdge,&
         DeigenvaluesAtEdge, IedgeList, Dpp, Dpm, Dqp, Dqm)
 
       ! input parameters
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), dimension(:,:), intent(in) :: DcharVariablesAtEdge,DeigenvaluesAtEdge
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, intent(in) :: idirection, NVAR
@@ -5853,11 +5858,11 @@ contains
       do idx = 1, size(DcharVariablesAtEdge,2)
         
         ! Compute unidirectional antidiffusive fluxes 
-        Daux1 = (DmatrixCoeffsAtEdge(idirection,2,idx)-&
-                 DmatrixCoeffsAtEdge(idirection,1,idx))*&
+        Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
+                 DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
-        Daux2 = (DmatrixCoeffsAtEdge(idirection,1,idx)+&
-                 DmatrixCoeffsAtEdge(idirection,2,idx))*&
+        Daux2 = (DcoeffsAtEdge(idirection,1,idx)+&
+                 DcoeffsAtEdge(idirection,2,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
         Dflux = -max(0.0_DP, min(abs(Daux1)-Daux2,&
                                  2.0_DP*abs(Daux1)))*DcharVariablesAtEdge(:,idx)
@@ -5898,11 +5903,11 @@ contains
     pure&
 #endif
     subroutine doLimitADFluxes_sim(idirection, NVAR, dscale, Drp, Drm,&
-        DmatrixCoeffsAtEdge, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+        DcoeffsAtEdge, DcharVariablesAtEdge, DeigenvaluesAtEdge,&
         DrightEigenvectorsAtEdge, IedgeList, Dy)
 
       ! input parameters
-      real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
       real(DP), dimension(:,:), intent(in) :: DcharVariablesAtEdge,DeigenvaluesAtEdge
       real(DP), dimension(:,:), intent(in) :: DrighteigenvectorsAtEdge,Drp,Drm
       real(DP), intent(in) :: dscale
@@ -5923,11 +5928,11 @@ contains
       do idx = 1, size(DcharVariablesAtEdge,2)
         
         ! Compute unidirectional antidiffusive fluxes 
-        Daux1 = (DmatrixCoeffsAtEdge(idirection,2,idx)-&
-                 DmatrixCoeffsAtEdge(idirection,1,idx))*&
+        Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
+                 DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
-        Daux2 = (DmatrixCoeffsAtEdge(idirection,1,idx)+&
-                 DmatrixCoeffsAtEdge(idirection,2,idx))*&
+        Daux2 = (DcoeffsAtEdge(idirection,1,idx)+&
+                 DcoeffsAtEdge(idirection,2,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
         Dflux = -max(0.0_DP, min(abs(Daux1)-Daux2,&
                                  2.0_DP*abs(Daux1)))*DcharVariablesAtEdge(:,idx)
