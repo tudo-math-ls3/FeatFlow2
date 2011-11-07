@@ -109,13 +109,13 @@ domegaIni          = 1.0
 [CC-ADAPTIVENEWTONITERATION]
 ############################
 
-# Minimum number of usul fix point iteration before to switch to
-# preconfitioning with the Newton matrix. (IFIXMIN)
+# Minimum number of fix point iterations before switching to
+# preconditioning with the Newton matrix. (IFIXMIN)
 
 nminFixPointIterations = 0
 
-# Maximum number of usul fix point iteration before to switch to
-# preconfitioning with the Newton matrix. (IFIXMAX)
+# Maximum number of fix point iterations before switching to
+# preconditioning with the Newton matrix. (IFIXMAX)
 
 nmaxFixPointIterations = 999
 

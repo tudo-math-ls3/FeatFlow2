@@ -160,7 +160,7 @@ contains
 !
 !
 !
-!    ! local vairables
+!    ! local variables
 !    integer :: iel,ielidx,nmaxelements,nelementsinset,ilocalel
 !    integer :: inode,idof
 !    

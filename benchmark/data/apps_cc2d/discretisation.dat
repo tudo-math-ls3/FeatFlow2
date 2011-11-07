@@ -196,7 +196,7 @@ imovingFrame = 0
 
 iRHS = 2
 
-# Fir irhs=4: Basic filename of the file sequence defining the right hand
+# For irhs=4: Basic filename of the file sequence defining the right hand
 # side. An index ".00000", ".00001",... is appended to this filename.
 # The files are uniformly distributed in the time interval 
 # [drhsTimeInit..drhsTimeMax] and interpolated in time if necessary.

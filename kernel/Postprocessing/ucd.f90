@@ -86,7 +86,7 @@
 !#      -> Get a data / information of a variable.
 !#
 !# 23.) ucd_infoVariables
-!#      -> Output information about vairables.
+!#      -> Output information about variables.
 !#
 !# 24.) ucd_getSimulationTime
 !#      -> Get simulation time.

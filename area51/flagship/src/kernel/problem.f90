@@ -873,7 +873,7 @@ contains
       deallocate(rproblemLevel%Rmatrix)
     end if
 
-    ! Release all block matries
+    ! Release all block matrices
     if (associated(rproblemLevel%RmatrixBlock)) then
       do i = lbound(rproblemLevel%RmatrixBlock,1),&
              ubound(rproblemLevel%RmatrixBlock,1)

@@ -18,9 +18,9 @@
 !#      for this case CHI should be defined in the underlying callback file chemotaxis_callback.f90
 !#
 !# The equation is discretised in time by an implicit Euler Method, providing the
-!# following discrete equation:									
-!#												
-!#	
+!# following discrete equation:
+!#
+!#
 !#	!!!! imlicit Euler !!!!!
 !#
 !#	1/dt * ( u_{n+1}-u{n} ) = Laplace u_{n+1} - grad (CHI*u_{n+1} * grad c_{n+1})	/ multiplying with test func and dt, take int
@@ -32,7 +32,7 @@
 !#      (c_{n+1},phi) 		=  dt*( Laplace c_{n+1},phi ) - dt*( c_{n+1} +u_{n},phi ) + ( c_{n},phi )
 !#	__________________
 !#
-!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi ) 
+!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi )
 !#
 !#      (c_{n+1},phi) 		= - dt*( grad c_{n+1},grad phi ) - dt*( u_{n} + c_{n+1},phi ) + ( c_{n},phi )
 !#	__________________
@@ -40,15 +40,15 @@
 !#	[M + dt*L - dt*M_2] u_{n+1} 	= [ M ] u_{n}
 !#
 !#      [M + dt*L + dt*M] c_{n+1} 		= [ M ] c_{n} - dt* M u_n
-!#	
 !#
-!# The whole solution process is divided into serveral subroutines, using 
+!#
+!# The whole solution process is divided into serveral subroutines, using
 !# the BiCG-solver (defect correction ) for the linear (nonlinear) subproblems in every
 !# timestep
 !#
 !# The module bases on the standard heatconduction example and shows which
 !# modifications are necessary to create a chemotaxis solver from a heatconduction
-!# solver. Boundary conditions, matrices and vectors are not all reassembled in 
+!# solver. Boundary conditions, matrices and vectors are not all reassembled in
 !# every timestep, in contrast to the heatcond_method1.f90
 !# </purpose>
 !##############################################################################
@@ -80,31 +80,31 @@ module chemotaxis_pattern_FCT
     use matrixio
     use vectorio
     use collection
-    use paramlist    
+    use paramlist
     use linearalgebra
     use analyticprojection
     use meshregion
     use chemotaxis_callback
-    
+
     !for weak Dirichlet bondaries
     use myTestModule
     use weakDirichlet
-  
+
     implicit none
 
     contains
 
     !##################################################################################
-    !<function>        
+    !<function>
     function Fsol(x,y,a,b) result (f_result1)					!----> fct for the initial condition
 	    implicit none								!	of the solutionvector
 	    real(DP) :: f_result1, x, y, a, b					!	(centered)
 
 	    f_result1 = a*dexp(-b*((x-0.5_DP)*(x-0.5_DP)+(y-0.5_DP)*(y-0.5_DP)))
     end function Fsol
-    !</function>        
+    !</function>
 
-   !<function>        
+   !<function>
     function Fchemo(x,y,a,b) result (f_result2)					!----> fct for the initial condition
 	    implicit none								!	of the chemoattractant
 	    real(DP) :: f_result2, x, y, a, b					!	(centered)
@@ -114,13 +114,13 @@ module chemotaxis_pattern_FCT
     !</function>
   !##################################################################################
 
-  
+
     !##################################################################################
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!   begin of chemotaxispatternFCT subroutine  !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine chemotaxispatternFCT
-    
+
     !<description>
     ! The routine performs the following tasks:
     !
@@ -130,11 +130,11 @@ module chemotaxis_pattern_FCT
     ! 4.) Set up matrix
     ! 5.) Create solver structure
     ! 6.) Solve the problem
-    ! 7.) Write solution to GMV file if desired 
+    ! 7.) Write solution to GMV file if desired
     ! 8.) Release all variables, finish
     !</description>
 
- 
+
         ! Definitions of variables.
         !
         ! An object for saving the domain:
@@ -150,7 +150,7 @@ module chemotaxis_pattern_FCT
         ! This contains also information about trial/test functions,...
         type(t_blockDiscretisation) :: rdiscretisation
 
-        ! A trilinear , bilinear and linear form describing the analytic problem to solve		
+        ! A trilinear , bilinear and linear form describing the analytic problem to solve
         type(t_trilinearForm) :: rtriform
         type(t_bilinearForm) :: rform
         type(t_linearForm) :: rlinform
@@ -158,11 +158,11 @@ module chemotaxis_pattern_FCT
         ! A scalar matrix and vector. The vector accepts the RHS of the problem in scalar form.
         type(t_matrixScalar)  :: rmatrix, rmatrixchemo, rsysmatrix , rlaplace, rtemp, rtempLump
         type(t_matrixScalar)  :: rmassmatrix
-        type(t_matrixScalar)  :: rmatrGradX, rmatrGradY 
+        type(t_matrixScalar)  :: rmatrGradX, rmatrGradY
         type(t_vectorScalar)  :: rrhscell,rcell
         type(t_vectorScalar)  :: rrhschemo,rchemoattract,cbvector_temp, &
                                     rinitcells, rinitchemo, rdef, rfc, rfu
-        type(t_vectorScalar)  :: rrhschemo_notCoupled                                    
+        type(t_vectorScalar)  :: rrhschemo_notCoupled
         type(t_vectorScalar) :: ranalyticcells , ranalyticchemo, rcold, ruold
 
         !A pointer to the entries of vector rchemoattract (added to access the chemoattractant)
@@ -173,11 +173,11 @@ module chemotaxis_pattern_FCT
         type(t_matrixBlock) :: rmatrixBlock, rmatrixBlockchemo
         type(t_vectorBlock) :: rcellBlock,rvectorBlockchemo,rrhsBlock,rrhsBlockchemo,rtempBlock, rdefBlock, rfuBlock
 
-        ! A set of variables describing the analytic and discrete boundary conditions.    
+        ! A set of variables describing the analytic and discrete boundary conditions.
         type(t_boundaryRegion) :: rboundaryRegion
         type(t_discreteBC), target :: rdiscreteBC, rdiscreteBCchemo
 
-        ! A solver node that accepts parameters for the linear solver    
+        ! A solver node that accepts parameters for the linear solver
         type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rsolverNode_cells,p_rpreconditioner_cells
 
         ! An array for the system matrix(matrices) during the initialisation of the linear solver.
@@ -193,7 +193,7 @@ module chemotaxis_pattern_FCT
         integer :: NLMAX
 
         ! Error indicator during initialisation of the solver
-        integer :: ierror    
+        integer :: ierror
 
         ! Output block for UCD output to GMV file
         type(t_ucdExport) :: rexport
@@ -207,7 +207,7 @@ module chemotaxis_pattern_FCT
         ! Time and time step counter
         real(DP) :: dtime
         integer :: itimestep
-        
+
         ! coupled step counter
         integer :: icouplestep
 
@@ -239,14 +239,14 @@ module chemotaxis_pattern_FCT
 
         ! Defining the gmvoutputfolder
         integer :: gmvfolder, checkneg
-                    
+
         ! error analysis
-        real(DP) :: uerror, cerror, tol, Derr_chemoL2, Derr_cellsL2, Derr_chemoH1, Derr_cellsH1    
+        real(DP) :: uerror, cerror, tol, Derr_chemoL2, Derr_cellsL2, Derr_chemoH1, Derr_cellsH1
 
         ! error-norm constant
         ! To be set in the .dat file
         integer :: CTRLNORM
-                
+
         ! Whether or not taking an const initial sol
         ! =0 means const initial sol
         ! =1 means exponential initial sol
@@ -279,11 +279,11 @@ module chemotaxis_pattern_FCT
 
        ! relaxation for the convective/chemotactical term
        real(DP) ::  convecRelaxation
- 
+
        ! for comparision with analytical solution
        type(t_vectorScalar) :: ranalytChemo, ranalytCell, rtempAnalyt
-       real(DP) :: dnorm     
-   
+       real(DP) :: dnorm
+
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!! Ok, let's start. !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -293,7 +293,7 @@ module chemotaxis_pattern_FCT
         call parlst_readfromfile(rparams, 'data/chemotaxis.dat')
 
         ! Getting some general params for the pb
-        call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7) 
+        call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
         call parlst_getvalue_int (rparams, 'GENERAL' , 'OUTPUT' , OUTPUT , 0)
         call parlst_getvalue_int (rparams, 'GENERAL' , 'ISTEP_GMV' , ISTEP_GMV , 1)
         call parlst_getvalue_int (rparams, 'GENERAL' , 'INITSOL' , INITSOL , 1)
@@ -302,7 +302,7 @@ module chemotaxis_pattern_FCT
         call parlst_getvalue_int(rparams, 'GENERAL', 'CHECKNEG', checkneg , 0)
         call parlst_getvalue_double(rparams, 'GENERAL', 'DEFECTTOL', defectTol , 0.0000001_DP)
         call parlst_getvalue_double(rparams, 'GENERAL', 'NEGTHRES', negthres , -0.1_DP)
-            
+
         ! We set the chemotaxis and diffusion coefficient
         call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'CHI', CHI, 1.0_DP)
         call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'W', W, 1.0_DP)
@@ -342,7 +342,7 @@ module chemotaxis_pattern_FCT
         ! penalty parameter for the weak Dirichlet boundary condition term
         call parlst_getvalue_double (rparams, 'WEAKDIRICHLET', 'lambda_c', lambda_c, 1000.0_DP)
         call parlst_getvalue_double (rparams, 'WEAKDIRICHLET', 'lambda_u', lambda_u, 1000.0_DP)
-            
+
         ! Get the tolerance threshold value for steady state issues
         call parlst_getvalue_double (rparams, 'ERROR', 'TOL', tol, 0.0001_DP)
 
@@ -353,13 +353,13 @@ module chemotaxis_pattern_FCT
        ! At first, read in the parametrisation of the boundary and save
        ! it to rboundary.
        call boundary_read_prm(rboundary, './pre/cube1.prm')
-        
+
        ! Now read in the basic triangulation.
        call tria_readTriFile2D (rtriangulation, './pre/cube1.tri', rboundary)
-    
+
        ! Refine it.
-       call tria_quickRefine2LevelOrdering (NLMAX,rtriangulation,rboundary)		
-    
+       call tria_quickRefine2LevelOrdering (NLMAX,rtriangulation,rboundary)
+
        ! And create information about adjacencies and everything one needs from
        ! a triangulation.
        call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
@@ -375,35 +375,35 @@ module chemotaxis_pattern_FCT
         ! Initialise the first element of the list to specify the element
         ! and cubature rule for this solution component:
         call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                       EL_E011,CUB_SIMPSON_2D,rtriangulation, rboundary)        
+                                       EL_E011,CUB_SIMPSON_2D,rtriangulation, rboundary)
         !                           EL_E011,CUB_G2X2,rtriangulation, rboundary)
-                
-        ! Now as the discretisation is set up, we can start to generate the structure of the system matrix. 
+
+        ! Now as the discretisation is set up, we can start to generate the structure of the system matrix.
         ! Get some pointers  for the errorctrl
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
-        call lsyssc_getbase_double(rcold,p_cold) 
+        call lsyssc_getbase_double(rcold,p_cold)
         call lsyssc_getbase_double(ruold,p_uold)
 
-        ! allocate and create structure of some important matrices and vectors                  
+        ! allocate and create structure of some important matrices and vectors
         call chemo_creatematvec (rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rmatrGradX, rmatrGradY, &
-                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhscell, & 
+                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhscell, &
                                     rdef, rdiscretisation, rfc, rfu, ranalytChemo, ranalytCell, rtempAnalyt)
-                                            
+
         ! initialize some matrices to be used later (optimization step)
         call chemo_initmat (rmassmatrix, rsysmatrix, rlaplace, rmatrGradX, rmatrGradY, dtstep, D_1, D_2)
-            
+
         ! set initial conditions for rcell and chemoattract.
         call chemo_initIC (rchemoattract, rcell, p_vectordata, rtriangulation, rmassmatrix, L2PROJ, &
                             INITSOL, U_0, C_0, A_CELLS, B_CELLS, A_CHEMO, B_CHEMO, ranalytChemo, ranalytCell)
 
-        ! Setting the boundary conditions for chemoattractant (filtering technique to be used later)     
+        ! Setting the boundary conditions for chemoattractant (filtering technique to be used later)
          call chemo_initBC ( rdiscreteBCchemo , rboundary, rdiscretisation, rtriangulation, C_0 , U_0 , INITSOL )
 
         ! here we set a pointer for the later filtering technique
         rvectorBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
 
-        ! Setting the Blockvectors (since the linear solver works only for block matrices/vectors)        
+        ! Setting the Blockvectors (since the linear solver works only for block matrices/vectors)
         call lsysbl_createMatFromScalar (rsysmatrix,rmatrixBlockchemo,rdiscretisation)
         call lsysbl_createVecFromScalar (rchemoattract,rvectorBlockchemo,rdiscretisation)
         call lsysbl_createVecFromScalar (rrhschemo, rrhsBlockchemo, rdiscretisation)
@@ -412,8 +412,8 @@ module chemotaxis_pattern_FCT
         call lsysbl_createVecFromScalar (rcell,rcellBlock,rdiscretisation)
         call lsysbl_createVecFromScalar (rdef,rdefBlock,rdiscretisation)
         call lsysbl_createVecFromScalar (rfu,rfuBlock,rdiscretisation)
-            
-        ! Setting the boundary conditions for cells (filtering technique to be used later)       
+
+        ! Setting the boundary conditions for cells (filtering technique to be used later)
         call cell_initBC ( rdiscreteBC, rboundary, rdiscretisation, rtriangulation, C_0, U_0, INITSOL )
 
         ! here we set a pointer for the later filtering technique
@@ -425,15 +425,15 @@ module chemotaxis_pattern_FCT
             case ( 0 )
                 call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                         'gmvcpld/solution_init.gmv.pattern')
-                call lsyssc_getbase_double (rcell,p_Ddata)            
+                call lsyssc_getbase_double (rcell,p_Ddata)
                 call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
-                call lsyssc_getbase_double (rchemoattract,p_Ddata)            
+                call lsyssc_getbase_double (rchemoattract,p_Ddata)
                 call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
                 !analytical part
                 call lsyssc_getbase_double (ranalytCell,p_Ddata)
-                call ucd_addVariableVertexBased (rexport,'analytCells',UCD_VAR_STANDARD, p_Ddata)        
+                call ucd_addVariableVertexBased (rexport,'analytCells',UCD_VAR_STANDARD, p_Ddata)
                 call lsyssc_getbase_double (ranalytChemo,p_Ddata)
-                call ucd_addVariableVertexBased (rexport,'analytChemo',UCD_VAR_STANDARD, p_Ddata)        
+                call ucd_addVariableVertexBased (rexport,'analytChemo',UCD_VAR_STANDARD, p_Ddata)
                 ! Write the file to disc, that's it.
                 call ucd_write (rexport)
                 call ucd_release (rexport)
@@ -479,7 +479,7 @@ module chemotaxis_pattern_FCT
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        if(steps /= 0) then 
+        if(steps /= 0) then
             ntimesteps = steps
         end if
 
@@ -492,23 +492,23 @@ module chemotaxis_pattern_FCT
         !!!!! Start the timeloop !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         timeloop : do itimestep=1,ntimesteps
-    
+
             ! time stats
             call cpu_time(time_start)
 
             ! Next time step.
-            dtime = dtime + dtstep                       
-                                
+            dtime = dtime + dtstep
+
             ! Store the old sols for the errorctrl
             call lsyssc_getbase_double(rcell, p_vectordata)
             call lsyssc_getbase_double(rchemoattract, p_chemodata)
             call lalg_copyVectorDble(p_vectordata, p_uold)
             call lalg_copyVectorDble(p_chemodata, p_cold)
-                            
+
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !!!!!!   STEP 1: we solve for c (chemoattractant)   !!!!!
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                       
-                            
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
             !********** we calculate the rhs of c^n = M c^n + \Delta t f_c ******!
             call chemo_initrhsC_forCoupling ( rchemoattract, rrhschemo_notCoupled, rcell, ranalytCell,&
                                      rdiscretisation, rmassmatrix, dtstep, PHI, rfc)
@@ -522,11 +522,11 @@ module chemotaxis_pattern_FCT
             rlinform%Idescriptors(1) = DER_FUNC
             call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
                                          rlinform, .false., rrhschemo_notCoupled, callback_weakDirichlet_rfc, rcollection)
-                                    
+
             !********** we calculate the rhs of u^n = M u^n + \Delta t f_u ******!
             ! Now form the actual RHS by matrix vector multiplication: rrhscell = rmatrix_lumped * u_{old}
-            ! The massmatrix has already been built outside the loop 
-            call lsyssc_scalarMatVec(rtempLump,rcell,rrhscell,1.0_DP,0.0_DP)		
+            ! The massmatrix has already been built outside the loop
+            call lsyssc_scalarMatVec(rtempLump,rcell,rrhscell,1.0_DP,0.0_DP)
             ! Here I embed (analytical) term F_u!
 
             rlinform%itermCount = 1
@@ -547,7 +547,7 @@ module chemotaxis_pattern_FCT
             ! need to specify one more componenet/parameter in the subrouinte below
             !>>>linf_buildVectorScalarBdr2d (rlinform, CUB_TRZ_1D,.false., rrhscell,&
             !>>>                               callback_boundaryIntegral )
-            !                              fcoeff_buildVectorScBdr2D_sim ) 
+            !                              fcoeff_buildVectorScBdr2D_sim )
             !call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
             !                             rlinform, .false., rrhscell, callback_boundaryIntegral, rcollection)
 
@@ -559,10 +559,10 @@ module chemotaxis_pattern_FCT
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !----> seems we are ready for the coupled loop
             coupledloop : do icouplestep=1,1
-                
-                ! set coupled rhschemo    
+
+                ! set coupled rhschemo
                 call lsyssc_copyVector(rrhschemo_notCoupled, rrhschemo)
-!                 call lsyssc_scalarMatVec(rtempLump, rcell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
+!                 call lsyssc_scalarMatVec(rtempLump, rcell, rrhschemo, dtstep*PHI, 1.0_DP)
 
                 ! RS: trying to set it up via a linear-form
                 ! e.g. invoke the linf_buildVectorScalar with rcell as the coefficient
@@ -576,28 +576,28 @@ module chemotaxis_pattern_FCT
 !                 ! <--- This actually doesn't any good :(
 
                 call lsyssc_scalarMatVec(rmassmatrix, rcell, rrhschemo, dtstep*PHI, 1.0_DP)
-                !call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)            
-    
-                                 
-                                
+                !call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)
+
+
+
                 rmatrixBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
                 rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
 
-                ! Next step is to implement boundary conditions into the RHS, solution and matrix. 
+                ! Next step is to implement boundary conditions into the RHS, solution and matrix.
                 !This is done using a vector/matrix filter for discrete boundary conditions.
-                ! The discrete boundary conditions are already attached to the vectors/matrix. 
+                ! The discrete boundary conditions are already attached to the vectors/matrix.
                 call matfil_discreteBC (rmatrixBlockchemo)
                 call vecfil_discreteBCrhs (rrhsBlockchemo)
                 call vecfil_discreteBCsol (rvectorBlockchemo)
 
                 !To calculate DEFECT for chemo
-                call lsysbl_copyVector( rrhsBlockchemo, rdefBlock)                  
+                call lsysbl_copyVector( rrhsBlockchemo, rdefBlock)
                 call lsysbl_blockMatVec( rmatrixBlockchemo, rvectorBlockchemo, rdefBlock, -1.0_DP, 1.0_DP )
-                defect = lsysbl_vectorNorm ( rdefBlock , LINALG_NORML2 )           
-               
-                  
-                !!!!!! seems everything to be ready for solving c !!!!!! 
-                        
+                defect = lsysbl_vectorNorm ( rdefBlock , LINALG_NORML2 )
+
+
+                !!!!!! seems everything to be ready for solving c !!!!!!
+
                 ! Setting some resolver issues
                 ! During the linear solver, the boundary conditions are also
                 ! frequently imposed to the vectors. But as the linear solver
@@ -612,21 +612,21 @@ module chemotaxis_pattern_FCT
                 nullify(p_rpreconditioner)
                 call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
                 !other solver: call linsol_initGMRES (p_rsolverNode,64,p_rpreconditioner,p_RfilterChain)
-                    
+
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
                 Rmatrices = (/rmatrixBlockchemo/)
                 call linsol_setMatrices(p_RsolverNode,Rmatrices)
-                    
+
                 ! Initialise structure/data of the solver. This allows the
                 ! solver to allocate memory / perform some precalculation to the problem.
                 call linsol_initStructure (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) stop
                 call linsol_initData (p_rsolverNode, ierror)
                 if (ierror .ne. LINSOL_ERR_NOERROR) stop
-                    
+
                 ! STEP 1.6: Solve the system
                 ! Now we have block vectors for the RHS and the matrix. What we
                 ! need additionally is a block vector for the solution and
@@ -651,18 +651,18 @@ module chemotaxis_pattern_FCT
                 end if
                 iteration_c_average = iteration_c_average + p_rsolverNode%iiterations
 
-                ! We  compute the norm of the difference between two successive timesteps. 
+                ! We  compute the norm of the difference between two successive timesteps.
                 ! (a basic error control below...)
-                cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)     
-                            
+                cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)
+
                 ! Release the block matrix/vectors
                 call lsysbl_releaseVector (rtempBlock)
 
 
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 !!!!!!   STEP 2: we solve for u (chemoattractant)   !!!!!
-                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                       
-                        
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
                 ! We calculate some iteratives to suit the residual tolerance
                 print*,"----------------"
                 print*,"timestep : ", itimestep
@@ -674,13 +674,13 @@ module chemotaxis_pattern_FCT
                                     rrhscell, rdiscretisation, rdiscreteBC, dtstep, D_1, CHI, ALPHA, r, GAMMA, N, maxiterationdef, defectTol ,&
                                     iteration_u_max, iteration_u_min, iteration_u_average, iteration_defcorr_max, &
                                     iteration_defcorr_min, iteration_defcorr_average, rfu, rfuBlock, itimestep, convecRelaxation, rtriangulation)
-        end do coupledloop 
+        end do coupledloop
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!! end of the coupledloop  !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            
+
             ! STEP 2.7: Postprocessing
-            ! That's it, rcellBlock now contains our solution. We can now start the postprocessing.     
+            ! That's it, rcellBlock now contains our solution. We can now start the postprocessing.
             if(OUTPUT .eq. 1) then
                 ! Start UCD export to GMV file:
                 select case (gmvfolder)
@@ -694,9 +694,9 @@ module chemotaxis_pattern_FCT
                 end  select
                     call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
-                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
+                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
-                    
+
                     ! Write the file to disc, that's it.
                     call ucd_write (rexport)
                     call ucd_release (rexport)
@@ -717,58 +717,58 @@ module chemotaxis_pattern_FCT
                     end  select
                     call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
                     !for test call lsyssc_getbase_double (rfu,p_Ddata)
-                    call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)        
-                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
-                    !for test call lsyssc_getbase_double (rfc,p_Ddata)		
+                    call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
+                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
+                    !for test call lsyssc_getbase_double (rfc,p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
                     !analytical part
                     call lsyssc_getbase_double (ranalytCell,p_Ddata)
-                    call ucd_addVariableVertexBased (rexport,'analytCells',UCD_VAR_STANDARD, p_Ddata)        
+                    call ucd_addVariableVertexBased (rexport,'analytCells',UCD_VAR_STANDARD, p_Ddata)
                     call lsyssc_getbase_double (ranalytChemo,p_Ddata)
-                    call ucd_addVariableVertexBased (rexport,'analytChemo',UCD_VAR_STANDARD, p_Ddata)        
+                    call ucd_addVariableVertexBased (rexport,'analytChemo',UCD_VAR_STANDARD, p_Ddata)
                     ! Write the file to disc, that's it.
                     call ucd_write (rexport)
                     call ucd_release (rexport)
                 end if
             end if
-                    
-            ! We  compute the norm of the difference between two successive timesteps. 
+
+            ! We  compute the norm of the difference between two successive timesteps.
             ! (a basic error control below...)
-            cerror = lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM ) 
+            cerror = lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM )
             cerror=cerror/dtstep
-            uerror = lalg_errorNormDble (p_uold,p_vectordata, CTRLNORM ) 
-            uerror=uerror/dtstep            
-            print *,' ############  Rel_chemo_diff=', cerror 
-            print *,' ############  Rel_cells_diff=', uerror 
-            
-            !!!!!!! calculate the norm of |analyt - numeric|                
+            uerror = lalg_errorNormDble (p_uold,p_vectordata, CTRLNORM )
+            uerror=uerror/dtstep
+            print *,' ############  Rel_chemo_diff=', cerror
+            print *,' ############  Rel_cells_diff=', uerror
+
+            !!!!!!! calculate the norm of |analyt - numeric|
             ! calculate the difference: (c_analyt - c_numeric)
-            call lsyssc_vectorLinearComb (ranalytChemo,rchemoattract,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)      
-            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)               
+            call lsyssc_vectorLinearComb (ranalytChemo,rchemoattract,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)
+            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)
             print*,''
-            print *,' >>>>>>>>>>  Norms_chemo_diff=', dnorm 
+            print *,' >>>>>>>>>>  Norms_chemo_diff=', dnorm
             ! calculate the difference: (u_analyt - u_numeric)
-            call lsyssc_vectorLinearComb (ranalytCell,rcell,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)      
-            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)               
-            print *,' >>>>>>>>>>  Norms_cells_diff=', dnorm 
+            call lsyssc_vectorLinearComb (ranalytCell,rcell,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)
+            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)
+            print *,' >>>>>>>>>>  Norms_cells_diff=', dnorm
             print*,''
 
             ! here I calculate the analytical L_2 error
             call pperr_scalar (rchemoattract,PPERR_L2ERROR,Derr_chemoL2,&
-                        ffunction_Target_Chemo)                              
+                        ffunction_Target_Chemo)
             call pperr_scalar (rcell,PPERR_L2ERROR,Derr_cellsL2,&
-                        ffunction_Target_Cells)                              
+                        ffunction_Target_Cells)
             print *,' ===========  Diff_L2_chemo=', Derr_chemoL2
             print *,' ===========  Diff_L2_cells=', Derr_cellsL2
 
             ! here I calculate the analytical H_1 error
             call pperr_scalar (rchemoattract,PPERR_H1ERROR,Derr_chemoH1,&
-                        ffunction_Target_ChemoH1)                              
+                        ffunction_Target_ChemoH1)
             call pperr_scalar (rcell,PPERR_H1ERROR,Derr_cellsH1,&
-                        ffunction_Target_CellsH1)                              
+                        ffunction_Target_CellsH1)
             print *,' \\\\\\\\\\\  Diff_H1_chemo=', Derr_chemoH1
             print *,' \\\\\\\\\\\  Diff_H1_cells=', Derr_cellsH1
-            
+
             ! time statistics
             call cpu_time(time_stop)
             time_accum = time_accum+( time_stop-time_start )
@@ -810,10 +810,10 @@ module chemotaxis_pattern_FCT
 
                     end  select
                     quit = .true.
-                    end if 
+                    end if
             end do checkneg_loop
             end if
-                                            
+
             ! The simulation should stop if we reached a nearly steady state. So thats whats done here...
             ! We approximate our time-derivative with the first order accurate difference quotient.
             ! d sol/ dt ~ (sol_n - sol_{n-1})/dtstep
@@ -829,20 +829,20 @@ module chemotaxis_pattern_FCT
                     quit = .true.
                 end if
             end if
-                                    
+
             if( quit ) then
                 EXIT
             end if
-            
+
         end do timeloop
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!! end of the global time loop !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        ! deallocate lumped mass matrix    
+        ! deallocate lumped mass matrix
          call lsyssc_releaseMatrix(rtempLump)
-        
-        ! If we want to export just the last vectors    
+
+        ! If we want to export just the last vectors
         if ( OUTPUT .eq. 2 ) then
             select case (gmvfolder)
                 case (0)
@@ -867,7 +867,7 @@ module chemotaxis_pattern_FCT
                     call ucd_release (rexport)
             end select
         end if
-        
+
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!   Printing some statistical information   !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -926,10 +926,10 @@ module chemotaxis_pattern_FCT
         print *,"min iteration needed :", iteration_defcorr_min
         if ( quit ) then
             print*, "average iterations needed :", iteration_defcorr_average / itimestep
-        else 
+        else
             print*, "average iterations needed :", iteration_defcorr_average / (itimestep-1)
         end if
-                            
+
         print *,"############ differenece to steady state in c ################"
                         print *,cerror / dtstep
                         print *,"############################"
@@ -955,7 +955,7 @@ module chemotaxis_pattern_FCT
         ! Release solver data and structure
         call linsol_doneData (p_rsolverNode)
         call linsol_doneStructure (p_rsolverNode)
-            
+
         ! Release the solver node and all subnodes attached to it (if at all):
         call linsol_releaseSolver (p_rsolverNode)
 
@@ -978,8 +978,8 @@ module chemotaxis_pattern_FCT
         call lsyssc_releaseVector (rdef)
         call lsyssc_releaseVector (rrhscell)
         call lsyssc_releaseVector (rfc)
-        call lsyssc_releaseVector (rfu)          
-        call lsysbl_releaseVector (rfuBlock)          
+        call lsyssc_releaseVector (rfu)
+        call lsysbl_releaseVector (rfuBlock)
 
         call lsyssc_releaseVector (rcold)
         call lsyssc_releaseVector (ruold)
@@ -988,14 +988,14 @@ module chemotaxis_pattern_FCT
         call lsyssc_releaseVector (ranalytChemo)
         call lsyssc_releaseVector (ranalytCell)
         call lsyssc_releaseVector (rtempAnalyt)
-        
+
         ! Release parameterlist
         call parlst_done (rparams)
 
         ! Release the discretisation structure and all spatial discretisation structures in it.
         call spdiscr_releaseBlockDiscr(rdiscretisation)
 
-        ! Release the triangulation. 
+        ! Release the triangulation.
         call tria_done (rtriangulation)
 
         ! Finally release the domain, that's it.
@@ -1004,7 +1004,7 @@ module chemotaxis_pattern_FCT
         !release  mass matrices for weak Dirichlet conditions
         call lsyssc_releaseMatrix (rmassmatrixWeakD_c)
         call lsyssc_releaseMatrix (rmassmatrixWeakD_u)
-        
+
         print *,">>end of the subroutine chemotaxispatternFCT ... "
     end subroutine
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1019,7 +1019,7 @@ module chemotaxis_pattern_FCT
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! In thie routine the basic matrices and vectors are initialized
     subroutine chemo_creatematvec (rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rmatrGradX, rmatrGradY, &
-                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhs, rdef, & 
+                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhs, rdef, &
                                     rdiscretisation, rfc, rfu, ranalytChemo, ranalytCell, rtempAnalyt)
 
         ! This is where the matrices shoiuld be stored
@@ -1028,14 +1028,14 @@ module chemotaxis_pattern_FCT
         ! This are the vectors
         type(t_vectorScalar), intent(INOUT) :: rchemoattract, rcell, rdef, rrhschemo, rrhs, rfc, rfu
         type(t_vectorScalar), intent(INOUT) :: rrhschemo_notCoupled
-        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY 
+        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY
         type(t_vectorScalar), intent(INOUT) :: ranalytChemo, ranalytCell, rtempAnalyt
-        
+
         ! The underlying discretisation
         type(t_blockDiscretisation) , intent (IN) :: rdiscretisation
 
         print *,">>start of the subroutine chemo_creatematvec ... "
-        
+
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                         LSYSSC_MATRIX9,rlaplace)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
@@ -1044,7 +1044,7 @@ module chemotaxis_pattern_FCT
                                         LSYSSC_MATRIX9,rsysmatrix)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                         LSYSSC_MATRIX9,rmassmatrix)
-        ! gradient matricies
+        ! gradient matrices
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                         LSYSSC_MATRIX9,rmatrGradX)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
@@ -1056,11 +1056,11 @@ module chemotaxis_pattern_FCT
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rrhschemo_notCoupled, .true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rfc, .true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rfu, .true.)
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.) 
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.)
         ! comparision with analytical solution
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytChemo,.true.) 
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytCell,.true.) 
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rtempAnalyt,.true.) 
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytChemo,.true.)
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytCell,.true.)
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rtempAnalyt,.true.)
 
         !initialize mass matrices for weak Dirichlet conditions
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
@@ -1088,19 +1088,19 @@ module chemotaxis_pattern_FCT
         type(t_matrixScalar), intent(INOUT):: rmassmatrix , rlaplace , rsysmatrix
         type(t_matrixScalar) :: rtempmatrix
 
-        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY 
-        
+        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY
+
         real(DP) , intent (INOUT) :: dtstep , D_1 , D_2
         ! local bilinearform to construct the matrices
         type(t_bilinearForm) :: rform
-        
+
         print *,">>start of the subroutine chemo_initmat ... "
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
         rform%Idescriptors(2,1) = DER_FUNC
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff = .true.
-        rform%Dcoefficients(1)  = 1.0 
+        rform%Dcoefficients(1)  = 1.0
         call bilf_buildMatrixScalar (rform,.true.,rmassmatrix)
 
         rform%itermCount = 2
@@ -1127,10 +1127,10 @@ module chemotaxis_pattern_FCT
         rform%Idescriptors(2,1) = DER_FUNC
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff = .true.
-        !1.0_DP is exactly my alpha    
+        !1.0_DP is exactly my alpha
         !!!TEST just for test
-        !rform%Dcoefficients(1)  = dtstep * 0.0_DP  
-        rform%Dcoefficients(1)  = dtstep * 1.0_DP  
+        !rform%Dcoefficients(1)  = dtstep * 0.0_DP
+        rform%Dcoefficients(1)  = dtstep * 1.0_DP
         !rform%Dcoefficients(1)  = dtstep * 32.0_DP  ! This is the coefficient in the paper
         !test rform%Dcoefficients(1)  = 0.0_DP
         !call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
@@ -1145,9 +1145,9 @@ module chemotaxis_pattern_FCT
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff = .true.
         rform%Dcoefficients(1)  = dtstep * D_2
-        rform%Dcoefficients(2)  = dtstep * D_2        
+        rform%Dcoefficients(2)  = dtstep * D_2
         call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
-        
+
         call lsyssc_releaseMatrix (rtempmatrix)
 
         ! we evaluate gradient c_x
@@ -1168,7 +1168,7 @@ module chemotaxis_pattern_FCT
         rform%Dcoefficients(1)  = 1.0
         call bilf_buildMatrixScalar (rform,.true.,rmatrGradY)
 
-        !!!!!!!!!!!!!! block of weak Dirichlet boundary conditions !!!!!!!!!!!!!! 
+        !!!!!!!!!!!!!! block of weak Dirichlet boundary conditions !!!!!!!!!!!!!!
         ! here I set weak Dirichlet mass matrices
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
@@ -1177,13 +1177,13 @@ module chemotaxis_pattern_FCT
         rform%BconstantCoeff = .false.
         ! create a weak-mass-matrix for chemo
         call bilf_buildMatrixScalar (rform, .true., rmassmatrixWeakD_c, callback_massmatrixWeakD_c)
-        ! create a weak-mass-matrix for cell       
+        ! create a weak-mass-matrix for cell
         call bilf_buildMatrixScalar (rform, .true., rmassmatrixWeakD_u, callback_massmatrixWeakD_u)
-        
-        ! add weak-mass-matrix into rsysmatrix                
-        call lsyssc_matrixLinearComb(rmassmatrixWeakD_c, dtstep*lambda_c, rsysmatrix, 1.0_DP, rsysmatrix,.false.,.false.,.true.,.true.)        
-        !!!!!!!!!!!!!! block of weak Dirichlet boundary conditions !!!!!!!!!!!!!! 
-        
+
+        ! add weak-mass-matrix into rsysmatrix
+        call lsyssc_matrixLinearComb(rmassmatrixWeakD_c, dtstep*lambda_c, rsysmatrix, 1.0_DP, rsysmatrix,.false.,.false.,.true.,.true.)
+        !!!!!!!!!!!!!! block of weak Dirichlet boundary conditions !!!!!!!!!!!!!!
+
         print *,">>end of the subroutine chemo_initmat ... "
     end subroutine
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1207,7 +1207,7 @@ module chemotaxis_pattern_FCT
         ! sol vectors
         type(t_vectorScalar) , intent (INOUT) :: rchemoattract, rcell
 
-        real(DP), dimension(:) , pointer , intent(INOUT):: p_vectordata 
+        real(DP), dimension(:) , pointer , intent(INOUT):: p_vectordata
         ! Underlying triangulation to derive vector-coords
         type(t_triangulation) , intent (IN) :: rtriangulation
 
@@ -1216,7 +1216,7 @@ module chemotaxis_pattern_FCT
         integer , intent (IN) :: L2PROJ , INITSOL
 
         ! A local collection
-        type(t_collection) :: rcollection 
+        type(t_collection) :: rcollection
 
         ! Some pointers
         real(DP) , dimension(:,:) , pointer :: p_DvertexCoords
@@ -1229,8 +1229,8 @@ module chemotaxis_pattern_FCT
         integer :: i
 
         print *,">>start of the subroutine chemo_initIC ... "
-        
-        call lsyssc_getbase_double(rcell,p_vectordata) 
+
+        call lsyssc_getbase_double(rcell,p_vectordata)
         call lsyssc_getbase_double(rchemoattract,p_rchemoattract)
         call storage_getbase_double2D(rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
@@ -1275,10 +1275,10 @@ module chemotaxis_pattern_FCT
                     ! Setting the IC for c
                     call anprj_discrDirect ( rchemoattract, initial_c_callback, rcollection )
 
-                    ! now we set the analytical solution 
-                    call anprj_discrDirect ( ranalytCell, analyt_u_pattern ) 
+                    ! now we set the analytical solution
+                    call anprj_discrDirect ( ranalytCell, analyt_u_pattern )
                     call anprj_discrDirect ( ranalytChemo, analyt_c_pattern )
-                    
+
                     ! Releasing the collection
                     call collct_done (rcollection)
                 end select
@@ -1330,21 +1330,21 @@ module chemotaxis_pattern_FCT
         rcollection%DquickAccess(2) = 0.0_DP
 
         ! here the Dirichlet chemo-code
-        call bcasm_initDiscreteBC(rdiscreteBC) 
-          
+        call bcasm_initDiscreteBC(rdiscreteBC)
+
         call boundary_createRegion(rboundary,1,1,rboundaryRegion)
         ! We use this boundary region and specify that we want to have Dirichlet
-        ! boundary there. 
+        ! boundary there.
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_u_callback, rcollection)
-                                
+
         ! Now to the edge 2 of boundary component 1 the domain.
         call boundary_createRegion(rboundary,1,2,rboundaryRegion)
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                        rboundaryRegion,rdiscreteBC,&		
+                                        rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_u_callback, rcollection)
-                                       							
+
         ! Edge 3 of boundary component 1.
         call boundary_createRegion(rboundary,1,3,rboundaryRegion)
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
@@ -1356,7 +1356,7 @@ module chemotaxis_pattern_FCT
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_u_callback, rcollection)
-        
+
         ! deactivate collection
         call collct_done(rcollection)
 
@@ -1407,21 +1407,21 @@ module chemotaxis_pattern_FCT
         rcollection%DquickAccess(2) = 0.0_DP
 
         ! here the Dirichlet chemo-code
-        call bcasm_initDiscreteBC(rdiscreteBC) 
-          
+        call bcasm_initDiscreteBC(rdiscreteBC)
+
         call boundary_createRegion(rboundary,1,1,rboundaryRegion)
         ! We use this boundary region and specify that we want to have Dirichlet
-        ! boundary there. 
+        ! boundary there.
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_c_callback, rcollection)
-                                
+
         ! Now to the edge 2 of boundary component 1 the domain.
         call boundary_createRegion(rboundary,1,2,rboundaryRegion)
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                        rboundaryRegion,rdiscreteBC,&		
+                                        rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_c_callback, rcollection)
-                                       							
+
         ! Edge 3 of boundary component 1.
         call boundary_createRegion(rboundary,1,3,rboundaryRegion)
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
@@ -1433,7 +1433,7 @@ module chemotaxis_pattern_FCT
         call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_c_callback, rcollection)
-        
+
         ! deactivate collection
         call collct_done(rcollection)
 
@@ -1456,7 +1456,7 @@ module chemotaxis_pattern_FCT
         type(t_vectorScalar) , intent(INOUT) :: rchemoattract , rcell, ranalytCell
 
         type(t_matrixScalar) , intent(IN) :: rmassmatrix
-        type(t_matrixScalar) :: rlumpedmass 
+        type(t_matrixScalar) :: rlumpedmass
 
         type(t_vectorScalar) , intent(INOUT) :: rhschemo_notCoupled
         type(t_vectorScalar) , intent(INOUT) :: rfc
@@ -1476,7 +1476,7 @@ module chemotaxis_pattern_FCT
         real(DP), dimension(:), pointer :: p_vector
 
         print *,">>start of the subroutine chemo_initrhsC ... "
-        
+
         ! To assemble the RHS , set up the corresponding linear  form (u*g(u),Phi_j):
         !rlinform%itermCount = 1
         !rlinform%Idescriptors(1) = DER_FUNC
@@ -1486,17 +1486,17 @@ module chemotaxis_pattern_FCT
         call lsyssc_copyMatrix ( rmassmatrix, rlumpedmass )
         call lsyssc_lumpMatrixScalar (rlumpedmass,LSYSSC_LUMP_DIAG,.false.)
         !not in coupling version
-        !call lsyssc_scalarMatVec(rmassmatrix, rcell,rhschemo,dtstep*PHI,0.0_DP)            
-            
-        
+        !call lsyssc_scalarMatVec(rmassmatrix, rcell,rhschemo,dtstep*PHI,0.0_DP)
+
+
         ! rmassmatrix* c_{old} (the corressponding massmatrix is already built)
         call lsyssc_scalarMatVec(rlumpedmass, rchemoattract, rhschemo_notCoupled, 1.0_DP, 0.0_DP)
 
         ! Here I embed the (analytical) term F_c!
-        call collct_init (rcollection)        
+        call collct_init (rcollection)
 !         call collct_setvalue_vecsca ( rcollection , 'cbvector1' , rcell , .true.)
         call collct_setvalue_vecsca ( rcollection , 'cbvector2' , ranalytCell , .true.)
-        rcollection%DquickAccess(1) = PHI    
+        rcollection%DquickAccess(1) = PHI
         rlinform%itermCount = 1
         rlinform%Idescriptors(1) = DER_FUNC
         call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
@@ -1528,7 +1528,7 @@ module chemotaxis_pattern_FCT
 
 
         ! sol vectors
-        type(t_vectorScalar) ,  intent(INOUT) :: rcell , rchemoattract 
+        type(t_vectorScalar) ,  intent(INOUT) :: rcell , rchemoattract
         ! The solution block - vector
         type(t_vectorBlock) , intent(INOUT) :: rcellBlock
         ! Some matrices for computing the LHS
@@ -1539,7 +1539,7 @@ module chemotaxis_pattern_FCT
         integer, intent(IN) :: itimestep
 
         type(t_vectorScalar)  , intent(INOUT) :: rfu
-        type(t_vectorBlock)  , intent(INOUT) :: rfuBlock    
+        type(t_vectorBlock)  , intent(INOUT) :: rfuBlock
 
         ! The underlying discretisation and BCs
         type(t_Blockdiscretisation), intent(IN) :: rdiscretisation
@@ -1548,7 +1548,7 @@ module chemotaxis_pattern_FCT
         ! Some params (needed to derive the sys matrix)
         real(DP) , intent(IN) :: dtstep , D_1, CHI, ALPHA, r, GAMMA, N
         integer , intent(IN) :: maxiterationdef
-        real(DP) , intent(IN) ::defectTol  
+        real(DP) , intent(IN) ::defectTol
         integer , intent(INOUT) :: iteration_u_max, iteration_u_min,&
                                             iteration_defcorr_max, iteration_defcorr_min
         real(DP), intent(INOUT) ::  iteration_u_average, iteration_defcorr_average
@@ -1562,7 +1562,7 @@ module chemotaxis_pattern_FCT
         ! local linform
         type(t_linearForm) :: rlinform
 
-        ! temporal matrix    
+        ! temporal matrix
         type(t_matrixScalar) :: rK , rmatrix, rlumpedmass
         type(t_matrixBlock) :: rKBlock
         ! defect ctrl variable
@@ -1586,27 +1586,27 @@ module chemotaxis_pattern_FCT
         integer, dimension(:,:), allocatable ::kedge
 
         ! a local average iterationcounter for  iteration_u_average
-        real(DP) :: u_average_local 
+        real(DP) :: u_average_local
 
         ! fot test
         real(DP), dimension(:), pointer :: p_vector
-                    
+
         ! auxz vector for the evaluation of the gradient c (chemoattract)
         type(t_vectorScalar) :: rtempVecX, rtempVecY
         real(DP) :: dnorm_x, dnorm_y
         integer :: i
-        
+
         ! relaxation for the convective/chemotactical term
         real(DP), intent(IN) ::  convecRelaxation
-        
+
         print *,">>start of the subroutine chemo_defcorr ... "
-        
+
         u_average_local = 0.0_DP
 
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,rK)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1), LSYSSC_MATRIX9,rmatrix)
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rtempVecX, .true.)        
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rtempVecY, .true.)        
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rtempVecX, .true.)
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rtempVecY, .true.)
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!   begin nonlinear loop   !!!!!
@@ -1629,26 +1629,26 @@ module chemotaxis_pattern_FCT
 
             ! add mass matrix due to the weak Dirichlet boundary conditions
             call lsyssc_matrixLinearComb(rmassmatrixWeakD_u, dtstep*lambda_u, rmatrix, 1.0_DP, rmatrix,.false.,.false.,.true.,.true.)
-            
+
             !print *, dtstep
             !print *, lambda_u
             !print *,''
-            
+
             !!!!!!!!!!!!!!!!!!!!!! Here I evaluate the gradient of c !!!!!!!!!!!!!!!!!!!!!!!!!!
             ! calculate $\nabla_x c$
             call lsyssc_scalarMatVec(rmatrGradX,rchemoattract,rtempVecX,1.0_DP,0.0_DP)
             call multInvLumpedVector(rlumpedmass, rtempVecX)
             ! Calculate (for test purposes) the l2_norm of c_x
-            dnorm_x = lsyssc_vectorNorm (rtempVecX, LINALG_NORML2 ) 
+            dnorm_x = lsyssc_vectorNorm (rtempVecX, LINALG_NORML2 )
             print *,'!!!!!!!!!!!!!!!!!! c_x=',dnorm_x
-                      
+
             call lsyssc_scalarMatVec(rmatrGradY,rchemoattract,rtempVecY,1.0_DP,0.0_DP)
-            !call testPrintVector(rtempVec)            
+            !call testPrintVector(rtempVec)
             call multInvLumpedVector(rlumpedmass, rtempVecY)
             ! Calculate (for test purposes) the l2_norm of c_y
-            dnorm_y = lsyssc_vectorNorm (rtempVecY, LINALG_NORML2 ) 
+            dnorm_y = lsyssc_vectorNorm (rtempVecY, LINALG_NORML2 )
             print *,'!!!!!!!!!!!!!!!!!! c_y=',dnorm_y
-            !!!!!!!!!!!!!!!!!!!!!! finish to evaluate the gradient of c (in rtempVect) !!!!!!!!!!!!!!!!!!!!!!!!!!    
+            !!!!!!!!!!!!!!!!!!!!!! finish to evaluate the gradient of c (in rtempVect) !!!!!!!!!!!!!!!!!!!!!!!!!!
 
             ! Initialize the collection structure
             call collct_init (rcollection)
@@ -1660,7 +1660,7 @@ module chemotaxis_pattern_FCT
             call collct_setvalue_vecsca ( rcollection , 'rvector_x' , rtempVecX, .true.)
             call collct_setvalue_vecsca ( rcollection , 'rvector_y' , rtempVecY, .true.)
             rcollection%DquickAccess(1) = dtstep
-            rcollection%DquickAccess(2) = CHI 
+            rcollection%DquickAccess(2) = CHI
             rcollection%DquickAccess(3) = GAMMA
             rcollection%DquickAccess(4) = ALPHA
             rcollection%DquickAccess(5) = convecRelaxation
@@ -1675,18 +1675,18 @@ module chemotaxis_pattern_FCT
             call bilf_buildMatrixScalar (rform,.true.,rK, callback_K, rcollection)
 
             ! here I apply Dirichlet boundary conditions to the matrix rK
-            call lsysbl_createMatFromScalar (rK,rKBlock,rdiscretisation)                        
-            rKBlock%p_rdiscreteBC => rdiscreteBC            
-            call matfil_discreteBC (rKBlock)            
+            call lsysbl_createMatFromScalar (rK,rKBlock,rdiscretisation)
+            rKBlock%p_rdiscreteBC => rdiscreteBC
+            call matfil_discreteBC (rKBlock)
             call lsysbl_releaseMatrix (rKBlock)
-                       
+
             !call testPrintMatrix9(rK)
-            
+
             if(k.eq.1) then
                 allocate ( kedge ( 2, rK%NA ) )
                 allocate ( dedge ( rK%NA ) )
-                allocate ( aedge_mass ( rK%NA ) ) 
-            endif     
+                allocate ( aedge_mass ( rK%NA ) )
+            endif
 
             !**********************
             ! Adding some artificial diffusion to obtain positivity + smooth sol.
@@ -1708,15 +1708,15 @@ module chemotaxis_pattern_FCT
 
             !call chemo_artdiff( rmassmatrix, rK, dedge, kedge, nedge, aedge_mass )
 
-            ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the 
-            ! lumped massmatrix to the existing matrix            
+            ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the
+            ! lumped massmatrix to the existing matrix
             call lsyssc_matrixLinearComb(rK, -dtstep, rmatrix, 1.0_DP, rmatrix,.false.,.false.,.true.,.true.)
-            
+
             ! Adding the diffusion-part of the model, since this can also be non-linear
             ! we use the callback function callback_defcorr_laplace
             rcollection%DquickAccess(1) = dtstep
             rcollection%DquickAccess(2) = D_1
-            rcollection%DquickAccess(3) = N            
+            rcollection%DquickAccess(3) = N
             rform%itermCount = 2
             rform%Idescriptors(1,1) = DER_DERIV_X
             rform%Idescriptors(2,1) = DER_DERIV_X
@@ -1730,9 +1730,9 @@ module chemotaxis_pattern_FCT
             ! Now rmatrix is our systemmatrix
             ! Releasing the collection
             call collct_done(rcollection)
-                
+
             ! STEP 2.3: Create block vectors and boundary conditions.
-            !      
+            !
             ! The linear solver only works for block matrices/vectors - but above,
             ! we created scalar ones. So the next step is to make a 1x1 block
             ! system from the matrices/vectors above which the linear solver
@@ -1747,20 +1747,20 @@ module chemotaxis_pattern_FCT
             rrhsBlock%p_rdiscreteBC => rdiscreteBC
 
             ! Next step is to implement boundary conditions into the RHS,
-            ! solution and matrix. 
+            ! solution and matrix.
             call vecfil_discreteBCrhs (rrhsBlock)
             call vecfil_discreteBCsol (rcellBlock)
-            call matfil_discreteBC (rmatrixBlock)            
+            call matfil_discreteBC (rmatrixBlock)
 
             ! Calculate DEFECT  for cells: rdefRHS = rrhs - rmatrix * rvector
-            call lsysbl_copyVector( rrhsBlock, rdefBlock)     
+            call lsysbl_copyVector( rrhsBlock, rdefBlock)
             call lsysbl_blockMatVec( rmatrixBlock, rcellBlock, rdefBlock, -1.0_DP, 1.0_DP )
             call vecfil_discreteBCdef (rdefBlock)
 
             ! Calculate the l2_norm of the defect
             defect = lsysbl_vectorNorm ( rdefBlock , LINALG_NORML2 )
 
-            ! Here is the time to CHECK SOME RESIDUAL CONVERGENCE 
+            ! Here is the time to CHECK SOME RESIDUAL CONVERGENCE
             ! Certain defect error control should be implemented here
             if ( k .gt. 1 ) then
                 if ( defect .le. defectTol) then
@@ -1788,13 +1788,13 @@ module chemotaxis_pattern_FCT
             p_RfilterChain => RfilterChain
             nullify(p_rpreconditioner_cells)
             call linsol_initBiCGStab (p_rsolverNode_cells,p_rpreconditioner_cells,p_RfilterChain)
-            !call linsol_initGMRES (p_rsolverNode_cells,64,p_rpreconditioner_cells,p_RfilterChain)        
+            !call linsol_initGMRES (p_rsolverNode_cells,64,p_rpreconditioner_cells,p_RfilterChain)
 
             ! Attach the system matrix to the solver.
             Rmatrices = (/rmatrixBlock/)
 
             call linsol_setMatrices(p_RsolverNode_cells,Rmatrices)
-            
+
             ! Initialise structure/data of the solver. This allows the
             ! solver to allocate memory / perform some precalculation
             ! to the problem.
@@ -1802,14 +1802,14 @@ module chemotaxis_pattern_FCT
             if (ierror .ne. LINSOL_ERR_NOERROR) stop
             call linsol_initData (p_rsolverNode_cells, ierror)
             if (ierror .ne. LINSOL_ERR_NOERROR) stop
-            ! Finally solve the system. 
+            ! Finally solve the system.
             ! Set the output level of the solver to 2 for some output
             p_rsolverNode_cells%ioutputLevel = 2
             p_rsolverNode_cells%depsRel=1E-11_DP
             p_rsolverNode_cells%nminIterations=1
             p_rsolverNode_cells%nmaxIterations=400
             call linsol_precondDefect( p_rsolverNode_cells , rdefBlock )
-            
+
             ! Store the iterationstats
             if ( p_rsolverNode_cells%iiterations >=  iteration_u_max ) then
                 iteration_u_max = p_rsolverNode_cells%iiterations
@@ -1821,7 +1821,7 @@ module chemotaxis_pattern_FCT
 
             ! compute the NEW  celldensity vector by adding rdef
             call lsysbl_vectorLinearComb ( rdefBlock , rcellBlock , 1.0_DP , 1.0_DP )
-            
+
             ! Release solver data and structure
             call linsol_doneData (p_rsolverNode_cells)
             call linsol_doneStructure (p_rsolverNode_cells)
@@ -1833,13 +1833,13 @@ module chemotaxis_pattern_FCT
             call lsysbl_releaseVector (rrhsBlock)
             call lsysbl_releaseMatrix (rmatrixBlock)
             call lsysbl_releaseVector (rdefBlock)
-                        
+
             ! test block for the linearity
             if(k.eq.3) then
                 print *,' problem is nonlinear!!! '
-                stop    
+                stop
             end if
-            
+
         end do def_correction
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!   end nonlinear loop   !!!!!
@@ -1863,14 +1863,14 @@ module chemotaxis_pattern_FCT
 
         deallocate ( kedge )
         deallocate ( dedge )
-        deallocate ( aedge_mass ) 
+        deallocate ( aedge_mass )
 
         call lsyssc_releaseMatrix (rK)
         call lsyssc_releaseMatrix (rlumpedmass)
         call lsyssc_releaseMatrix (rmatrix)
         call lsyssc_releaseVector (rtempVecX)
         call lsyssc_releaseVector (rtempVecY)
-        
+
         print *,">>end of the subroutine chemo_defcorr ... "
     end subroutine
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1892,7 +1892,7 @@ module chemotaxis_pattern_FCT
         real(DP), dimension (:), intent(OUT) :: dedge
         integer, dimension(:,:), intent(OUT) :: kedge
         integer, intent(INOUT) :: nedge
-        real(DP), dimension (:), intent(OUT) :: aedge_mass 
+        real(DP), dimension (:), intent(OUT) :: aedge_mass
 
         ! some local variables
         integer :: i , j , k, nvt ,counter, iedge
@@ -1906,17 +1906,17 @@ module chemotaxis_pattern_FCT
         !for boundary nodes treatment
         type(t_triangulation), intent(IN) :: rtriangulation
         integer, dimension(:), pointer :: p_InodalProperty
-        
-        
+
+
         print *,">>start of the subroutine chemo_artdiff ... "
 
         !set the array of all boundary nodes
         call storage_getbase_int(&
             rtriangulation%h_InodalProperty, p_InodalProperty)
-        
+
         ! Get the structure (rmassmatrix and rmatrix have the same structure)
         call lsyssc_getbase_double (rmassmatrix,p_Da_mass)
-        call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
         call lsyssc_getbase_double (rmatrix,p_Da)
@@ -1934,29 +1934,29 @@ module chemotaxis_pattern_FCT
             !IF( ii_loc <= nvt) THEN
             !    IF( p_InodalProperty( ii_loc ) .ne. 0  ) THEN
             !        print *,''
-            !        cycle            
+            !        cycle
             !    END IF
             !END IF
 
             DO ij_loc = iaux ( i )+1 ,p_Kld( i+1 ) - 1
-           
+
             j = p_Kcol ( ij_loc )
             jj_loc = p_Kdiagonal ( j )
-            
+
             !skip the boundary ii nodes
             !print *,'NVT=',NVT
             !print *,'ii_loc=',ii_loc
             !print *,'jj_loc=',jj_loc
             !IF( jj_loc <= nvt) THEN
-            !    IF( p_InodalProperty( jj_loc ) .ne. 0  ) THEN                
+            !    IF( p_InodalProperty( jj_loc ) .ne. 0  ) THEN
             !        print *,''
-            !        cycle            
+            !        cycle
             !    END IF
-            !END IF 
-            
+            !END IF
+
             ji_loc = iaux ( j )
             iaux ( j )=iaux ( j )+1
-            
+
             ! Artificial diffusion coefficient
             d_ij = MAX( -p_Da ( ij_loc ), 0.0_DP, -p_Da ( ji_loc ) )
 
@@ -1965,15 +1965,15 @@ module chemotaxis_pattern_FCT
             p_Da ( ii_loc ) = p_Da ( ii_loc ) - d_ij
             p_Da ( ji_loc ) = p_Da ( ji_loc ) + d_ij
             p_Da ( jj_loc ) = p_Da ( jj_loc ) - d_ij
-            
+
             iedge = iedge + 1
             dedge ( iedge ) = d_ij
             kedge ( 1, iedge ) = i
             kedge ( 2, iedge ) = j
-            aedge_mass( iedge ) =  p_Da_mass( ij_loc )       
-            
+            aedge_mass( iedge ) =  p_Da_mass( ij_loc )
+
             END DO
-        END DO 
+        END DO
 
         nedge = iedge
 
@@ -1994,7 +1994,7 @@ module chemotaxis_pattern_FCT
     ! This routine should follow the ideas of D.Kuzmins and M.M�lers "Algebraic Flux Correction I. Scalar Conservation Laws", March 2004
     subroutine chemo_fct_lim ( rdiscretisation, rvector, kedge, dedge, nedge, aedge_mass,&
                                 rlumpedmatrix, rlaplace, rK, dtstep, rtriangulation)
-                            
+
         type(t_vectorScalar), intent(INOUT) :: rvector
         type(t_matrixScalar), intent(IN) :: rlumpedmatrix, rlaplace, rK
         type(t_Blockdiscretisation), intent(IN) :: rdiscretisation
@@ -2006,7 +2006,7 @@ module chemotaxis_pattern_FCT
 
         ! Some local variables
         integer :: i, j, iedge, nedge_mass, nedge_D, neq
-        integer :: ivert 
+        integer :: ivert
         real(DP) :: f_ij, du, eps, counter
         real(DP), dimension (: ), allocatable  :: pp, pm, qp, qm, rm, rp, f, flux
         type(t_vectorScalar) :: ru_dot, rvector_temp
@@ -2023,26 +2023,26 @@ module chemotaxis_pattern_FCT
         icount = 0
 
         print *,">>start of the subroutine chemo_fct_lim ... "
-        
+
         !set the array of all boundary nodes
         call storage_getbase_int(&
             rtriangulation%h_InodalProperty, p_InodalProperty)
-        
+
         !test: just to see all boundary nodes
         !print *,rtriangulation%NVT
         !DO iedge = 1 , nedge
         !    i = kedge ( 1, iedge )
         !    j = kedge ( 2, iedge )
-        !    IF( p_InodalProperty(i) .ne. 0 ) THEN 
-        !        icount=icount+1 
+        !    IF( p_InodalProperty(i) .ne. 0 ) THEN
+        !        icount=icount+1
         !    END IF
-        !    IF( p_InodalProperty(j) .ne. 0 ) THEN 
-        !        icount=icount+1 
+        !    IF( p_InodalProperty(j) .ne. 0 ) THEN
+        !        icount=icount+1
         !    END IF
         !END DO
 
         !print *,icount
-        
+
         allocate ( pp (neq) )
         allocate ( pm (neq) )
         allocate ( qp (neq) )
@@ -2067,20 +2067,20 @@ module chemotaxis_pattern_FCT
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rvector_temp,.true.)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,rtemp)
         !construction
-        call lsyssc_matrixLinearComb(rK, 1.0_DP, rlaplace, -1.0_DP, rtemp, .true. , .true. , .true.)        
-        call lsyssc_scalarMatVec(rtemp, rvector, rvector_temp, 1.0_DP, 0.0_DP)        
+        call lsyssc_matrixLinearComb(rK, 1.0_DP, rlaplace, -1.0_DP, rtemp, .true. , .true. , .true.)
+        call lsyssc_scalarMatVec(rtemp, rvector, rvector_temp, 1.0_DP, 0.0_DP)
         call lsyssc_invertedDiagMatVec ( rlumpedmatrix, rvector_temp, 1.0_DP, ru_dot)
-        !get ru_dot data  
+        !get ru_dot data
         call lsyssc_getbase_double( ru_dot, p_udot )
 
         !Constructing fluxes
         DO iedge = 1,nedge
-            
+
             !skip boundary nodes
             !IF( ( p_InodalProperty( kedge(1,iedge) ) .ne. 0 ).or.( p_InodalProperty( kedge(2,iedge) ) .ne. 0 ) ) THEN
-            !    cycle            
+            !    cycle
             !END IF
-        
+
             !flux ( iedge ) = aedge_mass (iedge) * ( p_udot ( kedge (1,iedge) ) - &
             !                            p_udot ( kedge (2,iedge) ) ) + &
             flux ( iedge ) = dedge ( iedge ) * ( p_vectorentries ( kedge (1,iedge) ) - &
@@ -2091,16 +2091,16 @@ module chemotaxis_pattern_FCT
 
         ! Now the actual implementation of the FCT stabilization for the Keller-Segel model starts
         DO iedge = 1 , nedge
-       
+
             !IF( ( p_InodalProperty( kedge(1,iedge) ) .ne. 0 ).or.( p_InodalProperty( kedge(2,iedge) ) .ne. 0 ) ) THEN
-            !    cycle            
+            !    cycle
             !END IF
 
             i = kedge ( 1, iedge )
             j = kedge ( 2, iedge )
 
             ! Antidiffusive fluxes to be limeted
-            du = p_vectorentries ( j ) - p_vectorentries ( i ) 
+            du = p_vectorentries ( j ) - p_vectorentries ( i )
             f_ij = flux ( iedge )
 
             ! Prelimiting of antidiffusive fluxes
@@ -2110,31 +2110,31 @@ module chemotaxis_pattern_FCT
             !end if
 
             ! Positive/negative edge contributions
-            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij ) 
+            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij )
             pp ( j ) = pp ( j ) + MAX ( 0.0_DP , -f_ij )
-            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij ) 
+            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij )
             pm ( j ) = pm ( j ) + MIN ( 0.0_DP , -f_ij )
 
             ! Maximum / minimum solution increments
-            qp ( i ) = MAX ( qp ( i ) , du ) 
+            qp ( i ) = MAX ( qp ( i ) , du )
             qp ( j ) = MAX ( qp ( j ) , -du )
-            qm ( i ) = MIN ( qm ( i ) , du ) 
+            qm ( i ) = MIN ( qm ( i ) , du )
             qm ( j ) = MIN ( qm ( j ) , -du )
         END DO
 
-        ! Computation of nodal correction factors     
+        ! Computation of nodal correction factors
         WHERE ( pp > eps )  rp = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
         WHERE ( pm < -eps ) rm = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
-                
+
         ! Correction of the right-hand side
         DO iedge = 1 , nedge
-        
+
             !IF( ( p_InodalProperty( kedge(1,iedge) ) .ne. 0 ).or.( p_InodalProperty( kedge(2,iedge) ) .ne. 0 ) ) THEN
-            !    cycle            
+            !    cycle
             !END IF
 
             ! Node numbers for the current edge
-            i = kedge ( 1 , iedge )  
+            i = kedge ( 1 , iedge )
             j = kedge ( 2 , iedge )
 
             ! Antidiffusive flux to be limeted
@@ -2142,26 +2142,26 @@ module chemotaxis_pattern_FCT
 
             ! Multiplication by alpha_ij
             ! f_ij = alpha_ij * f_ij
-	        !!! if i or j \in boundary => set alpha_ij=0 (so the low order approximation near the boundary)	
+	        !!! if i or j \in boundary => set alpha_ij=0 (so the low order approximation near the boundary)
             IF ( f_ij  > 0 ) THEN
                 f_ij = MIN ( rp ( i ) , rm ( j ) ) * f_ij
             ELSE IF ( f_ij  < 0 ) THEN
                 f_ij = MIN ( rm ( i ) , rp ( j ) ) * f_ij
             END IF
-	
+
             ! Insertion into the global vector
-            f ( i ) = f ( i ) + f_ij 
+            f ( i ) = f ( i ) + f_ij
             f ( j ) = f ( j ) - f_ij
         END DO
 
         ! here I set boundary \alpha_ij to zero
         !DO ivert = 1, rtriangulation%NVT
-        !      IF ( p_InodalProperty(ivert) .ne. 0 ) THEN              
+        !      IF ( p_InodalProperty(ivert) .ne. 0 ) THEN
         !        print *,p_InodalProperty(ivert)
         !        f(ivert)=0
-        !      ELSE 
+        !      ELSE
         !        print *,p_InodalProperty(ivert)
-        !        f(ivert)=f(ivert)                  
+        !        f(ivert)=f(ivert)
         !      END IF
         !END DO
 
@@ -2183,8 +2183,8 @@ module chemotaxis_pattern_FCT
         call lsyssc_releaseMatrix (rtemp)
         call lsyssc_releaseVector (ru_dot)
         call lsyssc_releaseVector (rvector_temp)
-        
-        print *,">>end of the subroutine chemo_fct_lim ... "        
+
+        print *,">>end of the subroutine chemo_fct_lim ... "
     end subroutine
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!   end of chemo_fct_lim subroutine  !!!!!
@@ -2205,7 +2205,7 @@ module chemotaxis_pattern_FCT
         integer :: i, na
 
         print *,">>start of the subroutine chemo_initAuxArrays ... "
-        
+
         na = size ( pp )
 
         DO i = 1, na

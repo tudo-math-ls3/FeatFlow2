@@ -1380,7 +1380,7 @@ module chemotaxis_blowup
                                         LSYSSC_MATRIX9,rsysmatrix)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                         LSYSSC_MATRIX9,rmassmatrix)
-        ! gradient matricies
+        ! gradient matrices
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                         LSYSSC_MATRIX9,rmatrGradX)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&

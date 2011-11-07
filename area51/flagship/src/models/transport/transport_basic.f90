@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains the basic routines and provides all global vairables
+!# This module contains the basic routines and provides all global variables
 !# which are required to solve a conservation law for a scalar variable.
 !#
 !# The following routines are available:

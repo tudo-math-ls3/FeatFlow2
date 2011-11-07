@@ -185,13 +185,13 @@ module CahnHilliard_nonlinearcore
   ! This block is used if CHPREC_NEWTONDYNAMIC is used as preconditioner.
   type t_CHDynamicNewtonControl
   
-    ! Minimum number of usul fix point iteration before to switch to
-    ! preconfitioning with the Newton matrix. (IFIXMIN)
+    ! Minimum number of fix point iterations before switching to
+    ! preconditioning with the Newton matrix. (IFIXMIN)
 
     integer :: nminFixPointIterations = 0
 
-    ! Maximum number of usul fix point iteration before to switch to
-    ! preconfitioning with the Newton matrix. (IFIXMAX)
+    ! Maximum number of fix point iterations before switching to
+    ! preconditioning with the Newton matrix. (IFIXMAX)
 
     integer :: nmaxFixPointIterations = 999
 

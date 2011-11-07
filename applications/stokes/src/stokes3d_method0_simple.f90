@@ -204,7 +204,7 @@ contains
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9, rmatrix%RmatrixBlock(1,1))
 
-    ! In the Stokes problem, the matriices for the Y-/Z-velocity are identical
+    ! In the Stokes problem, the matrices for the Y-/Z-velocity are identical
     ! to the matrix for the X-velocity; all are Laplace-matrices!
     ! Therefore, we can simply make a copy of the matrix for the X-velocity.
     ! This we do later after the entries are created.

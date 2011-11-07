@@ -2457,7 +2457,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel
     integer :: inode,idof
     
@@ -2867,7 +2867,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel
     integer :: inode,idof
     
@@ -3274,7 +3274,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -4064,7 +4064,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -4675,7 +4675,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -5116,7 +5116,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -5582,7 +5582,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel
     integer :: inode,idof
     
@@ -6047,7 +6047,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     logical :: bsuccess
@@ -6506,7 +6506,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     logical :: bsuccess
@@ -6978,7 +6978,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel
     integer :: inode,idof
     
@@ -7442,7 +7442,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -7907,7 +7907,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -8418,7 +8418,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -9515,7 +9515,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     real(DP) :: dmult11,dmult22,dmult44,dmult55
@@ -10165,7 +10165,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -11035,7 +11035,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -13014,7 +13014,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel
     integer :: inode,idof
     
@@ -13304,7 +13304,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -14005,7 +14005,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -14314,7 +14314,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -14904,7 +14904,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -15504,7 +15504,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -15931,7 +15931,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     
@@ -16391,7 +16391,7 @@ contains
 
 !</subroutine>
 
-    ! local vairables
+    ! local variables
     integer :: iel,ielidx
     integer :: inode,idof
     

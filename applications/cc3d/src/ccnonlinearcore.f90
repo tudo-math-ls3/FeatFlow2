@@ -182,13 +182,13 @@ module ccnonlinearcore
   ! This block is used if CCPREC_NEWTONDYNAMIC is used as preconditioner.
   type t_ccDynamicNewtonControl
   
-    ! Minimum number of usul fix point iteration before to switch to
-    ! preconfitioning with the Newton matrix. (IFIXMIN)
+    ! Minimum number of fix point iterations before switching to
+    ! preconditioning with the Newton matrix. (IFIXMIN)
 
     integer :: nminFixPointIterations = 0
 
-    ! Maximum number of usul fix point iteration before to switch to
-    ! preconfitioning with the Newton matrix. (IFIXMAX)
+    ! Maximum number of fix point iterations before switching to
+    ! preconditioning with the Newton matrix. (IFIXMAX)
 
     integer :: nmaxFixPointIterations = 999
 
