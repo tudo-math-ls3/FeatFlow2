@@ -6,47 +6,11 @@
 #                                                                              #
 ################################################################################
 
-sperfconfigfile = "../../perfconfig/default.pcfg"
+simportdatafiles = "../1d/default.dat"
 
 ################################################################################
 [Mhd]
 ################################################################################
-
-# Position of the discretisation in the array of discretisations
-Discretisation = 1
-
-# Position of the stabilization for the inviscid term
-InviscidAFC = 1
-
-# Position of the stabilization for the iviscous term
-ViscousAFC = 2
-
-# Position of the group finite element block for the inviscid term
-InviscidGFEM = 1
-
-# Position of the group finite element block for the viscous term
-ViscousGFEM = 2
-
-# Position of the template group finite element block
-TemplateGFEM = 3
-
-# Position of the template matrix in the scalar matrix structure
-TemplateMatrix = 3
-
-# Position of the system matrix in the scalar matrix structure
-SystemMatrix = 1
-
-# Position of the Jacobian matrix in the scalar matrix structure
-JacobianMatrix = 2
-
-# Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 4
-
-# Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 5
-
-# Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 6
 
 # Position of the constant coefficient matrix CY in the scalar matrix structure
 CoeffMatrix_CY = 7
@@ -71,3 +35,5 @@ CoeffMatrix_CXZ = 0 #13
 
 # Position of the constant coefficient matrix CYZ in the scalar matrix structure
 CoeffMatrix_CYZ = 0 #14
+
+#------------------------------------------------------------------------------

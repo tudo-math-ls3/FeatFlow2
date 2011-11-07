@@ -15,8 +15,13 @@ sperfconfigfile = "../../perfconfig/default.pcfg"
 # Position of the discretisation in the array of discretisations
 Discretisation = 1
 
+# Position of the DOF coordinates in the block vector structure
+DofCoords = 1
+
 # Position of the velocity field data in the block vector structure
-VelocityField = 1
+VelocityField = 2
+
+#-------------------------------------------------------------------------------
 
 # Position of the group finite element block for the convective term
 ConvectionGFEM = 1
@@ -33,6 +38,8 @@ PrimalBdrGFEM = 4
 # Position of the group finite element block for the dual boundary
 DualBdrGFEM = 5
 
+#-------------------------------------------------------------------------------
+
 # Position of the stabilization for the convective term
 ConvectionAFC = 1
 
@@ -41,6 +48,8 @@ DiffusionAFC = 2
 
 # Position of the stabilization for the mass term
 MassAFC = 3
+
+#-------------------------------------------------------------------------------
 
 # Position of the template matrix in the scalar matrix structure
 TemplateMatrix = 1
@@ -66,8 +75,4 @@ CoeffMatrix_S = 7
 # Position of the constant coefficient matrix CX in the scalar matrix structure
 CoeffMatrix_CX = 8
 
-# Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 0
-
-# Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CZ = 0
+#-------------------------------------------------------------------------------

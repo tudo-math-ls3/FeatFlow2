@@ -15,12 +15,10 @@ sperfconfigfile = "../../perfconfig/default.pcfg"
 # Position of the discretisation in the array of discretisations
 Discretisation = 1
 
-# Position of the stabilization for the inviscid term
-InviscidAFC = 1
+# Position of the DOF coordinates in the block vector structure
+DofCoords = 1
 
-# Position of the stabilization for the viscous term
-ViscousAFC = 0
-
+#-------------------------------------------------------------------------------
 # Position of the group finite element block for the inviscid term
 InviscidGFEM = 1
 
@@ -30,48 +28,44 @@ ViscousGFEM = 0
 # Position of the template group finite element block
 TemplateGFEM = 3
 
-# Position of the system matrix for the hydrodynamic model
-SystemMatrix = 1
+# Position of the group finite element block for the primal boundary
+PrimalBdrGFEM = 4
 
-# Position of the Jacobian matrix for the hydrodynamic model
-JacobianMatrix = 2
+# Position of the group finite element block for the dual boundary
+DualBdrGFEM = 5
+
+#-------------------------------------------------------------------------------
+# Position of the stabilization for the inviscid term
+InviscidAFC = 1
+
+# Position of the stabilization for the viscous term
+ViscousAFC = 0
+
+# Position of the stabilization for the mass term
+MassAFC = 0
+
+#------------------------------------------------------------------------------
 
 # Position of the template matrix in the scalar matrix structure
-TemplateMatrix = 3
+TemplateMatrix = 1
+
+# Position of the system matrix for the hydrodynamic model
+SystemMatrix = 2
+
+# Position of the Jacobian matrix for the hydrodynamic model
+JacobianMatrix = 0
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 7
+ConsistentMassMatrix = 3
 
 # Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 8
+LumpedMassMatrix = 4
 
 # Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 11
-
-# Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 0
-
-# Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CZ = 0
+CoeffMatrix_CX = 5
 
 # Position of the constant coefficient matrix CXX in the scalar matrix structure
 CoeffMatrix_CXX = 0
-
-# Position of the constant coefficient matrix CYY in the scalar matrix structure
-CoeffMatrix_CYY = 0
-
-# Position of the constant coefficient matrix CZZ in the scalar matrix structure
-CoeffMatrix_CZZ = 0
-
-# Position of the constant coefficient matrix CXY in the scalar matrix structure
-CoeffMatrix_CXY = 0
-
-# Position of the constant coefficient matrix CXZ in the scalar matrix structure
-CoeffMatrix_CXZ = 0
-
-# Position of the constant coefficient matrix CYZ in the scalar matrix structure
-CoeffMatrix_CYZ = 0
-
 
 ################################################################################
 [Transport]
@@ -80,8 +74,30 @@ CoeffMatrix_CYZ = 0
 # Position of the discretisation in the array of discretisations
 Discretisation = 2
 
+# Position of the DOF coordinates in the block vector structure
+DofCoords = 2
+
 # Position of the velocity field data in the block vector structure
-VelocityField = 1
+VelocityField = 3
+
+#-------------------------------------------------------------------------------
+
+# Position of the group finite element block for the convective term
+ConvectionGFEM = 2
+
+# Position of the group finite element block for the diffusive term
+DiffusionGFEM = 0
+
+# Position of the template group finite element block
+TemplateGFEM = %{Hydro.TemplateGFEM}
+
+# Position of the group finite element block for the primal boundary
+PrimalBdrGFEM = 6
+
+# Position of the group finite element block for the dual boundary
+DualBdrGFEM = 7
+
+#-------------------------------------------------------------------------------
 
 # Position of the stabilization for the convective term
 ConvectionAFC = 2
@@ -92,32 +108,28 @@ DiffusionAFC = 0
 # Position of the stabilization for the mass term
 MassAFC = 0
 
+#------------------------------------------------------------------------------
+
 # Position of the template matrix in the scalar matrix structure
-TemplateMatrix = 3
+TemplateMatrix = %{Hydro.TemplateMatrix}
 
 # Position of the system matrix for the scalar transport model
-SystemMatrix = 4
+SystemMatrix = 8
 
 # Position of the Jacobian matrix in the scalar matrix structure
-JacobianMatrix = 5
+JacobianMatrix = 0
 
-# Posiiton of the trnasport operator
-TransportMatrix = 6
+# Position of the trnasport operator
+TransportMatrix = 9
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 9
+ConsistentMassMatrix = %{Hydro.ConsistentMassMatrix}
 
 # Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 10
+LumpedMassMatrix = %{Hydro.LumpedMassMatrix}
 
 # Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 11
-
-# Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 0
-
-# Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CZ = 0
+CoeffMatrix_CX = %{Hydro.CoeffMatrix_CX}
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S = 0
@@ -135,54 +147,4 @@ dintegralexponent = 0.175
 # derivative exponent for PID controller
 dderivativeexponent = 0.01
 
-################################################################################
-[Zpinch]
-################################################################################
-
-# Position of the discretisation in the array of discretisations
-Discretisation = 1
-
-# Position of the stabilization for the inviscid term
-InviscidAFC = 1
-
-# Position of the template matrix in the scalar matrix structure
-TemplateMatrix = 3
-
-# Position of the system matrix in the scalar matrix structure
-SystemMatrix = 1
-
-# Position of the Jacobian matrix in the scalar matrix structure
-JacobianMatrix = 2
-
-# Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 4
-
-# Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 5
-
-# Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 6
-
-# Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 0
-
-# Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CZ = 0
-
-# Position of the constant coefficient matrix CXX in the scalar matrix structure
-CoeffMatrix_CXX = 0
-
-# Position of the constant coefficient matrix CYY in the scalar matrix structure
-CoeffMatrix_CYY = 0
-
-# Position of the constant coefficient matrix CZZ in the scalar matrix structure
-CoeffMatrix_CZZ = 0
-
-# Position of the constant coefficient matrix CXY in the scalar matrix structure
-CoeffMatrix_CXY = 0
-
-# Position of the constant coefficient matrix CXZ in the scalar matrix structure
-CoeffMatrix_CXZ = 0
-
-# Position of the constant coefficient matrix CYZ in the scalar matrix structure
-CoeffMatrix_CYZ = 0
+#------------------------------------------------------------------------------
