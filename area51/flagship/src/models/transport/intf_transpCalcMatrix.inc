@@ -10,8 +10,8 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagPrimal_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
     use fsystem
     use collection
@@ -29,10 +29,10 @@
   real(DP), dimension(:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+  real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtNode
+  integer, dimension(:,:), intent(in) :: InodeList
 
   ! Scaling paramter
   real(DP), intent(in) :: dscale
@@ -48,7 +48,7 @@
 
 !<output>
   ! Coefficients of the matrix for all nodes under consideration
-  real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+  real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
 !</output>
 
 !</subroutine>
@@ -64,8 +64,8 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixPrimal_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -84,10 +84,10 @@
   real(DP), dimension(:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -103,7 +103,7 @@
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 
 !</subroutine>
@@ -119,8 +119,8 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDiagDual_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
     use fsystem
     use collection
@@ -138,10 +138,10 @@
   real(DP), dimension(:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+  real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtNode
+  integer, dimension(:,:), intent(in) :: InodeList
 
   ! Scaling paremter
   real(DP), intent(in) :: dscale
@@ -157,7 +157,7 @@
 
 !<output>
   ! Coefficients of the matrix for all nodes under consideration
-  real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+  real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
 !</output>
 
 !</subroutine>
@@ -173,8 +173,8 @@
 !<subroutine>
     
   subroutine fcb_calcMatrixDual_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IdofsAtEdge, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
     use fsystem
     use collection
@@ -193,10 +193,10 @@
   real(DP), dimension(:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtEdge
+  integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -212,7 +212,7 @@
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 
 !</subroutine>

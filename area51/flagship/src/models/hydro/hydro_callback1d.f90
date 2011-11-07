@@ -276,7 +276,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxGal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGal1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -293,7 +293,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -357,8 +357,8 @@ contains
       
       ! Assemble skew-symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi )
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi )
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       ! Compute flux difference for x-direction
@@ -370,8 +370,8 @@ contains
                 INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
                  
       ! Assemble fluxes
-      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale * IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij
-      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale * IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij
+      IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale * IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij
+      IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale * IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*F_ij
 #endif
     end do
 
@@ -381,7 +381,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxGalNoBdr1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxGalNoBdr1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -401,7 +401,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -459,8 +459,8 @@ contains
       
       ! Assemble symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*F_ij
+          RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*F_ij
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
     end do
 
@@ -470,7 +470,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxScDiss1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -488,7 +488,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -568,8 +568,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
 
       ! Compute densities
       ri = DENSITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
@@ -603,14 +603,14 @@ contains
       
 #ifdef HYDRO_USE_IBP
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
 #endif
     end do
 
@@ -620,7 +620,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRoeDiss1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -637,7 +637,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -720,8 +720,8 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -818,27 +818,27 @@ contains
 
 #ifdef HYDRO_USE_IBP
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
-             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+             IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else        
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
+            (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
 #endif
       else
 
 #ifdef HYDRO_USE_IBP
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
-             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi )
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+             IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi )
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij)
+            (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*F_ij)
 #endif
       end if
     end do
@@ -849,7 +849,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxRusDiss1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 
@@ -867,7 +867,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -957,20 +957,20 @@ contains
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
-                 RCONST(0.5)*sqrt((IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))**2)*cj,&
-                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
-                 RCONST(0.5)*sqrt((IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))**2)*ci )
+      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
+                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))**2)*cj,&
+                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
+                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))**2)*ci )
 #else   
       ! Compute scalar dissipation
-      d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cj,&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*ci )
+      d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+                  abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*ci )
 #endif
 
       ! Multiply the solution difference by the scalar dissipation
@@ -983,14 +983,14 @@ contains
 
 #ifdef HYDRO_USE_IBP
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*F_ij + Diff)
 #endif
     end do
 
@@ -1000,8 +1000,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcMatDiagMatD1d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IdofsAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
+  pure subroutine hydro_calcMatDiagMatD1d_sim(DdataAtNode, DcoeffsAtNode,&
+      InodeList, dscale, nnodes, DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1013,10 +1013,10 @@ contains
   real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+  real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtNode
+  integer, dimension(:,:), intent(in) :: InodeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1033,7 +1033,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all nodes under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -1049,20 +1049,20 @@ contains
       
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
-      IDX3(DcoefficientsAtNode,1,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,_)
-      IDX3(DcoefficientsAtNode,2,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,_)
-      IDX3(DcoefficientsAtNode,3,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,_)
+      IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
+      IDX3(DmatrixAtNode,2,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
+      IDX3(DmatrixAtNode,3,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ii = -diag(A_i)*C_{ii}$
-      IDX3(DcoefficientsAtNode,1,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,_)
-      IDX3(DcoefficientsAtNode,2,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,_)
-      IDX3(DcoefficientsAtNode,3,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,_)
+      IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
+      IDX3(DmatrixAtNode,2,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
+      IDX3(DmatrixAtNode,3,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
 #endif
     end do
 
@@ -1073,8 +1073,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatDiag1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -1086,10 +1086,10 @@ contains
   real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+  real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtNode
+  integer, dimension(:,:), intent(in) :: InodeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -1106,7 +1106,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all nodes under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -1123,44 +1123,44 @@ contains
 
 #ifdef HYDRO_USE_IBP      
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
-      IDX3(DcoefficientsAtNode,1,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,2,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,3,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,4,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,5,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,6,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,7,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,8,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,9,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,2,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,3,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,4,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,5,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,6,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,7,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,8,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,9,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ii = -A_i*C_{ii}$
-      IDX3(DcoefficientsAtNode,1,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,2,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,3,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,4,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,5,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,6,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,7,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,8,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
-      IDX3(DcoefficientsAtNode,9,1,inode,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX2(DmatrixCoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,2,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,3,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,4,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,5,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,6,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,7,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,8,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
+      IDX3(DmatrixAtNode,9,1,inode,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
 #endif
     end do
     
@@ -1171,8 +1171,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatGalMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 1D
@@ -1183,7 +1183,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -1203,7 +1203,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -1220,36 +1220,36 @@ contains
       
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
 #endif
     end do
 
@@ -1260,8 +1260,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatGal1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D
@@ -1272,7 +1272,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -1292,7 +1292,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -1312,92 +1312,92 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,4,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,1,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,1,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 #endif
     end do
 
@@ -1408,8 +1408,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatScDissMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1422,7 +1422,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -1442,7 +1442,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -1461,36 +1461,36 @@ contains
      
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
 #endif
       
       !---------------------------------------------------------------------------
@@ -1499,8 +1499,8 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ji}-C_{ij})$ and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1))
       
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -1530,12 +1530,12 @@ contains
         c_ij = sqrt(max(((HYDRO_GAMMA)-RCONST(1.0))*(H_ij-q_ij), SYS_EPSREAL_DP))
 
         ! Compute scalar dissipation
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = dscale * (abs(vel_ij) + anorm*c_ij)
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = dscale * (abs(vel_ij) + anorm*c_ij)
 
       else
         
         ! Nullify dissipation tensor
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
         
       end if
     end do
@@ -1547,8 +1547,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatScDiss1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1561,7 +1561,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -1581,7 +1581,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -1604,92 +1604,92 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1698,8 +1698,8 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
       
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -1731,15 +1731,15 @@ contains
         ! Compute scalar dissipation
         aux = dscale * (abs(vel_ij) + anorm*c_ij)
 
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
-        IDX3(DcoefficientsAtEdge,1,1,idx,0,0,0) = aux
-        IDX3(DcoefficientsAtEdge,5,1,idx,0,0,0) = aux
-        IDX3(DcoefficientsAtEdge,9,1,idx,0,0,0) = aux
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,1,1,idx,0,0,0) = aux
+        IDX3(DmatrixAtEdge,5,1,idx,0,0,0) = aux
+        IDX3(DmatrixAtEdge,9,1,idx,0,0,0) = aux
 
       else
 
         ! Nullify dissipation tensor
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
 
       end if
     end do
@@ -1751,8 +1751,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRoeDissMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D and applies
@@ -1764,7 +1764,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -1784,7 +1784,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -1807,36 +1807,36 @@ contains
       
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
 #endif
 
       !---------------------------------------------------------------------------
@@ -1844,8 +1844,8 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1))
       
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -1949,20 +1949,20 @@ contains
         anorm = dscale*anorm
 
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
-        IDX3(DcoefficientsAtEdge,1,1,idx,0,0,0) = anorm*( R_ij(1,1)*L_ij(1,1)+&
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,1,1,idx,0,0,0) = anorm*( R_ij(1,1)*L_ij(1,1)+&
                                                           R_ij(1,2)*L_ij(2,1)+&
                                                           R_ij(1,3)*L_ij(3,1)  )
-        IDX3(DcoefficientsAtEdge,2,1,idx,0,0,0) = anorm*( R_ij(2,1)*L_ij(1,2)+&
+        IDX3(DmatrixAtEdge,2,1,idx,0,0,0) = anorm*( R_ij(2,1)*L_ij(1,2)+&
                                                           R_ij(2,2)*L_ij(2,2)+&
                                                           R_ij(2,3)*L_ij(3,2)  )
-        IDX3(DcoefficientsAtEdge,3,1,idx,0,0,0) = anorm*( R_ij(3,1)*L_ij(1,3)+&
+        IDX3(DmatrixAtEdge,3,1,idx,0,0,0) = anorm*( R_ij(3,1)*L_ij(1,3)+&
                                                           R_ij(3,2)*L_ij(2,3)+&
                                                           R_ij(3,3)*L_ij(3,3)  )
       else
         
         ! Nullify dissipation tensor
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
 
       end if
     end do
@@ -1974,8 +1974,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRoeDiss1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D and applies
@@ -1987,7 +1987,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2007,7 +2007,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2034,92 +2034,92 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2127,7 +2127,7 @@ contains
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient $0.5*(C_{ij}-C_{ji})$ and its norm
-      a = RCONST(0.5)*(DmatrixCoeffsAtEdge(1,1,idx)-DmatrixCoeffsAtEdge(1,2,idx))
+      a = RCONST(0.5)*(DcoeffsAtEdge(1,1,idx)-DcoeffsAtEdge(1,2,idx))
       anorm = abs(a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -2235,14 +2235,14 @@ contains
             do k = 1, NVAR1D
               aux = aux + R_ij(i,k)*L_ij(k,j)
             end do
-            IDX3(DcoefficientsAtEdge,NVAR1D*(j-1)+i,1,idx,0,0,0) = anorm*aux
+            IDX3(DmatrixAtEdge,NVAR1D*(j-1)+i,1,idx,0,0,0) = anorm*aux
           end do
         end do
         
       else
         
         ! Nullify dissipation tensor
-        IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+        IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
         
       end if
     end do
@@ -2254,8 +2254,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRusDissMatD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -2267,7 +2267,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2287,7 +2287,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2308,36 +2308,36 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = diag(A_i)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,_)
 #else
       ! Compute Galerkin coefficient $K_ij = -diag(A_j)*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,_)
       
       ! Compute Galerkin coefficient $K_ji = -diag(A_i)*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,_)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2351,11 +2351,11 @@ contains
           (HYDRO_GAMMA)*(Ej-RCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
       
       ! Compute dissipation tensor
-      IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = dscale *&
-          max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
-               abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cj,&
-               abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
-               abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*ci )
+      IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = dscale *&
+          max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+               abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
+               abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+               abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*ci )
     end do
     
   end subroutine hydro_calcMatRusDissMatD1d_sim
@@ -2365,8 +2365,8 @@ contains
 !<subroutine>
 
   pure subroutine hydro_calcMatRusDiss1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D applies
@@ -2378,7 +2378,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2398,7 +2398,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2419,92 +2419,92 @@ contains
 
 #ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = A_j*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = A_i*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),ui,Ei)
 #else
       ! Compute Galerkin coefficient $K_ij = -A_j*C_{ij}$
-      IDX3(DcoefficientsAtEdge,1,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,2,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,3,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,2,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,3,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,4,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,5,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,6,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,4,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,5,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,6,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
 
-      IDX3(DcoefficientsAtEdge,7,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,8,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
-      IDX3(DcoefficientsAtEdge,9,2,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,7,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,8,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
+      IDX3(DmatrixAtEdge,9,2,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),uj,Ej)
       
       ! Compute Galerkin coefficient $K_ji = -A_i*C_{ji}$
-      IDX3(DcoefficientsAtEdge,1,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX11(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,2,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX21(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,3,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX31(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,1,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX11(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,2,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX21(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,3,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX31(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,4,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX12(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,5,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX22(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,6,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX32(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,4,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX12(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,5,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX22(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,6,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX32(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 
-      IDX3(DcoefficientsAtEdge,7,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX13(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,8,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX23(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
-      IDX3(DcoefficientsAtEdge,9,3,idx,0,0,0) =&
-          FLUXJACOBIMATRIX33(-dscale,IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,7,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX13(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,8,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX23(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
+      IDX3(DmatrixAtEdge,9,3,idx,0,0,0) =&
+          FLUXJACOBIMATRIX33(-dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),ui,Ei)
 #endif
 
       !---------------------------------------------------------------------------
@@ -2518,15 +2518,15 @@ contains
           (HYDRO_GAMMA)*(Ej-RCONST(0.5)*uj*uj), SYS_EPSREAL_DP))
 
       ! Compute dissipation tensor
-      aux = dscale * max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
-                          abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cj,&
-                          abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
-                          abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*ci )
+      aux = dscale * max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+                          abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
+                          abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+                          abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*ci )
 
-      IDX3(DcoefficientsAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
-      IDX3(DcoefficientsAtEdge,1,1,idx,0,0,0) = aux
-      IDX3(DcoefficientsAtEdge,5,1,idx,0,0,0) = aux
-      IDX3(DcoefficientsAtEdge,9,1,idx,0,0,0) = aux
+      IDX3(DmatrixAtEdge,:,1,idx,0,0,0) = RCONST(0.0)
+      IDX3(DmatrixAtEdge,1,1,idx,0,0,0) = aux
+      IDX3(DmatrixAtEdge,5,1,idx,0,0,0) = aux
+      IDX3(DmatrixAtEdge,9,1,idx,0,0,0) = aux
     end do
     
   end subroutine hydro_calcMatRusDiss1d_sim
@@ -2799,7 +2799,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxFCTScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxFCTScDiss1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -2817,7 +2817,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -2855,8 +2855,8 @@ contains
     do idx = 1, nedges
 
       ! Compute skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
 
       ! Compute velocities
       ui = XVELOCITY3(DdataAtEdge,IDX3,1,idx,0,0,0)
@@ -2901,7 +2901,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxFCTRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxFCTRoeDiss1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -2918,7 +2918,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -2957,8 +2957,8 @@ contains
     do idx = 1, nedges
 
       ! Compute skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))
       anorm = abs(a(1)) ! = sqrt(a(1)*a(1))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -3034,7 +3034,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine hydro_calcFluxFCTRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine hydro_calcFluxFCTRusDiss1d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -3051,7 +3051,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -3103,20 +3103,20 @@ contains
 #ifdef HYDRO_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
-                 RCONST(0.5)*sqrt((IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))**2)*cj,&
-                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
-                 RCONST(0.5)*sqrt((IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))**2)*ci )
+      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
+                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))**2)*cj,&
+                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
+                 RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))**2)*ci )
 #else  
       ! Compute scalar dissipation
-      d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cj,&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*ci )
+      d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+                  abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*ci )
 #endif
       
       ! Compute conservative fluxes

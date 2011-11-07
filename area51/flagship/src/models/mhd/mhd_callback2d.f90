@@ -307,7 +307,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxGal2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxGal2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -324,7 +324,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -425,10 +425,10 @@ contains
       
       ! Assemble skew-symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi )
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi )
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       ! Compute flux difference for x-direction
@@ -469,11 +469,11 @@ contains
            
       ! Assemble fluxes
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
 #endif
     end do
 
@@ -483,7 +483,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxGalNoBdr2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxGalNoBdr2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -503,7 +503,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -596,10 +596,10 @@ contains
       
       ! Assemble symmetric fluxes
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                        IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*Fx_ij+&
-           RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)-&
-                        IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0))*Fy_ij)
+          (RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                        IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*Fx_ij+&
+           RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)-&
+                        IDX3(DcoeffsAtEdge,2,2,idx,0,0,0))*Fy_ij)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
     end do
 
@@ -609,7 +609,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxScDiss2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
@@ -627,7 +627,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -780,18 +780,18 @@ contains
 
 #ifdef MHD_USE_IBP
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
 #endif
     end do
 
@@ -801,7 +801,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxScDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxScDissDiSp2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
@@ -821,7 +821,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -966,8 +966,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,:,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,:,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,:,2,idx,0,0,0))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       Diff = RCONST(0.0)
@@ -980,18 +980,18 @@ contains
 
 #ifdef MHD_USE_IBP
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
 #endif
     end do
 
@@ -1001,7 +1001,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxRoeDiss2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -1018,7 +1018,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -1162,8 +1162,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,:,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,:,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,:,2,idx,0,0,0))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -1181,35 +1181,35 @@ contains
 
 #ifdef MHD_USE_IBP
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+             IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
+            (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
 #endif
       else
         
 #ifdef MHD_USE_IBP
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+             IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
+            (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
 #endif
       end if
     end do
@@ -1220,7 +1220,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxRoeDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxRoeDissDiSp2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 
@@ -1239,7 +1239,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -1383,8 +1383,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient and its norm
-      a = RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,:,1,idx,0,0,0)-&
-                       IDX3(DmatrixCoeffsAtEdge,:,2,idx,0,0,0))
+      a = RCONST(0.5)*(IDX3(DcoeffsAtEdge,:,1,idx,0,0,0)-&
+                       IDX3(DcoeffsAtEdge,:,2,idx,0,0,0))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL_DP) then
@@ -1399,38 +1399,38 @@ contains
 
 #ifdef MHD_USE_IBP
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi+&
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+             IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi+&
              DiffX + DiffY)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij+&
+            (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij+&
              DiffX + DiffY)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij+&
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij+&
              DiffX + DiffY)
 #endif
       else
         
 #ifdef MHD_USE_IBP
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-             IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+             IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
+            (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-            (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-             IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
+            (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+             IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij)
 #endif
       end if
     end do
@@ -1441,7 +1441,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxRusDiss2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
     
 !<description>
@@ -1458,7 +1458,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -1653,32 +1653,32 @@ contains
 #ifdef MHD_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*uj+&
-                      RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0))*vj)+&
-                 RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-
-                                      IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),2)*cf1j+&
-                                  POW(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)-
-                                      IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0),2)*cf2j),&
-                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*ui+&
-                      RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0))*vi)+&
-                 RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-
-                                      IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),2)*cf1i+&
-                                  POW(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)-
-                                      IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0),2)*cf2i) )
+      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*uj+&
+                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,2,2,idx,0,0,0))*vj)+&
+                 RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-
+                                      IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),2)*cf1j+&
+                                  POW(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)-
+                                      IDX3(DcoeffsAtEdge,2,2,idx,0,0,0),2)*cf2j),&
+                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui+&
+                      RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,2,1,idx,0,0,0))*vi)+&
+                 RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-
+                                      IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),2)*cf1i+&
+                                  POW(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)-
+                                      IDX3(DcoeffsAtEdge,2,1,idx,0,0,0),2)*cf2i) )
 #else
        ! Compute scalar dissipation
-      d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj+&
-                      IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*vj)+&
-                 sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),2)*cf1j+&
-                      POW(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0),2)*cf2j),&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui+&
-                      IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*vi)+&
-                 sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),2)*cf1i+&
-                      POW(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0),2)*cf2i) )
+      d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj+&
+                      IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*vj)+&
+                 sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),2)*cf1j+&
+                      POW(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0),2)*cf2j),&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*ui+&
+                      IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*vi)+&
+                 sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),2)*cf1i+&
+                      POW(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0),2)*cf2i) )
 #endif
 
       ! Multiply the solution difference by the artificial diffusion factor
@@ -1691,18 +1691,18 @@ contains
       
 #ifdef MHD_USE_IBP
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
 #endif
     end do
 
@@ -1712,7 +1712,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxRusDissDiSp2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxRusDissDiSp2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -1730,7 +1730,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -1925,32 +1925,32 @@ contains
 #ifdef MHD_USE_IBP
       ! Compute scalar dissipation based on the skew-symmetric part
       ! which does not include the symmetric boundary contribution
-      d_ij = max( abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)-
-                                   IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0),2))*cf1j+&
-                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0))*vj)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)-
-                                   IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0),2))*cf2j,&
-                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)-
-                                   IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0),2))*cf1i+&
-                  abs(RCONST(0.5)*(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)-&
-                                   IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0))*vi)+&
-              RCONST(0.5)*sqrt(POW(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)-
-                                   IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0),2))*cf2i)
+      d_ij = max( abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*uj)+&
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)-
+                                   IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),2))*cf1j+&
+                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,2,2,idx,0,0,0))*vj)+&
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)-
+                                   IDX3(DcoeffsAtEdge,2,2,idx,0,0,0),2))*cf2j,&
+                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-
+                                   IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),2))*cf1i+&
+                  abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)-&
+                                   IDX3(DcoeffsAtEdge,2,1,idx,0,0,0))*vi)+&
+              RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)-
+                                   IDX3(DcoeffsAtEdge,2,1,idx,0,0,0),2))*cf2i)
 #else   
       ! Compute scalar dissipation with dimensional splitting
-      d_ij = max( abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0))*cf1j,&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0))*cf1i )&
-           + max( abs(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*vj)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0))*cf2j,&
-                  abs(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*vi)+&
-                  abs(IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0))*cf2i )
+      d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
+                  abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cf1j,&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*ui)+&
+                  abs(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0))*cf1i )&
+           + max( abs(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*vj)+&
+                  abs(IDX3(DcoeffsAtEdge,2,1,idx,0,0,0))*cf2j,&
+                  abs(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*vi)+&
+                  abs(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0))*cf2i )
 #endif
 
       ! Multiply the solution difference by the artificial diffusion factor
@@ -1963,18 +1963,18 @@ contains
 
 #ifdef MHD_USE_IBP
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
-           IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fxj+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fyj-&
+           IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fxi-&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fyi + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
 #else
       IDX3(DfluxesAtEdge,:,1,idx,0,0,0) =  dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*Fy_ij + Diff)
       IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
-          (IDX3(DmatrixCoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
-           IDX3(DmatrixCoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
+          (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fx_ij+&
+           IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)*Fy_ij + Diff)
 #endif
     end do
 
@@ -1984,8 +1984,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcMatDiagMatD2d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
-      IdofsAtNode, dscale, nnodes, DcoefficientsAtNode, rcollection)
+  pure subroutine mhd_calcMatDiagMatD2d_sim(DdataAtNode, DcoeffsAtNode,&
+      InodeList, dscale, nnodes, DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1997,10 +1997,10 @@ contains
   real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+  real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtNode
+  integer, dimension(:,:), intent(in) :: InodeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2017,7 +2017,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all nodes under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -2029,8 +2029,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatDiag2d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -2042,10 +2042,10 @@ contains
   real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
   ! Entries of the coefficient matrices for all nodes under consideration
-  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+  real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
 
   ! Numbers of vertices and matrix entries for all nodes under consideration
-  integer, dimension(:,:), intent(in) :: IdofsAtNode
+  integer, dimension(:,:), intent(in) :: InodeList
 
   ! Scaling parameter
   real(DP), intent(in) :: dscale
@@ -2062,7 +2062,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all nodes under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -2074,8 +2074,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatGalMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 2D.
@@ -2086,7 +2086,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2106,7 +2106,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
   
@@ -2118,8 +2118,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatGal2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D.
@@ -2130,7 +2130,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2150,7 +2150,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2162,8 +2162,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatScDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
     
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -2176,7 +2176,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2196,7 +2196,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2208,8 +2208,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatScDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D and applies
@@ -2222,7 +2222,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2242,7 +2242,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2254,8 +2254,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRoeDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D and applies
@@ -2267,7 +2267,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2287,7 +2287,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2299,8 +2299,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRoeDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D and applies
@@ -2312,7 +2312,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2332,7 +2332,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2344,8 +2344,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRusDissMatD2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -2357,7 +2357,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2377,7 +2377,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2389,8 +2389,8 @@ contains
 !<subroutine>
 
   pure subroutine mhd_calcMatRusDiss2d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D applies
@@ -2402,7 +2402,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
   ! Entries of the coefficient matrices for all edges under consideration
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   integer, dimension(:,:), intent(in) :: IedgeList
@@ -2422,7 +2422,7 @@ contains
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+  real(DP), dimension(:,:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2490,7 +2490,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTScDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxFCTScDiss2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -2508,7 +2508,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -2543,7 +2543,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTRoeDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxFCTRoeDiss2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -2560,7 +2560,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)
@@ -2595,7 +2595,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mhd_calcFluxFCTRusDiss2d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+  pure subroutine mhd_calcFluxFCTRusDiss2d_sim(DdataAtEdge, DcoeffsAtEdge,&
       IedgeList, dscale, nedges, DfluxesAtEdge, rcollection)
 
 !<description>
@@ -2612,7 +2612,7 @@ contains
   ! Entries of the coefficient matrices for all edges under consideration
   !   DIMENSION(ndim,2,nedges)
   ! with ndim the number of spatial dimensions
-  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+  real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of vertices and matrix entries for all edges under consideration
   !   DIMENSION(4,nedges)

@@ -270,8 +270,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatDiagConvP1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal convective matrix
@@ -284,10 +284,10 @@ contains
     real(DP), dimension(:), intent(in) :: DdataAtNode
     
     ! Entries of the coefficient matrices for all nodes under consideration
-    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IdofsAtNode
+    integer, dimension(:,:), intent(in) :: InodeList
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -306,7 +306,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all nodes under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -323,12 +323,12 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
-      DcoefficientsAtNode(1,inode) = dscale*&
-          p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = dscale*&
+          p_DvelocityX(InodeList(1,inode))*DcoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
-      DcoefficientsAtNode(1,inode) = -dscale*&
-          p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = -dscale*&
+          p_DvelocityX(InodeList(1,inode))*DcoeffsAtNode(1,inode)
 #endif
     end do
     
@@ -339,8 +339,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatGalConvP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -353,7 +353,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all edges under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -375,7 +375,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all edges under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -392,18 +392,18 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
-          p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(1,iedge) = dscale*&
+          p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,2,iedge)
       ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
-          p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(2,iedge) = dscale*&
+          p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
-      DcoefficientsAtEdge(1,iedge) = -dscale*&
-          p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(1,iedge) = -dscale*&
+          p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
-          p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(2,iedge) = -dscale*&
+          p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
     end do
 
@@ -414,8 +414,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatUpwConvP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -429,7 +429,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all nodes under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -451,7 +451,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all nodes under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -470,25 +470,25 @@ contains
         
 #ifdef TRANSP_USE_IBP
         ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
-        DcoefficientsAtEdge(2,iedge) = dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(2,iedge) = dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,2,iedge)
         ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
-        DcoefficientsAtEdge(3,iedge) = dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(3,iedge) = dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,1,iedge)
 #else
         ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
-        DcoefficientsAtEdge(2,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(2,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,1,iedge)
         ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
-        DcoefficientsAtEdge(3,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(3,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
         ! Compute artificial diffusion coefficient 
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
-        DcoefficientsAtEdge(1,iedge) =&
-            max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,&
-                -DcoefficientsAtEdge(3,iedge))
+        DmatrixAtEdge(1,iedge) =&
+            max(-DmatrixAtEdge(2,iedge), 0.0_DP,&
+                -DmatrixAtEdge(3,iedge))
       end do
 
     else
@@ -497,25 +497,25 @@ contains
         
 #ifdef TRANSP_USE_IBP
         ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
-        DcoefficientsAtEdge(2,iedge) = dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(2,iedge) = dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,2,iedge)
         ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
-        DcoefficientsAtEdge(3,iedge) = dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(3,iedge) = dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,1,iedge)
 #else
         ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
-        DcoefficientsAtEdge(2,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(2,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,1,iedge)
         ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
-        DcoefficientsAtEdge(3,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(3,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
         ! Compute artificial diffusion coefficient 
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
-        DcoefficientsAtEdge(1,iedge) =&
-            max(DcoefficientsAtEdge(2,iedge), 0.0_DP,&
-                DcoefficientsAtEdge(3,iedge))
+        DmatrixAtEdge(1,iedge) =&
+            max(DmatrixAtEdge(2,iedge), 0.0_DP,&
+                DmatrixAtEdge(3,iedge))
       end do
 
     end if
@@ -1888,8 +1888,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatDiagConvD1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal convective matrix
@@ -1902,10 +1902,10 @@ contains
     real(DP), dimension(:), intent(in) :: DdataAtNode
     
     ! Entries of the coefficient matrices for all nodes under consideration
-    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IdofsAtNode
+    integer, dimension(:,:), intent(in) :: InodeList
     
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -1924,7 +1924,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all nodes under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -1941,12 +1941,12 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
-      DcoefficientsAtNode(1,inode) = -dscale*&
-          p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = -dscale*&
+          p_DvelocityX(InodeList(1,inode))*DcoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
-      DcoefficientsAtNode(1,inode) = dscale*&
-          p_DvelocityX(IdofsAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = dscale*&
+          p_DvelocityX(InodeList(1,inode))*DcoeffsAtNode(1,inode)
 #endif
     end do
     
@@ -1957,8 +1957,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatGalConvD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -1971,7 +1971,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all edges under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -1993,7 +1993,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all edges under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
     
@@ -2010,18 +2010,18 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
-      DcoefficientsAtEdge(1,iedge) = -dscale*&
-          p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(1,iedge) = -dscale*&
+          p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,2,iedge)
       ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
-          p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(2,iedge) = -dscale*&
+          p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
-          p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(1,iedge) = dscale*&
+          p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,1,iedge)
       ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
-          p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(2,iedge) = dscale*&
+          p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
     end do
     
@@ -2032,8 +2032,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcMatUpwConvD1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -2047,7 +2047,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all nodes under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -2069,7 +2069,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all nodes under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2088,25 +2088,25 @@ contains
         
 #ifdef TRANSP_USE_IBP
         ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
-        DcoefficientsAtEdge(2,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(2,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,2,iedge)
         ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
-        DcoefficientsAtEdge(3,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(3,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,1,iedge)
 #else
         ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
-        DcoefficientsAtEdge(2,iedge) = dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(2,iedge) = dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,1,iedge)
         ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
-        DcoefficientsAtEdge(3,iedge) = dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(3,iedge) = dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
         ! Compute artificial diffusion coefficient 
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
-        DcoefficientsAtEdge(1,iedge) =&
-            max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,&
-                -DcoefficientsAtEdge(3,iedge))
+        DmatrixAtEdge(1,iedge) =&
+            max(-DmatrixAtEdge(2,iedge), 0.0_DP,&
+                -DmatrixAtEdge(3,iedge))
       end do
 
     else
@@ -2115,25 +2115,25 @@ contains
         
 #ifdef TRANSP_USE_IBP
         ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
-        DcoefficientsAtEdge(2,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(2,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,2,iedge)
         ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
-        DcoefficientsAtEdge(3,iedge) = -dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(3,iedge) = -dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,1,iedge)
 #else
         ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
-        DcoefficientsAtEdge(2,iedge) = dscale*&
-            p_DvelocityX(IedgeList(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+        DmatrixAtEdge(2,iedge) = dscale*&
+            p_DvelocityX(IedgeList(2,iedge))*DcoeffsAtEdge(1,1,iedge)
         ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
-        DcoefficientsAtEdge(3,iedge) = dscale*&
-            p_DvelocityX(IedgeList(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+        DmatrixAtEdge(3,iedge) = dscale*&
+            p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
         ! Compute artificial diffusion coefficient 
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
-        DcoefficientsAtEdge(1,iedge) =&
-            max(DcoefficientsAtEdge(2,iedge), 0.0_DP,&
-                DcoefficientsAtEdge(3,iedge))
+        DmatrixAtEdge(1,iedge) =&
+            max(DmatrixAtEdge(2,iedge), 0.0_DP,&
+                DmatrixAtEdge(3,iedge))
       end do
 
     end if
@@ -2145,8 +2145,8 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagBurgP1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal convective matrix
@@ -2158,10 +2158,10 @@ contains
     real(DP), dimension(:), intent(in) :: DdataAtNode
     
     ! Entries of the coefficient matrices for all nodes under consideration
-    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IdofsAtNode
+    integer, dimension(:,:), intent(in) :: InodeList
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -2178,7 +2178,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all nodes under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
     
@@ -2189,12 +2189,12 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficients  $k_{ii} = 0.5*u_i*C_{ii}$
-      DcoefficientsAtNode(1,inode) = dscale*&
-          0.5_DP*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = dscale*&
+          0.5_DP*DdataAtNode(inode)*DcoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficients  $k_{ii} = -0.5*u_i*C_{ii}$
-      DcoefficientsAtNode(1,inode) = -dscale*&
-          0.5_DP*DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = -dscale*&
+          0.5_DP*DdataAtNode(inode)*DcoeffsAtNode(1,inode)
 #endif
     end do
     
@@ -2205,8 +2205,8 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalBurgP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -2218,7 +2218,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all edges under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -2238,7 +2238,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all edges under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
     
@@ -2249,20 +2249,20 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = 0.5*u_j*C_{ji}$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
-          0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(1,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(2,iedge)*DcoeffsAtEdge(1,2,iedge)
           
       ! Compute convective coefficient  $k_{ji} = 0.5*u_i*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
-          0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(2,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(1,iedge)*DcoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient  $k_{ij} = -0.5*u_j*C_{ij}$
-      DcoefficientsAtEdge(1,iedge) = -dscale*&
-          0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(1,iedge) = -dscale*&
+          0.5_DP*DdataAtEdge(2,iedge)*DcoeffsAtEdge(1,1,iedge)
           
       ! Compute convective coefficient  $k_{ji} = -0.5*u_i*C_{ji}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
-          0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(2,iedge) = -dscale*&
+          0.5_DP*DdataAtEdge(1,iedge)*DcoeffsAtEdge(1,2,iedge)
 #endif
     end do
 
@@ -2273,8 +2273,8 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwBurgP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -2287,7 +2287,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all edges under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -2307,7 +2307,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all edges under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -2318,29 +2318,29 @@ contains
 
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = 0.5*u_j*C_{ji}$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
-          0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(2,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(2,iedge)*DcoeffsAtEdge(1,2,iedge)
           
       ! Compute convective coefficient  $k_{ji} = 0.5*u_i*C_{ij}$
-      DcoefficientsAtEdge(3,iedge) = dscale*&
-          0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(3,iedge) = dscale*&
+          0.5_DP*DdataAtEdge(1,iedge)*DcoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient  $k_{ij} = -0.5*u_j*C_{ij}$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
-          0.5_DP*DdataAtEdge(2,iedge)*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(2,iedge) = -dscale*&
+          0.5_DP*DdataAtEdge(2,iedge)*DcoeffsAtEdge(1,1,iedge)
 
       ! Compute convective coefficient  $k_{ji} = -0.5*u_i*C_{ji}$
-      DcoefficientsAtEdge(3,iedge) = -dscale*&
-          0.5_DP*DdataAtEdge(1,iedge)*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(3,iedge) = -dscale*&
+          0.5_DP*DdataAtEdge(1,iedge)*DcoeffsAtEdge(1,2,iedge)
 #endif
       
       ! Compute artificial diffusion coefficient 
       !   $d_{ij} = abs(v_{ij}*0.5*(c_{ij}-c_{ji})$,
       ! where 
       !   $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
+      DmatrixAtEdge(1,iedge) = dscale*&
           abs(0.25_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
-              (DmatrixCoeffsAtEdge(1,1,iedge)-DmatrixCoeffsAtEdge(1,2,iedge)))
+              (DcoeffsAtEdge(1,1,iedge)-DcoeffsAtEdge(1,2,iedge)))
 
     end do
 
@@ -2978,8 +2978,8 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatDiagBLevP1d_sim(DdataAtNode,&
-      DmatrixCoeffsAtNode, IdofsAtNode, dscale, nnodes,&
-      DcoefficientsAtNode, rcollection)
+      DcoeffsAtNode, InodeList, dscale, nnodes,&
+      DmatrixAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -2993,10 +2993,10 @@ contains
     real(DP), dimension(:), intent(in) :: DdataAtNode
     
     ! Entries of the coefficient matrices for all nodes under consideration
-    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
     
     ! Numbers of vertices and matrix entries for all nodes under consideration
-    integer, dimension(:,:), intent(in) :: IdofsAtNode
+    integer, dimension(:,:), intent(in) :: InodeList
 
     ! Scaling parameter
     real(DP), intent(in) :: dscale
@@ -3013,7 +3013,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all nodes under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtNode
 !</output>
 !</subroutine>
 
@@ -3028,13 +3028,13 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ii} = a_i*C_{ii}$,
       ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
-      DcoefficientsAtNode(1,inode) = dscale*&
-          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = dscale*&
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DcoeffsAtNode(1,inode)
 #else
       ! Compute convective coefficient  $k_{ii} = -a_i*C_{ii}$,
       ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
-      DcoefficientsAtNode(1,inode) = -dscale*&
-          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtNode(1,inode)
+      DmatrixAtNode(1,inode) = -dscale*&
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DcoeffsAtNode(1,inode)
 #endif
 
     end do
@@ -3046,8 +3046,8 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatGalBLevP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3061,7 +3061,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all edges under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -3081,7 +3081,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all edges under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -3096,23 +3096,23 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$,
       ! where $a_j=u_j/(u_^2+0.5*(1-u_j)^2)$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
-          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(1,iedge) = dscale*&
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DcoeffsAtEdge(1,2,iedge)
 
       ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$,
       ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
-          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(2,iedge) = dscale*&
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DcoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$,
       ! where $a_j=u_j/(u_j^2+0.5*(1-u_j)^2)$
-      DcoefficientsAtEdge(1,iedge) = -dscale*&
-          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(1,iedge) = -dscale*&
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DcoeffsAtEdge(1,1,iedge)
 
       ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$,
       ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
-          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(2,iedge) = -dscale*&
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DcoeffsAtEdge(1,2,iedge)
 #endif
     end do
     
@@ -3123,8 +3123,8 @@ contains
 !<subroutine>
 
   pure subroutine transp_calcMatUpwBLevP1d_sim(DdataAtEdge,&
-      DmatrixCoeffsAtEdge, IedgeList, dscale, nedges,&
-      DcoefficientsAtEdge, rcollection)
+      DcoeffsAtEdge, IedgeList, dscale, nedges,&
+      DmatrixAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -3140,7 +3140,7 @@ contains
     real(DP), dimension(:,:), intent(in) :: DdataAtEdge
     
     ! Entries of the coefficient matrices for all edges under consideration
-    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
     
     ! Numbers of vertices and matrix entries for all edges under consideration
     integer, dimension(:,:), intent(in) :: IedgeList
@@ -3160,7 +3160,7 @@ contains
 
 !<output>
     ! Coefficients of the matrix for all edges under consideration
-    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+    real(DP), dimension(:,:), intent(out) :: DmatrixAtEdge
 !</output>
 !</subroutine>
 
@@ -3175,23 +3175,23 @@ contains
 #ifdef TRANSP_USE_IBP
       ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$,
       ! where $a_j=u_j/(u_^2+0.5*(1-u_j)^2)$
-      DcoefficientsAtEdge(2,iedge) = dscale*&
-          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(2,iedge) = dscale*&
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DcoeffsAtEdge(1,2,iedge)
 
       ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$,
       ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
-      DcoefficientsAtEdge(3,iedge) = dscale*&
-          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(3,iedge) = dscale*&
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DcoeffsAtEdge(1,1,iedge)
 #else
       ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$,
       ! where $a_j=u_j/(u_j^2+0.5*(1-u_j)^2)$
-      DcoefficientsAtEdge(2,iedge) = -dscale*&
-          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DmatrixCoeffsAtEdge(1,1,iedge)
+      DmatrixAtEdge(2,iedge) = -dscale*&
+          uj/(uj*uj+0.5_DP*(1.0_DP-uj)*(1.0_DP-uj))*DcoeffsAtEdge(1,1,iedge)
 
       ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$,
       ! where $a_i=u_i/(u_i^2+0.5*(1-u_i)^2)$
-      DcoefficientsAtEdge(3,iedge) = -dscale*&
-          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DmatrixCoeffsAtEdge(1,2,iedge)
+      DmatrixAtEdge(3,iedge) = -dscale*&
+          ui/(ui*ui+0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))*DcoeffsAtEdge(1,2,iedge)
 #endif
 
       ! Calculate the characteristic speed
@@ -3204,9 +3204,9 @@ contains
 
       ! Compute artificial diffusion coefficient 
       ! $d_{ij} = abs(0.5*v_{ij}*(c_{ij}-c_{ji})$
-      DcoefficientsAtEdge(1,iedge) = dscale*&
-          abs(0.5_DP*vij*(DmatrixCoeffsAtEdge(1,1,iedge)-&
-                          DmatrixCoeffsAtEdge(1,2,iedge)))
+      DmatrixAtEdge(1,iedge) = dscale*&
+          abs(0.5_DP*vij*(DcoeffsAtEdge(1,1,iedge)-&
+                          DcoeffsAtEdge(1,2,iedge)))
     end do
     
   end subroutine transp_calcMatUpwBLevP1d_sim
