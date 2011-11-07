@@ -314,12 +314,6 @@ module spatialdiscretisation
     ! Only available if bprecompiledDofMapping=true.
     integer :: h_IelementDofIdx = ST_NOHANDLE
   
-    ! Handle to the array of coordinates of all global DOF`s. If
-    ! generated, this array contains the positions of the global
-    ! degrees of freedom in the order of the global DOF`s as returned
-    ! by the local-to-global mapping routines
-    integer :: h_DdofCoords = ST_NOHANDLE
-  
   end type
   
   public :: t_spatialDiscretisation
@@ -2109,10 +2103,6 @@ contains
       call storage_free (rdiscretisation%h_IelementDofs)
       call storage_free (rdiscretisation%h_IelementDofIdx)
     end if
-
-    ! Release coordinate arrays
-    if (rdiscretisation%h_DdofCoords .ne. ST_NOHANDLE)&
-        call storage_free (rdiscretisation%h_DdofCoords)
 
   end subroutine
 
