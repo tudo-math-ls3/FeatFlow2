@@ -80,12 +80,9 @@
 !# 2.) transp_initSolvers
 !#     -> Initializes the solve structures from the parameter list.
 !#
-!# 3.) transp_initProblem
-!#     -> Initializes the global problem structure based on the
-!#        parameter settings given by the parameter list. This routine
-!#        is quite universal, that is, it prepares the internal
-!#        structure of the global problem and generates a linked
-!#        list of problem levels used in the multigrid hierarchy.
+!# 3.) transp_initProblemDescriptor
+!#     -> Initializes the abstract problem descriptor based on the
+!#        parameter settings given by the parameter list.
 !#
 !# 4.) transp_initProblemLevel
 !#     -> Initializes the individual problem level based on the
@@ -154,9 +151,6 @@
 !# 1.) transp_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
-!#
-!# 2.) transp_adjustParameterlist
-!#     -> Adjust the parameter list depending on internal data
 !#
 !#
 !# Frequently asked questions
@@ -235,11 +229,10 @@ module transport_application
   private
   public :: transp_app
   public :: transp_adaptTriangulation
-  public :: transp_adjustParameterlist
   public :: transp_estimateRecoveryError
   public :: transp_estimateTargetFuncError
   public :: transp_initAllProblemLevels
-  public :: transp_initProblem
+  public :: transp_initProblemDescriptor
   public :: transp_initProblemLevel
   public :: transp_initRHS
   public :: transp_initSolution
@@ -337,6 +330,9 @@ contains
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
 
+    ! Abstract problem descriptor
+    type(t_problemDescriptor) :: rproblemDescriptor
+
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
@@ -360,7 +356,6 @@ contains
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
     call transp_parseCmdlArguments(rparlist)
-    call transp_adjustParameterlist(rparlist, ssectionName)
 
     ! Initialize global collection structure
     call collct_init(rcollection)
@@ -423,6 +418,8 @@ contains
     call transp_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
     ! Initialize the boundary conditions for the primal problem
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ndimension', ndimension)
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'sprimalbdrcondname', sbdrcondName)
     call bdrc_readBoundaryCondition(rbdrCondPrimal,&
@@ -438,28 +435,28 @@ contains
           ndimension, transp_parseBoundaryCondition)
     end if
     
-    ! Initialize the abstract problem structure and all individual
-    ! problem levels with primal and dual boundary (if available)
+    ! Initialize the abstract problem structure
+    call transp_initProblemDescriptor(rparlist, ssectionName,&
+        solver_getMinimumMultigridlevel(rsolver),&
+        solver_getMaximumMultigridlevel(rsolver),&
+        rproblemDescriptor)
+    call problem_initProblem(rproblemDescriptor, rproblem)
+
+    ! Initialize all individual problem levels with primal and dual
+    ! boundary conditions (if available)
     if (sbdrcondName .ne. '') then
-      call transp_initProblem(rparlist, ssectionName,&
-          solver_getMinimumMultigridlevel(rsolver),&
-          solver_getMaximumMultigridlevel(rsolver),&
-          rproblem, rbdrCondPrimal, rbdrCondDual)
       call transp_initAllProblemLevels(rparlist,&
           ssectionName, rproblem, rcollection,&
           rbdrCondPrimal, rbdrCondDual)
     else
-      call transp_initProblem(rparlist, ssectionName,&
-          solver_getMinimumMultigridlevel(rsolver),&
-          solver_getMaximumMultigridlevel(rsolver),&
-          rproblem, rbdrCondPrimal)
       call transp_initAllProblemLevels(rparlist,&
           ssectionName, rproblem, rcollection,&
           rbdrCondPrimal)
-    end if   
-
+    end if
+    
     ! Prepare internal data arrays of the solver structure
-    call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'systemMatrix', systemMatrix)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
         rsolver, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
@@ -476,9 +473,7 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'ndimension', ndimension)
-
+      
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -687,12 +682,12 @@ contains
   !*****************************************************************************
 
 !<subroutine>
-
-  subroutine transp_initProblem(rparlist, ssectionName,&
-      nlmin, nlmax, rproblem, rbdrCondPrimal, rbdrCondDual)
+  
+  subroutine transp_initProblemDescriptor(rparlist, ssectionName,&
+      nlmin, nlmax, rproblemDescriptor)
 
 !<description>
-    ! This subroutine initializes the abstract problem structure
+    ! This subroutine initializes the abstract problem descriptor
     ! using the parameters settings defined in the parameter list
 !</description>
 
@@ -705,40 +700,32 @@ contains
 
     ! minimum/maximum problem level
     integer, intent(in) :: nlmin, nlmax
-
-    ! OPTIONAL: boundary condition for primal problem
-    type(t_boundaryCondition), intent(in), optional :: rbdrCondPrimal
-
-    ! OPTIONAL: boundary condition for dual problem
-    type(t_boundaryCondition), intent(in), optional :: rbdrCondDual
 !</input>
 
 !<output>
-    ! problem structure
-    type(t_problem), intent(out) :: rproblem
+    ! problem descriptor
+    type(t_problemDescriptor), intent(out) :: rproblemDescriptor
 !</output>
 !</subroutine>
 
-    ! section names
-    character(LEN=SYS_STRLEN) :: smass
-    character(LEN=SYS_STRLEN) :: sconvection
-    character(LEN=SYS_STRLEN) :: sdiffusion
-
-    ! abstract problem descriptor
-    type(t_problemDescriptor) :: rproblemDescriptor
-
-    ! pointer to the problem level
-    type(t_problemLevel), pointer :: p_rproblemLevel
-
     ! local variables
+    integer :: discretisation,velocityfield,dofCoords
     integer :: massAFC,templateGFEM
     integer :: convectionAFC,convectionGFEM
     integer :: diffusionAFC,diffusionGFEM
-    integer :: primalbdrGFEM,dualbdrGFEM
+    integer :: primalBdrGFEM,dualBdrGFEM
+    integer :: templateMatrix
+    integer :: systemMatrix
+    integer :: jacobianMatrix
+    integer :: transportMatrix
+    integer :: consistentMassMatrix
+    integer :: lumpedMassMatrix
+    integer :: coeffMatrix_CX
+    integer :: coeffMatrix_CY
+    integer :: coeffMatrix_CZ
+    integer :: coeffMatrix_S
     integer :: iconvToTria
-    integer :: ivelocitytype
-    integer :: nsegments
-
+    
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'trifile', rproblemDescriptor%trifile)
@@ -747,16 +734,36 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
-    ! Default is empty section, i.e. no configuration
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'mass', smass, '')
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'diffusion', sdiffusion, '')
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'convection', sconvection, '')
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dofCoords', dofCoords, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'velocityfield', velocityfield, 0)
+
+    ! Get global positions of matrices
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateMatrix', templateMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'systemMatrix', systemMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'jacobianMatrix', jacobianMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'transportMatrix', transportMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'consistentMassMatrix', consistentMassMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'lumpedMassMatrix', lumpedMassMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_S', coeffMatrix_S, 0)
+
     ! Default is no stabilization
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'massAFC', massAFC, 0)
@@ -764,37 +771,53 @@ contains
         ssectionName, 'convectionAFC', convectionAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'diffusionAFC', diffusionAFC, 0)
+
     ! By default the same identifier is used for the group finite
     ! element formulation and the stabilization structure
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'templateGFEM', templateGFEM)
+        ssectionName, 'templateGFEM', templateGFEM, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'convectionGFEM', convectionGFEM, convectionAFC)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'diffusionGFEM', diffusionGFEM, diffusionAFC)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'primalbdrGFEM', primalbdrGFEM, 0)
+        ssectionName, 'primalbdrGFEM', primalBdrGFEM, 0)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'dualbdrGFEM', dualbdrGFEM, 0)
+        ssectionName, 'dualbdrGFEM', dualBdrGFEM, 0)
 
     ! Consistency check
     if (templateGFEM .eq. 0) then
       convectionGFEM = 0
-      diffusionGFEM = 0
+      diffusionGFEM  = 0
+      primalBdrGFEM  = 0
+      dualBdrGFEM    = 0
     end if
 
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 1 ! one discretisation
-    rproblemDescriptor%nafcstab        = max(massAFC, convectionAFC, diffusionAFC)
-    rproblemDescriptor%ngroupfemBlock  = max(templateGFEM, convectionGFEM, diffusionGFEM,&
-                                             primalbdrGFEM, dualbdrGFEM)
+    rproblemDescriptor%ndiscretisation = max(0, discretisation)
+    rproblemDescriptor%nafcstab        = max(0, massAFC,&
+                                                convectionAFC,&
+                                                diffusionAFC)
+    rproblemDescriptor%ngroupfemBlock  = max(0, templateGFEM,&
+                                                convectionGFEM,&
+                                                diffusionGFEM,&
+                                                primalBdrGFEM,&
+                                                dualBdrGFEM)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
-    rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
+    rproblemDescriptor%nmatrixScalar   = max(0, templateMatrix,&
+                                                systemMatrix,&
+                                                jacobianMatrix,&
+                                                transportMatrix,&
+                                                consistentMassMatrix,&
+                                                lumpedMassMatrix,&
+                                                coeffMatrix_CX,&
+                                                coeffMatrix_CY,&
+                                                coeffMatrix_CZ,&
+                                                coeffMatrix_S)
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = merge(1,0,transp_hasVelocityVector(ivelocitytype)) 
-                                         ! velocity field
+    rproblemDescriptor%nvectorBlock    = max(0, velocityfield, dofCoords)
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
@@ -802,52 +825,7 @@ contains
                                       + PROBDESC_MSPEC_CONVTRIANGLES
     end if
 
-    ! Initialize problem structure
-    call problem_initProblem(rproblemDescriptor, rproblem)
-
-    ! Loop over all problem levels
-    p_rproblemLevel => rproblem%p_rproblemLevelMax
-    do while(associated(p_rproblemLevel))
-      ! Initialize the group finite element block structures:
-      ! - for templates, convective and diffusive terms
-      if (templateGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
-      if (convectionGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(convectionGFEM), 1)
-      if (diffusionGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(diffusionGFEM), 1)
-
-      ! Initialize the group finite element block structures at the primal boundary
-      if ((primalBdrGFEM > 0) .and. present(rbdrCondPrimal)) then
-        call storage_getsize(rbdrCondPrimal%h_IbdrCondCpIdx, nsegments)
-        call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
-            2*nsegments)
-      end if
-
-      ! Initialize the group finite element block structures at the dual boundary
-      if ((dualBdrGFEM > 0) .and. present(rbdrCondDual)) then
-        call storage_getsize(rbdrCondDual%h_IbdrCondCpIdx, nsegments)
-        call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
-            2*nsegments)
-      end if
-
-      ! Initialize the stabilisation structures for the mass, the
-      ! convective and the diffusive term (if required)
-      if (massAFC > 0)&
-          call afcstab_initFromParameterlist(rparlist, smass,&
-          p_rproblemLevel%Rafcstab(massAFC))
-      if (convectionAFC > 0)&
-          call afcstab_initFromParameterlist(rparlist, sconvection,&
-          p_rproblemLevel%Rafcstab(convectionAFC))
-      if (diffusionAFC > 0)&
-          call afcstab_initFromParameterlist(rparlist, sdiffusion,&
-          p_rproblemLevel%Rafcstab(diffusionAFC))
-
-      ! Switch to next coarser level
-      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
-    end do
-
-  end subroutine transp_initProblem
+  end subroutine transp_initProblemDescriptor
 
   !*****************************************************************************
 
@@ -900,6 +878,7 @@ contains
     integer :: convectionAFC,convectionGFEM
     integer :: diffusionAFC,diffusionGFEM
     integer :: discretisation
+    integer :: dofCoords
     integer :: ijacobianFormat
     integer :: imatrixFormat
     integer :: primalbdrGFEM,dualbdrGFEM
@@ -911,16 +890,15 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_matrixScalar) :: rmatrixSX,rmatrixSY,rmatrixSZ
-    type(t_matrixScalar) :: rmatrixSXl,rmatrixSYl,rmatrixSZl
     integer, dimension(:), allocatable :: Celement
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
-    integer :: ccubType,i,ibdc,isegment,j,nmatrices,nsubstrings
-    character(len=SYS_STRLEN) :: selemName
+    integer :: ccubType,i,ibdc,isegment,j,nmatrices,nsubstrings,neq
+    character(len=SYS_STRLEN) :: selemName,smass,sconvection,sdiffusion
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'templatematrix', templateMatrix)
+        ssectionName, 'templatematrix', templateMatrix, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'systemmatrix', systemMatrix, 0)
     call parlst_getvalue_int(rparlist,&
@@ -939,14 +917,19 @@ contains
         ssectionName, 'coeffmatrix_cy', coeffMatrix_CY, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ, 0)
+
+    ! Default is no stabilization
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'massAFC', massAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'convectionAFC', convectionAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'diffusionAFC', diffusionAFC, 0)
+
+    ! By default the same identifier is used for the group finite
+    ! element formulation and the stabilization structure
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'templateGFEM', templateGFEM)
+        ssectionName, 'templateGFEM', templateGFEM, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'convectionGFEM', convectionGFEM, convectionAFC)
     call parlst_getvalue_int(rparlist,&
@@ -955,8 +938,12 @@ contains
         ssectionName, 'primalBdrGFEM', primalBdrGFEM, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'dualBdrGFEM', dualBdrGFEM, 0)
+
+    ! Default no summed cubature
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'discretisation', discretisation)
+        ssectionName, 'discretisation', discretisation, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dofCoords', dofCoords, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
     call parlst_getvalue_int(rparlist,&
@@ -964,15 +951,22 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
 
+    ! Default is empty section, i.e. no configuration
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'mass', smass, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'diffusion', sdiffusion, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'convection', sconvection, '')
+
     ! Set pointers to triangulation and boundary structure
-    p_rtriangulation  => rproblemLevel%rtriangulation
-    p_rboundary       => rproblemLevel%p_rproblem%rboundary
+    p_rtriangulation => rproblemLevel%rtriangulation
+    p_rboundary      => rproblemLevel%p_rproblem%rboundary
 
+    !---------------------------------------------------------------------------
+    ! Create discretisation structure
+    !---------------------------------------------------------------------------
     if (discretisation > 0) then
-
-      !-------------------------------------------------------------------------
-      ! Create discretisation structure
-      !-------------------------------------------------------------------------
 
       ! Initialize the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
@@ -1109,437 +1103,505 @@ contains
               %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
         end do
       end do
-    end if
-
-    ! Calculate coordinates of the global DOF`s
-    call dof_calcDofCoordsBlock(p_rdiscretisation)
-
-    !---------------------------------------------------------------------------
-    ! Create finite elemenet matrices
-    !---------------------------------------------------------------------------
-    
-    ! If the template matrix has no structure data then generate the
-    ! finite element matrix sparsity structure based on the spatial
-    ! descretisation and store it as the template matrix. Otherwise we
-    ! assume that the template matrix has been generated externally.
-    if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
-      call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
-      call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
-          imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create system matrix as duplicate of the template matrix
-    if (systemMatrix > 0)&
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(systemMatrix))
-
-    !---------------------------------------------------------------------------
-    ! Create transport matrix as duplicate of the template matrix
-    if (transportMatrix > 0)&
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(transportMatrix))
-
-    !---------------------------------------------------------------------------
-    ! Create Jacobian matrix. This is a little bit tricky. If the
-    ! Jacobian matrix has the same sparsity pattern as the template
-    ! matrix, we can just create the Jacobian matrix as a duplicate of
-    ! the template matrix. If the Jacobian matrix has an extended
-    ! sparsity pattern we must create it by using the template matrix
-    if (jacobianMatrix > 0) then
-
-      ! What format do we have for the Jacobian matrix?
-      call parlst_getvalue_int(rparlist, ssectionName, 'ijacobianFormat', ijacobianFormat)
       
-      if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
-        if (ijacobianFormat .eq. 0) then
-          call lsyssc_resizeMatrix(&
-              rproblemLevel%Rmatrix(jacobianMatrix),&
-              rproblemLevel%Rmatrix(templateMatrix),&
-              .false., .false., .true.)
+      !-------------------------------------------------------------------------
+      ! Calculate coordinates of the global DOF`s
+      if (dofCoords > 0) then
+        ! Check if block vector has been initialized
+        if (rproblemLevel%RvectorBlock(dofCoords)%nblocks .eq. 0) then
+          call lsysbl_createVectorBlock(p_rdiscretisation,&
+              p_rdiscretisation%ndimension,&
+              rproblemLevel%RvectorBlock(dofCoords), .false.)
         else
-          call afcstab_genExtSparsity(&
-              rproblemLevel%Rmatrix(templateMatrix),&
-              rproblemLevel%Rmatrix(jacobianMatrix))
+          neq = dof_igetNDofGlobBlock(p_rdiscretisation)
+          if (rproblemLevel%RvectorBlock(dofCoords)%NEQ .ne. neq) then
+            call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+                rproblemLevel%RvectorBlock(dofCoords), .false.)
+          end if
         end if
-      else
-        if (ijacobianFormat .eq. 0) then
-          call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(templateMatrix),&
-              rproblemLevel%Rmatrix(jacobianMatrix),&
-              LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        ! Calculate coordinates
+        call lin_calcDofCoordsBlock(p_rdiscretisation,&
+            rproblemLevel%RvectorBlock(dofCoords))
+      end if
+
+      !-------------------------------------------------------------------------
+      ! Create finite element matrices
+      !-------------------------------------------------------------------------
+      
+      ! If the template matrix has no structure data then generate the
+      ! finite element matrix sparsity structure based on the spatial
+      ! descretisation and store it as the template matrix. Otherwise we
+      ! assume that the template matrix has been generated externally.
+      if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
+        call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
+        call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
+            imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create system matrix as duplicate of the template matrix
+      if (systemMatrix > 0)&
+          call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                   rproblemLevel%Rmatrix(systemMatrix))
+
+      !-------------------------------------------------------------------------
+      ! Create transport matrix as duplicate of the template matrix
+      if (transportMatrix > 0)&
+          call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                   rproblemLevel%Rmatrix(transportMatrix))
+
+      !-------------------------------------------------------------------------
+      ! Create Jacobian matrix. This is a little bit tricky. If the
+      ! Jacobian matrix has the same sparsity pattern as the template
+      ! matrix, we can just create the Jacobian matrix as a duplicate of
+      ! the template matrix. If the Jacobian matrix has an extended
+      ! sparsity pattern we must create it by using the template matrix
+      if (jacobianMatrix > 0) then
+        
+        ! What format do we have for the Jacobian matrix?
+        call parlst_getvalue_int(rparlist, ssectionName,&
+            'ijacobianFormat', ijacobianFormat)
+        
+        if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
+          if (ijacobianFormat .eq. 0) then
+            call lsyssc_resizeMatrix(&
+                rproblemLevel%Rmatrix(jacobianMatrix),&
+                rproblemLevel%Rmatrix(templateMatrix),&
+                .false., .false., bforce=.true.)
+          else
+            call afcstab_genExtSparsity(&
+                rproblemLevel%Rmatrix(templateMatrix),&
+                rproblemLevel%Rmatrix(jacobianMatrix))
+          end if
         else
-          call afcstab_genExtSparsity(&
-              rproblemLevel%Rmatrix(templateMatrix),&
-              rproblemLevel%Rmatrix(jacobianMatrix))
+          if (ijacobianFormat .eq. 0) then
+            call lsyssc_duplicateMatrix(&
+                rproblemLevel%Rmatrix(templateMatrix),&
+                rproblemLevel%Rmatrix(jacobianMatrix),&
+                LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          else
+            call afcstab_genExtSparsity(&
+                rproblemLevel%Rmatrix(templateMatrix),&
+                rproblemLevel%Rmatrix(jacobianMatrix))
+          end if
         end if
       end if
-    end if
 
-    !---------------------------------------------------------------------------
-    ! Create consistent mass matrix as duplicate of the template matrix
-    if (consistentMassMatrix > 0) then
-      call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                               rproblemLevel%Rmatrix(consistentMassMatrix))
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
-
-      ! Create lumped mass matrix
-      if (lumpedMassMatrix > 0) then
+      !-------------------------------------------------------------------------
+      ! Create consistent mass matrix as duplicate of the template matrix
+      if (consistentMassMatrix > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(consistentMassMatrix))
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
+        
+        ! Create lumped mass matrix
+        if (lumpedMassMatrix > 0) then
+          call lsyssc_duplicateMatrix(&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+          call lsyssc_lumpMatrixScalar(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+        end if
+      elseif (lumpedMassMatrix > 0) then
+        ! Create lumped mass matrix
         call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(consistentMassMatrix),&
+            rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC)
         call lsyssc_lumpMatrixScalar(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
       end if
-    elseif (lumpedMassMatrix > 0) then
-      ! Create lumped mass matrix
-      call lsyssc_duplicateMatrix(&
-          rproblemLevel%Rmatrix(templateMatrix),&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC)
-      call lsyssc_lumpMatrixScalar(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create diffusion matrix as duplicate of the template matrix
-    if (coeffMatrix_S > 0) then
-      call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                               rproblemLevel%Rmatrix(coeffMatrix_S))
       
-      ! Get function parser from collection
-      p_rfparser => collct_getvalue_pars(rcollection,&
-          'rfparser', ssectionName=ssectionName)
-
-      select case(p_rtriangulation%ndim)
-      case (NDIM1D)
-        call initDiffusionMatrix1D(p_rfparser,&
-            rproblemLevel%Rmatrix(coeffMatrix_S))
-      case (NDIM2D)
-        call initDiffusionMatrix2D(p_rfparser,&
-            rproblemLevel%Rmatrix(coeffMatrix_S))
-      case (NDIM3D)
-        call initDiffusionMatrix3D(p_rfparser,&
-            rproblemLevel%Rmatrix(coeffMatrix_S))
-      case default
-        call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
-      end select
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CX > 0) then
-      call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                               rproblemLevel%Rmatrix(coeffMatrix_CX))
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                      DER_DERIV3D_X, DER_FUNC)
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CY > 0) then
-      call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                               rproblemLevel%Rmatrix(coeffMatrix_CY))
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                      DER_DERIV3D_Y, DER_FUNC)
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CZ > 0) then
-      call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                               rproblemLevel%Rmatrix(coeffMatrix_CZ))
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                      DER_DERIV3D_Z, DER_FUNC)
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create group finite element structures and AFC-stabilisations
-    !---------------------------------------------------------------------------
-
-    ! Initialize/resize template group finite elment structure and
-    ! generate the edge structure derived from the template matrix
-    if (templateGFEM > 0) then
-      ! Set pointer to first group finite element set of this block
-      p_rgroupFEMSet =>&
-          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
+      !-------------------------------------------------------------------------
+      ! Create diffusion matrix as duplicate of the template matrix
+      if (coeffMatrix_S > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_S))
+        
+        ! Get function parser from collection
+        p_rfparser => collct_getvalue_pars(rcollection,&
+            'rfparser', ssectionName=ssectionName)
+        
+        select case(p_rtriangulation%ndim)
+        case (NDIM1D)
+          call initDiffusionMatrix1D(p_rfparser,&
+              rproblemLevel%Rmatrix(coeffMatrix_S))
+        case (NDIM2D)
+          call initDiffusionMatrix2D(p_rfparser,&
+              rproblemLevel%Rmatrix(coeffMatrix_S))
+        case (NDIM3D)
+          call initDiffusionMatrix3D(p_rfparser,&
+              rproblemLevel%Rmatrix(coeffMatrix_S))
+        case default
+          call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
+        end select
+      end if
       
-      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize first group finite element set for edge-based assembly
-        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
-      else
-        ! Resize first group finite element set
-        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix))
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CX > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CX))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+                                       DER_DERIV3D_X, DER_FUNC)
       end if
 
-      ! Generate diagonal and edge structure derived from template matrix
-      call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
-          p_rgroupFEMSet)
-      call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
-          p_rgroupFEMSet)
-    else
-      convectionGFEM = 0
-      diffusionGFEM = 0
-    end if
-    
-    !---------------------------------------------------------------------------
-    ! Initialize/resize group finite element structure as duplicate of
-    ! the template group finite element structure and fill it with the
-    ! precomputed matrix coefficients for the convective term
-    if (convectionGFEM > 0) then
-      ! Set pointer to first group finite element set of this block
-      p_rgroupFEMSet =>&
-          rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1)
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CY > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+                                        DER_DERIV3D_Y, DER_FUNC)
+      end if
       
-      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize first group finite element set for edge-based
-        ! assembly as aduplicate of the template structure
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CZ > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+                                        DER_DERIV3D_Z, DER_FUNC)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create group finite element structures and AFC-stabilisations
+      !-------------------------------------------------------------------------
+      
+      ! Initialize/resize template group finite elment structure and
+      ! generate the edge structure derived from the template matrix
+      if (templateGFEM > 0) then
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(templateGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
+        
+        ! Set pointer to first group finite element set of this block
+        p_rgroupFEMSet =>&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
+        
+        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+          ! Initialize first group finite element set for edge-based assembly
+          call gfem_initGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
+        else
+          ! Resize first group finite element set
+          call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix))
+        end if
+        
+        ! Generate diagonal and edge structure derived from template matrix
+        call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
+            p_rgroupFEMSet)
+        call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
+            p_rgroupFEMSet)
+      else
+        convectionGFEM = 0
+        diffusionGFEM  = 0
+        primalBdrGFEM  = 0
+        dualBdrGFEM    = 0
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialize/resize group finite element structure as duplicate of
+      ! the template group finite element structure and fill it with the
+      ! precomputed matrix coefficients for the convective term
+      if (convectionGFEM > 0) then
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(convectionGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(convectionGFEM), 1)
+        
+        ! Set pointer to first group finite element set of this block
+        p_rgroupFEMSet =>&
+            rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1)
+        
+        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+          ! Initialize first group finite element set for edge-based
+          ! assembly as aduplicate of the template structure
+          call gfem_duplicateGroupFEMSet(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+          
+          ! Compute number of matrices to be copied
+          nmatrices = 0
+          if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
+          
+          ! Allocate memory for matrix entries
+          call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
+        else
+          ! Resize first group finite element set
+          call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix))
+        end if
+        
+        ! Duplicate edge-based structure from template
         call gfem_duplicateGroupFEMSet(&
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
-
+            p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
+        
+        ! Copy constant coefficient matrices to group finite element set
+        nmatrices = 0
+        if (coeffMatrix_CX > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CX), nmatrices)
+        end if
+        if (coeffMatrix_CY > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CY), nmatrices)
+        end if
+        if (coeffMatrix_CZ > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CZ), nmatrices)
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialise/Resize stabilisation structure for the convective
+      ! term by duplicating parts of the template group finite element set
+      if (convectionAFC > 0) then
+        if (rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
+            .eq. AFCSTAB_UNDEFINED) then
+          call afcstab_initFromParameterlist(rparlist, sconvection,&
+              rproblemLevel%Rafcstab(convectionAFC))
+          call afcsc_initStabilisation(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rafcstab(convectionAFC), p_rdiscretisation)
+        else
+          call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(convectionAFC),&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialize/resize group finite element structure as duplicate of
+      ! the template group finite element structure and fill it with the
+      ! precomputed matrix coefficients for the diffusice term
+      if (diffusionGFEM > 0) then
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(diffusionGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(diffusionGFEM), 1)
+        
+        ! Set pointer to first group finite element set of this block
+        p_rgroupFEMSet =>&
+            rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1)
+        
+        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+          ! Initialize first group finite element set for edge-based
+          ! assembly as aduplicate of the template structure
+          call gfem_duplicateGroupFEMSet(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+          
+          ! Compute number of matrices to by copied
+          nmatrices = 0
+          if (coeffMatrix_S > 0) nmatrices = nmatrices+1
+          
+          ! Allocate memory for matrix entries
+          call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
+        else
+          ! Resize first group finite element set
+          call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix))
+        end if
+        
+        ! Duplicate edge-based structure from template
+        call gfem_duplicateGroupFEMSet(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
+        
+        ! Copy constant coefficient matrices to group finite element set
+        nmatrices = 0
+        if (coeffMatrix_S > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_S), nmatrices)
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialise/Resize stabilisation structure for the diffusive
+      ! term by duplicating parts of the template group finite element set
+      if (diffusionAFC > 0) then
+        if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
+            .eq. AFCSTAB_UNDEFINED) then
+          call afcstab_initFromParameterlist(rparlist, sdiffusion,&
+              rproblemLevel%Rafcstab(diffusionAFC))
+          call afcsc_initStabilisation(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rafcstab(diffusionAFC), p_rdiscretisation)
+        else
+          call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(diffusionAFC),&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialize/Resize stabilisation structure for the mass matrix by
+      ! duplicating parts of the template group finite element set
+      if (massAFC > 0) then
+        if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
+            .eq. AFCSTAB_UNDEFINED) then
+          call afcstab_initFromParameterlist(rparlist, smass,&
+              rproblemLevel%Rafcstab(massAFC))
+          call afcsc_initStabilisation(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rafcstab(massAFC), p_rdiscretisation)
+        else
+          call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create group finite element structures on the boundary
+      !-------------------------------------------------------------------------
+      
+      if ((primalBdrGFEM > 0) .and. present(rbdrCondPrimal) .or.&
+          (dualBdrGFEM   > 0) .and. present(rbdrCondDual) ) then
+        
+        ! Compute X-component of mass matrices on the boundary
+        if (coeffMatrix_CX > 0) then
+          call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+              rmatrixSX, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          call lsyssc_createMatrixSymmPart(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+              1.0_DP, rmatrixSX)
+        end if
+        
+        ! Compute Y-component of mass matrices on the boundary
+        if (coeffMatrix_CY > 0) then
+          call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+              rmatrixSY, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          call lsyssc_createMatrixSymmPart(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+              1.0_DP, rmatrixSY)
+        end if
+        
+        ! Compute Z-component of mass matrices on the boundary
+        if (coeffMatrix_CZ > 0) then
+          call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+              rmatrixSZ, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          call lsyssc_createMatrixSymmPart(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+              1.0_DP, rmatrixSZ)
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Primal boundary condition
+      !-------------------------------------------------------------------------
+      
+      if ((primalBdrGFEM > 0) .and. present(rbdrCondPrimal)) then
+        
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(primalBdrGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(primalBdrGFEM),&
+            bdrc_getNumberOfRegions(rbdrCondPrimal))
+        
         ! Compute number of matrices to be copied
         nmatrices = 0
         if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
         if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
         if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
         
-        ! Allocate memory for matrix entries
-        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
-      else
-        ! Resize first group finite element set
-        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix))
-      end if
-      
-      ! Duplicate edge-based structure from template
-      call gfem_duplicateGroupFEMSet(&
-          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
-
-      ! Copy constant coefficient matrices to group finite element set
-      nmatrices = 0
-      if (coeffMatrix_CX > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CX), nmatrices)
-      end if
-      if (coeffMatrix_CY > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CY), nmatrices)
-      end if
-      if (coeffMatrix_CZ > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ), nmatrices)
-      end if
-    end if
-
-    ! Initialise/Resize stabilisation structure for the convective
-    ! term by duplicating parts of the template group finite element set
-    if (convectionAFC > 0) then
-      if (rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
-        call afcsc_initStabilisation(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(convectionAFC), p_rdiscretisation)
-      else
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
-      end if
-    end if
-    
-    !---------------------------------------------------------------------------
-    ! Initialize/resize group finite element structure as duplicate of
-    ! the template group finite element structure and fill it with the
-    ! precomputed matrix coefficients for the diffusice term
-    if (diffusionGFEM > 0) then
-      ! Set pointer to first group finite element set of this block
-      p_rgroupFEMSet =>&
-          rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1)
-      
-      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize first group finite element set for edge-based
-        ! assembly as aduplicate of the template structure
-        call gfem_duplicateGroupFEMSet(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
-
-        ! Compute number of matrices to by copied
-        nmatrices = 0
-        if (coeffMatrix_S > 0) nmatrices = nmatrices+1
+        ! Set pointer
+        call storage_getbase_int(rbdrCondPrimal%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
         
-        ! Allocate memory for matrix entries
-        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
-      else
-        ! Resize first group finite element set
-        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix))
-      end if
+        ! Loop over all boundary components
+        do ibdc = 1, rbdrCondPrimal%iboundarycount
       
-      ! Duplicate edge-based structure from template
-      call gfem_duplicateGroupFEMSet(&
-          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
-
-      ! Copy constant coefficient matrices to group finite element set
-      nmatrices = 0
-      if (coeffMatrix_S > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_S), nmatrices)
-      end if
-    end if
-
-    ! Initialise/Resize stabilisation structure for the diffusive
-    ! term by duplicating parts of the template group finite element set
-    if (diffusionAFC > 0) then
-      if (rproblemLevel%Rafcstab(diffusionAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
-        call afcsc_initStabilisation(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(diffusionAFC), p_rdiscretisation)
-      else
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(diffusionAFC),&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
-      end if
-    end if
-    
-    !---------------------------------------------------------------------------
-    ! Initialize/Resize stabilisation structure for the mass matrix by
-    ! duplicating parts of the template group finite element set
-    if (massAFC > 0) then
-      if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
-        call afcsc_initStabilisation(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(massAFC), p_rdiscretisation)
-      else
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
-      end if
-    end if
-
-    !---------------------------------------------------------------------------
-    ! Create group finite element structures on the boundary
-    !---------------------------------------------------------------------------
-    
-    if ((primalBdrGFEM > 0) .and. present(rbdrCondPrimal) .or.&
-        (dualBdrGFEM   > 0) .and. present(rbdrCondDual) ) then
-
-      ! Compute X-component of mass matrices on the boundary
-      if (coeffMatrix_CX > 0) then
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-            rmatrixSX, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call lsyssc_createMatrixSymmPart(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-            1.0_DP, rmatrixSX)
-        call lsyssc_duplicateMatrix(rmatrixSX, rmatrixSXl,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-        call lsyssc_lumpMatrixScalar(rmatrixSXl, LSYSSC_LUMP_DIAG)
-      end if
-
-      ! Compute Y-component of mass matrices on the boundary
-      if (coeffMatrix_CY > 0) then
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-            rmatrixSY, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call lsyssc_createMatrixSymmPart(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-            1.0_DP, rmatrixSY)
-        call lsyssc_duplicateMatrix(rmatrixSY, rmatrixSYl,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-        call lsyssc_lumpMatrixScalar(rmatrixSYl, LSYSSC_LUMP_DIAG)
-      end if
-
-      ! Compute Z-component of mass matrices on the boundary
-      if (coeffMatrix_CZ > 0) then
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-            rmatrixSZ, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call lsyssc_createMatrixSymmPart(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-            1.0_DP, rmatrixSZ)
-        call lsyssc_duplicateMatrix(rmatrixSZ, rmatrixSZl,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-        call lsyssc_lumpMatrixScalar(rmatrixSZl, LSYSSC_LUMP_DIAG)
-      end if
-    end if
-
-    if ((primalBdrGFEM > 0) .and. present(rbdrCondPrimal)) then
-
-      ! Compute number of matrices to be copied
-      nmatrices = 0
-      if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
-      if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
-      if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
-      
-      ! Set pointer
-      call storage_getbase_int(rbdrCondPrimal%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
-
-      ! Loop over all boundary components
-      do ibdc = 1, rbdrCondPrimal%iboundarycount
-      
-        ! Loop over all boundary segments
-        do isegment = p_IbdrCondCpIdx(ibdc), p_IbdrCondCpIdx(ibdc+1)-1
-
-          ! Create boundary region
-          call bdrc_createRegion(rbdrCondPrimal, ibdc,&
-              isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
-          
-          ! Set pointer to group finite element set for bilinear form
-          p_rgroupFEMSet =>&
-              rproblemLevel%RgroupFEMBlock(primalBdrGFEM)%RgroupFEMBlock(2*(isegment-1)+1)
-          
-          ! Initialize group finite element set for bilinear form
-          call initGroupFEMSetBilfBdr(rboundaryRegion,&
-              rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
-          
-          ! Copy constant coefficient matrices to group finite element set
-          if (coeffMatrix_CX > 0)&
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSXl, 1)
-          if (coeffMatrix_CY > 0)&
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSYl, 2)
-          if (coeffMatrix_CZ > 0)&
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSZl, 3)
-
-          ! Set pointer to group finite element set for linear form
-          p_rgroupFEMSet =>&
-              rproblemLevel%RgroupFEMBlock(primalBdrGFEM)%RgroupFEMBlock(2*(isegment-1)+2)
-
-          ! Initialize group finite element set for linear form
-          call initGroupFEMSetLinfBdr(rboundaryRegion,&
-              rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
-          
-          ! Copy constant coefficient matrices to group finite element set
-          if (coeffMatrix_CX > 0)&
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSX, 1)
-          if (coeffMatrix_CY > 0)&
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSY, 2)
-          if (coeffMatrix_CZ > 0)&
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSZ, 3)
+          ! Loop over all boundary segments
+          do isegment = p_IbdrCondCpIdx(ibdc), p_IbdrCondCpIdx(ibdc+1)-1
+            
+            ! Create boundary region
+            call bdrc_createRegion(rbdrCondPrimal, ibdc,&
+                isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
+            
+            ! Set pointer to group finite element set
+            p_rgroupFEMSet =>&
+                rproblemLevel%RgroupFEMBlock(primalBdrGFEM)%RgroupFEMBlock(isegment)
+            
+            ! Initialize group finite element
+            call initGroupFEMSetBoundary(rboundaryRegion,&
+                rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
+            
+            ! Copy constant coefficient matrices to group finite element set
+            if (coeffMatrix_CX > 0)&
+                call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSX, 1)
+            if (coeffMatrix_CY > 0)&
+                call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSY, 2)
+            if (coeffMatrix_CZ > 0)&
+                call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSZ, 3)
+          end do
         end do
-      end do
-    end if
-    
-    ! The auxiliary matrices are not needed any more
-    if (coeffMatrix_CX > 0) then
-      call lsyssc_releaseMatrix(rmatrixSX)
-      call lsyssc_releaseMatrix(rmatrixSXl)
-    end if
-    if (coeffMatrix_CY > 0) then
-      call lsyssc_releaseMatrix(rmatrixSY)
-      call lsyssc_releaseMatrix(rmatrixSYl)
-    end if
-    if (coeffMatrix_CZ > 0) then
-      call lsyssc_releaseMatrix(rmatrixSZ)
-      call lsyssc_releaseMatrix(rmatrixSZl)
-    end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Dual boundary condition
+      !-------------------------------------------------------------------------
+      
+      if ((dualBdrGFEM > 0) .and. present(rbdrCondDual)) then
+        
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(dualBdrGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(dualBdrGFEM),&
+            bdrc_getNumberOfRegions(rbdrCondDual))
+        
+        ! Compute number of matrices to be copied
+        nmatrices = 0
+        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
+        
+        ! Set pointer
+        call storage_getbase_int(rbdrCondDual%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+        
+        ! Loop over all boundary components
+        do ibdc = 1, rbdrCondDual%iboundarycount
+          
+          ! Loop over all boundary segments
+          do isegment = p_IbdrCondCpIdx(ibdc), p_IbdrCondCpIdx(ibdc+1)-1
+            
+            ! Create boundary region
+            call bdrc_createRegion(rbdrCondDual, ibdc,&
+                isegment-p_IbdrCondCpIdx(ibdc)+1, rboundaryRegion)
+            
+            ! Set pointer to group finite element set
+            p_rgroupFEMSet =>&
+                rproblemLevel%RgroupFEMBlock(dualBdrGFEM)%RgroupFEMBlock(isegment)
+            
+            ! Initialize group finite element
+            call initGroupFEMSetBoundary(rboundaryRegion,&
+                rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
+            
+            ! Copy constant coefficient matrices to group finite element set
+            if (coeffMatrix_CX > 0)&
+                call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSX, 1)
+            if (coeffMatrix_CY > 0)&
+                call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSY, 2)
+            if (coeffMatrix_CZ > 0)&
+                call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixSZ, 3)
+          end do
+        end do
+      end if
+      
+      ! The auxiliary matrices are not needed any more
+      if (coeffMatrix_CX > 0)&
+          call lsyssc_releaseMatrix(rmatrixSX)
+      if (coeffMatrix_CY > 0)&
+          call lsyssc_releaseMatrix(rmatrixSY)
+      if (coeffMatrix_CZ > 0)&
+          call lsyssc_releaseMatrix(rmatrixSZ)
+
+    end if   ! discretisation > 0
 
     !---------------------------------------------------------------------------
     ! Set update notifiers for the discrete transport operator and the
@@ -1562,7 +1624,7 @@ contains
 
       if (lsyssc_isMatrixStructureShared(rmatrix, rmatrixTemplate)) then
         call lsyssc_resizeMatrix(rmatrix, rmatrixTemplate,&
-            .false., .false., .true.)
+            .false., .false., bforce=.true.)
       else
         call lsyssc_duplicateMatrix(rmatrixTemplate, rmatrix,&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
@@ -1582,7 +1644,7 @@ contains
       character(LEN=SYS_STRLEN) :: sdiffusionName
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
-      integer :: icomp,idiffusiontype
+      integer :: idiffusiontype
 
       ! Retrieve data from parameter list
       call parlst_getvalue_int(rparlist,&
@@ -1595,10 +1657,9 @@ contains
         ! Retrieve name/number of expression describing the diffusion coefficient
         call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname',&
                                     sdiffusionName, isubString=1)
-        icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
 
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
+        call fparser_evalFunction(rfparser, sdiffusionName, Dunity, dalpha)
 
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the physical diffusion parameter alpha
@@ -1623,7 +1684,7 @@ contains
       character(LEN=SYS_STRLEN) :: sdiffusionName
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
-      integer :: i,icomp,idiffusiontype
+      integer :: i,idiffusiontype
 
       ! Retrieve data from parameter list
       call parlst_getvalue_int(rparlist,&
@@ -1635,10 +1696,9 @@ contains
         ! Retrieve name/number of expression describing the diffusion coefficient
         call parlst_getvalue_string(rparlist,&
             ssectionName, 'sdiffusionname', sdiffusionName, isubString=1)
-        icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
 
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
+        call fparser_evalFunction(rfparser, sdiffusionName, Dunity, dalpha)
 
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the physical diffusion parameter alpha
@@ -1650,10 +1710,10 @@ contains
           ! Retrieve name/number of expression describing the diffusion coefficient
           call parlst_getvalue_string(rparlist,&
               ssectionName, 'sdiffusionname', sdiffusionName, isubString=i)
-          icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
 
           ! Evaluate the constant coefficient from the function parser
-          call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(i))
+          call fparser_evalFunction(rfparser, sdiffusionName, Dunity,&
+              rform%Dcoefficients(i))
         end do
 
         ! We have constant coefficients
@@ -1697,7 +1757,7 @@ contains
       character(LEN=SYS_STRLEN) :: sdiffusionName
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
-      integer :: i,icomp,idiffusiontype
+      integer :: i,idiffusiontype
 
       ! Retrieve data from parameter list
       call parlst_getvalue_int(rparlist,&
@@ -1709,10 +1769,9 @@ contains
         ! Retrieve name/number of expression describing the diffusion coefficient
         call parlst_getvalue_string(rparlist,&
             ssectionName, 'sdiffusionname', sdiffusionName, isubString=1)
-        icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
 
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
+        call fparser_evalFunction(rfparser, sdiffusionName, Dunity, dalpha)
 
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the physical diffusion parameter alpha
@@ -1724,10 +1783,10 @@ contains
           ! Retrieve name/number of expression describing the diffusion coefficient
           call parlst_getvalue_string(rparlist,&
               ssectionName, 'sdiffusionname', sdiffusionName, isubString=i)
-          icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
 
           ! Evaluate the constant coefficient from the function parser
-          call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(i))
+          call fparser_evalFunction(rfparser, sdiffusionName, Dunity,&
+              rform%Dcoefficients(i))
         end do
 
         ! We have constant coefficients
@@ -1775,11 +1834,9 @@ contains
 
     !**************************************************************
     ! Initialize the group finite element set for evaluating the
-    ! bilinear form on the boundary node-by-node. Mass lumping is
-    ! performed in the bilinear form so that the test and trial
-    ! functions are restricted to the boundary region rregion.
+    ! bilinear and linear forms on the boundary node-by-node. 
 
-    subroutine initGroupFEMSetBilfBdr(rregion, rmatrix, nmatrices, rgroupFEMSet)
+    subroutine initGroupFEMSetBoundary(rregion, rmatrix, nmatrices, rgroupFEMSet)
 
       ! input parameters
       type(t_boundaryRegion), intent(in) :: rregion
@@ -1792,7 +1849,8 @@ contains
       if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
         ! Initialize finite element set for node-based assembly
         call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
-            0, 0, 0, GFEM_NODEBASED, rregionTest=rregion, rregionTrial=rregion)
+            0, 0, 0, GFEM_NODEBASED, rregionTest=rregion,&
+            brestrictToBoundary=.true.)
         
         ! Allocate memory for matrix entries
         call gfem_allocCoeffs(rgroupFEMSet, 0, nmatrices,0)
@@ -1805,42 +1863,7 @@ contains
       ! Generate node structure derived from template matrix
       call gfem_genNodeList(rmatrix, rgroupFEMSet)
 
-    end subroutine initGroupFEMSetBilfBdr
-
-    !**************************************************************
-    ! Initialize the group finite element set for evaluating the
-    ! linear form on the boundary node-by-node. No mass lumping is
-    ! performed, and hence, the boundary region rregion is used to
-    ! restrict the trial functions, whereas the test functions are
-    ! restricted to the while boundary.
-    subroutine initGroupFEMSetLinfBdr(rregion, rmatrix, nmatrices, rgroupFEMSet)
-
-      ! input parameters
-      type(t_boundaryRegion), intent(in) :: rregion
-      type(t_matrixScalar), intent(in) :: rmatrix
-      integer, intent(in) :: nmatrices
-
-      ! input/output parameters
-      type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
-      
-      if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize finite element set for node-based assembly
-        call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
-            0, 0, 0, GFEM_NODEBASED, rregionTrial=rregion,&
-            brestrictToBoundary=.true.)
-        
-        ! Allocate memory for matrix entries
-        call gfem_allocCoeffs(rgroupFEMSet, 0, nmatrices,0)
-      else
-        ! Resize first group finite element set
-        call gfem_resizeGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
-            rregionTrial=rregion, brestrictToBoundary=.true.)
-      end if
-      
-      ! Generate node structure derived from template matrix
-      call gfem_genNodeList(rmatrix, rgroupFEMSet)
-      
-    end subroutine initGroupFEMSetLinfBdr
+    end subroutine initGroupFEMSetBoundary
     
   end subroutine transp_initProblemLevel
 
@@ -1938,18 +1961,15 @@ contains
     type(t_collection) :: rcollectionTmp
     type(t_fparser), pointer :: p_rfparser
     type(t_linearForm) :: rform
-    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
-    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix,p_rConsistentMassMatrix
+    type(t_matrixScalar), target :: rlumpedMassMatrix,rconsistentMassMatrix
     type(t_pgm) :: rpgm
-    type(t_vectorBlock) :: rvectorHigh, rvectorAux
-    real(DP), dimension(:), pointer :: p_Ddata
-    real(DP), dimension(:,:), pointer :: p_DdofCoords
+    type(t_vectorBlock) :: rvectorHigh,rvectorAux
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdofCoords
     real(DP) :: depsAbsSolution,depsRelSolution,dnorm0,dnorm
     character(LEN=SYS_STRLEN) :: ssolutionname
-    integer :: icomp,iter,isolutiontype,nmaxIterationsSolution
-    integer :: lumpedMassMatrix,consistentMassMatrix,systemMatrix
-
+    integer :: iter,isolutiontype,nmaxIterationsSolution
+    integer :: lumpedMassMatrix,consistentMassMatrix,systemMatrix,dofCoords
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1975,21 +1995,28 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'ssolutionname', ssolutionName)
-
-      ! Initialize solution from portable graymap image
-      call ppsol_readPGM(0, ssolutionName, rpgm)
-
-      ! Set pointers
-      p_rspatialDiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
-      call storage_getbase_double2D(&
-          p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
-      call storage_getbase_double(rvector%h_Ddata, p_Ddata)
-
-      ! Initialize the solution by the image data
-      call ppsol_initArrayPGM_Dble(rpgm, p_DdofCoords, p_Ddata)
-
-      ! Release portable graymap image
-      call ppsol_releasePGM(rpgm)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'dofCoords', dofCoords, 0)
+      
+      if (dofCoords > 0) then
+        ! Set pointers
+        call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
+        call lsyssc_getbase_double(&
+            rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1), p_DdofCoords)
+              
+        ! Initialize solution from portable graymap image
+        call ppsol_readPGM(0, ssolutionName, rpgm)
+        
+        ! Initialize the solution by the image data
+        call ppsol_initArrayPGMDble(rpgm, p_DdofCoords, p_Ddata)
+        
+        ! Release portable graymap image
+        call ppsol_releasePGM(rpgm)
+      else
+        call output_line('Coordinates of DOFs not available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_initSolution')
+        call sys_halt()
+      end if
 
 
     case (SOLUTION_ANALYTIC_POINTVALUE)
@@ -2001,22 +2028,29 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'ssolutionname', ssolutionName)
-
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'dofCoords', dofCoords, 0)
+      
       ! Get function parser from collection structure
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
-
-      ! Get the number of the component used for evaluating the initial solution
-      icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
       
-      ! Set pointers
-      p_rspatialDiscr => rvector%p_rblockDiscr%RspatialDiscr(1)
-      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
-      call storage_getbase_double2d(p_rspatialDiscr%h_DDofCoords, p_DDofCoords)
+      if (dofCoords > 0) then
+        ! Set pointers
+        call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
+        call lsyssc_getbase_double(&
+            rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1), p_DdofCoords)
 
-      ! Evaluate solution values in the positions of the degrees of freedom
-      call fparser_evalFunction(p_rfparser, icomp, 2,&
-          p_DdofCoords, p_Ddata, (/dtime/))
+        ! Evaluate solution values in the positions of the degrees of freedom
+        call fparser_evalFuncBlockByName2(p_rfparser, ssolutionname,&
+            rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1)%NVAR,&
+            rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(1)%NEQ,&
+            p_DdofCoords, rvector%RvectorBlock(1)%NEQ, p_Ddata, (/dtime/))
+      else
+        call output_line('Coordinates of DOFs not available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_initSolution')
+        call sys_halt()
+      end if
 
       
     case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
@@ -2033,9 +2067,6 @@ contains
       ! Get function parser from collection structure
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
-
-      ! Get the number of the component used for evaluating the initial solution
-      icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
       ! Retrieve the lumped and consistent mass matrices from the
       ! problem level structure or recompute them on-the-fly.
@@ -2072,7 +2103,7 @@ contains
       rcollectionTmp%SquickAccess(1) = ''
       rcollectionTmp%SquickAccess(2) = 'rfparser'
       rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
       
       ! Attach user-defined collection structure to temporal collection
       ! structure (may be required by the callback function)
@@ -2223,7 +2254,7 @@ contains
     type(t_linearForm) :: rform
     type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: srhsname
-    integer :: icomp, irhstype
+    integer :: irhstype
 
 
     ! Get global configuration from parameter list
@@ -2246,9 +2277,6 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
 
-      ! Get the number of the component used for evaluating the right-hand side
-      icomp = fparser_getFunctionNumber(p_rfparser, srhsname)
-
       ! Initialize temporal collection structure
       call collct_init(rcollectionTmp)
 
@@ -2256,7 +2284,7 @@ contains
       rcollectionTmp%SquickAccess(1) = ''
       rcollectionTmp%SquickAccess(2) = 'rfparser'
       rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, srhsname)
       
       ! Attach user-defined collection structure to temporal collection
       ! structure (may be required by the callback function)
@@ -2327,7 +2355,7 @@ contains
     type(t_linearForm) :: rform
     type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: stargetfuncname
-    integer :: itargetfunctype, icomp
+    integer :: itargetfunctype
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -2353,9 +2381,6 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
       
-      ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
-
       ! Initialize temporal collection structure
       call collct_init(rcollectionTmp)
       
@@ -2363,7 +2388,7 @@ contains
       rcollectionTmp%SquickAccess(1) = ''
       rcollectionTmp%SquickAccess(2) = 'rfparser'
       rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
       
       ! Attach user-defined collection structure to temporal collection
       ! structure (may be required by the callback function)
@@ -2705,7 +2730,7 @@ contains
     logical, dimension(:), pointer :: p_BisactiveElement
     real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance
     real(DP) :: daux, dtargetFunc, dStep, theta
-    integer :: i, icomp, convectionAFC, diffusionAFC, NEQ
+    integer :: i, convectionAFC, diffusionAFC, NEQ
     integer :: cconvectionStabilisation, cdiffusionStabilisation
     integer :: lumpedMassMatrix, templateMatrix, velocityfield
     integer :: itargetfunctype, iexactsolutiontype, imasstype
@@ -2909,11 +2934,8 @@ contains
         
 
         if (trim(sexacttargetfuncname) .ne. '') then
-          ! Get the number of the component used for evaluating the exact target functional
-          icomp = fparser_getFunctionNumber(p_rfparser, sexacttargetfuncName)
-          
           ! Evaluate exact value of the quantity of interest
-          call fparser_evalFunction(p_rfparser, icomp,&
+          call fparser_evalFunction(p_rfparser, sexacttargetfuncName,&
               (/rtimestep%dTime/), dexactTargetFunc)
 
           ! Compute the approximate value of the quantity of interest
@@ -2988,11 +3010,8 @@ contains
         
 
         if (trim(sexacttargetfuncname) .ne. '') then
-          ! Get the number of the component used for evaluating the exact target functional
-          icomp = fparser_getFunctionNumber(p_rfparser, sexacttargetfuncName)
-
           ! Evaluate exact value of the quantity of interest
-          call fparser_evalFunction(p_rfparser, icomp,&
+          call fparser_evalFunction(p_rfparser, sexacttargetfuncName,&
               (/rtimestep%dTime/), dexactTargetFunc)
           
           ! Prepare quick access arrays of the temporal collection structure
@@ -3082,11 +3101,8 @@ contains
 
 
         if (trim(sexacttargetfuncname) .ne. '') then
-          ! Get the number of the component used for evaluating the exact target functional
-          icomp = fparser_getFunctionNumber(p_rfparser, sexacttargetfuncName)
-
           ! Evaluate exact value of the quantity of interest
-          call fparser_evalFunction(p_rfparser, icomp,&
+          call fparser_evalFunction(p_rfparser, sexacttargetfuncName,&
               (/rtimestep%dTime/), dexactTargetFunc)
 
           ! Prepare quick access arrays of the collection
@@ -3379,7 +3395,7 @@ contains
     logical, dimension(:), pointer :: p_BisactiveElement
     real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue,&
                 dexacterror, dprotectLayerTolerance
-    integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype, icomp
+    integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype
     integer :: iprotectLayer, nprotectLayers
     integer :: h_BisactiveElement
 
@@ -3455,9 +3471,6 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection,&
           'rfparser', ssectionName=ssectionName)
 
-      ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-
       ! Initialize temporal collection structure
       call collct_init(rcollectionTmp)
 
@@ -3465,7 +3478,7 @@ contains
       rcollectionTmp%SquickAccess(1) = ''
       rcollectionTmp%SquickAccess(2) = 'rfparser'
       rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
       
       ! Attach user-defined collection structure to temporal collection
       ! structure (may be required by the callback function)
@@ -5907,97 +5920,5 @@ contains
     end do cmdarg
 
   end subroutine transp_parseCmdlArguments
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_adjustParameterlist(rparlist, ssectionName)
-
-!<description>
-    ! This subroutine adjusts the content of the parameter list
-    ! depending on internal data, i.e., the dimension
-!</description>
-
-!<inputoutput>
-    ! parameter list
-    type(t_parlist), intent(inout) :: rparlist
-
-    ! section name in parameter list
-    character(LEN=*), intent(in) :: ssectionName
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: ndimension
-    integer :: imasstype
-    integer :: imassantidiffusiontype
-    integer :: idiffusiontype
-    integer :: ivelocitytype
-
-
-    ! Check if mass matrix needs to be built
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'imasstype', imasstype)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
-
-    if ((imasstype .eq. MASS_ZERO) .and. &
-        (imassantidiffusiontype .eq. MASS_ZERO)) then
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'ConsistentMassMatrix', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'LumpedMassMatrix', '0')
-    end if
-
-
-    ! Check if diffusion matrix needs to be built
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'idiffusiontype', idiffusiontype)
-
-    if (idiffusiontype .eq. DIFFUSION_ZERO) then
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_S', '0')
-    end if
-
-
-    ! Check if convection matrix needs to be build
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
-
-    if (ivelocitytype .eq. VELOCITY_ZERO) then
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CX', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CY', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CZ', '0')
-    else
-
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'ndimension', ndimension)
-
-      select case(ndimension)
-      case (NDIM1D)
-        call parlst_setvalue(rparlist,&
-            ssectionName, 'CoeffMatrix_CY', '0')
-        call parlst_setvalue(rparlist,&
-            ssectionName, 'CoeffMatrix_CZ', '0')
-      case (NDIM2D)
-        call parlst_setvalue(rparlist,&
-            ssectionName, 'CoeffMatrix_CZ', '0')
-      case (NDIM3D)
-        ! We actually need all three matrices
-      case default
-        call parlst_setvalue(rparlist,&
-            ssectionName, 'CoeffMatrix_CX', '0')
-        call parlst_setvalue(rparlist,&
-            ssectionName, 'CoeffMatrix_CY', '0')
-        call parlst_setvalue(rparlist,&
-            ssectionName, 'CoeffMatrix_CZ', '0')
-      end select
-
-    end if
-
-  end subroutine transp_adjustParameterlist
 
 end module transport_application

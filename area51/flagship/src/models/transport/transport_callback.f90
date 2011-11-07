@@ -153,6 +153,7 @@ module transport_callback
   use fparser
   use fsystem
   use genoutput
+  use groupfembase
   use groupfemscalar
   use linearalgebra
   use linearformevaluation
@@ -612,7 +613,7 @@ contains
     ! notifier for the discret transport operator has been set
     if (iand(rproblemLevel%iproblemSpec, TRANSP_TROPER_UPDATE) .ne. 0) then
       rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         TRANSP_PRECOND_UPDATE)
+                                       TRANSP_PRECOND_UPDATE)
     end if
 
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still
@@ -4683,7 +4684,7 @@ contains
 
   subroutine transp_calcVelocityField(rparlist, ssectionName,&
       rproblemLevel, dtime, rcollection, nlminOpt)
-
+    
 !<description>
     ! This subroutine calculates the velocity fields from the function
     ! parser. The result is stored separately for each problem level.
@@ -4716,91 +4717,100 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_problemLevel), pointer :: p_rproblemLevel
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    real(DP), dimension(:,:), pointer :: p_DdofCoords
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdofCoords
     character(LEN=SYS_STRLEN) :: svelocityname
-    integer :: neq, idim, ndim, nlmin, icomp
-    integer :: ivelocitytype, velocityfield, discretisation
+    integer :: neq,idim,ndim,nlmin
+    integer :: ivelocitytype,velocityfield,discretisation,dofCoords
 
-
-    ! Check if the velocity "vector" needs to be generated explicitly
+    ! Get parameters from parameter list
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ivelocitytype', ivelocitytype)
-    if ((abs(ivelocitytype) .ne. VELOCITY_CONSTANT) .and.&
-        (abs(ivelocitytype) .ne. VELOCITY_TIMEDEP)) return
+        ssectionName, 'ivelocitytype', ivelocitytype, VELOCITY_ZERO)
 
-    ! Get parameter from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'velocityfield', velocityfield)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'discretisation', discretisation)
+    select case(ivelocitytype)
+    case (VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
 
-    ! Get function parser from collection
-    p_rfparser => collct_getvalue_pars(rcollection,&
-        'rfparser', ssectionName=ssectionName)
+      ! Get parameter from parameter list
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'velocityfield', velocityfield, 0)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'discretisation', discretisation, 0)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'dofCoords', dofCoords, 0)
+      
+      ! Get function parser from collection
+      p_rfparser => collct_getvalue_pars(rcollection,&
+          'rfparser', ssectionName=ssectionName)
+      
+      ! Set minimum problem level
+      nlmin = rproblemLevel%ilev
+      if (present(nlminOpt)) nlmin = nlminOpt
+      
+      ! Loop over all problem levels
+      p_rproblemLevel => rproblemLevel
+      do while(associated(p_rproblemLevel))
+        
+        if ((velocityfield  > 0) .and.&
+            (discretisation > 0) .and.&
+            (dofCoords      > 0)) then
+          
+          ! Get number of degrees of freedom and spatial dimension
+          p_rspatialDiscr =>&
+              p_rproblemLevel%Rdiscretisation(discretisation)%RspatialDiscr(1)
+          neq  = dof_igetNDofGlob(p_rspatialDiscr)
+          ndim = p_rspatialDiscr%ndimension
+          
+          ! Create/resize velocity vector if required
+          if (p_rproblemLevel%RvectorBlock(velocityfield)%NEQ .eq. 0) then
+            call lsysbl_createVectorBlock(&
+                p_rproblemLevel%rvectorBlock(velocityfield), neq, ndim, .true.)
+          elseif (p_rproblemLevel%RvectorBlock(velocityfield)%NEQ .ne. neq*ndim) then
+            call lsysbl_resizeVectorBlock(&
+                p_rproblemLevel%rvectorBlock(velocityfield), neq, .true.)
+          end if
+          
+          ! Get coordinates of the DOF`s of the current problem level
+          call lsysbl_getbase_double(&
+              p_rproblemLevel%RvectorBlock(dofCoords), p_DdofCoords)
+          
+          ! Loop over all spatial dimensions
+          do idim = 1, ndim
+            
+            ! Attach discretisation structure
+            p_rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(idim)&
+                %p_rspatialDiscr => p_rspatialDiscr
 
-    ! Set minimum problem level
-    nlmin = rproblemLevel%ilev
-    if (present(nlminOpt)) nlmin = nlminOpt
+            ! Get scalar subvector
+            call lsyssc_getbase_double(&
+                p_rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(idim), p_Ddata)
+            
+            ! Retrieve function name from parameter list
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'svelocityname', svelocityname, isubString=idim)
+            
+            ! Evaluate all coefficients of the scalar subvector
+            call fparser_evalFuncBlockByName2(p_rfparser, svelocityname,&
+                ndim, neq, p_DdofCoords, neq, p_Ddata, (/dtime/))
+          end do
+          
+        else
+          call output_line('Coordinates of DOFs not available!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcVelocityField')
+          call sys_halt()
+        end if
+        
+        ! Set update notifier for transport operator in problem level structure
+        p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
+                                           TRANSP_TROPER_UPDATE)
+        
+        ! Proceed to coarser problem level if minimum level has not been reached
+        if (p_rproblemLevel%ilev .le. nlmin) exit
+        p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
+      end do
 
-!    ! Initialize variable values
-!    Dvalue           = 0.0_DP
-!    Dvalue(NDIM3D+1) = dtime
-
-    ! Loop over all problem levels
-    p_rproblemLevel => rproblemLevel
-    do while(associated(p_rproblemLevel))
-
-      ! Get number of degrees of freedom and spatial dimension
-      p_rspatialDiscr => p_rproblemLevel%Rdiscretisation(discretisation)%RspatialDiscr(1)
-      neq  = dof_igetNDofGlob(p_rspatialDiscr)
-      ndim = p_rspatialDiscr%ndimension
-
-      ! Create/resize velocity vector if required
-      if (p_rproblemLevel%RvectorBlock(velocityfield)%NEQ .eq. 0) then
-        call lsysbl_createVectorBlock(&
-            p_rproblemLevel%rvectorBlock(velocityfield), neq, ndim, .true.)
-      elseif (p_rproblemLevel%RvectorBlock(velocityfield)%NEQ .ne. neq*ndim) then
-        call lsysbl_resizeVectorBlock(&
-            p_rproblemLevel%rvectorBlock(velocityfield), neq, .true.)
-      end if
-
-      ! Get coordinates of the DOF`s of the current problem level
-      call storage_getbase_double2d(&
-          p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
-
-      ! Loop over all spatial dimensions
-      do idim = 1, ndim
-
-        ! Attach discretisation structure
-        p_rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(idim)%p_rspatialDiscr => p_rspatialDiscr
-
-        ! Get scalar subvector
-        call lsyssc_getbase_double(&
-            p_rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(idim), p_Ddata)
-
-        ! Retrieve function name from parameter list
-        call parlst_getvalue_string(rparlist, ssectionName,&
-            'svelocityname', svelocityname, isubString=idim)
-
-        ! Determine corresponding component number from the function parser
-        icomp = fparser_getFunctionNumber(p_rfparser, svelocityname)
-
-        ! Evaluate all coefficients of the scalar subvector
-        call fparser_evalFunction(p_rfparser, icomp, 2,&
-            p_DdofCoords, p_Ddata, (/dtime/))
-        end do
-
-      ! Set update notifier for transport operator in problem level structure
-      p_rproblemLevel%iproblemSpec = ior(p_rproblemLevel%iproblemSpec,&
-                                         TRANSP_TROPER_UPDATE)
-
-      ! Proceed to coarser problem level if minimum level has not been reached
-      if (p_rproblemLevel%ilev .le. nlmin) exit
-      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
-
-    end do
-
+    case default
+      return      
+    end select
+    
   end subroutine transp_calcVelocityField
 
   !*****************************************************************************
@@ -5534,7 +5544,6 @@ contains
     real(DP), dimension(1) :: dtime
     integer :: iel, icomp
 
-
     ! This subroutine assumes that the first and second quick access
     ! string values hold the section name and the name of the function
     ! parser in the collection, respectively.
@@ -5704,17 +5713,16 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    real(DP), dimension(:,:), pointer :: p_DdofCoords
+    real(DP), dimension(:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_DdataSolution
     real(DP), dimension(:), pointer :: p_DdataVelocity
     real(DP), dimension(:), pointer :: p_DdataSource
     real(DP), dimension(:), pointer :: p_DdataMassMatrix
-    integer, dimension(:), pointer :: p_Kld, p_Kcol
+    integer, dimension(:), pointer :: p_Kld,p_Kcol
     character(LEN=SYS_STRLEN) :: smode
     real(DP) :: deffectiveRadius
-    integer :: icoordsystem, massmatrix, velocityfield
-    integer :: ivelocitytype, igeometricsourcetype
+    integer :: icoordsystem,massmatrix,velocityfield
+    integer :: ivelocitytype,igeometricsourcetype,dofCoords
 
     ! Check of source and solution vector are compatible
     call lsysbl_isVectorCompatible(rsolution, rsource)
@@ -5724,7 +5732,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'mode', smode)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ivelocitytype', ivelocitytype)
+        ssectionName, 'ivelocitytype', ivelocitytype, VELOCITY_ZERO)
     
     ! Are we in primal or dual mode?
     if (trim(smode) .eq. 'primal') then
@@ -5755,96 +5763,108 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'igeometricsourcetype', igeometricsourcetype, MASS_LUMPED)
         call parlst_getvalue_int(rparlist,&
-            ssectionName, 'velocityfield', velocityfield, VELOCITY_ZERO)
+            ssectionName, 'velocityfield', velocityfield, 0)
         call parlst_getvalue_double(rparlist,&
             ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'dofCoords', dofCoords, 0)
+        
+        if ((velocityfield > 0) .and. (dofCoords > 0)) then
 
-        
-        ! Get pointers
-        call lsysbl_getbase_double(rsolution, p_DdataSolution)
-        call lsysbl_getbase_double(rsource, p_DdataSource)
-        call lsysbl_getbase_double(&
-            rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
-        
-        ! Get coordinates of the global DOF`s
-        p_rspatialDiscr => rsolution%p_rblockDiscr%RspatialDiscr(1)
-        call storage_getbase_double2d(&
-            p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
-        
-        ! What type of coordinate system are we?
-        select case(icoordsystem)
-        case (COORDS_CARTESIAN)
-          ! No geometric source term required, clear vector (if required)
-          if (bclear) call lsysbl_clearVector(rsource)
+          ! Get pointers
+          call lsysbl_getbase_double(rsolution, p_DdataSolution)
+          call lsysbl_getbase_double(rsource, p_DdataSource)
+          call lsysbl_getbase_double(&
+              rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
           
+          ! Get coordinates of the global DOF`s
+          call lsysbl_getbase_double(&
+              rproblemLevel%RvectorBlock(dofCoords), p_DdofCoords)
           
-        case (COORDS_AXIALSYMMETRY,COORDS_CYLINDRICALSYMMETRY)
-          ! Axi-symmetric (dalpha=1) flow (2D approximation to 3D flow) or
-          ! cylindrically symmetric (dalpha=1) flow (1D approximation to 2D flow)
-          
-          select case(igeometricsourcetype)
-          case (MASS_LUMPED)
-            call parlst_getvalue_int(rparlist,&
-                ssectionName, 'lumpedmassmatrix', massmatrix)
-            call lsyssc_getbase_double(&
-                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-            call doSourceVelocityLumped(dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
-                p_DdataVelocity, p_DdataSolution, p_DdataSource)
+          ! What type of coordinate system are we?
+          select case(icoordsystem)
+          case (COORDS_CARTESIAN)
+            ! No geometric source term required, clear vector (if required)
+            if (bclear) call lsysbl_clearVector(rsource)
             
-          case (MASS_CONSISTENT)
-            call parlst_getvalue_int(rparlist,&
-                ssectionName, 'consistentmassmatrix', massmatrix)
-            call lsyssc_getbase_double(&
-                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-            call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
-            call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
-            call doSourceVelocityConsistent(dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
+            
+          case (COORDS_AXIALSYMMETRY,COORDS_CYLINDRICALSYMMETRY)
+            ! Axi-symmetric (dalpha=1) flow (2D approximation to 3D flow) or
+            ! cylindrically symmetric (dalpha=1) flow (1D approximation to 2D flow)
+            
+            select case(igeometricsourcetype)
+            case (MASS_LUMPED)
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'lumpedmassmatrix', massmatrix)
+              call lsyssc_getbase_double(&
+                  rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              call doSourceVelocityLumped(dscale, deffectiveRadius,&
+                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
+                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
+                  p_DdataVelocity, p_DdataSolution, p_DdataSource)
+              
+            case (MASS_CONSISTENT)
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'consistentmassmatrix', massmatrix)
+              call lsyssc_getbase_double(&
+                  rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+              call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+              call doSourceVelocityConsistent(dscale, deffectiveRadius,&
+                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
+                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
+                  p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
+              
+            case default
+              call output_line('Unsupported geometric source type!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+              call sys_halt()
+            end select
+            
+            
+          case (COORDS_SPHERICALSYMMETRY)
+            ! Spherically symmetric (dalpha=2) flow (1D approximation to 3D flow)
+            
+            select case(igeometricsourcetype)
+            case (MASS_LUMPED)
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'lumpedmassmatrix', massmatrix)
+              call lsyssc_getbase_double(&
+                  rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              call doSourceVelocityLumped(2*dscale, deffectiveRadius,&
+                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
+                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
+                  p_DdataVelocity, p_DdataSolution, p_DdataSource)
+              
+            case (MASS_CONSISTENT)
+              call parlst_getvalue_int(rparlist,&
+                  ssectionName, 'lumpedmassmatrix', massmatrix)
+              call lsyssc_getbase_double(&
+                  rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
+              call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+              call doSourceVelocityConsistent(2*dscale, deffectiveRadius,&
+                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
+                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
+                  p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
+              
+            case default
+              call output_line('Unsupported geometric source type!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+              call sys_halt()
+            end select
             
           case default
-            call output_line('Unsupported geometric source type!',&
+            call output_line('Invalid coordinate system!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
             call sys_halt()
           end select
           
-          
-        case (COORDS_SPHERICALSYMMETRY)
-          ! Spherically symmetric (dalpha=2) flow (1D approximation to 3D flow)
-          
-          select case(igeometricsourcetype)
-          case (MASS_LUMPED)
-            call parlst_getvalue_int(rparlist,&
-                ssectionName, 'lumpedmassmatrix', massmatrix)
-            call lsyssc_getbase_double(&
-                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-            call doSourceVelocityLumped(2*dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
-                p_DdataVelocity, p_DdataSolution, p_DdataSource)
-            
-          case (MASS_CONSISTENT)
-            call parlst_getvalue_int(rparlist,&
-                ssectionName, 'lumpedmassmatrix', massmatrix)
-            call lsyssc_getbase_double(&
-                rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-            call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
-            call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
-            call doSourceVelocityConsistent(2*dscale, deffectiveRadius,&
-                rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
-            
-          case default
-            call output_line('Unsupported geometric source type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
-            call sys_halt()
-          end select
-          
-        case default
-          call output_line('Invalid coordinate system!',&
+        else
+          call output_line('Coordinates of DOFs not available!',&
               OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
           call sys_halt()
-        end select
+        end if
         
       case default
         call output_line('Unsupported velocity type!',&
@@ -5883,30 +5903,38 @@ contains
             ssectionName, 'velocityfield', velocityfield, VELOCITY_ZERO)
         call parlst_getvalue_double(rparlist,&
             ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
-
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'dofCoords', dofCoords, 0)
         
-        ! Get pointers
-        call lsysbl_getbase_double(rsolution, p_DdataSolution)
-        call lsysbl_getbase_double(rsource, p_DdataSource)
-        call lsysbl_getbase_double(&
-            rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
-        
-        ! Get coordinates of the global DOF`s
-        p_rspatialDiscr => rsolution%p_rblockDiscr%RspatialDiscr(1)
-        call storage_getbase_double2d(&
-            p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
-        
-        ! What type of coordinate system are we?
-        select case(icoordsystem)
-        case (COORDS_CARTESIAN)
-          ! No geometric source term required, clear vector (if required)
-          if (bclear) call lsysbl_clearVector(rsource)
-
-        case default
-          call output_line('Invalid coordinate system!',&
+        if ((velocityfield > 0) .and. (dofCoords > 0)) then
+          
+          ! Get pointers
+          call lsysbl_getbase_double(rsolution, p_DdataSolution)
+          call lsysbl_getbase_double(rsource, p_DdataSource)
+          call lsysbl_getbase_double(&
+              rproblemLevel%RvectorBlock(velocityfield), p_DdataVelocity)
+          
+          ! Get coordinates of the global DOF`s
+          call lsysbl_getbase_double(&
+              rproblemLevel%RvectorBlock(dofCoords), p_DdofCoords)
+          
+          ! What type of coordinate system are we?
+          select case(icoordsystem)
+          case (COORDS_CARTESIAN)
+            ! No geometric source term required, clear vector (if required)
+            if (bclear) call lsysbl_clearVector(rsource)
+            
+          case default
+            call output_line('Invalid coordinate system!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
+            call sys_halt()
+          end select
+          
+        else
+          call output_line('Coordinates of DOFs not available!',&
               OU_CLASS_ERROR,OU_MODE_STD,'transp_calcGeometricSourceterm')
           call sys_halt()
-        end select
+        end if
         
       case default
         call output_line('Unsupported velocity type!',&
@@ -5932,7 +5960,7 @@ contains
     ! vector using the lumped mass matrix.
     
     subroutine doSourceVelocityLumped(deffectiveScale,&
-        deffectiveRadius, neq, bclear, Dcoords, DdataMassMatrix,&
+        deffectiveRadius, ndim,neq, bclear, Dcoords, DdataMassMatrix,&
         DdataVelocity, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -5941,6 +5969,9 @@ contains
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
 
+      ! Spatial dimension
+      integer, intent(in) :: ndim
+
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
 
@@ -5948,7 +5979,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(ndim,neq), intent(in) :: Dcoords
 
       ! Lumped mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -6022,7 +6053,7 @@ contains
     ! vector using the consistent mass matrix.
     
     subroutine doSourceVelocityConsistent(deffectiveScale,&
-        deffectiveRadius, neq, bclear, Dcoords, DdataMassMatrix,&
+        deffectiveRadius, ndim, neq, bclear, Dcoords, DdataMassMatrix,&
         Kld, Kcol, DdataVelocity, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -6031,6 +6062,9 @@ contains
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
 
+      ! Spatial dimension
+      integer, intent(in) :: ndim
+
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
 
@@ -6038,7 +6072,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(ndim,neq), intent(in) :: Dcoords
 
       ! Consistent mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -6135,7 +6169,7 @@ contains
 
   end subroutine transp_calcGeometricSourceterm
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -6309,12 +6343,14 @@ contains
               rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1),&
               dscale, .true., rmatrix)
 
-        case (AFCSTAB_SYMMETRIC)
+        case (AFCSTAB_SYMMETRIC,&
+              AFCSTAB_LINLPT_SYMMETRIC,&
+              AFCSTAB_NLINLPT_SYMMETRIC)
           ! Satisfy discrete maximum principle
           ! and assemble stabilisation structure
           call gfsc_buildOperator(&
               rproblemLevel%RgroupFEMBlock(diffusionGFEM)%RgroupFEMBlock(1),&
-              dscale, .true., rmatrix, rproblemLevel%Rafcstab(diffusionAFC))
+              dscale, .true., rmatrix, rafcstab=rproblemLevel%Rafcstab(diffusionAFC))
 
         case default
           ! Compute the standard Galerkin approximation
@@ -6727,6 +6763,15 @@ contains
       end select
 
       !-------------------------------------------------------------------------
+
+!!$      do i = 1, rproblemLevel%RgroupFEMBlock(4)%nblocks
+!!$        call gfsc_buildOperator(&
+!!$            rproblemLevel%RgroupFEMBlock(4)%RgroupFEMBlock(i),&
+!!$            rsolution, transp_calcMatBdrConvP2d_sim,&
+!!$            dscale, .false., rmatrix, GFEM_MATC_CONSISTENT, rcollectionTmp)
+!!$      end do
+!!$
+!!$      stop
 
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcBilfBdrCondQuick(rproblemLevel,&

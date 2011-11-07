@@ -32,12 +32,9 @@
 !# 2.) zpinch_initSolvers
 !#     -> Initializes the solve structures from the parameter list.
 !#
-!# 3.) zpinch_initProblem
-!#     -> Initializes the global problem structure based on the
-!#        parameter settings given by the parameter list. This routine
-!#        is quite universal, that is, it prepares the internal
-!#        structure of the global problem and generates a linked
-!#        list of problem levels used in the multigrid hierarchy.
+!# 3.) zpinch_initProblemDescriptor
+!#     -> Initializes the abstract problem descriptor based on the
+!#        parameter settings given by the parameter list.
 !#
 !# 4.) zpinch_calcAdaptationIndicator
 !#     -> Calculates the element-wise indicator for refinement/-coarsening
@@ -191,6 +188,9 @@ contains
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
 
+    ! Abstract problem descriptor
+    type(t_problemDescriptor) :: rproblemDescriptor
+
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
@@ -199,8 +199,7 @@ contains
     character(LEN=SYS_STRLEN) :: ssectionNameTransport
 
     ! local variables
-    integer :: isystemFormat, systemMatrix
-    integer :: nlmin, nlmax, ndimension
+    integer :: isystemFormat, systemMatrix, ndimension
 
     ! Start total time measurement
     call stat_startTimer(rtimerTotal)
@@ -216,8 +215,8 @@ contains
     p_rbdrCondHydro => RbdrCond(1)
     p_rsolutionHydro => Rsolution(1)
 
-    p_rsolutionTransport => Rsolution(2)
     p_rbdrCondTransport => RbdrCond(2)
+    p_rsolutionTransport => Rsolution(2)
 
     ! Retrieve section names of sub-applications
     call parlst_getvalue_string(rparlist,&
@@ -229,8 +228,6 @@ contains
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
     call zpinch_parseCmdlArguments(rparlist)
-    call hydro_adjustParameterlist(rparlist, ssectionNameHydro)
-    call transp_adjustParameterlist(rparlist, ssectionNameTransport)
 
 
     ! Initialize global collection structure
@@ -392,19 +389,46 @@ contains
     ! Initialize the solver structures
     call zpinch_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
+    ! Get the spatial dimension from the parameter list
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'ndimension', ndimension)
+    
+    ! Initialize the boundary condition for the hydrodynamic model
+    call parlst_getvalue_string(rparlist, ssectionNameHydro,&
+        'sprimalbdrcondname', sbdrcondName)
+    call parlst_getvalue_string(rparlist, ssectionNameHydro,&
+        'indatfile', sindatfileName)
+    
+    ! The boundary condition for the primal problem is required for
+    ! all solution strategies so initialize it from the parameter file
+    call bdrc_readBoundaryCondition(p_rbdrCondHydro,&
+        sindatfileName, '['//trim(sbdrcondName)//']',&
+        ndimension, hydro_parseBoundaryCondition)
+    
+    ! Initialize the boundary condition for the transport model
+    call parlst_getvalue_string(rparlist, ssectionNameTransport,&
+        'sprimalbdrcondname', sbdrcondName)
+    call parlst_getvalue_string(rparlist, ssectionNameTransport,&
+        'indatfile', sindatfileName)
+    
+    ! The boundary condition for the primal problem is required for
+    ! all solution strategies so initialize it from the parameter file
+    call bdrc_readBoundaryCondition(p_rbdrCondTransport,&
+        sindatfileName, '['//trim(sbdrcondName)//']',&
+        ndimension, transp_parseBoundaryCondition)
+    
     ! Initialize the abstract problem structure
-    nlmin = solver_getMinimumMultigridlevel(rsolver)
-    nlmax = solver_getMaximumMultigridlevel(rsolver)
-
-    ! Initialize the abstract problem structure
-    call zpinch_initProblem(rparlist, ssectionName,&
-        nlmin, nlmax, rproblem, rcollection)
+    call zpinch_initProblemDescriptor(rparlist, ssectionName,&
+        solver_getMinimumMultigridlevel(rsolver),&
+        solver_getMaximumMultigridlevel(rsolver),&
+        rproblemDescriptor)
+    call problem_initProblem(rproblemDescriptor, rproblem)
 
     ! Initialize the individual problem levels
     call hydro_initAllProblemLevels(rparlist,&
-        ssectionNameHydro, rproblem, rcollection)
+        ssectionNameHydro, rproblem, rcollection, p_rbdrCondHydro)
     call transp_initAllProblemLevels(rparlist,&
-        ssectionNameTransport, rproblem, rcollection)
+        ssectionNameTransport, rproblem, rcollection, p_rbdrCondTransport)
 
     ! Prepare internal data arrays of the solver structure for hydrodynamic model
     call parlst_getvalue_int(rparlist,&
@@ -442,33 +466,7 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, ssectionName,&
           'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-          'ndimension', ndimension)
-
-      ! Initialize the boundary condition for the hydrodynamic model
-      call parlst_getvalue_string(rparlist, ssectionNameHydro,&
-          'sprimalbdrcondname', sbdrcondName)
-      call parlst_getvalue_string(rparlist, ssectionNameHydro,&
-          'indatfile', sindatfileName)
-
-      ! The boundary condition for the primal problem is required for
-      ! all solution strategies so initialize it from the parameter file
-      call bdrc_readBoundaryCondition(p_rbdrCondHydro,&
-          sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, hydro_parseBoundaryCondition)
-
-      ! Initialize the boundary condition for the transport model
-      call parlst_getvalue_string(rparlist, ssectionNameTransport,&
-          'sprimalbdrcondname', sbdrcondName)
-      call parlst_getvalue_string(rparlist, ssectionNameTransport,&
-          'indatfile', sindatfileName)
-
-      ! The boundary condition for the primal problem is required for
-      ! all solution strategies so initialize it from the parameter file
-      call bdrc_readBoundaryCondition(p_rbdrCondTransport,&
-          sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, transp_parseBoundaryCondition)
-      
+               
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
         
@@ -595,12 +593,12 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_initProblem(rparlist, ssectionName,&
-      nlmin, nlmax, rproblem, rcollection)
+  subroutine zpinch_initProblemDescriptor(rparlist, ssectionName,&
+      nlmin, nlmax, rproblemDescriptor)
 
 !<description>
-    ! This subroutine initializes the abstract problem structure
-    ! based on the parameters settings given by the parameter list
+    ! This subroutine initializes the abstract problem descriptor
+    ! using the parameters settings defined in the parameter list
 !</description>
 
 !<input>
@@ -614,35 +612,19 @@ contains
     integer, intent(in) :: nlmin, nlmax
 !</input>
 
-!<inputoutput>
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</intputoutput>
-
 !<output>
-    ! problem structure
-    type(t_problem), intent(out) :: rproblem
+    ! problem descriptor
+    type(t_problemDescriptor), intent(out) :: rproblemDescriptor
 !</output>
 !</subroutine>
 
     ! section names
     character(LEN=SYS_STRLEN) :: ssectionNameHydro
     character(LEN=SYS_STRLEN) :: ssectionNameTransport
-    character(LEN=SYS_STRLEN) :: sconvection
-    character(LEN=SYS_STRLEN) :: sinviscid
 
     ! abstract problem descriptor
-    type(t_problemDescriptor) :: rproblemDescriptor
-
-    ! pointer to the problem level
-    type(t_problemLevel), pointer :: p_rproblemLevel
-
-    ! local variables
-    integer :: templateGFEM
-    integer :: convectionAFC,convectionGFEM
-    integer :: inviscidAFC,inviscidGFEM
-    integer :: iconvToTria
-
+    type(t_problemDescriptor) :: rproblemDescriptorHydro
+    type(t_problemDescriptor) :: rproblemDescriptorTransport
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -650,78 +632,15 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'subapplication', ssectionNameTransport, isubstring=2)
 
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'trifile', rproblemDescriptor%trifile)
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ndimension', rproblemDescriptor%ndimension)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'iconvtotria', iconvToTria, 0)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'templateGFEM', templateGFEM)
+    call hydro_initProblemDescriptor(rparlist, ssectionNameHydro,&
+        nlmin, nlmax, rproblemDescriptorHydro)
+    call transp_initProblemDescriptor(rparlist, ssectionNameTransport,&
+        nlmin, nlmax, rproblemDescriptorTransport)
     
-    call parlst_getvalue_string(rparlist,&
-        ssectionNameTransport, 'convection', sconvection)
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'convectionAFC', convectionAFC, 0)
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'convectionGFEM', convectionGFEM, convectionAFC)
-    
-    call parlst_getvalue_string(rparlist,&
-        ssectionNameHydro, 'inviscid', sinviscid)
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameHydro, 'inviscidAFC', inviscidAFC, 0)
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameHydro, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
+    rproblemDescriptor = problem_combineDescriptors(rproblemDescriptorHydro,&
+                                                    rproblemDescriptorTransport)
 
-    ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 2   ! two discretisations
-    rproblemDescriptor%nafcstab        = max(convectionAFC, inviscidAFC)
-    rproblemDescriptor%ngroupfemBlock  = max(templateGFEM, convectionGFEM, inviscidGFEM)
-    rproblemDescriptor%nlmin           = nlmin
-    rproblemDescriptor%nlmax           = nlmax
-    rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 10
-    rproblemDescriptor%nmatrixBlock    = 2   ! two system matrices
-    rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = 2   ! external velocity field
-
-    ! Check if quadrilaterals should be converted to triangles
-    if (iconvToTria .ne. 0)&
-        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                        + PROBDESC_MSPEC_CONVTRIANGLES
-
-    ! Initialize problem structure
-    call problem_initProblem(rproblemDescriptor, rproblem)
-
-    ! Loop over all problem levels
-    p_rproblemLevel => rproblem%p_rproblemLevelMax
-    do while(associated(p_rproblemLevel))
-      ! Initialize the group finite element block structures:
-      ! - for templates, inviscid and viscous terms
-      if (templateGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
-      if (convectionGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(convectionGFEM), 1)
-      if (inviscidGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(inviscidGFEM), 1)
-      
-      ! Initialize the stabilisation structures for the convective and
-      ! the inviscid term (if required)
-      if (convectionAFC > 0) then
-        call afcstab_initFromParameterlist(rparlist, sconvection,&
-            p_rproblemLevel%Rafcstab(convectionAFC))
-      end if
-      if (inviscidAFC > 0) then
-        call afcstab_initFromParameterlist(rparlist, sinviscid,&
-            p_rproblemLevel%Rafcstab(inviscidAFC))
-      end if
-
-      ! Switch to next coarser level
-      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
-    end do
-
-  end subroutine zpinch_initProblem
+  end subroutine zpinch_initProblemDescriptor
 
   !*****************************************************************************
 
@@ -1369,7 +1288,7 @@ contains
     real(dp) :: dscale
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationHydro, discretisationTransport
-    integer :: isize, ipreadapt, npreadapt, ndimension
+    integer :: ipreadapt, npreadapt, ndimension
     integer, external :: signal_SIGINT
 
     ! Get timer structures
@@ -1409,7 +1328,7 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
 
-    !--- compressible hydrodynamic model ----------------------------------------------
+    !--- compressible hydrodynamic model ---------------------------------------
 
     ! Get position of discretisation structure
     call parlst_getvalue_int(rparlist,&
@@ -1422,13 +1341,10 @@ contains
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
         p_rsolutionHydro, .false., ST_DOUBLE)
-    if (p_rdiscretisation%ncomponents .ne.&
-        hydro_getNVAR(p_rproblemLevel)) then
-      p_rsolutionHydro%RvectorBlock(1)%NVAR =&
-          hydro_getNVAR(p_rproblemLevel)
-      isize = p_rsolutionHydro%NEQ*hydro_getNVAR(p_rproblemLevel)
+    if (p_rdiscretisation%ncomponents .ne. hydro_getNVAR(p_rproblemLevel)) then
+      p_rsolutionHydro%RvectorBlock(1)%NVAR = hydro_getNVAR(p_rproblemLevel)
       call lsysbl_resizeVectorBlock(p_rsolutionHydro,&
-          isize, .false., .false.)
+          p_rsolutionHydro%NEQ, .false., .false.)
     end if
 
     ! Initialize the solution vector

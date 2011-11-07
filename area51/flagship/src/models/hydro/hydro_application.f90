@@ -47,12 +47,9 @@
 !# 2.) hydro_initSolvers
 !#     -> Initializes the solve structures from the parameter list.
 !#
-!# 3.) hydro_initProblem
-!#     -> Initializes the global problem structure based on the
-!#        parameter settings given by the parameter list. This routine
-!#        is quite universal, that is, it prepares the internal
-!#        structure of the global problem and generates a linked
-!#        list of problem levels used in the multigrid hierarchy.
+!# 3.) hydro_initProblemDescriptor
+!#     -> Initializes the abstract problem descriptor based on the
+!#        parameter settings given by the parameter list.
 !#
 !# 4.) hydro_initProblemLevel
 !#     -> Initializes the individual problem level based on the
@@ -111,6 +108,7 @@ module hydro_application
   use collection
   use cubature
   use derivatives
+  use dofmapping
   use element
   use hydro_basic
   use hydro_basic1d
@@ -149,20 +147,14 @@ module hydro_application
   use timestepaux
   use ucd
 
-#ifdef ENABLE_AUTOTUNE
-  use geneticalgorithm
-  use io
-#endif
-
   implicit none
 
   private
   public :: hydro_app
   public :: hydro_adaptTriangulation
-  public :: hydro_adjustParameterlist
   public :: hydro_estimateRecoveryError
   public :: hydro_initAllProblemLevels
-  public :: hydro_initProblem
+  public :: hydro_initProblemDescriptor
   public :: hydro_initProblemLevel
   public :: hydro_initSolution
   public :: hydro_initSolvers
@@ -253,15 +245,13 @@ contains
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
 
+    ! Abstract problem descriptor
+    type(t_problemDescriptor) :: rproblemDescriptor
+
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
-
-#ifdef ENABLE_AUTOTUNE
-    ! Auto-Tune: Use genetic algorithm
-    type(t_population) :: rpopulation
-#endif
 
     ! local variables
     integer :: isystemFormat, systemMatrix, ndimension
@@ -280,7 +270,6 @@ contains
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
     call hydro_parseCmdlArguments(rparlist)
-    call hydro_adjustParameterlist(rparlist, ssectionName)
 
     ! Initialize global collection structure
     call collct_init(rcollection)
@@ -342,14 +331,42 @@ contains
     ! Initialize the solver structures
     call hydro_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
-    ! Initialize the abstract problem structure
-    call hydro_initProblem(rparlist, ssectionName,&
-        solver_getMinimumMultigridlevel(rsolver),&
-        solver_getMaximumMultigridlevel(rsolver), rproblem)
+    ! Initialize the boundary conditions for the primal problem
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ndimension', ndimension)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'sprimalbdrcondname', sbdrcondName)
+    call bdrc_readBoundaryCondition(rbdrCondPrimal,&
+        sindatfileName, '['//trim(sbdrcondName)//']',&
+        ndimension, hydro_parseBoundaryCondition)
 
-    ! Initialize the individual problem levels
-    call hydro_initAllProblemLevels(rparlist, ssectionName,&
-        rproblem, rcollection)
+    ! Initialize the boundary conditions for the dual problem
+    call parlst_getvalue_string(rparlist, ssectionName,&
+        'sdualbdrcondname', sbdrcondName, '')
+    if (sbdrcondName .ne. '') then
+      call bdrc_readBoundaryCondition(rbdrCondDual,&
+          sindatfileName, '['//trim(sbdrcondName)//']',&
+          ndimension, hydro_parseBoundaryCondition)
+    end if
+
+    ! Initialize the abstract problem structure
+    call hydro_initProblemDescriptor(rparlist, ssectionName,&
+        solver_getMinimumMultigridlevel(rsolver),&
+        solver_getMaximumMultigridlevel(rsolver),&
+        rproblemDescriptor)
+    call problem_initProblem(rproblemDescriptor, rproblem)
+
+    ! Initialize all individual problem levels with primal and dual
+    ! boundary conditions (if available)
+    if (sbdrcondName .ne. '') then
+      call hydro_initAllProblemLevels(rparlist,&
+          ssectionName, rproblem, rcollection,&
+          rbdrCondPrimal, rbdrCondDual)
+    else
+      call hydro_initAllProblemLevels(rparlist,&
+          ssectionName, rproblem, rcollection,&
+          rbdrCondPrimal)
+    end if
 
     ! Prepare internal data arrays of the solver structure
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -373,32 +390,16 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'ndimension', ndimension)
-      call parlst_getvalue_string(rparlist,&
-          ssectionName, 'sprimalbdrcondname', sbdrcondName)
-      
-      ! The boundary condition for the primal problem is required for
-      ! all solution strategies so initialize it from the parameter file
-      call bdrc_readBoundaryCondition(rbdrCondPrimal,&
-          sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, hydro_parseBoundaryCondition)
-
+            
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
         
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#ifndef ENABLE_AUTOTUNE
         call hydro_solveTransientPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
-#else
-        call ga_initPopulation(rpopulation, 20, 84)
-        call profile_subroutine(rpopulation, 10000)
-        call ga_releasePopulation(rpopulation)
-#endif
         
         call hydro_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
@@ -458,94 +459,7 @@ contains
 
     ! Release collection
     call collct_done(rcollection)
-    
-  contains
-
-#ifdef ENABLE_AUTOTUNE
-
-    !************************************************************************
-    ! Profiling routines
-    !************************************************************************
-    
-    subroutine profile_subroutine(rpopulation, ngenerations)
-    
-      type(t_population), intent(inout) :: rpopulation
-      integer, intent(in) :: ngenerations
-      
-      real(DP) :: dtimeStart, dtimeStop
-      integer :: clock,clockrate,iunit
-      integer :: ichromosome,igeneration
-      
-      ! Open new output file
-      iunit = sys_getFreeUnit()
-      call io_openFileForWriting('ga.log', iunit, SYS_REPLACE, bformatted=.true.)
-
-      ! Iterate genetic algorithm
-      do igeneration = 1, ngenerations
-        
-        ! Loop over all chromosomes in population
-        do ichromosome = 1, rpopulation%nchromosomes
-          
-          ! Set variables from chromosome
-          call OMP_set_num_threads(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(1:4)))
-          
-          LINALG_NMIN_OMP      = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(5:12)))
-          LSYSSC_NEQMIN_OMP    = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(13:20)))
-          AFCSTAB_NEDGEMIN_OMP = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(21:28)))
-          GFSYS_NEQMIN_OMP     = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(29:36)))
-          GFSYS_NEDGEMIN_OMP   = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(37:44)))
-          BILF_NELEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(45:52)))
-          LINF_NELEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(53:60)))
-          GFSYS_NEQSIM         = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(61:68)))
-          GFSYS_NEDGESIM       = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(69:76)))
-          FPAR_NITEMSIM        = 32*(1+char2int(rpopulation%p_Rchromosomes(ichromosome)%p_DNA(77:84)))
-
-          call system_clock(clock,clockrate); dtimeStart = real(clock,DP)/clockrate
-          
-          call hydro_solveTransientPrimal(rparlist, ssectionName,&
-              rbdrCondPrimal, rproblem, rtimestep, rsolver,&
-              rsolutionPrimal, rcollection)
-          call tstep_resetTimestep(rtimestep, .true.)
-          call lsysbl_releaseVector(rsolutionPrimal)
-
-          call system_clock(clock,clockrate); dtimeStop = real(clock,DP)/clockrate
-          rpopulation%p_Rchromosomes(ichromosome)%dfitness = 1.0/(dtimeStop-dtimeStart)          
-        end do
-        
-        ! Output statistics and renew population
-        call ga_sortPopulation(rpopulation)
-        call ga_outputPopulation(rpopulation)
-        call ga_outputPopulation(rpopulation, iunit)
-        call ga_renewPopulation(rpopulation)
-
-      end do
-
-      ! Close output unit
-      close(iunit)
-    
-    end subroutine profile_subroutine
-
-#endif
-
-    !************************************************************************
-    
-    function char2int(cstring) result(ivalue)
-      
-      character, dimension(:), intent(in) :: cstring
-      integer :: ivalue,i
-      
-      ivalue = 0
-      
-      do i = size(cstring),1,-1
-        if (cstring(i) .eq. '1') then
-          ivalue = ibset(ivalue, size(cstring)-i)
-        else
-          ivalue = ibclr(ivalue, size(cstring)-i)
-        end if
-      end do
-      
-    end function char2Int
-
+ 
   end subroutine hydro_app
 
   !*****************************************************************************
@@ -613,12 +527,12 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_initProblem(rparlist, ssectionName,&
-      nlmin, nlmax, rproblem)
+  subroutine hydro_initProblemDescriptor(rparlist, ssectionName,&
+      nlmin, nlmax, rproblemDescriptor)
 
 !<description>
-    ! This subroutine initializes the abstract problem structure
-    ! based on the parameters settings given by the parameter list
+    ! This subroutine initializes the abstract problem descriptor
+    ! using the parameters settings defined in the parameter list
 !</description>
 
 !<input>
@@ -633,28 +547,32 @@ contains
 !</input>
 
 !<output>
-    ! problem structure
-    type(t_problem), intent(out) :: rproblem
+    ! problem descriptor
+    type(t_problemDescriptor), intent(out) :: rproblemDescriptor
 !</output>
 !</subroutine>
 
-    ! section names
-    character(LEN=SYS_STRLEN) :: smass
-    character(LEN=SYS_STRLEN) :: sinviscid
-    character(LEN=SYS_STRLEN) :: sviscous
-
-    ! abstract problem descriptor
-    type(t_problemDescriptor) :: rproblemDescriptor
-
-    ! pointer to the problem level
-    type(t_problemLevel), pointer :: p_rproblemLevel
-
     ! local variables
+    integer :: discretisation,dofCoords
     integer :: massAFC,templateGFEM
     integer :: inviscidAFC,inviscidGFEM
     integer :: viscousAFC,viscousGFEM
+    integer :: primalBdrGFEM,dualBdrGFEM
+    integer :: templateMatrix
+    integer :: systemMatrix
+    integer :: jacobianMatrix
+    integer :: consistentMassMatrix
+    integer :: lumpedMassMatrix
+    integer :: coeffMatrix_CX
+    integer :: coeffMatrix_CY
+    integer :: coeffMatrix_CZ
+    integer :: coeffMatrix_CXX
+    integer :: coeffMatrix_CYY
+    integer :: coeffMatrix_CZZ
+    integer :: coeffMatrix_CXY
+    integer :: coeffMatrix_CXZ
+    integer :: coeffMatrix_CYZ
     integer :: iconvToTria
-
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -662,16 +580,44 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ndimension', rproblemDescriptor%ndimension)
+        ssectionName, 'ndimension', rproblemDescriptor%ndimension, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'iconvtotria', iconvToTria, 0)
-    ! Default is empty section, i.e. no configuration
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'mass', smass, '')
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'inviscid', sinviscid, '')
-    call parlst_getvalue_string(rparlist,&
-        ssectionName, 'viscous', sviscous, '')
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dofCoords', dofCoords, 0)
+
+    ! Get global positions of matrices
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templateMatrix', templateMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'systemMatrix', systemMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'jacobianMatrix', jacobianMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'consistentMassMatrix', consistentMassMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'lumpedMassMatrix', lumpedMassMatrix, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CX', coeffMatrix_CX, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CY', coeffMatrix_CY, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CZ', coeffMatrix_CZ, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CXX', coeffMatrix_CXX, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CYY', coeffMatrix_CYY, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CZZ', coeffMatrix_CZZ, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CXY', coeffMatrix_CXY, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CXZ', coeffMatrix_CXZ, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffMatrix_CYZ', coeffMatrix_CYZ, 0)
+
     ! Default is no stabilization
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'massAFC', massAFC, 0)
@@ -679,6 +625,7 @@ contains
         ssectionName, 'inviscidAFC', inviscidAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'viscousAFC', viscousAFC, 0)
+
     ! By default the same identifier is used for the group finite
     ! element formulation and the stabilization structure
     call parlst_getvalue_int(rparlist,&
@@ -687,23 +634,47 @@ contains
         ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'viscousGFEM', viscousGFEM, viscousAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'primalbdrGFEM', primalbdrGFEM, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dualbdrGFEM', dualbdrGFEM, 0)
 
     ! Consistency check
     if (templateGFEM .eq. 0) then
       inviscidGFEM = 0
-      viscousGFEM = 0
+      viscousGFEM  = 0
+      primalBdrGFEM  = 0
+      dualBdrGFEM    = 0
     end if
 
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 1   ! one discretisation
-    rproblemDescriptor%nafcstab        = max(massAFC, inviscidAFC, viscousAFC)
-    rproblemDescriptor%ngroupfemBlock  = max(templateGFEM, inviscidGFEM, viscousGFEM)
+    rproblemDescriptor%ndiscretisation = max(0, discretisation)
+    rproblemDescriptor%nafcstab        = max(0, massAFC,&
+                                                inviscidAFC,&
+                                                viscousAFC)
+    rproblemDescriptor%ngroupfemBlock  = max(0, templateGFEM,&
+                                                inviscidGFEM,&
+                                                viscousGFEM,&
+                                                primalBdrGFEM,&
+                                                dualBdrGFEM)
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
-    rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 5
-    rproblemDescriptor%nmatrixBlock    = 2   ! system matrix and Jacobian
+    rproblemDescriptor%nmatrixScalar   = max(0, templateMatrix,&
+                                                consistentMassMatrix,&
+                                                lumpedMassMatrix,&
+                                                coeffMatrix_CX,&
+                                                coeffMatrix_CY,&
+                                                coeffMatrix_CZ,&
+                                                coeffMatrix_CXX,&
+                                                coeffMatrix_CYY,&
+                                                coeffMatrix_CZZ,&
+                                                coeffMatrix_CXY,&
+                                                coeffMatrix_CXZ,&
+                                                coeffMatrix_CYZ)
+    rproblemDescriptor%nmatrixBlock    = max(0, systemMatrix,&
+                                                jacobianMatrix)
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = 0
+    rproblemDescriptor%nvectorBlock    = max(0, dofCoords)
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
@@ -711,45 +682,14 @@ contains
                                       + PROBDESC_MSPEC_CONVTRIANGLES
     end if
 
-    ! Initialize problem structure
-    call problem_initProblem(rproblemDescriptor, rproblem)
-
-    ! Loop over all problem levels
-    p_rproblemLevel => rproblem%p_rproblemLevelMax
-    do while(associated(p_rproblemLevel))
-      ! Initialize the group finite element block structures:
-      ! - for templates, inviscid and viscous terms
-      if (templateGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
-      if (inviscidGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(inviscidGFEM), 1)
-      if (viscousGFEM > 0)&
-          call gfem_initGroupFEMBlock(p_rproblemLevel%RgroupFEMBlock(viscousGFEM), 1)
-
-      ! Initialize the stabilisation structures for the mass, the
-      ! inviscid and the viscous term (if required)
-      if (massAFC > 0)&
-          call afcstab_initFromParameterlist(rparlist, smass,&
-          p_rproblemLevel%Rafcstab(massAFC))
-      if (inviscidAFC > 0)&
-          call afcstab_initFromParameterlist(rparlist, sinviscid,&
-          p_rproblemLevel%Rafcstab(inviscidAFC))
-      if (viscousAFC > 0)&
-          call afcstab_initFromParameterlist(rparlist, sviscous,&
-          p_rproblemLevel%Rafcstab(viscousAFC))
-      
-      ! Switch to next coarser level
-      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
-    end do
-
-  end subroutine hydro_initProblem
+  end subroutine hydro_initProblemDescriptor
 
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine hydro_initProblemLevel(rparlist, ssectionName,&
-      rproblemLevel, rcollection)
+      rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
@@ -763,6 +703,12 @@ contains
 
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: boundary condition for primal problem
+    type(t_boundaryCondition), intent(in), optional :: rbdrCondPrimal
+
+    ! OPTIONAL: boundary condition for dual problem
+    type(t_boundaryCondition), intent(in), optional :: rbdrCondDual
 !</input>
 
 !<inputoutput>
@@ -793,24 +739,27 @@ contains
     integer :: inviscidAFC,inviscidGFEM
     integer :: viscousAFC,viscousGFEM
     integer :: discretisation
+    integer :: dofCoords
     integer :: isystemFormat
     integer :: isystemCoupling
     integer :: imatrixFormat
+    integer :: primalbdrGFEM,dualbdrGFEM
 
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_groupFEMSet), pointer :: p_rgroupFEMSet
     type(t_boundary) , pointer :: p_rboundary
     character(len=SYS_STRLEN) :: slimitingvariable
+    type(t_matrixScalar) :: rmatrixSX,rmatrixSY,rmatrixSZ
     integer, dimension(:), allocatable :: Celement
-    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed
+    integer :: i,j,ivar,jvar,ivariable,nvariable,nvartransformed,neq
     integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
     integer :: nmatrices,nsubstrings,ccubType
-    character(len=SYS_STRLEN) :: selemName
+    character(len=SYS_STRLEN) :: selemName,smass,sinviscid,sviscous
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'templatematrix', templateMatrix)
+        ssectionName, 'templatematrix', templateMatrix, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'systemmatrix', systemMatrix, 0)
     call parlst_getvalue_int(rparlist,&
@@ -837,20 +786,33 @@ contains
         ssectionName, 'coeffmatrix_cxz', coeffMatrix_CXZ, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'coeffmatrix_cyz', coeffMatrix_CYZ, 0)
+
+    ! Default is no stabilization
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'massAFC', massAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'viscousAFC', viscousAFC, 0)
+
+    ! By default the same identifier is used for the group finite
+    ! element formulation and the stabilization structure
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'templateGFEM', templateGFEM)
+        ssectionName, 'templateGFEM', templateGFEM, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'viscousGFEM', viscousGFEM, viscousAFC)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'discretisation', discretisation)
+        ssectionName, 'primalBdrGFEM', primalBdrGFEM, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dualBdrGFEM', dualBdrGFEM, 0)
+
+    ! Default no summed cubature
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dofCoords', dofCoords, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'imatrixFormat', imatrixFormat)
     call parlst_getvalue_int(rparlist,&
@@ -864,13 +826,23 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
     
+    ! Default is empty section, i.e. no configuration
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'mass', smass, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'inviscid', sinviscid, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'viscous', sviscous, '')
+
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation => rproblemLevel%rtriangulation
     p_rboundary      => rproblemLevel%p_rproblem%rboundary
 
+    !---------------------------------------------------------------------------
     ! Create discretisation structure
+    !---------------------------------------------------------------------------
     if (discretisation > 0) then
-
+      
       ! Initialize the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
@@ -878,7 +850,7 @@ contains
         case (SYSTEM_INTERLEAVEFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation, 1,&
               rproblemLevel%rtriangulation)
-
+          
         case (SYSTEM_BLOCKFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation,&
               hydro_getNVAR(rproblemLevel), p_rtriangulation)
@@ -937,6 +909,10 @@ contains
       
       ! Deallocate temporal memory
       deallocate(Celement)
+
+      !-------------------------------------------------------------------------
+      ! Configure evaluation of (bi-)linear formes
+      !-------------------------------------------------------------------------
 
       if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm') .ne. 0) then
         ! Check if special cubature formula for evaluating integral
@@ -1025,551 +1001,551 @@ contains
         end do
       end do
 
-    end if
-
-
-    ! If the template matrix has no structure data then generate the
-    ! finite element matrix sparsity structure based on the spatial
-    ! descretisation and store it as the template matrix. Otherwise we
-    ! assume that the template matrix has been generated externally.
-    if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
-      call bilf_createMatrixStructure(&
-          p_rdiscretisation%RspatialDiscr(1), imatrixFormat,&
-          rproblemLevel%Rmatrix(templateMatrix))
-    end if
-
-
-    ! Create system matrix
-    if (systemMatrix > 0) then
-      select case(isystemFormat)
-
-      case (SYSTEM_INTERLEAVEFORMAT)
-        ! The global operator is stored as an interleave matrix with
-        ! NVAR components. However, the row and column structure of
-        ! the template matrix can be adopted without modification
-        if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(systemMatrix))) then
-
-          ! Release pseudo block matrix
-          call lsysbl_releaseMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
-
-          ! Resize scalar matrix
-          call lsyssc_resizeMatrix(&
-              rproblemLevel%Rmatrix(systemMatrix),&
-              rproblemLevel%Rmatrix(templateMatrix)%NEQ,&
-              rproblemLevel%Rmatrix(templateMatrix)%NCOLS,&
-              rproblemLevel%rmatrix(templateMatrix)%NA,&
-              .false., .false., bforce=.true.)
-
-        else   ! System matrix has no structure
-
-          call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(templateMatrix),&
-              rproblemLevel%Rmatrix(systemMatrix),&
-              LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
-
-          ! Set number of variables per node
-          rproblemLevel%Rmatrix(systemMatrix)%NVAR = hydro_getNVAR(rproblemLevel)
-
-          ! What matrix format should be used?
-          select case(imatrixFormat)
-          case (LSYSSC_MATRIX7)
-            rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX7INTL
-
-          case (LSYSSC_MATRIX9)
-            rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
-
-          case default
-            call output_line('Unsupported matrix format!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
-            call sys_halt()
-          end select
-
-          ! What kind of global operator should be adopted?
-          select case(isystemCoupling)
-          case (SYSTEM_SEGREGATED)
-            rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
-
-          case (SYSTEM_ALLCOUPLED)
-            rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
-
-          case default
-            call output_line('Unsupported interleave matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
-            call sys_halt()
-          end select
-
-          ! Create global operator physically
-          call lsyssc_allocEmptyMatrix(&
-              rproblemLevel%Rmatrix(systemMatrix), LSYSSC_SETM_UNDEFINED)
-
+      !-------------------------------------------------------------------------
+      ! Calculate coordinates of the global DOF`s
+      if (dofCoords > 0) then
+        ! Check if block vector has been initialized
+        if (rproblemLevel%RvectorBlock(dofCoords)%nblocks .eq. 0) then
+          call lsysbl_createVectorBlock(p_rdiscretisation,&
+              p_rdiscretisation%ndimension,&
+              rproblemLevel%RvectorBlock(dofCoords), .false.)
+        else
+          neq = dof_igetNDofGlobBlock(p_rdiscretisation)
+          if (rproblemLevel%RvectorBlock(dofCoords)%NEQ .ne. neq) then
+            call lsysbl_resizeVectorBlock(&
+                rproblemLevel%RvectorBlock(dofCoords), neq, .false.)
+          end if
         end if
+        ! Calculate coordinates
+        call lin_calcDofCoordsBlock(p_rdiscretisation,&
+            rproblemLevel%RvectorBlock(dofCoords))
+      end if
 
-        ! Create pseudo block matrix from global operator
-        call lsysbl_createMatFromScalar(&
-            rproblemLevel%Rmatrix(systemMatrix),&
-            rproblemLevel%RmatrixBlock(systemMatrix), p_rdiscretisation)
-
-
-      case (SYSTEM_BLOCKFORMAT)
-        ! The global operator is stored as a block matrix with
-        ! NVARxNVAR blocks made up from scalar matrices
-
-        if ((rproblemLevel%RmatrixBlock(systemMatrix)%nblocksPerRow .ne. 0) .and.&
-            (rproblemLevel%RmatrixBlock(systemMatrix)%nblocksPerCol .ne. 0)) then
-
-          ! What kind of global operator should be adopted?
-          select case(isystemCoupling)
-
-          case (SYSTEM_SEGREGATED)
-            ! Create only NVAR diagonal blocks
-            do ivar = 1, hydro_getNVAR(rproblemLevel)
-              call lsyssc_resizeMatrix(&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
-            end do
-
-          case (SYSTEM_ALLCOUPLED)
-            ! Create all NVAR x NVAR blocks
-            do ivar = 1, hydro_getNVAR(rproblemLevel)
-              do jvar = 1, hydro_getNVAR(rproblemLevel)
+      !-------------------------------------------------------------------------
+      ! Create finite element matrices
+      !-------------------------------------------------------------------------
+      
+      ! If the template matrix has no structure data then generate the
+      ! finite element matrix sparsity structure based on the spatial
+      ! descretisation and store it as the template matrix. Otherwise we
+      ! assume that the template matrix has been generated externally.
+      if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
+        call bilf_createMatrixStructure(&
+            p_rdiscretisation%RspatialDiscr(1), imatrixFormat,&
+            rproblemLevel%Rmatrix(templateMatrix))
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create system matrix
+      if (systemMatrix > 0) then
+        select case(isystemFormat)
+          
+        case (SYSTEM_INTERLEAVEFORMAT)
+          ! The global operator is stored as an interleave matrix with
+          ! NVAR components. However, the row and column structure of
+          ! the template matrix can be adopted without modification
+          if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(systemMatrix))) then
+            
+            ! Release pseudo block matrix
+            call lsysbl_releaseMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
+            
+            ! Resize scalar matrix
+            call lsyssc_resizeMatrix(&
+                rproblemLevel%Rmatrix(systemMatrix),&
+                rproblemLevel%Rmatrix(templateMatrix)%NEQ,&
+                rproblemLevel%Rmatrix(templateMatrix)%NCOLS,&
+                rproblemLevel%rmatrix(templateMatrix)%NA,&
+                .false., .false., bforce=.true.)
+            
+          else   ! System matrix has no structure
+            
+            call lsyssc_duplicateMatrix(&
+                rproblemLevel%Rmatrix(templateMatrix),&
+                rproblemLevel%Rmatrix(systemMatrix),&
+                LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
+            
+            ! Set number of variables per node
+            rproblemLevel%Rmatrix(systemMatrix)%NVAR = hydro_getNVAR(rproblemLevel)
+            
+            ! What matrix format should be used?
+            select case(imatrixFormat)
+            case (LSYSSC_MATRIX7)
+              rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX7INTL
+              
+            case (LSYSSC_MATRIX9)
+              rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
+              
+            case default
+              call output_line('Unsupported matrix format!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+              call sys_halt()
+            end select
+            
+            ! What kind of global operator should be adopted?
+            select case(isystemCoupling)
+            case (SYSTEM_SEGREGATED)
+              rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
+              
+            case (SYSTEM_ALLCOUPLED)
+              rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
+              
+            case default
+              call output_line('Unsupported interleave matrix format!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+              call sys_halt()
+            end select
+            
+            ! Create global operator physically
+            call lsyssc_allocEmptyMatrix(&
+                rproblemLevel%Rmatrix(systemMatrix), LSYSSC_SETM_UNDEFINED)
+            
+          end if
+          
+          ! Create pseudo block matrix from global operator
+          call lsysbl_createMatFromScalar(&
+              rproblemLevel%Rmatrix(systemMatrix),&
+              rproblemLevel%RmatrixBlock(systemMatrix), p_rdiscretisation)
+          
+          
+        case (SYSTEM_BLOCKFORMAT)
+          ! The global operator is stored as a block matrix with
+          ! NVARxNVAR blocks made up from scalar matrices
+          
+          if ((rproblemLevel%RmatrixBlock(systemMatrix)%nblocksPerRow .ne. 0) .and.&
+              (rproblemLevel%RmatrixBlock(systemMatrix)%nblocksPerCol .ne. 0)) then
+            
+            ! What kind of global operator should be adopted?
+            select case(isystemCoupling)
+              
+            case (SYSTEM_SEGREGATED)
+              ! Create only NVAR diagonal blocks
+              do ivar = 1, hydro_getNVAR(rproblemLevel)
                 call lsyssc_resizeMatrix(&
-                    rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar ,jvar),&
-                    rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
+                    rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                    rproblemLevel%Rmatrix(templateMatrix), .false., .false., bforce=.true.)
               end do
-            end do
-
-          case default
-            call output_line('Unsupported block matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
-            call sys_halt()
-          end select
-
-        else   ! System matrix has no structure
-
-          ! Create empty NVARxNVAR block matrix directly
-          call lsysbl_createEmptyMatrix(&
-              rproblemLevel%RmatrixBlock(systemMatrix),&
-              hydro_getNVAR(rproblemLevel),&
-              hydro_getNVAR(rproblemLevel))
-
-          ! Specify matrix as 'group matrix'
-          rproblemLevel%RmatrixBlock(systemMatrix)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
-
-          ! What kind of global operator should be adopted?
-          select case(isystemCoupling)
-
-          case (SYSTEM_SEGREGATED)
-            ! Create only NVAR diagonal blocks
-            do ivar = 1, hydro_getNVAR(rproblemLevel)
-              call lsyssc_duplicateMatrix(&
-                  rproblemLevel%Rmatrix(templateMatrix),&
-                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-            end do
-
-          case (SYSTEM_ALLCOUPLED)
-            ! Create all NVAR x NVAR blocks
-            do ivar = 1, hydro_getNVAR(rproblemLevel)
-              do jvar = 1, hydro_getNVAR(rproblemLevel)
+              
+            case (SYSTEM_ALLCOUPLED)
+              ! Create all NVAR x NVAR blocks
+              do ivar = 1, hydro_getNVAR(rproblemLevel)
+                do jvar = 1, hydro_getNVAR(rproblemLevel)
+                  call lsyssc_resizeMatrix(&
+                      rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar ,jvar),&
+                      rproblemLevel%Rmatrix(templateMatrix), .false., .false., bforce=.true.)
+                end do
+              end do
+              
+            case default
+              call output_line('Unsupported block matrix format!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+              call sys_halt()
+            end select
+            
+          else   ! System matrix has no structure
+            
+            ! Create empty NVARxNVAR block matrix directly
+            call lsysbl_createEmptyMatrix(&
+                rproblemLevel%RmatrixBlock(systemMatrix),&
+                hydro_getNVAR(rproblemLevel),&
+                hydro_getNVAR(rproblemLevel))
+            
+            ! Specify matrix as 'group matrix'
+            rproblemLevel%RmatrixBlock(systemMatrix)%imatrixSpec = LSYSBS_MSPEC_GROUPMATRIX
+            
+            ! What kind of global operator should be adopted?
+            select case(isystemCoupling)
+              
+            case (SYSTEM_SEGREGATED)
+              ! Create only NVAR diagonal blocks
+              do ivar = 1, hydro_getNVAR(rproblemLevel)
                 call lsyssc_duplicateMatrix(&
                     rproblemLevel%Rmatrix(templateMatrix),&
-                    rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
+                    rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
               end do
-            end do
-
-          case default
-            call output_line('Unsupported block matrix format!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
-            call sys_halt()
-          end select
-
+              
+            case (SYSTEM_ALLCOUPLED)
+              ! Create all NVAR x NVAR blocks
+              do ivar = 1, hydro_getNVAR(rproblemLevel)
+                do jvar = 1, hydro_getNVAR(rproblemLevel)
+                  call lsyssc_duplicateMatrix(&
+                      rproblemLevel%Rmatrix(templateMatrix),&
+                      rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
+                      LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+                end do
+              end do
+              
+            case default
+              call output_line('Unsupported block matrix format!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+              call sys_halt()
+            end select
+            
+          end if
+          
+          ! Update internal structure of block matrix
+          call lsysbl_updateMatStrucInfo(rproblemLevel%RmatrixBlock(systemMatrix))
+          
+        case default
+          call output_line('Unsupported system format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
+          call sys_halt()
+        end select
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
+      if (consistentMassMatrix > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+            rproblemLevel%Rmatrix(consistentMassMatrix))
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
+        
+        ! Create lumped mass matrix
+        if (lumpedMassMatrix > 0) then
+          call lsyssc_duplicateMatrix(&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+          call lsyssc_lumpMatrixScalar(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
         end if
-
-        ! Update internal structure of block matrix
-        call lsysbl_updateMatStrucInfo(rproblemLevel%RmatrixBlock(systemMatrix))
-
-      case default
-        call output_line('Unsupported system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_initProblemLevel')
-        call sys_halt()
-      end select
-    end if
-
-
-    ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
-    if (consistentMassMatrix > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(consistentMassMatrix),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(consistentMassMatrix),&
-            rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
-
-      else
+      elseif (lumpedMassMatrix > 0) then
+        ! Create lumped mass matrix
         call lsyssc_duplicateMatrix(&
             rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(consistentMassMatrix),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(consistentMassMatrix),&
-          DER_FUNC, DER_FUNC)
-      if (lumpedMassMatrix > 0) then
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(consistentMassMatrix),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call stdop_assembleSimpleMatrix(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC)
         call lsyssc_lumpMatrixScalar(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            LSYSSC_LUMP_DIAG)
-
-      end if
-    elseif (lumpedMassMatrix > 0) then
-      call lsyssc_duplicateMatrix(&
-          rproblemLevel%Rmatrix(templateMatrix),&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          DER_FUNC, DER_FUNC)
-
-      call lsyssc_lumpMatrixScalar(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          LSYSSC_LUMP_DIAG)
-
-    end if
-
-
-    ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CX > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CX),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CX),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CX),&
-          DER_DERIV3D_X, DER_FUNC)
-    end if
-
-    
-    ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CY > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CY),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CY),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CY),&
-          DER_DERIV3D_Y, DER_FUNC)
-    end if
-
-
-    ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CZ > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-          DER_DERIV3D_Z, DER_FUNC)
-    end if
-
-    
-    ! Create coefficient matrix (dphi/dx, dphi/dx) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CXX > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CXX),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CXX),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CXX),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CXX),&
-          DER_DERIV3D_X, DER_DERIV3D_X)
-    end if
-
-    
-    ! Create coefficient matrix (dphi/dy, dphi/dy) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CYY > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CYY),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CYY),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CYY),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CYY),&
-          DER_DERIV3D_Y, DER_DERIV3D_Y)
-    end if
-
-
-    ! Create coefficient matrix (dphi/dz, dphi/dz) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CZZ > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
-          DER_DERIV3D_Z, DER_DERIV3D_Z)
-    end if
-
-
-    ! Create coefficient matrix (dphi/dx, dphi/dy) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CXY > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CXY),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CXY),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CXY),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CXY),&
-          DER_DERIV3D_X, DER_DERIV3D_Y)
-    end if
-
-    
-    ! Create coefficient matrix (dphi/dx, dphi/dz) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CXZ > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
-          DER_DERIV3D_X, DER_DERIV3D_Z)
-    end if
-    
-
-    ! Create coefficient matrix (dphi/dy, dphi/dz) as duplicate of the
-    ! template matrix
-    if (coeffMatrix_CYZ > 0) then
-      if (lsyssc_isMatrixStructureShared(&
-          rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
-          rproblemLevel%Rmatrix(templateMatrix))) then
-
-        call lsyssc_resizeMatrix(&
-            rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            .false., .false., .true.)
-
-      else
-        call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-      end if
-      call stdop_assembleSimpleMatrix(&
-          rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
-          DER_DERIV3D_Y, DER_DERIV3D_Z)
-    end if
-
-
-    ! Initialize/resize template group finite elment structure and
-    ! generate the edge structure derived from the template matrix
-    if (templateGFEM > 0) then
-      ! Set pointer to first group finite element set of this block
-      p_rgroupFEMSet =>&
-          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
-      
-      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize first group finite element set for edge-based assembly
-        call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
-      else
-        ! Resize first group finite element set
-        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix))
+            rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
       end if
       
-      ! Generate diagonal and edge structure derived from template matrix
-      call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
-          p_rgroupFEMSet)
-      call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
-          p_rgroupFEMSet)
-    else
-      inviscidGFEM = 0
-      viscousGFEM = 0
-    end if
-
-    ! Initialize/resize group finite element structure as duplicate of
-    ! the template group finite element structure and fill it with the
-    ! precomputed matrix coefficients for the inviscid term
-    if (inviscidGFEM > 0) then
-      ! Set pointer to first group finite element set of this block
-      p_rgroupFEMSet =>&
-          rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1)
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CX > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CX))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+                                        DER_DERIV3D_X, DER_FUNC)
+      end if
       
-      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize first group finite element set for edge-based
-        ! assembly as aduplicate of the template structure
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CY > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+                                        DER_DERIV3D_Y, DER_FUNC)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CZ > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+                                        DER_DERIV3D_Z, DER_FUNC)
+      end if
+    
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (dphi/dx, dphi/dx) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CXX > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CXX))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CXX),&
+                                        DER_DERIV3D_X, DER_DERIV3D_X)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (dphi/dy, dphi/dy) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CYY > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CYY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CYY),&
+                                        DER_DERIV3D_Y, DER_DERIV3D_Y)
+      end if
+    
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (dphi/dz, dphi/dz) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CZZ > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CZZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
+                                        DER_DERIV3D_Z, DER_DERIV3D_Z)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (dphi/dx, dphi/dy) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CXY > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CXY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CXY),&
+                                        DER_DERIV3D_X, DER_DERIV3D_Y)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (dphi/dx, dphi/dz) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CXZ > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CXZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
+                                        DER_DERIV3D_X, DER_DERIV3D_Z)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Create coefficient matrix (dphi/dy, dphi/dz) as duplicate of the
+      ! template matrix
+      if (coeffMatrix_CYZ > 0) then
+        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
+                                 rproblemLevel%Rmatrix(coeffMatrix_CYZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
+                                        DER_DERIV3D_Y, DER_DERIV3D_Z)
+      end if
+
+      !-------------------------------------------------------------------------
+      ! Create group finite element structures and AFC-stabilisations
+      !-------------------------------------------------------------------------
+      
+      ! Initialize/resize template group finite elment structure and
+      ! generate the edge structure derived from the template matrix
+      if (templateGFEM > 0) then
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(templateGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(templateGFEM), 1)
+        
+        ! Set pointer to first group finite element set of this block
+        p_rgroupFEMSet =>&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1)
+        
+        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+          ! Initialize first group finite element set for edge-based assembly
+          call gfem_initGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
+        else
+          ! Resize first group finite element set
+          call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix))
+        end if
+        
+        ! Generate diagonal and edge structure derived from template matrix
+        call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
+            p_rgroupFEMSet)
+        call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
+            p_rgroupFEMSet)
+      else
+        inviscidGFEM = 0
+        viscousGFEM  = 0
+        primalBdrGFEM  = 0
+        dualBdrGFEM    = 0
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialize/resize group finite element structure as duplicate of
+      ! the template group finite element structure and fill it with the
+      ! precomputed matrix coefficients for the inviscid term
+      if (inviscidGFEM > 0) then
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(inviscidGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(inviscidGFEM), 1)
+        
+        ! Set pointer to first group finite element set of this block
+        p_rgroupFEMSet =>&
+            rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1)
+        
+        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+          ! Initialize first group finite element set for edge-based
+          ! assembly as aduplicate of the template structure
+          call gfem_duplicateGroupFEMSet(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+          
+          ! Adjust number of variables
+          p_rgroupFEMSet%NVAR = hydro_getNVAR(rproblemLevel)
+          
+          ! Compute number of matrices to by copied
+          nmatrices = 0
+          if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
+          
+          ! Allocate memory for matrix entries
+          call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
+        else
+          ! Resize first group finite element set
+          call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix))
+        end if
+        
+        ! Duplicate edge-based structure from template
         call gfem_duplicateGroupFEMSet(&
             rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+            p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
         
-        ! Adjust number of variables
-        p_rgroupFEMSet%NVAR = hydro_getNVAR(rproblemLevel)
-
-        ! Compute number of matrices to by copied
+        ! Copy constant coefficient matrices to group finite element set
         nmatrices = 0
-        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
-        
-        ! Allocate memory for matrix entries
-        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
-      else
-        ! Resize first group finite element set
-        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix))
+        if (coeffMatrix_CX > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CX), nmatrices)
+        end if
+        if (coeffMatrix_CY > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CY), nmatrices)
+        end if
+        if (coeffMatrix_CZ > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CZ), nmatrices)
+        end if
       end if
       
-      ! Duplicate edge-based structure from template
-      call gfem_duplicateGroupFEMSet(&
-          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
+      !-------------------------------------------------------------------------
+      ! Initialise/Resize stabilisation structure for the inviscid term
+      ! by duplicating parts of the corresponding group finite element set
+      if (inviscidAFC > 0) then
+        if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
+            .eq. AFCSTAB_UNDEFINED) then
+          
+          ! Initialise stabilisation structure from parameter list
+          call afcstab_initFromParameterlist(rparlist, sinviscid,&
+              rproblemLevel%Rafcstab(inviscidAFC))
 
-      ! Copy constant coefficient matrices to group finite element set
-      nmatrices = 0
-      if (coeffMatrix_CX > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX), (/nmatrices/))
-      end if
-      if (coeffMatrix_CY > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CY:coeffMatrix_CY), (/nmatrices/))
-      end if
-      if (coeffMatrix_CZ > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CZ:coeffMatrix_CZ), (/nmatrices/))
-      end if
-    end if
+          ! Determine the number of transformed variables
+          select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
+          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
+            ! No variable transformation needs to be performed
+            NVARtransformed = 0
 
-    ! Initialise/Resize stabilisation structure for the inviscid term
-    ! by duplicating parts of the corresponding group finite element set
-    if (inviscidAFC > 0) then
-      if (rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
+          case (AFCSTAB_TVD, AFCSTAB_GP)
+            ! Transformation to characteristic variables
+            NVARtransformed = hydro_getNVAR(rproblemLevel)
+
+          case default
+            ! Get number of expressions for limiting variables
+            nvariable = max(1,&
+                parlst_querysubstrings(rparlist,&
+                ssectionName, 'slimitingvariable'))
+            
+            ! Initialise number of limiting variables
+            NVARtransformed = 1
+            
+            ! Determine maximum number of limiting variables in a single set
+            do ivariable = 1, nvariable
+              call parlst_getvalue_string(rparlist,&
+                  ssectionName, 'slimitingvariable',&
+                  slimitingvariable, isubstring=ivariable)
+              NVARtransformed = max(NVARtransformed,&
+                  hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
+            end do
+          end select
+          
+          ! Initialise stabilisation structure
+          call afcsys_initStabilisation(p_rgroupFEMSet,&
+              rproblemLevel%Rafcstab(inviscidAFC), p_rdiscretisation, NVARtransformed)
+        else
+          ! Resize stabilisation structure
+          call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(inviscidAFC),&
+              p_rgroupFEMSet)
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialize/resize group finite element structure as duplicate of
+      ! the template group finite element structure and fill it with the
+      ! precomputed matrix coefficients for the viscous term
+      if (viscousGFEM > 0) then
+        ! Check if structure has been initialized
+        if (rproblemLevel%RgroupFEMBlock(viscousGFEM)%nblocks .eq. 0)&
+            call gfem_initGroupFEMBlock(rproblemLevel%RgroupFEMBlock(viscousGFEM), 1)
         
-        ! Determine the number of transformed variables
-        select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-        case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
-          ! No variable transformation needs to be performed
-          NVARtransformed = 0
-
-        case (AFCSTAB_TVD, AFCSTAB_GP)
-          ! Transformation to characteristic variables
-          NVARtransformed = hydro_getNVAR(rproblemLevel)
-
-        case default
+        ! Set pointer to first group finite element set of this block
+        p_rgroupFEMSet =>&
+            rproblemLevel%RgroupFEMBlock(viscousGFEM)%RgroupFEMBlock(1)
+        
+        if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+          ! Initialize first group finite element set for edge-based
+          ! assembly as aduplicate of the template structure
+          call gfem_duplicateGroupFEMSet(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+          
+          ! Adjust number of variables
+          p_rgroupFEMSet%NVAR = hydro_getNVAR(rproblemLevel)
+          
+          ! Compute number of matrices to by copied
+          nmatrices = 0
+          if (coeffMatrix_CXX > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CYY > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CZZ > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CXY > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CXZ > 0) nmatrices = nmatrices+1
+          if (coeffMatrix_CYZ > 0) nmatrices = nmatrices+1
+          
+          ! Allocate memory for matrix entries
+          call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
+        else
+          ! Resize first group finite element set
+          call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(templateMatrix))
+        end if
+        
+        ! Duplicate edge-based structure from template
+        call gfem_duplicateGroupFEMSet(&
+            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+            p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
+        
+        ! Copy constant coefficient matrices to group finite element set
+        nmatrices = 0
+        if (coeffMatrix_CXX > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CXX), nmatrices)
+        end if
+        if (coeffMatrix_CYY > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CYY), nmatrices)
+        end if
+        if (coeffMatrix_CZZ > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CZZ), nmatrices)
+        end if
+        if (coeffMatrix_CXY > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CXY), nmatrices)
+        end if
+        if (coeffMatrix_CXZ > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CXZ), nmatrices)
+        end if
+        if (coeffMatrix_CYZ > 0) then
+          nmatrices = nmatrices+1
+          call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
+              rproblemLevel%Rmatrix(coeffMatrix_CYZ), nmatrices)
+        end if
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Initialise/Resize stabilisation structure for the inviscid term
+      ! by duplicating parts of the corresponding group finite element set
+      if (viscousAFC > 0) then
+        if (rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
+            .eq. AFCSTAB_UNDEFINED) then
+          
           ! Get number of expressions for limiting variables
           nvariable = max(1,&
               parlst_querysubstrings(rparlist,&
@@ -1586,163 +1562,121 @@ contains
             NVARtransformed = max(NVARtransformed,&
                 hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
           end do
-        end select
-
-        ! Initialise stabilisation structure
-        call afcsys_initStabilisation(p_rgroupFEMSet,&
-            rproblemLevel%Rafcstab(inviscidAFC), p_rdiscretisation, NVARtransformed)
-      else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(inviscidAFC),&
-            p_rgroupFEMSet)
+          
+          ! Initialise stabilisation structure
+          call afcstab_initFromParameterlist(rparlist, sviscous,&
+              rproblemLevel%Rafcstab(viscousAFC))
+          call afcsys_initStabilisation(p_rgroupFEMSet,&
+              rproblemLevel%Rafcstab(viscousAFC), p_rdiscretisation, NVARtransformed)
+        else
+          ! Resize stabilisation structure
+          call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(viscousAFC),&
+              p_rgroupFEMSet)
+        end if
       end if
-    end if
-    
-
-    ! Initialize/resize group finite element structure as duplicate of
-    ! the template group finite element structure and fill it with the
-    ! precomputed matrix coefficients for the viscous term
-    if (viscousGFEM > 0) then
-      ! Set pointer to first group finite element set of this block
-      p_rgroupFEMSet =>&
-          rproblemLevel%RgroupFEMBlock(viscousGFEM)%RgroupFEMBlock(1)
       
-      if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
-        ! Initialize first group finite element set for edge-based
-        ! assembly as aduplicate of the template structure
-        call gfem_duplicateGroupFEMSet(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            p_rgroupFEMSet, GFEM_DUP_STRUCTURE, .false.)
+      !-------------------------------------------------------------------------
+      ! Initialize/Resize stabilisation structure for the mass matrix by
+      ! duplicating parts of the template group finite element set
+      if (massAFC > 0) then
+        if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
+            .eq. AFCSTAB_UNDEFINED) then
+          
+          ! Get number of expressions for limiting variables
+          nvariable = max(1,&
+              parlst_querysubstrings(rparlist,&
+              ssectionName, 'slimitingvariable'))
+          
+          ! Initialise number of limiting variables
+          NVARtransformed = 1
+          
+          ! Determine maximum number of limiting variables in a single set
+          do ivariable = 1, nvariable
+            call parlst_getvalue_string(rparlist,&
+                ssectionName, 'slimitingvariable',&
+                slimitingvariable, isubstring=ivariable)
+            NVARtransformed = max(NVARtransformed,&
+                hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
+          end do
+          
+          ! Initialise stabilisation structure
+          call afcstab_initFromParameterlist(rparlist, smass,&
+              rproblemLevel%Rafcstab(massAFC))
+          call afcsys_initStabilisation(&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
+              rproblemLevel%Rafcstab(massAFC), p_rdiscretisation, NVARtransformed)
+          
+          ! Adjust number of variables
+          rproblemLevel%Rafcstab(massAFC)%NVAR = hydro_getNVAR(rproblemLevel)
+        else
+          ! Resize stabilisation structure
+          call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
+              rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
+        end if
+      end if
 
-        ! Adjust number of variables
-        p_rgroupFEMSet%NVAR = hydro_getNVAR(rproblemLevel)
-        
-        ! Compute number of matrices to by copied
-        nmatrices = 0
-        if (coeffMatrix_CXX > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CYY > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CZZ > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXY > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CXZ > 0) nmatrices = nmatrices+1
-        if (coeffMatrix_CYZ > 0) nmatrices = nmatrices+1
+      ! The auxiliary matrices are not needed any more
+      if (coeffMatrix_CX > 0)&
+          call lsyssc_releaseMatrix(rmatrixSX)
+      if (coeffMatrix_CY > 0)&
+          call lsyssc_releaseMatrix(rmatrixSY)
+      if (coeffMatrix_CZ > 0)&
+          call lsyssc_releaseMatrix(rmatrixSZ)
+      
+    end if   ! discretisation > 0
+
+  contains
+    
+    !**************************************************************
+    ! Initialize the matrix structure by duplicating the template matrix
+
+    subroutine initMatrixStructure(rmatrixTemplate, rmatrix)
+
+      type(t_matrixScalar), intent(in) :: rmatrixTemplate
+      type(t_matrixScalar), intent(inout) :: rmatrix
+
+      if (lsyssc_isMatrixStructureShared(rmatrix, rmatrixTemplate)) then
+        call lsyssc_resizeMatrix(rmatrix, rmatrixTemplate,&
+            .false., .false., bforce=.true.)
+      else
+        call lsyssc_duplicateMatrix(rmatrixTemplate, rmatrix,&
+            LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      end if
+
+    end subroutine initMatrixStructure  
+
+    !**************************************************************
+    ! Initialize the group finite element set for evaluating the
+    ! bilinear and linear forms on the boundary node-by-node. 
+
+    subroutine initGroupFEMSetBoundary(rregion, rmatrix, nmatrices, rgroupFEMSet)
+
+      ! input parameters
+      type(t_boundaryRegion), intent(in) :: rregion
+      type(t_matrixScalar), intent(in) :: rmatrix
+      integer, intent(in) :: nmatrices
+
+      ! input/output parameters
+      type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
+      
+      if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
+        ! Initialize finite element set for node-based assembly
+        call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
+            0, 0, 0, GFEM_NODEBASED, rregionTest=rregion,&
+            brestrictToBoundary=.true.)
         
         ! Allocate memory for matrix entries
-        call gfem_allocCoeffs(p_rgroupFEMSet, nmatrices, 0, nmatrices)
+        call gfem_allocCoeffs(rgroupFEMSet, 0, nmatrices,0)
       else
         ! Resize first group finite element set
-        call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(templateMatrix))
+        call gfem_resizeGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
+            rregionTest=rregion, rregionTrial=rregion)
       end if
-      
-      ! Duplicate edge-based structure from template
-      call gfem_duplicateGroupFEMSet(&
-          rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-          p_rgroupFEMSet, GFEM_DUP_DIAGLIST+GFEM_DUP_EDGELIST, .true.)
 
-      ! Copy constant coefficient matrices to group finite element set
-      nmatrices = 0
-      if (coeffMatrix_CXX > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CXX:coeffMatrix_CXX), (/nmatrices/))
-      end if
-      if (coeffMatrix_CYY > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CYY:coeffMatrix_CYY), (/nmatrices/))
-      end if
-      if (coeffMatrix_CZZ > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CZZ:coeffMatrix_CZZ), (/nmatrices/))
-      end if
-      if (coeffMatrix_CXY > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CXY:coeffMatrix_CXY), (/nmatrices/))
-      end if
-      if (coeffMatrix_CXZ > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CXZ:coeffMatrix_CXZ), (/nmatrices/))
-      end if
-      if (coeffMatrix_CYZ > 0) then
-        nmatrices = nmatrices+1
-        call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-            rproblemLevel%Rmatrix(coeffMatrix_CYZ:coeffMatrix_CYZ), (/nmatrices/))
-      end if
-    end if
+      ! Generate node structure derived from template matrix
+      call gfem_genNodeList(rmatrix, rgroupFEMSet)
 
-    ! Initialise/Resize stabilisation structure for the inviscid term
-    ! by duplicating parts of the corresponding group finite element set
-    if (viscousAFC > 0) then
-      if (rproblemLevel%Rafcstab(viscousAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
-        
-        ! Get number of expressions for limiting variables
-        nvariable = max(1,&
-            parlst_querysubstrings(rparlist,&
-            ssectionName, 'slimitingvariable'))
-        
-        ! Initialise number of limiting variables
-        NVARtransformed = 1
-        
-        ! Determine maximum number of limiting variables in a single set
-        do ivariable = 1, nvariable
-          call parlst_getvalue_string(rparlist,&
-              ssectionName, 'slimitingvariable',&
-              slimitingvariable, isubstring=ivariable)
-          NVARtransformed = max(NVARtransformed,&
-              hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
-        end do
-        
-        ! Initialise stabilisation structure
-        call afcsys_initStabilisation(p_rgroupFEMSet,&
-            rproblemLevel%Rafcstab(viscousAFC), p_rdiscretisation, NVARtransformed)
-      else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(viscousAFC),&
-            p_rgroupFEMSet)
-      end if
-    end if
-
-    
-    ! Initialize/Resize stabilisation structure for the mass matrix by
-    ! duplicating parts of the template group finite element set
-    if (massAFC > 0) then
-      if (rproblemLevel%Rafcstab(massAFC)%istabilisationSpec&
-          .eq. AFCSTAB_UNDEFINED) then
-        
-        ! Get number of expressions for limiting variables
-        nvariable = max(1,&
-            parlst_querysubstrings(rparlist,&
-            ssectionName, 'slimitingvariable'))
-        
-        ! Initialise number of limiting variables
-        NVARtransformed = 1
-
-        ! Determine maximum number of limiting variables in a single set
-        do ivariable = 1, nvariable
-          call parlst_getvalue_string(rparlist,&
-              ssectionName, 'slimitingvariable',&
-              slimitingvariable, isubstring=ivariable)
-          NVARtransformed = max(NVARtransformed,&
-              hydro_getNVARtransformed(rproblemLevel, slimitingvariable))
-        end do
-        
-        ! Initialise stabilisation structure
-        call afcsys_initStabilisation(&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1),&
-            rproblemLevel%Rafcstab(massAFC), p_rdiscretisation, NVARtransformed)
-
-        ! Adjust number of variables
-        rproblemLevel%Rafcstab(massAFC)%NVAR = hydro_getNVAR(rproblemLevel)
-      else
-        ! Resize stabilisation structure
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(massAFC),&
-            rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
-      end if
-    end if
+    end subroutine initGroupFEMSetBoundary
 
   end subroutine hydro_initProblemLevel
 
@@ -1751,7 +1685,7 @@ contains
 !<subroutine>
 
   subroutine hydro_initAllProblemLevels(rparlist, ssectionName,&
-      rproblem, rcollection)
+      rproblem, rcollection, rbdrCondPrimal, rbdrCondDual)
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
@@ -1766,6 +1700,12 @@ contains
 
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: boundary condition for primal problem
+    type(t_boundaryCondition), intent(in), optional :: rbdrCondPrimal
+
+    ! OPTIONAL: boundary condition for dual problem
+    type(t_boundaryCondition), intent(in), optional :: rbdrCondDual
 !</input>
 
 !<inputoutput>
@@ -1787,7 +1727,7 @@ contains
 
       ! Initialize individual problem level
       call hydro_initProblemLevel(rparlist, ssectionName,&
-          p_rproblemLevel, rcollection)
+          p_rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
@@ -1832,24 +1772,22 @@ contains
     ! local variables
     type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
-    type(t_vectorBlock) :: rvectorBlock, rvectorHigh, rvectorAux
+    type(t_vectorBlock) :: rvectorBlock,rvectorHigh,rvectorAux
     type(t_vectorScalar) :: rvectorScalar
-    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
-    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
+    type(t_matrixScalar), target :: rlumpedMassMatrix,rconsistentMassMatrix
+    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix,p_rConsistentMassMatrix
     type(t_fparser), pointer :: p_rfparser
-    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_collection) :: rcollectionTmp
-    real(DP), dimension(:,:), pointer :: p_DdofCoords
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdofCoords
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP), dimension(:), pointer :: Dnorm0
-    real(DP) :: depsAbsSolution, depsRelSolution, dnorm, dmin, dmax
+    real(DP) :: depsAbsSolution,depsRelSolution,dnorm,dmin,dmax
     character(len=SYS_STRLEN), dimension(:), pointer :: SsolutionFailsafeVariables
     character(LEN=SYS_STRLEN) :: ssolutionName
-    integer :: isolutiontype, nexpression, nsolutionfailsafe
-    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, iter
-    integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
-    integer :: nmaxIterationsSolution, ivariable, nvariable
+    integer :: isolutiontype,nexpression,nsolutionfailsafe
+    integer :: iblock,ivar,ieq,idim,iter
+    integer :: lumpedMassMatrix,consistentMassMatrix,systemMatrix,dofCoords
+    integer :: nmaxIterationsSolution,ivariable,nvariable
     logical :: bisAccepted
 
 
@@ -1900,66 +1838,72 @@ contains
             OU_CLASS_ERROR, OU_MODE_STD, 'hydro_initSolution')
         call sys_halt()
       end if
-
-      ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection,&
-          'rfparser', ssectionName=ssectionName)
-
-      ! Get number of spatial dimensions
-      ndim = rproblemLevel%rtriangulation%ndim
-
-      ! Initialize variable values
-      Dvalue = 0.0_DP
-      nexpression = 0
-
-      ! Loop over all blocks of the global solution vector
-      do iblock = 1, rvector%nblocks
-
-        ! Set pointers
-        p_rspatialDiscr => rvector%p_rblockDiscr%RspatialDiscr(iblock)
-        call storage_getbase_double2D(&
-            p_rspatialDiscr%h_DdofCoords, p_DdofCoords)
-        call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
-
-        ! Initialisation for scalar subvector
-        neq  = rvector%RvectorBlock(iblock)%NEQ
-        nvar = rvector%RvectorBlock(iblock)%NVAR
-
-        ! Loop over all variables of the solution vector
-        do ivar = 1, nvar
-
-          ! Get the function name of the component used for evaluating the initial solution.
-          call parlst_getvalue_string(rparlist, ssectionName,&
-              'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
+      
+      ! Get global configuration from parameter list
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'dofCoords', dofCoords)
+      
+      if (dofCoords > 0) then
+        ! Get function parser from collection structure
+        p_rfparser => collct_getvalue_pars(rcollection,&
+            'rfparser', ssectionName=ssectionName)
+        
+        ! Initialize variable values
+        Dvalue           = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        nexpression      = 0
+        
+        ! Loop over all blocks of the global solution vector
+        do iblock = 1, rvector%nblocks
           
-          ! Get the number of the component used for evaluating the initial solution
-          icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+          ! Set pointers
+          call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
+          call lsyssc_getbase_double(&
+              rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock),&
+              p_DdofCoords)
           
-          if (ivar .eq. 1) then
-            ! Evaluate the function parser for all coordinates
-            call fparser_evalFunction(p_rfparser, icomp, 2,&
-                  p_DdofCoords, p_Ddata, (/dtime/))
-          else
-            ! Loop over all equations of the scalar subvector
-            do ieq = 1, neq
-              
-              ! Set coordinates and evalution time
-              Dvalue(1:ndim)   = p_DdofCoords(:,ieq)
-              Dvalue(NDIM3D+1) = dtime
-              
-              ! Evaluate the function parser
-              call fparser_evalFunction(p_rfparser, icomp,&
-                  Dvalue, p_Ddata((ieq-1)*nvar+ivar))
-            end do   ! ieq
-          end if
+          ! Loop over all variables of the solution vector
+          do ivar = 1, rvector%RvectorBlock(iblock)%NVAR
+            
+            ! Get the function name of the component used for evaluating the initial solution.
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
+            
+            if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
+              ! Evaluate the function parser for all coordinates
+              call fparser_evalFuncBlockByName2(p_rfparser, ssolutionName,&
+                  rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock)%NVAR,&
+                  rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock)%NEQ,&
+                  p_DdofCoords, rvector%RvectorBlock(iblock)%NEQ, p_Ddata, (/dtime/))
+            else
 
-        end do   ! ivar
+              ! Loop over all equations of the scalar subvector
+              do ieq = 1, rvector%RvectorBlock(iblock)%NEQ
+                ! Set coordinates and evalution time
+                do idim = 1, rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock)%NVAR
+                  Dvalue(idim) = p_DdofCoords((ieq-1)*&
+                      rproblemLevel%RvectorBlock(dofCoords)%RvectorBlock(iblock)%NVAR+idim)
+                end do
+                
+                ! Evaluate the function parser
+                call fparser_evalFunction(p_rfparser, ssolutionName,&
+                    Dvalue, p_Ddata((ieq-1)*rvector%RvectorBlock(iblock)%NVAR+ivar))
+              end do   ! ieq
+            end if
+            
+          end do   ! ivar
+          
+          ! Increase number of processed expressions
+          nexpression = nexpression + rvector%RvectorBlock(iblock)%NVAR
+          
+        end do   ! iblock
 
-        ! Increase number of processed expressions
-        nexpression = nexpression + nvar
-
-      end do   ! iblock
-   
+      else
+        call output_line('Coordinates of DOFs not available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_initSolution')
+        call sys_halt()
+      end if
+      
 
     case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
           SOLUTION_ANALYTIC_L2_LUMPED)
@@ -3288,7 +3232,7 @@ contains
     character(LEN=SYS_STRLEN) :: sucdimport
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat, discretisation
-    integer :: isize, ipreadapt, npreadapt, ndimension
+    integer :: ipreadapt, npreadapt, ndimension
     integer, external :: signal_SIGINT
 
 
@@ -3322,11 +3266,9 @@ contains
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
         rsolution, .false., ST_DOUBLE)
-    if (p_rdiscretisation%ncomponents .ne.&
-        hydro_getNVAR(p_rproblemLevel)) then
+    if (p_rdiscretisation%ncomponents .ne. hydro_getNVAR(p_rproblemLevel)) then
       rsolution%RvectorBlock(1)%NVAR = hydro_getNVAR(p_rproblemLevel)
-      isize = rsolution%NEQ*hydro_getNVAR(p_rproblemLevel)
-      call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
+      call lsysbl_resizeVectorBlock(rsolution, rsolution%NEQ, .false., .false.)
     end if
 
     ! Initialize the solution vector and impose boundary conditions
@@ -3862,71 +3804,5 @@ contains
     end do cmdarg
 
   end subroutine hydro_parseCmdlArguments
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_adjustParameterlist(rparlist, ssectionName)
-
-!<description>
-    ! This subroutine adjusts the content of the parameter list
-    ! depending on internal data, i.e., the dimension
-!</description>
-
-!<inputoutput>
-    ! parameter list
-    type(t_parlist), intent(inout) :: rparlist
-
-    ! section name in parameter list
-    character(LEN=*), intent(in) :: ssectionName
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: ndimension
-    integer :: imasstype
-    integer :: imassantidiffusiontype
-
-
-    ! Check if mass matrix needs to be built
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'imasstype', imasstype)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
-
-    if ((imasstype .eq. MASS_ZERO) .and. &
-        (imassantidiffusiontype .eq. MASS_ZERO)) then
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'ConsistentMassMatrix', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'LumpedMassMatrix', '0')
-    end if
-
-    ! Check which coefficient matrices for inviscid part need to be build
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'ndimension', ndimension)
-
-    select case(ndimension)
-    case (NDIM1D)
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CY', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CZ', '0')
-    case (NDIM2D)
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CZ', '0')
-    case (NDIM3D)
-      ! We actually need all three matrices
-    case default
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CX', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CY', '0')
-      call parlst_setvalue(rparlist,&
-          ssectionName, 'CoeffMatrix_CZ', '0')
-    end select
-
-  end subroutine hydro_adjustParameterlist
 
 end module hydro_application
