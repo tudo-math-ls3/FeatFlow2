@@ -5504,7 +5504,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxScDiss2d_sim, dscale, bclear, rvector, rcollection,&
-                hydro_calcDivVecScDiss2d_cuda)
+                fcb_calcVectorEdgeSys=hydro_calcDivVecScDiss2d_cuda)
 #else
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5538,7 +5538,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxScDissDiSp2d_sim, dscale, bclear, rvector, rcollection,&
-                hydro_calcDivVecScDissDiSp2d_cuda)
+                fcb_calcVectorEdgeSys=hydro_calcDivVecScDissDiSp2d_cuda)
 #else
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5571,7 +5571,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRoeDiss2d_sim, dscale, bclear, rvector, rcollection,&
-                hydro_calcDivVecRoeDiss2d_cuda)
+                fcb_calcVectorEdgeSys=hydro_calcDivVecRoeDiss2d_cuda)
 #else
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5605,7 +5605,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRoeDissDiSp2d_sim, dscale, bclear, rvector, rcollection,&
-                hydro_calcDivVecRoeDissDiSp2d_cuda)
+                fcb_calcVectorEdgeSys=hydro_calcDivVecRoeDissDiSp2d_cuda)
 #else
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5638,7 +5638,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRusDiss2d_sim, dscale, bclear, rvector, rcollection,&
-                hydro_calcDivVecRusDiss2d_cuda)
+                fcb_calcVectorEdgeSys=hydro_calcDivVecRusDiss2d_cuda)
 #else
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -5672,7 +5672,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
                 hydro_calcFluxRusDissDiSp2d_sim, dscale, bclear, rvector, rcollection,&
-                hydro_calcDivVecRusDissDiSp2d_cuda)
+                fcb_calcVectorEdgeSys=hydro_calcDivVecRusDissDiSp2d_cuda)
 #else
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&

@@ -365,13 +365,13 @@ __global__ void hydro_calcFluxRoeDiss2d_knl(double * DmatrixCoeffsAtEdge,
 /*******************************************************************************/
 
 int hydro_calcFluxRoeDiss2d_cuda(unsigned long * h_DmatrixCoeffsAtEdge,
-				unsigned long * h_IverticesAtEdge,
-				unsigned long * h_Dx,
-				unsigned long * h_Dy,
-				double * dscale,
-				int * nblocks, int * neq, int * nvar,
-				int * nedge, int * nmatcoeff,
-				int * nedges, int * iedgeset)
+				 unsigned long * h_IverticesAtEdge,
+				 unsigned long * h_Dx,
+				 unsigned long * h_Dy,
+				 double * dscale,
+				 int * nblocks, int * neq, int * nvar,
+				 int * nedge, int * nmatcoeff,
+				 int * nedges, int * iedgeset)
 {
   double * d_Dx = (double*)(*h_Dx);
   double * d_Dy = (double*)(*h_Dy);

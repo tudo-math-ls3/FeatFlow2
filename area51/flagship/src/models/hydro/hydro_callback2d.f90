@@ -735,12 +735,13 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecScDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFluxSys_sim, rcollection)
+  subroutine hydro_calcDivVecScDiss2d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
     use fsystem
+    use groupfembase
     use linearsystemblock
 
 !<description>
@@ -750,6 +751,9 @@ contains
 !</description>
 
 !<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -767,14 +771,14 @@ contains
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! divergence vector
+    ! Destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -783,20 +787,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_DcoeffsAtEdge
     integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
-        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
-    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
-    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
@@ -812,7 +816,7 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
@@ -828,9 +832,10 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxScDiss2d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -1037,12 +1042,13 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecScDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFluxSys_sim, rcollection)
+  subroutine hydro_calcDivVecScDissDiSp2d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
     use fsystem
+    use groupfembase
     use linearsystemblock
 
 !<description>
@@ -1053,6 +1059,9 @@ contains
 !</description>
 
 !<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -1070,14 +1079,14 @@ contains
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! divergence vector
+    ! Destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -1086,20 +1095,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_DcoeffsAtEdge
     integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
-        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
-    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
-    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
@@ -1115,7 +1124,7 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
@@ -1131,9 +1140,10 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxScDissDiSp2d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -1437,12 +1447,13 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecRoeDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFluxSys_sim, rcollection)
+  subroutine hydro_calcDivVecRoeDiss2d_cuda(rgroupFEMSet, rx, ry, dscale, bclear,&
+      fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
     use fsystem
+    use groupfembase
     use linearsystemblock
 
 !<description>
@@ -1451,6 +1462,9 @@ contains
 !</description>
 
 !<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -1468,14 +1482,14 @@ contains
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! divergence vector
+    ! Destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -1484,20 +1498,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_DcoeffsAtEdge
     integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
-        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
-    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
-    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
@@ -1513,7 +1527,7 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
@@ -1529,9 +1543,10 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRoeDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxRoeDiss2d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -1910,12 +1925,13 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecRoeDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFluxSys_sim, rcollection)
+  subroutine hydro_calcDivVecRoeDissDiSp2d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
     use fsystem
+    use groupfembase
     use linearsystemblock
 
 !<description>
@@ -1925,6 +1941,9 @@ contains
 !</description>
 
 !<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -1942,14 +1961,14 @@ contains
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! divergence vector
+    ! Destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -1958,20 +1977,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_DcoeffsAtEdge
     integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
-        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
-    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
-    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
@@ -1987,7 +2006,7 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
@@ -2003,9 +2022,10 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRoeDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxRoeDissDiSp2d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -2221,12 +2241,13 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecRusDiss2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFluxSys_sim, rcollection)
+  subroutine hydro_calcDivVecRusDiss2d_cuda(rgroupFEMSet, rx, ry, dscale, bclear,&
+      fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
     use fsystem
+    use groupfembase
     use linearsystemblock
 
 !<description>
@@ -2235,6 +2256,9 @@ contains
 !</description>
 
 !<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -2252,14 +2276,14 @@ contains
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! divergence vector
+    ! Destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -2268,20 +2292,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_DcoeffsAtEdge
     integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
-        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
-    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
-    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
@@ -2297,7 +2321,7 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
@@ -2313,9 +2337,10 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRusDiss2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxRusDiss2d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
@@ -2533,12 +2558,13 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_calcDivVecRusDissDiSp2d_cuda(rafcstab, rx, ry, dscale, bclear,&
-      fcb_calcFluxSys_sim, rcollection)
+  subroutine hydro_calcDivVecRusDissDiSp2d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
 
     use afcstabbase
     use collection
     use fsystem
+    use groupfembase
     use linearsystemblock
 
 !<description>
@@ -2548,6 +2574,9 @@ contains
 !</description>
 
 !<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
     ! solution vector
     type(t_vectorBlock), intent(in) :: rx
 
@@ -2565,14 +2594,14 @@ contains
 !</input>
 
 !<inputoutput>
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-
-    ! divergence vector
+    ! Destination vector
     type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -2581,20 +2610,20 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DmatrixCoeffsAtEdge
+    integer(I64) :: p_DcoeffsAtEdge
     integer(I64) :: p_IedgeList
     integer(I64) :: p_Dx, p_Dy
     
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_IedgeList) .eq. 0_I64)&
-        call afcstab_copyH2D_IedgeList(rafcstab, .true.)
-    p_IedgeList = storage_getMemoryAddress(rafcstab%h_IedgeList)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge) .eq. 0_I64)&
-        call afcstab_copyH2D_DmatCoeffAtEdge(rafcstab, .true.)
-    p_DmatrixCoeffsAtEdge = storage_getMemoryAddress(rafcstab%h_DmatrixCoeffsAtEdge)
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
@@ -2610,7 +2639,7 @@ contains
     p_Dy = storage_getMemoryAddress(ry%h_Ddata)
    
     ! Set pointer
-    call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
     
     ! Loop over the edge groups and process all edges of one group
     ! in parallel without the need to synchronize memory access
@@ -2626,9 +2655,10 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRusDissDiSp2d_cuda(p_DmatrixCoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rafcstab%NEQ, rafcstab%NVAR,&
-          rafcstab%NEDGE, rafcstab%nmatrixCoeffs, IEDGEmax-IEDGEset+1, IEDGEset)
+      call hydro_calcFluxRusDissDiSp2d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
