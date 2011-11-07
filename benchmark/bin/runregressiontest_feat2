@@ -541,6 +541,7 @@ fb_customise() {
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
 	    if [ -s $AUXILIARYLOG ]; then
+		test $DEBUG -gt 0 && echo "# Loading of modules failed"
 		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
@@ -652,6 +653,7 @@ fb_customise() {
 	    sed -i -e '/Duplicate version symbol .* found/d;' $AUXILIARYLOG
 
 	    if [ -s $AUXILIARYLOG ]; then
+		test $DEBUG -gt 0 && echo "# Loading of modules failed"
 		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
@@ -799,6 +801,7 @@ fb_customise() {
 	    fi
 	    #grep -v Duplicate $AUXILIARYLOG > $AUXILIARYLOG
 	    if [ -s $AUXILIARYLOG ]; then
+		test $DEBUG -gt 0 && echo "# Loading of modules failed"
 		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
@@ -812,6 +815,7 @@ fb_customise() {
 fb_cleanUpOldCheckout() {
     cd $BASEDIR
     if [ $? -ne 0 ]; then
+	test $DEBUG -gt 0 && echo "# Cannot enter directory <$BASEDIR>"
 	MAILSUBJECT="$MAILPREFIX Cannot enter directory <$BASEDIR> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
@@ -890,6 +894,7 @@ fb_cleanUpOldCheckout() {
 
             # Check (within if block!!) whether an error occured
 	    if [ $? -ne 0 ]; then
+		test $DEBUG -gt 0 && echo "# Clean up of old FEAT2 checkout had errors"
 		MAILSUBJECT="$MAILPREFIX Clean up of old FEAT2 checkout had errors ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		$MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
@@ -934,6 +939,7 @@ fb_initialiseGlobalLogFile() {
 
     # Test whether logfiles can be written to
     if ! touch $GLOBALLOG; then
+	test $DEBUG -gt 0 && echo "# Cannot create logfile <$GLOBALLOG>"
 	MAILSUBJECT="$MAILPREFIX Cannot create logfile <$GLOBALLOG> ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
@@ -960,6 +966,7 @@ fb_checkoutFromSVN() {
 	export SVNURL
 	if ! svn co $SVNURL 1> $AUXILIARYLOG 2>&1; then
             # error occured
+	    test $DEBUG -gt 0 && echo "# SVN checkout failed"
 	    MAILSUBJECT="$MAILPREFIX SVN checkout failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    fb_exit 1
@@ -1018,6 +1025,7 @@ fb_checkWhetherToRun() {
 		     echo "benchmark was run. Benchmark skipped.";
 		     echo) >> $GLOBALLOG
 
+		    test $DEBUG -gt 0 && echo "# Benchmark skipped"
 		    MAILSUBJECT="$MAILPREFIX Benchmark skipped ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 		    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $GLOBALLOG
 		    fb_exit 0
@@ -1097,6 +1105,7 @@ fb_prepareForRun() {
 	fi
 	mkdir $BENCHMARKDIR > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
+	    test $DEBUG -gt 0 && echo "# Cannot create benchmark folder clone"
 	    MAILSUBJECT="$MAILPREFIX Cannot create benchmark folder clone ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    # Don't exit right now, it may be the directory already existed.
@@ -1105,6 +1114,7 @@ fb_prepareForRun() {
 	test $DEBUG -gt 0 && echo "# Cloning benchmark directory to <$BENCHMARKDIR>"
 	tar -cf - . | ( cd $BENCHMARKDIR; tar -xpf - ) > $AUXILIARYLOG 2>&1
 	if [ $? -ne 0 ]; then
+	    test $DEBUG -gt 0 && echo "# Copying benchmark folder failed"
 	    MAILSUBJECT="$MAILPREFIX Copying benchmark folder failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	    cat $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	    fb_exit 1
@@ -1146,6 +1156,7 @@ fb_configureBenchmark() {
 	test $DEBUG -gt 0 && echo "# Configuring benchmark applications"
     fi
     if [ -z "$BENCHMARKDIR" ]; then
+	test $DEBUG -gt 0 && echo "# Variable <BENCHMARKDIR> not set"
 	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
@@ -1160,6 +1171,7 @@ fb_configureBenchmark() {
     # or NEC compiler suites. In this case do not generate an e-mail
     # notification (error code 15, randomly chosen in bin/configure).
     if [ $? -ne 0  -a  $? -ne 15 ]; then
+	test $DEBUG -gt 0 && echo "# Configuring benchmark applications failed"
 	MAILSUBJECT="$MAILPREFIX Configuring benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
@@ -1181,6 +1193,7 @@ fb_compileBenchmark() {
 	test $DEBUG -gt 0 && echo "# Compiling benchmark applications"
     fi
     if [ -z "$BENCHMARKDIR" ]; then
+	test $DEBUG -gt 0 && echo "# Variable <BENCHMARKDIR> not set"
 	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
@@ -1203,6 +1216,7 @@ fb_compileBenchmark() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
+	test $DEBUG -gt 0 && echo "# Compiling benchmark applications failed"
 	MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	# Do not exit here! Even if one application fails to build,
@@ -1235,6 +1249,7 @@ fb_createTestSuiteScript() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
+	test $DEBUG -gt 0 && echo "# Creation of test suite script failed"
 	MAILSUBJECT="$MAILPREFIX Creation of test suite script failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
@@ -1273,6 +1288,7 @@ fb_runBenchmarkOnLiDO() {
 
     # Check whether an error occured
     if [ $? -ne 0 ]; then
+	test $DEBUG -gt 0 && echo "# Job scheduling failed"
 	MAILSUBJECT="$MAILPREFIX Job scheduling failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
     fi
@@ -1391,6 +1407,7 @@ fb_createDocumentation() {
 
         # Check whether an error occured
 	if [ $? -ne 0 ]; then
+	    test $DEBUG -gt 0 && echo "# Documentation could not be created"
 	    MAILSUBJECT="$MAILPREFIX Documentation could not be created ($HOSTNAME)"
 	    $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 	fi
@@ -1525,6 +1542,7 @@ test $DEBUG -gt 0 && echo "# Command line options parsed"
 test -r $AUXILIARYLOG && \rm -f $AUXILIARYLOG
 touch $AUXILIARYLOG
 if [ $? -ne 0 ]; then
+        test $DEBUG -gt 0 && echo "# Cannot create logfile <$AUXILIARYLOG>"
         MAILSUBJECT="$MAILPREFIX Cannot create logfile <$AUXILIARYLOG> ($HOSTNAME)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 fi
