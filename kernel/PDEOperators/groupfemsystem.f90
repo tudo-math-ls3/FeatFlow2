@@ -159,7 +159,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildOperatorNodeBlock1(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
@@ -195,6 +195,11 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSys_sim.inc'
 
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
@@ -220,9 +225,10 @@ contains
     type(t_array), dimension(:,:), allocatable  :: rarray
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Dx
-    integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeList1D
+    integer, dimension(:,:), pointer :: p_InodeListIdx2D,p_InodeList2D
+    integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
     logical :: bisFullMatrix
+    integer :: ccType
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -230,8 +236,9 @@ contains
     ! Check if user-defined assembly is provided
     if (present(fcb_calcOperatorNodeSys)) then
       
-      call fcb_calcOperatorNodeSys(rgroupFEMSet, rx, rmatrix, dscale,&
-          bclear, fcb_calcMatrixDiagSys_sim, rcollection, rafcstab)
+      call fcb_calcOperatorNodeSys(rgroupFEMSet, rx, rmatrix,&
+          dscale, bclear, cconstrType, fcb_calcMatrixDiagSys_sim,&
+          rcollection, rafcstab)
       ! That`s it
       return
 
@@ -242,7 +249,7 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
           fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
-          rcollection, rafcstab, rperfconfig=rperfconfig)
+          cconstrType, rcollection, rafcstab, rperfconfig=rperfconfig)
       ! That`s it
       return
     end if
@@ -267,6 +274,10 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildOperatorEdgeBlock1')
       call sys_halt()
     end if
+
+    ! Set type of matrix construction method
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
 
     ! What type of assembly should be performed
     select case(rgroupFEMSet%cassemblyType)
@@ -297,21 +308,39 @@ contains
     
         ! Check if only a subset of the matrix is required
         if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-          ! Set pointers
-          call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+
+          select case(ccType)
+          case (GFEM_MATC_CONSISTENT)
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+            call doOperatorConsistDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+                p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
+                bisFullMatrix, rarray)
+
+          case (GFEM_MATC_LUMPED)
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+            call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
+            call doOperatorLumpedDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+                p_InodeListIdx1D, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
+                dscale, bclear, bisFullMatrix, rarray)
+          end select
+
+        else ! use restricted DOFs for assembly
           
-          ! Assemble operator node-by-node
-          call doOperatorDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
-              p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
-              bisFullMatrix, rarray)
-        else
-          ! Set pointers
-          call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-          
-          ! Assemble selected part of the operator node-by-node
-          call doOperatorDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
-              p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
-              bisFullMatrix, rarray)
+          select case(ccType)
+          case (GFEM_MATC_CONSISTENT)
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+            call doOperatorConsistDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+                p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
+                bisFullMatrix, rarray)
+
+          case (GFEM_MATC_LUMPED)
+            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+            call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
+            call doOperatorLumpedDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+                p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
+                dscale, bclear, bisFullMatrix, rarray)
+          end select
+
         end if
         
         ! Deallocate temporal memory
@@ -332,10 +361,10 @@ contains
   contains
 
     !**************************************************************
-    ! Assemble operator node-by-node without stabilisation
+    ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorDble(NEQ, NVAR, InodeList, DcoeffsAtNode,&
-        Dx, dscale, bclear, bisFullMatrix, rarray)
+    subroutine doOperatorConsistDble(NEQ, NVAR, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -367,14 +396,14 @@ contains
       !$omp         IAmax,idx,ij,j,ivar,jvar,ijpos)&
       !$omp if (size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
-      ! allocate temporal memory
+      ! Allocate temporal memory
       allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
       if (bisFullMatrix) then
         allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
       else
         allocate(Dcoefficients(NVAR,1,p_rperfconfig%NASIM))
       end if
-      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
       
       ! Loop over all nonzero matrix entries
       !$omp do schedule(static,1)
@@ -490,13 +519,209 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
       
-    end subroutine doOperatorDble
+    end subroutine doOperatorConsistDble
 
     !**************************************************************
-    ! Assemble operator node-by-node without stabilisation
+    ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorDbleSel(NEQ, NVAR, InodeList, DcoeffsAtNode,&
-        Dx, dscale, bclear, bisFullMatrix, rarray)
+    subroutine doOperatorLumpedDble(NEQ, NVAR, InodeListIdx, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
+
+       ! input parameters
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
+      integer, intent(in) :: NEQ,NVAR
+      logical, intent(in) :: bisFullMatrix
+
+      ! input/output parameters
+      type(t_array), dimension(:,:), intent(inout) :: rarray
+    
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DdataAtNode
+      real(DP), dimension(:,:,:), pointer :: Dcoefficients
+      integer, dimension(:,:), pointer :: IdofsAtNode
+      
+      ! local variables
+      real(DP), dimension(:), allocatable :: Dtemp
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq,ijpos,ivar,jvar
+      
+      !-------------------------------------------------------------------------
+      ! Assemble all entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) call gfem_clearArray(rarray)
+
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtNode,Dtemp,IdofsAtNode,&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq,ivar,jvar,ijpos)&
+      !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
+      
+      ! Allocate temporal memory
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
+      if (bisFullMatrix) then
+        allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
+        allocate(Dtemp(NVAR*NVAR))
+      else
+        allocate(Dcoefficients(NVAR,1,p_rperfconfig%NASIM))
+        allocate(Dtemp(NVAR))
+      end if
+
+      ! Loop over all equations in blocks of size NEQSIM
+      !$omp do schedule(static,1)
+      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+        
+        ! We always handle NEQSIM equations by one OpenMP thread.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most NEQSIM equations by one OpenMP thread.
+
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        
+        ! Since the number of nonzero entries per equation is not
+        ! fixed we need to iterate over all equations in the current
+        ! set of equations [IEQset:IEQmax] and process not more than
+        ! NASIM nonzero entries simultaneously.
+        
+        ! Initialise the lower and upper bounds of nonzero entries;
+        ! note that this is not the matrix position itself but the
+        ! equation number to which the nonzero matrix entries belong
+        IAset = IEQset
+        IAmax = IEQset
+
+        ! Also initialise the absolute position of first nonzero entry
+        IApos = InodeListIdx(IEQset)
+        
+        ! Repeat until all equation in the current set have been processed
+        do while (IAset .le. IEQmax)
+          
+          ! Initialise local index which will run from IAset..IAmax.
+          ! Since IAset and IAmax are not fixed but they are updated
+          ! step-by-step we need this complicated while-loop
+          idx = 0
+
+          ! Loop over the equations of the current group and include
+          ! an equation into the current set of nonzero matrix entries
+          ! if the total number of nonzero matrix entries in the set
+          ! does not exceed the upper bound NASIM
+          do while(IAmax .le. IEQmax)
+
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
+            
+            ! Loop through all nonzero matrix entries in the current
+            ! equation and prepare the auxiliary arrays for it
+            do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Fill auxiliary arrays
+              IdofsAtNode(1,idx) = InodeList(ia)       ! absolut nodal value j
+              IdofsAtNode(2,idx) = ia                  ! absolute matrix position ia
+              DdataAtNode(:,idx) = Dx(InodeList(ia),:) ! solution value at node j
+            end do
+            
+            ! Increase the upper bound for nonzero entries
+            IAmax = IAmax+1
+          end do
+          
+          ! Use callback function to compute matrix entries
+          call fcb_calcMatrixDiagSys_sim(&
+              DdataAtNode(:,1:idx),&
+              DcoeffsAtNode(:,IApos:IApos+idx-1),&
+              IdofsAtNode(:,1:idx),&
+              dscale, idx,&
+              Dcoefficients(:,:,1:idx), rcollection)
+
+          ! Initialise local index which will run from IAset..IAmax
+          idx = 0
+
+          ! Loop through all nonzero matrix entries in the current set
+          ! and scatter the entries to the diagonal of the global matrix
+
+          if (bisFullMatrix) then
+
+            do ieq = IAset, IAmax-1
+              
+              ! Clear temporal data
+              Dtemp = 0.0_DP
+              
+              ! Loop over all contributions to this equation
+              do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
+                
+                ! Update local index
+                idx = idx+1
+                
+                ! Update temporal data
+                Dtemp = Dtemp + Dcoefficients(:,1,idx)
+              end do
+              
+              ! Update the diagonal entry of the global operator
+              ia = InodeListIdx(ieq)
+              do ivar = 1, NVAR
+                do jvar = 1, NVAR
+                  ijpos = NVAR*(ivar-1)+jvar
+                  rarray(jvar,ivar)%p_Ddata(ia) = Dtemp(ijpos)
+                end do
+              end do
+            end do
+            
+            ! Proceed with next nonzero entries in current set
+            IAset = IAmax
+            IApos = InodeListIdx(IASet)
+
+          else ! block diagonal matrix
+
+            do ieq = IAset, IAmax-1
+              
+              ! Clear temporal data
+              Dtemp = 0.0_DP
+              
+              ! Loop over all contributions to this equation
+              do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
+                
+                ! Update local index
+                idx = idx+1
+                
+                ! Update temporal data
+                Dtemp = Dtemp + Dcoefficients(:,1,idx)
+              end do
+              
+              ! Update the diagonal entry of the global operator
+              ia = InodeListIdx(ieq)
+              do ivar = 1, NVAR
+                rarray(ivar,ivar)%p_Ddata(ia) = Dtemp(ivar)
+              end do
+            end do
+            
+            ! Proceed with next nonzero entries in current set
+            IAset = IAmax
+            IApos = InodeListIdx(IASet)
+
+          end if
+            
+        end do
+      end do
+      !$omp end do
+      
+      ! Deallocate temporal memory
+      deallocate(IdofsAtNode)
+      deallocate(DdataAtNode)
+      deallocate(Dcoefficients)
+      deallocate(Dtemp)
+      !$omp end parallel
+            
+    end subroutine doOperatorLumpedDble
+
+    !**************************************************************
+    ! Assemble operator node-by-node in consistent manner
+
+    subroutine doOperatorConsistDbleSel(NEQ, NVAR, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -526,7 +751,7 @@ contains
       !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j,ivar,jvar,ijpos)&
       !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
-      ! allocate temporal memory
+      ! Allocate temporal memory
       allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
       if (bisFullMatrix) then
         allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
@@ -639,8 +864,198 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
       
-    end subroutine doOperatorDbleSel
+    end subroutine doOperatorConsistDbleSel
     
+    !**************************************************************
+    ! Assemble operator node-by-node in lumped manner
+
+    subroutine doOperatorLumpedDbleSel(NEQ, NVAR, InodeListIdx, InodeList,&
+        DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
+
+      ! input parameters
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: InodeListIdx,InodeList
+      integer, intent(in) :: NEQ,NVAR
+      logical, intent(in) :: bisFullMatrix
+
+      ! input/output parameters
+      type(t_array), dimension(:,:), intent(inout) :: rarray
+      
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DdataAtNode
+      real(DP), dimension(:,:,:), pointer :: Dcoefficients
+      
+      ! local variables
+      real(DP), dimension(:), allocatable :: Dtemp
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ijpos,ivar,jvar
+
+      !-------------------------------------------------------------------------
+      ! Assemble all entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) call gfem_clearArray(rarray)
+
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtNode,Dtemp,&
+      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ivar,jvar,ijpos)&
+      !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
+      
+      ! Allocate temporal memory
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      if (bisFullMatrix) then
+        allocate(Dcoefficients(NVAR*NVAR,1,p_rperfconfig%NASIM))
+        allocate(Dtemp(NVAR*NVAR))
+      else
+        allocate(Dcoefficients(NVAR,1,p_rperfconfig%NASIM))
+        allocate(Dtemp(NVAR))
+      end if
+      
+      ! Loop over all equations in blocks of size NEQSIM
+      !$omp do schedule(static,1)
+      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
+        
+        ! We always handle NEQSIM equations by one OpenMP thread.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most NEQSIM equations by one OpenMP thread.
+
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        
+        ! Since the number of nonzero entries per equation is not
+        ! fixed we need to iterate over all equations in the current
+        ! set of equations [IEQset:IEQmax] and process not more than
+        ! NASIM nonzero entries simultaneously.
+        
+        ! Initialise the lower and upper bounds of nonzero entries;
+        ! note that this is not the matrix position itself but the
+        ! equation number to which the nonzero matrix entries belong
+        IAset = IEQset
+        IAmax = IEQset
+
+        ! Also initialise the absolute position of first nonzero entry
+        IApos = InodeListIdx(1,IEQset)
+        
+        ! Repeat until all equation in the current set have been processed
+        do while (IAset .le. IEQmax)
+          
+          ! Initialise local index which will run from IAset..IAmax.
+          ! Since IAset and IAmax are not fixed but they are updated
+          ! step-by-step we need this complicated while-loop
+          idx = 0
+
+          ! Loop over the equations of the current group and include
+          ! an equation into the current set of nonzero matrix entries
+          ! if the total number of nonzero matrix entries in the set
+          ! does not exceed the upper bound NASIM
+          do while(IAmax .le. IEQmax)
+
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(1,IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
+            
+            ! Loop through all nonzero matrix entries in the current
+            ! equation and prepare the auxiliary arrays for it
+            do ia = InodeListIdx(1,IAmax), InodeListIdx(1,IAmax+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Fill auxiliary arrays
+              DdataAtNode(:,idx) = Dx(InodeList(1,ia),:) ! solution value at node j
+            end do
+            
+            ! Increase the upper bound for nonzero entries
+            IAmax = IAmax+1
+          end do
+        
+          ! Use callback function to compute matrix entries
+          call fcb_calcMatrixDiagSys_sim(&
+              DdataAtNode(:,1:idx),&
+              DcoeffsAtNode(:,IApos:IApos+idx-1),&
+              InodeList(:,IApos:IApos+idx-1),&
+              dscale, idx, Dcoefficients(:,:,1:idx), rcollection)
+
+          ! Initialise local index which will run from IAset..IAmax
+          idx = 0
+          
+          ! Loop through all equations in the current set
+          ! and scatter the entries to the global matrix
+
+          if (bisFullMatrix) then
+
+            do i = IAset, IAmax-1
+              
+              ! Clear temporal date
+              Dtemp = 0.0_DP
+              
+              ! Loop over all contributions to this equation
+              do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+                
+                ! Update local index
+                idx = idx+1
+                
+                ! Update temporal data
+                Dtemp = Dtemp + Dcoefficients(:,1,idx)
+              end do
+              
+              ! Update the diagonal entry of the global operator
+              ia = InodeListIdx(1,i)
+              do ivar = 1, NVAR
+                do jvar = 1, NVAR
+                  ijpos = NVAR*(ivar-1)+jvar
+                  rarray(jvar,ivar)%p_Ddata(ia) = Dtemp(ijpos)
+                end do
+              end do
+            end do
+            
+            ! Proceed with next nonzero entries in current set
+            IAset = IAmax
+            IApos = InodeListIdx(1,IASet)
+          
+          else   ! matrix is block-diagonal
+
+            do i = IAset, IAmax-1
+              
+              ! Clear temporal date
+              Dtemp = 0.0_DP
+              
+              ! Loop over all contributions to this equation
+              do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+                
+                ! Update local index
+                idx = idx+1
+                
+                ! Update temporal data
+                Dtemp = Dtemp + Dcoefficients(:,1,idx)
+              end do
+              
+              ! Update the diagonal entry of the global operator
+              ia = InodeListIdx(1,i)
+              do ivar = 1, NVAR
+                rarray(ivar,ivar)%p_Ddata(ia) = Dtemp(ivar)
+              end do
+            end do
+            
+            ! Proceed with next nonzero entries in current set
+            IAset = IAmax
+            IApos = InodeListIdx(1,IASet)
+            
+          end if
+          
+        end do
+      end do
+      !$omp end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtNode)
+      deallocate(Dcoefficients)
+      deallocate(Dtemp)
+      !$omp end parallel
+      
+    end subroutine doOperatorLumpedDbleSel
+
   end subroutine gfsys_buildOperatorNodeBlock1
 
   !*****************************************************************************
@@ -648,7 +1063,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildOperatorNodeBlock2(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
@@ -684,6 +1099,11 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSys_sim.inc'
 
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
@@ -714,8 +1134,9 @@ contains
       ! Create auxiliary 1-block vector
       call lsysbl_createVecFromScalar(rx, rxBlock)
 
-      call fcb_calcOperatorNodeSys(rgroupFEMSet, rxBlock, rmatrix, dscale,&
-          bclear, fcb_calcMatrixDiagSys_sim, rcollection, rafcstab)
+      call fcb_calcOperatorNodeSys(rgroupFEMSet, rxBlock, rmatrix,&
+          dscale, bclear, cconstrType, fcb_calcMatrixDiagSys_sim,&
+          rcollection, rafcstab)
 
       ! Release auxiliary 1-block vector
       call lsysbl_releaseVector(rxBlock)
@@ -726,8 +1147,8 @@ contains
       ! Call scalar version of this routine
       call gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx,&
           fcb_calcMatrixDiagSys_sim, dscale, bclear,&
-          rmatrix%RmatrixBlock(1,1), rcollection, rafcstab,&
-          rperfconfig=rperfconfig)
+          rmatrix%RmatrixBlock(1,1), cconstrType, rcollection,&
+          rafcstab, rperfconfig=rperfconfig)
 
     else
       call output_line('Matrix must not contain more than one block!',&
@@ -742,7 +1163,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildOperatorNodeBlock3(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
@@ -778,6 +1199,11 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSys_sim.inc'
 
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
@@ -808,8 +1234,9 @@ contains
       ! Create auxiliary 1-block matrix
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
 
-      call fcb_calcOperatorNodeSys(rgroupFEMSet, rx, rmatrixBlock, dscale,&
-          bclear, fcb_calcMatrixDiagSys_sim, rcollection, rafcstab)
+      call fcb_calcOperatorNodeSys(rgroupFEMSet, rx, rmatrixBlock,&
+          dscale, bclear, cconstrType, fcb_calcMatrixDiagSys_sim,&
+          rcollection, rafcstab)
 
       ! Release auxiliary 1-block matrix
       call lsysbl_releaseMatrix(rmatrixBlock)
@@ -818,8 +1245,8 @@ contains
 
       ! Call scalar version of this routine
       call gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, rcollection,&
-          rafcstab, rperfconfig=rperfconfig)
+          fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, cconstrType,&
+          rcollection, rafcstab, rperfconfig=rperfconfig)
       
     else
       call output_line('Vector must not contain more than one block!',&
@@ -834,7 +1261,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildOperatorNodeScalar(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSys_sim, dscale, bclear, rmatrix, cconstrType,&
       rcollection, rafcstab, fcb_calcOperatorNodeSys, rperfconfig)
     
 !<description>
@@ -864,6 +1291,11 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSys_sim.inc'
 
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorNodeSys.inc'
     optional :: fcb_calcOperatorNodeSys
@@ -890,8 +1322,9 @@ contains
     type(t_matrixBlock) :: rmatrixBlock
     real(DP), dimension(:,:), pointer :: p_DcoeffsAtNode
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
-    integer, dimension(:,:), pointer :: p_InodeList2D
-    integer, dimension(:), pointer :: p_InodeList1D
+    integer, dimension(:,:), pointer :: p_InodeListIdx2D,p_InodeList2D
+    integer, dimension(:), pointer :: p_InodeListIdx1D,p_InodeList1D
+    integer :: ccType
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -903,8 +1336,9 @@ contains
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
       
       ! Call user-defined assembly
-      call fcb_calcOperatorNodeSys(rgroupFEMSet, rxBlock, rmatrixBlock, dscale,&
-          bclear, fcb_calcMatrixDiagSys_sim, rcollection, rafcstab)
+      call fcb_calcOperatorNodeSys(rgroupFEMSet, rxBlock, rmatrixBlock,&
+          dscale, bclear, cconstrType, fcb_calcMatrixDiagSys_sim,&
+          rcollection, rafcstab)
       
       ! Release auxiliary 1-block vector and matrix
       call lsysbl_releaseVector(rxBlock)
@@ -929,6 +1363,10 @@ contains
       call sys_halt()
     end if
     
+    ! Set type of matrix construction method
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
     ! What type of assembly should be performed
     select case(rgroupFEMSet%cassemblyType)
 
@@ -960,38 +1398,76 @@ contains
           
           ! Check if only a subset of the matrix is required
           if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-            ! Set pointers
-            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+
+            select case(ccType)
+            case (GFEM_MATC_CONSISTENT)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+              call doOperatorConsistDble(rx%NEQ, rmatrix%NA, rx%NVAR,&
+                  rx%NVAR*rx%NVAR, p_InodeList1D, p_DcoeffsAtNode,&
+                  p_Dx, dscale, bclear, p_Ddata)
+
+            case (GFEM_MATC_LUMPED)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+              call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
+              call doOperatorLumpedDble(rx%NEQ, rmatrix%NA, rx%NVAR,&
+                  rx%NVAR*rx%NVAR, p_InodeListIdx1D, p_InodeList1D,&
+                  p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+            end select
             
-            ! Assemble operator node-by-node
-            call doOperatorDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
-                p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
-          else
-            ! Set pointers
-            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+          else ! use restricted DOFs for assembly
             
-            ! Assemble selected part of the operator node-by-node
-            call doOperatorDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
-                p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+            select case(ccType)
+            case (GFEM_MATC_CONSISTENT)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+              call doOperatorConsistDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR,&
+                  rx%NVAR*rx%NVAR, p_InodeList2D, p_DcoeffsAtNode,&
+                  p_Dx, dscale, bclear, p_Ddata)
+
+            case (GFEM_MATC_LUMPED)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+              call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
+              call doOperatorLumpedDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR,&
+                  rx%NVAR*rx%NVAR, p_InodeListIdx2D, p_InodeList2D,&
+                  p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+            end select
+
           end if
 
         case (LSYSSC_MATRIXD)
           
           ! Check if only a subset of the matrix is required
           if (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DOFLIST) .eq. 0) then
-            ! Set pointers
-            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
-            
-            ! Assemble operator node-by-node
-            call doOperatorDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
-                p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
-          else
-            ! Set pointers
-            call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-            
-            ! Assemble selected part of the operator node-by-node
-            call doOperatorDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
-                p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+
+            select case(ccType)
+            case (GFEM_MATC_CONSISTENT)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+              call doOperatorConsistDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+                  p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+
+            case (GFEM_MATC_LUMPED)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
+              call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
+              call doOperatorLumpedDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+                  p_InodeListIdx1D, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
+                  dscale, bclear, p_Ddata)
+            end select
+
+          else ! use restricted DOFs for assembly
+
+            select case(ccType)
+            case (GFEM_MATC_CONSISTENT)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+              call doOperatorConsistDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+                  p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
+
+            case (GFEM_MATC_LUMPED)
+              call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
+              call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D) 
+              call doOperatorLumpedDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+                  p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
+                  dscale, bclear, p_Ddata)
+            end select
+              
           end if
 
         case default
@@ -1017,10 +1493,10 @@ contains
     ! Here, the working routine follow
 
     !**************************************************************
-    ! Assemble operator node-by-node without stabilisation
-
-    subroutine doOperatorDble(NEQ, NA, NVAR, MVAR, InodeList,&
-        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+    ! Assemble operator node-by-node in consistent manner
+    
+    subroutine doOperatorConsistDble(NEQ, NA, NVAR, MVAR,&
+        InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -1050,7 +1526,7 @@ contains
       !$omp private(Dcoefficients,DdataAtNode,IdofsAtNode,IAmax,idx,ij,j)&
       !$omp if (size(InodeList) > p_rperfconfig%NAMIN_OMP)
       
-      ! allocate temporal memory
+      ! Allocate temporal memory
       allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
       allocate(Dcoefficients(MVAR,1,p_rperfconfig%NASIM))
       allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
@@ -1122,13 +1598,162 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
       
-    end subroutine doOperatorDble
+    end subroutine doOperatorConsistDble
 
     !**************************************************************
-    ! Assemble operator node-by-node without stabilisation
+    ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorDbleSel(NEQ, NA, NVAR, MVAR, InodeList,&
-        DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+    subroutine doOperatorLumpedDble(NEQ, NA, NVAR, MVAR,&
+        InodeListIdx, InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+
+       ! input parameters
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:), intent(in) :: InodeListIdx,InodeList
+      integer, intent(in) :: NEQ,NA,NVAR,MVAR
+
+      ! input/output parameters
+      real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
+    
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DdataAtNode
+      real(DP), dimension(:,:,:), pointer :: Dcoefficients
+      integer, dimension(:,:), pointer :: IdofsAtNode
+      
+      ! local variables
+      real(DP), dimension(MVAR) :: Dtemp
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq
+      
+      !-------------------------------------------------------------------------
+      ! Assemble all entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) call lalg_clearVector(Ddata)
+
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtNode,Dtemp,IdofsAtNode,&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq)&
+      !$omp if(size(InodeList) > p_rperfconfig%NAMIN_OMP)
+      
+      ! Allocate temporal memory
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(MVAR,1,p_rperfconfig%NASIM))
+      allocate(IdofsAtNode(2,p_rperfconfig%NASIM))
+
+      ! Loop over all equations in blocks of size NEQSIM
+      !$omp do schedule(static,1)
+      do IEQset = 1, size(InodeListIdx)-1, p_rperfconfig%NEQSIM
+        
+        ! We always handle NEQSIM equations by one OpenMP thread.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most NEQSIM equations by one OpenMP thread.
+
+        IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        
+        ! Since the number of nonzero entries per equation is not
+        ! fixed we need to iterate over all equations in the current
+        ! set of equations [IEQset:IEQmax] and process not more than
+        ! NASIM nonzero entries simultaneously.
+        
+        ! Initialise the lower and upper bounds of nonzero entries;
+        ! note that this is not the matrix position itself but the
+        ! equation number to which the nonzero matrix entries belong
+        IAset = IEQset
+        IAmax = IEQset
+
+        ! Also initialise the absolute position of first nonzero entry
+        IApos = InodeListIdx(IEQset)
+        
+        ! Repeat until all equation in the current set have been processed
+        do while (IAset .le. IEQmax)
+          
+          ! Initialise local index which will run from IAset..IAmax.
+          ! Since IAset and IAmax are not fixed but they are updated
+          ! step-by-step we need this complicated while-loop
+          idx = 0
+
+          ! Loop over the equations of the current group and include
+          ! an equation into the current set of nonzero matrix entries
+          ! if the total number of nonzero matrix entries in the set
+          ! does not exceed the upper bound NASIM
+          do while(IAmax .le. IEQmax)
+
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
+            
+            ! Loop through all nonzero matrix entries in the current
+            ! equation and prepare the auxiliary arrays for it
+            do ia = InodeListIdx(IAmax), InodeListIdx(IAmax+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Fill auxiliary arrays
+              IdofsAtNode(1,idx) = InodeList(ia)       ! absolut nodal value j
+              IdofsAtNode(2,idx) = ia                  ! absolute matrix position ia
+              DdataAtNode(:,idx) = Dx(:,InodeList(ia)) ! solution value at node j
+            end do
+            
+            ! Increase the upper bound for nonzero entries
+            IAmax = IAmax+1
+          end do
+          
+          ! Use callback function to compute matrix entries
+          call fcb_calcMatrixDiagSys_sim(&
+              DdataAtNode(:,1:idx),&
+              DcoeffsAtNode(:,IApos:IApos+idx-1),&
+              IdofsAtNode(:,1:idx),&
+              dscale, idx,&
+              Dcoefficients(:,:,1:idx), rcollection)
+
+          ! Initialise local index which will run from IAset..IAmax
+          idx = 0
+
+          ! Loop through all nonzero matrix entries in the current set
+          ! and scatter the entries to the diagonal of the global matrix
+          do ieq = IAset, IAmax-1
+            
+            ! Clear temporal data
+            Dtemp = 0.0_DP
+            
+            ! Loop over all contributions to this equation
+            do ia = InodeListIdx(ieq), InodeListIdx(ieq+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Update temporal data
+              Dtemp = Dtemp + Dcoefficients(:,1,idx)
+            end do
+            
+            ! Update the diagonal entry of the global operator
+            Ddata(:,InodeListIdx(ieq)) = Dtemp
+          end do
+          
+          ! Proceed with next nonzero entries in current set
+          IAset = IAmax
+          IApos = InodeListIdx(IASet)
+          
+        end do
+      end do
+      !$omp end do
+      
+      ! Deallocate temporal memory
+      deallocate(IdofsAtNode)
+      deallocate(DdataAtNode)
+      deallocate(Dcoefficients)
+      !$omp end parallel
+            
+    end subroutine doOperatorLumpedDble
+
+    !**************************************************************
+    ! Assemble operator node-by-node in consistent manner
+
+    subroutine doOperatorConsistDbleSel(NEQ, NA, NVAR, MVAR,&
+        InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -1157,7 +1782,7 @@ contains
       !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j)&
       !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
-      ! allocate temporal memory
+      ! Allocate temporal memory
       allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
       allocate(Dcoefficients(MVAR,1,p_rperfconfig%NASIM))
       
@@ -1219,7 +1844,150 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
       
-    end subroutine doOperatorDbleSel
+    end subroutine doOperatorConsistDbleSel
+
+    !**************************************************************
+    ! Assemble operator node-by-node in lumped manner
+
+    subroutine doOperatorLumpedDbleSel(NEQ, NA, NVAR, MVAR,&
+        InodeListIdx, InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
+
+      ! input parameters
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
+      real(DP), intent(in) :: dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: InodeListIdx,InodeList
+      integer, intent(in) :: NEQ,NA,NVAR,MVAR
+
+      ! input/output parameters
+      real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
+      
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DdataAtNode
+      real(DP), dimension(:,:,:), pointer :: Dcoefficients
+      
+      ! local variables
+      real(DP), dimension(MVAR) :: Dtemp
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx
+
+      !-------------------------------------------------------------------------
+      ! Assemble all entries
+      !-------------------------------------------------------------------------
+
+      if (bclear) call lalg_clearVector(Ddata)
+
+      !$omp parallel default(shared)&
+      !$omp private(Dcoefficients,DdataAtNode,Dtemp,&
+      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx)&
+      !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
+      
+      ! Allocate temporal memory
+      allocate(DdataAtNode(NVAR,p_rperfconfig%NASIM))
+      allocate(Dcoefficients(MVAR,1,p_rperfconfig%NASIM))
+      
+      ! Loop over all equations in blocks of size NEQSIM
+      !$omp do schedule(static,1)
+      do IEQset = 1, size(InodeListIdx,2)-1, p_rperfconfig%NEQSIM
+        
+        ! We always handle NEQSIM equations by one OpenMP thread.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most NEQSIM equations by one OpenMP thread.
+
+        IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
+        
+        ! Since the number of nonzero entries per equation is not
+        ! fixed we need to iterate over all equations in the current
+        ! set of equations [IEQset:IEQmax] and process not more than
+        ! NASIM nonzero entries simultaneously.
+        
+        ! Initialise the lower and upper bounds of nonzero entries;
+        ! note that this is not the matrix position itself but the
+        ! equation number to which the nonzero matrix entries belong
+        IAset = IEQset
+        IAmax = IEQset
+
+        ! Also initialise the absolute position of first nonzero entry
+        IApos = InodeListIdx(1,IEQset)
+        
+        ! Repeat until all equation in the current set have been processed
+        do while (IAset .le. IEQmax)
+          
+          ! Initialise local index which will run from IAset..IAmax.
+          ! Since IAset and IAmax are not fixed but they are updated
+          ! step-by-step we need this complicated while-loop
+          idx = 0
+
+          ! Loop over the equations of the current group and include
+          ! an equation into the current set of nonzero matrix entries
+          ! if the total number of nonzero matrix entries in the set
+          ! does not exceed the upper bound NASIM
+          do while(IAmax .le. IEQmax)
+
+            ! Exit if more than NASIM nonzero entries would be processed
+            if (InodeListIdx(1,IAmax+1)-IApos .gt. p_rperfconfig%NASIM) exit
+            
+            ! Loop through all nonzero matrix entries in the current
+            ! equation and prepare the auxiliary arrays for it
+            do ia = InodeListIdx(1,IAmax), InodeListIdx(1,IAmax+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Fill auxiliary arrays
+              DdataAtNode(:,idx) = Dx(:,InodeList(1,ia)) ! solution value at node j
+            end do
+            
+            ! Increase the upper bound for nonzero entries
+            IAmax = IAmax+1
+          end do
+        
+          ! Use callback function to compute matrix entries
+          call fcb_calcMatrixDiagSys_sim(&
+              DdataAtNode(:,1:idx),&
+              DcoeffsAtNode(:,IApos:IApos+idx-1),&
+              InodeList(:,IApos:IApos+idx-1),&
+              dscale, idx, Dcoefficients(:,:,1:idx), rcollection)
+
+          ! Initialise local index which will run from IAset..IAmax
+          idx = 0
+          
+          ! Loop through all equations in the current set
+          ! and scatter the entries to the global matrix
+          do i = IAset, IAmax-1
+                        
+            ! Clear temporal date
+            Dtemp = 0.0_DP
+            
+            ! Loop over all contributions to this equation
+            do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+              
+              ! Update local index
+              idx = idx+1
+              
+              ! Update temporal data
+              Dtemp = Dtemp + Dcoefficients(:,1,idx)
+            end do
+            
+            ! Update the diagonal entry of the global operator
+            Ddata(:,InodeListIdx(1,i)) = Dtemp
+          end do
+          
+          ! Proceed with next nonzero entries in current set
+          IAset = IAmax
+          IApos = InodeListIdx(1,IASet)
+          
+        end do
+      end do
+      !$omp end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtNode)
+      deallocate(Dcoefficients)
+      !$omp end parallel
+      
+    end subroutine doOperatorLumpedDbleSel
 
   end subroutine gfsys_buildOperatorNodeScalar
 
@@ -1906,9 +2674,9 @@ contains
                 
                 ! Update the global operator
                 do ivar = 1, NVAR
-                  rarray(jvar,ivar)%p_Ddata(ii) = rarray(jvar,ivar)%p_Ddata(ii)&
+                  rarray(ivar,ivar)%p_Ddata(ii) = rarray(ivar,ivar)%p_Ddata(ii)&
                                                 - Dcoefficients(ivar,1,idx)
-                  rarray(jvar,ivar)%p_Ddata(jj) = rarray(jvar,ivar)%p_Ddata(jj)&
+                  rarray(ivar,ivar)%p_Ddata(jj) = rarray(ivar,ivar)%p_Ddata(jj)&
                                                 - Dcoefficients(ivar,1,idx)
                   rarray(ivar,ivar)%p_Ddata(ij) = Dcoefficients(ivar,2,idx)&
                                                 + Dcoefficients(ivar,1,idx)
@@ -1963,9 +2731,9 @@ contains
                 
                 ! Update the global operator
                 do ivar = 1, NVAR
-                  rarray(jvar,ivar)%p_Ddata(ii) = rarray(jvar,ivar)%p_Ddata(ii)&
+                  rarray(ivar,ivar)%p_Ddata(ii) = rarray(ivar,ivar)%p_Ddata(ii)&
                                                 - Dcoefficients(ivar,1,idx)
-                  rarray(jvar,ivar)%p_Ddata(jj) = rarray(jvar,ivar)%p_Ddata(jj)&
+                  rarray(ivar,ivar)%p_Ddata(jj) = rarray(ivar,ivar)%p_Ddata(jj)&
                                                 - Dcoefficients(ivar,1,idx)
                   rarray(ivar,ivar)%p_Ddata(ij) = rarray(ivar,ivar)%p_Ddata(ij)&
                                                 + Dcoefficients(ivar,2,idx)&

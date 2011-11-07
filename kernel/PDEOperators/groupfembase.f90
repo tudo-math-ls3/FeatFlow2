@@ -107,6 +107,9 @@
 !#                           gfem_getbase_arrayBlock
 !#      -> Returns the array of pointers to a given block matrix
 !#
+!# 29.) gfem_clearArray
+!#      -> Clears the array of pointrs to a block matrix
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) gfem_copyH2D_IedgeList
@@ -197,6 +200,7 @@ module groupfembase
   public :: gfem_infoGroupFEMSet
   public :: gfem_infoGroupFEMBlock
   public :: gfem_getbase_array
+  public :: gfem_clearArray
 
   public :: gfem_copyH2D_IedgeList
   public :: gfem_copyD2H_IedgeList
@@ -219,6 +223,16 @@ module groupfembase
 
   ! Edge-based assembly
   integer, parameter, public :: GFEM_EDGEBASED = 2
+!</constantblock>
+
+
+!<constantblock description="Method identifiers for construction of matrix structure.">
+
+  ! Consistent matrix construction. This is the standard matrix construction method.
+  integer, parameter, public :: GFEM_MATC_CONSISTENT = 0
+
+  ! Lumped matrix construction. All off-diagonal entries are added to the diagonal
+  integer, parameter, public :: GFEM_MATC_LUMPED     = 1
 !</constantblock>
 
 
@@ -560,6 +574,12 @@ module groupfembase
   interface gfem_getbase_array
     module procedure gfem_getbase_arrayScalar
     module procedure gfem_getbase_arrayBlock
+  end interface
+
+  interface gfem_clearArray
+    module procedure gfem_clearArraySingle
+    module procedure gfem_clearArrayScalar
+    module procedure gfem_clearArrayBlock
   end interface
 
 contains
@@ -4840,6 +4860,76 @@ contains
     end do
 
   end subroutine gfem_getbase_arrayScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_clearArraySingle(rarray)
+
+!<description>
+    ! This subroutine clears all data of the array
+!</description>
+
+!<inputoutput>
+    type(t_array), intent(inout) :: rarray
+!</inputoutput>
+!</subroutine>
+
+    if (associated(rarray%p_Ddata)) call lalg_clearVector(rarray%p_Ddata)
+    if (associated(rarray%p_Fdata)) call lalg_clearVector(rarray%p_Fdata)
+    
+  end subroutine gfem_clearArraySingle
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_clearArrayScalar(rarray)
+
+!<description>
+    ! This subroutine clears all data of the vector of arrays
+!</description>
+
+!<inputoutput>
+    type(t_array), dimension(:), intent(inout) :: rarray
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: i
+
+    do i=1,size(rarray)
+      call gfem_clearArraySingle(rarray(i))
+    end do
+    
+  end subroutine gfem_clearArrayScalar
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_clearArrayBlock(rarray)
+
+!<description>
+    ! This subroutine clears all data of the matrix of arrays
+!</description>
+
+!<inputoutput>
+    type(t_array), dimension(:,:), intent(inout) :: rarray
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: i,j
+
+    do i=1,size(rarray,1)
+      do j=1,size(rarray,2)
+        call gfem_clearArraySingle(rarray(i,j))
+      end do
+    end do
+    
+  end subroutine gfem_clearArrayBlock
 
   !*****************************************************************************
 
