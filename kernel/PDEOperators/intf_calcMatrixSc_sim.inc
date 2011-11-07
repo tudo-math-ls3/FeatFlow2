@@ -27,7 +27,7 @@
   real(DP), dimension(:,:,:), intent(in) ::  DcoeffsAtEdge
 
   ! Numbers of nodes and matrix entries for all edges under consideration
-  !   DIMENSION(4,nedges)
+  !   DIMENSION(6,nedges)
   integer, dimension(:,:), intent(in) :: IedgeList
 
   ! Scaling parameter
