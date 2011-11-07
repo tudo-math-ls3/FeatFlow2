@@ -112,40 +112,80 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) gfem_copyH2D_IedgeList
-!#      -> Copies the edge structure from the host memory
+!# 1.) gfem_allocCoeffs
+!#     -> Initialises memory for precomputed coefficients
+!#
+!# 2.) gfem_copyH2D_IdofsList
+!#    -> Copies the list of DOFs from the host memory
+!#       to the device memory.
+!#
+!# 3.) gfem_copyD2H_IdofsList
+!#     -> Copies the list of DOFs from the device memory
+!#        to the host memory.
+!#
+!# 4.) gfem_copyH2D_IdiagList
+!#     -> Copies the diagonal structure from the host memory
+!#        to the device memory.
+!#
+!# 5.) gfem_copyD2H_IdiagList
+!#     -> Copies the diagonal structure from the device memory
+!#        to the host memory.
+!#
+!# 6.) gfem_copyH2D_IedgeListIdx
+!#     -> Copies the edge index structure from the host memory
+!#        to the device memory.
+!#
+!# 7.) gfem_copyD2H_IedgeListIdx
+!#     -> Copies the edge index structure from the device memory
+!#        to the host memory.
+!#
+!# 8.) gfem_copyH2D_IedgeList
+!#     -> Copies the edge structure from the host memory
+!#        to the device memory.
+!#
+!# 9.) gfem_copyD2H_IedgeList
+!#     -> Copies the edge structure from the device memory
+!#        to the host memory.
+!#
+!# 10.) gfem_copyH2D_InodeListIdx
+!#      -> Copies the node index structure from the host memory
 !#         to the device memory.
 !#
-!# 2.) gfem_copyD2H_IedgeList
-!#      -> Copies the edge structure from the device memory
+!# 11.) gfem_copyD2H_InodeListIdx
+!#      -> Copies the node index structure from the device memory
 !#         to the host memory.
 !#
-!# 3.) gfem_copyH2D_CoeffsAtNode
-!#     -> Copies the coefficients at nodes from the host memory
-!#        to the device memory.
+!# 12.) gfem_copyH2D_InodeList
+!#      -> Copies the node structure from the host memory
+!#         to the device memory.
 !#
-!# 4.) gfem_copyD2H_CoeffsAtNode
-!#     -> Copies the coefficients at nodes from the device memory
-!#        to the host  memory.
+!# 13.) gfem_copyD2H_InodeList
+!#      -> Copies the node structure from the device memory
+!#         to the host memory.
 !#
-!# 5.) gfem_copyH2D_CoeffsAtEdge
-!#     -> Copies the coefficients at edges from the host memory
-!#        to the device memory.
+!# 14.) gfem_copyH2D_CoeffsAtNode
+!#      -> Copies the coefficients at nodes from the host memory
+!#         to the device memory.
 !#
-!# 6.) gfem_copyD2H_CoeffsAtEdge
-!#     -> Copies the coefficients at matrix diagonals from the 
-!#        device memory to the host  memory.
+!# 15.) gfem_copyD2H_CoeffsAtNode
+!#      -> Copies the coefficients at nodes from the device memory
+!#         to the host  memory.
 !#
-!# 7.) gfem_copyH2D_CoeffsAtDiag
+!# 16.) gfem_copyH2D_CoeffsAtEdge
+!#      -> Copies the coefficients at edges from the host memory
+!#         to the device memory.
+!#
+!# 17.) gfem_copyD2H_CoeffsAtEdge
+!#      -> Copies the coefficients at matrix diagonals from the 
+!#         device memory to the host  memory.
+!#
+!# 18.) gfem_copyH2D_CoeffsAtDiag
 !#     -> Copies the coefficients at matrix diagonals from the
 !#         host memory to the device memory.
 !#
-!# 8.) gfem_copyD2H_CoeffsAtDiag
-!#     -> Copies the coefficients at edges from the device memory
-!#        to the host  memory.
-!#
-!# 9.) gfem_allocCoeffs
-!#     -> Initialises memory for precomputed coefficients
+!# 19.) gfem_copyD2H_CoeffsAtDiag
+!#      -> Copies the coefficients at edges from the device memory
+!#         to the host  memory.
 !#
 !# </purpose>
 !##############################################################################
@@ -201,17 +241,27 @@ module groupfembase
   public :: gfem_infoGroupFEMBlock
   public :: gfem_getbase_array
   public :: gfem_clearArray
-
+  
+  public :: gfem_allocCoeffs
+  public :: gfem_copyH2D_IdofsList
+  public :: gfem_copyD2H_IdofsList
+  public :: gfem_copyH2D_IdiagList
+  public :: gfem_copyD2H_IdiagList
+  public :: gfem_copyH2D_IedgeListIdx
+  public :: gfem_copyD2H_IedgeListIdx
   public :: gfem_copyH2D_IedgeList
   public :: gfem_copyD2H_IedgeList
+  public :: gfem_copyH2D_InodeListIdx
+  public :: gfem_copyD2H_InodeListIdx
+  public :: gfem_copyH2D_InodeList
+  public :: gfem_copyD2H_InodeList
+  public :: gfem_copyH2D_CoeffsAtDiag
+  public :: gfem_copyD2H_CoeffsAtDiag
   public :: gfem_copyH2D_CoeffsAtNode
   public :: gfem_copyD2H_CoeffsAtNode
   public :: gfem_copyH2D_CoeffsAtEdge
   public :: gfem_copyD2H_CoeffsAtEdge
-  public :: gfem_copyH2D_CoeffsAtDiag
-  public :: gfem_copyD2H_CoeffsAtDiag
-  public :: gfem_allocCoeffs
-
+  
 !<constants>
 !<constantblock description="Global format flag for group FEM assembly">
 
@@ -4931,6 +4981,269 @@ contains
     
   end subroutine gfem_clearArrayBlock
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_allocCoeffs(rgroupFEMSet, ncoeffsAtDiag, ncoeffsAtNode,&
+      ncoeffsAtEdge, cdataType)
+
+!<description>
+    ! This subroutine initialises memory for storing precomputed
+    ! coefficients at nodes and/or edges.
+!</description>
+
+!<input>
+    ! Number of precomputed coefficients.
+    ! If a value is negative, then the corresponding array is not modified!
+    integer, intent(in) :: ncoeffsAtDiag
+    integer, intent(in) :: ncoeffsAtNode
+    integer, intent(in) :: ncoeffsAtEdge
+
+    ! OPTIONAL Data type
+    integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(2) :: Isize2D
+    integer, dimension(3) :: Isize3D
+
+    ! Remove auxiliary memory if not shared with others and set new dimension
+    if (ncoeffsAtDiag .eq. 0) then
+      if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_DIAGDATA) .eq. 0)&
+          .and.(rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE))&
+          call storage_free(rgroupFEMSet%h_CoeffsAtDiag)
+      rgroupFEMSet%ncoeffsAtDiag = ncoeffsAtDiag
+    end if
+
+    if (ncoeffsAtNode .ge. 0) then
+      if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODEDATA) .eq. 0)&
+          .and.(rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE))&
+          call storage_free(rgroupFEMSet%h_CoeffsAtNode)
+      rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
+    end if
+      
+    if (ncoeffsAtEdge .ge. 0) then
+      if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGEDATA) .eq. 0)&
+        .and.(rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE))&
+        call storage_free(rgroupFEMSet%h_CoeffsAtEdge)
+      rgroupFEMSet%ncoeffsAtEdge = ncoeffsAtEdge
+    end if
+
+    ! Set data type
+    if (present(cdataType)) rgroupFEMSet%cdataType = cdataType
+    
+    if (ncoeffsAtDiag .gt. 0) rgroupFEMSet%ncoeffsAtDiag = ncoeffsAtDiag
+    if (ncoeffsAtNode .gt. 0) rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
+    if (ncoeffsAtEdge .gt. 0) rgroupFEMSet%ncoeffsAtEdge = ncoeffsAtEdge
+
+    ! Allocate diagonal data array
+    if ((rgroupFEMSet%NEQ .gt. 0) .and. (rgroupFEMSet%ncoeffsAtDiag .gt. 0)) then
+      Isize2D = (/rgroupFEMSet%ncoeffsAtDiag, rgroupFEMSet%NEQ/)
+      call storage_new('gfem_allocCoeffs', 'CoeffsAtDiag',&
+          Isize2D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtDiag,&
+          ST_NEWBLOCK_NOINIT)
+    end if
+    
+    ! Allocate nodal data arary
+    if ((rgroupFEMSet%NA .gt. 0) .and. (rgroupFEMSet%ncoeffsAtNode .gt. 0)) then
+      Isize2D = (/rgroupFEMSet%ncoeffsAtNode, rgroupFEMSet%NA/)
+      call storage_new('gfem_allocCoeffs', 'CoeffsAtNode',&
+          Isize2D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtNode,&
+          ST_NEWBLOCK_NOINIT)
+    end if
+
+    ! Allocate edge-based data array
+    if ((rgroupFEMSet%NEDGE .gt. 0) .and. (rgroupFEMSet%ncoeffsAtEdge .gt. 0)) then
+      Isize3D = (/rgroupFEMSet%ncoeffsAtEdge, 2, rgroupFEMSet%NEDGE/)  
+      call storage_new('gfem_allocCoeffs', 'CoeffsAtEdge',&
+          Isize3D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtEdge,&
+          ST_NEWBLOCK_NOINIT)
+    end if
+    
+  end subroutine gfem_allocCoeffs
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyH2D_IdofsList(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the list of DOFs from the host memory
+    ! to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+
+    if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_IdofsTest,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+    if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE .and.&
+        .not.rgroupFEMSet%bidenticalTrialAndTest)&
+        call storage_syncMemory(rgroupFEMSet%h_IdofsTrial,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine gfem_copyH2D_IdofsList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyD2H_IdofsList(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the list of DOFs from the memory of the
+    ! coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_IdofsTest,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+    if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE .and.&
+        .not.rgroupFEMSet%bidenticalTrialAndTest)&
+        call storage_syncMemory(rgroupFEMSet%h_IdofsTrial,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine gfem_copyD2H_IdofsList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyH2D_IdiagList(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the diagonal structure from the host
+    ! memory to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+
+    if (rgroupFEMSet%h_IdiagList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_IdiagList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine gfem_copyH2D_IdiagList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyD2H_IdiagList(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the diagonal structure from the memory of
+    ! the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rgroupFEMSet%h_IdiagList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_IdiagList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine gfem_copyD2H_IdiagList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyH2D_IedgeListIdx(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the edge index structure from the host
+    ! memory to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+
+    if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine gfem_copyH2D_IedgeListIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyD2H_IedgeListIdx(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the edge index structure from the memory
+    ! of the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine gfem_copyD2H_IedgeListIdx
+
   !*****************************************************************************
 
 !<subroutine>
@@ -4986,6 +5299,116 @@ contains
 
   end subroutine gfem_copyD2H_IedgeList
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyH2D_InodeListIdx(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the node index structure from the host
+    ! memory to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+
+    if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_InodeListIdx,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine gfem_copyH2D_InodeListIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyD2H_InodeListIdx(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the node index structure from the memory
+    ! of the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_InodeListIdx,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine gfem_copyD2H_InodeListIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyH2D_InodeList(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the node structure from the host memory
+    ! to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+
+    if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_InodeList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose)
+
+  end subroutine gfem_copyH2D_InodeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_copyD2H_InodeList(rgroupFEMSet, btranspose)
+
+!<description>
+    ! This subroutine copies the node structure from the memory of the
+    ! coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! If true then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+!</subroutine>
+
+    if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
+        call storage_syncMemory(rgroupFEMSet%h_InodeList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose)
+
+  end subroutine gfem_copyD2H_InodeList
+  
   !*****************************************************************************
 
 !<subroutine>
@@ -5151,92 +5574,6 @@ contains
 
   end subroutine gfem_copyD2H_CoeffsAtDiag
 
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine gfem_allocCoeffs(rgroupFEMSet, ncoeffsAtDiag, ncoeffsAtNode,&
-      ncoeffsAtEdge, cdataType)
-
-!<description>
-    ! This subroutine initialises memory for storing precomputed
-    ! coefficients at nodes and/or edges.
-!</description>
-
-!<input>
-    ! Number of precomputed coefficients.
-    ! If a value is negative, then the corresponding array is not modified!
-    integer, intent(in) :: ncoeffsAtDiag
-    integer, intent(in) :: ncoeffsAtNode
-    integer, intent(in) :: ncoeffsAtEdge
-
-    ! OPTIONAL Data type
-    integer, intent(in), optional :: cdataType
-!</input>
-
-!<inputoutput>
-    ! Group finite element set
-    type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer, dimension(2) :: Isize2D
-    integer, dimension(3) :: Isize3D
-
-    ! Remove auxiliary memory if not shared with others and set new dimension
-    if (ncoeffsAtDiag .eq. 0) then
-      if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_DIAGDATA) .eq. 0)&
-          .and.(rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE))&
-          call storage_free(rgroupFEMSet%h_CoeffsAtDiag)
-      rgroupFEMSet%ncoeffsAtDiag = ncoeffsAtDiag
-    end if
-
-    if (ncoeffsAtNode .ge. 0) then
-      if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_NODEDATA) .eq. 0)&
-          .and.(rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE))&
-          call storage_free(rgroupFEMSet%h_CoeffsAtNode)
-      rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
-    end if
-      
-    if (ncoeffsAtEdge .ge. 0) then
-      if ((iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGEDATA) .eq. 0)&
-        .and.(rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE))&
-        call storage_free(rgroupFEMSet%h_CoeffsAtEdge)
-      rgroupFEMSet%ncoeffsAtEdge = ncoeffsAtEdge
-    end if
-
-    ! Set data type
-    if (present(cdataType)) rgroupFEMSet%cdataType = cdataType
-    
-    if (ncoeffsAtDiag .gt. 0) rgroupFEMSet%ncoeffsAtDiag = ncoeffsAtDiag
-    if (ncoeffsAtNode .gt. 0) rgroupFEMSet%ncoeffsAtNode = ncoeffsAtNode
-    if (ncoeffsAtEdge .gt. 0) rgroupFEMSet%ncoeffsAtEdge = ncoeffsAtEdge
-
-    ! Allocate diagonal data array
-    if ((rgroupFEMSet%NEQ .gt. 0) .and. (rgroupFEMSet%ncoeffsAtDiag .gt. 0)) then
-      Isize2D = (/rgroupFEMSet%ncoeffsAtDiag, rgroupFEMSet%NEQ/)
-      call storage_new('gfem_allocCoeffs', 'CoeffsAtDiag',&
-          Isize2D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtDiag,&
-          ST_NEWBLOCK_NOINIT)
-    end if
-    
-    ! Allocate nodal data arary
-    if ((rgroupFEMSet%NA .gt. 0) .and. (rgroupFEMSet%ncoeffsAtNode .gt. 0)) then
-      Isize2D = (/rgroupFEMSet%ncoeffsAtNode, rgroupFEMSet%NA/)
-      call storage_new('gfem_allocCoeffs', 'CoeffsAtNode',&
-          Isize2D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtNode,&
-          ST_NEWBLOCK_NOINIT)
-    end if
-
-    ! Allocate edge-based data array
-    if ((rgroupFEMSet%NEDGE .gt. 0) .and. (rgroupFEMSet%ncoeffsAtEdge .gt. 0)) then
-      Isize3D = (/rgroupFEMSet%ncoeffsAtEdge, 2, rgroupFEMSet%NEDGE/)  
-      call storage_new('gfem_allocCoeffs', 'CoeffsAtEdge',&
-          Isize3D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtEdge,&
-          ST_NEWBLOCK_NOINIT)
-    end if
-    
-  end subroutine gfem_allocCoeffs
+  
 
 end module groupfembase
