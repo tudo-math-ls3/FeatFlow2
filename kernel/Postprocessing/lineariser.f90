@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains various routines to convert an arbitrary
 !# finite element vector into its linearised representation which can
-!# be used for visualuzation. Given a FE-solution and its underlying
+!# be used for visualization. Given a FE-solution and its underlying
 !# triangulation a new triangulation is generated which consists of
 !# simplex elements (lines in 1D, triangles in 2D, tetrahedras in
 !# 3D). A piecewise linear representation of the FE-solution is
@@ -38,16 +38,24 @@
 !# 3.) lin_convertQuad2Tri
 !#     -> Convert all quadrilaterals into two triangles
 !#
+!# 4.) lin_calcDofCoords = dof_calcDofCoordsSc /
+!#                         dof_calcDofCoordsBl
+!#     -> Calculate the coordinates of the degrees of freedom
+!#
+!# 5.) lin_calcDofCoordsBlock
+!#     -> Calculate the coordinates of the degrees of freedom
+!#
 !# </purpose>
 !##############################################################################
 
 module lineariser
-
   
   use basicgeometry
   use boundary
   use derivatives
+  use dofmapping
   use element
+  use elementpreprocessing
   use feevaluation
   use fsystem
   use genoutput
@@ -55,8 +63,10 @@ module lineariser
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use perfconfig
   use spatialdiscretisation
   use storage
+  use transformation
   use triangulation
 
   implicit none
@@ -66,12 +76,18 @@ module lineariser
   public :: lin_lineariseVectorGlobal
   public :: lin_refineTriaGlobal
   public :: lin_evalAtDOFScalar
-
+  public :: lin_calcDofCoords
+  public :: lin_calcDofCoordsBlock
+  
   interface lin_lineariseVectorGlobal
     module procedure lin_lineariseVecScalarGlobal
     module procedure lin_lineariseVecBlockGlobal
   end interface
   
+  interface lin_calcDofCoords
+    module procedure lin_calcDofCoordsSc
+    module procedure lin_calcDofCoordsBl
+  end interface
 
 !<constants>
 !<constantblock description="Linearisation Types">
@@ -1547,5 +1563,280 @@ contains
     NEL = NEL0 + NEL
     
   end subroutine lin_convertQuad2Tri
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lin_calcDofCoordsSc(rdiscretisation, rvector, rperfconfig)
+
+!<description>
+    ! This subroutine computes the coordinates of the global DOF`s
+    ! of the given discretisation structure rdiscretisation
+!</description>
+
+!<input>
+    ! discretisation structure
+    type(t_spatialdiscretisation), intent(in) :: rdiscretisation
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! scalar vector
+    type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_evalElementSet) :: revalElementSet
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    real(DP), dimension(:,:), allocatable :: DcubPtsRef    
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:,:), allocatable :: Idofs
+    integer, dimension(:), pointer :: p_IelementList
+    integer :: icurrentElementDistr,idof,ndofLoc
+    integer(I32) :: cevaluationTag,ctrafoType
+    integer :: idim,iel
+    
+    ! Check if vector is compatible
+    if ((rvector%NVAR .ne. rdiscretisation%ndimension) .or.&
+        (rvector%NEQ  .ne. dof_igetNDofGlob(rdiscretisation))) then
+      call output_line('Vector is not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lin_calcDofCoordsSc')
+      call sys_halt()
+    end if
+    
+    ! Set pointer
+    call lsyssc_getbase_double(rvector, p_Ddata)
+
+    ! Prepare element evaluation set
+    call elprep_init(revalElementSet)
+    
+    ! Set the element evaluation tag of all FE spaces.
+    cevaluationTag = EL_EVLTAG_COORDS
+    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
+    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+    
+    ! Loop over the different element distributions
+    do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+        
+      ! Set pointer to current element distribution
+      p_relementDistribution =>&
+          rdiscretisation%RelementDistr(icurrentElementDistr)
+      
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+      
+      ! Set pointer to the list of elements in the discretisation
+      call storage_getbase_int(&
+          p_relementDistribution%h_IelementList, p_IelementList)
+      
+      ! Get the type of coordinate system
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      
+      ! Get the number of local degrees of freedom for the element
+      ndofLoc = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Allocate temporal array for the coordinates of the local
+      ! degrees of freedom on the reference element
+      allocate(DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ndofLoc))
+      call elem_getNDofLoc(p_relementDistribution%celement,DcubPtsRef)
+      
+      ! Calculate the global DOF`s into Idofs.
+      allocate(Idofs(ndofLoc,size(p_IelementList)))
+      call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, Idofs)
+        
+      ! Calculate all information that is necessary to evaluate the
+      ! finite element on all cells of our subset. This includes the
+      ! coordinates of the points on the cells.
+      call elprep_prepareSetForEvaluation(revalElementSet,&
+          cevaluationTag, rdiscretisation%p_rtriangulation,&
+          p_IelementList, ctrafoType, DcubPtsRef, rperfconfig=rperfconfig)
+      
+      ! Distribute data global degrees of freedom
+      do iel = 1,size(p_IelementList)
+        do idof = 1, ndofLoc
+          do idim = 1, rdiscretisation%ndimension
+            p_Ddata(rdiscretisation%ndimension*(Idofs(idof,iel)-1)+idim) =&
+                revalElementSet%p_DpointsReal(idim,idof,iel)
+          end do
+        end do
+      end do
+      
+      ! Release memory
+      deallocate(DcubPtsRef,Idofs)
+      
+      call elprep_releaseElementSet(revalElementSet)  
+    end do ! icurrentElementDistribution
+        
+  end subroutine lin_calcDofCoordsSc
+
+    ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lin_calcDofCoordsBl(rdiscretisation, rvector, rperfconfig)
+
+!<description>
+    ! This subroutine computes the coordinates of the global DOF`s
+    ! of the given discretisation structure rdiscretisation
+!</description>
+
+!<input>
+    ! discretisation structure
+    type(t_spatialdiscretisation), intent(in) :: rdiscretisation
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! block vector
+    type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_evalElementSet) :: revalElementSet
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    real(DP), dimension(:,:), allocatable :: DcubPtsRef    
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:,:), allocatable :: Idofs
+    integer, dimension(:), pointer :: p_IelementList
+    integer :: icurrentElementDistr,idof,ndofLoc
+    integer(I32) :: cevaluationTag,ctrafoType
+    integer :: idim,iel,ndofglob
+    
+    ! Check if rvector is a 1-block vector
+    if (rvector%nblocks .eq. 1) then
+      call lin_calcDofCoordsSc(rdiscretisation,&
+          rvector%RvectorBlock(1), rperfconfig)
+      ! That`s it
+      return
+    end if
+    
+    ! Calculate number of global DOFs
+    ndofglob = dof_igetNDofGlob(rdiscretisation)
+
+    ! Check if vector is compatible
+    if ((rvector%nblocks .ne. rdiscretisation%ndimension) .or.&
+        (rvector%NEQ     .ne. ndofglob*rdiscretisation%ndimension)) then
+      call output_line('Vector is not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lin_calcDofCoordsBl')
+      call sys_halt()
+    end if
+    
+    ! Set pointer
+    call lsysbl_getbase_double(rvector, p_Ddata)
+
+    ! Prepare element evaluation set
+    call elprep_init(revalElementSet)
+    
+    ! Set the element evaluation tag of all FE spaces.
+    cevaluationTag = EL_EVLTAG_COORDS
+    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
+    cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+    
+    ! Loop over the different element distributions
+    do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+        
+      ! Set pointer to current element distribution
+      p_relementDistribution =>&
+          rdiscretisation%RelementDistr(icurrentElementDistr)
+      
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+      
+      ! Set pointer to the list of elements in the discretisation
+      call storage_getbase_int(&
+          p_relementDistribution%h_IelementList, p_IelementList)
+      
+      ! Get the type of coordinate system
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      
+      ! Get the number of local degrees of freedom for the element
+      ndofLoc = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Allocate temporal array for the coordinates of the local
+      ! degrees of freedom on the reference element
+      allocate(DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ndofLoc))
+      call elem_getNDofLoc(p_relementDistribution%celement,DcubPtsRef)
+      
+      ! Calculate the global DOF`s into Idofs.
+      allocate(Idofs(ndofLoc,size(p_IelementList)))
+      call dof_locGlobMapping_mult(rdiscretisation, p_IelementList, Idofs)
+        
+      ! Calculate all information that is necessary to evaluate the
+      ! finite element on all cells of our subset. This includes the
+      ! coordinates of the points on the cells.
+      call elprep_prepareSetForEvaluation(revalElementSet,&
+          cevaluationTag, rdiscretisation%p_rtriangulation,&
+          p_IelementList, ctrafoType, DcubPtsRef, rperfconfig=rperfconfig)
+      
+      ! Distribute data global degrees of freedom
+      do iel = 1,size(p_IelementList)
+        do idof = 1, ndofLoc
+          do idim = 1, rdiscretisation%ndimension
+            p_Ddata(ndofglob*(idim-1)+Idofs(idof,iel)) =&
+                revalElementSet%p_DpointsReal(idim,idof,iel)
+          end do
+        end do
+      end do
+      
+      ! Release memory
+      deallocate(DcubPtsRef,Idofs)
+      
+      call elprep_releaseElementSet(revalElementSet)  
+    end do ! icurrentElementDistribution
+        
+  end subroutine lin_calcDofCoordsBl
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lin_calcDofCoordsBlock(rdiscretisation, rvector, rperfconfig)
+
+!<description>
+    ! This subroutine computes the coordinates of the global DOF`s
+    ! of the given block discretisation structure rdiscretisation
+!</description>
+
+!<input>
+    ! block discretisation structure
+    type(t_blockdiscretisation), intent(in) :: rdiscretisation
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! block vector
+    type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+  
+    ! local variables
+    integer :: i
+
+    ! Check if vector is compatible
+    if (rvector%nblocks .ne. rdiscretisation%ncomponents) then
+      call output_line('Vector is not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lin_calcDofCoordsBlock')
+      call sys_halt()
+    end if
+
+    ! Loop over all scalar spatial discretisation structures
+    do i = 1, rdiscretisation%ncomponents
+      call lin_calcDofCoordsSc(rdiscretisation%RspatialDiscr(i),&
+          rvector%RvectorBlock(i), rperfconfig)
+    end do
+    
+  end subroutine lin_calcDofCoordsBlock
 
 end module lineariser
