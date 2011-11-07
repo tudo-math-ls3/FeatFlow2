@@ -1370,14 +1370,19 @@ fb_runBenchmark() {
 	    test $DEBUG -gt 0 && echo "# Running benchmark"
 	fi
 
-	# It would be great if we could directly access all variables
-	# defined within the 'runtests' script (i.e. number of successful
-	# tests, of failed ones etc.)
-	# But, 'runtests' is (still) written in tcsh and incompatible
-	# with /bin/sh.
-        # So, tell runtests script to export all information we need to files such
-        # we can access the information here and still have all output redirected to $globallog.
-	./runtests >> $GLOBALLOG 2>&1
+	# 'runtests' is written in POSIX shell syntax as well and can hence be sourced
+	# and the statistics variables defined therein queried here once the script has finished.
+	. ./runtests >> $GLOBALLOG 2>&1
+
+	test $DEBUG -gt 0 && \
+	    (
+	     echo "# Benchmark summary:";
+	     echo "# tests in total           : "${testall};
+	     echo "# tests successfully passed: "${testpass};
+	     echo "# tests deviant            : "${testdeviant};
+	     echo "# tests unverifiable       : "${testunverified};
+	     echo "# tests failing execution  : "${testexecfailed};
+	     echo)
 
 	(echo; echo "Test ended at "`date`) >> $GLOBALLOG
     else
