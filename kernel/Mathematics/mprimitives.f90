@@ -3223,6 +3223,7 @@ contains
 !<result>
     real(DP) :: c
 !</result>
+!</function>
 
     ! local variables
     real(DP) :: dminval,dmaxval
@@ -3258,6 +3259,7 @@ contains
 !<result>
     real(DP) :: d
 !</result>
+!</function>
 
     ! local variables
     real(DP) :: dminval,dmaxval
@@ -3292,6 +3294,7 @@ contains
 !<result>
     real(SP) :: c
 !</result>
+!</function>
 
     ! local variables
     real(SP) :: fminval,fmaxval
@@ -3327,6 +3330,7 @@ contains
 !<result>
     real(SP) :: d
 !</result>
+!</function>
 
     ! local variables
     real(SP) :: fminval,fmaxval
@@ -3361,6 +3365,7 @@ contains
 !<result>
     real(DP) :: c
 !</result>
+!</function>
 
     ! local variables
     real(DP) :: dminval,dmaxval
@@ -3396,6 +3401,7 @@ contains
 !<result>
     real(DP) :: d
 !</result>
+!</function>
 
     ! local variables
     real(DP) :: dminval,dmaxval
@@ -3430,6 +3436,7 @@ contains
 !<result>
     real(SP) :: c
 !</result>
+!</function>
 
     ! local variables
     real(SP) :: fminval,fmaxval
@@ -3465,6 +3472,7 @@ contains
 !<result>
     real(SP) :: d
 !</result>
+!</function>
 
     ! local variables
     real(SP) :: fminval,fmaxval

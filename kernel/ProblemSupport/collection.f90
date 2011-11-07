@@ -2496,7 +2496,7 @@ contains
 
   ! ***************************************************************************
   
-!<function>
+!<subroutine>
 
   subroutine collct_settag (rcollection, sparameter, itag, &
                         ilevel, ssectionName, bexists)
@@ -2538,7 +2538,7 @@ contains
 
 !</output>
 
-!</function>
+!</subroutine>
 
     ! local variables
     type(t_collctValue), pointer :: p_rvalue

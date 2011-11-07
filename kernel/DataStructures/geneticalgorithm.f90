@@ -257,10 +257,10 @@ contains
     ! to their fitness level (the larger the better)
 !</description>
 
-!<inputoutpu>
+!<inputoutput>
     ! Population of chromosomes
     type(t_population), intent(inout) :: rpopulation
-!</inputoutpu>
+!</inputoutput>
 !</subroutine>
 
     ! local variables
