@@ -31,6 +31,9 @@
 !# 6.) bdrc_createRegion
 !#     -> Get the characteristics of a boundary segment and create
 !#        a boundary region structure from it.
+!#
+!# 7.) bdrc_getNumberOfRegions
+!#     -> Get the number of boundary regions on the boundary or some component
 !# </purpose>
 !##############################################################################
 
@@ -58,6 +61,7 @@ module boundarycondaux
   public :: bdrc_infoBoundaryCondition
   public :: bdrc_createRegion
   public :: bdrc_getNearestNeighbor2d
+  public :: bdrc_getNumberOfRegions
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -1185,4 +1189,46 @@ contains
 
   end subroutine bdrc_createRegion
 
+  ! *****************************************************************************
+
+!<function>
+
+  function bdrc_getNumberOfRegions(rboundaryCondition, ibdc) result(nregions)
+
+!<description>
+    ! This function calculates the number of boundary regions on the
+    ! boundary or on the boundary component ibdc.
+!</description>
+
+!<input>
+    ! The boundary conditions
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! OPTIONAL: boundary component
+    integer, intent(in), optional :: ibdc
+!</input>
+
+!<result>
+    integer :: nregions
+!</result>
+!</function>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx
+    integer :: ibct
+
+    ! Set pointers
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+
+    if (present(ibdc)) then
+      nregions = p_IbdrCondCpIdx(ibdc+1)-p_IbdrCondCpIdx(ibdc)
+    else
+      nregions = 0
+      do ibct = 1, rboundaryCondition%iboundarycount
+        nregions = nregions + p_IbdrCondCpIdx(ibct+1)-p_IbdrCondCpIdx(ibct)
+      end do
+    end if
+
+  end function bdrc_getNumberOfRegions
+  
 end module boundarycondaux
