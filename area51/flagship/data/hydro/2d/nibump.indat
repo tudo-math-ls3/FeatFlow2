@@ -33,10 +33,10 @@
 ################################################################################
 
 # Specify the initial solution by logical expressions and solution values
-deffunc: @initsol_rho   =  0.80410679808681; x,y,z,t
-deffunc: @initsol_vel_x =  0.61481474019026; x,y,z,t
-deffunc: @initsol_vel_y =  0.0; x,y,z,t
-deffunc: @initsol_Etot  =  2.07742175014947; x,y,z,t
+deffunc: @initsol_rho   =  0.80410679808681; x,y,t
+deffunc: @initsol_vel_x =  0.61481474019026; x,y,t
+deffunc: @initsol_vel_y =  0.0; x,y,t
+deffunc: @initsol_Etot  =  2.07742175014947; x,y,t
 
 # Specify the boundary conditions
 [bdrcond_weak1_primal]

@@ -25,9 +25,9 @@ defconst: y0 = 0.5
 defexpr:  sqr1 = ABS(x)
 
 # Specify the initial solution
-deffunc: @initsol_rho = if(@sqr1 < _r0, 2.0, 1.0) ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = if(@sqr1 < _r0, 37.5, 2.5) ; x,y,z,t
+deffunc: @initsol_rho = if(@sqr1 < _r0, 2.0, 1.0) ; x,y,t
+deffunc: @initsol_vel = 0.0 ; x,y,t
+deffunc: @initsol_Etot = if(@sqr1 < _r0, 37.5, 2.5) ; x,y,t
 
 # Specify the boundary conditions
 [bdrcond_primal]

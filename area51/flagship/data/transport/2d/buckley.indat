@@ -7,30 +7,14 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if( x<=0.5, 1.0, 0.0) ; x,y,z,t
+deffunc: @initsol = if( x<=0.5, 1.0, 0.0) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 1.0 ; x,y,z,t
-deffunc: @velocity_y = 1.0 ; x,y,z,t
+deffunc: @velocity_x = 1.0 ; x,y,t
+deffunc: @velocity_y = 1.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-0.25 T  'DIRICHLET_STRONG'  1.0
-1.0  T  'DIRICHLET_STRONG'  0.0
-3.0  F  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'  1.0
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

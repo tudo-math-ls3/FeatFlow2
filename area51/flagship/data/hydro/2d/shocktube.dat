@@ -22,7 +22,7 @@ application = hydro
 indatfile = data/hydro/2d/shocktube.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_weak_primal
+sprimalbdrcondname = bdrcond_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname =
@@ -85,8 +85,9 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(1) = 
-  density,pressure,velocity
+slimitingvariable(2) = 
+  density
+  pressure
   
 # number of failsafe steps
 nfailsafe = 0
@@ -202,7 +203,7 @@ istabilisation = 20
 #  0 = no prelimiting
 #  1 = standard prelimiting
 #  2 = minmod prelimiting
-iprelimiting = 2
+iprelimiting = 0
 
 
 ################################################################################
@@ -318,10 +319,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce

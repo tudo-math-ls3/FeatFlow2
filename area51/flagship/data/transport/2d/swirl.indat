@@ -17,21 +17,21 @@
 defconst: Tfin = 1.5
 
 # Specify the initial solution
-deffunc: @initsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,z,t
+deffunc: @initsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,z,t
+deffunc: @exactsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
 
 # Specify the initial velocity by logical expressions and solution values
-#deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y) ; x,y,z,t
-#deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x) ; x,y,z,t
+#deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y) ; x,y,t
+#deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/_Tfin) ; x,y,z,t
-deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/_Tfin) ; x,y,z,t
+deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/_Tfin) ; x,y,t
+deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/_Tfin) ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR
@@ -42,16 +42,3 @@ NCOMP
 1
 PARAMETERS
 4.0  T  'HOMNEUMANN_WEAK'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-8
-PARAMETERS
-4.0  T  'HOMNEUMANN_STRONG'

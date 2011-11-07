@@ -29,7 +29,7 @@ application = transport
 indatfile = data/transport/2d/swirl.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_weak_primal
+sprimalbdrcondname = bdrcond_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 
@@ -107,7 +107,7 @@ srhsname =
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 1
+isolutiontype = 4
 
 # section name of initial solution
 ssolutionname = @initsol

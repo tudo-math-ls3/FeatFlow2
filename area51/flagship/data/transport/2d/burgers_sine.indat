@@ -7,34 +7,17 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = SIN(_PI*x) ; x,y,z,t
+deffunc: @initsol = SIN(_PI*x) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 1.0 ; x,y,z,t
-deffunc: @velocity_y = 1.0 ; x,y,z,t
+deffunc: @velocity_x = 1.0 ; x,y,t
+deffunc: @velocity_y = 1.0 ; x,y,t
 
 # Specify the diffusion coefficient
-deffunc: @diffusion = 0.0 ; x,y,z,t
+deffunc: @diffusion = 0.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-1.0  T  'PERIODIC_STRONG' 1 3
-2.0  F  'DIRICHLET_STRONG'  'SIN(_PI*x)'
-3.0  F  'PERIODIC_STRONG' 1 1
-4.0  T  'HOMNEUMANN_STRONG'
-
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

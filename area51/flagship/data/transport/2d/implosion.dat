@@ -23,7 +23,7 @@ application = transport
 indatfile = data/transport/2d/implosion.indat
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_weak_primal
+sprimalbdrcondname = bdrcond_primal
 
 # section name of boundary condition for dual problem
 sdualbdrcondname = 

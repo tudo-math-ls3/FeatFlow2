@@ -8,34 +8,16 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if(x > 0.2 & x < 0.7, 1.0, 0.0) ; x,y,z,t
+deffunc: @initsol = if(x > 0.2 & x < 0.7, 1.0, 0.0) ; x,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,y,z,t
+deffunc: @exactsol = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,t
 
 # Specify the diffusion coefficient
-deffunc: @diffusion = 1e-3 ; x,y,z,t
+deffunc: @diffusion = 1e-3 ; x,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-2
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-IBCT
-2
-NCOMP
-1
-PARAMETERS
-0.0  T  'DIRICHLET_STRONG'  0.0
-0.0  T  'HOMNEUMANN_STRONG'  
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 2
 NEXPR

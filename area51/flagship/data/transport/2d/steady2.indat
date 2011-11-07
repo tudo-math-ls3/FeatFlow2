@@ -18,17 +18,17 @@
 defconst: ang = -60
 
 # Specify the initial solution
-deffunc: @initsol = y ; x,y,z,t
+deffunc: @initsol = y ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,z,t
-deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,z,t
+deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,t
+deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,t
 
 # Specify the diffusion tensor
-deffunc: @diffusion = 1e-8 ; x,y,z,t
+deffunc: @diffusion = 1e-8 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_priml]
+[bdrcond_priml]
 NBCT
 1
 NEXPR
@@ -38,12 +38,12 @@ IBCT
 NCOMP
 3
 PARAMETERS
-0.3  T  'DIRICHLET_STRONG'  1.0
-3.0  T  'DIRICHLET_STRONG'  0.0
-4.0  T  'DIRICHLET_STRONG'  1.0
+0.3  T  'DIRICHLET_WEAK'  1.0
+3.0  T  'DIRICHLET_WEAK'  0.0
+4.0  T  'DIRICHLET_WEAK'  1.0
 
 # Specify the boundary conditions for the dual problem
-[bdrcond_strong_dual]
+[bdrcond_dual]
 NBCT
 1
 NEXPR
@@ -53,4 +53,4 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  'DIRICHLET_STRONG'  0.0
+4.0  T  'DIRICHLET_WEAK'  0.0

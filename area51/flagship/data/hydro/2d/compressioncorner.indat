@@ -20,29 +20,13 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho = 1.0 ; x,y,z,t
-deffunc: @initsol_vel_x = 2.5 ; x,y,z,t
-deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = 4.91071428571 ; x,y,z,t
+deffunc: @initsol_rho = 1.0 ; x,y,t
+deffunc: @initsol_vel_x = 2.5 ; x,y,t
+deffunc: @initsol_vel_y = 0.0 ; x,y,t
+deffunc: @initsol_Etot = 4.91071428571 ; x,y,t
 
 # Specify the boundary conditions
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-4
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-2.0  T  'FREESLIP_STRONG'
-3.0  F  'SUPEROUTLET_STRONG'
-4.0  F  'FREESLIP_STRONG'
-5.0  T  'SUPERINLET_STRONG'  1.0  2.5  0.0  0.71428571428571
-
-# Specify the boundary conditions
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

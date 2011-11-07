@@ -14,30 +14,12 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho  = if(x < 0.4, 5.99924, 5.99242) ; x,y,z,t
-deffunc: @initsol_vel  = if(x < 0.4, 117.5701059, -37.1310118186) ; x,y,z,t
-deffunc: @initsol_Etot = if(x < 0.4, 2304.27507518763, 230.275501230973) ; x,y,z,t
+deffunc: @initsol_rho  = if(x < 0.4, 5.99924, 5.99242) ; x,t
+deffunc: @initsol_vel  = if(x < 0.4, 117.5701059, -37.1310118186) ; x,t
+deffunc: @initsol_Etot = if(x < 0.4, 2304.27507518763, 230.275501230973) ; x,t
 
 # Specify the boundary conditions
-[bdrcond_strong_primal]
-NBCT
-2
-NEXPR
-3
-IBCT
-1
-NCOMP
-1
-IBCT
-2
-NCOMP
-1
-PARAMETERS
-0.0 T  'SUPEROUTLET_STRONG'  '5.99924'  '19.5975'  '460.894'
-0.0 T  'SUPEROUTLET_STRONG'  '5.99242'  '-6.19633'  '46.095'
-
-# Specify the boundary conditions
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 2
 NEXPR

@@ -17,20 +17,20 @@ defexpr:  y1  = -_x0*SIN(t)+_y0*COS(t)
 defexpr:  r2  = (x-@x1)^2+(y-@y1)^2
 
 # Specify the initial solution
-deffunc: @initsol = EXP(-@r2/(4*_eps*t))/(4*_pi*_eps*t) ; x,y,z,t
+deffunc: @initsol = EXP(-@r2/(4*_eps*t))/(4*_pi*_eps*t) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = EXP(-@r2/(4*_eps*t))/(4*_pi*_eps*t) ; x,y,z,t
+deffunc: @exactsol = EXP(-@r2/(4*_eps*t))/(4*_pi*_eps*t) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = -y ; x,y,z,t
-deffunc: @velocity_y =  x ; x,y,z,t
+deffunc: @velocity_x = -y ; x,y,t
+deffunc: @velocity_y =  x ; x,y,t
 
 # Sepcify the diffusion coefficient
-deffunc: @diffusion = _eps ; x,y,z,t
+deffunc: @diffusion = _eps ; x,y,t
 
 # Specify the flux boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR
@@ -41,23 +41,3 @@ NCOMP
 1
 PARAMETERS
 4.0  T  'FLUX_WEAK'  0.0
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-8
-PARAMETERS
-0.5  T  'HOMNEUMANN_STRONG'
-1.0  T  'DIRICHLET_STRONG'  0.0
-1.5  T  'HOMNEUMANN_STRONG'
-2.0  T  'DIRICHLET_STRONG'  0.0
-2.5  T  'HOMNEUMANN_STRONG'
-3.0  T  'DIRICHLET_STRONG'  0.0
-3.5  T  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'  0.0

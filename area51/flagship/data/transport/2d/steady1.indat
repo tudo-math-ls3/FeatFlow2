@@ -18,32 +18,17 @@
 defconst: ang = 10
 
 # Specify the initial solution
-deffunc: @initsol = if(y>=0.5,1-x,0) ; x,y,z,t
+deffunc: @initsol = if(y>=0.5,1-x,0) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,z,t
-deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,z,t
+deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,t
+deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,t
 
 # Specify the diffusion tensor
-deffunc: @diffusion = 1e-3 ; x,y,z,t
+deffunc: @diffusion = 1e-3 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-3
-PARAMETERS
-0.5  T  'DIRICHLET_STRONG'   '1.0'
-3.0  T  'DIRICHLET_STRONG'   '0.0'
-4.0  F  'HOMNEUMANN_STRONG'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

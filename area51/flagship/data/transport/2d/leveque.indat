@@ -28,19 +28,19 @@ defexpr:  sqr5 = SQRT((x-_x2)^2+(y-_y2)^2)
 # Specify the initial solution
 deffunc: @initsol = if(@sqr1 <= _r0  & (ABS(x-0.5)>=0.025 | ABS(y-0.6) >=0.25), 1,...
                     if(@sqr2 <= _r0, 1-@sqr4,...
-                    if(@sqr3 <= _r0, 0.25*(1+COS(_pi*(MIN(@sqr5,_r0))/_r0)), 0))) ; x,y,z,t
+                    if(@sqr3 <= _r0, 0.25*(1+COS(_pi*(MIN(@sqr5,_r0))/_r0)), 0))) ; x,y,t
 
 # Specify the exact solution
 deffunc: @exactsol = if(@sqr1 <= _r0  & (ABS(x-0.5)>=0.025 | ABS(y-0.6) >=0.25), 1,...
                      if(@sqr2 <= _r0, 1-@sqr4,...
-                     if(@sqr3 <= _r0, 0.25*(1+COS(_pi*(MIN(@sqr5,_r0))/_r0)), 0))) ; x,y,z,t
+                     if(@sqr3 <= _r0, 0.25*(1+COS(_pi*(MIN(@sqr5,_r0))/_r0)), 0))) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 0.5 - y ; x,y,z,t
-deffunc: @velocity_y = x - 0.5 ; x,y,z,t
+deffunc: @velocity_x = 0.5 - y ; x,y,t
+deffunc: @velocity_y = x - 0.5 ; x,y,t
 
 # Specify the flux boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR
@@ -51,23 +51,3 @@ NCOMP
 1
 PARAMETERS
 4.0  T  'FLUX_WEAK'  0.0
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-8
-PARAMETERS
-0.5  T  'HOMNEUMANN_STRONG'
-1.0  T  'DIRICHLET_STRONG'  0.0
-1.5  T  'HOMNEUMANN_STRONG'
-2.0  T  'DIRICHLET_STRONG'  0.0
-2.5  T  'HOMNEUMANN_STRONG'
-3.0  T  'DIRICHLET_STRONG'  0.0
-3.5  T  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'  0.0

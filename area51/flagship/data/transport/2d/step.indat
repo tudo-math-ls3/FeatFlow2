@@ -10,17 +10,17 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if(x>=0.2 & x<=0.4 & y>=0.2 & y<=0.4,1,0) ; x,y,z,t
+deffunc: @initsol = if(x>=0.2 & x<=0.4 & y>=0.2 & y<=0.4,1,0) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(x>=0.2+t & x<=0.4+t & y>=0.2+t & y<=0.4+t,1,0) ; x,y,z,t
+deffunc: @exactsol = if(x>=0.2+t & x<=0.4+t & y>=0.2+t & y<=0.4+t,1,0) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 1.0 ; x,y,z,t
-deffunc: @velocity_y = 1.0 ; x,y,z,t
+deffunc: @velocity_x = 1.0 ; x,y,t
+deffunc: @velocity_y = 1.0 ; x,y,t
 
 # Specify the flux boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR
@@ -31,18 +31,3 @@ NCOMP
 1
 PARAMETERS
 4.0  F  'FLUX_WEAK'  0.0
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-3
-PARAMETERS
-1.0  T  'DIRICHLET_STRONG'  0.0
-3.0  F  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'  0.0

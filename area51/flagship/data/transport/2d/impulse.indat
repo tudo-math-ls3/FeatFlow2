@@ -17,22 +17,22 @@ defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
 defexpr:  area = (_pi*_eps*_eps)
 
 # Specify the 'null-function'
-deffunc: @null = 0 ; x,y,z,t
+deffunc: @null = 0 ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = if(x = 0.5, 1, 0) ; x,y,z,t
+deffunc: @exactsol = if(x = 0.5, 1, 0) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 1.0 ; x,y,z,t
-deffunc: @velocity_y = 0.0 ; x,y,z,t
+deffunc: @velocity_x = 1.0 ; x,y,t
+deffunc: @velocity_y = 0.0 ; x,y,t
 
 # Specify the quantity of interest
-deffunc: @weightingFuncInt = if(@sqr1 <= _eps, 1/@area, 0) ; x,y,z,t
+deffunc: @weightingFuncInt = if(@sqr1 <= _eps, 1/@area, 0) ; x,y,t
 
 deffunc: @exactTargetFunc = 1 ; t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR
@@ -44,37 +44,3 @@ NCOMP
 PARAMETERS
 1.0  T  'DIRICHLET_WEAK'  'if(abs(y-0.5) < 0.01, 1.0, 0.0)'
 4.0  F  'FLUX_WEAK'  '0.0'
-
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-5
-PARAMETERS
-0.5  F  'DIRICHLET_STRONG'  0.0
-0.5  T  'DIRICHLET_STRONG'  1.0
-2.0  T  'DIRICHLET_STRONG'  0.0
-3.0  F  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'  0.0
-
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_strong_dual]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-3
-PARAMETERS
-2.0  F  'HOMNEUMANN_STRONG'
-3.0  T  'DIRICHLET_STRONG'  'if(y >= _y0-_eps & y <= _y0+_eps, 1/@area, 0)'
-4.0  F  'HOMNEUMANN_STRONG'

@@ -26,12 +26,12 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho  = 1.0 ; x,y,z,t
-deffunc: @initsol_vel  = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = 2.5 ; x,y,z,t
+deffunc: @initsol_rho  = 1.0 ; x,y,t
+deffunc: @initsol_vel  = 0.0 ; x,y,t
+deffunc: @initsol_Etot = 2.5 ; x,y,t
 
 # Specify the boundary conditions
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

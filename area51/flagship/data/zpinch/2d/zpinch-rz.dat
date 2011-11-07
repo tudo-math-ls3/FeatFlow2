@@ -62,6 +62,12 @@ icoordsystem = 1
 # 0 = evaluate linear form by numerical integration
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
+igeometricsourcetype = 2
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
 ilorentzforcetype = 2
 
 # type of synchronization used for flux correction
@@ -81,8 +87,21 @@ prmfile = grids/2d/zpinch_3x120_rz.prm
 # file which contains the triangulation
 trifile = grids/2d/zpinch_3x120_rz.tri
 
+# type of finite element space(s)
+celement = EL_Q1_2D
+
 # convert mesh to triangular mesh?
 iconvToTria = 0
+
+# type of matrix format
+# 7 = matrix format 7
+# 9 = matrix format 9
+imatrixformat = 9
+
+# type of system format
+# 0 = interleave scalar format
+# 1 = block system
+isystemformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -118,6 +137,9 @@ sdualbdrcondname = %{Zpinch.sdualbdrcondname:1}
 # number of spatial dimensions
 ndimension = %{Zpinch.ndimension}
 
+# solution algorithm
+algorithm = %{Zpinch.algorithm}
+
 #-------------------------------------------------------------------------------
 
 # type of mass matrix
@@ -130,6 +152,11 @@ imasstype = 2
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
 imassantidiffusiontype = 1
+
+# type of approximate time derivative
+# 0 = Galerkin method
+# 1 = low-order method
+iapproxtimederivativetype = 1
 
 # type of dissipation
 # 0 = no dissipation
@@ -178,8 +205,6 @@ sfailsafevariable(3) =
   pressure
   advect
 
-#-------------------------------------------------------------------------------
-
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution: pointwise values
@@ -227,18 +252,27 @@ ssolutionfailsafevariable(2) =
 
 #-------------------------------------------------------------------------------
 
+# file which contains the boundary parametrisation
+prmfile = %{Zpinch.prmfile}
+
+# file which contains the triangulation
+trifile = %{Zpinch.trifile}
+
 # type of finite element space(s)
-celement = EL_Q1_2D
+celement = %{Zpinch.celement}
+
+# convert mesh to triangular mesh?
+iconvToTria = %{Zpinch.iconvToTria}
 
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
-imatrixformat = 9
+imatrixformat = %{Zpinch.imatrixformat}
 
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = %{Zpinch.isystemformat}
 
 #-------------------------------------------------------------------------------
 
@@ -263,7 +297,7 @@ icoordsystem = %{Zpinch.icoordsystem}
 # 0 = evaluate linear form by numerical integration
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
-igeometricsourcetype = 2
+igeometricsourcetype = %{Zpinch.igeometricsourcetype}
 
 
 ################################################################################
@@ -306,6 +340,9 @@ sdualbdrcondname = %{Zpinch.sdualbdrcondname:2}
 # number of spatial dimensions
 ndimension = %{Zpinch.ndimension}
 
+# solution algorithm
+algorithm = %{Zpinch.algorithm}
+
 #-------------------------------------------------------------------------------
 
 # type of mass matrix
@@ -318,6 +355,11 @@ imasstype = %{Hydro.imasstype}
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
 imassantidiffusiontype = %{Hydro.imassantidiffusiontype}
+
+# type of approximate time derivative
+# 0 = Galerkin method
+# 1 = low-order method
+iapproxtimederivativetype = %{Hydro.iapproxtimederivativetype}
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -412,8 +454,17 @@ sexacttargetfuncname =
 
 #-------------------------------------------------------------------------------
 
+# file which contains the boundary parametrisation
+prmfile = %{Hydro.prmfile}
+
+# file which contains the triangulation
+trifile = %{Hydro.trifile}
+
 # type of finite element space(s)
 celement = %{Hydro.celement}
+
+# convert mesh to triangular mesh?
+iconvToTria = %{Hydro.iconvToTria}
 
 # type of matrix format
 # 7 = matrix format 7

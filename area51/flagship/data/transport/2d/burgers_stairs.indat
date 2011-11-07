@@ -7,39 +7,20 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = if( x>=0.1 & x<0.4, 1.0, if( x>=0.4 & x<=0.7, 0.5, 0.0)) ; x,y,z,t
+deffunc: @initsol = if( x>=0.1 & x<0.4, 1.0, if( x>=0.4 & x<=0.7, 0.5, 0.0)) ; x,y,t
 
 # Specify the exact solution
 deffunc: @exactsol = if (x <  0.1, 0.0, ...
                      if (x-0.1 <=      y, (x-0.1)/y, ...
                      if (x-0.4 <  0.75*y, 1.0, ...
-                     if (x-0.7 <= 0.25*y, 0.5, 0.0)))) ; x,y,z,t
+                     if (x-0.7 <= 0.25*y, 0.5, 0.0)))) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 1.0 ; x,y,z,t
-deffunc: @velocity_y = 1.0 ; x,y,z,t
+deffunc: @velocity_x = 1.0 ; x,y,t
+deffunc: @velocity_y = 1.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-6
-PARAMETERS
-1.0  T  'DIRICHLET_STRONG'   0.0
-1.1  F  'DIRICHLET_STRONG'   0.0
-1.4  F  'DIRICHLET_STRONG'   1.0
-1.7  T  'DIRICHLET_STRONG'   0.5
-2.0  T  'DIRICHLET_STRONG'   0.0
-4.0  F  'HOMNEUMANN_STRONG'
-
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

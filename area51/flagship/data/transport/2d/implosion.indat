@@ -16,14 +16,14 @@ defexpr:  sqr1 = SQRT(x^2+y^2)
 defexpr:  r    = max(@sqr1, 1e-4)
 
 # Specify the initial solution
-deffunc: @initsol = if(@sqr1 < 1.0-_width | @sqr1 > 1.0+_width, 0, 1) ; x,y,z,t
+deffunc: @initsol = if(@sqr1 < 1.0-_width | @sqr1 > 1.0+_width, 0, 1) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = -4*(t^3)*x/@r ; x,y,z,t
-deffunc: @velocity_y = -4*(t^3)*y/@r ; x,y,z,t
+deffunc: @velocity_x = -4*(t^3)*x/@r ; x,y,t
+deffunc: @velocity_y = -4*(t^3)*y/@r ; x,y,t
 
 # Specify the flux boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

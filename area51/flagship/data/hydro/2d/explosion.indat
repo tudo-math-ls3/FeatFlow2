@@ -27,25 +27,12 @@ defconst: y0 = 0.4
 defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
 
 # Specify the initial solution
-deffunc: @initsol_rho  = if(@sqr1 < _r0, 5.0, 1.0) ; x,y,z,t
-deffunc: @initsol_vel  = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = if(@sqr1 < _r0, 12.5, 2.5) ; x,y,z,t
+deffunc: @initsol_rho  = if(@sqr1 < _r0, 5.0, 1.0) ; x,y,t
+deffunc: @initsol_vel  = 0.0 ; x,y,t
+deffunc: @initsol_Etot = if(@sqr1 < _r0, 12.5, 2.5) ; x,y,t
 
 # Specify the boundary conditions
-[bdrcond_strong_primal]
-NBCT
-1
-NEXPR
-4
-IBCT
-1
-NCOMP
-1
-PARAMETERS
-4.0 T 'FREESLIP_STRONG'
-
-# Specify the boundary conditions
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 1
 NEXPR

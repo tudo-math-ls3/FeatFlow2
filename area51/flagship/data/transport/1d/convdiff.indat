@@ -11,37 +11,19 @@
 defconst: g0 = 100
 
 # Specify the initial solution
-deffunc: @initsol = 1-x ; x,y,z,t
+deffunc: @initsol = 1-x ; x,t
 
 # Specify the exact solution
-deffunc: @exactsol = (exp(_g0)-exp(_g0*x))/(exp(_g0)-1.0); x,y,z,t
+deffunc: @exactsol = (exp(_g0)-exp(_g0*x))/(exp(_g0)-1.0); x,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 1.0 ; x,y,z,t
+deffunc: @velocity_x = 1.0 ; x,t
 
 # Specify the diffusion coefficient
-deffunc: @diffusion = 1e-3 ; x,y,z,t
+deffunc: @diffusion = 1e-3 ; x,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond_strong_primal]
-NBCT
-2
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-IBCT
-2
-NCOMP
-1
-PARAMETERS
-0.0  T  'DIRICHLET_STRONG'  1.0
-0.0  T  'DIRICHLET_STRONG'  0.0
-
-# Specify the boundary conditions for the primal problem
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 2
 NEXPR

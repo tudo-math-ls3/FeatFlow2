@@ -7,69 +7,21 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol1 = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,z,t
-deffunc: @initsol2 = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,z,t
-deffunc: @initsol3 = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,z,t
+deffunc: @initsol1 = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,t
+deffunc: @initsol2 = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,t
+deffunc: @initsol3 = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol1 = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,z,t
-deffunc: @exactsol2 = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,z,t
-deffunc: @exactsol3 = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,z,t
+deffunc: @exactsol1 = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,t
+deffunc: @exactsol2 = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,t
+deffunc: @exactsol3 = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,t
 
 # Specify the  velocity field
-deffunc: @velocity_x = 0.5 ; x,y,z,t
-deffunc: @velocity_y = 1.0 ; x,y,z,t
+deffunc: @velocity_x = 0.5 ; x,y,t
+deffunc: @velocity_y = 1.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem no.1
-[bdrcond_strong_primal1]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-1.05  F  'DIRICHLET_STRONG'  '0.0'
-1.35  T  'DIRICHLET_STRONG'  '1.0'
-2.0   F  'DIRICHLET_STRONG'  '0.0'
-4.0   F  'HOMNEUMANN_STRONG'
-
-# Specify the boundary conditions for the primal problem no.2
-[bdrcond_strong_primal2]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-1.05  F  'DIRICHLET_STRONG'  '0.0'
-1.35  T  'DIRICHLET_STRONG'  'SQRT(1-((x-0.2)/0.15)^2)'
-2.0   F  'DIRICHLET_STRONG'  '0.0'
-4.0   F  'HOMNEUMANN_STRONG'
-
-# Specify the boundary conditions for the primal problem no.3
-[bdrcond_strong_primal3]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-4
-PARAMETERS
-1.05  F  'DIRICHLET_STRONG'  '0.0'
-1.35  T  'DIRICHLET_STRONG'  '1-ABS(x-0.2)/0.15'
-2.0   F  'DIRICHLET_STRONG'  '0.0'
-4.0   F  'HOMNEUMANN_STRONG'
-
-# Specify the boundary conditions for the primal problem no.1
-[bdrcond_weak_primal1]
+[bdrcond_primal1]
 NBCT
 1
 NEXPR
@@ -83,7 +35,7 @@ PARAMETERS
 4.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem no.2
-[bdrcond_weak_primal2]
+[bdrcond_primal2]
 NBCT
 1
 NEXPR
@@ -97,7 +49,7 @@ PARAMETERS
 4.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem no.3
-[bdrcond_weak_primal3]
+[bdrcond_primal3]
 NBCT
 1
 NEXPR
@@ -109,16 +61,3 @@ NCOMP
 PARAMETERS
 2.0  T  'FLUX_WEAK'  'if(ABS(x-0.2) <= 0.15, 1-ABS(x-0.2)/0.15, 0.0)'
 4.0  T  'FLUX_WEAK'  '0.0'
-
-# Specify the boundary conditions for the dual problem
-[bdrcond_strong_dual]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-PARAMETERS
-4.0  T  'DIRICHLET_STRONG'  '0.0'

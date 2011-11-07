@@ -17,11 +17,11 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = 0.0 ; x,y,z,t
+deffunc: @initsol = 0.0 ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = 0.0 ; x,y,z,t
-deffunc: @velocity_y = 0.0 ; x,y,z,t
+deffunc: @velocity_x = 0.0 ; x,y,t
+deffunc: @velocity_y = 0.0 ; x,y,t
 
 ################################################################################
 # Test problem no.1
@@ -41,37 +41,19 @@ defexpr: d1_21 = (SIN(_ang1)*_a11+COS(_ang1)*_a21)*COS(_ang1)-(SIN(_ang1)*_a12+C
 defexpr: d1_22 = (SIN(_ang1)*_a11+COS(_ang1)*_a21)*SIN(_ang1)+(SIN(_ang1)*_a12+COS(_ang1)*_a22)*COS(_ang1)
 
 # Specify the diffusion tensor
-deffunc: @diffusion1_11 = @d1_11 ; x,y,z,t
-deffunc: @diffusion1_12 = @d1_12 ; x,y,z,t
-deffunc: @diffusion1_21 = @d1_21 ; x,y,z,t
-deffunc: @diffusion1_22 = @d1_22 ; x,y,z,t
+deffunc: @diffusion1_11 = @d1_11 ; x,y,t
+deffunc: @diffusion1_12 = @d1_12 ; x,y,t
+deffunc: @diffusion1_21 = @d1_21 ; x,y,t
+deffunc: @diffusion1_22 = @d1_22 ; x,y,t
 
 # Sepcify the right-hand side
-deffunc: @rhs1 = 0.0 ; x,y,z,t
+deffunc: @rhs1 = 0.0 ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol1 = 0.0 ; x,y,z,t
+deffunc: @exactsol1 = 0.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond1_strong_primal]
-NBCT
-2
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-IBCT
-2
-NCOMP
-1
-PARAMETERS
-4.0  T  'DIRICHLET_STRONG'  '-1.0'
-4.0  T  'DIRICHLET_STRONG'  '1.0'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond1_weak_primal]
+[bdrcond1_primal]
 NBCT
 2
 NEXPR
@@ -107,42 +89,19 @@ defexpr: d2_21 = (SIN(_ang2)*_b11+COS(_ang2)*_b21)*COS(_ang2)-(SIN(_ang2)*_b12+C
 defexpr: d2_22 = (SIN(_ang2)*_b11+COS(_ang2)*_b21)*SIN(_ang2)+(SIN(_ang2)*_b12+COS(_ang2)*_b22)*COS(_ang2)
 
 # Specify the diffusion tensor
-deffunc: @diffusion2_11 = @d2_11 ; x,y,z,t
-deffunc: @diffusion2_12 = @d2_12 ; x,y,z,t
-deffunc: @diffusion2_21 = @d2_21 ; x,y,z,t
-deffunc: @diffusion2_22 = @d2_22 ; x,y,z,t
+deffunc: @diffusion2_11 = @d2_11 ; x,y,t
+deffunc: @diffusion2_12 = @d2_12 ; x,y,t
+deffunc: @diffusion2_21 = @d2_21 ; x,y,t
+deffunc: @diffusion2_22 = @d2_22 ; x,y,t
 
 # Sepcify the right-hand side
-deffunc: @rhs2 = 0.0 ; x,y,z,t
+deffunc: @rhs2 = 0.0 ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol2 = 0.0 ; x,y,z,t
+deffunc: @exactsol2 = 0.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond2_strong_primal]
-NBCT
-3
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-IBCT
-2
-NCOMP
-1
-IBCT
-3
-NCOMP
-1
-PARAMETERS
-4.0  T  'HOMNEUMANN_STRONG'
-4.0  T  'DIRICHLET_STRONG'  '0.0'
-4.0  T  'DIRICHLET_STRONG'  '1.0'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond2_weak_primal]
+[bdrcond2_primal]
 NBCT
 3
 NEXPR
@@ -170,32 +129,19 @@ PARAMETERS
 ################################################################################
 
 # Specify the diffusion tensor
-deffunc: @diffusion3_11 = 100.0 ; x,y,z,t
-deffunc: @diffusion3_12 = 0.0   ; x,y,z,t
-deffunc: @diffusion3_21 = 0.0   ; x,y,z,t
-deffunc: @diffusion3_22 = 1.0   ; x,y,z,t
+deffunc: @diffusion3_11 = 100.0 ; x,y,t
+deffunc: @diffusion3_12 = 0.0   ; x,y,t
+deffunc: @diffusion3_21 = 0.0   ; x,y,t
+deffunc: @diffusion3_22 = 1.0   ; x,y,t
 
 # Specify the right-hand side
-deffunc: @rhs3 = 50.5*SIN(_PI*x)*SIN(_PI*y) ; x,y,z,t
+deffunc: @rhs3 = 50.5*SIN(_PI*x)*SIN(_PI*y) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol3 = SIN(_PI*x)*SIN(_PI*y)/(2*_PI^2) ; x,y,z,t
+deffunc: @exactsol3 = SIN(_PI*x)*SIN(_PI*y)/(2*_PI^2) ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond3_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-PARAMETERS
-4.0  T  'DIRICHLET_STRONG'  '0.0'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond3_weak_primal]
+[bdrcond3_primal]
 NBCT
 1
 NEXPR
@@ -218,32 +164,19 @@ PARAMETERS
 ################################################################################
 
 # Specify the diffusion tensor
-deffunc: @diffusion4_11 = 1.5 ; x,y,z,t
-deffunc: @diffusion4_12 = 0.5 ; x,y,z,t
-deffunc: @diffusion4_21 = 0.5 ; x,y,z,t
-deffunc: @diffusion4_22 = 1.5 ; x,y,z,t
+deffunc: @diffusion4_11 = 1.5 ; x,y,t
+deffunc: @diffusion4_12 = 0.5 ; x,y,t
+deffunc: @diffusion4_21 = 0.5 ; x,y,t
+deffunc: @diffusion4_22 = 1.5 ; x,y,t
 
 # Specify the right-hand side
-deffunc: @rhs4 = -48*(x^2+y^2)+80*(x+y)-64*x*y-16 ; x,y,z,t
+deffunc: @rhs4 = -48*(x^2+y^2)+80*(x+y)-64*x*y-16 ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol4 = 16*x*(1-x)*y*(1-y) ; x,y,z,t
+deffunc: @exactsol4 = 16*x*(1-x)*y*(1-y) ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond4_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-1
-PARAMETERS
-4.0  T  'DIRICHLET_STRONG'  '0.0'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond4_weak_primal]
+[bdrcond4_primal]
 NBCT
 1
 NEXPR
@@ -266,34 +199,19 @@ PARAMETERS
 ################################################################################
 
 # Specify the diffusion tensor
-deffunc: @diffusion5_11 = 1.5 ; x,y,z,t
-deffunc: @diffusion5_12 = 0.5 ; x,y,z,t
-deffunc: @diffusion5_21 = 0.5 ; x,y,z,t
-deffunc: @diffusion5_22 = 1.5 ; x,y,z,t
+deffunc: @diffusion5_11 = 1.5 ; x,y,t
+deffunc: @diffusion5_12 = 0.5 ; x,y,t
+deffunc: @diffusion5_21 = 0.5 ; x,y,t
+deffunc: @diffusion5_22 = 1.5 ; x,y,t
 
 # Specify the right-hand side
-deffunc: @rhs5 = 1.5*sin((1-x)*(1-y))*(y-1)^2-9*(1-x)*(1-y)^2+sin((1-x)*1-y)*(y-1)*(x-1)-cos((1-x)*(1-y))-6*(1-x)^2*(1-y)+1.5*sin((1-x)*(1-y))*(x-1)^2-3*(1-x)^3 ; x,y,z,t
+deffunc: @rhs5 = 1.5*sin((1-x)*(1-y))*(y-1)^2-9*(1-x)*(1-y)^2+sin((1-x)*1-y)*(y-1)*(x-1)-cos((1-x)*(1-y))-6*(1-x)^2*(1-y)+1.5*sin((1-x)*(1-y))*(x-1)^2-3*(1-x)^3 ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol5 = sin((1-x)*(1-y))+(1-x)^3*(1-y)^2 ; x,y,z,t
+deffunc: @exactsol5 = sin((1-x)*(1-y))+(1-x)^3*(1-y)^2 ; x,y,t
 
 # Specify the boundary conditions for the primal problem
-[bdrcond5_strong_primal]
-NBCT
-1
-NEXPR
-1
-IBCT
-1
-NCOMP
-3
-PARAMETERS
-1.0  T  'DIRICHLET_STRONG'  'sin(1-y)+(1-y)^2'
-2.0  T  'DIRICHLET_STRONG'  'sin(1-x)+(1-x)^3'
-4.0  T  'DIRICHLET_STRONG'  '0.0'
-
-# Specify the boundary conditions for the primal problem
-[bdrcond5_weak_primal]
+[bdrcond5_primal]
 NBCT
 1
 NEXPR

@@ -25,14 +25,14 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
-deffunc: @initsol_By  = if(x < 0.5, 1.0, -1.0) ; x,y,z,t
-deffunc: @initsol_Bz  = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = if(x < 0.5, 3.28125, 1.03125) ; x,y,z,t
+deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,t
+deffunc: @initsol_vel = 0.0 ; x,t
+deffunc: @initsol_By  = if(x < 0.5, 1.0, -1.0) ; x,t
+deffunc: @initsol_Bz  = 0.0 ; x,t
+deffunc: @initsol_Etot = if(x < 0.5, 3.28125, 1.03125) ; x,t
 
 # Specify the boundary conditions
-[bdrcond_weak_primal]
+[bdrcond_primal]
 NBCT
 2
 NEXPR
