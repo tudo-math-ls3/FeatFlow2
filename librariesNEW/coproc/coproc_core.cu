@@ -50,6 +50,8 @@ int coproc_init()
       cudaDeviceProp prop;
       cudaGetDeviceProperties(&prop, i);
       printf("%d: %s\n", i, prop.name);
+      printf("    memory: %d bytes\n", prop.totalGlobalMem);
+      printf("    clockrate: %d khz\n", prop.clockRate);
     }
   printf("Selected device: %d\n", selectedDevice);
   coproc_checkErrors("coproc_init");  
