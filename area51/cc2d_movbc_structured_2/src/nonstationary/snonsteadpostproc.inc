@@ -12,7 +12,7 @@
 *
 * The structures themselves are realized as integer/double precision
 * arrays:
-*   IPARAM = array [1..SZISPI] of integer 
+*   IPARAM = array [1..SZISPI] of integer
 *          = TInstatPostprocessingIParams
 *   DPARAM = array [1..SZISPD] of double
 *          = TInstatPostprocessingDParams
@@ -22,7 +22,7 @@
 * the nonstationary solver without being manipulated by the solver;
 * it's completely maintained in the postprocessing routine.
 *
-* TInstatPostprocessingIParams = record 
+* TInstatPostprocessingIParams = record
 *
 *   // Input parameters: General
 *
@@ -31,14 +31,14 @@
 *            <>0: Write solution vectors to disc on level |ISAV|.
 *                 INSAV>0: Formatted output (standard)
 *                 INSAV<0: Unformatted output.
-*                 The solutions are written to disc with an 
-*                 increasing extension  .1,.2,.3,... until reaching 
+*                 The solutions are written to disc with an
+*                 increasing extension  .1,.2,.3,... until reaching
 *                 .INSVN. Then the counting restarts at 1.
 *            What and how solution vectors are written to disc
 *            is defined by the output configuration below.
 *   INSAV  : Step count for writing solutions to disc in a stepwise
-*            manner. This is only active if ISAV<>0. 
-*            When INSAV <> 0, the last INSVN accepted solutions 
+*            manner. This is only active if ISAV<>0.
+*            When INSAV <> 0, the last INSVN accepted solutions
 *            on the finest level are written to disc, regardless of
 *            the time stepping.
 *            =-1: write everything to disc, predictor steps,
@@ -48,9 +48,9 @@
 *            > 0: Write out every INSAV'th accepted solution to disc.
 *                 Solutions of predictor steps are not saved.
 *   INSVN  : Modulo number for how many intermediate solutions are
-*            written to disc. When ISAV<>0, INSAV>0, solutions are 
-*            written to disc with an increasing extension 
-*            .1,.2,.3,... until reaching .INSVN. 
+*            written to disc. When ISAV<>0, INSAV>0, solutions are
+*            written to disc with an increasing extension
+*            .1,.2,.3,... until reaching .INSVN.
 *            Then the counting restarts at 1.
 *            The files are written to ./ns/DX.xxxx
 *
@@ -60,7 +60,7 @@
 *            stepping.
 *             =0: Don't save time-stepping based intermediate solutions
 *                 to disc
-*            <>0: Save plain intermediate solutions to disc on level 
+*            <>0: Save plain intermediate solutions to disc on level
 *                 |IUPSAV|.
 *                 IUPSAV>0: save in formatted form (standard).
 *                 IUPSAV<0: save in unformatted form.
@@ -110,7 +110,7 @@
 *                 IFXSAV<0: Save in unformatted form.
 *                 The files are named with increasing extension .1,.2,...
 *                 The pressure is saved to "./film/DISO.xxxx".
-*         
+*
 *   IGMV   : Save GMV files to disc, based on time-stepping.
 *            =0: Don't save time-stepping based GMV-files to disc.
 *            >0: Save GMV-file to disc on level IGMV.
@@ -173,7 +173,7 @@
 *   LFLISO : Handle to basic filename for film output, streamline function output
 *   LFLGMV : Handle to basic filename of GMV-files
 *
-*   // Status variables; maintained internally when the solver is 
+*   // Status variables; maintained internally when the solver is
 *   // running; need not to be initialised in advance.
 *
 *   IFILEN : Number of the solution that is written to disc at last.
@@ -204,16 +204,16 @@
 *            postprocessing routine.
 * end
 *
-* TInstatPostprocessingDParams = record 
+* TInstatPostprocessingDParams = record
 *
-*   // Input parameters 
+*   // Input parameters
 *
 *   DUPSAV : The time interval after which solution vectors should be
 *            written out; only active if IUPSAV<>0.
 *   DTGMV  : The time interval after which GMV files should be
 *            written out; only active if IGMV<>0.
 *
-*   // Status variables; maintained internally when the solver is 
+*   // Status variables; maintained internally when the solver is
 *   // running; need not to be initialised in advance.
 *
 *   TUPSAV : The point in time when the next solution should be
@@ -237,7 +237,7 @@
 
       INTEGER SZISPI
       
-      PARAMETER (OISAV    =  1) 
+      PARAMETER (OISAV    =  1)
       PARAMETER (OINSAV   =  2)
       PARAMETER (OINSVN   =  3)
       PARAMETER (OIFINIT  =  4)
@@ -248,7 +248,7 @@
       PARAMETER (OIGMV    =  9)
       PARAMETER (OIGINIT  = 10)
       PARAMETER (OITRCES  = 11)
-      PARAMETER (OIERANA  = 12) 
+      PARAMETER (OIERANA  = 12)
       PARAMETER (OIBDFBD  = 13)
       PARAMETER (OIBDFVI  = 14)
       PARAMETER (OIBDFLI  = 15)

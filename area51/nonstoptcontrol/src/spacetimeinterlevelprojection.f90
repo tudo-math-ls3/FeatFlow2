@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module realises the interlevel projection (prolongation and 
+!# This module realises the interlevel projection (prolongation and
 !# restriction) of space-time coupled solution vectors. The t_sptiProjection
 !# structure configures the interlevel projection. For the actual projection,
 !# the following routines can be found in this module:
@@ -16,7 +16,7 @@
 !#     -> Cleans up a space-time interlevel projection structure
 !#
 !# 3.) sptipr_performProlongation
-!#     -> Prolongation of a space-time coupled solution vector to a higher 
+!#     -> Prolongation of a space-time coupled solution vector to a higher
 !#        level
 !#
 !# 4.) sptipr_performRestriction
@@ -91,9 +91,9 @@ module spacetimeinterlevelprojection
     !     space to synchronise in time with the dual space. Simple
     !     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
     !     respecting that the matrices must be exchanged.
-    ! =7: linear prolongation/constant restriction. primal+dual solutions 
+    ! =7: linear prolongation/constant restriction. primal+dual solutions
     !     located at the endpoints of the time interval.
-    ! =8: linear prolongation/constant restriction. primal+dual solutions 
+    ! =8: linear prolongation/constant restriction. primal+dual solutions
     !     located according to the timestep scheme.
     integer :: ctimeProjection = -1
     
@@ -108,7 +108,7 @@ module spacetimeinterlevelprojection
     type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierarchy
 
     ! Pointer to a hierarchy of interlevel projection structures in space.
-    type(t_interlevelProjectionHier), pointer :: p_rprojHierarchySpace    
+    type(t_interlevelProjectionHier), pointer :: p_rprojHierarchySpace
     
     ! An array of prolongation matrices.
     ! rprojectionMat(i) defines the weights for the projection
@@ -151,7 +151,7 @@ contains
       rprojHierarchySpace,rphysics,ctimeProjection)
   
 !<description>
-  ! 
+  !
 !</description>
 
 !<input>
@@ -188,9 +188,9 @@ contains
   !     space to synchronise in time with the dual space. Simple
   !     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
   !     respecting that the matrices must be exchanged.
-  ! =7: linear prolongation/constant restriction. primal+dual solutions 
+  ! =7: linear prolongation/constant restriction. primal+dual solutions
   !     located at the endpoints of the time interval.
-  ! =8: linear prolongation/constant restriction. primal+dual solutions 
+  ! =8: linear prolongation/constant restriction. primal+dual solutions
   !     located according to the timestep scheme.
   integer, intent(in), optional :: ctimeProjection
   
@@ -207,7 +207,7 @@ contains
     ! Remember the physics; necessary so we know how and what to project
     rprojHier%p_rphysics => rphysics
 
-    ! Remember the discretisation and projection hierarchy in space.  
+    ! Remember the discretisation and projection hierarchy in space.
     rprojHier%p_rspaceTimeHierarchy => rspaceTimeHierarchy
     rprojHier%p_rprojHierarchySpace => rprojHierarchySpace
     rprojHier%p_rtimeCoarseDiscr => rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)
@@ -299,7 +299,7 @@ contains
                 
             call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
                 rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
-          end if          
+          end if
         end if
 
       case (7)
@@ -450,8 +450,8 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A space/time interlevel projection structure that configures the 
-  ! prolongation/restriction in space/time. 
+  ! A space/time interlevel projection structure that configures the
+  ! prolongation/restriction in space/time.
   ! The structure is cleaned up.
   type(t_sptiProjHierarchy), intent(INOUT) :: rprojHier
 !</output>
@@ -508,7 +508,7 @@ contains
   subroutine sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
   
 !<description>
-  ! Creates a prolongation matrix for the primal space between time-level 
+  ! Creates a prolongation matrix for the primal space between time-level
   ! ilevel and ilevel+1 of the given space-time hierarchy.
 !</description>
 
@@ -605,7 +605,7 @@ contains
         ! For simplicity, we take the lineaer interpolation, which is also
         ! 2nd order. In contrast to case 2, this matrix has a reduced
         ! matrix stencil and works only for implicit Euler!
-        ! 
+        !
         ! Timestep:     1                     2        (coarse grid)
         !               x                     x          ...
         !                 --1/2--> + <--1/2--   --1/2--> ...
@@ -618,13 +618,13 @@ contains
         !
         ! The corresponding matrix looks like this:
         !
-        !   1   
-        !   1/2 1/2 
-        !       1   
+        !   1
+        !   1/2 1/2
+        !       1
         !       1/2 1/2
-        !           1   
+        !           1
         !           1/2 1/2
-        !               1   
+        !               1
         !   ...
         !
         ! and is organised in 2x2 blocks
@@ -775,18 +775,18 @@ contains
   !      !   1
   !      !   1/2 1/2 0
   !      !       1   0
-  !      !       1/2 1/2  
+  !      !       1/2 1/2
   !      !           1   0
-  !      !           1/2 1/2  
+  !      !           1/2 1/2
   !      !               1   0
   !      !   ...
   !      !               1   0
   !      !               1/2 1/2
-  !      !               0   1  
+  !      !               0   1
   !      !
-  !      ! and is organised in 2x2 blocks with a special case at the 
+  !      ! and is organised in 2x2 blocks with a special case at the
   !      ! beginning and at the end.
-  !      
+  !
   !      rprolMatrix%NA = 4+(ndofFine-2)*2
   !      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
   !          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
@@ -798,24 +798,24 @@ contains
   !      call lsyssc_getbase_double (rprolMatrix,p_Da)
   !      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
   !      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
-  !      
+  !
   !      ! Fill KLD.
   !      p_Kld(1) = 1
   !      p_Kld(2) = 2
   !      do irow = 3,ndofFine+1
   !        p_Kld(irow) = 5+(irow-3)*2
   !      end do
-  !      
+  !
   !      ! Set up the first two rows.
   !      p_Da(1) = 1.0_DP
   !      p_Da(2) = 0.5_DP
   !      p_Da(3) = 0.5_DP
-  !      
+  !
   !      p_Kcol(1) = 1
   !      p_Kcol(2) = 1
   !      p_Kcol(3) = 2
   !      p_Kcol(4) = 3
-  !      
+  !
   !      ! Then the remaining rows except for the end.
   !      do icol = 2,ndofCoarse-1
   !        p_Kcol(5+4*(icol-2)+0) = icol
@@ -847,7 +847,7 @@ contains
   subroutine sptipr_getProlMatrixDual (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
   
 !<description>
-  ! Creates a prolongation matrix for the dual space between time-level 
+  ! Creates a prolongation matrix for the dual space between time-level
   ! ilevel and ilevel+1 of the given space-time hierarchy.
 !</description>
 
@@ -920,7 +920,7 @@ contains
         !     y0                      y1                      y2                      y3
         !     xi0                     xi1                     xi2                     xi3
         !     l0          l1                      l2                      l3
-        !     p0          p1                      p2                      p3          
+        !     p0          p1                      p2                      p3
         !
         ! The prolongation will be the weighted mean for y and xi:
         !
@@ -941,13 +941,13 @@ contains
         !
         !
         !     l0          l1                      l2                      l3
-        !     p0          p1                      p2                      p3          
+        !     p0          p1                      p2                      p3
         !     X-----------o-----------X-----------o-----------X-----------o-----------X
-        !                  -3/4> <---- 1/4 ------- -3/4> <----- 1/4 ------ 
+        !                  -3/4> <---- 1/4 ------- -3/4> <----- 1/4 ------
         !
         !                  ----- 1/4 ------> <3/4- ----- 1/4 ------> <3/4-
-        !            <5/4--                                               --5/4> 
-        !            <--------- -1/4 ------------- ---- -1/4 ------------------> 
+        !            <5/4--                                               --5/4>
+        !            <--------- -1/4 ------------- ---- -1/4 ------------------>
         !
         !     X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X-----o-----X
         !     l0    l1          l2          l3          l4          l5          l6
@@ -968,9 +968,9 @@ contains
         !   1
         !   0   5/4 -1/4
         !       3/4 1/4
-        !       1/4 3/4  
+        !       1/4 3/4
         !           3/4 1/4
-        !           1/4 -3/4 
+        !           1/4 -3/4
         !               3/4 1/4
         !   ...
         !               1/4 3/4
@@ -1048,7 +1048,7 @@ contains
       ctimeProjection,rprolMatrix)
   
 !<description>
-  ! Creates a interpolation matrix for the primal space between time-level 
+  ! Creates a interpolation matrix for the primal space between time-level
   ! ilevel and ilevel+1 of the given space-time hierarchy.
 !</description>
 
@@ -1106,8 +1106,8 @@ contains
       case (0,1,2,3,4,6,7,8)
         ! The interpolation is just taking the values in the points in time.
         !
-        ! Timestep: 
-        !               1          2          3      
+        ! Timestep:
+        !               1          2          3
         !               x          x          x        (fine grid)
         !
         !               |                     |
@@ -1120,12 +1120,12 @@ contains
         !
         ! The matrix looks like this:
         !
-        !   1   
+        !   1
         !   .   .   1
         !           .   .   1
         !   ...
         !
-        ! 
+        !
         
         rprolMatrix%NA = ndofCoarse
         call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
@@ -1164,7 +1164,7 @@ contains
   subroutine sptipr_getInterpMatrixDual (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
   
 !<description>
-  ! Creates a prolongation matrix for the dual space between time-level 
+  ! Creates a prolongation matrix for the dual space between time-level
   ! ilevel and ilevel+1 of the given space-time hierarchy.
 !</description>
 
@@ -1259,7 +1259,7 @@ contains
         !                 V                       V                       V
         !     X-----------o-----------X-----------o-----------X-----------o-----------X
         !     l0          l1                      l2                      l3
-        !     p0          p1                      p2                      p3          
+        !     p0          p1                      p2                      p3
         !
         ! So at the end, we have:
         !
@@ -1268,7 +1268,7 @@ contains
         !     y0                      y1                      y2                      y3
         !     xi0                     xi1                     xi2                     xi3
         !     l0          l1                      l2                      l3
-        !     p0          p1                      p2                      p3          
+        !     p0          p1                      p2                      p3
         !
         !
         ! The matrix looks like this (for Crank-Nicolson):
@@ -1397,7 +1397,7 @@ contains
         !                 V                       V                       V
         !                 X-----------|-----------X-----------|-----------X-----------|
         !               y-1/2                   y1/2                     y3/2
-        !               xi-1/2                  xi1/2                    yi3/2        
+        !               xi-1/2                  xi1/2                    yi3/2
         !
         ! The matrix looks like this (for Crank-Nicolson):
         !
@@ -1551,7 +1551,7 @@ contains
       case (1)
 
         call output_line ("Not implemented.")
-        call sys_halt()                    
+        call sys_halt()
       end select
 
     case default
@@ -1570,7 +1570,7 @@ contains
     ! Extracts the spatial subvector iindex from rcoarseVector and puts it
     ! into rx. If necessary, the vector is prolongated in space.
     
-    ! A space/time interlevel projection structure that configures the 
+    ! A space/time interlevel projection structure that configures the
     ! prolongation/restriction in space/time.
     type(t_sptiProjHierarchy), intent(IN) :: rprojHier
 
@@ -1617,14 +1617,14 @@ contains
   ! Performs a prolongation for a given space/time vector (i.e. a projection
   ! in the primal space where the solution lives). The vector
   ! rcoarseVector on a coarser space/time mesh is projected to the vector
-  ! rfineVector on a finer space/time mesh. 
+  ! rfineVector on a finer space/time mesh.
   ! rprojHier configures how the transfer is performed.
   ! This projection structure rprojHier must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjHierarchy), intent(IN) :: rprojHier
   
@@ -1666,7 +1666,7 @@ contains
     ! DEBUG!!!
     !do istep=1,rcoarseVector%NEQtime
     !  call sptivec_setSubvectorConstant(rcoarseVector,istep,real(istep,DP))
-    !end do      
+    !end do
 
     ! Get the space-time coarse and fine discretisations.
     call sth_getLevel (rprojHier%p_rspaceTimeHierarchy,ilevelfine-1,&
@@ -1877,14 +1877,14 @@ contains
   
 !<description>
   ! Embeds a solution vector in another space.
-  ! Primal vectors are interpolated from the time-primal space to the 
+  ! Primal vectors are interpolated from the time-primal space to the
   ! time-dual space and dual vectors are interpolated from the time-dual space
   ! to the time primal space.
   ! If bdualToPrimal=.true., the embedding is the other way around.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjHierarchy), intent(IN) :: rprojHier
 
@@ -2075,7 +2075,7 @@ contains
           end do
         end if
 
-        if (iand(cprimdual,2) .ne. 0) then        
+        if (iand(cprimdual,2) .ne. 0) then
           ! Dual space: lambda/p
           do icol = p_KldDual(irow),p_KldDual(irow+1)-1
           
@@ -2394,14 +2394,14 @@ contains
   ! Performs a restriction for a given space/time vector (i.e. a projection
   ! in the dual space where the RHS vector lives).The vector
   ! rfineVector on a finer grid is projected to the vector
-  ! rcoarseVector on a coarser space/time mesh. 
+  ! rcoarseVector on a coarser space/time mesh.
   ! rprojHier configures how the transfer is performed.
   ! This projection structure rprojHier must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjHierarchy), intent(IN) :: rprojHier
 
@@ -2630,7 +2630,7 @@ contains
     ! Saves the spatial subvector iindex from rx to rfineVector.
     ! If necessary, the vector is restricted in space.
     
-    ! A space/time interlevel projection structure that configures the 
+    ! A space/time interlevel projection structure that configures the
     ! prolongation/restriction in space/time.
     type(t_sptiProjHierarchy), intent(in) :: rprojHier
 
@@ -2676,14 +2676,14 @@ contains
 !<description>
   ! Performs an interpolation for a given space/time vector to a lower level.
   ! The solution vector rfineVector on a finer grid is projected to the vector
-  ! rcoarseVector on a coarser space/time mesh. 
+  ! rcoarseVector on a coarser space/time mesh.
   ! rprojHier configures how the transfer is performed.
   ! This projection structure rprojHier must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjHierarchy), intent(IN) :: rprojHier
 
@@ -2887,7 +2887,7 @@ contains
     ! Saves the spatial subvector iindex from rx to rfineVector.
     ! If necessary, the vector is restricted in space.
     
-    ! A space/time interlevel projection structure that configures the 
+    ! A space/time interlevel projection structure that configures the
     ! prolongation/restriction in space/time.
     type(t_sptiProjHierarchy), intent(in) :: rprojHier
 

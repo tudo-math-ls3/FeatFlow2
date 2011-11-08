@@ -5,14 +5,14 @@
 !#
 !# <purpose>
 !# This module is a program how to solve a stationary or nonstationary
-!# Navier-Stokes problem 
+!# Navier-Stokes problem
 !#
 !#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p = f $$
 !#              $$ \Nable \cdot p = 0$$
 !#
 !# on a 3D domain for a 3D function $u=(u_1,u_2,u_3)$ and a pressure $p$.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -68,7 +68,7 @@ contains
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (This is somehow a cleaner implementation than using a collection!).
@@ -105,7 +105,7 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
     
     ! Initialise the timers by zero:
     call stat_clearTimer(rtimerTotal)
@@ -125,7 +125,7 @@ contains
     ! Initialise the parameter list object. This creates an empty parameter list.
     call parlst_init (p_rproblem%rparamList)
     
-    ! Read parameters from the INI/DAT files into the parameter list. 
+    ! Read parameters from the INI/DAT files into the parameter list.
     call cc3d_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
@@ -177,7 +177,7 @@ contains
       call output_separator (OU_SEP_MINUS)
       call output_line('Initialising discretisation...')
     end if
-    call cc_initDiscretisation (p_rproblem)    
+    call cc_initDiscretisation (p_rproblem)
 
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
       call output_lbrk ()
@@ -203,7 +203,7 @@ contains
     
     call stat_startTimer(rtimerMatrixGeneration)
     
-    call cc_allocMatVec (p_rproblem,rvector,rrhs)    
+    call cc_allocMatVec (p_rproblem,rvector,rrhs)
     
     call stat_stopTimer(rtimerMatrixGeneration)
     call output_lbrk ()
@@ -274,7 +274,7 @@ contains
       end if
       call cc_generateBasicRHS (p_rproblem,rrhs)
       
-      ! Initialise the boundary conditions, but 
+      ! Initialise the boundary conditions, but
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
@@ -305,7 +305,7 @@ contains
     call cc_doneMatVec (p_rproblem,rvector,rrhs)
     call cc_doneBC (p_rproblem)
     call cc_doneDiscretisation (p_rproblem)
-    call cc_donepostprocessing (rpostprocessing)    
+    call cc_donepostprocessing (rpostprocessing)
     call cc_doneDomain (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.

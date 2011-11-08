@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains the basic definitions and routines to maintain
-!# graphs. A graph consists of a set of vertices V and a set of edged E 
+!# graphs. A graph consists of a set of vertices V and a set of edged E
 !# connecting vertices. Graphs are stored as adjacency matrices which can be
 !# modified dynamically. A new vertex can be added or an existing vertex can
 !# be removed. Moreover, edges can be inserted between two vertices or removed.
@@ -14,19 +14,19 @@
 !# optimal choice for nearly complete graphs, that is, graphs which possess
 !# the majority of all possible edges. In this case it would make sense to
 !# adopt a static matrix data structure. Be warned, this is not implemented
-!# in this module so that the performance of the provided routines may 
+!# in this module so that the performance of the provided routines may
 !# deteriorate for nearly complete graphs.
 !#
 !# To keep things simple, graphs can be seen as sparce matrices stored in the
 !# CSR format (either 7 or 9) which can be modified dynamically. Hence, it
 !# makes sence to provide conversion routines between a scalar matrix and a
-!# graph. If you are familiar with the CSR format used for scalar matrices 
+!# graph. If you are familiar with the CSR format used for scalar matrices
 !# then this hint will be helpful: The list of vertices is stored in the Kld
-!# array whereas the edges are associated with the Kcol array. In short, an 
+!# array whereas the edges are associated with the Kcol array. In short, an
 !# edge (I,J) exists if and only if there is an entry J in the subarray
 !# Kcol(Kld(i):Kld(i+1)-1).
 !#
-!# 
+!#
 !#
 !# The following routines can be found in this module:
 !#
@@ -169,7 +169,7 @@ contains
 
 !<description>
     ! This routine creates a graph rgraph. The graph format must be one of
-    ! the GRPH_GRAPHx format specifiers. The parameters nvtMax and 
+    ! the GRPH_GRAPHx format specifiers. The parameters nvtMax and
     ! nedgeMax define the maximum number of vertices/egdes that can be
     ! initially stored in the graph. If either more vertices or edges are
     ! inserted into the graph, then reallocation of memory will be performed.
@@ -177,7 +177,7 @@ contains
     ! as dense graph or not. In a dense graph, the adjacency list of vertex
     ! ivt is stored in table itable=ivt. It makes sense to use dense graphs,
     ! e.g., if NVT vertices numbered by 1..NVT are present in the graph so
-    ! that the table look-up can be performed in time O(1). If the graph 
+    ! that the table look-up can be performed in time O(1). If the graph
     ! consists of NVT vertices which can be labeled arbitrarily, e.g.,
     ! <tex>1.. ($1^k$)*NVT, k >> 1</tex>, then an enormous amount of memory would be
     ! wasted for the look-up tables. Then it makes sense to define the graph as
@@ -478,9 +478,9 @@ contains
     ! Set number of columns/rows. This is a little bit ugly because the
     ! number of vertices (NVT) may be different from the number of tables.
     ! If vertices are inserted as follows 1,2,3,...,NVT, then the number of
-    ! tables is equal to the number of vertices. However, if only vertices 
+    ! tables is equal to the number of vertices. However, if only vertices
     ! 1,5,9,10 are present in the graph, then NVT=4 but the largest number in
-    ! the graph is 10. Hence, the matrix has NEQ=NCOLS=10 and some rows, e.g. 
+    ! the graph is 10. Hence, the matrix has NEQ=NCOLS=10 and some rows, e.g.
     ! 2,3,4 have no entries. For a finite element matrix, this does not make
     ! sense but this graph module should be as general as possible.
     rscalarMatrix%NEQ   = max(rgraph%NVT,rgraph%rEdges%NTABLE)
@@ -549,7 +549,7 @@ contains
     if (rscalarMatrix%cmatrixFormat .eq. LSYSSC_MATRIX9 .or.&
         rscalarMatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
 
-      ! Create new memory or resize existing memory      
+      ! Create new memory or resize existing memory
       if (rscalarMatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
         call storage_new('grph_generateMatrix','p_Kdiagonal',&
             rscalarMatrix%NEQ, ST_INT, rscalarMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
@@ -787,7 +787,7 @@ contains
     ! This subroutine removes the vertex with number iVertex from the graph
     ! and eliminates all of its incoming and outgoing edges.
     ! If the optional parameter ireplacemantVertex is true, then vertex iVertex
-    ! is removed and the vertex with number ireplacementVertex is moved at its 
+    ! is removed and the vertex with number ireplacementVertex is moved at its
     ! former position. This can be useful, if one needs a complete set of
     ! vertices, e.g., 1..NVT without "holes" at the positions of removed vertices.
 !</description>
@@ -845,10 +845,10 @@ contains
         ! it suffices to visit those which are present in the adjacency list
         ! of vertex iVertex.
         
-        ! Step 1: Delete corresponding vertex from tree. Note that for dense 
+        ! Step 1: Delete corresponding vertex from tree. Note that for dense
         !         graphs the vertex tree does not store further information and
-        !         can be eliminated in the first step. If the vertex should be 
-        !         replaced by the last vertex, then the last vertex is 
+        !         can be eliminated in the first step. If the vertex should be
+        !         replaced by the last vertex, then the last vertex is
         !         removed from the tree instead of vertex numbered iVertex.
         if (btree_deleteFromTree(rgraph%rVertices,&
             merge(ireplaceVertex,iVertex,bdoReplace)).eq.BTREE_NOT_FOUND) then
@@ -857,7 +857,7 @@ contains
           call sys_halt()
         end if
                
-        ! Step 2: Loop through adjacency list of vertex iVertex and delete all 
+        ! Step 2: Loop through adjacency list of vertex iVertex and delete all
         !         edges (jVertex,iVertex) from the adjacency list of jVertex.
 
         ! Find position of first entry in adjacency list
@@ -909,7 +909,7 @@ contains
 
           ! Look for position of trivial edge (iVertex,iVertex)
           if (arrlst_searchInArrayList(rgraph%rEdges,iVertex,iVertex,ipred).eq.&
-              ARRAYLIST_FOUND) then             
+              ARRAYLIST_FOUND) then
             call output_line('Vertex already exists in adjacency list!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             call sys_halt()
@@ -918,8 +918,8 @@ contains
           ! Insert trivial edge (iVertex,iVertex) into adjacency list
           call arrlst_insertIntoArrayList(rgraph%rEdges,iVertex,iVertex,ipred,ipos)
 
-          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex 
-          !            (which is already stored at its new position iVertex) and 
+          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex
+          !            (which is already stored at its new position iVertex) and
           !            delete all edges (jVertex,ireplaceVertex) from the adjacency
           !            lists of jVertex. Afterwards, add the edge (jVertex,iVertex)
           !            to the adjacency list of jVertex.
@@ -947,14 +947,14 @@ contains
 
             ! Look for position of edge (jVertex,iVertex)
             if (arrlst_searchInArrayList(rgraph%rEdges,jVertex,iVertex,ipred).eq.&
-                ARRAYLIST_FOUND) then             
+                ARRAYLIST_FOUND) then
               call output_line('Vertex already exists in adjacency list!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               call sys_halt()
             end if
             
             ! Insert edge (jVertex,iVertex) into adjacency list
-            call arrlst_insertIntoArrayList(rgraph%rEdges,jVertex,iVertex,ipred,ipos)            
+            call arrlst_insertIntoArrayList(rgraph%rEdges,jVertex,iVertex,ipred,ipos)
           end do
                   
           ! Decrease number of vertices by one
@@ -1022,10 +1022,10 @@ contains
           ireplaceTable=0
         end if
         
-        ! Step 1: Delete corresponding vertex from tree. Note that for dense 
+        ! Step 1: Delete corresponding vertex from tree. Note that for dense
         !         graphs the vertex tree does not store further information and
-        !         can be eliminated in the first step. If the vertex should be 
-        !         replaced by the last vertex, then the last vertex is 
+        !         can be eliminated in the first step. If the vertex should be
+        !         replaced by the last vertex, then the last vertex is
         !         removed from the tree instead of vertex numbered iVertex.
         
         if (btree_deleteFromTree(rgraph%rVertices,&
@@ -1035,7 +1035,7 @@ contains
           call sys_halt()
         end if
         
-        ! Step 2: Loop through adjacency list of vertex iVertex and delete all 
+        ! Step 2: Loop through adjacency list of vertex iVertex and delete all
         !         edges (jVertex,iVertex) from the adjacency lists of jVertex.
         
         ! Find position of first entry in adjacency list
@@ -1051,7 +1051,7 @@ contains
           ! Do nothing if both vertices are the same
           if (iVertex .eq. jVertex) cycle
 
-          ! In addition, do nothing if the current vertex is identical to 
+          ! In addition, do nothing if the current vertex is identical to
           ! the replacement vertex. Otherwise, we would have to re-insert
           ! it afterwards. Hence, it does not make sense to remove before.
           if (bdoReplace .and. (ireplaceVertex .eq. jVertex)) cycle
@@ -1075,17 +1075,17 @@ contains
           
           ! Decrease number of edges by two; for the edge (iVertex,jVertex)
           ! and for the edge (jVertex,iVertex) that exists in an undirected graph
-          rgraph%NEDGE = rgraph%NEDGE-2          
+          rgraph%NEDGE = rgraph%NEDGE-2
         end do
 
         ! Now, vertex iVertex does no longer exist in any adjacency list.
         ! Check if replacement vertex needs to be moved to position iVertex.
         if (bdoReplace .and. (iVertex .ne. ireplaceVertex)) then
           
-          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex and 
+          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex and
           !            delete all edges (jVertex,ireplaceVertex) from the adjacency
           !            lists of jVertex. Afterwards, add the edge (jVertex,iVertex)
-          !            to the adjacency list of jVertex. Finally, swap adjacency 
+          !            to the adjacency list of jVertex. Finally, swap adjacency
           !            list of vertices iVertex and ireplaceVertex.
           
           ! Find position of first entry in adjacency list
@@ -1128,7 +1128,7 @@ contains
             end if
             
             ! Insert edge (jVertex,iVertex) into adjacency list
-            call arrlst_insertIntoArrayList(rgraph%rEdges,jtable,iVertex,ipred,ipos)            
+            call arrlst_insertIntoArrayList(rgraph%rEdges,jtable,iVertex,ipred,ipos)
           end do
 
           ! Remove the trivial edge (ireplaceVertex,ireplaceVertex) from the adjacency
@@ -1169,7 +1169,7 @@ contains
         call output_line('Invalid graph format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
-      end select   
+      end select
     end if
   end subroutine grph_removeVertex
 
@@ -1252,7 +1252,7 @@ contains
     integer, intent(in) :: iFromVertex
 
     ! Number of the ending vertex
-    integer, intent(in) :: iToVertex    
+    integer, intent(in) :: iToVertex
 !</input>
 
 !<inputoutput>
@@ -1409,7 +1409,7 @@ contains
           rgraph%NEDGE = rgraph%NEDGE+1
 
           if (present(iFromEdgePosition)) iFromEdgePosition=ipos
-        end if    
+        end if
       end if
 
       
@@ -1438,7 +1438,7 @@ contains
     integer, intent(in) :: iFromVertex
 
     ! Number of the ending vertex
-    integer, intent(in) :: iToVertex    
+    integer, intent(in) :: iToVertex
 !</input>
 
 !<inputoutput>
@@ -1549,7 +1549,7 @@ contains
     call output_line('bisDense:     '//merge('Yes','No ',rgraph%bisDense))
     call output_line('NVT:          '//trim(sys_siL(rgraph%NVT,15)))
     call output_line('NEDGE:        '//trim(sys_siL(rgraph%NEDGE,15)))
-    call output_lbrk()    
+    call output_lbrk()
   end subroutine grph_infoGraph
 
   ! ***************************************************************************

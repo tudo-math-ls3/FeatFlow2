@@ -4,7 +4,7 @@
 !# ***********************************************************************
 !#
 !# <purpose>
-!# This module contains all routines and constant necessary to output 
+!# This module contains all routines and constant necessary to output
 !# vectors/arrays to files or read them from files.
 !#
 !# The following routines can be found in this module:
@@ -34,11 +34,11 @@
 !#     -> Writes a block vector into a text file in Maple syntax
 !#
 !# 9.) vecio_spyVector
-!#     -> Writes a scalar vector into a file which can be 
+!#     -> Writes a scalar vector into a file which can be
 !#        visualised by means of the MATLAB command SPY
 !#
 !# 10.) vecio_spyBlockVector
-!#      -> Writes a scalar vector into a file which can be 
+!#      -> Writes a scalar vector into a file which can be
 !#         visualised by means of the MATLAB command SPY
 !# </purpose>
 !#########################################################################
@@ -63,7 +63,7 @@ module vectorio
   public :: vecio_readBlockVectorHR
   public :: vecio_readVectorHR
   public :: vecio_writeVectorMaple
-  public :: vecio_writeBlockVectorMaple  
+  public :: vecio_writeBlockVectorMaple
   public :: vecio_spyVector
   public :: vecio_spyBlockVector
 
@@ -94,7 +94,7 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
-    ! If not specified, data is written to the file unformatted 
+    ! If not specified, data is written to the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in), optional :: sformat
 
@@ -181,7 +181,7 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
-    ! If not specified, data is written to the file unformatted 
+    ! If not specified, data is written to the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in), optional :: sformat
 
@@ -265,10 +265,10 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
-    ! If not specified, data is read from the file unformatted 
+    ! If not specified, data is read from the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     ! When reading an array written out by vecio_writeArray_Dble,
-    ! the format string shall match the setting of the 
+    ! the format string shall match the setting of the
     ! format string used there.
     character(len=*), intent(in), optional :: sformat
     
@@ -355,10 +355,10 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
-    ! If not specified, data is read from the file unformatted 
+    ! If not specified, data is read from the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     ! When reading an array written out by vecio_writeArray_Dble,
-    ! the format string shall match the setting of the 
+    ! the format string shall match the setting of the
     ! format string used there.
     character(len=*), intent(in), optional :: sformat
     
@@ -455,7 +455,7 @@ contains
     logical, intent(in) :: bunsort
 
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
-    ! If not specified, data is written to the file unformatted 
+    ! If not specified, data is written to the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in), optional :: sformat
 
@@ -527,13 +527,13 @@ contains
       if (present(sformat)) then
         if (.not. associated(p_Ipermutation)) then
           call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
-        else 
+        else
           call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
         end if
       else
         if (.not. associated(p_Ipermutation)) then
           call vecio_writeArray_Dble (p_Ddata, cf, sfile)
-        else 
+        else
           call vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
         end if
       end if
@@ -546,7 +546,7 @@ contains
     ! Close the file if necessary
     if (ifile .eq. 0) close(cf)
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -596,7 +596,7 @@ contains
     type(t_vectorScalar), intent(inout) :: rvector
   !</inputoutput>
 
-  !<output>    
+  !<output>
     ! Name of the vector
     character(len=*), intent(out) :: sarray
   !</output>
@@ -627,7 +627,7 @@ contains
 
     if (bformatted) then
       ! Peek the first line(s). Ignore all comments.
-      do 
+      do
         read (cf,'(A2)',ADVANCE="NO") S
         if (S .eq. "##") then
           read (cf,*)
@@ -673,13 +673,13 @@ contains
       if (bformatted) then
         if (.not. associated(p_Ipermutation)) then
           call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
-        else 
+        else
           call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
         end if
       else
         if (.not. associated(p_Ipermutation)) then
           call vecio_readArray_Dble (p_Ddata, cf, sfile)
-        else 
+        else
           call vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
         end if
       end if
@@ -728,7 +728,7 @@ contains
     logical, intent(in) :: bunsort
 
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
-    ! If not specified, data is written to the file unformatted 
+    ! If not specified, data is written to the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in), optional :: sformat
 
@@ -812,13 +812,13 @@ contains
         if (present(sformat)) then
           if (.not. associated(p_Ipermutation)) then
             call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
-          else 
+          else
             call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
           end if
         else
           if (.not. associated(p_Ipermutation)) then
             call vecio_writeArray_Dble (p_Ddata, cf, sfile)
-          else 
+          else
             call vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
           end if
         end if
@@ -889,7 +889,7 @@ contains
     type(t_vectorBlock), intent(inout) :: rvector
   !</inputoutput>
 
-  !<output>    
+  !<output>
     ! Name of the vector
     character(len=*), intent(out) :: sarray
   !</output>
@@ -921,7 +921,7 @@ contains
 
     if (bformatted) then
       ! Peek the first line(s). Ignore all comments.
-      do 
+      do
         read (cf,'(A2)',ADVANCE="NO") S
         if (S .eq. "##") then
           read (cf,*)
@@ -979,7 +979,7 @@ contains
       call sys_halt()
     end if
 
-    ! We do not need the block size anymore.    
+    ! We do not need the block size anymore.
     deallocate (IblockSize)
     
     ! Vector precision?
@@ -1000,13 +1000,13 @@ contains
         if (bformatted) then
           if (.not. associated(p_Ipermutation)) then
             call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
-          else 
+          else
             call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
           end if
         else
           if (.not. associated(p_Ipermutation)) then
             call vecio_readArray_Dble (p_Ddata, cf, sfile)
-          else 
+          else
             call vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
           end if
         end if
@@ -1054,7 +1054,7 @@ contains
     logical, intent(in) :: bunsort
 
     ! Format string to use for the output; e.g. '(E20.10)'.
-    ! If not specified, data is written to the file unformatted 
+    ! If not specified, data is written to the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in) :: sformat
   !</input>
@@ -1109,7 +1109,7 @@ contains
       
       if (.not. associated(p_Ipermutation)) then
         call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
-      else 
+      else
         call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
       end if
       
@@ -1159,7 +1159,7 @@ contains
     logical, intent(in) :: bunsort
 
     ! Format string to use for the output; e.g. '(E20.10)'.
-    ! If not specified, data is written to the file unformatted 
+    ! If not specified, data is written to the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in) :: sformat
   !</input>
@@ -1217,7 +1217,7 @@ contains
         
         if (.not. associated(p_Ipermutation)) then
           call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
-        else 
+        else
           call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
         end if
         
@@ -1247,7 +1247,7 @@ contains
 
   subroutine vecio_writeMapleArray_Dble (Ddata, ifile, sformat, Ipermutation)
 
-!<description>  
+!<description>
   ! INTERNAL SUBROUTINE.
   ! Writes the data of an array to the Maple output file iodentified by the
   ! output channel ifile.
@@ -1261,7 +1261,7 @@ contains
   integer, intent(in) :: ifile
   
   ! Format string to use for the output; e.g. '(E20.10)'.
-  ! If not specified, data is written to the file unformatted 
+  ! If not specified, data is written to the file unformatted
   ! (i.e. in a computer dependent, not human readable form).
   character(len=*), intent(in) :: sformat
   

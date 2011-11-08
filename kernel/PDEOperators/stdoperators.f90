@@ -63,7 +63,7 @@ contains
   ! structure must already be given.
   ! If the array for the matrix content does not exist, a new array is created.
   ! If the array exist, the new entries of the Laplace operator overwrite
-  ! the old entries (if bclear=true) or are added to the old entries 
+  ! the old entries (if bclear=true) or are added to the old entries
   ! (if bclear=false).
   type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
@@ -170,7 +170,7 @@ contains
   ! structure must already be given.
   ! If the array for the matrix content does not exist, a new array is created.
   ! If the array exist, the new entries of the Laplace operator overwrite
-  ! the old entries (if bclear=true) or are added to the old entries 
+  ! the old entries (if bclear=true) or are added to the old entries
   ! (if bclear=false).
   type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>

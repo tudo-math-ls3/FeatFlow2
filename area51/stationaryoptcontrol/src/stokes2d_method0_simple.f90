@@ -24,7 +24,7 @@
 !#   z = target velocity
 !#
 !# The boundary conditions for the dual solution are =0 on the
-!# Dirichlet boundary. 
+!# Dirichlet boundary.
 !# The projection operator
 !#
 !#   P(g) = P(g)g = P[a,b](g)g = max(a,min(b,g))
@@ -45,7 +45,7 @@
 !#  -Laplace(y) + 1/alpha l = f
 !#  -Laplace(p) - u = -z
 !#
-!# which corresponds to the system 
+!# which corresponds to the system
 !#
 !#  (  A    1/alpha M ) ( y )= (  f )
 !#  ( -M    A         ) ( l )  ( -z )
@@ -71,7 +71,7 @@
 !#  ( y_n+1 ) = ( l_n ) + (  A    P'(u_n)(1/alpha .) )^-1 [ (  f ) - (  A    P(u_n)(1/alpha .) ) ( y_n ) ]
 !#  ( l_n+1 )   ( p_n )   ( -M    A                  )    [ ( -z )   ( -M    A                 ) ( l_n ) ]
 !#
-!# where u_n = -1/alpha l_n and P'(g) (and its corresponding matrix) is 
+!# where u_n = -1/alpha l_n and P'(g) (and its corresponding matrix) is
 !# the semismooth Newton operator the projection P(g). This operator is defined by
 !#
 !#   P'(h)g (x) = g(x)  , if a <= h(x) <= b
@@ -183,11 +183,11 @@ contains
     type(t_vectorBlock) :: rrhsBlock,rtempRhsBlock
     type(t_vectorScalar) :: rvectorTmp,rvectorOutputX,rvectorOutputY
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rprecond
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
@@ -199,7 +199,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Data for the Newton iteration
     integer :: ite, nmaxiterations, idiscretisation
@@ -217,9 +217,9 @@ contains
     type(t_ucdExport) :: rexport
     real(DP), dimension(:), pointer :: p_Ddata,p_DdataX,p_DdataY,p_DdataRhs,p_DdataRhsTemp
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
-    ! We want to solve our Poisson problem on level... 
+    ! We want to solve our Poisson problem on level...
     NLMAX = 2
     
     ! Newton iteration counter
@@ -245,7 +245,7 @@ contains
     ! Discretisation. 1=EM30, 2=Q2
     idiscretisation = 1
     
-    ! TRUE emulates a timestep with implicit Euler, timestep length dt, 
+    ! TRUE emulates a timestep with implicit Euler, timestep length dt,
     ! starting from a zero solution
     bemulateTimestep = .false.
     
@@ -498,8 +498,8 @@ contains
 !      end if
     
       ! Create the nonliear defect
-      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y ) 
-      !  (d2)    ( -z )   ( -M    A                 ) ( p ) 
+      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y )
+      !  (d2)    ( -z )   ( -M    A                 ) ( p )
       ! We do this manually...
       
       call lsysbl_copyVector (rrhsBlock,rtempRhsBlock)
@@ -584,7 +584,7 @@ contains
             
       end if
 
-      ! ---      
+      ! ---
       ! Prepare the preconditioner matrix (Newton).
       call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -602,7 +602,7 @@ contains
         call lsyssc_matrixLinearComb (rmatrixMass,1.0_DP/dt,&
             rmatrixBlock%RmatrixBlock(2,2),1.0_DP,rmatrixBlock%RmatrixBlock(2,2),&
             .false.,.false.,.true.,.true.)
-      end if      
+      end if
 
       call lsyssc_duplicateMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -747,7 +747,7 @@ contains
       
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
-      ! only have one level here), then call the initialisation 
+      ! only have one level here), then call the initialisation
       ! routine to attach all these matrices.
       ! Remark: Don't make a call like
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -783,7 +783,7 @@ contains
     end do
     
     ! That's it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        'gmv/ust2d_0_simple.vtk')
@@ -889,7 +889,7 @@ contains
     call spdiscr_releaseDiscr(rdiscrOutput)
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
@@ -950,7 +950,7 @@ contains
     
     deallocate(p_Idofs)
 
-  end subroutine    
+  end subroutine
 
   ! ***************************************************************************
   
@@ -990,6 +990,6 @@ contains
       p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
     end do
 
-  end subroutine 
+  end subroutine
   
 end module

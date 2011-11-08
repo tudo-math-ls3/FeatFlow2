@@ -7,7 +7,7 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and cleanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -62,7 +62,7 @@ module poisson2d_method2
     type(t_matrixBlock) :: rmatrix
     type(t_vectorBlock) :: rvector,rrhs
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -80,7 +80,7 @@ module poisson2d_method2
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -88,8 +88,8 @@ module poisson2d_method2
     ! only one level supported, identified by NLMAX!
     type(t_problem_lvl), dimension(1) :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
     
@@ -131,7 +131,7 @@ contains
     ! Initialise the level in the problem structure
     rproblem%NLMAX = ilv
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -198,7 +198,7 @@ contains
     ! for later use.
     rproblem%RlevelInfo(1)%p_rdiscretisation => p_rdiscretisation
 
-    ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+    ! p_rdiscretisation%Rdiscretisations is a list of scalar
     ! discretisation structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
@@ -244,12 +244,12 @@ contains
     p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
     
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
+    p_rrhs    => rproblem%RlevelInfo(1)%rrhs
     p_rvector => rproblem%RlevelInfo(1)%rvector
     
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
     
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
@@ -279,8 +279,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -288,7 +288,7 @@ contains
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical data.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     call bilf_buildMatrixScalar (rform,.true.,&
@@ -301,7 +301,7 @@ contains
     ! to create it by using our matrix as template:
     call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
     
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -309,10 +309,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     call linf_buildVectorScalar (&
@@ -321,7 +321,7 @@ contains
               rproblem%rcollection)
     
     ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution. 
+    ! need additionally is a block vector for the solution.
     ! Create them using the RHS as template.
     ! Fill the solution vector with 0:
     call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
@@ -346,7 +346,7 @@ contains
 
   ! local variables
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -359,7 +359,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
+    p_rrhs    => rproblem%RlevelInfo(1)%rrhs
     p_rvector => rproblem%RlevelInfo(1)%rvector
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
@@ -385,7 +385,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -394,7 +394,7 @@ contains
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
                              
-    ! Now to the edge 2 of boundary component 1 the domain. 
+    ! Now to the edge 2 of boundary component 1 the domain.
     call boundary_createRegion(rproblem%rboundary,1,2,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
@@ -440,13 +440,13 @@ contains
 
   ! local variables
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
 
     ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
+    p_rrhs    => rproblem%RlevelInfo(1)%rrhs
     p_rvector => rproblem%RlevelInfo(1)%rvector
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
@@ -480,19 +480,19 @@ contains
   ! local variables
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -500,7 +500,7 @@ contains
     type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
+    p_rrhs    => rproblem%RlevelInfo(1)%rrhs
     p_rvector => rproblem%RlevelInfo(1)%rvector
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
@@ -509,9 +509,9 @@ contains
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -528,7 +528,7 @@ contains
 
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -603,7 +603,7 @@ contains
       p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -743,7 +743,7 @@ contains
 !<description>
   ! This is a 'separated' poisson solver for solving a Poisson
   ! problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (THis is somehow a cleaner implementation than using a collection!).
@@ -770,7 +770,7 @@ contains
     ! A problem structure for our problem
     type(t_problem), target :: rproblem
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     ! We want to solve our Poisson problem on level...
 
     NLMAX = 7
@@ -782,7 +782,7 @@ contains
     !
     ! Initialisation
     call pm3_initParamTriang (NLMAX,rproblem)
-    call pm3_initDiscretisation (rproblem)    
+    call pm3_initDiscretisation (rproblem)
     call pm3_initMatVec (rproblem)
     call pm3_initDiscreteBC (rproblem)
     

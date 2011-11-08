@@ -95,7 +95,7 @@ module linearalgebra
     module procedure lalg_copyVectorI64I8_2D
     module procedure lalg_copyVectorI64I16_2D
     module procedure lalg_copyVectorI64I32_2D
-  end interface  
+  end interface
   
   public :: lalg_copyVectorInt2D
 
@@ -116,7 +116,7 @@ module linearalgebra
     module procedure lalg_copyVectorI64I8_3D
     module procedure lalg_copyVectorI64I16_3D
     module procedure lalg_copyVectorI64I32_3D
-  end interface  
+  end interface
   
   public :: lalg_copyVectorInt3D
 
@@ -497,7 +497,7 @@ module linearalgebra
   public :: lalg_errorNormDble
   public :: lalg_errorNormQuad
 
-  interface lalg_vectorSortInt    
+  interface lalg_vectorSortInt
     module procedure lalg_vectorSortI32
     module procedure lalg_vectorSortI64
   end interface
@@ -850,7 +850,7 @@ contains
       call DSCOPY(size(Dx),Dx,1,Fy,1)
     else
       call DSCOPY(n,Dx,1,Fy,1)
-    end if  
+    end if
 
   end subroutine
 
@@ -887,7 +887,7 @@ contains
       call DQCOPY(size(Dx),Dx,1,Qy,1)
     else
       call DQCOPY(n,Dx,1,Qy,1)
-    end if  
+    end if
 
   end subroutine
 
@@ -924,7 +924,7 @@ contains
       call QSCOPY(size(Qx),Qx,1,Fy,1)
     else
       call QSCOPY(n,Qx,1,Fy,1)
-    end if  
+    end if
 
   end subroutine
 
@@ -961,7 +961,7 @@ contains
       call QDCOPY(size(Qx),Qx,1,Dy,1)
     else
       call QDCOPY(n,Qx,1,Dy,1)
-    end if  
+    end if
 
   end subroutine
 
@@ -6345,7 +6345,7 @@ contains
         call SSCAL(n,scy,Fy,1)
       endif
 
-    end if  
+    end if
   
   end subroutine
   
@@ -6549,7 +6549,7 @@ contains
         call DSCAL(n,dcy,Dy,1)
       endif
 
-    end if  
+    end if
   
   end subroutine
   
@@ -6617,7 +6617,7 @@ contains
         call QSCAL(n,qcy,Qy,1)
       endif
 
-    end if  
+    end if
   
   end subroutine
 
@@ -6685,7 +6685,7 @@ contains
         call QSCAL(n,qcy,Qy,1)
       endif
 
-    end if  
+    end if
   
   end subroutine
 
@@ -7308,7 +7308,7 @@ contains
   real(SP) function lalg_scalarProductSngl (Fx,Fy,n) result (res)
   
 !<description>
-  ! Calculates the scalar product of two single precision vectors: 
+  ! Calculates the scalar product of two single precision vectors:
   ! res = (vector,vector)
 !</description>
 
@@ -7348,7 +7348,7 @@ contains
   real(DP) function lalg_scalarProductDble (Dx,Dy,n) result (res)
   
 !<description>
-  ! Calculates the scalar product of two double precision vectors: 
+  ! Calculates the scalar product of two double precision vectors:
   ! res = (vector,vector)
 !</description>
 
@@ -7388,7 +7388,7 @@ contains
   real(QP) function lalg_scalarProductQuad (Qx,Qy,n) result (res)
   
 !<description>
-  ! Calculates the scalar product of two quad precision vectors: 
+  ! Calculates the scalar product of two quad precision vectors:
   ! res = (vector,vector)
 !</description>
 
@@ -7440,7 +7440,7 @@ contains
   real(SP) function lalg_scalarProductSngl2D (Fx,Fy) result (res)
   
 !<description>
-  ! Calculates the scalar product of two single precision vectors: 
+  ! Calculates the scalar product of two single precision vectors:
   ! res = (vector,vector)
 !</description>
 
@@ -7473,7 +7473,7 @@ contains
   real(DP) function lalg_scalarProductDble2D (Dx,Dy) result (res)
   
 !<description>
-  ! Calculates the scalar product of two double precision vectors: 
+  ! Calculates the scalar product of two double precision vectors:
   ! res = (vector,vector)
 !</description>
 
@@ -7506,7 +7506,7 @@ contains
   real(DP) function lalg_scalarProductQuad2D (Qx,Qy) result (res)
   
 !<description>
-  ! Calculates the scalar product of two quad precision vectors: 
+  ! Calculates the scalar product of two quad precision vectors:
   ! res = (vector,vector)
 !</description>
 
@@ -7548,7 +7548,7 @@ contains
   real(SP) function lalg_normSngl (Fx,cnorm,iposMax,n) result(resnorm)
   
 !<description>
-  ! Calculates the norm of a single precision vector. cnorm identifies the 
+  ! Calculates the norm of a single precision vector. cnorm identifies the
   ! type of norm to calculate.
 !</description>
 
@@ -7630,7 +7630,7 @@ contains
   real(DP) function lalg_normDble (Dx,cnorm,iposMax,n) result(resnorm)
   
 !<description>
-  ! Calculates the norm of a double precision vector. cnorm identifies the 
+  ! Calculates the norm of a double precision vector. cnorm identifies the
   ! type of norm to calculate.
 !</description>
 
@@ -7713,7 +7713,7 @@ contains
   real(QP) function lalg_normQuad (Qx,cnorm,iposMax,n) result(resnorm)
   
 !<description>
-  ! Calculates the norm of a quad precision vector. cnorm identifies the 
+  ! Calculates the norm of a quad precision vector. cnorm identifies the
   ! type of norm to calculate.
 !</description>
 
@@ -8142,7 +8142,7 @@ contains
       Fd(i) = Fx(Itr(i))
     end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -8180,7 +8180,7 @@ contains
       Dd(i) = Dx(Itr(i))
     end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -8218,7 +8218,7 @@ contains
       Qd(i) = Qx(Itr(i))
     end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -8254,7 +8254,7 @@ contains
       Id(i) = Ix(Itr(i))
     end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -8290,7 +8290,7 @@ contains
       Id(i) = Ix(Itr(i))
     end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -9115,7 +9115,7 @@ contains
 !<description>
   ! Scales a quad precision vector by a constant qx := qa * qx
   !
-  ! REMARK: This subroutine is a port of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9182,7 +9182,7 @@ contains
 !<description>
   ! Copies a quad precision vector to another vector qy := qx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9254,7 +9254,7 @@ contains
 !<description>
   ! Computes constant times a quad precision vector plus a vector.
   !
-  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9327,7 +9327,7 @@ contains
 !<description>
   ! Takes the sum of the absolute values.
   !
-  ! REMARK: This subroutine is a port of subroutine DASUM from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DASUM from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9392,7 +9392,7 @@ contains
 !<description>
   ! Computes the euclidean norm of quad precision vector
   !
-  ! REMARK: This subroutine is a port of subroutine DNRM2 from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DNRM2 from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9453,7 +9453,7 @@ contains
 !<description>
   ! Finds the index of element having max. absolute value.
   !
-  ! REMARK: This subroutine is a port of subroutine IDAMAX from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine IDAMAX from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9519,7 +9519,7 @@ contains
 !<description>
   ! Copies a single precision vector to a double precision vector dy := sx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9591,7 +9591,7 @@ contains
 !<description>
   ! Copies a single precision vector to a double precision vector sy := dx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9663,7 +9663,7 @@ end subroutine dscopy
 !<description>
   ! Copies a single precision vector to a quad precision vector qy := sx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9735,7 +9735,7 @@ end subroutine dscopy
 !<description>
   ! Copies a quad precision vector to a single precision vector sy := qx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9807,7 +9807,7 @@ end subroutine qscopy
 !<description>
   ! Copies a double precision vector to a quad precision vector qy := dx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9879,7 +9879,7 @@ end subroutine qscopy
 !<description>
   ! Copies a quad precision vector to a double precision vector dy := qx
   !
-  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -9951,7 +9951,7 @@ end subroutine qscopy
 !<description>
   ! Computes constant times a single vector plus a double precision vector.
   !
-  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10024,7 +10024,7 @@ end subroutine qscopy
 !<description>
   ! Computes constant times a single vector plus a quad precision vector.
   !
-  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10097,7 +10097,7 @@ end subroutine qscopy
 !<description>
   ! Computes constant times a double vector plus a quad precision vector.
   !
-  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS 
+  ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10174,7 +10174,7 @@ end subroutine qscopy
 !<description>
   ! Sets a single precision vector equal to a constant sx := sa
   !
-  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10246,7 +10246,7 @@ end subroutine qscopy
 !<description>
   ! Sets a double precision vector equal to a constant dx := da
   !
-  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 
@@ -10318,7 +10318,7 @@ end subroutine qscopy
 !<description>
   ! Sets a quad precision vector equal to a constant qx := qa
   !
-  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS 
+  ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
 !</descption>
 

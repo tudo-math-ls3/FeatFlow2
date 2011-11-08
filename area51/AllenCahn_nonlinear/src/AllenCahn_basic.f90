@@ -59,7 +59,7 @@ MODULE AllenCahn_basic
     ! The mass matrix
     TYPE(t_matrixBlock) :: rmatrixMass
 
-    ! System matrix. May change during the time iteration    
+    ! System matrix. May change during the time iteration
     TYPE(t_matrixBlock) :: rmatrix
     
     ! A variable describing the discrete boundary conditions.
@@ -113,7 +113,7 @@ MODULE AllenCahn_basic
     ! A RHS vector on the finest level used for solving linear systems
     TYPE(t_vectorBlock) :: rrhs
     
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     
     ! An interlevel projection structure for changing levels
@@ -130,8 +130,8 @@ MODULE AllenCahn_basic
     ! only one level supported, identified by NLMAX!
     TYPE(t_ACproblem_lvl), DIMENSION(:), POINTER :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     TYPE(t_collection) :: rcollection
     

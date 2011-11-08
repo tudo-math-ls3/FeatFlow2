@@ -46,7 +46,7 @@ MODULE AllenCahn
   use ccbasic
   use cccallback
 !  use ccnonstationary
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   use AllenCahn_callback
   use AllenCahn_basic
   use AllenCahn_matvec
@@ -124,8 +124,8 @@ CONTAINS
   subroutine AC_timestep (rACproblem,rACvector,rACrhs,rNSproblem,rNSvector,rNSrhs)
   
 !<description>
-  ! Performs one time step: $t^n -> t^n+1$. 
-  ! Assembles system matrix and RHS vector. 
+  ! Performs one time step: $t^n -> t^n+1$.
+  ! Assembles system matrix and RHS vector.
   ! Solves the corresponding time-step equation and returns the solution vector
   ! at the end of the time step.
   ! Solves the given problem by applying a linear solver.
@@ -157,20 +157,20 @@ CONTAINS
     INTEGER :: i
 
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    INTEGER :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_vectorBlock), POINTER :: p_rrhs
     TYPE(t_vectorBlock), TARGET :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rsmoother
     TYPE(t_linsolNode), POINTER :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -186,7 +186,7 @@ CONTAINS
 
 
 ! Mcai
-	! A parameter to determine, whether we use implicit scheme or explicit scheme for 
+	! A parameter to determine, whether we use implicit scheme or explicit scheme for
 	! Allen-Cahn problem, if it is 0, we treat convective term explictly. Otherwise,implicitly
 	integer :: Implicit_Convective=0
 
@@ -197,8 +197,8 @@ CONTAINS
     real(DP), dimension(:), pointer ::  p_data
 
 !~~~~~~~~~~~~~~If we only have Allen-Cahn problem, activate the following one~~~~~~~~
-    !MCai, For testing the Allen-Cahn solver only, we set rNSvector = 0 vector	
-	!call lsysbl_clearVector(rNSvector) 
+    !MCai, For testing the Allen-Cahn solver only, we set rNSvector = 0 vector
+	!call lsysbl_clearVector(rNSvector)
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     ! We have an equation of the type
@@ -207,7 +207,7 @@ CONTAINS
     !
     ! Which is discretised in time with a Theta scheme, leading to
     !
-    !   $$ u_{n+1} + w_1*N(u_n+1) 
+    !   $$ u_{n+1} + w_1*N(u_n+1)
     !      =   u_n + w_2*N(u_n)  +  w_3*f_{n+1}  +  w_4*f_n $$
     !
     ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
@@ -222,14 +222,14 @@ CONTAINS
     NLMAX = rACproblem%NLMAX
     
 ! MCai~~~~~~~Geneate Poly matrix and Conv matrix on all levels~~~~~~~~~~~~~~~
-    ! We first generate the matrix based on nonlinear term 
+    ! We first generate the matrix based on nonlinear term
     call AC_assembleMatPoly(rACproblem, rACvector)
 
 !~~~~~~~~~MCai, implicitly treat convection term?~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-! we may also need to update the system matrix of AC problem by using new obtained 
-! velocity field in NS problem. 
+! we may also need to update the system matrix of AC problem by using new obtained
+! velocity field in NS problem.
 
-!~~think about how to implement this	*)*)*)*)*)*)*)**)*)*)*)*)*)*)*)*)*)*)					    
+!~~think about how to implement this	*)*)*)*)*)*)*)**)*)*)*)*)*)*)*)*)*)*)
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! We can also generate convetive matrix here
     call AC_assembleMatConv(rACproblem, rACvector, rNSproblem, rNSvector)
@@ -238,7 +238,7 @@ CONTAINS
     ! Get our right hand side / solution / matrix on the finest
     ! level from the problem structure.
     p_rmatrix => rACproblem%RlevelInfo(NLMAX)%rmatrix
-    p_rrhs    => rACproblem%rrhs 
+    p_rrhs    => rACproblem%rrhs
     
     ! Create a temporary vector we need for some preparations.
     call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .FALSE.)
@@ -246,19 +246,19 @@ CONTAINS
     ! Set up w_2*N(u_n) + w_4*f_n.
     call lsysbl_vectorLinearComb(rACrhs,p_rrhs,&
          rACproblem%rtimedependence%rtimestepping%dweightOldRHS,0.0_DP)
-!First, Laplace term  
+!First, Laplace term
 	call lsysbl_blockMatVec(rACproblem%RlevelInfo(NLMAX)%rmatrixStatic,&
          rACvector,p_rrhs,&
          rACproblem%rtimedependence%rtimestepping%dweightMatrixRHS,&
          rACproblem%rtimedependence%rtimestepping%dweightOldRHS)
-!Then, Convective term 
+!Then, Convective term
 	call lsysbl_blockMatVec(rACproblem%RlevelInfo(NLMAX)%rmatrixConv,&
          rACvector,p_rrhs,&
          rACproblem%rtimedependence%rtimestepping%dweightMatrixRHS,&
          rACproblem%rtimedependence%rtimestepping%dweightOldRHS)
 !MCai,
 !Finally, Polynomial term: here we treated it through ????????????????????
-! We can also do it through the following way: 
+! We can also do it through the following way:
 ! 	call lsysbl_blockMatVec(rACproblem%RlevelInfo(NLMAX)%rmatrixPoly,&
 !          rACvector,p_rrhs,&
 !          rACproblem%rtimedependence%rtimestepping%dweightMatrixRHS,&
@@ -281,9 +281,9 @@ CONTAINS
 ! ! Debug
 !     call lsyssc_getbaseVector_double(rACvector%rvectorBlock(1), p_vectordata)
 !     call storage_getbase_double2D(rACproblem%RlevelInfo(rACproblem%NLMAX)%rtriangulation%h_DvertexCoords,p_DvertexCoords)
-! ! 
+! !
 !       do i=1,rACproblem%RlevelInfo(rACproblem%NLMAX)%rtriangulation%NVT
-!            call AllenCahn_inicon(p_DvertexCoords(1,i),p_DvertexCoords(2,i), p_vectordata(i))	
+!            call AllenCahn_inicon(p_DvertexCoords(1,i),p_DvertexCoords(2,i), p_vectordata(i))
 !       end do
 
     call AC_calcRHS (rACproblem, rACvector, rACrhs,&
@@ -315,7 +315,7 @@ CONTAINS
       call lsyssc_duplicateMatrix (rACproblem%RlevelInfo(i)%rmatrixMass%RmatrixBlock(1,1),&
                                    rACproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
                                    LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-      ! Laplace Matrix 
+      ! Laplace Matrix
       call lsyssc_matrixLinearComb (rACproblem%RlevelInfo(i)%rmatrixStatic%RmatrixBlock(1,1),&
                                     rACproblem%rtimedependence%rtimestepping%dweightMatrixLHS,&
                                     rACproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
@@ -323,7 +323,7 @@ CONTAINS
                                     rACproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
                                     .FALSE.,.FALSE.,.TRUE.,.TRUE.)
       ! Polynomical Matrix
-! Here, the system matrix is time independent. 
+! Here, the system matrix is time independent.
 ! We first add mass matrix from polynomial term first
 !      call lsyssc_matrixLinearComb (rACproblem%RlevelInfo(i)%rmatrixPoly%RmatrixBlock(1,1),&
 !                                   rACproblem%rtimedependence%rtimestepping%dweightMatrixLHS,&
@@ -331,7 +331,7 @@ CONTAINS
 !                                   1.0_DP,&
 !                                   rACproblem%RlevelInfo(i)%rmatrix%RmatrixBlock(1,1),&
 !                                   .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-      ! Then convective matrix 
+      ! Then convective matrix
 
 !    if (Implicit_Convective .eq. 1) then
       call lsyssc_matrixLinearComb (rACproblem%RlevelInfo(i)%rmatrixConv%RmatrixBlock(1,1),&
@@ -419,7 +419,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-     ! file name for output 
+     ! file name for output
      character(SYS_STRLEN) :: sfile,sfilename
 
     ! We need some more variables for postprocessing
@@ -451,7 +451,7 @@ CONTAINS
       rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
 
 !    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&

@@ -182,7 +182,7 @@ contains
         end if
       end do
       
-      ! We have some significant character, 
+      ! We have some significant character,
       ! read until next space, comma or comment
       do
         cbuffer(ipos:ipos) = c
@@ -377,6 +377,6 @@ contains
 
       Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
-  end subroutine ppsol_initArrayPGMSngl 
+  end subroutine ppsol_initArrayPGMSngl
 
 end module pprocsolution

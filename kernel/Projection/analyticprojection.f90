@@ -11,13 +11,13 @@
 !# One can find the following subroutines here:
 !#
 !# 1.) anprj_analytL2projectionByMass
-!#     -> Performs defect correction with the consistent and lumped mass 
+!#     -> Performs defect correction with the consistent and lumped mass
 !#        matrix of a FE space to calculate the consistent <tex>$ L_2 $</tex>
 !#        projection of an analytically given function.
 !#
 !# 2.) anprj_discrDirect
-!#     -> Evaluates an analytically given function and creates the 
-!#        corresponding FE representation. 
+!#     -> Evaluates an analytically given function and creates the
+!#        corresponding FE representation.
 !#
 !# 3.) anprj_charFctRealBdComp
 !#     -> Calculate the characteristic function of a boundary region
@@ -75,13 +75,13 @@ module analyticprojection
   
     ! Relative error criterium. Standard = $10^-{5}$.
     ! anevl_L2projectionByMass carries out the iteration until the relative as well
-    ! the absolute error criterium is reached. 
+    ! the absolute error criterium is reached.
     ! A value of 0.0 disables the check against the relative residuum.
     real(DP) :: depsRel = 1.0E-5_DP
 
     ! Absolute error criterium. Standard = $10^-{5}$.
     ! anevl_L2projectionByMass carries out the iteration until the relative as well
-    ! the absolute error criterium is reached. 
+    ! the absolute error criterium is reached.
     ! A value of 0.0 disables the check against the absolute residuum.
     real(DP) :: depsAbs = 1.0E-5
 
@@ -94,14 +94,14 @@ module analyticprojection
     
     ! Type of preconditioner to use.
     ! =0: Use damped Jacobi or lumped mass matrix (depending on whether
-    !     rmatrixMassLumped is specified or not). 
+    !     rmatrixMassLumped is specified or not).
     ! =1: Use damped Jacobi.
-    ! =2: Use lumped mass matrix. rmatrixMassLumped must be specified 
+    ! =2: Use lumped mass matrix. rmatrixMassLumped must be specified
     !     in the call to l2prj_analytL2projectionByMass.
     ! Standard = 0.
     integer :: cpreconditioner = 0
     
-    ! Damping parameter for the iteration. 
+    ! Damping parameter for the iteration.
     ! If SYS_MAXREAL_DP is specified, the standard damping parameters are used,
     ! which are: = 1.0, if the lumped mass matrix is used for preconditioning,
     !            = 0.7, if the Jacobi preconditioner is used for preconditioning.
@@ -157,7 +157,7 @@ contains
   ! with $f$ being a RHS vector generated with fcoeff_buildVectorSc_sim,
   ! $M$ being the consistent mass matrix and $C$ being either the
   ! lumped mass matrix $M_l$ (if specified as rmatrixMassLumped)
-  ! or the Jacobi preconditioner. The iteration is performed until the 
+  ! or the Jacobi preconditioner. The iteration is performed until the
   ! error criteria are fulfilled or the given number of steps is reached.
 !</description>
 
@@ -166,11 +166,11 @@ contains
   type(t_matrixScalar), intent(in) :: rmatrixMass
   
   ! A callback routine for the function to be discretised. The callback routine
-  ! has the same syntax as that for evaluating analytic functions for the 
+  ! has the same syntax as that for evaluating analytic functions for the
   ! computation of RHS vectors.
   include '../DOFMaintenance/intf_coefficientVectorSc.inc'
 
-  ! OPTIONAL: A pointer to a collection structure. This structure is 
+  ! OPTIONAL: A pointer to a collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -200,7 +200,7 @@ contains
     ! local variables
     type(t_linearForm) :: rlinform
     integer :: iiteration
-    type(t_configL2ProjectionByMass) :: rconfig    
+    type(t_configL2ProjectionByMass) :: rconfig
     real(DP) :: depsAbs, depsRel, dresInit
     type(t_vectorScalar), pointer :: p_rvectorTemp1,p_rvectorTemp2
     real(dp) :: domega
@@ -240,7 +240,7 @@ contains
     !
     ! <=>     M rvector = F
     !
-    ! So we have to invert M. As long as the condition number of M is not 
+    ! So we have to invert M. As long as the condition number of M is not
     ! too bad, we do not need tricks like multigrid, but we can use a standard
     ! defect correction!
     !
@@ -365,7 +365,7 @@ contains
   ! to a finite element vector rvector by direct point evaluation.
   !
   ! Note: This function may not work for all finite elements!
-  ! Standard 'immediate' elements (Q0,Q1,..., Q1~) are 
+  ! Standard 'immediate' elements (Q0,Q1,..., Q1~) are
   ! nevertheless supported.
   !
   ! Note: For conformal finite elements (Q0,Q1,...) the result of this
@@ -379,7 +379,7 @@ contains
   ! A callback routine for the function to be discretised.
   include '../Postprocessing/intf_refFunctionSc.inc'
 
-  ! OPTIONAL: A pointer to a collection structure. This structure is 
+  ! OPTIONAL: A pointer to a collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -389,7 +389,7 @@ contains
   !     calculate as exact as possible.
   ! =1: Use pure point evaluation. This is exact for Q0, Q1, Q2,... as well as
   !     for midpoint based Q1~ finite elements.
-  ! =2: Use point evaluation for point-value based finite elements 
+  ! =2: Use point evaluation for point-value based finite elements
   !     (Q0, Q1, Q2,...). Use exact integral mean value evaluation for integral
   !     mean value based elements like Q1~ (E030, EM30).
   ! Example: If the given vector is an integral mean value based Q1~
@@ -467,7 +467,7 @@ contains
     ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -711,7 +711,7 @@ contains
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
-        ! Prepare the call to the evaluation routine of the analytic function.    
+        ! Prepare the call to the evaluation routine of the analytic function.
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
@@ -739,7 +739,7 @@ contains
             
               do icubp = 1, ncubp
               
-                ! Sum up the calculated value to the existing value of the 
+                ! Sum up the calculated value to the existing value of the
                 ! corresponding DOF.
                 p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
                   Dcoefficients(icubp,IEL)
@@ -747,7 +747,7 @@ contains
                 ! Count the entry
                 p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
 
-              end do ! ICUBP 
+              end do ! ICUBP
 
             end do ! IEL
             
@@ -757,7 +757,7 @@ contains
             do IEL=1,IELmax-IELset+1
             
               ! Loop through the DOF`s on the current element.
-              do idof = 1,indofTrial 
+              do idof = 1,indofTrial
               
                 ! Calculate the DOF. For that purpose, calculate the line
                 ! integral (using the cubature points calculated above).
@@ -785,7 +785,7 @@ contains
           
             do icubp = 1, ncubp
             
-              ! Sum up the calculated value to the existing value of the 
+              ! Sum up the calculated value to the existing value of the
               ! corresponding DOF.
               p_Ddata(IdofsTrial(icubp,IEL)) = p_Ddata(IdofsTrial(icubp,IEL)) + &
                 Dcoefficients(icubp,IEL)
@@ -793,12 +793,12 @@ contains
               ! Count the entry
               p_Dweight(IdofsTrial(icubp,IEL)) = p_Dweight(IdofsTrial(icubp,IEL)) + 1.0_DP
 
-            end do ! ICUBP 
+            end do ! ICUBP
 
           end do ! IEL
           
 
-        end select        
+        end select
         
         ! Release the temporary domain integration structure again
         call domint_doneIntegration (rintSubset)
@@ -836,7 +836,7 @@ contains
   ! Calculates the characteristic function of a boundary region.
   ! rvector is a FE solution vector, discretised by P1,Q1,P2,Q2 or Ex3x,
   ! rboundaryRegion a boundary region on the boundary of the underlying
-  ! domain. The routine will now set the DOF's of all vertices to 1 which 
+  ! domain. The routine will now set the DOF's of all vertices to 1 which
   ! belong to this boundary region. All other DOF's are ignored, so the
   ! routine can be called for multiple boundary regions to accumulate
   ! a characteristic vector.
@@ -1065,11 +1065,11 @@ contains
   type(t_matrixScalar), intent(in) :: rmatrixMass
 
   ! A callback routine for the function to be discretised. The callback routine
-  ! has the same syntax as that for evaluating analytic functions for the 
+  ! has the same syntax as that for evaluating analytic functions for the
   ! computation of RHS vectors.
   include '../DOFMaintenance/intf_coefficientVectorSc.inc'
 
-  ! OPTIONAL: A pointer to a collection structure. This structure is 
+  ! OPTIONAL: A pointer to a collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -1112,7 +1112,7 @@ contains
       call lsyssc_lumpMatrixScalar(p_rmatrixMassLumped, LSYSSC_LUMP_DIAG)
     end if
 
-    ! We need to perform s single defect correction step 
+    ! We need to perform s single defect correction step
     ! preconditioned by the lumped mass matrix
     rconfig%nmaxIterations  = 1
     rconfig%cpreconditioner = 2

@@ -18,21 +18,21 @@
 !#    -> an evaluation function for that element in multiple points
 !#       (e.g. a set of cubature points) on multiple elements simultaneously.\\
 !#
-!# The evaluation function for multiple points accepts a set of point 
-!# coordinates where to evaluate and evaluates the finite element in 
-!# all these points. 
+!# The evaluation function for multiple points accepts a set of point
+!# coordinates where to evaluate and evaluates the finite element in
+!# all these points.
 !# The evaluation functions for multiple elements work like the variant
 !# for multiple points, but also accept a list of elements where to
 !# evaluate.
-!# Depending on the type of the element, the coordinates must be given 
-!# to the evaluation functions either on the reference element (for 
+!# Depending on the type of the element, the coordinates must be given
+!# to the evaluation functions either on the reference element (for
 !# parametric elements) or on the real element (for nonparametric elements).\\
 !#
 !# There is also a couple of auxiliary routines which help to deal with
 !# a finite element:
 !#
 !# 1.) elem_igetNDofLoc
-!#     -> determines the number of local degrees of freedom for a finite 
+!#     -> determines the number of local degrees of freedom for a finite
 !#        element
 !#
 !# 2.) elem_igetNVE
@@ -56,10 +56,10 @@
 !#     -> Returns the element identifier of the 'primary' element without
 !#        any subtype information, which identifies an element family.
 !#
-!# 8.) elem_generic 
-!#     -> Realises a generic element which can be used to evaluate a finite 
-!#        element depending on its element identifier - in contrast to the 
-!#        standard evaluation routines, which ignore the element quantifier 
+!# 8.) elem_generic
+!#     -> Realises a generic element which can be used to evaluate a finite
+!#        element depending on its element identifier - in contrast to the
+!#        standard evaluation routines, which ignore the element quantifier
 !#        as they 'know' what they are...
 !#
 !# 9.) elem_generic_mult
@@ -112,7 +112,7 @@
 !#   is identically =0.
 !#
 !#   <tex>
-!#   If you call one such a function $\phi_i$, the whole function 
+!#   If you call one such a function $\phi_i$, the whole function
 !#   <tex>$u:R^2 \to R$</tex> is then defined as a sum
 !#
 !#     $$ u(x,y) = \sum_i  u_i  \phi_i(x,y) $$
@@ -120,7 +120,7 @@
 !#   where the coefficients $u_i$ can be modified to change the whole
 !#   function. This set ${u_i}$ are called "Degrees of Freedom" of the FE
 !#   function $u$. If the $\phi_i$ are chosen to be =1 in the center
-!#   and =0 in the other corners (like in $P_1$ and $Q_1$, by `lucky 
+!#   and =0 in the other corners (like in $P_1$ and $Q_1$, by `lucky
 !#   chance` the $u_i$ are exactly the values of $u$ in these points --
 !#   $u_i = u(x_i,y_i)$.
 !#   </tex>
@@ -134,7 +134,7 @@
 !#   This variable identifies the type of the element. For example
 !#   celement=EL_Q1 identifies a Q1-element.
 !#
-!# 3.) I wrote a subroutine which works for a special element family. More 
+!# 3.) I wrote a subroutine which works for a special element family. More
 !#   precisely for example, my routine works for all variants of <tex>$\tilde Q_1$</tex>.
 !#   Do I really have to check all element types at the beginning of the
 !#   routine? That would be legthy!?! Like in
@@ -179,10 +179,10 @@
 !#
 !#   but the first version is cleaner :-)
 !#
-!# 4.) How is this thing with the 'primary' element realised? I mean, for example, 
+!# 4.) How is this thing with the 'primary' element realised? I mean, for example,
 !#   EL_EM30 is defined as EL_EM30=EL_Q1T+2**8!?! What does this mean?
 !#
-!#   The element constants follow a special pattern oriented on a bitfield to 
+!#   The element constants follow a special pattern oriented on a bitfield to
 !#   encode as much information into an integer as possible.
 !#   Every element identifier consists of a 32 bit integer, which is coded as
 !#   follows:
@@ -197,22 +197,22 @@
 !#   Bit    15   specifies whether an element is nonparametric (1) or parametric (0).
 !#   Bits 16..31 encodes special variants of elements. This is used only for some special
 !#               type elements:
-!#               Q1T: Bit 16 =1: element nonconformal, integral mean value based, 
+!#               Q1T: Bit 16 =1: element nonconformal, integral mean value based,
 !#                           =0: element conformal, midpoint value based
 !#                    Bit 17:=0: Standard handling
-!#                           =1: For nonparametric element: Do not use pivoting when 
+!#                           =1: For nonparametric element: Do not use pivoting when
 !#                               solving local 4x4 / 6x6 systems; faster but less
 !#                               stable on cruel elements.
 !#                    Bit 18:=0: Standard handling
-!#                           =1: No scaling of the local coodinate system for 
-!#                               nonparametric <tex>$\tilde Q_1$</tex> element. Slightly faster but 
+!#                           =1: No scaling of the local coodinate system for
+!#                               nonparametric <tex>$\tilde Q_1$</tex> element. Slightly faster but
 !#                               less stable on cruel elements.
 !#               Q1HN: Bit 16/17: These three bits encode the local number of the edge
 !#                               where there is a hanging node.
 !#                               =0: local edge 1, =1: local edge 2,...
 !#               P2ISO: Bit 16/17: These three bits encode how many edges of the <tex>$P_2$</tex>
 !#                               element are to be handled with an isoparametric mapping
-!#                               to the reference element. 
+!#                               to the reference element.
 !#                               =0: isoparametric mapping with one edge not linear
 !#                               =1: isoparametric mapping with two edges not linear
 !#                               =2: isoparametric mapping with three edges not linear
@@ -224,7 +224,7 @@
 !#                               Bit 20:=1 3rd edge maps nonlinear
 !#               Q2ISO: Bit 16/17: These three bits encode how many edges of the <tex>$Q_2$</tex>
 !#                               element are to be handled with an isoparametric mapping
-!#                               to the reference element. 
+!#                               to the reference element.
 !#                               =0: isoparametric mapping with one edge not linear
 !#                               =1: isoparametric mapping with two edges not linear
 !#                               =2: isoparametric mapping with three edges not linear
@@ -238,7 +238,7 @@
 !#                               Bit 21:=1 4th edge maps nonlinear
 !# </verb>
 !#
-!#   To obtain the actual element identifier, one must mask out all bits 
+!#   To obtain the actual element identifier, one must mask out all bits
 !#   except for bit 0..7, i.e. to check whether an element is Q1~, one can use
 !#   elem_getPrimaryElement, which masks out all unimportant bits with IAND:
 !#
@@ -251,7 +251,7 @@
 !# <code>
 !#     if ( (celement .eq. EL_E030) .or. (celement .eq. EL_EM30) .or. ...) then ...
 !# </code>
-!# 
+!#
 !#   When it is clear that it is a <tex>$\tilde Q_1$</tex> element, one can have a closer
 !#   look which variant it is -- if this is necessary.
 !#
@@ -409,9 +409,9 @@ module element
 
   ! ID of bilinear conforming quadrilateral FE, Q1
   integer(I32), parameter, public :: EL_Q1      = EL_2D + 11
-  integer(I32), parameter, public :: EL_E011    = EL_Q1 
-  integer(I32), parameter, public :: EL_Q1_2D   = EL_Q1 
-  integer(I32), parameter, public :: EL_E011_2D = EL_Q1 
+  integer(I32), parameter, public :: EL_E011    = EL_Q1
+  integer(I32), parameter, public :: EL_Q1_2D   = EL_Q1
+  integer(I32), parameter, public :: EL_E011_2D = EL_Q1
 
   ! ID of biquadratic conforming quadrilateral FE, Q2
   integer(I32), parameter, public :: EL_Q2      = EL_2D + 13
@@ -439,13 +439,13 @@ module element
   integer(I32), parameter, public :: EL_QP1NPD   = EL_QP1 + EL_NONPARAMETRIC + 2**17
   integer(I32), parameter, public :: EL_QP1NPD_2D = EL_QP1NPD
 
-  ! General rotated bilinear <tex>$\tilde Q_1$</tex> element, all variants (conformal, 
+  ! General rotated bilinear <tex>$\tilde Q_1$</tex> element, all variants (conformal,
   ! nonconformal, parametric, nonparametric).
   ! Simplest variant is: parametric, edge midpoint-value based.
   integer(I32), parameter, public :: EL_Q1T     = EL_2D + 30
   integer(I32), parameter, public :: EL_Q1T_2D  = EL_Q1T
 
-  ! General rotated bilinear <tex>$\tilde Q_1$</tex> element with bubble, 
+  ! General rotated bilinear <tex>$\tilde Q_1$</tex> element with bubble,
   ! all variants (conformal, nonconformal, parametric, nonparametric).
   integer(I32), parameter, public :: EL_Q1TB    = EL_2D + 31
   integer(I32), parameter, public :: EL_Q1TB_2D = EL_Q1TB
@@ -585,7 +585,7 @@ module element
   integer(I32), parameter, public :: EL_EM30_2D = EL_EM30
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
-  ! mean value based; 'unpivoted' variant, solving local 4x4 systems directly 
+  ! mean value based; 'unpivoted' variant, solving local 4x4 systems directly
   ! without pivoting. Faster but less stable.
   integer(I32), parameter, public :: EL_EM30_UNPIVOTED = EL_Q1T + EL_NONPARAMETRIC + 2**17 + 2**16
   
@@ -634,7 +634,7 @@ module element
   ! Isoparametric <tex>$Q_2$</tex> element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
   ! be set to identify the edge.
-  integer(I32), parameter, public :: EL_Q2ISO1 = EL_Q2ISO 
+  integer(I32), parameter, public :: EL_Q2ISO1 = EL_Q2ISO
 
   ! Isoparametric <tex>$Q_2$</tex> element with two edges mapped nonlinear from the reference
   ! to the real element. Additionally, two bits in the property bitfield must
@@ -716,13 +716,13 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   integer(I32) function elem_igetID(selemName, bcheck)
   
 !<description>
   ! This routine returns the element id to a given element name.
-  ! It is  case-insensitive. 
+  ! It is  case-insensitive.
 !</description>
 
 !<result>
@@ -765,7 +765,7 @@ contains
     else if (selem .eq. "EL_DG_T1_1D") then
       elem_igetID = EL_DG_T1_1D
     else if (selem .eq. "EL_DG_T2_1D") then
-      elem_igetID = EL_DG_T2_1D            
+      elem_igetID = EL_DG_T2_1D
     
     ! -= 2D Triangle Elements =-
     else if (selem .eq. "EL_P0" .or. selem .eq. "EL_P0_2D" .or. &
@@ -912,7 +912,7 @@ contains
   ! This function returns a string which represents the elements name.
   !
   ! This function is constructed in a way such that for any valid element
-  ! identifier celement, the equation 
+  ! identifier celement, the equation
   ! <verb>
   !   elem_igetID(elem_getName(celement)) = celement
   ! </verb>
@@ -927,7 +927,7 @@ contains
   ! valid names, e.g. EL_Q1T_2D and EL_E030_2D.
 !</description>
 
-!<input> 
+!<input>
   ! The element whose name is to be returned.
   integer(I32), intent(in) :: celement
 !</input>
@@ -1077,7 +1077,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function elem_igetNDofLoc(celement)
 
@@ -1086,7 +1086,7 @@ contains
   ! degrees of freedom.
 !</description>
 
-!<input>    
+!<input>
 
   ! The element type identifier.
   integer(I32), intent(in) :: celement
@@ -1167,10 +1167,10 @@ contains
       ! local DOFs for EB30 / E032
       elem_igetNDofLoc = 5
     case (EL_Q2T)
-      ! local DOFs for Ex50 
+      ! local DOFs for Ex50
       elem_igetNDofLoc = 9
     case (EL_Q2TB)
-      ! local DOFs for EB50 
+      ! local DOFs for EB50
       elem_igetNDofLoc = 10
     case (EL_DG_T0_2D)
       ! local DOFs for 1D DG Taylor constant
@@ -1234,7 +1234,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   pure subroutine elem_igetNDofLocAssignment(celement, &
       ndofAtVertices, ndofAtEdges, ndofAtFaces, ndofAtElement)
@@ -1244,7 +1244,7 @@ contains
   ! degrees of freedom that is assigned to vertices, edges, faces and elements.
 !</description>
 
-!<input>    
+!<input>
   ! The element type identifier.
   integer(I32), intent(in) :: celement
 !</input>
@@ -1431,7 +1431,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function elem_igetNVE(celement)
 
@@ -1441,7 +1441,7 @@ contains
   ! 4 for quadrilateral elements.
 !</description>
 
-!<input>    
+!<input>
 
   ! The element type identifier.
   integer(I32), intent(in) :: celement
@@ -1463,7 +1463,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer(I32) function elem_igetCoordSystem(celement)
 
@@ -1476,7 +1476,7 @@ contains
   ! system identifier TRAFO_CS_BARY2DTRI.
 !</description>
 
-!<input>    
+!<input>
 
   ! The element type identifier.
   integer(I32), intent(in) :: celement
@@ -1547,17 +1547,17 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer(I32) function elem_igetTrafoType(celement)
 
 !<description>
-  ! This function returns the typical type of transformation, a specific 
-  ! element uses for transferring coordinates of the reference element to 
+  ! This function returns the typical type of transformation, a specific
+  ! element uses for transferring coordinates of the reference element to
   ! the real element.
 !</description>
 
-!<input>    
+!<input>
   ! The element type identifier.
   integer(I32), intent(in) :: celement
 !</input>
@@ -1612,7 +1612,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function elem_igetDimension(celement)
 
@@ -1621,7 +1621,7 @@ contains
   ! dimension (1D, 2D,...) an element uses.
 !</description>
 
-!<input>    
+!<input>
   ! The element type identifier.
   integer(I32), intent(in) :: celement
 !</input>
@@ -1640,17 +1640,17 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function elem_getMaxDerivative(celement)
 
 !<description>
   ! This function determines for a given element type the maximum derivative
-  ! that the element can calculate (One of the DER_xxxx constants and 
+  ! that the element can calculate (One of the DER_xxxx constants and
   ! <= MAX_NDER). This can be used to specify the size of the array DBas.
 !</description>
 
-!<input>    
+!<input>
 
   ! The element type identifier.
   integer(I32), intent(in) :: celement
@@ -1683,7 +1683,7 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 2
     case (EL_DG_T0_1D)
-      ! Function 
+      ! Function
       elem_getMaxDerivative = 1
     case (EL_DG_T1_1D)
       ! Function + 1st derivative
@@ -1727,7 +1727,7 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_DG_T0_2D)
-      ! Function 
+      ! Function
       elem_getMaxDerivative = 1
     case (EL_DG_T1_2D)
       ! Function + 1st derivative
@@ -1773,7 +1773,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer(I32) function elem_getEvaluationTag(celement)
 
@@ -1784,11 +1784,11 @@ contains
   !
   ! If more than one finite element has to be evaluated in the same points,
   ! the evaluation tags of all elements under consideration can be combined
-  ! using OR. With the resulting tag, a t_evalElementXXXX structure can be 
+  ! using OR. With the resulting tag, a t_evalElementXXXX structure can be
   ! set up. This structure allows then to evaluate the element(s).
 !</description>
 
-!<input>    
+!<input>
   ! The element type identifier.
   integer(I32), intent(in) :: celement
 !</input>
@@ -1813,7 +1813,7 @@ contains
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDX
     case default
-      ! Standard evaluation tag. Evaluate reference coordinates 
+      ! Standard evaluation tag. Evaluate reference coordinates
       ! + Jac + Determinant of Jac for the transformation
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
           EL_EVLTAG_JAC + EL_EVLTAG_DETJ
@@ -1838,7 +1838,7 @@ contains
 
   !************************************************************************
   
-!<function>  
+!<function>
 
   elemental logical function elem_isNonparametric (celement) result (inonpar)
 
@@ -1849,7 +1849,7 @@ contains
   !</description>
   
   !<result>
-  ! =true, if the element is nonparametric. 
+  ! =true, if the element is nonparametric.
   ! =false, if the element is parametric.
   !</result>
   
@@ -1868,7 +1868,7 @@ contains
 
   !************************************************************************
   
-!<function>  
+!<function>
 
   elemental integer(I32) function elem_getPrimaryElement (celement) result (iresult)
 
@@ -1909,7 +1909,7 @@ contains
 
   !************************************************************************
   
-!<function>  
+!<function>
 
   integer(I32) function elem_igetShape(celement) result(ishp)
   
@@ -1978,7 +1978,7 @@ contains
 ! The following two routines define a generic element. Depending on
 ! the element type identifier celement, the right element is called.
  
-!<subroutine>  
+!<subroutine>
 
   subroutine elem_generic1 (celement, Dcoords, Djac, ddetj, Bder, &
                             Dpoint, Dbas, ItwistIndex)
@@ -1986,7 +1986,7 @@ contains
 !<description>
   ! DEPRECATED!!!
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at the given point on the reference element. 
+  ! finite element at the given point on the reference element.
   ! celement defines the element type that is used. Depending on
   ! the type of the element (parametric or nonparametric), dx
   ! and dy must be given either on the reference element or on the
@@ -2033,7 +2033,7 @@ contains
   ! For quadrilateral elements in real 2D coordinates
   !  Dcoord(1) = x-coordinate
   !  Dcoord(2) = y-coordinate
-  ! For parametric elements, the point must be on the reference element, 
+  ! For parametric elements, the point must be on the reference element,
   ! for nonparametric elements on the real element.
   real(DP), dimension(:), intent(in) :: Dpoint
 
@@ -2044,9 +2044,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
-  !   basis function of the finite element in the point (dx,dy) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
+  !   basis function of the finite element in the point (dx,dy) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -2145,7 +2145,7 @@ contains
       case (EL_DG_T1_2D)
         call elem_DG_T1_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T2_2D)
-        call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas) 
+        call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
 
       ! 3D elements
       case (EL_P0_3D)
@@ -2224,20 +2224,20 @@ contains
     ! Copy results to Dbas
     Dbas(:,:) = Dbas2(:,:,1,1)
 
-  end subroutine 
+  end subroutine
   
 !**************************************************************************
 ! Generic element routines
 ! The following two routines define a generic element. Depending on
 ! the element type identifier celement, the right element is called.
  
-!<subroutine>  
+!<subroutine>
 
   subroutine elem_generic2 (celement, revalElement, Bder, Dbas)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at the given point on the reference element. 
+  ! finite element at the given point on the reference element.
   ! celement defines the element type that is used. Depending on
   ! the type of the element (parametric or nonparametric), dx
   ! and dy must be given either on the reference element or on the
@@ -2263,9 +2263,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
-  !   basis function of the finite element in the point (dx,dy) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
+  !   basis function of the finite element in the point (dx,dy) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -2401,18 +2401,18 @@ contains
       call sys_throwFPE()
     end select
 
-  end subroutine 
+  end subroutine
   
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine elem_generic_mult (celement, Dcoords, Djac, Ddetj, &
                                 Bder, Dbas, npoints, Dpoints, itwistIndex)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at multiple given points on the reference element. 
+  ! finite element at multiple given points on the reference element.
 !</description>
 
 !<input>
@@ -2449,7 +2449,7 @@ contains
   logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
-  ! For parametric elements, the coordinates are expected on the 
+  ! For parametric elements, the coordinates are expected on the
   ! reference element. For nonparametric elements, the coordinates
   ! are expected on the real element!
   ! DIMENSION(#space dimensions,npoints)
@@ -2464,9 +2464,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
-  !   basis function of the finite element in the point Dcoords(j) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -2569,19 +2569,19 @@ contains
       end do
     end select
 
-  end subroutine 
+  end subroutine
   
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine elem_generic_sim1 (celement, Dcoords, Djac, Ddetj, &
                                Bder, Dbas, npoints, nelements, Dpoints, ItwistIndex)
 
 !<description>
   ! DEPRECATED:
-  ! This subroutine simultaneously calculates the values of the basic 
-  ! functions of the finite element at multiple given points on the reference 
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the reference
   ! element for multiple given elements.
 !</description>
 
@@ -2633,7 +2633,7 @@ contains
   logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
-  ! The coordinates are expected 
+  ! The coordinates are expected
   ! - on the reference element, if celement identifies a parametric element
   ! - on the real element, if celement identifies a nonparametric element
   ! It is assumed that:
@@ -2653,10 +2653,10 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
+  ! Value/derivatives of basis functions.
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npoints,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
-  !   basis function of the finite element in the point Dcoords(j) on the 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -2800,17 +2800,17 @@ contains
       end if
     end select
 
-  end subroutine 
+  end subroutine
   
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine elem_generic_sim2 (celement, revalElementSet, Bder, Dbas)
 
 !<description>
-  ! This subroutine simultaneously calculates the values of the basic 
-  ! functions of the finite element at multiple given points on the reference 
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the reference
   ! element for multiple given elements.
 !</description>
 
@@ -2828,14 +2828,14 @@ contains
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(in) :: Bder  
+  logical, dimension(:), intent(in) :: Bder
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
+  ! Value/derivatives of basis functions.
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
-  !   basis function of the finite element in the point Dcoords(j) on the 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -3175,11 +3175,11 @@ contains
       end if
     end select
 
-  end subroutine 
+  end subroutine
 
   !************************************************************************
   
-!<function>  
+!<function>
 
   elemental logical function elem_isLinearTrafo (celement) result (blinearTrafo)
 
@@ -3215,11 +3215,11 @@ contains
   subroutine elem_getNDofLoc(celement,Dpoints)
 
 !<description>
-  ! This subroutine returns the point coordinates of the 
+  ! This subroutine returns the point coordinates of the
   ! local degrees of freedom for a given element type
 !</description>
 
-!<input>    
+!<input>
   ! The element type identifier.
   integer(I32), intent(in) :: celement
 !</input>
@@ -3338,7 +3338,7 @@ contains
       
       Dpoints(1,3) = 0.5_DP
       Dpoints(2,3) = 0.0_DP
-      Dpoints(3,3) = 0.5_DP    
+      Dpoints(3,3) = 0.5_DP
 
     ! -= 2D Quadrilateral Elements =-
     case (EL_Q0)
@@ -3523,4 +3523,4 @@ contains
 
   end subroutine
 
-end module 
+end module

@@ -50,7 +50,7 @@ module spacetimelinsol
   ! Defect correction
   integer, parameter :: STLS_TYPE_DEFCORR    = 4
   
-  ! BiCGStab 
+  ! BiCGStab
   integer, parameter :: STLS_TYPE_BICGSTAB   = 5
 
   ! Two-grid
@@ -59,7 +59,7 @@ module spacetimelinsol
 
 !<constantblock description="Type of preconditioner in space">
 
-  ! No preconditioning; Used for UMFPACK solvers e.g. 
+  ! No preconditioning; Used for UMFPACK solvers e.g.
   ! which do not use preconditioning.
   integer, parameter, public :: STLS_PC_NONE = -1
 
@@ -359,7 +359,7 @@ contains
     case (STLS_PR_STANDARD)
     
       select case (csolvertype)
-      case (STLS_PC_JACOBI)  
+      case (STLS_PC_JACOBI)
         call linsol_initJacobi (p_rpreconditioner)
         call linsol_initDefCorr (p_rsolver,p_rpreconditioner)
         
@@ -393,7 +393,7 @@ contains
     case (STLS_PC_2DSADDLEPT2EQ)
 
       select case (csolvertype)
-      case (STLS_PC_VANKA)  
+      case (STLS_PC_VANKA)
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
         call linsol_initDefCorr (p_rsolver,p_rpreconditioner)
         
@@ -487,14 +487,14 @@ contains
       rsolver%p_rpreconditioner => rpreconditioner
     end if
 
-    if (present(RmatVecTempl)) then    
+    if (present(RmatVecTempl)) then
       ! Remember matrix templates
       rsolver%p_RmatVecTempl => RmatVecTempl
     end if
     
     if (present(rspaceSolverParams) .or. ballocTempMatrices) then
 
-      ! Get the space level associated to the space-time level    
+      ! Get the space level associated to the space-time level
       call sth_getLevel (rspaceTimeHierarchy,ilevel,ispaceLevel=ispaceLevel)
       
       ! Allocate matrices for the space solver
@@ -503,7 +503,7 @@ contains
       ! Initialise the solver in space.
       rsolver%rspaceSolverParams = rspaceSolverParams
       select case (rspaceSolverParams%cspaceSolverType)
-      case (LINSOL_ALG_UMFPACK4) 
+      case (LINSOL_ALG_UMFPACK4)
         call linsol_initUMFPACK4 (rsolver%p_rspaceSolver)
         !rsolver%p_rspaceSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
         
@@ -525,7 +525,7 @@ contains
                   rspaceSolverParams%depsRel, rspaceSolverParams%depsAbs, &
                   rspaceSolverParams%depsdiff,&
                   rspaceSolverParams%nmaxIterations, rspaceSolverParams%ioutputLevel)
-            else            
+            else
               call stls_initspacesolver (p_rlevelInfo%p_rcoarseGridSolver, &
                   rspaceSolverParams%cproblemtype, rspaceSolverParams%cspacecoarsegridsolver, &
                   rspaceSolverParams%depsRelCoarse, rspaceSolverParams%depsAbsCoarse, &
@@ -535,7 +535,7 @@ contains
           else
             ! Smoother
             call stls_initspacesolver (p_rlevelInfo%p_rpostsmoother, &
-                rspaceSolverParams%cproblemtype, rspaceSolverParams%cspacesmoother)            
+                rspaceSolverParams%cproblemtype, rspaceSolverParams%cspacesmoother)
 
             call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,&
                 rspaceSolverParams%nsmPost,rspaceSolverParams%domegaSmoother)
@@ -848,7 +848,7 @@ contains
   
   ! Some cleanup after solving
   
-  ! Solver structure 
+  ! Solver structure
   type(t_spacetimelinsol), intent(inout) :: rsolver
   
     ! local variables
@@ -1336,7 +1336,7 @@ contains
         ! We scale the absolute stopping criterion by the difference
         ! between the preconditioned and unpreconditioned defect --
         ! to encounter the difference in the residuals.
-        ! This is of course an approximation to 
+        ! This is of course an approximation to
         dresunprec = dresCurrent
         dresCurrent = sptivec_vectorNorm (p_DR,LINALG_NORML2)
         
@@ -1459,7 +1459,7 @@ contains
           end if
         end if
 
-        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
+        drho1 = sptivec_scalarProduct (p_DR0,p_DR)
 
         if (drho0*domega0 .eq. 0.0_DP) then
           ! Should not happen
@@ -1640,7 +1640,7 @@ contains
               call output_line ('Space-Time-BiCGStab: Iteration '// &
                   trim(sys_siL(ITE,10))//',  !!RES(precond)!! = '//&
                   trim(sys_sdEL(dresreal,15)) )
-            end if                
+            end if
 
             call output_line ('Space-Time-BiCGStab: Iteration '// &
                 trim(sys_siL(ITE,10))//',  !!RES!! = '//&
@@ -1689,7 +1689,7 @@ contains
             call output_line ('Space-Time-BiCGStab: Iteration '// &
                 trim(sys_siL(ITE,10))//',  !!RES(precond)!! = '//&
                 trim(sys_sdEL(dresreal,15)) )
-          end if                
+          end if
 
           call output_line ('Space-Time-BiCGStab: Iteration '// &
               trim(sys_siL(ITE,10))//',  !!RES!! = '//&
@@ -1731,7 +1731,7 @@ contains
              trim(sys_sdEL(dresInit,15)) )
         call output_line ('!!RES!!                 : '//&
              trim(sys_sdEL(dresFinal,15)) )
-        if (dresInit .gt. SYS_EPSREAL_DP) then     
+        if (dresInit .gt. SYS_EPSREAL_DP) then
           call output_line ('!!RES!!/!!INITIAL RES!! : '//&
             trim(sys_sdEL(dresFinal / dresInit,15)) )
         else
@@ -1754,7 +1754,7 @@ contains
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       drho = 1.0_DP
-    end if  
+    end if
 
   end subroutine
 
@@ -1989,7 +1989,7 @@ contains
               trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockFBSIM')
               
           !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
-          !    "matrix", .true., 0, "matrix.txt", "(E10.3)") 
+          !    "matrix", .true., 0, "matrix.txt", "(E10.3)")
               
           call sys_halt()
         end if
@@ -2187,7 +2187,7 @@ contains
 !        if (istep .lt. rd%NEQtime) then
 !          ! Load the previous timestep.
 !          call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
-!          
+!
 !          ! Subtract the primal.
 !          call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
 !              rsolver%p_RspaceMatrices(ispaceLevel))
@@ -2227,7 +2227,7 @@ contains
               trim(sys_siL(istep,10)),OU_CLASS_ERROR,OU_MODE_STD,'stls_precondBlockFBGS')
               
           !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
-          !    "matrix", .true., 0, "matrix.txt", "(E10.3)") 
+          !    "matrix", .true., 0, "matrix.txt", "(E10.3)")
               
           call sys_halt()
         end if
@@ -2487,7 +2487,7 @@ contains
         ! Coarse grid solver diverged. Stop here!
         rsolver%csolverStatus = 2
         return
-      end if 
+      end if
       
       ! Put the result to the solution.
       call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors1(ilevel))
@@ -2588,7 +2588,7 @@ contains
           
         end if
 
-!        ! RHS      
+!        ! RHS
 !        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors2(ilevel))
 !        print *,"RHS"
 !        read (*,*)
@@ -2659,7 +2659,7 @@ contains
         select case (rsolver%icycle)
           case (0)
             ! F-cycle. The number of coarse grid iterations has to be calculated
-            ! from the current iteration. 
+            ! from the current iteration.
             if (niteFixed .eq. 0) then
               niteCoarse = 2
             else
@@ -2669,7 +2669,7 @@ contains
             
           case (1,2)
             ! V/W cycle.
-            ! The icycle identifier specifies the number of coarse 
+            ! The icycle identifier specifies the number of coarse
             ! grid iterations.
             niteCoarse = rsolver%icycle
             
@@ -2700,7 +2700,7 @@ contains
 !        print *,"cgr sol."
 !        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel),&
 !          .true.,.false.,0,"./gmv/ucgcor.vtk")
-!        read (*,*) 
+!        read (*,*)
         dfactor = 1.0_DP
 !        if (sstring .eq. "y") then
 !          print *,"ok"
@@ -2744,7 +2744,7 @@ contains
 !        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel),&
 !          .true.,.true.,CUB_G2_1D,"./gmv/unew.vtk")
 !        print *,"ok. press key."
-!        read (*,*) 
+!        read (*,*)
 
 !          call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
 !          call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
@@ -2759,9 +2759,9 @@ contains
 !          call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
 !              rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
 !          call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
-!          
+!
 !          call stpp_printDefectSubnormsDirect (rsolver%p_Rvectors3(ilevel))
-!          
+!
 !          dresCurrent = sptivec_vectorNorm (rsolver%p_Rvectors3(ilevel),LINALG_NORML2)
 !        end if
         
@@ -2839,7 +2839,7 @@ contains
 
   subroutine stls_mgCalcCgCorrFactorEnergy(rmatrix,rsolution,rcorrection,rrhs,rtemp,dalpha)
   
-  ! Calculates a factor for the adaptive coarse grid correction by 
+  ! Calculates a factor for the adaptive coarse grid correction by
   ! energy minimisation.
   
   ! Space-time matrix
@@ -2894,7 +2894,7 @@ contains
   subroutine stls_mgCalcCgCorrFactorDef(rmatrix,rsolution,rcorrection,rrhs,&
       rtemp1,rtemp2,dalpha)
   
-  ! Calculates a factor for the adaptive coarse grid correction by 
+  ! Calculates a factor for the adaptive coarse grid correction by
   ! defect minimisation.
   
   ! Space-time matrix

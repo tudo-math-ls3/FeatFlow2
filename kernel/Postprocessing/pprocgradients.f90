@@ -10,7 +10,7 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) ppgrd_calcGradient
-!#     -> Standard implementation for the calculation of the recovered 
+!#     -> Standard implementation for the calculation of the recovered
 !#        gradient of a scalar finite element function.
 !#        A parameter admits to choose a method which is used with
 !#        default parameters.
@@ -77,7 +77,7 @@ module pprocgradients
 
 !<constantblock description = "Identifiers for the method how to calculate a gradient vector.">
 
-  ! Use standard interpolation to calculate a gradient vector. 1st order. 
+  ! Use standard interpolation to calculate a gradient vector. 1st order.
   integer, parameter, public :: PPGRD_INTERPOL = 0
   
   ! ZZ-technique for recovering a gradient. 2nd order on regular meshes.
@@ -369,7 +369,7 @@ contains
       call spdiscr_initBlockDiscr(rdiscrBlock, p_rspatialDiscr%ndimension, p_rtriangulation)
       call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rspatialDiscr%ndimension, p_rtriangulation)
 
-      ! Duplicate the discretisation from the scalar vector and adjust 
+      ! Duplicate the discretisation from the scalar vector and adjust
       ! the FE spaces for the consistent finite element gradient
       do idim = 1, p_rspatialDiscr%ndimension
         
@@ -465,7 +465,7 @@ contains
       call spdiscr_initBlockDiscr(rdiscrBlock, p_rspatialDiscr%ndimension, p_rtriangulation)
       call spdiscr_initBlockDiscr(rdiscrBlockRef, p_rspatialDiscr%ndimension, p_rtriangulation)
 
-      ! Duplicate the discretisation from the scalar vector and adjust 
+      ! Duplicate the discretisation from the scalar vector and adjust
       ! the FE spaces for the consistent finite element gradient
       do idim = 1, p_rspatialDiscr%ndimension
         
@@ -522,7 +522,7 @@ contains
         end do
       end do
 
-      ! Duplicate the discretisation from the scalar vector and adjust 
+      ! Duplicate the discretisation from the scalar vector and adjust
       ! the FE spaces for the reconstructed finite element gradient
       do idim = 1, p_rspatialDiscr%ndimension
         
@@ -645,7 +645,7 @@ contains
     ! Number of local degees of freedom for test functions
     integer :: indofTrial,indofDest
     
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -689,7 +689,7 @@ contains
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there is the same information in the triangulation, but that is not
-    ! based on DOF`s! Actually, we will calculate how often we touch each DOF 
+    ! based on DOF`s! Actually, we will calculate how often we touch each DOF
     ! in the destination space.
     integer :: h_IcontributionsAtDOF
     integer, dimension(:), pointer :: p_IcontributionsAtDOF
@@ -825,7 +825,7 @@ contains
       case (EL_P1_1D)
         call cub_getCubPoints(CUB_TRZ_1D, nlocalDOFsDest, Dxi, Domega)
       case (EL_P2_1D)
-        ! Manually calculate the coordinates of the 
+        ! Manually calculate the coordinates of the
         ! corners/midpoints on the reference element.
         Dxi(1,1) = 0.0_DP
         Dxi(2,1) = 1.0_DP
@@ -842,7 +842,7 @@ contains
       case (EL_Q1_2D)
         call cub_getCubPoints(CUB_TRZ, nlocalDOFsDest, Dxi, Domega)
       case (EL_P2_2D)
-        ! Manually calculate the coordinates of the 
+        ! Manually calculate the coordinates of the
         ! corners/midpoints on the reference element.
         Dxi(1,1)  =  1.0_DP
         Dxi(1,2)  =  0.0_DP
@@ -871,7 +871,7 @@ contains
         nlocalDOFsDest = 6
         
       case (EL_Q2_2D)
-        ! Manually calculate the coordinates of the 
+        ! Manually calculate the coordinates of the
         ! corners/midpoints on the reference element.
         Dxi(1,1)  =  -1.0_DP
         Dxi(1,2)  =  -1.0_DP
@@ -911,7 +911,7 @@ contains
       case (EL_Q1_3D)
         call cub_getCubPoints(CUB_TRZ_3D, nlocalDOFsDest, Dxi, Domega)
       case (EL_P2_3D)
-        ! Manually calculate the coordinates of the 
+        ! Manually calculate the coordinates of the
         ! corners/midpoints on the reference element.
         Dxi(1,1)  =  1.0_DP
         Dxi(1,2)  =  0.0_DP
@@ -966,7 +966,7 @@ contains
         nlocalDOFsDest = 10
 
       case (EL_Q2_3D)
-        ! Manually calculate the coordinates of the 
+        ! Manually calculate the coordinates of the
         ! corners/midpoints on the reference element.
         Dxi(1,1)  = -1.0_DP
         Dxi(1,2)  = -1.0_DP
@@ -1082,7 +1082,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! Get the number of elements in the element distribution.
@@ -1136,8 +1136,8 @@ contains
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           ! Sum up the derivative values in the destination vector.
-          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
           
           do i=1,IELmax-IELset+1
@@ -1163,8 +1163,8 @@ contains
               Dderivatives(:,1:IELmax-IELset+1,2))
 
           ! Sum up the derivative values in the destination vector.
-          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
           
           do i=1,IELmax-IELset+1
@@ -1196,8 +1196,8 @@ contains
               Dderivatives(:,1:IELmax-IELset+1,3))
           
           ! Sum up the derivative values in the destination vector.
-          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
           
           do i=1,IELmax-IELset+1
@@ -1226,13 +1226,13 @@ contains
 
     end do ! icurrentElementDistr
 
-    ! We are nearly done. The final thing: divide the calculated derivatives by 
+    ! We are nearly done. The final thing: divide the calculated derivatives by
     ! the number of elements adjacent to each vertex. That closes the calculation
     ! of the 'mean' of the derivatives.
     select case(p_rtriangulation%ndim)
     case (NDIM1D)
       do i=1,size(p_DxDeriv)
-        ! Div/0 should not occur, otherwise the triangulation is 
+        ! Div/0 should not occur, otherwise the triangulation is
         ! crap as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
       end do
@@ -1344,8 +1344,8 @@ contains
     ! in the destination space.
     integer :: nlocalDOFsDest
 
-    ! Maximum number of 'cubature points'. As we acutally do not do 
-    ! cubature here, this coincides with the number of DOF`s on each 
+    ! Maximum number of 'cubature points'. As we acutally do not do
+    ! cubature here, this coincides with the number of DOF`s on each
     ! element in the destination space.
     integer :: nlocalDOFsDestMax
 
@@ -1443,7 +1443,7 @@ contains
     
     ! Arrays for saving Jacobian determinants and matrices
     real(DP), dimension(:,:), pointer :: p_Ddetj
-    real(DP), dimension(:,:,:), pointer :: p_Djac      
+    real(DP), dimension(:,:,:), pointer :: p_Djac
 
     ! Number of patches in a block
     integer :: npatchesPerBlock
@@ -1456,7 +1456,7 @@ contains
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there is the same information in the triangulation, but that is not
-    ! based on DOF`s! Actually, we will calculate how often we touch each DOF 
+    ! based on DOF`s! Actually, we will calculate how often we touch each DOF
     ! in the destination space.
     integer :: h_IcontributionsAtDOF
     integer, dimension(:), pointer :: p_IcontributionsAtDOF
@@ -1509,7 +1509,7 @@ contains
     p_rdiscrSource => rvectorScalar%p_rspatialDiscr
     p_rdiscrDest   => rvectorGradient%p_rblockDiscr%RspatialDiscr(1)
     
-    ! Check if we have a non-uniform discretisation structure and if nodal 
+    ! Check if we have a non-uniform discretisation structure and if nodal
     ! patches should be used. This does not make too much sense since it is
     ! not clear which type of element should be adopted for the patch elements.
     !
@@ -1518,7 +1518,7 @@ contains
     ! code. There are other possibilities for the patches that should be used !!!
     if ((p_rdiscrSource%ccomplexity .ne. SPDISC_UNIFORM .or. &
          p_rdiscrDest%ccomplexity   .ne. SPDISC_UNIFORM) .and. &
-         cpatchType .eq. PPGRD_NODEPATCH) then 
+         cpatchType .eq. PPGRD_NODEPATCH) then
       call output_line('Nodal patches are not available for non-uniform discretisations!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
       call sys_halt()
@@ -1584,7 +1584,7 @@ contains
     if (.not. bisUniform) then
       ! Things are more complicated if one of the discretisations is not uniform.
       ! In this case, we always have to consider the maximum number of quadrature
-      ! points, the largest number of local DOF`s, etc. 
+      ! points, the largest number of local DOF`s, etc.
 
       indofTrialMax     = 0
       indofDestMax      = 0
@@ -1653,7 +1653,7 @@ contains
       ! Get the elements-at-element array.
       call storage_getbase_int2D (p_rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
       ! Get the vertices-at-element array.
-      call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)     
+      call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
     case (PPGRD_FACEPATCH)
       ! Get the elements-at-element array.
@@ -1694,13 +1694,13 @@ contains
       ! Get number of patches in current element distribution
       select case(cpatchType)
       case (PPGRD_NODEPATCH)
-        ! Recall that for nodal-baes patches there MUST be exactly one element 
+        ! Recall that for nodal-baes patches there MUST be exactly one element
         ! distribution so that the number of patches equals the total number
         ! of vertices in the whole triangulation !!!
         NPATCH = p_rtriangulation%NVT
         
       case (PPGRD_ELEMPATCH,PPGRD_FACEPATCH)
-        ! The number of patches equals the number of elements 
+        ! The number of patches equals the number of elements
         ! in the current element distribution.
         NPATCH = p_relementDistribution%NEL
         
@@ -1731,7 +1731,7 @@ contains
         
         ! We always handle NPATCHSIM patches simultaneously.
         ! How many patches have we actually here?
-        ! Get the maximum patch number, such that we handle at most 
+        ! Get the maximum patch number, such that we handle at most
         ! NPATCHSIM patches simultaneously.
         PATCHmax = min(NPATCH,PATCHset-1+p_rperfconfig%NPATCHSIM)
         
@@ -1915,7 +1915,7 @@ contains
         ! Do we have a uniform discretisation? Would simplify a lot...
         if (bisUniform) then
           
-          ! Yes, the discretisation is uniform. In this case, we have to set the 
+          ! Yes, the discretisation is uniform. In this case, we have to set the
           ! pointers, dimensions, etc. just once and can work blockwise.
           
           ! Active element distribution
@@ -1949,8 +1949,8 @@ contains
           ! that is used there:
           icoordSystem = elem_igetCoordSystem(p_relementDistribution%celement)
           
-          ! Allocate memory and get local references to it. This domain integration 
-          ! structure stores all information of the source FE space. 
+          ! Allocate memory and get local references to it. This domain integration
+          ! structure stores all information of the source FE space.
           call domint_initIntegration (rintSubset, nelementsPerBlock, &
             ncubp, icoordSystem, p_rtriangulation%ndim, NVE)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
@@ -1999,7 +1999,7 @@ contains
           
           ! Depending on the type of transformation, we must now choose
           ! the mapping between the reference and the real element.
-          ! In case we use a nonparametric element as test function, we need the 
+          ! In case we use a nonparametric element as test function, we need the
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
@@ -2068,7 +2068,7 @@ contains
           
           ! Depending on the type of transformation, we must now choose
           ! the mapping between the reference and the real element.
-          ! In case we use a nonparametric element as test function, we need the 
+          ! In case we use a nonparametric element as test function, we need the
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
@@ -2082,7 +2082,7 @@ contains
           allocate(Dpolynomials(indofTrial,DER_FUNC,ncubp,nelementsPerBlock))
           
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
-          ! cubature points of the elements present in the patch and store each polynomial 
+          ! cubature points of the elements present in the patch and store each polynomial
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
           call elem_generic_sim(p_relementDistribution%celement,&
               p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
@@ -2131,7 +2131,7 @@ contains
           ! that is used there:
           icoordSystem = elem_igetCoordSystem(p_relementDistrDest%celement)
           
-          ! Allocate memory and get local references to it. This domain integration 
+          ! Allocate memory and get local references to it. This domain integration
           ! structure stores all information of the destination FE space.
           call domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
             nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE)
@@ -2180,7 +2180,7 @@ contains
           
           ! Depending on the type of transformation, we must now choose
           ! the mapping between the reference and the real element.
-          ! In case we use a nonparametric element as test function, we need the 
+          ! In case we use a nonparametric element as test function, we need the
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
@@ -2220,7 +2220,7 @@ contains
           !---------------------------------------------------------------------
           
           select case (p_rtriangulation%ndim)
-          case(NDIM1D) 
+          case(NDIM1D)
             ! Loop over the patches in the set
             do ipatch = 1, npatchesInCurrentBlock
 
@@ -2320,8 +2320,8 @@ contains
           ! No, the discretisation is not uniform. In this case, we have to check the type
           ! of element for each individual element and adopt the FE spaces accordingly.
           !
-          ! In the beginning, perform a short bubble-sort to sort the elements in each 
-          ! patch for their element distribution. 
+          ! In the beginning, perform a short bubble-sort to sort the elements in each
+          ! patch for their element distribution.
           !
           ! Loop over the patches in the set
           do ipatch = 1, npatchesInCurrentBlock
@@ -2331,7 +2331,7 @@ contains
             ilastElementDistr = p_IelementDistr(IEL)
             
             ! Now find all elements in the patch that are in the same element
-            ! distribution. Shift them to behind IEL. 
+            ! distribution. Shift them to behind IEL.
             !
             ! Loop over elements in patch
             bigsort: do idx = IelementsInPatchIdx(ipatch)+1,IelementsInPatchIdx(ipatch+1)-1
@@ -2406,8 +2406,8 @@ contains
           call dof_locGlobMapping_mult(p_rdiscrDest, &
               IelementsInPatch(1:nelementsPerBlock), IdofsDest)
 
-          ! Allocate memory and get local references to it. This domain integration 
-          ! structure stores all information of the source FE space. 
+          ! Allocate memory and get local references to it. This domain integration
+          ! structure stores all information of the source FE space.
           call domint_initIntegration (rintSubset, nelementsPerBlock, &
               ncubpMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax)
           p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
@@ -2423,15 +2423,15 @@ contains
           p_Ddetj       = 0
           p_Dcoords     = 0
 
-          ! Allocate memory. This domain integration structure stores 
-          ! all information of the destination FE space. 
+          ! Allocate memory. This domain integration structure stores
+          ! all information of the destination FE space.
           call domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
               nlocalDOFsDestMax, TRAFO_CS_BARY2DTRI, p_rtriangulation%ndim, NVEMax)
           
           ! Since the discretisations are not uniform, we have to treat each
           ! element individually since it may differ from its predecessor.
           ! However, we may skip the re-initialisation of cubature points, etc.
-          ! if the current elements belongs to the same element distribution as 
+          ! if the current elements belongs to the same element distribution as
           ! the last one.
           ilastElementDistr = 0
 
@@ -2450,7 +2450,7 @@ contains
               ! Now, find the last element in the current patch which belongs to the
               ! same group of elements; note that we sorted the elements in the patch
               ! before, so all elements of the same element distribution are behind
-              ! each other. 
+              ! each other.
               ! All these elements have the same basis functions, the same transformation,
               ! coordinate system,...
               !
@@ -2517,7 +2517,7 @@ contains
               ! Loop over elements in subgroup
               do idx = idxsubgroup,idx2
 
-                ! Put the cubature point coordinates in the right format to the 
+                ! Put the cubature point coordinates in the right format to the
                 ! cubature-point array.
                 ! Initialise all entries in p_DcubPtsRef with the same coordinates -
                 ! as the cubature point coordinates are identical on all elements.
@@ -2554,7 +2554,7 @@ contains
 
               ! Depending on the type of transformation, we must now choose
               ! the mapping between the reference and the real element.
-              ! In case we use a nonparametric element as test function, we need the 
+              ! In case we use a nonparametric element as test function, we need the
               ! coordinates of the points on the real element, too.
               ! Unfortunately, we need the real coordinates of the cubature points
               ! anyway for the function - so calculate them all.
@@ -2620,7 +2620,7 @@ contains
                 call output_line('Invalid spatial dimension!',&
                     OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
                 call sys_halt()
-              end select             
+              end select
 
               ! Subgroup finished, continue with the next one.
               idxsubgroup = idx2 + 1
@@ -2639,9 +2639,9 @@ contains
           call calc_patchBoundingGroup_mult(IelementsInPatchIdx, npatchesInCurrentBlock, &
               IelementNVEInPatch, p_Dcoords, DpatchBound(:,:,1:npatchesInCurrentBlock))
 
-          ! Reactive current element distribution of the source FE space. This is the 
-          ! element distribution of those elements which make up the center of each 
-          ! patch. Hence, this element distribution determine the type of element 
+          ! Reactive current element distribution of the source FE space. This is the
+          ! element distribution of those elements which make up the center of each
+          ! patch. Hence, this element distribution determine the type of element
           ! used to construct the constant Jacobian "patch" elements.
           p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
 
@@ -2677,7 +2677,7 @@ contains
 
           ! Depending on the type of transformation, we must now choose
           ! the mapping between the reference and the real element.
-          ! In case we use a nonparametric element as test function, we need the 
+          ! In case we use a nonparametric element as test function, we need the
           ! coordinates of the points on the real element, too.
           ! Unfortunately, we need the real coordinates of the cubature points
           ! anyway for the function - so calculate them all.
@@ -2691,7 +2691,7 @@ contains
           allocate(Dpolynomials(indofTrial,DER_FUNC,ncubpMax,nelementsPerBlock))
 
           ! Evaluate the trial functions of the constant Jacobian patch "element" for all
-          ! cubature points of the elements present in the patch and store each polynomial 
+          ! cubature points of the elements present in the patch and store each polynomial
           ! interpolation in the rectangular patch matrix used for least-squares fitting.
           ! Note that we evaluate over the maximum number of cubature points present in
           ! the patch. Although some meaningless values may be generated, it is faster to
@@ -2792,7 +2792,7 @@ contains
               ! Now, find the last element in the current patch which belongs to the
               ! same group of elements; note that we sorted the elements in the patch
               ! before, so all elements of the same element distribution are behind
-              ! each other. 
+              ! each other.
               do idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
                 if (ilocalElementDistr .eq. p_IelementDistr(IelementsInPatch(idx2))) exit
               end do
@@ -2852,7 +2852,7 @@ contains
               do idx = idxsubgroup,idx2
                 do i=1,nlocalDOFsDest
                   do k=1,size(p_DcubPtsRef,1)
-                    ! Could be solved using the TRANSPOSE operator - but often it is 
+                    ! Could be solved using the TRANSPOSE operator - but often it is
                     ! faster this way...
                     p_DcubPtsRef(k,i,idx) = Dxi(i,k)
                   end do
@@ -2874,7 +2874,7 @@ contains
               
               ! Depending on the type of transformation, we must now choose
               ! the mapping between the reference and the real element.
-              ! In case we use a nonparametric element as test function, we need the 
+              ! In case we use a nonparametric element as test function, we need the
               ! coordinates of the points on the real element, too.
               ! Unfortunately, we need the real coordinates of the cubature points
               ! anyway for the function - so calculate them all.
@@ -2891,7 +2891,7 @@ contains
           end do
           
           ! Next, we need to convert the physical coordinates of the curbature points
-          ! to the local coordinates of the constant Jacobian "patch" elements. Note that 
+          ! to the local coordinates of the constant Jacobian "patch" elements. Note that
           ! NVE and icoordSystem have not been modified and can be savely used from above.
           call calc_localTrafo_sim(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
               NVE,  p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
@@ -2926,7 +2926,7 @@ contains
               ! Now, find the last element in the current patch which belongs to the
               ! same group of elements; note that we sorted the elements in the patch
               ! before, so all elements of the same element distribution are behind
-              ! each other. 
+              ! each other.
               do idx2 = IelementsInPatchIdx(ipatch+1)-1, idxsubgroup+1, -1
                 if (ilocalElementDistr .eq. p_IelementDistr(IelementsInPatch(idx2))) exit
               end do
@@ -3002,7 +3002,7 @@ contains
                 ! Get number of local element distribution
                 ilocalElementDistr = p_IelementDistr(IEL)
                 
-                ! Check if local element distribution corresponds to the last element 
+                ! Check if local element distribution corresponds to the last element
                 ! distribution. Then we do not have to initialise everything again.
                 if (ilocalElementDistr .ne. ilastElementDistr) then
                   
@@ -3060,7 +3060,7 @@ contains
                 ! Get number of local element distribution
                 ilocalElementDistr = p_IelementDistr(IEL)
                 
-                ! Check if local element distribution corresponds to the last element 
+                ! Check if local element distribution corresponds to the last element
                 ! distribution. Then we do not have to initialise everything again.
                 if (ilocalElementDistr .ne. ilastElementDistr) then
                   
@@ -3108,7 +3108,7 @@ contains
                 ! Get number of local element distribution
                 ilocalElementDistr = p_IelementDistr(IEL)
                 
-                ! Check if local element distribution corresponds to the last element 
+                ! Check if local element distribution corresponds to the last element
                 ! distribution. Then we do not have to initialise everything again.
                 if (ilocalElementDistr .ne. ilastElementDistr) then
                   
@@ -3213,7 +3213,7 @@ contains
     !**************************************************************
     ! Calculate the "bounding group" for a set of patches
     !
-    ! Each patch consists of multiple elements which are adjacent to 
+    ! Each patch consists of multiple elements which are adjacent to
     ! each other so that they cover some connected part of the domain.
     ! This routine determines the physical coordinates of the constant
     ! Jacobian patch "element" that has its local axes parallel to the
@@ -3441,7 +3441,7 @@ contains
     !**************************************************************
     ! Calculate the "bounding group" for a set of patches
     !
-    ! Each patch consists of multiple elements which are adjacent to 
+    ! Each patch consists of multiple elements which are adjacent to
     ! each other so that they cover some connected part of the domain.
     ! This routine determines the physical coordinates of the constant
     ! Jacobian patch "element" that has its local axes parallel to the
@@ -3613,7 +3613,7 @@ contains
           
         case (TRIA_NVEPYR3D)
           ! Tricky: Find minimal/maximal value and compute the lower-right
-          ! and upper-left corner by hand. For the z-coordinate it 
+          ! and upper-left corner by hand. For the z-coordinate it
           ! suffices to find the minial/maximal value
           
           ! Loop over all patches
@@ -3654,10 +3654,10 @@ contains
             DpointsReal(3,5,idxFirst:idxLast) = xmax+zmax-xmin
           end do
           
-        case (TRIA_NVEPRIS3D)        
+        case (TRIA_NVEPRIS3D)
 
           ! Tricky: Find minimal/maximal value and compute the lower-right
-          ! and upper-left corner by hand. For the z-coordinate it 
+          ! and upper-left corner by hand. For the z-coordinate it
           ! suffices to find the minial/maximal value
           
           ! Loop over all patches
@@ -3768,10 +3768,10 @@ contains
     end subroutine calc_patchBoundingGroup_sim
 
     !**************************************************************
-    ! Transform physical coordinates to local coordinates of the 
-    ! constant Jacobian "patch" elements which is uniquely 
+    ! Transform physical coordinates to local coordinates of the
+    ! constant Jacobian "patch" elements which is uniquely
     ! determined by its minimum/maximum values.
-    ! 
+    !
     ! Note that for quadrilateral/hexahedral elements the x-, y- and
     ! z-coordinates are stored whereas for triangular/tetrahedral
     ! elements barycentric coordinates are adopted.
@@ -3915,7 +3915,7 @@ contains
       end select
     end subroutine calc_localTrafo_sim
     
-    !**************************************************************    
+    !**************************************************************
     ! Calculate the averaged gradient values
     ! In principal, it suffices to solve the linear system
     !   <tex> $$ (P^T * P) * x = (P^T) * b $$ </tex>
@@ -3985,7 +3985,7 @@ contains
       end do
     end subroutine calc_patchAverages_mult
 
-    !**************************************************************    
+    !**************************************************************
     ! Calculate the averaged gradient values
     ! In principal, it suffices to solve the linear system
     ! <tex> $$ (P^T * P) * x = (P^T) * b $$ </tex>
@@ -4058,7 +4058,7 @@ contains
       end do
     end subroutine calc_patchAverages_sim
 
-    !**************************************************************    
+    !**************************************************************
     ! Initialise the cubature formula for the destination FE space
 
     subroutine calc_cubatureDest(celement,ncubp, Dxi, Domega)
@@ -4146,7 +4146,7 @@ contains
         
         ncubp = 9
         
-      case DEFAULT 
+      case DEFAULT
         call output_line ('Unsupported FE space in destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'calc_cubatureDest')
         call sys_halt()
@@ -4163,7 +4163,7 @@ contains
 
 !<description>
     ! Calculates the recovered gradient of a scalar finite element function
-    ! by means of the limited gradient averaging technique suggested by 
+    ! by means of the limited gradient averaging technique suggested by
     ! M. Möller and D. Kuzmin. Supports conformal discretisations in arbitrary
     ! spatial dimensions with <tex>$P_1$ and $Q_1$</tex> finite elements mixed in the
     ! source and destination vectors.
@@ -4559,7 +4559,7 @@ contains
         ! all the points.
         !
         ! At first, get the coordinates of the corners of all the
-        ! elements in the current set. 
+        ! elements in the current set.
         
         call trafo_getCoords_sim (elem_igetTrafoType(&
             p_relementDistribution%celement),&
@@ -4567,7 +4567,7 @@ contains
         
         ! Depending on the type of transformation, we must now choose
         ! the mapping between the reference and the real element.
-        ! In case we use a nonparametric element, we need the 
+        ! In case we use a nonparametric element, we need the
         ! coordinates of the points on the real element, too.
         call trafo_calctrafo_sim (&
               p_rdiscrSource%RelementDistr(icurrentElementDistr)%ctrafoType,&
@@ -4575,7 +4575,7 @@ contains
               p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
               p_DcubPtsReal)
       
-        ! Prepare the call to the evaluation routine of the analytic function.    
+        ! Prepare the call to the evaluation routine of the analytic function.
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -4593,15 +4593,15 @@ contains
               Dderivatives(:,1:IELmax-IELset+1,1))
 
           ! Sum up the derivative values in the destination vector.
-          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
               idof = IdofsDest(j,i)
 
-              if (p_IcontributionsAtDOF(idof) .eq. 0) then 
+              if (p_IcontributionsAtDOF(idof) .eq. 0) then
                 p_DxDeriv(idof) = Dderivatives(j,i,1)
                 p_IcontributionsAtDOF(idof) = 1
               else
@@ -4632,15 +4632,15 @@ contains
               Dderivatives(:,1:IELmax-IELset+1,2))
           
           ! Sum up the derivative values in the destination vector.
-          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
               idof = IdofsDest(j,i)
 
-              if (p_IcontributionsAtDOF(idof) .eq. 0) then 
+              if (p_IcontributionsAtDOF(idof) .eq. 0) then
                 p_DxDeriv(idof) = Dderivatives(j,i,1)
                 p_DyDeriv(idof) = Dderivatives(j,i,2)
                 p_IcontributionsAtDOF(idof) = 1
@@ -4683,15 +4683,15 @@ contains
               Dderivatives(:,1:IELmax-IELset+1,3))
 
           ! Sum up the derivative values in the destination vector.
-          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
-          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
+          ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest
+          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the
           ! local DOF`s in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
               idof = IdofsDest(j,i)
 
-              if (p_IcontributionsAtDOF(idof) .eq. 0) then 
+              if (p_IcontributionsAtDOF(idof) .eq. 0) then
                 p_DxDeriv(idof) = Dderivatives(j,i,1)
                 p_DyDeriv(idof) = Dderivatives(j,i,2)
                 p_DzDeriv(idof) = Dderivatives(j,i,3)

@@ -302,7 +302,7 @@ contains
     call spdiscr_releaseBlockDiscr(rdiscrF)
     call spdiscr_releaseBlockDiscr(rdiscrC)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriaF)
     call tria_done (rtriaC)
     

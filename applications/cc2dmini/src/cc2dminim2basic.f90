@@ -37,7 +37,7 @@ module cc2dminim2basic
     
   implicit none
   
-  ! Maximum allowed level in this application; must be =9 for 
+  ! Maximum allowed level in this application; must be =9 for
   ! FEAT 1.x compatibility (still)!
   integer, parameter :: NNLEV = 9
   
@@ -54,16 +54,16 @@ module cc2dminim2basic
     ! (size of subvectors in the solution vector, trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! A system matrix for that specific level. 
+    ! A system matrix for that specific level.
     type(t_matrixBlock) :: rmatrix
 
-    ! Laplace matrix for that specific level. 
+    ! Laplace matrix for that specific level.
     type(t_matrixScalar) :: rmatrixLaplace
 
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
 
     ! A temporary vector for building the solution when assembling the
@@ -94,13 +94,13 @@ module cc2dminim2basic
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! A solution vector and a RHS vector on the finest level. 
+    ! A solution vector and a RHS vector on the finest level.
     type(t_vectorBlock) :: rvector,rrhs
 
-    ! A variable describing the analytic boundary conditions.    
+    ! A variable describing the analytic boundary conditions.
     type(t_boundaryConditions), pointer :: p_rboundaryConditions
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -108,8 +108,8 @@ module cc2dminim2basic
     ! only one level supported, identified by NLMAX!
     type(t_problem_lvl), dimension(NNLEV) :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
     
@@ -168,7 +168,7 @@ module cc2dminim2basic
 ! NU                    | Reciprocal 1/RE of parameter RE from the DAT file
 ! NLMIN                 | Minimum level of the discretisation
 ! NLMAX                 | Maximum level of the discretisation
-! ISTOKES               | =0: we discretise Navier Stokes, 
+! ISTOKES               | =0: we discretise Navier Stokes,
 !                       | =1: we discretise Stokes
 ! IUPWIND               | Type of stabilisation. 0=streamline diff, 1=upwind
 ! UPSAM                 | Stabilisation parameter
@@ -186,20 +186,20 @@ module cc2dminim2basic
 !
 ! Name                  | Description
 ! ----------------------+------------------------------------------------------
-! RHS                   | t_vectorBlock object 
+! RHS                   | t_vectorBlock object
 !                       | Current RHS vector on maximum level
 !                       |
-! SOLUTION              | t_vectorBlock object 
+! SOLUTION              | t_vectorBlock object
 !                       | Current solution vector on maximum level
 !                       |
 ! ILVPROJECTION         | t_interlevelProjectionBlock structure.
 !                       | Configures prolongation/restriction for multigrid
 !                       | solver component.
 !                       |
-! RTEMPSCALAR           | t_vectorScalar object 
+! RTEMPSCALAR           | t_vectorScalar object
 !                       | Temporary vector
 !                       |
-! RTEMP2SCALAR          | t_vectorScalar object 
+! RTEMP2SCALAR          | t_vectorScalar object
 !                       | Temporary vector
 !                       |
 ! LINSOLVER             | t_linsol object

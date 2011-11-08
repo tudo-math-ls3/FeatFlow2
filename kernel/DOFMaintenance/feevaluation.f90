@@ -192,8 +192,8 @@ contains
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
   ! if a point is located outside of the domain. May happen e.g. in
-  ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
-  ! parameter if cnonmeshPoints is not specified. 
+  ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default
+  ! parameter if cnonmeshPoints is not specified.
   integer, intent(in), optional :: cnonmeshPoints
   
 !</input>
@@ -262,7 +262,7 @@ contains
     
     ! Get the data vector
     select case (rvectorScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
@@ -288,7 +288,7 @@ contains
     !$omp         dval,ibas,iellast,indof,iresult,nve,revalElement)
     do ipoint = 1,ubound(Dpoints,2)
     
-      ! Get the element number that contains the point. 
+      ! Get the element number that contains the point.
       if (present(Ielements)) then
         ! Either we have that...
         iel = Ielements (ipoint)
@@ -383,7 +383,7 @@ contains
       call trafo_calcRefCoords (ctrafoType, revalElement%Dcoords,&
           Dpoints(:,ipoint), DparPoint)
 
-      ! Now calculate everything else what is necessary for the element    
+      ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
           iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
           rvectorScalar%p_rspatialDiscr%p_rtriangulation, iel, &
@@ -497,11 +497,11 @@ contains
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluate(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), Dpoints)
-  !   call fevl_evaluate(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), Dpoints) 
-  !   call fevl_evaluate(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), Dpoints) 
-  !   call fevl_evaluate(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), Dpoints) 
-  !   call fevl_evaluate(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), Dpoints) 
-  !   call fevl_evaluate(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), Dpoints) 
+  !   call fevl_evaluate(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), Dpoints)
+  !   call fevl_evaluate(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), Dpoints)
+  !   call fevl_evaluate(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), Dpoints)
+  !   call fevl_evaluate(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), Dpoints)
+  !   call fevl_evaluate(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), Dpoints)
   !
   ! one can use
   !
@@ -535,7 +535,7 @@ contains
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens if a point is
   ! located outside of the domain. May happen e.g. in nonconvex domains.
-  ! FEVL_NONMESHPTS_NONE is the default parameter if cnonmeshPoints is not specified. 
+  ! FEVL_NONMESHPTS_NONE is the default parameter if cnonmeshPoints is not specified.
   integer, intent(in), optional :: cnonmeshPoints
 
   ! OPTIONAL: For the case that not all components of the vector are to be processed, the
@@ -630,7 +630,7 @@ contains
     
     ! set pointer to the data vector
     select case (rvectorBlock%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsysbl_getbase_double(rvectorBlock, p_Ddata)
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock, p_Fdata)
@@ -744,7 +744,7 @@ contains
       call trafo_calcRefCoords (ctrafoType, revalElement%Dcoords, &
                                 Dpoints(:,ipoint), DparPoint)
 
-      ! calculate everything else what is necessary for the element    
+      ! calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
              iand(cevaluationTag,not(EL_EVLTAG_COORDS)), p_rspatialDiscr%p_rtriangulation, &
              iel, ctrafoType, DparPoint, Dpoints(:,ipoint))
@@ -796,7 +796,7 @@ contains
 !<description>
   ! This is a rather general finite element evaluation
   ! routine. It allows to evaluate a general (scalar) FE function specified
-  ! by rvectorScalar in a set of points Dpoints on one element ielement. 
+  ! by rvectorScalar in a set of points Dpoints on one element ielement.
   ! The values of the FE function are written into Dvalues.
 !</description>
 
@@ -818,7 +818,7 @@ contains
   real(DP), dimension(:,:), intent(in), optional :: DpointsRef
   
   ! OPTIONAL: A list of points where to evaluate. All points must be inside
-  ! of element ielement. 
+  ! of element ielement.
   ! If not specified, the coordinates are automatically calculated.
   ! Either Dpoints or DpointsRef must be specified!
   ! DIMENSION(1..ndim,1..npoints)
@@ -862,7 +862,7 @@ contains
     ! Are points given?
     if ((.not. present(Dpoints)) .and. (.not. present(DpointsRef))) then
       call output_line ('Evaluation points not specified!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_mult')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_mult')
     end if
     
     if (present(DpointsRef)) then
@@ -900,7 +900,7 @@ contains
 
     ! Get the data vector
     select case (rvectorScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
@@ -1051,7 +1051,7 @@ contains
 !<description>
   ! DEPRECATED!
   ! This routine allows to evaluate a finite element solution vector
-  ! rvectorScalar simultaneously in multiple points on one elements in a 
+  ! rvectorScalar simultaneously in multiple points on one elements in a
   ! discretisation.
   ! The caller must provide all necessary information for the evaluation in the
   ! parameters.
@@ -1063,7 +1063,7 @@ contains
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
-  ! of FE trial function that was used for the discretisation on those 
+  ! of FE trial function that was used for the discretisation on those
   ! elements that we are concerning here.
   integer(I32), intent(in) :: celement
 
@@ -1091,7 +1091,7 @@ contains
   
   ! Array with coordinates of the points where to evaluate.
   ! DIMENSION(NDIM2D,npoints).
-  ! The coordinates are expected 
+  ! The coordinates are expected
   ! - on the reference element, if celement identifies a parametric element
   ! - on the real element, if celement identifies a nonparametric element
   ! It is assumed that:
@@ -1141,7 +1141,7 @@ contains
   
   ! Evaluate the basis functions
   call elem_generic_mult (celement, Dcoords, Djac, Ddetj, &
-                         Bder, DbasTrial, npoints, Dpoints, itwistIndex)  
+                         Bder, DbasTrial, npoints, Dpoints, itwistIndex)
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
@@ -1251,11 +1251,11 @@ contains
 !
 !  SUBROUTINE fevl_evaluate_sim (iderType, Dvalues, rvectorScalar, Dpoints, &
 !      Ielements, DpointsRef)
-!                                      
+!
 !!<description>
 !  ! This is a rather general finite element evaluation
 !  ! routine. It allows to evaluate a general (scalar) FE function specified
-!  ! by rvectorScalar in a set of points Dpoints on a set of elements Ielements. 
+!  ! by rvectorScalar in a set of points Dpoints on a set of elements Ielements.
 !  ! The values of the FE function are written into Dvalues.
 !!</description>
 !
@@ -1266,16 +1266,16 @@ contains
 !
 !  ! The scalar solution vector that is to be evaluated.
 !  TYPE(t_vectorScalar), INTENT(in)              :: rvectorScalar
-!  
+!
 !  ! A list of points where to evaluate. All points must be inside
 !  ! of element ielement.
 !  ! DIMENSION(1..ndim,1..npoints,1..nelements)
 !  REAL(DP), DIMENSION(:,:,:), INTENT(in) :: Dpoints
-!  
+!
 !  ! A list of elements containing the points in Dpoints.
 !  ! All elements in this list must be of the same type!!!
 !  INTEGER, DIMENSION(:), INTENT(in) :: Ielements
-!  
+!
 !  ! OPTIONAL: Coordinates of the points on the reference element.
 !  ! If not specified, the coordinates are automatically calculated.
 !  ! DIMENSION(1..ndim,1..npoints,1..nelements)
@@ -1297,23 +1297,23 @@ contains
 !    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
 !    REAL(DP) :: dval
 !    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsRef
-!    
+!
 !    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 !    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
-!    
+!
 !    ! Triangulation information
 !    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !    INTEGER, DIMENSION(:,:), POINTER :: p_IverticesAtElement
-!    
+!
 !    ! Transformation
 !    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Djac
 !    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddetj
 !    INTEGER(I32) :: ctrafoType
-!    
+!
 !    ! Values of basis functions and DOF`s
 !    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dbas
 !    INTEGER, DIMENSION(:,:), ALLOCATABLE :: Idofs
-!    
+!
 !    ! Coordinates of the corners of one element
 !    REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Dcoord
 !
@@ -1324,7 +1324,7 @@ contains
 !    INTEGER(I32), DIMENSION(:,:), ALLOCATABLE :: ItwistIndex
 !
 !    ! Ok, slow but general.
-!    
+!
 !    ! Get triangulation information
 !    CALL storage_getbase_double2d (&
 !        rvectorScalar%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
@@ -1332,36 +1332,36 @@ contains
 !    CALL storage_getbase_int2d (&
 !        rvectorScalar%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
 !        p_IverticesAtElement)
-!    
+!
 !    p_RelementDistribution => rvectorScalar%p_rspatialDiscr%RelementDistr
 !
 !    ! For uniform discretisations, we get the element type in advance...
 !    IF (rvectorScalar%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNIFORM) THEN
-!      
+!
 !      ! Element type
 !      celement = p_RelementDistribution(1)%celement
 !
 !      ! Get the number of local DOF`s for trial and test functions
 !      indof = elem_igetNDofLoc(celement)
-!      
+!
 !      ! Number of vertices on the element
 !      nve = elem_igetNVE(celement)
-!      
+!
 !      ! Type of transformation from/to the reference element
 !      ctrafoType = elem_igetTrafoType(celement)
-!      
+!
 !      ! Element nonparametric?
 !      bnonpar = elem_isNonparametric(celement)
-!      
+!
 !      NULLIFY(p_IelementDistr)
 !    ELSE
 !      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscr%h_IelementDistr,&
 !          p_IelementDistr)
 !    END IF
-!    
+!
 !    ! Get the data vector
 !    SELECT CASE (rvectorScalar%cdataType)
-!    CASE (ST_DOUBLE) 
+!    CASE (ST_DOUBLE)
 !      CALL lsyssc_getbase_double(rvectorScalar,p_Ddata)
 !    CASE (ST_SINGLE)
 !      CALL lsyssc_getbase_single(rvectorScalar,p_Fdata)
@@ -1370,11 +1370,11 @@ contains
 !          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
 !      CALL sys_halt()
 !    END SELECT
-!    
+!
 !    ! What to evaluate?
 !    Bder = .FALSE.
 !    Bder(iderType) = .TRUE.
-!    
+!
 !    ! Get the type of the element ielement
 !    IF (ASSOCIATED(p_IelementDistr)) THEN
 !      ! As all elements have the same type, we get the element
@@ -1383,30 +1383,30 @@ contains
 !
 !      ! Get the number of local DOF`s for trial and test functions
 !      indof = elem_igetNDofLoc(celement)
-!      
+!
 !      ! Number of vertices on the element
 !      nve = elem_igetNVE(celement)
-!      
+!
 !      ! Type of transformation from/to the reference element
 !      ctrafoType = elem_igetTrafoType(celement)
-!      
+!
 !      ! Element nonparametric?
 !      bnonpar = elem_isNonparametric(celement)
-!      
+!
 !    END IF
-!      
+!
 !    ! Calculate the global DOF`s on that element into IdofsTest.
 !    ALLOCATE(Idofs(indof,SIZE(Ielements)))
 !    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
 !        Ielements, .FALSE.,Idofs)
-!        
+!
 !    ! Get the coordinates forming the elements
 !    ALLOCATE(Dcoord(UBOUND(p_DvertexCoords,1),NVE,SIZE(Ielements)))
 !    DO iel = 1,SIZE(Ielements)
 !      Dcoord(:,1:nve,iel) = &
 !        p_DvertexCoords(:,p_IverticesAtElement(:,Ielements(iel)))
 !    END DO
-!    
+!
 !    ! Get the coordinates of all points on the reference element
 !    IF (PRESENT(DpointsRef)) THEN
 !      p_DpointsRef => DpointsRef
@@ -1421,7 +1421,7 @@ contains
 !        END DO
 !      END DO
 !    END IF
-!    
+!
 !    ! Calculate the transformation of all the points from the reference
 !    ! to the real element(s).
 !    ndim = UBOUND(Dcoord,1)
@@ -1429,8 +1429,8 @@ contains
 !    ALLOCATE(Ddetj(UBOUND(Dpoints,2),UBOUND(Dpoints,3)))
 !    CALL trafo_calctrafo_sim (elem_igetTrafoType(celement),SIZE(Ielements),&
 !        UBOUND(Dpoints,2),Dcoord,&
-!        p_DpointsRef,Djac,Ddetj)    
-!  
+!        p_DpointsRef,Djac,Ddetj)
+!
 !    ! Does the element need twist indices?
 !    ntwistsize = elem_getTwistIndexSize(celement)
 !
@@ -1449,40 +1449,40 @@ contains
 !    IF (bnonpar) THEN
 !      CALL elem_generic_sim (celement, Dcoord, Djac, Ddetj, &
 !                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
-!                           Dpoints,ItwistIndex)    
+!                           Dpoints,ItwistIndex)
 !    ELSE
 !      CALL elem_generic_sim (celement, Dcoord, Djac, Ddetj, &
 !                           Bder, Dbas, UBOUND(Dpoints,2), UBOUND(Dpoints,3), &
-!                           p_DpointsRef,ItwistIndex)    
+!                           p_DpointsRef,ItwistIndex)
 !    END IF
-!  
+!
 !    ! Calculate the desired values. We loop over all points and all elements
 !    IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
 !      DO iel = 1, UBOUND(Dpoints,3)
 !        DO ipoint = 1,UBOUND(Dpoints,2)
-!      
+!
 !          dval = 0.0_DP
-!        
+!
 !          ! Now that we have the basis functions, we want to have the function values.
 !          ! We get them by multiplying the FE-coefficients with the values of the
 !          ! basis functions and summing up.
-!          !          
+!          !
 !          ! Calculate the value in the point
 !          DO ibas = 1,indof
 !            dval = dval + p_Ddata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
 !          END DO
-!        
+!
 !          ! Save the value in the point
 !          Dvalues(ipoint,iel) = dval
-!        
+!
 !        END DO ! ipoint
 !      END DO ! iel
 !
 !    ELSE IF (rvectorScalar%cdataType .EQ. ST_SINGLE) THEN
-!    
+!
 !      DO iel = 1, UBOUND(Dpoints,3)
 !        DO ipoint = 1,UBOUND(Dpoints,2)
-!          
+!
 !          ! Now that we have the basis functions, we want to have the function values.
 !          ! We get them by multiplying the FE-coefficients with the values of the
 !          ! basis functions and summing up.
@@ -1491,15 +1491,15 @@ contains
 !          DO ibas = 1,indof
 !            dval = dval + p_Fdata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
 !          END DO
-!        
+!
 !          ! Save the value in the point
 !          Dvalues(ipoint,iel) = dval
-!        
+!
 !        END DO ! ipoint
 !      END DO ! iel
-!      
+!
 !    END IF
-!    
+!
 !    ! Release allocated memory
 !    DEALLOCATE(ItwistIndex)
 !    DEALLOCATE(Dbas)
@@ -1524,7 +1524,7 @@ contains
 !<description>
   ! This is a rather general finite element evaluation
   ! routine. It allows to evaluate a general (scalar) FE function specified
-  ! by rvectorScalar in a set of points Dpoints on a set of elements Ielements. 
+  ! by rvectorScalar in a set of points Dpoints on a set of elements Ielements.
   ! The values of the FE function are written into Dvalues.
 !</description>
 
@@ -1627,7 +1627,7 @@ contains
     
     ! Get the data vector
     select case (rvectorScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
@@ -1666,8 +1666,8 @@ contains
     call dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
         Ielements, Idofs)
     
-    ! Initialisation of the element set.    
-    call elprep_init(revalElementSet)   
+    ! Initialisation of the element set.
+    call elprep_init(revalElementSet)
         
     ! Get the coordinates of the corners of the elements
     call elprep_prepareSetForEvaluation (revalElementSet,&
@@ -1691,7 +1691,7 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(celement)
     
     ! Do not create coordinates on the reference/real element; we do this manually!
@@ -1845,7 +1845,7 @@ contains
 !<description>
   ! DEPRECATED!
   ! This routine allows to evaluate a finite element solution vector
-  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a
   ! discretisation.
   ! The caller must provide all necessary information for the evaluation in the
   ! parameters.
@@ -1862,7 +1862,7 @@ contains
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
-  ! of FE trial function that was used for the discretisation on those 
+  ! of FE trial function that was used for the discretisation on those
   ! elements that we are concerning here.
   integer(I32), intent(in) :: celement
 
@@ -1893,7 +1893,7 @@ contains
   
   ! Array with coordinates of the points where to evaluate.
   ! DIMENSION(NDIM2D,npoints,nelements).
-  ! The coordinates are expected 
+  ! The coordinates are expected
   ! - on the reference element, if celement identifies a parametric element
   ! - on the real element, if celement identifies a nonparametric element
   ! It is assumed that:
@@ -1943,7 +1943,7 @@ contains
   
   ! Evaluate the basis functions
   call elem_generic_sim (celement, Dcoords, Djac, Ddetj, &
-      Bder, DbasTrial, npoints, nelements, Dpoints, ItwistIndexEdges)  
+      Bder, DbasTrial, npoints, nelements, Dpoints, ItwistIndexEdges)
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
@@ -2083,7 +2083,7 @@ contains
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
-  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a
   ! discretisation.
   ! revalElementScalar must specify all information about where and how
   ! to evaluate; e.g. the coordinates of the evaluation points are
@@ -2107,7 +2107,7 @@ contains
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
-  ! of FE trial function that was used for the discretisation on those 
+  ! of FE trial function that was used for the discretisation on those
   ! elements that we are concerning here.
   integer(I32), intent(in) :: celement
 
@@ -2209,7 +2209,7 @@ contains
         end do ! ipoint
       end do ! iel
 
-    end if     
+    end if
     
   else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
   
@@ -2290,7 +2290,7 @@ contains
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
-  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a
   ! discretisation.
   ! rdomainIntSubset must specify all information about where and how
   ! to evaluate; e.g. the coordinates of the evaluation points are
@@ -2514,7 +2514,7 @@ contains
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
-  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a
   ! discretisation.
   ! rdomainIntSubset must specify all information about where and how
   ! to evaluate; e.g. the coordinates of the evaluation points are
@@ -2896,7 +2896,7 @@ contains
 
     ! Get the data vector
     select case (rvectorScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
@@ -2946,7 +2946,7 @@ contains
         DpointRef = 1.0
       end if
 
-      ! Now calculate everything else what is necessary for the element    
+      ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
           cevaluationTag, rvectorScalar%p_rspatialDiscr%p_rtriangulation,&
           iel, ctrafoType, DpointRef=DpointRef)
@@ -3065,8 +3065,8 @@ contains
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), ibdc)
-  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), ibdc) 
-  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), ibdc) 
+  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), ibdc)
+  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), ibdc)
   !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), ibdc)
   !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), ibdc)
   !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), ibdc)
@@ -3186,8 +3186,8 @@ contains
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), ibdc)
-  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), ibdc) 
-  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), ibdc) 
+  !   call fevl_evaluateBdr1d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), ibdc)
+  !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), ibdc)
   !   call fevl_evaluateBdr1d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), ibdc)
   !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), ibdc)
   !   call fevl_evaluateBdr1d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), ibdc)
@@ -3311,7 +3311,7 @@ contains
 
     ! Get the data vector
     select case (rvectorBlock%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsysbl_getbase_double(rvectorBlock,p_Ddata)
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
@@ -3363,7 +3363,7 @@ contains
         DpointRef = 1.0
       end if
 
-      ! Now calculate everything else what is necessary for the element    
+      ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
           cevaluationTag, p_rspatialDiscr%p_rtriangulation,&
           iel, ctrafoType, DpointRef=DpointRef)
@@ -3442,7 +3442,7 @@ contains
 
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to search for the elements (must be given in 0-1 parametrisation)
-  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion  
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 !</input>
 
 !<output>
@@ -3638,7 +3638,7 @@ contains
 
     ! Get the data vector
     select case (rvectorScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
@@ -3714,7 +3714,7 @@ contains
       call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(idx), &
           1, Dxi1D, Dxi2d); DpointsRef = Dxi2d(1,:)
       
-      ! Now calculate everything else what is necessary for the element    
+      ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
           cevaluationTag, rvectorScalar%p_rspatialDiscr%p_rtriangulation,&
           iel, ctrafoType, DpointRef=DpointsRef)
@@ -3834,8 +3834,8 @@ contains
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
-  !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType) 
-  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType) 
+  !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
   !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
   !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
   !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
@@ -3869,7 +3869,7 @@ contains
 
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to search for the elements (must be given in 0-1 parametrisation)
-  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion  
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! OPTIONAL: For the case that not all components of the vector are to be processed, the
   ! user can provide these two parameters so that only the components from iblockMin to
@@ -4000,8 +4000,8 @@ contains
   !
   !   real(DP), dimension(nblocks,npoints) :: Dvalues
   !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
-  !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType) 
-  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType) 
+  !   call fevl_evaluateBdr2d(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
+  !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
   !   call fevl_evaluateBdr2d(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
   !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), DpointsPar, ibdc, cparType)
   !   call fevl_evaluateBdr2d(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), DpointsPar, ibdc, cparType)
@@ -4136,7 +4136,7 @@ contains
 
     ! Get the data vector
     select case (rvectorBlock%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       call lsysbl_getbase_double(rvectorBlock,p_Ddata)
     case (ST_SINGLE)
       call lsysbl_getbase_single(rvectorBlock,p_Fdata)
@@ -4215,7 +4215,7 @@ contains
       call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(idx), &
           1, Dxi1D, Dxi2d); DpointsRef = Dxi2d(1,:)
       
-      ! Now calculate everything else what is necessary for the element    
+      ! Now calculate everything else what is necessary for the element
       call elprep_prepareForEvaluation (revalElement, &
           cevaluationTag, p_rspatialDiscr%p_rtriangulation,&
           iel, ctrafoType, DpointRef=DpointsRef)

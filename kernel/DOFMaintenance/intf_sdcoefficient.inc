@@ -21,7 +21,7 @@
     use collection
     
   !<description>
-    ! This subroutine is called during the calculation of the SD operator. It has to 
+    ! This subroutine is called during the calculation of the SD operator. It has to
     ! compute the coefficients in front of the terms.
     !
     ! The routine accepts a set of elements and a set of points on these
@@ -64,8 +64,8 @@
   !</input>
 
   !<inpuoutputt>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
   

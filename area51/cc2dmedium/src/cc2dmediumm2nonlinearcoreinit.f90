@@ -14,7 +14,7 @@
 !# The following routines can be found here:
 !#
 !# 1.) c2d2_allocSystemMatrix
-!#     -> Allocates memory for the system matrix representing the 
+!#     -> Allocates memory for the system matrix representing the
 !#        core equation.
 !#
 !# 2.) c2d2_initNonlinearLoop
@@ -24,7 +24,7 @@
 !#
 !# 3.) c2d2_doneNonlinearLoop
 !#     -> Cleans up a 'nonlinear iteration structure' initialised by
-!#        c2d2_initNonlinearLoop. 
+!#        c2d2_initNonlinearLoop.
 !#     -> Extension to c2d2_releaseNonlinearLoop.
 !#
 !# 4.) c2d2_initPreconditioner
@@ -50,7 +50,7 @@
 !# 2.) c2d2_finaliseMatrices
 !#     -> Rearranges the structure of the preconditioner matrices if necessary.
 !#
-!# 3.) c2d2_unfinaliseMatrices 
+!# 3.) c2d2_unfinaliseMatrices
 !#     -> Reverts the changes of c2d2_finaliseMatrices and brings preconditioner
 !#        matrices into their original form.
 !#
@@ -152,7 +152,7 @@ contains
 
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
       
     ! Let's consider the global system in detail. It has roughly
     ! the following shape:
@@ -163,7 +163,7 @@ contains
     !
     ! All matices may have multiplication factors in their front.
     !
-    ! The structure of the matrices A11 and A22 of the global system matrix 
+    ! The structure of the matrices A11 and A22 of the global system matrix
     ! is governed by the template FEM matrix.
     ! Initialise them with the same structure, i.e. A11, A22 share (!) their
     ! structure (not the entries) with that of the template matrix.
@@ -185,7 +185,7 @@ contains
     rmatrixAssembly%p_rmatrixB2 => rlevelInfo%rmatrixB2
     rmatrixAssembly%p_rmatrixMass => rlevelInfo%rmatrixMass
 
-    if (.not. rproblem%bdecoupledXY) then    
+    if (.not. rproblem%bdecoupledXY) then
       call c2d2_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
         rmatrix,rmatrixAssembly)
     else
@@ -250,7 +250,7 @@ contains
     type(t_parlstSection), pointer :: p_rsection
 
     ! Basic initialisation of the nonlinenar iteration structure.
-    call c2d2_createNonlinearLoop (rnonlinearIteration,rproblem%NLMIN,rproblem%NLMAX)    
+    call c2d2_createNonlinearLoop (rnonlinearIteration,rproblem%NLMIN,rproblem%NLMAX)
     
     rnonlinearIteration%MT_OutputLevel = rproblem%MT_OutputLevel
     
@@ -300,7 +300,7 @@ contains
     rnonlinearIteration%DresidualInit = 0.0_DP
     rnonlinearIteration%DresidualOld  = 0.0_DP
     
-    call parlst_querysection(rproblem%rparamList, sname, p_rsection) 
+    call parlst_querysection(rproblem%rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       print *,'Nonlinear solver not available; no section '''&
@@ -420,7 +420,7 @@ contains
     integer(PREC_VECIDX) :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
 
-    ! At first, ask the parameters in the INI/DAT file which type of 
+    ! At first, ask the parameters in the INI/DAT file which type of
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
     call parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
@@ -489,7 +489,7 @@ contains
 
       imaxmem = 0
       do i=NLMIN+1,NLMAX
-        ! Pass the system metrices on the coarse/fine grid to 
+        ! Pass the system metrices on the coarse/fine grid to
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryDirect (&
@@ -558,7 +558,7 @@ contains
   logical, intent(IN) :: binit
 
   ! Whether the structure of the system matrices is new.
-  ! This variable has to be set to TRUE whenever there was a structure in 
+  ! This variable has to be set to TRUE whenever there was a structure in
   ! the system matrices. This reinitialises the linear solver.
   logical, intent(IN) :: bstructuralUpdate
 !</input>
@@ -577,7 +577,7 @@ contains
     character(LEN=PARLST_MLDATA) :: sstring,snewton
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A pointer to the matrix of the preconditioner
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner
@@ -597,8 +597,8 @@ contains
     
       if (.not. binit) then
         ! Restore the standard matrix structure in case the matrices had been
-        ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
-        ! temporarily switch to the matrix structure that is compatible to 
+        ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e.
+        ! temporarily switch to the matrix structure that is compatible to
         ! the discretisation.
         call c2d2_unfinaliseMatrices (rnonlinearIteration, &
             rnonlinearIteration%rfinalAssembly,.false.)
@@ -639,7 +639,7 @@ contains
           !  B1^T B2^T 0
           !
           ! With A12, A21, A11, A22 independent of each other!
-          ! Do we have that case? If not, we have to allocate memory 
+          ! Do we have that case? If not, we have to allocate memory
           ! for these matrices.
           p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
           
@@ -695,7 +695,7 @@ contains
               p_rmatrixPreconditioner%RmatrixBlock(2,2),&
               LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
               
-            ! ... then allocate memory for the entries; 
+            ! ... then allocate memory for the entries;
             ! don't initialise the memory.
             call lsyssc_allocEmptyMatrix (&
                 p_rmatrixPreconditioner%RmatrixBlock(2,2),&
@@ -742,8 +742,8 @@ contains
       if (binit) then
         ! Check the matrices if they are compatible to our
         ! preconditioner. If not, we later have to modify the matrices a little
-        ! bit to make it compatible. 
-        ! The result of this matrix analysis is saved to the rfinalAssembly structure 
+        ! bit to make it compatible.
+        ! The result of this matrix analysis is saved to the rfinalAssembly structure
         ! in rnonlinearIteration and allows us later to switch between these two
         ! matrix representations: Compatibility to the discretisation routines
         ! and compatibity to the preconditioner.
@@ -752,10 +752,10 @@ contains
         call c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
             rnonlinearIteration%rfinalAssembly)
       end if
-      ! Otherwise, checkAssembly was already called and does not have to be 
+      ! Otherwise, checkAssembly was already called and does not have to be
       ! called again.
       
-      ! Using rfinalAssembly as computed above, make the matrices compatible 
+      ! Using rfinalAssembly as computed above, make the matrices compatible
       ! to our preconditioner if they are not.
       call c2d2_finaliseMatrices (rnonlinearIteration)
       
@@ -824,7 +824,7 @@ contains
     ! local variables
     integer :: i
 
-    ! Which preconditioner do we have?    
+    ! Which preconditioner do we have?
     select case (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
     case (CCPREC_NONE)
       ! No preconditioning
@@ -902,7 +902,7 @@ contains
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       ! We use the default configuration; stop here.
@@ -989,9 +989,9 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Nonlinear iteration structure. 
-  ! The t_ccFinalAssemblyInfo substructure that receives information how to 
-  ! finally assembly the matrices such that everything in the callback routines 
+  ! Nonlinear iteration structure.
+  ! The t_ccFinalAssemblyInfo substructure that receives information how to
+  ! finally assembly the matrices such that everything in the callback routines
   ! will work.
   type(t_ccFinalAssemblyInfo), intent(INOUT) :: rfinalAssembly
 !</inputoutput>
@@ -1008,8 +1008,8 @@ contains
   type(t_matrixBlock), dimension(NNLEV) :: Rmatrices
   type(t_linsolNode), pointer :: p_rsolverNode
     
-    ! At first, ask the parameters in the INI/DAT file which type of 
-    ! preconditioner is to be used. 
+    ! At first, ask the parameters in the INI/DAT file which type of
+    ! preconditioner is to be used.
     call parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
                                      'itypePreconditioning', &
                                      iprecType, 1)
@@ -1102,7 +1102,7 @@ contains
   ! are compatible to the preconditioner.
   ! It may happen that e.g. VANCA does not like our matrices (probably
   ! they have to be saved transposed or whatever). In that case, we
-  ! have to make slight modifications to our matrices in order to 
+  ! have to make slight modifications to our matrices in order to
   ! make them compatible.
 !</description>
 
@@ -1127,7 +1127,7 @@ contains
       NLMIN = rnonlinearIteration%NLMIN
       NLMAX = rnonlinearIteration%NLMAX
 
-      ! Loop through the levels, transpose the B-matrices  
+      ! Loop through the levels, transpose the B-matrices
       do ilev=NLMIN,NLMAX
         ! Get the matrix of the preconditioner
         p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
@@ -1148,7 +1148,7 @@ contains
             p_rmatrix%RmatrixBlock(3,2),LSYSSC_TR_ALL)
                                     
         ! Release the memory that was allocated for the B2 structure by
-        ! the matrix-transpose routine. 
+        ! the matrix-transpose routine.
         ! Replace the structure of B2 by that of B1; more precisely,
         ! share the structure. We can do this as we know that B1 and B2
         ! have exactly the same structure!
@@ -1185,8 +1185,8 @@ contains
 !</inputoutput>
 
 !<input>
-  ! The t_ccFinalAssemblyInfo structure that receives information how to finally 
-  ! assembly the matrices such that everything in the callback routines will 
+  ! The t_ccFinalAssemblyInfo structure that receives information how to finally
+  ! assembly the matrices such that everything in the callback routines will
   ! work. Must be set up with c2d2_checkAssembly above.
   type(t_ccFinalAssemblyInfo), intent(IN) :: rfinalAssembly
   
@@ -1207,7 +1207,7 @@ contains
     NLMIN = rnonlinearIteration%NLMIN
     NLMAX = rnonlinearIteration%NLMAX
 
-    ! Loop through the levels, transpose the B-matrices  
+    ! Loop through the levels, transpose the B-matrices
     do ilev=NLMIN,NLMAX
       ! Get the matrix of the preconditioner
       p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
@@ -1217,7 +1217,7 @@ contains
                 LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
                 
         ! There is usually a VANCA subsolver in the main linear solver which
-        ! cannot deal with our virtually transposed matrices. 
+        ! cannot deal with our virtually transposed matrices.
         ! The B1/B2 matrices are transposed -- so we re-transpose them
         ! to get the original matrices.
 
@@ -1243,9 +1243,9 @@ contains
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1, &
               p_rmatrix%RmatrixBlock(3,1),LSYSSC_TR_STRUCTURE)
 
-          ! No change has to be done to the B2^T block in the global system 
+          ! No change has to be done to the B2^T block in the global system
           ! matrix since that one will later share the same structure as B1^T!
-          ! So the following command is commented out and should 
+          ! So the following command is commented out and should
           ! not be commented in!
           ! CALL lsyssc_transposeMatrix (&
           !     rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2, &
@@ -1253,7 +1253,7 @@ contains
         end if
                                     
         ! Release the memory that was allocated for the B2 structure by
-        ! the matrix-transpose routine. 
+        ! the matrix-transpose routine.
         ! Replace the structure of B2 by that of B1; more precisely,
         ! share the structure. We can do this as we know that B1 and B2
         ! have exactly the same structure!

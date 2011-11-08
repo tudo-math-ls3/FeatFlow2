@@ -8,11 +8,11 @@
 !# WARNING: Do not USE this module in your applications unless you really
 !#          know what you are doing. This module does no error checking!!!
 !#
-!# This module contains the basic data structures and auxiliary routines 
-!# which are required for performing h-adaptivity in. 
+!# This module contains the basic data structures and auxiliary routines
+!# which are required for performing h-adaptivity in.
 !#
 !# The following routines are available:
-!# 
+!#
 !#  1.) hadapt_getNVE
 !#      -> return the number of vertices per element
 !#
@@ -82,7 +82,7 @@ module hadaptaux
   use quadtree
   use sort
   use storage
-  use storage  
+  use storage
   use triangulation
 
   implicit none
@@ -294,7 +294,7 @@ module hadaptaux
 
 !</constantblock>
 
-!<constantblock 
+!<constantblock
 ! description="Duplication flags. Specifies which information is shared between adaptivity structures">
 
   integer(I32), parameter, public :: HADAPT_SHARE_IMARKER            = 2** 0
@@ -319,7 +319,7 @@ module hadaptaux
 
   !<typeblock>
   
-  ! This type contains all data structures to handle 
+  ! This type contains all data structures to handle
   ! adaptive grid refinement and grid coarsening.
   type :: t_hadapt
     ! Format Tag: Specifies the state of adaptation
@@ -329,8 +329,8 @@ module hadaptaux
     ! shared with another adaptivity structure.
     ! When a bit is set to 1, the corresponding array is
     ! maintained by another adaptivity structure and must
-    ! not be deleted by hadapt_releaseAdaptation. 
-    ! When the bit is 0, the array is a real copy of another array 
+    ! not be deleted by hadapt_releaseAdaptation.
+    ! When the bit is 0, the array is a real copy of another array
     ! and must be deleted in hadapt_releaseAdaptation.
     integer(I32) :: iduplicationFlag = 0
 
@@ -432,9 +432,9 @@ module hadaptaux
     ! Nodal property array.
     ! Handle to
     !       p_InodalProperty = array [1..NVT+NMT] of integer
-    ! p_InodalProperty(i) defines for each vertex i=(1..NVT) 
+    ! p_InodalProperty(i) defines for each vertex i=(1..NVT)
     ! and each edge i=(NVT+1..NVT+NMT) its function inside of the
-    ! geometry. Generally said, the range of the p_InodalProperty-array 
+    ! geometry. Generally said, the range of the p_InodalProperty-array
     ! characterizes the type of the node (=vertex/edge):
     ! = 0    : The vertex/edge is an inner vertex/edge
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
@@ -448,7 +448,7 @@ module hadaptaux
     integer, dimension(:), pointer :: p_InodalProperty => null()
     
     ! Vertices adjacent to an element.
-    ! Handle to 
+    ! Handle to
     !       p_IverticesAtElement = array [1..TRIA_MAXNVE2D,1..NEL] of integer.
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
@@ -509,7 +509,7 @@ module hadaptaux
   
   public :: t_hadapt
 
-  !</typeblock> 
+  !</typeblock>
 
 !</types>
 
@@ -601,7 +601,7 @@ contains
 
 !<description>
     ! This subroutine sets the vertex coordinates given by the handle
-    ! h_DvertexCoords that points to the two-dimensional array 
+    ! h_DvertexCoords that points to the two-dimensional array
     ! p_DvertexCoords and stores them in the binary-search-tree.
 !</description>
 
@@ -655,7 +655,7 @@ contains
 !<description>
     ! This subroutine gets the vertex coordinates from the binary tree
     ! and stores them in the two-dimensional array associated to the
-    ! handle h_DvertexCoords. Note that the allocated memory will 
+    ! handle h_DvertexCoords. Note that the allocated memory will
     ! be reallocated if is does not provide the correct dimensions.
 !</description>
 
@@ -738,7 +738,7 @@ contains
 
 !<description>
     ! This subroutine sets the vertex coordinates given by the handle
-    ! h_DvertexCoords that points to the two-dimensional array 
+    ! h_DvertexCoords that points to the two-dimensional array
     ! p_DvertexCoords and stores them in the quadtree.
 !</description>
 
@@ -810,7 +810,7 @@ contains
 !<description>
     ! This subroutine gets the vertex coordinates from the quadtree
     ! and stores them in the two-dimensional array associated to the
-    ! handle h_DvertexCoords. Note that the allocated memory will 
+    ! handle h_DvertexCoords. Note that the allocated memory will
     ! be reallocated if is does not provide the correct dimensions.
 !</description>
 
@@ -864,7 +864,7 @@ contains
 
 !<description>
     ! This subroutine sets the vertex coordinates given by the handle
-    ! h_DvertexCoords that points to the three-dimensional array 
+    ! h_DvertexCoords that points to the three-dimensional array
     ! p_DvertexCoords and stores them in the octree.
 !</description>
 
@@ -938,7 +938,7 @@ contains
 !<description>
     ! This subroutine gets the vertex coordinates from the octree
     ! and stores them in the three-dimensional array associated to the
-    ! handle h_DvertexCoords. Note that the allocated memory will 
+    ! handle h_DvertexCoords. Note that the allocated memory will
     ! be reallocated if is does not provide the correct dimensions.
 !</description>
 
@@ -1267,7 +1267,7 @@ contains
     ! Number of boundary components
     integer, intent(in) :: nbct
 
-    ! Number of vertices at the boundary 
+    ! Number of vertices at the boundary
     integer, intent(in) :: nvbd
 !</input>
 
@@ -1382,7 +1382,7 @@ contains
 
 !<description>
     ! This subroutine extracts the boundary data from the adaptivity structure
-    ! and generates the the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and 
+    ! and generates the the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and
     ! p_DvertexParameterValue. If the optional parameter nvbd is given
     ! then the number of boundary vertices is assigned.
 !</description>
@@ -1425,12 +1425,12 @@ contains
       call sys_halt()
     end if
 
-    ! Due to the fact, that the boundary data may be stored in multiple 
-    ! binary search trees (one for each component) the static arrays 
+    ! Due to the fact, that the boundary data may be stored in multiple
+    ! binary search trees (one for each component) the static arrays
     ! are pre-allocated and filled step-by-step from the dynamic data
     ! in the boundary search tree(s).
 
-    ! Check if the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and 
+    ! Check if the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and
     ! p_DvertexParameterValue have correct dimension
     if (h_IboundaryCpIdx .eq. ST_NOHANDLE) then
       call storage_new('hadapt_getBoundary', 'p_IboundaryCpIdx',&

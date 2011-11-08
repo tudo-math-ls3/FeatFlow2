@@ -68,7 +68,7 @@
 !#     is subdivided into two similar lines, and a new vertex is
 !#     inserted at the midpoint of the element. That is it.
 !#
-!# 2.) 
+!# 2.)
 !# </purpose>
 !##############################################################################
 
@@ -118,7 +118,7 @@ contains
 
 !<description>
     ! This subroutine marks all elements that should be refined
-    ! due to accuracy reasons. The decision is based on some 
+    ! due to accuracy reasons. The decision is based on some
     ! indicator vector which must be given element-wise.
 !</description>
 
@@ -198,13 +198,13 @@ contains
           ! Unmark element IEL for refinement
           p_Imarker(iel) = MARK_ASIS
 
-          ! According to the indicator, this element should be refined. Since the 
-          ! maximum admissible refinement level has been reached no refinement 
+          ! According to the indicator, this element should be refined. Since the
+          ! maximum admissible refinement level has been reached no refinement
           ! was performed. At the same time, all vertices of the element should
           ! be "locked" to prevent this element from coarsening
           do ive = 1, TRIA_NVELINE1D
             ivt = IverticesAtElement(ive)
-            rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
+            rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
           end do
           
         end if
@@ -230,14 +230,14 @@ contains
 
 !<description>
     ! This routine marks all elements that sould be recoarsened due to accuracy
-    ! reasons. The decision is based on some indicator vector which must be 
+    ! reasons. The decision is based on some indicator vector which must be
     ! given element-wise. The recoarsening strategy is as follows: A subset of
     ! elements can only be coarsened if this subset results from a previous
     ! refinement step. In other words, the grid cannot become coarser than the
     ! initial triangulation. Moreover, one recoarsening step can only "undo"
-    ! what one refinement step can "do". This is in contrast to other 
-    ! "node-removal" techniques, which remove all superficial vertices and 
-    ! retriangulate the generated "holes". However, such algorithms cannot 
+    ! what one refinement step can "do". This is in contrast to other
+    ! "node-removal" techniques, which remove all superficial vertices and
+    ! retriangulate the generated "holes". However, such algorithms cannot
     ! guarantee a grid hierarchy between refined and recoarsened grids.
 !</description>
 
@@ -272,7 +272,7 @@ contains
     call storage_getbase_int(rhadapt%h_Imarker, p_Imarker)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
 
-    ! All nodes of the initial triangulation have age-0, and hence, 
+    ! All nodes of the initial triangulation have age-0, and hence,
     ! they will never be deleted by the re-coarsening procedure.
     !
     ! Phase 1: Lock vertices which cannot be deleted at first sight.
@@ -283,7 +283,7 @@ contains
     ! For each element which is marked for refinement,
     ! the corner vertices are "locked" unconditionally.
     !
-    ! For each element that is not marked for refinement, the 
+    ! For each element that is not marked for refinement, the
     ! indicator is considered and all vertices are "locked" if
     ! re-coarsening is not allowed due to accuracy reasons.
     do iel = 1, rhadapt%NEL
@@ -317,7 +317,7 @@ contains
       end if
     end do
 
-    ! Loop over all elements and determine those elements which 
+    ! Loop over all elements and determine those elements which
     ! can be combined together with its neighbouring cell
     do iel = 1, rhadapt%NEL
 
@@ -433,7 +433,7 @@ contains
     integer, dimension(:), pointer :: p_Imarker
     integer :: iel
 
-    ! Check if dynamic data structures are o.k. and if 
+    ! Check if dynamic data structures are o.k. and if
     ! cells are marked for refinement
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA1D) .ne.&
                             HADAPT_HAS_DYNAMICDATA1D .or.&
@@ -511,7 +511,7 @@ contains
     integer, dimension(2) :: Ivertices
     integer :: iel,jel,ivt,ivtReplace,ipos,ive
 
-    ! Check if dynamic data structures are o.k. and if 
+    ! Check if dynamic data structures are o.k. and if
     ! cells are marked for refinement
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA1D) .ne.&
                             HADAPT_HAS_DYNAMICDATA1D .or.&
@@ -591,7 +591,7 @@ contains
           ! something is wrong and we stop the simulation
           call output_line('Unable to find replacement vertex in element',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen1D')
-          call sys_halt()            
+          call sys_halt()
         end do update
         
         ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
@@ -768,7 +768,7 @@ contains
   subroutine replace_element1D(rhadapt, iel, i1, i2, e1, e2)
   
 !<description>
-    ! This subroutine replaces the vertices and 
+    ! This subroutine replaces the vertices and
     ! adjacent elements for a given element in 1D
 !</description>
 
@@ -801,7 +801,7 @@ contains
   subroutine add_element1D(rhadapt, i1, i2, e1, e2)
 
 !<description>
-    ! This subroutine adds a new element connected to 
+    ! This subroutine adds a new element connected to
     ! two vertices and surrounded by two adjacent elements
 !</description>
 
@@ -836,7 +836,7 @@ contains
 !<description>
     ! This subroutine removes an existing element and moves the last
     ! element of the adaptation data structure to its position.
-    ! The routine returns the former number ielReplace of the last 
+    ! The routine returns the former number ielReplace of the last
     ! element. If iel is the last element, then ielReplace=0 is returned.
 !</description>
 
@@ -899,7 +899,7 @@ contains
         end do elements
 
                 
-        ! Get element number of element JEL which 
+        ! Get element number of element JEL which
         ! is adjacent to element ielReplace
         jel = rhadapt%p_IneighboursAtElement(ive, ielReplace)
 
@@ -987,7 +987,7 @@ contains
 
 !<description>
     ! This subroutine updates the list of elements adjacent to another elements.
-    ! For all elements jel which are adjacent to the old element iel0 the new 
+    ! For all elements jel which are adjacent to the old element iel0 the new
     ! value iel is stored in the neighbours-at-element structure.
 !</description>
 
@@ -1141,7 +1141,7 @@ contains
     ! is removed. Moreover, (e1) and (e2) stand for the element numbers
     ! which are adjacent to the element iel and iel1, respectively. The
     ! element with the larger element number JEL=MIN(IEL,IEL1) is preserved
-    ! whereas the one with the larger element number is removed. The 
+    ! whereas the one with the larger element number is removed. The
     ! total number of elements in the triangulation is decreased by one.
     !
     !    initial lines              combined lines

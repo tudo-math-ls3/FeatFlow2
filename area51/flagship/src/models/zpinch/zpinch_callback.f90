@@ -275,7 +275,7 @@ contains
       istatus = 0
 
 
-    elseif (trim(rsolver%ssolverName) .eq. 'NonlinearSolverTransport') then   
+    elseif (trim(rsolver%ssolverName) .eq. 'NonlinearSolverTransport') then
 
       ! Set pointer to parameter list (we can always use the parameter
       ! list from the same section since all three sections in the
@@ -300,7 +300,7 @@ contains
       ! --------------------------------------------------------------------------
       if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
         
-        ! Get configuration from hydrodynamic section of parameter list 
+        ! Get configuration from hydrodynamic section of parameter list
         call parlst_getvalue_int(p_rparlist,&
             ssectionNameHydro, 'isystemformat', isystemFormat)
         
@@ -353,7 +353,7 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
-        ! Get configuration from hydrodynamic section of parameter list 
+        ! Get configuration from hydrodynamic section of parameter list
         call parlst_getvalue_int(p_rparlist,&
             ssectionNameHydro, 'isystemformat', isystemFormat)
 
@@ -465,7 +465,7 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
         
-        ! Get configuration from hydrodynamic section of parameter list 
+        ! Get configuration from hydrodynamic section of parameter list
         call parlst_getvalue_int(p_rparlist,&
             ssectionNameHydro, 'isystemformat', isystemFormat)
         
@@ -508,7 +508,7 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
 
-        ! Get configuration from hydrodynamic section of parameter list 
+        ! Get configuration from hydrodynamic section of parameter list
         call parlst_getvalue_int(p_rparlist,&
             ssectionNameHydro, 'isystemformat', isystemFormat)
         
@@ -1194,7 +1194,7 @@ contains
           daux = dcurrentDrive * DmassMatrix(ieq)*max(0.0_DP, DdataTransport(ieq)) /&
               max(drad, deffectiveRadius)
           
-          ! Compute Lorentz source term        
+          ! Compute Lorentz source term
           DdataForce(1,ieq) = 0.0_DP
           DdataForce(2,ieq) = daux * x1
           DdataForce(3,ieq) = 0.0_DP
@@ -1225,7 +1225,7 @@ contains
               max(drad, deffectiveRadius)
           
           ! Compute Lorentz source term
-          DdataForce(2,ieq) = DdataForce(2,ieq) + daux * x1          
+          DdataForce(2,ieq) = DdataForce(2,ieq) + daux * x1
           DdataForce(4,ieq) = DdataForce(4,ieq)&
                             + daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,ieq,0,0)*x1/&
                                        DENSITY2(DdataHydro,IDX2_FORWARD,ieq,0,0)
@@ -1290,7 +1290,7 @@ contains
             daux = dcurrentDrive * DmassMatrix(jeq)*max(0.0_DP, DdataTransport(jeq)) /&
                 max(drad, deffectiveRadius)
             
-            ! Update Lorentz source term        
+            ! Update Lorentz source term
             Ddata(2) = Ddata(2) + daux * x1
             Ddata(4) = Ddata(4) + daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,0,0)*x1/&
                                            DENSITY2(DdataHydro,IDX2_FORWARD,jeq,0,0)
@@ -1332,7 +1332,7 @@ contains
                 max(drad, deffectiveRadius)
           
             ! Update Lorentz source term
-            Ddata(2) = Ddata(2) + daux * x1          
+            Ddata(2) = Ddata(2) + daux * x1
             Ddata(4) = Ddata(4)&
                      + daux * XMOMENTUM2(DdataHydro,IDX2_FORWARD,jeq,0,0)*x1/&
                                 DENSITY2(DdataHydro,IDX2_FORWARD,jeq,0,0)
@@ -2389,14 +2389,14 @@ contains
 !!$      ! Initialize dummy timestep
 !!$      rtimestepAux%dStep = 1.0_DP
 !!$      rtimestepAux%theta = 0.0_DP
-!!$      
+!!$
 !!$      ! Set pointer to predictor
 !!$      p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
-!!$      
+!!$
 !!$      ! Compute the preconditioner
 !!$      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
 !!$          rsolverTransport, Rsolution(2), ssectionNameTransport, rcollection)
-!!$      
+!!$
 !!$      ! Compute low-order "right-hand side" without theta parameter
 !!$      if (present(Rsource)) then
 !!$        if (Rsource(2)%NEQ .eq. 0) then
@@ -2422,12 +2422,12 @@ contains
 !!$            fcb_coeffVecBdrPrimal2d_sim = transp_coeffVecBdrConvP2d_sim,&
 !!$            fcb_coeffVecBdrDual2d_sim = transp_coeffVecBdrConvD2d_sim)
 !!$      end if
-!!$      
+!!$
 !!$      ! Compute low-order predictor
 !!$      call lsysbl_invertedDiagMatVec(&
 !!$          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
 !!$          p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
-!!$      
+!!$
 !!$      ! Build the raw antidiffusive fluxes with contribution from
 !!$      ! consistent mass matrix
 !!$      call gfsc_buildADFlux(rproblemLevel%Rafcstab(convectionAFC),&
@@ -2859,7 +2859,7 @@ contains
 
 !<description>
     ! This subroutine extracts a single variable from the vector of
-    ! conservative variables which is stored in interleave of block 
+    ! conservative variables which is stored in interleave of block
     ! format. In contrast to the corresponding subroutine from the
     ! Hydrodynamic model, this subroutine accepts arrays of block vectors,
     ! e.g., to pass the solution from the hydrodynamic system and the

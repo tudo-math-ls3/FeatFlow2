@@ -1313,7 +1313,7 @@ contains
     real(DP), dimension(ndimA) :: Dftemp1
     real(DP), dimension(ndimC) :: Dftemp2
 
-    interface 
+    interface
       pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
       use fsystem
       integer, intent(in) :: N,LDA,LDB,NRHS

@@ -61,7 +61,7 @@ module poisson2d_method1_l2prj
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
     
@@ -78,7 +78,7 @@ module poisson2d_method1_l2prj
     ! An interlevel-projection structure for that specific level.
     type(t_interlevelProjectionBlock) :: rprojection
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -138,7 +138,7 @@ contains
     ! A variable that is used to specify a region on the boundary.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -185,7 +185,7 @@ contains
     ! A simple counter variable
     integer :: i
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = 2
@@ -194,7 +194,7 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -256,7 +256,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (&
-          Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
+          Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -279,8 +279,8 @@ contains
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
       rform%BconstantCoeff = .true.
-      rform%Dcoefficients(1)  = 1.0 
-      rform%Dcoefficients(2)  = 1.0 
+      rform%Dcoefficients(1)  = 1.0
+      rform%Dcoefficients(2)  = 1.0
 
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_Laplace for the coefficients.
@@ -298,7 +298,7 @@ contains
     ! to create it by using our matrix as template:
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
 
-    ! The vector structure is ready but the entries are missing. 
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -319,13 +319,13 @@ contains
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.
       call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Now to the edge 2 of boundary component 1 the domain. 
+      ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -748,7 +748,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = NLMAX, NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do

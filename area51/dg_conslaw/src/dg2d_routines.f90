@@ -95,10 +95,10 @@ contains
     ! two values of the solution on the edge, according to the left and right
     ! element
     !
-    ! If bclear=TRUE, the vector is cleared before the assembly and any 
+    ! If bclear=TRUE, the vector is cleared before the assembly and any
     ! sorting of the entries is switched off - the vector is set up unsorted.
     !
-    ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+    ! If bclear=FALSE, the vector must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !</description>
 
@@ -119,7 +119,7 @@ contains
     ! Additional triangulation data
     type(t_additionalTriaData), intent(in) :: raddTriaData
 
-    ! OPTIONAL: A collection structure. This structure is 
+    ! OPTIONAL: A collection structure. This structure is
     ! given to the callback function for calculating the function
     ! which should be discretised in the linear form.
     type(t_collection), intent(inout), target, optional :: rcollection
@@ -145,7 +145,7 @@ contains
     integer :: ielementDistr, NMT, NVT, iedge
 
     ! If the vector does not exist, stop here.
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
        call output_line('Vector not available!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d')
     end if
@@ -186,7 +186,7 @@ contains
     p_rtriangulation => rvectorScalarSol%p_rspatialDiscr%p_rtriangulation
 
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (rvectorScalarSol%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then 
+    if (rvectorScalarSol%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
        select case(rvectorScalar%cdataType)
 
@@ -290,7 +290,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine linf_dg_assembleSubmeshVectorScalarEdge2d (rvectorAssembly,&
        rvector, rvectorSol,&
@@ -318,7 +318,7 @@ contains
     ! A callback routine which is able to calculate the values of the
     ! function $f$ which is to be discretised.
     include 'intf_flux_dg_buildVectorScEdge2D.inc'
-    optional :: flux_dg_buildVectorScEdge2D_sim 
+    optional :: flux_dg_buildVectorScEdge2D_sim
 
     !</input>
 
@@ -328,11 +328,11 @@ contains
     type(t_linfVectorAssembly), dimension(2), intent(inout), target :: rvectorAssembly
 
     ! A vector where to assemble the contributions to.
-    type(t_vectorScalar), intent(inout) :: rvector  
+    type(t_vectorScalar), intent(inout) :: rvector
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
     !</inputoutput>
 
@@ -459,7 +459,7 @@ contains
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
          rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
-         p_IverticesAtElement)   
+         p_IverticesAtElement)
 
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -482,16 +482,16 @@ contains
 
     !    ! Allocate space for the jacobi matrices in the cubature points
     !    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
-    !    
+    !
     !    ! Allocate space for the determinants of the jacobi matrices in the cubature points
     !    allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
-    !    
+    !
     !    ! Allocate space for the integration points on the real elements
     !    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
 
     !    ! Allocate space for normal vectors
     !    allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
-    !    
+    !
     !    ! Allocate space for edge length
     !    allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
 
@@ -590,7 +590,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -611,7 +611,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalVectorAssembly(1)%cevaluationTag
 
        ! The cubature points are already initialised by 1D->2D mapping.
@@ -649,7 +649,7 @@ contains
        !      ! Now that we have the basis functions, we want to have the function values.
        !      ! We get them by multiplying the FE-coefficients with the values of the
        !      ! basis functions and summing up.
-       !      do iel = 1,IELmax-IELset+1      
+       !      do iel = 1,IELmax-IELset+1
        !        do icubp = 1,ncubp
        !          ! Calculate the value in the point
        !          dval1 = 0.0_DP
@@ -677,7 +677,7 @@ contains
        !      if(IelementList(2,IELset+iel-1).eq.0) then
        !        DsolVals(2,1:ncubp,iel) = 0.0_DP
        !      end if
-       !      
+       !
        !      end do
 
 
@@ -771,7 +771,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
        !
        ! Loop through elements in the set and for each element,
@@ -789,11 +789,11 @@ contains
 
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*raddTriaData%p_Dedgelength(Iedgelist(IELset+iel-1))
 
@@ -810,14 +810,14 @@ contains
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalVectorAssembly(1)%rform%itermcount
 
-                ! Get from Idescriptors the type of the derivatives for the 
+                ! Get from Idescriptors the type of the derivatives for the
                 ! test and trial functions. The summand we calculate
                 ! here will be:
                 !
                 ! int_...  f * ( phi_i )_IA
                 !
-                ! -> IA=0: function value, 
-                !      =1: first derivative, 
+                ! -> IA=0: function value,
+                !      =1: first derivative,
                 !      =2: 2nd derivative,...
                 !    as defined in the module 'derivative'.
 
@@ -831,17 +831,17 @@ contains
                 daux2 = domega2 * DfluxValues(ialbet,icubp,iel) *(-1.0_dp)
 
                 ! Now loop through all possible combinations of DOF`s
-                ! in the current cubature point. 
+                ! in the current cubature point.
 
                 do idofe = 1,indof
 
-                   ! Get the value of the basis function 
-                   ! phi_o in the cubature point. 
+                   ! Get the value of the basis function
+                   ! phi_o in the cubature point.
                    ! Them multiply:
                    !    DBAS(..) * AUX
                    ! ~= phi_i * coefficient * cub.weight
                    ! Summing this up gives the integral, so the contribution
-                   ! to the vector. 
+                   ! to the vector.
                    !
                    ! Simply summing up DBAS(..) * AUX would give
                    ! the additive contribution for the vector. We save this
@@ -863,7 +863,7 @@ contains
 
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
           ! Incorporate the local vector into the global one.
           ! The 'local' DOF 1..indofTest is mapped to the global DOF using
@@ -910,7 +910,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine linf_getLocalEdgeNumbers(IedgeList,IlocalEdgeNumber,&
        rtriangulation)
@@ -980,7 +980,7 @@ contains
           ! Second element doesn't exist
           ! Set local edge number as 0
           IlocalEdgeNumber(2,iedge) = 0
-       else 
+       else
           ! Second element does exist, so do the same thing as with the first element
           do ilocal = 1,ImaxedgePerElement
              if (Iglobaledgenumber.eq.p_IedgesAtElement(ilocal,iel2)) exit
@@ -1009,7 +1009,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg2gmv(rvector,extraNodesPerEdge,sofile,ifilenumber)
 
@@ -1091,7 +1091,7 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
 
-    ! Get number of elements from the triangulation                               
+    ! Get number of elements from the triangulation
     NEL = p_rtriangulation%NEL
 
     ! First calculate the number of nodes on the reference element
@@ -1227,7 +1227,7 @@ contains
        write(iunit,'(4I8)') iCornerNodesOfCell(1:4,i)
     end do
 
-    write (iunit,'(A)') 'variable'  
+    write (iunit,'(A)') 'variable'
     write (iunit,'(A,1X,I5)') trim('sol'),1
     do i=1,nnodes
        write (iunit,'(E15.8)') dnodevalues(i)
@@ -1254,7 +1254,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg2vtk(rvector,extraNodesPerEdge,sofile,ifilenumber)
 
@@ -1340,7 +1340,7 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
 
-    ! Get number of elements from the triangulation                               
+    ! Get number of elements from the triangulation
     NEL = p_rtriangulation%NEL
 
     ! First calculate the number of nodes on the reference element
@@ -1444,20 +1444,20 @@ contains
             rvector, iel, drefCoords(1:2,:))
 
 
-       !    
-       !    
+       !
+       !
        !    call fevl_evaluate_mult1 (DER_DERIV_X, dnodeValues1(ibaseN+1:ibaseN+nnodesOnRef),&
        !                              rvector, iel, drefCoords(1:2,:))
        !    call fevl_evaluate_mult1 (DER_DERIV_Y, dnodeValues2(ibaseN+1:ibaseN+nnodesOnRef),&
        !                              rvector, iel, drefCoords(1:2,:))
-       !                              
-       !                              
-       !                              
-       !                              
-       !                              
-       !                              
-       !                              
-       !                              
+       !
+       !
+       !
+       !
+       !
+       !
+       !
+       !
        !   xc = &
        !         (p_DvertexCoords(1,p_IverticesAtElement(1,iel))+&
        !          p_DvertexCoords(1,p_IverticesAtElement(2,iel))+&
@@ -1469,16 +1469,16 @@ contains
        !          p_DvertexCoords(2,p_IverticesAtElement(2,iel))+&
        !          p_DvertexCoords(2,p_IverticesAtElement(3,iel))+&
        !          p_DvertexCoords(2,p_IverticesAtElement(4,iel)))/4.0_dp
-       !          
+       !
        !     ! Steady circular convection
        !    Dvel(1)=yc
        !    Dvel(2)=1.0_DP-xc
-       !    
+       !
        !    Dvel(1) = Dvel(1)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
        !    Dvel(2) = Dvel(2)/(sqrt(Dvel(1)*Dvel(1)+Dvel(2)*Dvel(2)+SYS_EPSREAL_DP))
-       !                          
+       !
        !    dnodeValues(ibaseN+1:ibaseN+nnodesOnRef) = dnodeValues1(ibaseN+1:ibaseN+nnodesOnRef)*Dvel(1) + dnodeValues2(ibaseN+1:ibaseN+nnodesOnRef)*Dvel(2)
-       !    
+       !
 
 
     end do
@@ -1542,7 +1542,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_linearLimiter (rvector,ralpha)
 
@@ -1558,7 +1558,7 @@ contains
     !<inputoutput>
 
     ! A vector to limit
-    type(t_vectorScalar), intent(inout) :: rvector  
+    type(t_vectorScalar), intent(inout) :: rvector
 
     ! The limiting factors
     type(t_vectorScalar), intent(inout) :: ralpha
@@ -1630,11 +1630,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
     call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
          p_InodalProperty)
 
@@ -1730,7 +1730,7 @@ contains
        ! Start calculating the limiting factor
        duc = Dvalues(1)
 
-       do ivert = 1, NVE  
+       do ivert = 1, NVE
           dui = Dvalues(1+ivert)
           ddu = dui-duc
           nvert = p_IverticesAtElement(ivert, iel)
@@ -1834,7 +1834,7 @@ contains
 
     type(t_vectorScalar) :: rrhs,rsolSteady,rtemp
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -1891,8 +1891,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -1947,7 +1947,7 @@ contains
 
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -1990,7 +1990,7 @@ contains
 
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
-    call ucd_release (rexport)    
+    call ucd_release (rexport)
 
 
     ! Release solver data and structure
@@ -2031,7 +2031,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiter (rvector,ralpha)
 
@@ -2047,7 +2047,7 @@ contains
     !<inputoutput>
 
     ! A vector to limit
-    type(t_vectorScalar), intent(inout) :: rvector  
+    type(t_vectorScalar), intent(inout) :: rvector
 
     ! The limiting factors
     type(t_vectorScalar), intent(inout) :: ralpha
@@ -2098,7 +2098,7 @@ contains
 
     integer :: iglobNeighNum
 
-    integer, dimension(:), pointer :: p_InodalProperty 
+    integer, dimension(:), pointer :: p_InodalProperty
 
     integer :: ilocalVtnumber, iglobVtNumber
 
@@ -2128,15 +2128,15 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)     
+         p_IverticesAtBoundary)
     call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
          p_InodalProperty)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
 
@@ -2225,15 +2225,15 @@ contains
           if(ilim<3) then
 
              !    do ivert = 1, NVE
-             !		
+             !
              !      nvert = p_IverticesAtElement(ivert, iel)
-             !      
+             !
              !      ! The second point we want to evaluate the solution in, is in the corner of the mother element
              !      Dpoints(1,1+ivert) = p_DvertexCoords(1,nvert)
              !      Dpoints(2,1+ivert) = p_DvertexCoords(2,nvert)
              !      Ielements(1+ivert) = iel
              !	  end do
-             !	  
+             !
              !    ! Evaluate the solution
              !    call fevl_evaluate (ideriv, Dvalues(1:5), rvector, Dpoints(1:2,1:5), &
              !                          Ielements(1:5))
@@ -2247,7 +2247,7 @@ contains
 
              !      call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
              !      duc = p_Ddata(IdofGlob(1))+abs(p_Ddata(IdofGlob(2)))+abs(p_Ddata(IdofGlob(3)))
-             !      
+             !
              !    do ivt = 1, NVE
              !      nvt = p_IverticesAtElement(ivt,iel)
              !      duimax(nvt) = max(p_Ddata(IdofGlob(1))+abs(p_Ddata(IdofGlob(2)))+abs(p_Ddata(IdofGlob(3))),duimax(nvt))
@@ -2269,26 +2269,26 @@ contains
        !  do ivt = 1, nvt
        !  iidx = 0
        !    do ineighbour = p_IelementsAtVertexIdx(ivt), p_IelementsAtVertexIdx(ivt+1)-1
-       !    
+       !
        !      if(ilim<3) then
        !        iglobNeighNum = p_IelementsAtVertex(ineighbour)
-       !      
+       !
        !        iidx = iidx + 1
-       !      
+       !
        !        Dpoints(1,iidx) = p_DvertexCoords(1,iglobNeighNum)
        !        Dpoints(2,iidx) = p_DvertexCoords(2,iglobNeighNum)
-       !        Ielements(iidx) = iglobNeighNum 
-       !        
+       !        Ielements(iidx) = iglobNeighNum
+       !
        !      else
        !        iidx = iidx + 1
-       !        
+       !
        !        do ilocalVtNumber = 1, 4
        !          if (p_IverticesAtElement(ilocalVtnumber,iglobNeighNum )==ivt) exit
        !        end do
-       !        
+       !
        !        call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
        !        dui = p_Ddata(IdofGlob(1))
-       !        
+       !
        !        select case (ilocalVtnumber)
        !        case(1)
        !        dui = dui - p_Ddata(IdofGlob(2)) - p_Ddata(IdofGlob(3))
@@ -2299,43 +2299,43 @@ contains
        !        case(4)
        !        dui = dui - p_Ddata(IdofGlob(2)) + p_Ddata(IdofGlob(3))
        !        end select
-       !        
+       !
        !        Dvalues(iidx) = dui
-       !        
+       !
        !      end if
        !    end do
-       !    
+       !
        !    ! Evaluate the solution
        !    if(ilim<3) call fevl_evaluate (ideriv, Dvalues(1:iidx), rvector, Dpoints(1:2,1:iidx), &
        !                                   Ielements(1:iidx))
-       !      
-       !      
+       !
+       !
        !    duimax(ivt) = max(maxval(Dvalues(1:iidx)),duimax(ivt))
        !    duimin(ivt) = min(minval(Dvalues(1:iidx)),duimin(ivt))
-       !        
-       !  
+       !
+       !
        !  end do
 
 
 
 
        ! do iel = 1, NEL
-       ! 
+       !
        ! iidx = 0
-       ! 
+       !
        !  do ivt = 1, 4
-       !  
+       !
        !    nvt = p_IverticesAtElement(ivt,iel)
-       !  
+       !
        !    do ineighbour = p_IelementsAtVertexIdx(nvt), p_IelementsAtVertexIdx(nvt+1)-1
-       !    
+       !
        !    iglobNeighNum = p_IelementsAtVertex(ineighbour)
        !    iidx = iidx + 1
-       !    
+       !
        !      if(ilim<3) then
-       !        
-       !      
-       !        
+       !
+       !
+       !
        !        ! Get midpoint of the element
        !        xc = &
        !         (p_DvertexCoords(1,p_IverticesAtElement(1,iglobNeighNum))+&
@@ -2348,33 +2348,33 @@ contains
        !          p_DvertexCoords(2,p_IverticesAtElement(2,iglobNeighNum))+&
        !          p_DvertexCoords(2,p_IverticesAtElement(3,iglobNeighNum))+&
        !          p_DvertexCoords(2,p_IverticesAtElement(4,iglobNeighNum)))/4.0_dp
-       !        
+       !
        !        Dpoints(1,iidx) = xc
        !        Dpoints(2,iidx) = yc
-       !        Ielements(iidx) = iglobNeighNum 
-       !  
+       !        Ielements(iidx) = iglobNeighNum
+       !
        !      else
-       !      
+       !
        !        call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
        !        Dvalues(iidx) = p_Ddata(IdofGlob(1))
-       !      
+       !
        !      end if
-       !    
+       !
        !    end do
        !  end do
-       !    
+       !
        !  ! Evaluate the solution
        !  if(ilim<3) call fevl_evaluate (ideriv, Dvalues(1:iidx), rvector, Dpoints(1:2,1:iidx), &
        !                                 Ielements(1:iidx))
-       !                                 
+       !
        !  do ivt = 1, 4
        !    iglobVtNumber = p_IverticesAtElement(ivt,iel)
        !    duimax(iglobVtNumber) = max(maxval(Dvalues(1:iidx)),duimax(iglobVtNumber))
        !    duimin(iglobVtNumber) = min(minval(Dvalues(1:iidx)),duimin(iglobVtNumber))
-       !  
+       !
        !  end do
-       !    
-       !end do    
+       !
+       !end do
 
 
 
@@ -2448,7 +2448,7 @@ contains
           !      duimin(nvt) = min(duc,duimin(nvt))
           !    end do
 
-          do ivert = 1, NVE  
+          do ivert = 1, NVE
              dui = Dvalues(1+ivert)
 
              if (ilim == 3) then
@@ -2505,7 +2505,7 @@ contains
 
           ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
           ! Get the Minimum and multiply it with the corresponding DOFs
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
 
              ! Limiting like Kuzmin did it
@@ -2525,16 +2525,16 @@ contains
              !        ! Limiting using different limiting factors for the second derivatives
              !        ! Get global DOFs of the element
              !        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
-             !    
-             !    
+             !
+             !
              !        ! Multiply the linear part of the solution vector with the correction factor
              !        p_Ddata(IdofGlob(4)) = p_Ddata(IdofGlob(4))*Dalpha(1,iel)
              !        p_Ddata(IdofGlob(5)) = p_Ddata(IdofGlob(5))*min(Dalpha(1,iel),Dalpha(2,iel))
              !        p_Ddata(IdofGlob(6)) = p_Ddata(IdofGlob(6))*Dalpha(2,iel)
-             !        
-             !        
+             !
+             !
              !        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
-             !        
+             !
              !        p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
              !        p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
 
@@ -2542,7 +2542,7 @@ contains
           end do ! iel
 
        case (3)
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
 
@@ -2591,7 +2591,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine addTriaData(rtriangulation, raddTriaData)
 
@@ -2672,7 +2672,7 @@ contains
           ! Second element doesn't exist
           ! Set local edge number as 0
           raddTriaData%p_IlocalEdgeNumber(2,iedge) = 0
-       else 
+       else
           ! Second element does exist, so do the same thing as with the first element
           do ilocal = 1,ImaxedgePerElement
              if (Iglobaledgenumber.eq.p_IedgesAtElement(ilocal,iel2)) exit
@@ -2702,7 +2702,7 @@ contains
     allocate(raddTriaData%p_DedgeLength(nedge))
 
     do iedge = 1, nedge
-       ! Calculate the length of the edge 
+       ! Calculate the length of the edge
        dxl1=p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
        dyl1=p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
        dxl2=p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
@@ -2761,7 +2761,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine releaseTriaData(raddTriaData)
 
@@ -2823,10 +2823,10 @@ contains
     ! two values of the solution on the edge, according to the left and right
     ! element
     !
-    ! If bclear=TRUE, the vector is cleared before the assembly and any 
+    ! If bclear=TRUE, the vector is cleared before the assembly and any
     ! sorting of the entries is switched off - the vector is set up unsorted.
     !
-    ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+    ! If bclear=FALSE, the vector must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !</description>
 
@@ -2847,7 +2847,7 @@ contains
     ! Additional triangulation data
     type(t_additionalTriaData), intent(in) :: raddTriaData
 
-    ! OPTIONAL: A collection structure. This structure is 
+    ! OPTIONAL: A collection structure. This structure is
     ! given to the callback function for calculating the function
     ! which should be discretised in the linear form.
     type(t_collection), intent(inout), target, optional :: rcollection
@@ -2873,7 +2873,7 @@ contains
     integer :: ielementDistr, NMT, NVT, iedge, i
 
     !  ! If the vector does not exist, stop here.
-    !  if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    !  if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
     !    call output_line('Vector not available!',&
     !                     OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d')
     !  end if
@@ -2901,7 +2901,7 @@ contains
     !        OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d')
     !    call sys_halt()
     !  end if
-    !  
+    !
     !  ! The discretisation must provide a boundary structure
     !  if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
     !    call output_line('No boundary associated!',&
@@ -2914,7 +2914,7 @@ contains
     p_rtriangulation => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
 
     ! Do we have a uniform triangulation? Would simplify a lot...
-    if (rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then 
+    if (rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
 
        select case(rvectorBlock%cdataType)
 
@@ -3018,7 +3018,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine linf_dg_assembleSubmeshVectorBlockEdge2d (RvectorAssembly,&
        rvector, rvectorSol,&
@@ -3046,7 +3046,7 @@ contains
     ! A callback routine which is able to calculate the values of the
     ! function $f$ which is to be discretised.
     include 'intf_flux_dg_buildVectorBlEdge2D.inc'
-    optional :: flux_dg_buildVectorBlEdge2D_sim 
+    optional :: flux_dg_buildVectorBlEdge2D_sim
 
     !</input>
 
@@ -3056,11 +3056,11 @@ contains
     type(t_linfVectorAssembly), dimension(2), intent(inout), target :: rvectorAssembly
 
     ! A vector where to assemble the contributions to.
-    type(t_vectorBlock), intent(inout) :: rvector  
+    type(t_vectorBlock), intent(inout) :: rvector
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
     !</inputoutput>
 
@@ -3205,7 +3205,7 @@ contains
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
-         p_IverticesAtElement)   
+         p_IverticesAtElement)
 
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -3231,16 +3231,16 @@ contains
 
     !    ! Allocate space for the jacobi matrices in the cubature points
     !    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
-    !    
+    !
     !    ! Allocate space for the determinants of the jacobi matrices in the cubature points
     !    allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
-    !    
+    !
     !    ! Allocate space for the integration points on the real elements
     !    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
 
     !    ! Allocate space for normal vectors
     !    allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
-    !    
+    !
     !    ! Allocate space for edge length
     !    allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
 
@@ -3276,7 +3276,7 @@ contains
     ! Allocate memory for the coordinates of the reference points
     allocate(DpointsRef(NDIM2D+1,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock,2))
 
-    ! Allocate DlocalData, which will later 
+    ! Allocate DlocalData, which will later
     allocate(DlocalData(nvar,2,indof))
 
     !    ! Allocate the space for the pointer to the Data of the different blocks of the output vector
@@ -3348,7 +3348,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -3369,7 +3369,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalVectorAssembly(1)%cevaluationTag
 
        ! The cubature points are already initialised by 1D->2D mapping.
@@ -3403,11 +3403,11 @@ contains
 
        !      ! ********** Get solution values in the cubature points *************
        !      call lsyssc_getbase_double(rvectorSol,p_DdataSol)
-       !    
+       !
        !      ! Now that we have the basis functions, we want to have the function values.
        !      ! We get them by multiplying the FE-coefficients with the values of the
        !      ! basis functions and summing up.
-       !      do iel = 1,IELmax-IELset+1      
+       !      do iel = 1,IELmax-IELset+1
        !        do icubp = 1,ncubp
        !          ! Calculate the value in the point
        !          dval1 = 0.0_DP
@@ -3435,7 +3435,7 @@ contains
        !      if(IelementList(2,IELset+iel-1).eq.0) then
        !        DsolVals(2,1:ncubp,iel) = 0.0_DP
        !      end if
-       !      
+       !
        !      end do
 
 
@@ -3531,7 +3531,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
        !
        ! Loop through elements in the set and for each element,
@@ -3549,11 +3549,11 @@ contains
 
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*raddTriaData%p_Dedgelength(Iedgelist(IELset+iel-1))
 
@@ -3570,14 +3570,14 @@ contains
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalVectorAssembly(1)%rform%itermcount
 
-                ! Get from Idescriptors the type of the derivatives for the 
+                ! Get from Idescriptors the type of the derivatives for the
                 ! test and trial functions. The summand we calculate
                 ! here will be:
                 !
                 ! int_...  f * ( phi_i )_IA
                 !
-                ! -> IA=0: function value, 
-                !      =1: first derivative, 
+                ! -> IA=0: function value,
+                !      =1: first derivative,
                 !      =2: 2nd derivative,...
                 !    as defined in the module 'derivative'.
 
@@ -3593,17 +3593,17 @@ contains
                 Daux(:,2) = domega2 * DfluxValues(:,ialbet,icubp,iel) *(-1.0_dp)
 
                 ! Now loop through all possible combinations of DOF`s
-                ! in the current cubature point. 
+                ! in the current cubature point.
 
                 do idofe = 1,indof
 
-                   ! Get the value of the basis function 
-                   ! phi_o in the cubature point. 
+                   ! Get the value of the basis function
+                   ! phi_o in the cubature point.
                    ! Them multiply:
                    !    DBAS(..) * AUX
                    ! ~= phi_i * coefficient * cub.weight
                    ! Summing this up gives the integral, so the contribution
-                   ! to the vector. 
+                   ! to the vector.
                    !
                    ! Simply summing up DBAS(..) * AUX would give
                    ! the additive contribution for the vector. We save this
@@ -3626,7 +3626,7 @@ contains
 
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
           ! Incorporate the local vector into the global one.
           ! The 'local' DOF 1..indofTest is mapped to the global DOF using
@@ -3636,11 +3636,11 @@ contains
 
              do idofe = 1,indof
 
-                p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &            
+                p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &
                      p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) + &
                      DlocalData(ivar,1,idofe)
 
-                p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(2)%p_Idofs(idofe,iel)-1) = &            
+                p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(2)%p_Idofs(idofe,iel)-1) = &
                      p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(2)%p_Idofs(idofe,iel)-1) + &
                      DlocalData(ivar,2,idofe)
 
@@ -3682,7 +3682,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_linearLimiterBlockIndicatorVar (rvectorBlock, iindicatorVar)
 
@@ -3792,11 +3792,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
 
     ! Set pointer to coordinate vector
@@ -3832,14 +3832,14 @@ contains
 
 
        !    NVE = 4
-       !    
+       !
        !    do ivt = 1, NVE
        !      nvt = p_IverticesAtElement(ivt,iel)
        !      Dpoints(1,ivt) = p_DvertexCoords(1,nvt)
        !      Dpoints(2,ivt) = p_DvertexCoords(2,nvt)
        !      Ielements(ivt) = iel
        !    end do
-       !    
+       !
        !    call fevl_evaluate (DER_FUNC, Dvalues(1:4), p_rvector, Dpoints(1:2,1:4), &
        !                          Ielements(1:4))
        !   do ivt = 1, NVE
@@ -3904,7 +3904,7 @@ contains
        ! Start calculating the limiting factor
        duc = Dvalues(1)
 
-       do ivert = 1, NVE  
+       do ivert = 1, NVE
           dui = Dvalues(1+ivert)
           ddu = dui-duc
           nvert = p_IverticesAtElement(ivert, iel)
@@ -3935,7 +3935,7 @@ contains
 
        do ivar = 1, nvar
           !p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*dalpha
-          p_DdataOut(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &            
+          p_DdataOut(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &
                p_DdataOut(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) * &
                dalpha
        end do
@@ -3953,7 +3953,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiterBlockIndicatorVar (rvectorBlock, iindicatorVar)
 
@@ -4065,11 +4065,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
 
     ! Set pointer to coordinate vector
@@ -4191,7 +4191,7 @@ contains
           ! Start calculating the limiting factor
           duc = Dvalues(1)
 
-          do ivert = 1, NVE  
+          do ivert = 1, NVE
              dui = Dvalues(1+ivert)
              ddu = dui-duc
              nvert = p_IverticesAtElement(ivert, iel)
@@ -4221,7 +4221,7 @@ contains
 
           ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
           ! Get the Minimum and multiply it with the corresponding DOFs
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
 
@@ -4237,7 +4237,7 @@ contains
           end do ! iel
 
        case (3)
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
 
@@ -4274,7 +4274,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_linearLimiterBlockCharVar (rvectorBlock)
 
@@ -4385,11 +4385,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
@@ -4441,7 +4441,7 @@ contains
              iglobNeighNum = p_IelementsAtVertex(ineighbour)
              !if (iglobNeighNum.ne.iel) then
              call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
-             iidx = iidx + 1          
+             iidx = iidx + 1
              do ivar = 1, nvar
                 !DLin(ivar,iidx) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1)) - DVec(ivar)
                 DLin(ivar,iidx) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1)-1) - DVec(ivar)
@@ -4530,7 +4530,7 @@ contains
        do ivar = 1, nvar
           ! p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
 
-          p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &            
+          p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &
                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) * &
                Dalpha(ivar, iel)
 
@@ -4553,7 +4553,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiterBlockIndicatorVar_2 (rvectorBlock, iindicatorVar)
 
@@ -4671,11 +4671,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
 
     ! Set pointer to coordinate vector
@@ -4711,13 +4711,13 @@ contains
 
        !  duimax= -SYS_MAXREAL_DP
        !  duimin=  SYS_MAXREAL_DP
-       !  
+       !
        !  do iel = 1, NEL
-       !    
+       !
        !    ! Get number of corner vertices
        !    ! elem_igetNVE(celement)
        !    NVE = 4
-       !    
+       !
        !    ! Get midpoint of the element
        !    xc = &
        !         (p_DvertexCoords(1,p_IverticesAtElement(1,iel))+&
@@ -4730,26 +4730,26 @@ contains
        !          p_DvertexCoords(2,p_IverticesAtElement(2,iel))+&
        !          p_DvertexCoords(2,p_IverticesAtElement(3,iel))+&
        !          p_DvertexCoords(2,p_IverticesAtElement(4,iel)))/4.0_dp
-       !          
+       !
        !    ! The first point we want to evaluate the solution in, is the midpoint of the element
        !    Dpoints(1,1) = xc
        !    Dpoints(2,1) = yc
        !    Ielements(1) = iel
-       !    
+       !
        !    ! Evaluate the solution
        !    call fevl_evaluate (ideriv, Dvalues(1:1), p_rvector, Dpoints(1:2,1:1), &
        !                          Ielements(1:1))
-       !                          
+       !
        !    duc = Dvalues(1)
-       !    
+       !
        !    do ivt = 1, NVE
        !      nvt = p_IverticesAtElement(ivt,iel)
        !      duimax(nvt) = max(duc,duimax(nvt))
        !      duimin(nvt) = min(duc,duimin(nvt))
        !    end do
-       !    
-       !    
-       !    
+       !
+       !
+       !
        !  end do
 
 
@@ -4805,7 +4805,7 @@ contains
              !      call fevl_evaluate (DER_FUNC, Dvalues(1:1), p_rvector,&
              !                          p_DvertexCoords(1:2,iglobVtNumber:iglobVtNumber), Ielements(1:1))
              !
-             !      ! Solution value in this edge                    
+             !      ! Solution value in this edge
              !      dui = Dvalues(1:1)
 
 
@@ -4838,7 +4838,7 @@ contains
 
                 ! Center (derivative) value
                 duc = Dvalues(1)
-                ! Solution value in this edge                    
+                ! Solution value in this edge
                 dui = Dvalues(2)
 
                 ! Now calculate limiting factor
@@ -4873,7 +4873,7 @@ contains
 
           ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
           ! Get the Minimum and multiply it with the corresponding DOFs
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
 
@@ -4889,7 +4889,7 @@ contains
           end do ! iel
 
        case (3)
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
 
@@ -4953,7 +4953,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiterBlockCharVar (rvectorBlock, raddTriaData)
 
@@ -5065,11 +5065,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
@@ -5244,7 +5244,7 @@ contains
           select case (ilim)
           case (1)
 
-             ! Do nothing      
+             ! Do nothing
 
           case (2)
 
@@ -5349,7 +5349,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine getDtByCfl (rvectorBlock, raddTriaData, dCFL, dt, dgravconst)
 
@@ -5412,7 +5412,7 @@ contains
 
     allocate(IdofGlob(elem_igetNDofLoc(celement),NEL))
 
-    ! Get global DOFs of the elements  
+    ! Get global DOFs of the elements
     call dof_locGlobMapping_mult(p_rspatialDiscr, IelIdx, IdofGlob)
 
     call lsysbl_getbase_double (rvectorBlock, p_Ddata)
@@ -5448,7 +5448,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_linearLimiterBlockCharVar_mixedJacobian (rvectorBlock)
 
@@ -5561,11 +5561,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
@@ -5618,7 +5618,7 @@ contains
              iglobNeighNum = p_IelementsAtVertex(ineighbour)
              !if (iglobNeighNum.ne.iel) then
              call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
-             iidx = iidx + 1          
+             iidx = iidx + 1
              do ivar = 1, nvar
                 !DLin(ivar,iidx) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1)) - DVec(ivar)
                 DLin(ivar,iidx) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1)-1) - DVec(ivar)
@@ -5741,7 +5741,7 @@ contains
        do ivar = 1, nvar
           ! p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
 
-          p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &            
+          p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &
                p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) * &
                Dalpha(ivar, iel)
 
@@ -5762,7 +5762,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_evaluateLinearPart (rvectorBlock, iel, iglobVtNumber, Dvalues)
 
@@ -5870,7 +5870,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiterBlockCharVar_mixedJacobian (rvectorBlock, raddTriaData)
 
@@ -5958,7 +5958,7 @@ contains
 
     ! Allocate the space for the pointer to the Data of the different blocks of the output vector
     !  allocate(p_DoutputData(nvar))
-    !    
+    !
     !  do ivar = 1, nvar
     !    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
     !  end do
@@ -5986,11 +5986,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
@@ -6232,7 +6232,7 @@ contains
           select case (ilim)
           case (1)
 
-             ! Do nothing      
+             ! Do nothing
 
           case (2)
 
@@ -6305,7 +6305,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_kuzminLimiterBlockCharVar_mixedJacobian (rvectorBlock, raddTriaData)
 
@@ -6400,7 +6400,7 @@ contains
 
     integer, parameter :: nmaxneighbours = 10
 
-    integer, dimension(:), pointer :: p_InodalProperty 
+    integer, dimension(:), pointer :: p_InodalProperty
 
     ! Get number of variables of the system
     nvar = rvectorBlock%nblocks
@@ -6411,7 +6411,7 @@ contains
 
     ! Allocate the space for the pointer to the Data of the different blocks of the output vector
     !  allocate(p_DoutputData(nvar))
-    !    
+    !
     !  do ivar = 1, nvar
     !    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
     !  end do
@@ -6441,13 +6441,13 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)   
+         p_IverticesAtBoundary)
     call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
-         p_InodalProperty)                              
+         p_InodalProperty)
 
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
@@ -6465,7 +6465,7 @@ contains
     ! Number of points on each element, where the solution has to be evaluated (corner vertives + midpoint)
     npoints = 1 + NVE
 
-    ! Allocate space for the values of the linear part of the solution vector 
+    ! Allocate space for the values of the linear part of the solution vector
     allocate(DLinPartValues(nvar,npoints,NEL))
 
     ! Get list of (all) elements
@@ -6474,24 +6474,24 @@ contains
     ! Get global DOFs for these (all) elements
     call dof_locGlobMapping_mult(p_rspatialDiscr, p_IelIdx, IdofGlob)
 
-    ! Get the values of the linear part of the solution vector 
+    ! Get the values of the linear part of the solution vector
     call dg_evaluateLinearPart_mult(rvectorBlock, p_IelIdx, IdofGlob, DLinPartValues)
 
     ! Test, if we have quadratic elements
     if (celement == EL_DG_T2_2D) then
-       ! Allocate space for the values of the derivatives of the quadratic solution vector 
+       ! Allocate space for the values of the derivatives of the quadratic solution vector
        allocate(DDerivativeQuadraticValues(nvar,npoints,2,NEL))
 
-       ! Get the values of the derivatives of the quadratic solution vector 
+       ! Get the values of the derivatives of the quadratic solution vector
        call dg_evaluateDerivativeQuadratic_mult (rvectorBlock, p_IelIdx, DDerivativeQuadraticValues, raddTriaData)
     end if
 
 
     select case (celement)
-    case (EL_DG_T2_2D) 
+    case (EL_DG_T2_2D)
        ilimstart = 1
        Dalpha = 1.0_DP
-    case (EL_DG_T1_2D) 
+    case (EL_DG_T1_2D)
        ilimstart = 3
        Dalpha = 0.0_DP
     end select
@@ -6499,15 +6499,15 @@ contains
 
     !  ! Initialise the limiting factors
     !  Dalpha = 1.0_DP
-    !  
+    !
     !  do iel = 1, NEL
-    !    
-    !    
+    !
+    !
     !    do ilim = ilimstart, 3
-    !      
+    !
     !      ! Get solution values, that are used to evaluate the trofo matrices
     !      DQchar = DLinPartValues(:,1,iel)
-    !      
+    !
     !      do idim = 3, 4
     !        ! Now we need the trafo matrices
     !        if(idim<3) then
@@ -6526,7 +6526,7 @@ contains
     !          DL = buildMixedL2(DQchar,da,db)
     !          DR = buildMixedR2(DQchar,da,db)
     !        end if
-    !        
+    !
     !        else if (idim==4) then
     !        da = DQchar(2)/DQchar(1)
     !        db = DQchar(3)/DQchar(1)
@@ -6541,17 +6541,17 @@ contains
     !          DR = buildMixedR2(DQchar,-db,da)
     !        end if
     !        end if
-    !        
-    !        
-    !        
-    !        
+    !
+    !
+    !
+    !
     !      end do ! idim
-    !  
-    !    
-    !    
+    !
+    !
+    !
     !    end do ! ilim
-    !  
-    !  
+    !
+    !
     !  end do ! iel
 
 
@@ -6772,22 +6772,22 @@ contains
 
        !  ! *** Now limit the solution ***
        !  do iel = 1, NEL
-       !  
-       !  
+       !
+       !
        !  select case (ilim)
        !  case (1)
-       !  
-       !    ! Do nothing      
-       !    
+       !
+       !    ! Do nothing
+       !
        !  case (2)
-       !      
+       !
        !    ! Multiply the quadratic part of the solution vector with the correction factor
        !    do ivar = 1, nvar
        !      !p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6))*Dalpha(ivar, iel)
        !      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)*Dalpha(ivar, iel)
        !    end do
        !
-       !      
+       !
        !  case (3)
        !
        !   ! Multiply the linear part of the solution vector with the correction factor
@@ -6795,13 +6795,13 @@ contains
        !      !p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
        !      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)*Dalpha(ivar, iel)
        !    end do
-       !    
+       !
        !
        !  end select
-       !  
+       !
        !    end do ! iel
-       !  
-       !  
+       !
+       !
     end do ! ilim
 
 
@@ -6821,7 +6821,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_evaluateLinearPart_mult (rvectorBlock, IelIdx, IdofGlob, Dvalues)
 
@@ -6887,7 +6887,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_evaluateDerivativeQuadratic_mult (rvectorBlock, IelIdx, Dvalues, raddTriaData)
 
@@ -6997,7 +6997,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine saveSolutionData(rvector,sofile,ifilenumber)
 
@@ -7035,7 +7035,7 @@ contains
     call lsyssc_getbase_double(rvector,p_Ddata)
 
     ! Get the length of the data array
-    ilength = size(p_Ddata,1)  
+    ilength = size(p_Ddata,1)
 
 
     ! ************ WRITE TO FILE PHASE *******************
@@ -7061,7 +7061,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine loadSolutionData(rvector,sofile)
 
@@ -7226,7 +7226,7 @@ contains
 
     ! Allocate the space for the pointer to the Data of the different blocks of the output vector
     !  allocate(p_DoutputData(nvar))
-    !    
+    !
     !  do ivar = 1, nvar
     !    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
     !  end do
@@ -7256,11 +7256,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)                               
+         p_IverticesAtBoundary)
 
 
     ! Get from the trial element space the type of coordinate system
@@ -7369,7 +7369,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_realKuzmin (rvectorBlock, raddTriaData)
 
@@ -7466,7 +7466,7 @@ contains
 
     integer, parameter :: nmaxneighbours = 10
 
-    integer, dimension(:), pointer :: p_InodalProperty 
+    integer, dimension(:), pointer :: p_InodalProperty
 
     real(dp), dimension(3,3) :: DTemp1, DTemp2
 
@@ -7490,7 +7490,7 @@ contains
 
     ! Allocate the space for the pointer to the Data of the different blocks of the output vector
     !  allocate(p_DoutputData(nvar))
-    !    
+    !
     !  do ivar = 1, nvar
     !    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
     !  end do
@@ -7520,13 +7520,13 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)   
+         p_IverticesAtBoundary)
     call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
-         p_InodalProperty)                              
+         p_InodalProperty)
 
     ! Allocate the space for solution differences, transformed solution differences,
     ! limited transformed solution differences, limited backtransformed solution differences
@@ -7544,7 +7544,7 @@ contains
     ! Number of points on each element, where the solution has to be evaluated (corner vertives + midpoint)
     npoints = 1 + NVE
 
-    ! Allocate space for the values of the linear part of the solution vector 
+    ! Allocate space for the values of the linear part of the solution vector
     allocate(DLinPartValues(nvar,npoints,NEL))
 
     ! Get list of (all) elements
@@ -7553,15 +7553,15 @@ contains
     ! Get global DOFs for these (all) elements
     call dof_locGlobMapping_mult(p_rspatialDiscr, p_IelIdx, IdofGlob)
 
-    ! Get the values of the linear part of the solution vector 
+    ! Get the values of the linear part of the solution vector
     call dg_evaluateLinearPart_mult(rvectorBlock, p_IelIdx, IdofGlob, DLinPartValues)
 
     ! Test, if we have quadratic elements
     if (celement == EL_DG_T2_2D) then
-       ! Allocate space for the values of the derivatives of the quadratic solution vector 
+       ! Allocate space for the values of the derivatives of the quadratic solution vector
        allocate(DDerivativeQuadraticValues(nvar,npoints,2,NEL))
 
-       ! Get the values of the derivatives of the quadratic solution vector 
+       ! Get the values of the derivatives of the quadratic solution vector
        call dg_evaluateDerivativeQuadratic_mult (rvectorBlock, p_IelIdx, DDerivativeQuadraticValues, raddTriaData)
     end if
 
@@ -7570,10 +7570,10 @@ contains
     !  end do
 
     select case (celement)
-    case (EL_DG_T2_2D) 
+    case (EL_DG_T2_2D)
        ilimstart = 1
        Dalpha = 1.0_DP
-    case (EL_DG_T1_2D) 
+    case (EL_DG_T1_2D)
        ilimstart = 3
        Dalpha = 0.0_DP
     end select
@@ -7653,10 +7653,10 @@ contains
                    if (idim==1) then
                       DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
                       DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
-                   elseif (idim==-1) then  
+                   elseif (idim==-1) then
                       DL = 1.0_dp
                       DR = 1.0_dp
-                   elseif (idim==0) then  
+                   elseif (idim==0) then
                       da = 1.0_dp/sqrt(2.0_dp)
                       db = 1.0_dp/sqrt(2.0_dp)
                       DL = buildMixedL2(DQchar,da,db)
@@ -7779,10 +7779,10 @@ contains
 
                       !          if (idim==1) then
                       !            DL2 = buildMixedL2(Dlin(:,ineighbour),1.0_dp,0.0_dp)
-                      !          
+                      !
                       !          elseif (idim==2) then
                       !            DL2 = buildMixedL2(Dlin(:,ineighbour),0.0_dp,1.0_dp)
-                      !          
+                      !
                       !          end if
 
                       DtLin(:,ineighbour) = matmul(DL,Dlin(:,ineighbour))
@@ -7891,7 +7891,7 @@ contains
 
              DquadraticGradient = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient)
 
-             do ivar = 1, nvar  
+             do ivar = 1, nvar
                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = Dquadraticgradient(ivar,1:3)
              end do
 
@@ -7899,45 +7899,45 @@ contains
 
              !      ! Limiting the second derivatives with different limiting factors
              !      DmAlpha = 0.0_dp
-             !      
+             !
              !      ! Get minimum of all correction factors of all vertices on this element
              !      do ivar = 1, nvar
-             !        
+             !
              !        Dquadraticgradient(ivar,1:3) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)
              !
              !      end do
-             !      
-             !      
-             !      
+             !
+             !
+             !
              !      do ivar = 1, nvar
-             !      
+             !
              !        DmAlpha(ivar,ivar) = Dalpha(ivar, iel)
              !
              !      end do
-             !      
+             !
              !      DquadraticGradient(1:nvar,1) = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient(1:nvar,1))
-             !      
+             !
              !      do ivar = 1, nvar
-             !      
+             !
              !        DmAlpha(ivar,ivar) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
              !
              !      end do
-             !      
+             !
              !      DquadraticGradient(1:nvar,2) = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient(1:nvar,2))
-             !      
+             !
              !      do ivar = 1, nvar
-             !      
+             !
              !        DmAlpha(ivar,ivar) = minval(Dalphaei(ivar,1:NVE))
              !
              !      end do
-             !      
+             !
              !      DquadraticGradient(1:nvar,3) = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient(1:nvar,3))
-             !      
-             !      
-             !        
-             !      do ivar = 1, nvar  
+             !
+             !
+             !
+             !      do ivar = 1, nvar
              !        p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = Dquadraticgradient(ivar,1:3)
-             !        
+             !
              !        Dalpha(ivar, iel) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
              !      end do
 
@@ -7960,7 +7960,7 @@ contains
 
              !      do idim = 1, 1
              !        ! Now we need the trafo matrices
-             !        
+             !
              !        if (idim==1) then
              !          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
              !          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
@@ -7968,7 +7968,7 @@ contains
              !          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
              !          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
              !        end if
-             !        
+             !
              !        if (idim==1) then
              !          DTemp1(1:3,1:2) = matmul(matmul(matmul(DR,DmAlpha),DL),DlinearGradient)
              !        else
@@ -7979,11 +7979,11 @@ contains
              !          end do
              !          end do
              !        end if
-             !        
+             !
              !      end do
              !      DlinearGradient=DTemp1(1:3,1:2)
 
-             DlinearGradient = matmul(matmul(matmul(DR,DmAlpha),DL),DlinearGradient)  
+             DlinearGradient = matmul(matmul(matmul(DR,DmAlpha),DL),DlinearGradient)
 
              do ivar = 1, nvar
                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = DlinearGradient(ivar,1:2)
@@ -7996,22 +7996,22 @@ contains
 
        !  ! *** Now limit the solution ***
        !  do iel = 1, NEL
-       !  
-       !  
+       !
+       !
        !  select case (ilim)
        !  case (1)
-       !  
-       !    ! Do nothing      
-       !    
+       !
+       !    ! Do nothing
+       !
        !  case (2)
-       !      
+       !
        !    ! Multiply the quadratic part of the solution vector with the correction factor
        !    do ivar = 1, nvar
        !      !p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6))*Dalpha(ivar, iel)
        !      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)*Dalpha(ivar, iel)
        !    end do
        !
-       !      
+       !
        !  case (3)
        !
        !   ! Multiply the linear part of the solution vector with the correction factor
@@ -8019,13 +8019,13 @@ contains
        !      !p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
        !      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)*Dalpha(ivar, iel)
        !    end do
-       !    
+       !
        !
        !  end select
-       !  
+       !
        !    end do ! iel
-       !  
-       !  
+       !
+       !
     end do ! ilim
 
 
@@ -8088,7 +8088,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiter_2 (rvector,ralpha)
 
@@ -8104,7 +8104,7 @@ contains
     !<inputoutput>
 
     ! A vector to limit
-    type(t_vectorScalar), intent(inout) :: rvector  
+    type(t_vectorScalar), intent(inout) :: rvector
 
     ! The limiting factors
     type(t_vectorScalar), intent(inout) :: ralpha
@@ -8153,7 +8153,7 @@ contains
 
     integer :: NVBD, ilim, ideriv
 
-    integer, dimension(:), pointer :: p_InodalProperty 
+    integer, dimension(:), pointer :: p_InodalProperty
 
     real(DP), dimension(:,:), allocatable :: Dalpha
 
@@ -8184,11 +8184,11 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)     
+         p_IverticesAtBoundary)
     call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
          p_InodalProperty)
 
@@ -8340,7 +8340,7 @@ contains
 
 
 
-          do ivert = 1, NVE  
+          do ivert = 1, NVE
 
              dui = Dallvalues(ivert+1,iel,2)*Dvel(1) + Dallvalues(ivert+1,iel,3)*Dvel(2)
 
@@ -8388,7 +8388,7 @@ contains
 
           ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
           ! Get the Minimum and multiply it with the corresponding DOFs
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
 
              ! Limiting like Kuzmin did it
@@ -8408,16 +8408,16 @@ contains
              !        ! Limiting using different limiting factors for the second derivatives
              !        ! Get global DOFs of the element
              !        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
-             !    
-             !    
+             !
+             !
              !        ! Multiply the linear part of the solution vector with the correction factor
              !        p_Ddata(IdofGlob(4)) = p_Ddata(IdofGlob(4))*Dalpha(1,iel)
              !        p_Ddata(IdofGlob(5)) = p_Ddata(IdofGlob(5))*min(Dalpha(1,iel),Dalpha(2,iel))
              !        p_Ddata(IdofGlob(6)) = p_Ddata(IdofGlob(6))*Dalpha(2,iel)
-             !        
-             !        
+             !
+             !
              !        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
-             !        
+             !
              !        p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
              !        p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
 
@@ -8425,7 +8425,7 @@ contains
           end do ! iel
 
        case (3)
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
 
@@ -8458,7 +8458,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_quadraticLimiter_3 (rvector,ralpha)
 
@@ -8474,7 +8474,7 @@ contains
     !<inputoutput>
 
     ! A vector to limit
-    type(t_vectorScalar), intent(inout) :: rvector  
+    type(t_vectorScalar), intent(inout) :: rvector
 
     ! The limiting factors
     type(t_vectorScalar), intent(inout) :: ralpha
@@ -8525,7 +8525,7 @@ contains
 
     integer :: iglobNeighNum
 
-    integer, dimension(:), pointer :: p_InodalProperty 
+    integer, dimension(:), pointer :: p_InodalProperty
 
     integer :: ilocalVtnumber, iglobVtNumber
 
@@ -8555,15 +8555,15 @@ contains
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
          p_DvertexCoords)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
     call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-         p_IverticesAtBoundary)     
+         p_IverticesAtBoundary)
     call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
          p_InodalProperty)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
-         p_IelementsAtVertex) 
+         p_IelementsAtVertex)
     call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
          p_IelementsAtVertexIdx)
 
@@ -8643,15 +8643,15 @@ contains
           if(ilim<3) then
 
              !    do ivert = 1, NVE
-             !		
+             !
              !      nvert = p_IverticesAtElement(ivert, iel)
-             !      
+             !
              !      ! The second point we want to evaluate the solution in, is in the corner of the mother element
              !      Dpoints(1,1+ivert) = p_DvertexCoords(1,nvert)
              !      Dpoints(2,1+ivert) = p_DvertexCoords(2,nvert)
              !      Ielements(1+ivert) = iel
              !	  end do
-             !	  
+             !
              !    ! Evaluate the solution
              !    call fevl_evaluate (ideriv, Dvalues(1:5), rvector, Dpoints(1:2,1:5), &
              !                          Ielements(1:5))
@@ -8665,7 +8665,7 @@ contains
 
              !      call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
              !      duc = p_Ddata(IdofGlob(1))+abs(p_Ddata(IdofGlob(2)))+abs(p_Ddata(IdofGlob(3)))
-             !      
+             !
              !    do ivt = 1, NVE
              !      nvt = p_IverticesAtElement(ivt,iel)
              !      duimax(nvt) = max(p_Ddata(IdofGlob(1))+abs(p_Ddata(IdofGlob(2)))+abs(p_Ddata(IdofGlob(3))),duimax(nvt))
@@ -8687,26 +8687,26 @@ contains
        !  do ivt = 1, nvt
        !  iidx = 0
        !    do ineighbour = p_IelementsAtVertexIdx(ivt), p_IelementsAtVertexIdx(ivt+1)-1
-       !    
+       !
        !      if(ilim<3) then
        !        iglobNeighNum = p_IelementsAtVertex(ineighbour)
-       !      
+       !
        !        iidx = iidx + 1
-       !      
+       !
        !        Dpoints(1,iidx) = p_DvertexCoords(1,iglobNeighNum)
        !        Dpoints(2,iidx) = p_DvertexCoords(2,iglobNeighNum)
-       !        Ielements(iidx) = iglobNeighNum 
-       !        
+       !        Ielements(iidx) = iglobNeighNum
+       !
        !      else
        !        iidx = iidx + 1
-       !        
+       !
        !        do ilocalVtNumber = 1, 4
        !          if (p_IverticesAtElement(ilocalVtnumber,iglobNeighNum )==ivt) exit
        !        end do
-       !        
+       !
        !        call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
        !        dui = p_Ddata(IdofGlob(1))
-       !        
+       !
        !        select case (ilocalVtnumber)
        !        case(1)
        !        dui = dui - p_Ddata(IdofGlob(2)) - p_Ddata(IdofGlob(3))
@@ -8717,21 +8717,21 @@ contains
        !        case(4)
        !        dui = dui - p_Ddata(IdofGlob(2)) + p_Ddata(IdofGlob(3))
        !        end select
-       !        
+       !
        !        Dvalues(iidx) = dui
-       !        
+       !
        !      end if
        !    end do
-       !    
+       !
        !    ! Evaluate the solution
        !    if(ilim<3) call fevl_evaluate (ideriv, Dvalues(1:iidx), rvector, Dpoints(1:2,1:iidx), &
        !                                   Ielements(1:iidx))
-       !      
-       !      
+       !
+       !
        !    duimax(ivt) = max(maxval(Dvalues(1:iidx)),duimax(ivt))
        !    duimin(ivt) = min(minval(Dvalues(1:iidx)),duimin(ivt))
-       !        
-       !  
+       !
+       !
        !  end do
 
 
@@ -8767,7 +8767,7 @@ contains
 
                 Dpoints(1,iidx) = xc
                 Dpoints(2,iidx) = yc
-                Ielements(iidx) = iglobNeighNum 
+                Ielements(iidx) = iglobNeighNum
 
              end do
           end do
@@ -8846,7 +8846,7 @@ contains
           ! Start calculating the limiting factor
           duc = Dvalues(1)
 
-          do ivert = 1, NVE  
+          do ivert = 1, NVE
              dui = Dvalues(1+ivert)
              ddu = dui-duc
              nvert = p_IverticesAtElement(ivert, iel)
@@ -8886,7 +8886,7 @@ contains
 
           ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
           ! Get the Minimum and multiply it with the corresponding DOFs
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
 
 
@@ -8904,16 +8904,16 @@ contains
              !        ! Limiting using different limiting factors for the second derivatives
              !        ! Get global DOFs of the element
              !        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
-             !    
-             !    
+             !
+             !
              !        ! Multiply the linear part of the solution vector with the correction factor
              !        p_Ddata(IdofGlob(4)) = p_Ddata(IdofGlob(4))*Dalpha(1,iel)
              !        p_Ddata(IdofGlob(5)) = p_Ddata(IdofGlob(5))*min(Dalpha(1,iel),Dalpha(2,iel))
              !        p_Ddata(IdofGlob(6)) = p_Ddata(IdofGlob(6))*Dalpha(2,iel)
-             !        
-             !        
+             !
+             !
              !        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
-             !        
+             !
              !        p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
              !        p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
 
@@ -8921,7 +8921,7 @@ contains
           end do ! iel
 
        case (3)
-          do iel = 1, NEL  
+          do iel = 1, NEL
 
              Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
 
@@ -9002,7 +9002,7 @@ contains
     do iFESpace = 1, p_rspatialDiscr%inumFESpaces
 
        ! Get the element distribution from the spatial discretisation
-       p_relemDist => p_rspatialDiscr%RelementDistr(iFESpace)  
+       p_relemDist => p_rspatialDiscr%RelementDistr(iFESpace)
 
        ! Get type of element in this distribution
        celement =  p_relemDist%celement
@@ -9245,7 +9245,7 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     rvectorAssembly%cevaluationTag = elem_getEvaluationTag(rvectorAssembly%celement)
 
   end subroutine dg_initAssembly_reverseCubPoints
@@ -9302,7 +9302,7 @@ contains
     ! the matrix is used (rmatrix%p_rdiscretisation). This is
     ! normally attached to the matrix by bilf_createMatrixStructure.
     !
-    ! The matrix must be unsorted when this routine is called, 
+    ! The matrix must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !</description>
 
@@ -9339,7 +9339,7 @@ contains
 
     ! OPTIONAL: A collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
     !</inputoutput>
 
@@ -9406,12 +9406,12 @@ contains
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
-    case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+    case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
        ! Uniform and conformal discretisations
        select case (rmatrix%cdataType)
-       case (ST_DOUBLE) 
+       case (ST_DOUBLE)
           ! Which matrix structure do we have?
-          select case (rmatrix%cmatrixFormat) 
+          select case (rmatrix%cmatrixFormat)
           case (LSYSSC_MATRIX9)
 
              ! Probably allocate/clear the matrix
@@ -9481,7 +9481,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
        rvectorSol, raddTriaData, IedgeList,&
@@ -9526,7 +9526,7 @@ contains
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
 
     !</inputoutput>
@@ -9680,7 +9680,7 @@ contains
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
          rmatrix%p_rspatialDiscrTest%p_rtriangulation%h_IverticesAtElement,&
-         p_IverticesAtElement)   
+         p_IverticesAtElement)
 
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -9746,7 +9746,7 @@ contains
        !        do icubp = 1,ncubp
        !          ! Dxi1D is in [-1,1] while the current edge has parmeter values
        !          ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-       !          ! transformation to transform Dxi1D into that interval, this 
+       !          ! transformation to transform Dxi1D into that interval, this
        !          ! gives the parameter values in length parametrisation
        !          call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
        !              DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -9784,7 +9784,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -9816,35 +9816,35 @@ contains
        !
        ! We have indofTrial trial DOF`s per element and
        ! indofTest test DOF`s per element. Therefore there are
-       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-       ! "active" (i.e. have common support) on our current element, each 
+       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+       ! "active" (i.e. have common support) on our current element, each
        ! giving an additive contribution to the system matrix.
        !
        ! We build a quadratic indofTrial*indofTest local matrix:
-       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-       ! in the global system matrix, where the corresponding value 
+       ! Kentry(1..indofTrial,1..indofTest) receives the position
+       ! in the global system matrix, where the corresponding value
        ! has to be added to.
-       ! (The corresponding contributions can be saved separately, 
-       ! but we directly add them to the global matrix in this 
+       ! (The corresponding contributions can be saved separately,
+       ! but we directly add them to the global matrix in this
        ! approach.)
        !
-       ! We build local matrices for all our elements 
+       ! We build local matrices for all our elements
        ! in the set simultaneously. Get the positions of the local matrices
        ! in the global matrix.
        !      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
-       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)  
+       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryii,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryia,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryai,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryaa,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
@@ -9855,19 +9855,19 @@ contains
        call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryaa,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)   
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
 
        ! -------------------- ELEMENT EVALUATION PHASE ----------------------
 
@@ -9879,7 +9879,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalMatrixAssembly(1)%cevaluationTag
 
        ! The cubature points are already initialised by 1D->2D mapping.
@@ -9982,7 +9982,7 @@ contains
        ! Calculate the values of the basis functions.
        !      call elem_generic_sim2 (rlocalMatrixAssembly%celementTest, &
        !          p_revalElementSet, rlocalMatrixAssembly%BderTest, &
-       !          rlocalMatrixAssembly%p_DbasTest) 
+       !          rlocalMatrixAssembly%p_DbasTest)
        call elem_generic_sim2 (rlocalMatrixAssembly(1)%celementTest, &
             rlocalMatrixAssembly(1)%revalElementSet,&
             rlocalMatrixAssembly(1)%BderTest, &
@@ -10026,7 +10026,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
 
        ! Clear the local matrices
@@ -10046,14 +10046,14 @@ contains
        ! Check the bilinear form which one to use:
 
        !      if (rlocalMatrixAssembly%rform%ballCoeffConstant) then
-       !      
+       !
        !        ! Constant coefficients. The coefficients are to be found in
        !        ! the Dcoefficients variable of the form.
        !        !
        !        ! Loop over the elements in the current set.
        !
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          ! Get the length of the edge.
        !          dlen = DedgeLength(iel)
        !
@@ -10067,48 +10067,48 @@ contains
        !
        !            ! Loop over the additive factors in the bilinear form.
        !            do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
-       !            
-       !              ! Get from Idescriptors the type of the derivatives for the 
+       !
+       !              ! Get from Idescriptors the type of the derivatives for the
        !              ! test and trial functions. The summand we calculate
        !              ! here will be added to the matrix entry:
        !              !
        !              ! a_ij  =  int_... ( psi_j )_ib  *  ( phi_i )_ia
        !              !
-       !              ! -> Ix=0: function value, 
+       !              ! -> Ix=0: function value,
        !              !      =1: first derivative, ...
        !              !    as defined in the module 'derivative'.
-       !              
+       !
        !              ia = p_Idescriptors(1,ialbet)
        !              ib = p_Idescriptors(2,ialbet)
-       !              
+       !
        !              ! Multiply domega with the coefficient of the form.
        !              ! This gives the actual value to multiply the
        !              ! function value with before summing up to the integral.
        !              daux = domega * p_DcoefficientsBilf(ialbet)
-       !            
+       !
        !              ! Now loop through all possible combinations of DOF`s
        !              ! in the current cubature point. The outer loop
        !              ! loops through the "O"`s in the above picture,
        !              ! the test functions:
        !
        !              do idofe = 1,indofTest
-       !              
-       !                ! Get the value of the (test) basis function 
+       !
+       !                ! Get the value of the (test) basis function
        !                ! phi_i (our "O") in the cubature point:
        !                db = p_DbasTest(idofe,ib,icubp,iel)
-       !                
+       !
        !                ! Perform an inner loop through the other DOF`s
-       !                ! (the "X"). 
+       !                ! (the "X").
        !
        !                do jdofe = 1,indofTrial
-       !                
-       !                  ! Get the value of the basis function 
-       !                  ! psi_j (our "X") in the cubature point. 
+       !
+       !                  ! Get the value of the basis function
+       !                  ! psi_j (our "X") in the cubature point.
        !                  ! Them multiply:
        !                  !    db * dbas(..) * daux
        !                  ! ~= phi_i * psi_j * coefficient * cub.weight
        !                  ! Summing this up gives the integral, so the contribution
-       !                  ! to the global matrix. 
+       !                  ! to the global matrix.
        !                  !
        !                  ! Simply summing up db * dbas(..) * daux would give
        !                  ! the coefficient of the local matrix. We save this
@@ -10118,17 +10118,17 @@ contains
        !                  !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
        !                  p_Dentry(jdofe,idofe,iel) = p_Dentry(jdofe,idofe,iel) + &
        !                                        db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
-       !                
+       !
        !                end do ! jdofe
-       !              
+       !
        !              end do ! idofe
-       !              
+       !
        !            end do ! ialbet
        !
-       !          end do ! icubp 
-       !          
+       !          end do ! icubp
+       !
        !        end do ! iel
-       !        
+       !
        !      else
 
        ! Nonconstant coefficients. The coefficients are to be found in
@@ -10154,13 +10154,13 @@ contains
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalMatrixAssembly(1)%rform%itermcount
 
-                ! Get from Idescriptors the type of the derivatives for the 
+                ! Get from Idescriptors the type of the derivatives for the
                 ! test and trial functions. The summand we calculate
                 ! here will be added to the matrix entry:
                 !
                 ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                 !
-                ! -> Ix=0: function value, 
+                ! -> Ix=0: function value,
                 !      =1: first derivative, ...
                 !    as defined in the module 'derivative'.
 
@@ -10181,23 +10181,23 @@ contains
 
                 do idofe = 1,indofTest
 
-                   ! Get the value of the (test) basis function 
+                   ! Get the value of the (test) basis function
                    ! phi_i (our "O") in the cubature point:
                    db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
                    db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
                    ! Perform an inner loop through the other DOF`s
-                   ! (the "X"). 
+                   ! (the "X").
 
                    do jdofe = 1,indofTrial
 
-                      ! Get the value of the basis function 
-                      ! psi_j (our "X") in the cubature point. 
+                      ! Get the value of the basis function
+                      ! psi_j (our "X") in the cubature point.
                       ! Them multiply:
                       !    db * dbas(..) * daux
                       ! ~= phi_i * psi_j * coefficient * cub.weight
                       ! Summing this up gives the integral, so the contribution
-                      ! to the global matrix. 
+                      ! to the global matrix.
                       !
                       ! Simply summing up db * dbas(..) * daux would give
                       ! the coefficient of the local matrix. We save this
@@ -10210,16 +10210,16 @@ contains
 
                       !                  ! Testfunction on the 'first' (i) side
                       !                  p_Dentryii(jdofe,idofe,iel) = &
-                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
+                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)
                       !                  p_Dentryai(jdofe,idofe,iel) = &
-                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
-                      !                  
+                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)
+                      !
                       !                  ! Testfunction on the 'second' (a) side
                       !                  p_Dentryia(jdofe,idofe,iel) = &
                       !                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
                       !                  p_Dentryaa(jdofe,idofe,iel) = &
                       !                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
-                      !                
+                      !
 
 
                       ! Testfunction on the 'first' (i) side
@@ -10233,7 +10233,7 @@ contains
                            p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,ialbet,icubp,iel)
 
                       !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
-                      !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
+                      !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
                       !                write(*,*) 'ia',ia
                       !                write(*,*) 'daux1',daux1
                       !                write(*,*) 'daux2',daux2
@@ -10267,7 +10267,7 @@ contains
 
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
        end do ! iel
 
@@ -10286,7 +10286,7 @@ contains
        !
        !        !$omp critical
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          do idofe = 1,indofTest
        !            daux = 0.0_DP
        !            do jdofe = 1,indofTrial
@@ -10295,7 +10295,7 @@ contains
        !            p_DA(p_Kentry(idofe,idofe,iel)) = &
        !                p_DA(p_Kentry(idofe,idofe,iel)) + daux
        !          end do
-       !          
+       !
        !        end do ! iel
        !        !$omp end critical
        !
@@ -10507,7 +10507,7 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     rmatrixAssembly%cevaluationTag = elem_getEvaluationTag(rmatrixAssembly%celementTest)
     rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
          elem_getEvaluationTag(rmatrixAssembly%celementTrial))
@@ -10575,7 +10575,7 @@ contains
     ! the matrix is used (rmatrix%p_rdiscretisation). This is
     ! normally attached to the matrix by bilf_createMatrixStructure.
     !
-    ! The matrix must be unsorted when this routine is called, 
+    ! The matrix must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !</description>
 
@@ -10612,7 +10612,7 @@ contains
 
     ! OPTIONAL: A collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
     !</inputoutput>
 
@@ -10679,12 +10679,12 @@ contains
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     select case (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity)
-    case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+    case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
        ! Uniform and conformal discretisations
        select case (rmatrix%RmatrixBlock(1,1)%cdataType)
-       case (ST_DOUBLE) 
+       case (ST_DOUBLE)
           ! Which matrix structure do we have?
-          select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat) 
+          select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat)
           case (LSYSSC_MATRIX9)
 
              ! Probably allocate/clear the matrix
@@ -10754,7 +10754,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_bilf_assembleSubmeshMat9Bdr2D_Block (rmatrixAssembly, rmatrix,&
        rvectorSol, raddTriaData, IedgeList,&
@@ -10799,7 +10799,7 @@ contains
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
 
     !</inputoutput>
@@ -10968,7 +10968,7 @@ contains
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
          rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%p_rtriangulation%h_IverticesAtElement,&
-         p_IverticesAtElement)   
+         p_IverticesAtElement)
 
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -11034,7 +11034,7 @@ contains
        !        do icubp = 1,ncubp
        !          ! Dxi1D is in [-1,1] while the current edge has parmeter values
        !          ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-       !          ! transformation to transform Dxi1D into that interval, this 
+       !          ! transformation to transform Dxi1D into that interval, this
        !          ! gives the parameter values in length parametrisation
        !          call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
        !              DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -11072,7 +11072,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -11104,35 +11104,35 @@ contains
        !
        ! We have indofTrial trial DOF`s per element and
        ! indofTest test DOF`s per element. Therefore there are
-       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-       ! "active" (i.e. have common support) on our current element, each 
+       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+       ! "active" (i.e. have common support) on our current element, each
        ! giving an additive contribution to the system matrix.
        !
        ! We build a quadratic indofTrial*indofTest local matrix:
-       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-       ! in the global system matrix, where the corresponding value 
+       ! Kentry(1..indofTrial,1..indofTest) receives the position
+       ! in the global system matrix, where the corresponding value
        ! has to be added to.
-       ! (The corresponding contributions can be saved separately, 
-       ! but we directly add them to the global matrix in this 
+       ! (The corresponding contributions can be saved separately,
+       ! but we directly add them to the global matrix in this
        ! approach.)
        !
-       ! We build local matrices for all our elements 
+       ! We build local matrices for all our elements
        ! in the set simultaneously. Get the positions of the local matrices
        ! in the global matrix.
        !      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
-       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)  
+       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryii,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryia,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryai,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryaa,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
@@ -11143,19 +11143,19 @@ contains
        call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryaa,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)   
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
 
        ! -------------------- ELEMENT EVALUATION PHASE ----------------------
 
@@ -11167,7 +11167,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalMatrixAssembly(1)%cevaluationTag
 
        ! The cubature points are already initialised by 1D->2D mapping.
@@ -11270,7 +11270,7 @@ contains
        ! Calculate the values of the basis functions.
        !      call elem_generic_sim2 (rlocalMatrixAssembly%celementTest, &
        !          p_revalElementSet, rlocalMatrixAssembly%BderTest, &
-       !          rlocalMatrixAssembly%p_DbasTest) 
+       !          rlocalMatrixAssembly%p_DbasTest)
        call elem_generic_sim2 (rlocalMatrixAssembly(1)%celementTest, &
             rlocalMatrixAssembly(1)%revalElementSet,&
             rlocalMatrixAssembly(1)%BderTest, &
@@ -11314,7 +11314,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
 
        ! Clear the local matrices
@@ -11334,14 +11334,14 @@ contains
        ! Check the bilinear form which one to use:
 
        !      if (rlocalMatrixAssembly%rform%ballCoeffConstant) then
-       !      
+       !
        !        ! Constant coefficients. The coefficients are to be found in
        !        ! the Dcoefficients variable of the form.
        !        !
        !        ! Loop over the elements in the current set.
        !
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          ! Get the length of the edge.
        !          dlen = DedgeLength(iel)
        !
@@ -11355,48 +11355,48 @@ contains
        !
        !            ! Loop over the additive factors in the bilinear form.
        !            do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
-       !            
-       !              ! Get from Idescriptors the type of the derivatives for the 
+       !
+       !              ! Get from Idescriptors the type of the derivatives for the
        !              ! test and trial functions. The summand we calculate
        !              ! here will be added to the matrix entry:
        !              !
        !              ! a_ij  =  int_... ( psi_j )_ib  *  ( phi_i )_ia
        !              !
-       !              ! -> Ix=0: function value, 
+       !              ! -> Ix=0: function value,
        !              !      =1: first derivative, ...
        !              !    as defined in the module 'derivative'.
-       !              
+       !
        !              ia = p_Idescriptors(1,ialbet)
        !              ib = p_Idescriptors(2,ialbet)
-       !              
+       !
        !              ! Multiply domega with the coefficient of the form.
        !              ! This gives the actual value to multiply the
        !              ! function value with before summing up to the integral.
        !              daux = domega * p_DcoefficientsBilf(ialbet)
-       !            
+       !
        !              ! Now loop through all possible combinations of DOF`s
        !              ! in the current cubature point. The outer loop
        !              ! loops through the "O"`s in the above picture,
        !              ! the test functions:
        !
        !              do idofe = 1,indofTest
-       !              
-       !                ! Get the value of the (test) basis function 
+       !
+       !                ! Get the value of the (test) basis function
        !                ! phi_i (our "O") in the cubature point:
        !                db = p_DbasTest(idofe,ib,icubp,iel)
-       !                
+       !
        !                ! Perform an inner loop through the other DOF`s
-       !                ! (the "X"). 
+       !                ! (the "X").
        !
        !                do jdofe = 1,indofTrial
-       !                
-       !                  ! Get the value of the basis function 
-       !                  ! psi_j (our "X") in the cubature point. 
+       !
+       !                  ! Get the value of the basis function
+       !                  ! psi_j (our "X") in the cubature point.
        !                  ! Them multiply:
        !                  !    db * dbas(..) * daux
        !                  ! ~= phi_i * psi_j * coefficient * cub.weight
        !                  ! Summing this up gives the integral, so the contribution
-       !                  ! to the global matrix. 
+       !                  ! to the global matrix.
        !                  !
        !                  ! Simply summing up db * dbas(..) * daux would give
        !                  ! the coefficient of the local matrix. We save this
@@ -11406,17 +11406,17 @@ contains
        !                  !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
        !                  p_Dentry(jdofe,idofe,iel) = p_Dentry(jdofe,idofe,iel) + &
        !                                        db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
-       !                
+       !
        !                end do ! jdofe
-       !              
+       !
        !              end do ! idofe
-       !              
+       !
        !            end do ! ialbet
        !
-       !          end do ! icubp 
-       !          
+       !          end do ! icubp
+       !
        !        end do ! iel
-       !        
+       !
        !      else
 
        ! Nonconstant coefficients. The coefficients are to be found in
@@ -11442,13 +11442,13 @@ contains
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalMatrixAssembly(1)%rform%itermcount
 
-                ! Get from Idescriptors the type of the derivatives for the 
+                ! Get from Idescriptors the type of the derivatives for the
                 ! test and trial functions. The summand we calculate
                 ! here will be added to the matrix entry:
                 !
                 ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                 !
-                ! -> Ix=0: function value, 
+                ! -> Ix=0: function value,
                 !      =1: first derivative, ...
                 !    as defined in the module 'derivative'.
 
@@ -11469,23 +11469,23 @@ contains
 
                 do idofe = 1,indofTest
 
-                   ! Get the value of the (test) basis function 
+                   ! Get the value of the (test) basis function
                    ! phi_i (our "O") in the cubature point:
                    db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
                    db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
                    ! Perform an inner loop through the other DOF`s
-                   ! (the "X"). 
+                   ! (the "X").
 
                    do jdofe = 1,indofTrial
 
-                      ! Get the value of the basis function 
-                      ! psi_j (our "X") in the cubature point. 
+                      ! Get the value of the basis function
+                      ! psi_j (our "X") in the cubature point.
                       ! Them multiply:
                       !    db * dbas(..) * daux
                       ! ~= phi_i * psi_j * coefficient * cub.weight
                       ! Summing this up gives the integral, so the contribution
-                      ! to the global matrix. 
+                      ! to the global matrix.
                       !
                       ! Simply summing up db * dbas(..) * daux would give
                       ! the coefficient of the local matrix. We save this
@@ -11498,16 +11498,16 @@ contains
 
                       !                  ! Testfunction on the 'first' (i) side
                       !                  p_Dentryii(jdofe,idofe,iel) = &
-                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
+                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)
                       !                  p_Dentryai(jdofe,idofe,iel) = &
-                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
-                      !                  
+                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)
+                      !
                       !                  ! Testfunction on the 'second' (a) side
                       !                  p_Dentryia(jdofe,idofe,iel) = &
                       !                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
                       !                  p_Dentryaa(jdofe,idofe,iel) = &
                       !                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
-                      !                
+                      !
 
 
                       ! Testfunction on the 'first' (i) side
@@ -11523,7 +11523,7 @@ contains
                                  p_Dentryia(iblock,jblock,jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2(iblock,jblock)*p_Dside(iblock,jblock,1,ialbet,icubp,iel)
 
                             !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
-                            !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
+                            !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
                             !                write(*,*) 'ia',ia
                             !                write(*,*) 'daux1',daux1
                             !                write(*,*) 'daux2',daux2
@@ -11557,7 +11557,7 @@ contains
 
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
        end do ! iel
 
@@ -11576,7 +11576,7 @@ contains
        !
        !        !$omp critical
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          do idofe = 1,indofTest
        !            daux = 0.0_DP
        !            do jdofe = 1,indofTrial
@@ -11585,7 +11585,7 @@ contains
        !            p_DA(p_Kentry(idofe,idofe,iel)) = &
        !                p_DA(p_Kentry(idofe,idofe,iel)) + daux
        !          end do
-       !          
+       !
        !        end do ! iel
        !        !$omp end critical
        !
@@ -11603,7 +11603,7 @@ contains
        !        end do
        !      end do
 
-       !p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &            
+       !p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &
        !              p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) + &
        !              DlocalData(ivar,1,idofe)
 
@@ -11625,17 +11625,17 @@ contains
 
                       !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) = &
                       !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
-                      !                
+                      !
                       !                if (IelementList(2,IELset+iel-1).ne.0) then
-                      !                
+                      !
                       !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) = &
                       !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryia(jdofe,idofe,iel)) + p_Dentryia(iblock,jblock,jdofe,idofe,iel)
-                      !                
+                      !
                       !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) = &
                       !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryai(jdofe,idofe,iel)) + p_Dentryai(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
                       !                p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) = &
                       !                  p_matrixBlockDataPointers(iblock,jblock)%Da(p_Kentryaa(jdofe,idofe,iel)) + p_Dentryaa(iblock,jblock,jdofe,idofe,iel)!*real(min(1,IelementList(2,IELset+iel-1)))
-                      !                end if  
+                      !                end if
                       p_Da(p_Kentryii(jdofe,idofe,iel)) = &
                            p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
 
@@ -11748,7 +11748,7 @@ contains
     ! the matrix is used (rmatrix%p_rdiscretisation). This is
     ! normally attached to the matrix by bilf_createMatrixStructure.
     !
-    ! The matrix must be unsorted when this routine is called, 
+    ! The matrix must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !
     ! IMPLEMENTATIONAL REMARK:
@@ -11772,7 +11772,7 @@ contains
 
     ! OPTIONAL: A collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
 
     ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
@@ -11830,12 +11830,12 @@ contains
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     select case (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity)
-    case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+    case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
        ! Uniform and conformal discretisations
        select case (rmatrix%RmatrixBlock(1,1)%cdataType)
-       case (ST_DOUBLE) 
+       case (ST_DOUBLE)
           ! Which matrix structure do we have?
-          select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat) 
+          select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat)
           case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
 
              !        ! Probably allocate/clear the matrix
@@ -11910,7 +11910,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine bilf_assembleSubmeshMatrix9Block (rmatrixAssembly, rmatrix, IelementList,&
        fcoeff_buildMatrixBl_sim, rcollection)
@@ -11943,7 +11943,7 @@ contains
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
 
     !</inputoutput>
@@ -11980,7 +11980,7 @@ contains
     !     ! Pointer to the double-valued matrix or vector data
     !     real(DP), dimension(:), pointer :: Da
     !    end type t_array
-    !    
+    !
     !    type(t_array), dimension(:,:), allocatable:: p_matrixBlockDataPointers
 
 
@@ -12065,7 +12065,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -12092,19 +12092,19 @@ contains
        !
        ! We have indofTrial trial DOF`s per element and
        ! indofTest test DOF`s per element. Therefore there are
-       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-       ! "active" (i.e. have common support) on our current element, each 
+       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+       ! "active" (i.e. have common support) on our current element, each
        ! giving an additive contribution to the system matrix.
        !
        ! We build a quadratic indofTrial*indofTest local matrix:
-       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-       ! in the global system matrix, where the corresponding value 
+       ! Kentry(1..indofTrial,1..indofTest) receives the position
+       ! in the global system matrix, where the corresponding value
        ! has to be added to.
-       ! (The corresponding contributions can be saved separately, 
-       ! but we directly add them to the global matrix in this 
+       ! (The corresponding contributions can be saved separately,
+       ! but we directly add them to the global matrix in this
        ! approach.)
        !
-       ! We build local matrices for all our elements 
+       ! We build local matrices for all our elements
        ! in the set simultaneously. Get the positions of the local matrices
        ! in the global matrix.
        call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),p_IdofsTest,p_IdofsTrial,p_Kentry,&
@@ -12120,7 +12120,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalMatrixAssembly%cevaluationTag
 
        ! In the first loop, calculate the coordinates on the reference element.
@@ -12182,7 +12182,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
 
        ! Clear the local matrices
@@ -12212,13 +12212,13 @@ contains
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
 
-                ! Get from Idescriptors the type of the derivatives for the 
+                ! Get from Idescriptors the type of the derivatives for the
                 ! test and trial functions. The summand we calculate
                 ! here will be added to the matrix entry:
                 !
                 ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                 !
-                ! -> Ix=0: function value, 
+                ! -> Ix=0: function value,
                 !      =1: first derivative, ...
                 !    as defined in the module 'derivative'.
 
@@ -12241,22 +12241,22 @@ contains
 
                       do idofe = 1,indofTest
 
-                         ! Get the value of the (test) basis function 
+                         ! Get the value of the (test) basis function
                          ! phi_i (our "O") in the cubature point:
                          db = p_DbasTest(idofe,ib,icubp,iel)
 
                          ! Perform an inner loop through the other DOF`s
-                         ! (the "X"). 
+                         ! (the "X").
 
                          do jdofe = 1,indofTrial
 
-                            ! Get the value of the basis function 
-                            ! psi_j (our "X") in the cubature point. 
+                            ! Get the value of the basis function
+                            ! psi_j (our "X") in the cubature point.
                             ! Them multiply:
                             !    db * dbas(..) * daux
                             ! ~= phi_i * psi_j * coefficient * cub.weight
                             ! Summing this up gives the integral, so the contribution
-                            ! to the global matrix. 
+                            ! to the global matrix.
                             !
                             ! Simply summing up db * dbas(..) * daux would give
                             ! the coefficient of the local matrix. We save this
@@ -12275,7 +12275,7 @@ contains
 
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
        end do ! iel
 
@@ -12389,7 +12389,7 @@ contains
     ! the matrix is used (rmatrix%p_rdiscretisation). This is
     ! normally attached to the matrix by bilf_createMatrixStructure.
     !
-    ! The matrix must be unsorted when this routine is called, 
+    ! The matrix must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !</description>
 
@@ -12426,7 +12426,7 @@ contains
 
     ! OPTIONAL: A collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
     !</inputoutput>
 
@@ -12493,12 +12493,12 @@ contains
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     select case (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%ccomplexity)
-    case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+    case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
        ! Uniform and conformal discretisations
        select case (rmatrix%RmatrixBlock(1,1)%cdataType)
-       case (ST_DOUBLE) 
+       case (ST_DOUBLE)
           ! Which matrix structure do we have?
-          select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat) 
+          select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat)
           case (LSYSSC_MATRIX9)
 
              ! Probably allocate/clear the matrix
@@ -12568,7 +12568,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_bilf_assembleSubmeshMat9Bdr2D_Block_ss (rmatrixAssembly, rmatrix,&
        rvectorSol, raddTriaData, IedgeList,&
@@ -12613,7 +12613,7 @@ contains
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
 
     !</inputoutput>
@@ -12782,7 +12782,7 @@ contains
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
          rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%p_rtriangulation%h_IverticesAtElement,&
-         p_IverticesAtElement)   
+         p_IverticesAtElement)
 
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -12848,7 +12848,7 @@ contains
        !        do icubp = 1,ncubp
        !          ! Dxi1D is in [-1,1] while the current edge has parmeter values
        !          ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-       !          ! transformation to transform Dxi1D into that interval, this 
+       !          ! transformation to transform Dxi1D into that interval, this
        !          ! gives the parameter values in length parametrisation
        !          call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
        !              DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -12886,7 +12886,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -12918,35 +12918,35 @@ contains
        !
        ! We have indofTrial trial DOF`s per element and
        ! indofTest test DOF`s per element. Therefore there are
-       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-       ! "active" (i.e. have common support) on our current element, each 
+       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+       ! "active" (i.e. have common support) on our current element, each
        ! giving an additive contribution to the system matrix.
        !
        ! We build a quadratic indofTrial*indofTest local matrix:
-       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-       ! in the global system matrix, where the corresponding value 
+       ! Kentry(1..indofTrial,1..indofTest) receives the position
+       ! in the global system matrix, where the corresponding value
        ! has to be added to.
-       ! (The corresponding contributions can be saved separately, 
-       ! but we directly add them to the global matrix in this 
+       ! (The corresponding contributions can be saved separately,
+       ! but we directly add them to the global matrix in this
        ! approach.)
        !
-       ! We build local matrices for all our elements 
+       ! We build local matrices for all our elements
        ! in the set simultaneously. Get the positions of the local matrices
        ! in the global matrix.
        !      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
-       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)  
+       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryii,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryia,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryai,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryaa,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
@@ -12957,19 +12957,19 @@ contains
        call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call bilf_getLocalMatrixIndices (rmatrix%RmatrixBlock(1,1),rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryaa,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)   
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
 
        ! -------------------- ELEMENT EVALUATION PHASE ----------------------
 
@@ -12981,7 +12981,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalMatrixAssembly(1)%cevaluationTag
 
        ! The cubature points are already initialised by 1D->2D mapping.
@@ -13084,7 +13084,7 @@ contains
        ! Calculate the values of the basis functions.
        !      call elem_generic_sim2 (rlocalMatrixAssembly%celementTest, &
        !          p_revalElementSet, rlocalMatrixAssembly%BderTest, &
-       !          rlocalMatrixAssembly%p_DbasTest) 
+       !          rlocalMatrixAssembly%p_DbasTest)
        call elem_generic_sim2 (rlocalMatrixAssembly(1)%celementTest, &
             rlocalMatrixAssembly(1)%revalElementSet,&
             rlocalMatrixAssembly(1)%BderTest, &
@@ -13128,7 +13128,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
 
        ! Clear the local matrices
@@ -13148,14 +13148,14 @@ contains
        ! Check the bilinear form which one to use:
 
        !      if (rlocalMatrixAssembly%rform%ballCoeffConstant) then
-       !      
+       !
        !        ! Constant coefficients. The coefficients are to be found in
        !        ! the Dcoefficients variable of the form.
        !        !
        !        ! Loop over the elements in the current set.
        !
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          ! Get the length of the edge.
        !          dlen = DedgeLength(iel)
        !
@@ -13169,48 +13169,48 @@ contains
        !
        !            ! Loop over the additive factors in the bilinear form.
        !            do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
-       !            
-       !              ! Get from Idescriptors the type of the derivatives for the 
+       !
+       !              ! Get from Idescriptors the type of the derivatives for the
        !              ! test and trial functions. The summand we calculate
        !              ! here will be added to the matrix entry:
        !              !
        !              ! a_ij  =  int_... ( psi_j )_ib  *  ( phi_i )_ia
        !              !
-       !              ! -> Ix=0: function value, 
+       !              ! -> Ix=0: function value,
        !              !      =1: first derivative, ...
        !              !    as defined in the module 'derivative'.
-       !              
+       !
        !              ia = p_Idescriptors(1,ialbet)
        !              ib = p_Idescriptors(2,ialbet)
-       !              
+       !
        !              ! Multiply domega with the coefficient of the form.
        !              ! This gives the actual value to multiply the
        !              ! function value with before summing up to the integral.
        !              daux = domega * p_DcoefficientsBilf(ialbet)
-       !            
+       !
        !              ! Now loop through all possible combinations of DOF`s
        !              ! in the current cubature point. The outer loop
        !              ! loops through the "O"`s in the above picture,
        !              ! the test functions:
        !
        !              do idofe = 1,indofTest
-       !              
-       !                ! Get the value of the (test) basis function 
+       !
+       !                ! Get the value of the (test) basis function
        !                ! phi_i (our "O") in the cubature point:
        !                db = p_DbasTest(idofe,ib,icubp,iel)
-       !                
+       !
        !                ! Perform an inner loop through the other DOF`s
-       !                ! (the "X"). 
+       !                ! (the "X").
        !
        !                do jdofe = 1,indofTrial
-       !                
-       !                  ! Get the value of the basis function 
-       !                  ! psi_j (our "X") in the cubature point. 
+       !
+       !                  ! Get the value of the basis function
+       !                  ! psi_j (our "X") in the cubature point.
        !                  ! Them multiply:
        !                  !    db * dbas(..) * daux
        !                  ! ~= phi_i * psi_j * coefficient * cub.weight
        !                  ! Summing this up gives the integral, so the contribution
-       !                  ! to the global matrix. 
+       !                  ! to the global matrix.
        !                  !
        !                  ! Simply summing up db * dbas(..) * daux would give
        !                  ! the coefficient of the local matrix. We save this
@@ -13220,17 +13220,17 @@ contains
        !                  !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
        !                  p_Dentry(jdofe,idofe,iel) = p_Dentry(jdofe,idofe,iel) + &
        !                                        db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
-       !                
+       !
        !                end do ! jdofe
-       !              
+       !
        !              end do ! idofe
-       !              
+       !
        !            end do ! ialbet
        !
-       !          end do ! icubp 
-       !          
+       !          end do ! icubp
+       !
        !        end do ! iel
-       !        
+       !
        !      else
 
        ! Nonconstant coefficients. The coefficients are to be found in
@@ -13260,13 +13260,13 @@ contains
                 if ((p_Dside(1,ialbet)==1.0_dp).and.(p_Dside(2,ialbet)==0.0_dp)) then
                 ! Trialfunction only needed on first side
 
-                    ! Get from Idescriptors the type of the derivatives for the 
+                    ! Get from Idescriptors the type of the derivatives for the
                     ! test and trial functions. The summand we calculate
                     ! here will be added to the matrix entry:
                     !
                     ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                     !
-                    ! -> Ix=0: function value, 
+                    ! -> Ix=0: function value,
                     !      =1: first derivative, ...
                     !    as defined in the module 'derivative'.
 
@@ -13287,23 +13287,23 @@ contains
 
                     do idofe = 1,indofTest
 
-                       ! Get the value of the (test) basis function 
+                       ! Get the value of the (test) basis function
                        ! phi_i (our "O") in the cubature point:
                        db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
                        db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
                        ! Perform an inner loop through the other DOF`s
-                       ! (the "X"). 
+                       ! (the "X").
 
                        do jdofe = 1,indofTrial
 
-                          ! Get the value of the basis function 
-                          ! psi_j (our "X") in the cubature point. 
+                          ! Get the value of the basis function
+                          ! psi_j (our "X") in the cubature point.
                           ! Them multiply:
                           !    db * dbas(..) * daux
                           ! ~= phi_i * psi_j * coefficient * cub.weight
                           ! Summing this up gives the integral, so the contribution
-                          ! to the global matrix. 
+                          ! to the global matrix.
                           !
                           ! Simply summing up db * dbas(..) * daux would give
                           ! the coefficient of the local matrix. We save this
@@ -13325,18 +13325,18 @@ contains
                           
                        end do ! idofe
 
-                    end do ! jdofe                
+                    end do ! jdofe
                 
                 elseif ((p_Dside(1,ialbet)==0.0_dp).and.(p_Dside(2,ialbet)==1.0_dp)) then
                 ! Trialfunction only needed on the second side
 
-                    ! Get from Idescriptors the type of the derivatives for the 
+                    ! Get from Idescriptors the type of the derivatives for the
                     ! test and trial functions. The summand we calculate
                     ! here will be added to the matrix entry:
                     !
                     ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                     !
-                    ! -> Ix=0: function value, 
+                    ! -> Ix=0: function value,
                     !      =1: first derivative, ...
                     !    as defined in the module 'derivative'.
 
@@ -13357,23 +13357,23 @@ contains
 
                     do idofe = 1,indofTest
 
-                       ! Get the value of the (test) basis function 
+                       ! Get the value of the (test) basis function
                        ! phi_i (our "O") in the cubature point:
                        db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
                        db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
                        ! Perform an inner loop through the other DOF`s
-                       ! (the "X"). 
+                       ! (the "X").
 
                        do jdofe = 1,indofTrial
 
-                          ! Get the value of the basis function 
-                          ! psi_j (our "X") in the cubature point. 
+                          ! Get the value of the basis function
+                          ! psi_j (our "X") in the cubature point.
                           ! Them multiply:
                           !    db * dbas(..) * daux
                           ! ~= phi_i * psi_j * coefficient * cub.weight
                           ! Summing this up gives the integral, so the contribution
-                          ! to the global matrix. 
+                          ! to the global matrix.
                           !
                           ! Simply summing up db * dbas(..) * daux would give
                           ! the coefficient of the local matrix. We save this
@@ -13395,17 +13395,17 @@ contains
                           
                        end do ! idofe
 
-                    end do ! jdofe                
+                    end do ! jdofe
                 
                 else ! Trialfunctions are needed on both sides
                 
-                    ! Get from Idescriptors the type of the derivatives for the 
+                    ! Get from Idescriptors the type of the derivatives for the
                     ! test and trial functions. The summand we calculate
                     ! here will be added to the matrix entry:
                     !
                     ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                     !
-                    ! -> Ix=0: function value, 
+                    ! -> Ix=0: function value,
                     !      =1: first derivative, ...
                     !    as defined in the module 'derivative'.
 
@@ -13426,23 +13426,23 @@ contains
 
                     do idofe = 1,indofTest
 
-                       ! Get the value of the (test) basis function 
+                       ! Get the value of the (test) basis function
                        ! phi_i (our "O") in the cubature point:
                        db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
                        db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
                        ! Perform an inner loop through the other DOF`s
-                       ! (the "X"). 
+                       ! (the "X").
 
                        do jdofe = 1,indofTrial
 
-                          ! Get the value of the basis function 
-                          ! psi_j (our "X") in the cubature point. 
+                          ! Get the value of the basis function
+                          ! psi_j (our "X") in the cubature point.
                           ! Them multiply:
                           !    db * dbas(..) * daux
                           ! ~= phi_i * psi_j * coefficient * cub.weight
                           ! Summing this up gives the integral, so the contribution
-                          ! to the global matrix. 
+                          ! to the global matrix.
                           !
                           ! Simply summing up db * dbas(..) * daux would give
                           ! the coefficient of the local matrix. We save this
@@ -13474,7 +13474,7 @@ contains
              
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
        end do ! iel
 
@@ -13493,7 +13493,7 @@ contains
        !
        !        !$omp critical
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          do idofe = 1,indofTest
        !            daux = 0.0_DP
        !            do jdofe = 1,indofTrial
@@ -13502,7 +13502,7 @@ contains
        !            p_DA(p_Kentry(idofe,idofe,iel)) = &
        !                p_DA(p_Kentry(idofe,idofe,iel)) + daux
        !          end do
-       !          
+       !
        !        end do ! iel
        !        !$omp end critical
        !
@@ -13520,7 +13520,7 @@ contains
        !        end do
        !      end do
 
-       !p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &            
+       !p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &
        !              p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) + &
        !              DlocalData(ivar,1,idofe)
 
@@ -13562,7 +13562,7 @@ contains
                            p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
 
                    end do
-                end do             
+                end do
              end if
 
              end do ! iel
@@ -13625,7 +13625,7 @@ contains
   
    !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_makeSolPos (rvectorBlock)
 
@@ -13691,7 +13691,7 @@ contains
                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1) *db/da*0.99_dp
              p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1) = &
                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1) *db/da*0.99_dp
-          end if      
+          end if
           
        end do
     end do
@@ -13772,7 +13772,7 @@ contains
     ! the matrix is used (rmatrix%p_rdiscretisation). This is
     ! normally attached to the matrix by bilf_createMatrixStructure.
     !
-    ! The matrix must be unsorted when this routine is called, 
+    ! The matrix must be unsorted when this routine is called,
     ! otherwise an error is thrown.
     !</description>
 
@@ -13809,7 +13809,7 @@ contains
 
     ! OPTIONAL: A collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
     !</inputoutput>
 
@@ -13876,12 +13876,12 @@ contains
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
-    case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+    case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
        ! Uniform and conformal discretisations
        select case (rmatrix%cdataType)
-       case (ST_DOUBLE) 
+       case (ST_DOUBLE)
           ! Which matrix structure do we have?
-          select case (rmatrix%cmatrixFormat) 
+          select case (rmatrix%cmatrixFormat)
           case (LSYSSC_MATRIX9)
 
              ! Probably allocate/clear the matrix
@@ -13951,7 +13951,7 @@ contains
 
   !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine dg_bilf_assembleSubmeshMat9Bdr2D_ss (rmatrixAssembly, rmatrix,&
        rvectorSol, raddTriaData, IedgeList,&
@@ -13996,7 +13996,7 @@ contains
 
     ! OPTIONAL: A pointer to a collection structure. This structure is given to the
     ! callback function for nonconstant coefficients to provide additional
-    ! information. 
+    ! information.
     type(t_collection), intent(inout), target, optional :: rcollection
 
     !</inputoutput>
@@ -14150,7 +14150,7 @@ contains
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
          rmatrix%p_rspatialDiscrTest%p_rtriangulation%h_IverticesAtElement,&
-         p_IverticesAtElement)   
+         p_IverticesAtElement)
 
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -14216,7 +14216,7 @@ contains
        !        do icubp = 1,ncubp
        !          ! Dxi1D is in [-1,1] while the current edge has parmeter values
        !          ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-       !          ! transformation to transform Dxi1D into that interval, this 
+       !          ! transformation to transform Dxi1D into that interval, this
        !          ! gives the parameter values in length parametrisation
        !          call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
        !              DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -14254,7 +14254,7 @@ contains
        !        #-----#-----#. . .#
        !
        ! --> On element iel, the basis function at "X" only interacts
-       !     with the basis functions in "O". Elements in the 
+       !     with the basis functions in "O". Elements in the
        !     neighbourhood ("*") have no support, therefore we only have
        !     to collect all "O" DOF`s.
        !
@@ -14286,35 +14286,35 @@ contains
        !
        ! We have indofTrial trial DOF`s per element and
        ! indofTest test DOF`s per element. Therefore there are
-       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-       ! "active" (i.e. have common support) on our current element, each 
+       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+       ! "active" (i.e. have common support) on our current element, each
        ! giving an additive contribution to the system matrix.
        !
        ! We build a quadratic indofTrial*indofTest local matrix:
-       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-       ! in the global system matrix, where the corresponding value 
+       ! Kentry(1..indofTrial,1..indofTest) receives the position
+       ! in the global system matrix, where the corresponding value
        ! has to be added to.
-       ! (The corresponding contributions can be saved separately, 
-       ! but we directly add them to the global matrix in this 
+       ! (The corresponding contributions can be saved separately,
+       ! but we directly add them to the global matrix in this
        ! approach.)
        !
-       ! We build local matrices for all our elements 
+       ! We build local matrices for all our elements
        ! in the set simultaneously. Get the positions of the local matrices
        ! in the global matrix.
        !      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
-       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)  
+       !          ubound(p_IdofsTest,1),ubound(p_IdofsTrial,1),IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryii,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryia,&
        !            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(2)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(1)%p_IdofsTrial, p_Kentryai,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)    
+       !            ubound(rlocalMatrixAssembly(1)%p_IdofsTrial,1), IELmax-IELset+1)
        !      call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
        !            rlocalMatrixAssembly(2)%p_IdofsTrial, p_Kentryaa,&
        !            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
@@ -14325,19 +14325,19 @@ contains
        call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryii,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(1)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryai,&
             ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
        call dg_bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(1)%p_IdofsTest, p_Kentryia,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)    
+            ubound(rlocalMatrixAssembly(1)%p_IdofsTest,1), IELmax-IELset+1)
        call bilf_getLocalMatrixIndices (rmatrix,rlocalMatrixAssembly(2)%p_IdofsTest, &
             rlocalMatrixAssembly(2)%p_IdofsTest, p_Kentryaa,&
             ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), &
-            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)   
+            ubound(rlocalMatrixAssembly(2)%p_IdofsTest,1), IELmax-IELset+1)
 
        ! -------------------- ELEMENT EVALUATION PHASE ----------------------
 
@@ -14349,7 +14349,7 @@ contains
 
        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
        ! the elements later. All of them can be combined with OR, what will give
-       ! a combined evaluation tag. 
+       ! a combined evaluation tag.
        cevaluationTag = rlocalMatrixAssembly(1)%cevaluationTag
 
        ! The cubature points are already initialised by 1D->2D mapping.
@@ -14452,7 +14452,7 @@ contains
        ! Calculate the values of the basis functions.
        !      call elem_generic_sim2 (rlocalMatrixAssembly%celementTest, &
        !          p_revalElementSet, rlocalMatrixAssembly%BderTest, &
-       !          rlocalMatrixAssembly%p_DbasTest) 
+       !          rlocalMatrixAssembly%p_DbasTest)
        call elem_generic_sim2 (rlocalMatrixAssembly(1)%celementTest, &
             rlocalMatrixAssembly(1)%revalElementSet,&
             rlocalMatrixAssembly(1)%BderTest, &
@@ -14496,7 +14496,7 @@ contains
 
        ! --------------------- DOF COMBINATION PHASE ------------------------
 
-       ! Values of all basis functions calculated. Now we can start 
+       ! Values of all basis functions calculated. Now we can start
        ! to integrate!
 
        ! Clear the local matrices
@@ -14516,14 +14516,14 @@ contains
        ! Check the bilinear form which one to use:
 
        !      if (rlocalMatrixAssembly%rform%ballCoeffConstant) then
-       !      
+       !
        !        ! Constant coefficients. The coefficients are to be found in
        !        ! the Dcoefficients variable of the form.
        !        !
        !        ! Loop over the elements in the current set.
        !
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          ! Get the length of the edge.
        !          dlen = DedgeLength(iel)
        !
@@ -14537,48 +14537,48 @@ contains
        !
        !            ! Loop over the additive factors in the bilinear form.
        !            do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
-       !            
-       !              ! Get from Idescriptors the type of the derivatives for the 
+       !
+       !              ! Get from Idescriptors the type of the derivatives for the
        !              ! test and trial functions. The summand we calculate
        !              ! here will be added to the matrix entry:
        !              !
        !              ! a_ij  =  int_... ( psi_j )_ib  *  ( phi_i )_ia
        !              !
-       !              ! -> Ix=0: function value, 
+       !              ! -> Ix=0: function value,
        !              !      =1: first derivative, ...
        !              !    as defined in the module 'derivative'.
-       !              
+       !
        !              ia = p_Idescriptors(1,ialbet)
        !              ib = p_Idescriptors(2,ialbet)
-       !              
+       !
        !              ! Multiply domega with the coefficient of the form.
        !              ! This gives the actual value to multiply the
        !              ! function value with before summing up to the integral.
        !              daux = domega * p_DcoefficientsBilf(ialbet)
-       !            
+       !
        !              ! Now loop through all possible combinations of DOF`s
        !              ! in the current cubature point. The outer loop
        !              ! loops through the "O"`s in the above picture,
        !              ! the test functions:
        !
        !              do idofe = 1,indofTest
-       !              
-       !                ! Get the value of the (test) basis function 
+       !
+       !                ! Get the value of the (test) basis function
        !                ! phi_i (our "O") in the cubature point:
        !                db = p_DbasTest(idofe,ib,icubp,iel)
-       !                
+       !
        !                ! Perform an inner loop through the other DOF`s
-       !                ! (the "X"). 
+       !                ! (the "X").
        !
        !                do jdofe = 1,indofTrial
-       !                
-       !                  ! Get the value of the basis function 
-       !                  ! psi_j (our "X") in the cubature point. 
+       !
+       !                  ! Get the value of the basis function
+       !                  ! psi_j (our "X") in the cubature point.
        !                  ! Them multiply:
        !                  !    db * dbas(..) * daux
        !                  ! ~= phi_i * psi_j * coefficient * cub.weight
        !                  ! Summing this up gives the integral, so the contribution
-       !                  ! to the global matrix. 
+       !                  ! to the global matrix.
        !                  !
        !                  ! Simply summing up db * dbas(..) * daux would give
        !                  ! the coefficient of the local matrix. We save this
@@ -14588,17 +14588,17 @@ contains
        !                  !p_DA(JCOLB) = p_DA(JCOLB) + db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
        !                  p_Dentry(jdofe,idofe,iel) = p_Dentry(jdofe,idofe,iel) + &
        !                                        db*p_DbasTrial(jdofe,ia,icubp,iel)*daux
-       !                
+       !
        !                end do ! jdofe
-       !              
+       !
        !              end do ! idofe
-       !              
+       !
        !            end do ! ialbet
        !
-       !          end do ! icubp 
-       !          
+       !          end do ! icubp
+       !
        !        end do ! iel
-       !        
+       !
        !      else
 
        ! Nonconstant coefficients. The coefficients are to be found in
@@ -14624,13 +14624,13 @@ contains
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalMatrixAssembly(1)%rform%itermcount
 
-                ! Get from Idescriptors the type of the derivatives for the 
+                ! Get from Idescriptors the type of the derivatives for the
                 ! test and trial functions. The summand we calculate
                 ! here will be added to the matrix entry:
                 !
                 ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
                 !
-                ! -> Ix=0: function value, 
+                ! -> Ix=0: function value,
                 !      =1: first derivative, ...
                 !    as defined in the module 'derivative'.
 
@@ -14651,23 +14651,23 @@ contains
 
                 do idofe = 1,indofTest
 
-                   ! Get the value of the (test) basis function 
+                   ! Get the value of the (test) basis function
                    ! phi_i (our "O") in the cubature point:
                    db1 = rlocalMatrixAssembly(1)%p_DbasTest(idofe,ib,icubp,iel)
                    db2 = rlocalMatrixAssembly(2)%p_DbasTest(idofe,ib,icubp,iel)
 
                    ! Perform an inner loop through the other DOF`s
-                   ! (the "X"). 
+                   ! (the "X").
 
                    do jdofe = 1,indofTrial
 
-                      ! Get the value of the basis function 
-                      ! psi_j (our "X") in the cubature point. 
+                      ! Get the value of the basis function
+                      ! psi_j (our "X") in the cubature point.
                       ! Them multiply:
                       !    db * dbas(..) * daux
                       ! ~= phi_i * psi_j * coefficient * cub.weight
                       ! Summing this up gives the integral, so the contribution
-                      ! to the global matrix. 
+                      ! to the global matrix.
                       !
                       ! Simply summing up db * dbas(..) * daux would give
                       ! the coefficient of the local matrix. We save this
@@ -14680,16 +14680,16 @@ contains
 
                       !                  ! Testfunction on the 'first' (i) side
                       !                  p_Dentryii(jdofe,idofe,iel) = &
-                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)   
+                      !                      p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(1,icubp,iel)
                       !                  p_Dentryai(jdofe,idofe,iel) = &
-                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)   
-                      !                  
+                      !                      p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux1*p_Dside(2,icubp,iel)
+                      !
                       !                  ! Testfunction on the 'second' (a) side
                       !                  p_Dentryia(jdofe,idofe,iel) = &
                       !                      p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(1,icubp,iel)
                       !                  p_Dentryaa(jdofe,idofe,iel) = &
                       !                      p_Dentryaa(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(2)%p_DbasTrial(jdofe,ia,icubp,iel)*daux2*p_Dside(2,icubp,iel)
-                      !                
+                      !
 
 
                       ! Testfunction on the 'first' (i) side
@@ -14703,7 +14703,7 @@ contains
                            p_Dentryia(jdofe,idofe,iel)+db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,ialbet)
 
                       !                      if ((p_Dentryia(jdofe,idofe,iel)<-1000000000.0_dp).and.(IelementList(2,IELset+iel-1).ne.0)) then
-                      !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)      
+                      !                write(*,*) 'Added', db2*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux2*p_Dside(1,iel)
                       !                write(*,*) 'ia',ia
                       !                write(*,*) 'daux1',daux1
                       !                write(*,*) 'daux2',daux2
@@ -14737,7 +14737,7 @@ contains
 
              end do ! ialbet
 
-          end do ! icubp 
+          end do ! icubp
 
        end do ! iel
 
@@ -14756,7 +14756,7 @@ contains
        !
        !        !$omp critical
        !        do iel = 1,IELmax-IELset+1
-       !          
+       !
        !          do idofe = 1,indofTest
        !            daux = 0.0_DP
        !            do jdofe = 1,indofTrial
@@ -14765,7 +14765,7 @@ contains
        !            p_DA(p_Kentry(idofe,idofe,iel)) = &
        !                p_DA(p_Kentry(idofe,idofe,iel)) + daux
        !          end do
-       !          
+       !
        !        end do ! iel
        !        !$omp end critical
        !
@@ -14845,12 +14845,12 @@ contains
 !  ! 2D version for double-precision vectors.
 !!</description>
 !
-!!<input> 
+!!<input>
 !  ! Type of error to compute. Bitfield. This is a combination of the
 !  ! PPERR_xxxx-constants, which specifies what to compute.
 !  ! Example: PPERR_L2ERROR computes the $L_2$-error.
 !  integer, intent(in) :: cerrortype
-!  
+!
 !  ! A discretisation structure specifying how to compute the error.
 !  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
 !
@@ -14858,7 +14858,7 @@ contains
 !  ! If omitted, the function is assumed to be constantly =0.
 !  type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 !
-!  ! OPTIONAL: A callback function that provides the analytical reference 
+!  ! OPTIONAL: A callback function that provides the analytical reference
 !  ! function to which the error should be computed.
 !  ! If not specified, the reference function is assumed to be zero!
 !  include 'intf_refFunctionSc.inc'
@@ -14871,7 +14871,7 @@ contains
 !!</input>
 !
 !!<inputoutput>
-!  ! OPTIONAL: A collection structure to provide additional 
+!  ! OPTIONAL: A collection structure to provide additional
 !  ! information for callback routines.
 !  type(t_collection), intent(inout), optional :: rcollection
 !
@@ -14890,59 +14890,59 @@ contains
 !    integer :: ielementDistr, ICUBP, NVE, NCOEFF
 !    integer :: IEL, IELmax, IELset, IELGlobal
 !    real(DP) :: OM
-!    
+!
 !    ! Array to tell the element which derivatives to calculate
 !    logical, dimension(EL_MAXNDER) :: Bder
-!    
+!
 !    ! For every cubature point on the reference element,
 !    ! the corresponding cubature weight
 !    real(DP), dimension(:), allocatable :: Domega
-!    
+!
 !    ! number of cubature points on the reference element
 !    integer :: ncubp
-!    
+!
 !    ! Number of local degees of freedom for test functions
 !    integer :: indofTrial
-!    
+!
 !    ! The triangulation structure - to shorten some things...
 !    type(t_triangulation), pointer :: p_rtriangulation
-!    
+!
 !    ! A pointer to an element-number list
 !    integer, dimension(:), pointer :: p_IelementList
-!    
+!
 !    ! An array receiving the coordinates of cubature points on
 !    ! the reference element for all elements in a set.
 !    real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
 !
 !    ! Arrays for saving Jacobian determinants and matrices
 !    real(DP), dimension(:,:), pointer :: p_Ddetj
-!    
+!
 !    ! Current element distribution
 !    type(t_elementDistribution), pointer :: p_relementDistribution
-!    
+!
 !    ! Number of elements in the current element distribution
 !    integer :: NEL, ielement1, ipoint1
-!    
+!
 !    real(dp) :: dx
 !
 !    ! Pointer to the values of the function that are computed by the callback routine.
 !    real(DP), dimension(:,:,:), allocatable :: Dcoefficients
-!    
+!
 !    ! Number of elements in a block. Normally =PPERR_NELEMSIM,
 !    ! except if there are less elements in the discretisation.
 !    integer :: nelementsPerBlock
-!    
+!
 !    ! A t_domainIntSubset structure that is used for storing information
 !    ! and passing it to callback routines.
 !    type(t_domainIntSubset) :: rintSubset
 !    type(t_evalElementSet) :: revalElementSet
-!    
+!
 !    ! An allocateable array accepting the DOF`s of a set of elements.
 !    integer, dimension(:,:), allocatable, target :: IdofsTrial
-!  
-!    ! Type of transformation from the reference to the real element 
+!
+!    ! Type of transformation from the reference to the real element
 !    integer(I32) :: ctrafoType
-!    
+!
 !    ! Element evaluation tag; collects some information necessary for evaluating
 !    ! the elements.
 !    integer(I32) :: cevaluationTag
@@ -14960,23 +14960,23 @@ contains
 !    case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR)
 !      Bder(DER_FUNC) = .true.
 !      NCOEFF = 3
-!    case (PPERR_H1ERROR) 
+!    case (PPERR_H1ERROR)
 !      Bder(DER_DERIV_X) = .true.
 !      Bder(DER_DERIV_Y) = .true.
 !      NCOEFF = 5
 !    case default
 !      NCOEFF = 2
 !    end select
-!        
+!
 !    ! Get a pointer to the triangulation - for easier access.
 !    p_rtriangulation => rdiscretisation%p_rtriangulation
-!    
+!
 !    ! For saving some memory in smaller discretisations, we calculate
 !    ! the number of elements per block. For smaller triangulations,
 !    ! this is NEL. If there are too many elements, it is at most
 !    ! PPERR_NELEMSIM. This is only used for allocating some arrays.
 !    nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
-!    
+!
 !    ! Set the current error to 0 and add the error contributions of each element
 !    ! to that.
 !    derror = 0.0_DP
@@ -14990,53 +14990,53 @@ contains
 !    ! of trial and test functions) in the discretisation.
 !
 !    do ielementDistr = 1, rdiscretisation%inumFESpaces
-!    
+!
 !      ! Activate the current element distribution
 !      p_relementDistribution => rdiscretisation%RelementDistr(ielementDistr)
-!    
+!
 !      ! Cancel if this element distribution is empty.
 !      if (p_relementDistribution%NEL .eq. 0) cycle
 !
 !      ! Get the number of local DOF`s for trial functions
 !      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
-!      
+!
 !      ! Get the number of corner vertices of the element
 !      NVE = elem_igetNVE(p_relementDistribution%celement)
-!      
+!
 !      ! Get from the trial element space the type of coordinate system
 !      ! that is used there:
 !      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 !
 !      ! Get the number of cubature points for the cubature formula
 !      ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
-!      
+!
 !      ! Allocate two arrays for the points and the weights
 !      allocate(Domega(ncubp))
 !      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType), ncubp))
-!      
+!
 !      ! Get the cubature formula
 !      call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
-!      
+!
 !      ! Allocate memory for the DOF`s of all the elements.
 !      allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 !
 !      ! Allocate memory for the coefficients
 !      allocate(Dcoefficients(ncubp, nelementsPerBlock, NCOEFF))
-!    
+!
 !      ! Initialisation of the element set.
 !      call elprep_init(revalElementSet)
 !
 !      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
 !      ! the elements later. All of them can be combined with OR, what will give
-!      ! a combined evaluation tag. 
+!      ! a combined evaluation tag.
 !      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
-!                      
+!
 !      if (present(ffunctionReference) .or.&
 !          present(ffunctionWeight)) then
 !        ! Evaluate real coordinates if necessary.
 !        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_REALPOINTS)
 !      end if
-!                      
+!
 !      ! Make sure that we have determinants.
 !      cevaluationTag = ior(cevaluationTag, EL_EVLTAG_DETJ)
 !
@@ -15044,35 +15044,35 @@ contains
 !      ! with that combination of trial functions
 !      call storage_getbase_int (p_relementDistribution%h_IelementList, &
 !                                p_IelementList)
-!                     
+!
 !      ! Get the number of elements there.
 !      NEL = p_relementDistribution%NEL
-!    
+!
 !      ! Loop over the elements - blockwise.
 !      do IELset = 1, NEL, PPERR_NELEMSIM
-!      
+!
 !        ! We always handle LINF_NELEMSIM elements simultaneously.
 !        ! How many elements have we actually here?
 !        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
 !        ! elements simultaneously.
-!        
+!
 !        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
-!      
+!
 !        ! Calculate the global DOF`s into IdofsTrial.
 !        !
 !        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
 !        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
 !        call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                     IdofsTrial)
-!                                     
-!        ! Prepare the call to the evaluation routine of the analytic function.    
+!
+!        ! Prepare the call to the evaluation routine of the analytic function.
 !        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
 !        rintSubset%ielementDistribution = ielementDistr
 !        rintSubset%ielementStartIdx = IELset
 !        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
 !        rintSubset%p_IdofsTrial => IdofsTrial
 !        rintSubset%celement = p_relementDistribution%celement
-!    
+!
 !        ! Calculate all information that is necessary to evaluate the finite element
 !        ! on all cells of our subset. This includes the coordinates of the points
 !        ! on the cells.
@@ -15087,13 +15087,13 @@ contains
 !
 !        ! At this point, we must select the correct domain integration and coefficient
 !        ! calculation routine, depending which type of error we should compute!
-!        
+!
 !        select case (cerrortype)
-!        
+!
 !        case (PPERR_L2ERROR)
-!          
+!
 !          ! L2-error uses only the values of the function.
-!          
+!
 !          if (present(ffunctionReference)) then
 !            ! It is time to call our coefficient function to calculate the
 !            ! function values in the cubature points:  u(x,y)
@@ -15106,7 +15106,7 @@ contains
 !          else
 !            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
 !          end if
-!          
+!
 !          if (present(rvectorScalar)) then
 !            ! Calculate the values of the FE function in the
 !            ! cubature points: u_h(x,y).
@@ -15128,7 +15128,7 @@ contains
 !!                IdofsTrial, rintSubset, &
 !!                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
 !          else
-!            
+!
 !            do ielement1 = 1,IELmax-IELset+1
 !            do ipoint1 = 1,size(revalElementSet%p_DpointsReal,2)
 !            dx = revalElementSet%p_DpointsReal(1,1,ielement1)
@@ -15139,76 +15139,76 @@ contains
 !            end if
 !            end do
 !            end do
-!            
+!
 !          end if
 !
 !          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
 !          ! and multiplication by Dcoefficients(:,:,3) yields
 !          ! the error "w*[u-u_h](cubature pt.)"!
-!          !        
+!          !
 !          ! Loop through elements in the set and for each element,
 !          ! loop through the DOF`s and cubature points to calculate the
 !          ! integral: int_Omega w*(u-u_h,u-u_h) dx
-!          
+!
 !          if (present(relementError)) then
 !
 !            do IEL=1,IELmax-IELset+1
-!          
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
-!                
+!
 !                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
 !
 !                IELGlobal = p_IelementList(IELset+IEL-1)
-!                
+!
 !                p_Derror(IELGlobal) = OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
 !
 !                derror = derror + p_Derror(IELGlobal)
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          else
 !
 !            do IEL=1,IELmax-IELset+1
-!          
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
-!                
+!
 !                ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
-!                
+!
 !                derror = derror + &
 !                         OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          end if
 !
 !        case (PPERR_L1ERROR)
-!          
+!
 !          ! L1-error uses only the values of the function.
-!          
+!
 !          if (present(ffunctionReference)) then
 !            ! It is time to call our coefficient function to calculate the
 !            ! function values in the cubature points:  u(x,y)
@@ -15221,7 +15221,7 @@ contains
 !          else
 !            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
 !          end if
-!          
+!
 !          if (present(rvectorScalar)) then
 !            ! Calculate the values of the FE function in the
 !            ! cubature points: u_h(x,y).
@@ -15232,7 +15232,7 @@ contains
 !          else
 !            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
 !          end if
-!          
+!
 !          if (present(ffunctionWeight)) then
 !            ! Calculate the values of the weighting function in
 !            ! the cubature points: w(x).
@@ -15258,54 +15258,54 @@ contains
 !          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
 !          ! and multiplication by Dcoefficients(:,:,3) yields
 !          ! the error "w*[u-u_h](cubature pt.)"!
-!          !        
+!          !
 !          ! Loop through elements in the set and for each element,
 !          ! loop through the DOF`s and cubature points to calculate the
 !          ! integral: int_Omega w*abs(u-u_h) dx
-!          
+!
 !          if (present(relementError)) then
 !
 !            do IEL=1,IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
-!                
+!
 !                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)*Dcoefficients(icubp,IEL,3)
-!                
+!
 !                ! L1-error is:   int_... abs(u-u_h) dx
-!                
+!
 !                IELGlobal = p_IelementList(IELset+IEL-1)
 !
 !                p_Derror(IELGlobal) = OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
 !
 !                derror = derror + p_Derror(IELGlobal)
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          else
-!            
+!
 !            do IEL=1,IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
-!                
+!
 !                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)*Dcoefficients(icubp,IEL,3)
-!                
+!
 !                ! L1-error is:   int_... abs(u-u_h) dx
-!                
+!
 !                derror = derror + &
 !                         OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          end if
@@ -15314,7 +15314,7 @@ contains
 !
 !          ! H1-error uses only 1st derivative of the function.
 !
-!          if (present(ffunctionReference)) then          
+!          if (present(ffunctionReference)) then
 !            ! It is time to call our coefficient function to calculate the
 !            ! X-derivative values in the cubature points:  u(x,y)
 !            ! The result is saved in Dcoefficients(:,:,1)
@@ -15323,7 +15323,7 @@ contains
 !                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
 !                        IdofsTrial, rintSubset,&
 !                        Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
-!                        
+!
 !            ! Calculate the Y-derivative to Dcoefficients(:,:,2)
 !            call ffunctionReference (DER_DERIV_Y,rdiscretisation, &
 !                        int(IELmax-IELset+1), ncubp,&
@@ -15333,7 +15333,7 @@ contains
 !          else
 !            Dcoefficients(:,1:IELmax-IELset+1,1:2) = 0.0_DP
 !          end if
-!          
+!
 !          if (present(rvectorScalar)) then
 !            ! Calculate the X/Y-derivative of the FE function in the
 !            ! cubature points: u_h(x,y).
@@ -15362,32 +15362,32 @@ contains
 !            Dcoefficients(:,1:IELmax-IELset+1,5) = 1.0_DP
 !          end if
 !
-!          ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) 
+!          ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4)
 !          ! and multiplication by Dcoefficients(:,:,5) yields
 !          ! the error "w*grad(u-u_h)(cubature pt.)"!
-!          !        
+!          !
 !          ! Loop through elements in the set and for each element,
 !          ! loop through the DOF`s and cubature points to calculate the
 !          ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
-!          
+!
 !          if (present(relementError)) then
 !
 !            do IEL=1,IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
-!                
+!
 !                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
-!                
+!
 !                IELGlobal = p_IelementList(IELset+IEL-1)
 !
 !                p_Derror(IELGlobal) = OM * ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
@@ -15395,34 +15395,34 @@ contains
 !
 !                derror = derror + p_Derror(IELGlobal)
 !
-!              end do ! ICUBP 
-!              
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          else
-!            
+!
 !            do IEL=1,IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
-!                
+!
 !                ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
-!                
+!
 !                derror = derror + OM * &
 !                         ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
 !                          (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
 !
-!              end do ! ICUBP 
-!              
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          end if
@@ -15430,7 +15430,7 @@ contains
 !        case (PPERR_MEANERROR)
 !
 !          ! The integral mean value uses only the values of the function
-!          
+!
 !          if (present(ffunctionReference)) then
 !            ! Calculate the values of the coefficient function in the
 !            ! cubature points: u(x).
@@ -15443,7 +15443,7 @@ contains
 !          else
 !            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
 !          end if
-!          
+!
 !          if (present(rvectorScalar)) then
 !            ! Calculate the values of the FE function in the
 !            ! cubature points: u_h(x).
@@ -15454,7 +15454,7 @@ contains
 !          else
 !            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
 !          end if
-!          
+!
 !          if (present(ffunctionWeight)) then
 !            ! Calculate the values of the weighting function in
 !            ! the cubature points: w(x).
@@ -15471,70 +15471,70 @@ contains
 !          ! Subtraction of Dcoefficients(:,:,2) from Dcoefficients(:,:,1)
 !          ! and multiplication by Dcoefficients(:,:,3) yields
 !          ! the error "w*[u-u_h] (cubature pt.)"!
-!          !        
+!          !
 !          ! Loop through elements in the set and for each element,
 !          ! loop through the DOF`s and cubature points to calculate the
 !          ! integral: int_Omega w*(u-u_h) dx
 !
 !          if (present(relementError)) then
-!            
+!
 !            do IEL = 1, IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
-!                
+!
 !                IELGlobal = p_IelementList(IELset+IEL-1)
-!                
+!
 !                p_Derror(IELGlobal) = OM * ( Dcoefficients(icubp,IEL,1) - &
 !                                             Dcoefficients(icubp,IEL,2) )
 !
 !                derror = derror + p_Derror(IELGlobal)
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
-!            
+!
 !          else
-!            
+!
 !            do IEL = 1, IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
-!                
+!
 !                derror = derror + &
 !                         OM * ( Dcoefficients(icubp,IEL,1) - &
 !                                Dcoefficients(icubp,IEL,2) )
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          end if
-!        
+!
 !        case default
 !
 !          ! This case realises
 !          !
 !          !  int (w u) dx
-!          !  
+!          !
 !          ! with w being the weight and u the analytical function given by
 !          ! ffunctionReference. This function must be present such that it can
 !          ! be evaluated -- otherwise the user made a mistake in calling
@@ -15577,62 +15577,62 @@ contains
 !          ! integral: int_Omega w*f(u) dx
 !
 !          if (present(relementError)) then
-!            
+!
 !            do IEL = 1, IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
-!                
+!
 !                IELGlobal = p_IelementList(IELset+IEL-1)
-!                
+!
 !                p_Derror(IELGlobal) = OM * Dcoefficients(icubp,IEL,1)
 !
 !                derror = derror + p_Derror(IELGlobal)
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
-!            
+!
 !          else
-!            
+!
 !            do IEL = 1, IELmax-IELset+1
-!              
+!
 !              ! Loop over all cubature points on the current element
 !              do icubp = 1, ncubp
-!                
+!
 !                ! calculate the current weighting factor in the cubature formula
 !                ! in that cubature point.
 !                !
 !                ! Take the absolut value of the determinant of the mapping.
 !                ! In 2D, the determinant is always positive, whereas in 3D,
 !                ! the determinant might be negative -- that is normal!
-!                
+!
 !                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
-!                
+!
 !                derror = derror + OM * Dcoefficients(icubp,IEL,1)
-!                
-!              end do ! ICUBP 
-!              
+!
+!              end do ! ICUBP
+!
 !            end do ! IEL
 !
 !          end if
 !
 !        end select
-!        
+!
 !        ! Release the temporary domain integration structure again
 !        call domint_doneIntegration (rintSubset)
-!    
+!
 !      end do ! IELset
-!      
+!
 !      ! Release memory
 !      call elprep_releaseElementSet(revalElementSet)
 !
@@ -15752,7 +15752,7 @@ contains
       na = rmatrix%NA
 
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! Kentry(1..indofTrial,1..indofTest) receives the position 
+      ! Kentry(1..indofTrial,1..indofTest) receives the position
       !   in the global system matrix
       !
       ! Loop through elements in the set and for each element,
@@ -15764,7 +15764,7 @@ contains
         ! define the rows in the matrix.
         do idofe = 1,indofTest
         
-          ! Row IDOFE of the local matrix corresponds 
+          ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
@@ -15781,7 +15781,7 @@ contains
           
           do jdofe = 1,indofTrial
             
-            ! Get the global DOF of the "X" which interacts with 
+            ! Get the global DOF of the "X" which interacts with
             ! our "O".
             
             jdfg=Icolumns(jdofe,iel)
@@ -15795,7 +15795,7 @@ contains
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
 
-            ! Because columns in the global matrix are sorted 
+            ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
             
@@ -15826,7 +15826,7 @@ contains
       nnzrows = rmatrix%NNZROWS
 
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! Kentry(1..indofTrial,1..indofTest) receives the position 
+      ! Kentry(1..indofTrial,1..indofTest) receives the position
       !   in the global system matrix
       !
       ! Loop through elements in the set and for each element,
@@ -15838,7 +15838,7 @@ contains
         ! define the rows in the matrix.
         do idofe = 1,indofTest
         
-          ! Row IDOFE of the local matrix corresponds 
+          ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
@@ -15854,7 +15854,7 @@ contains
           
           do jdofe = 1,indofTrial
             
-            ! Get the global DOF of the "X" which interacts with 
+            ! Get the global DOF of the "X" which interacts with
             ! our "O".
             
             jdfg=Icolumns(jdofe,iel)
@@ -15868,7 +15868,7 @@ contains
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
 
-            ! Because columns in the global matrix are sorted 
+            ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
             

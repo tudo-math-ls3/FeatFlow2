@@ -18,7 +18,7 @@ module commandparser
   use fespacehierarchybase
   use fespacehierarchy
   use spatialdiscretisation
-  use multilevelprojection  
+  use multilevelprojection
   use linearsystemscalar
   use linearsystemblock
   
@@ -390,12 +390,12 @@ contains
   !</input>
     
   !<output>
-    ! Start line in the command block. 
+    ! Start line in the command block.
     ! A value =0 indicates an error.
     ! If istartline=0 and iendline>0, the block end was not found.
     integer, intent(out) :: istartline
     
-    ! End line in the command block. 
+    ! End line in the command block.
     ! If this equals to istartline, this is a 1-line command block.
     ! Otherwise, the command block starts with "{" and ends with "}".
     integer, intent(out) :: iendline
@@ -470,7 +470,7 @@ contains
           iendline = icurrentline
           return
         
-        end if        
+        end if
       
       end if
 
@@ -490,10 +490,10 @@ contains
     ! Command block with commands.
     type(t_commandBlock), intent(in) :: rcmdblock
 
-    ! Start line in the command block. 
+    ! Start line in the command block.
     integer, intent(in) :: istartline
     
-    ! End line in the command block. 
+    ! End line in the command block.
     integer, intent(in) :: iendline
   !</input>
     
@@ -625,7 +625,7 @@ contains
       ! Try to match the command
       call cmdprs_commandmatch (scommandtrimmed,spatternINT,bmatch)
 
-      if (bmatch) then      
+      if (bmatch) then
         ! Create INT variable.
         istart = 0
         iend = 0
@@ -633,7 +633,7 @@ contains
         call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
         call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
         call collct_setvalue_int (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
-            0, .true., ssectionname=ssectionname) 
+            0, .true., ssectionname=ssectionname)
       end if
     end if
     
@@ -648,7 +648,7 @@ contains
         call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
         call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
         call collct_setvalue_real (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
-            0.0_DP, .true., ssectionname=ssectionname) 
+            0.0_DP, .true., ssectionname=ssectionname)
       end if
     end if
 
@@ -663,7 +663,7 @@ contains
         call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
         call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
         call collct_setvalue_string (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
-            "", .true., ssectionname=ssectionname) 
+            "", .true., ssectionname=ssectionname)
       end if
     end if
 
@@ -696,7 +696,7 @@ contains
         call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
         call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
         call collct_setvalue_real (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
-            0.0_DP, .true., ssectionname=ssectionname) 
+            0.0_DP, .true., ssectionname=ssectionname)
         istart2 = 0
         iend2 = 0
         call tpsym_evalExpression (scommandtrimmed(istart:),rcmdStatus,inestlevel,istart2,iend2,rvalue)
@@ -714,7 +714,7 @@ contains
         call cmdprs_nexttoken (scommandtrimmed,istart,iend,len(scommandtrimmed))
         call cmdprs_getSymbolSection (rcmdStatus%rcollection,scommandtrimmed(istart:iend),inestlevel,ssectionname)
         call collct_setvalue_string (rcmdStatus%rcollection, scommandtrimmed(istart:iend), &
-            "", .true., ssectionname=ssectionname) 
+            "", .true., ssectionname=ssectionname)
         istart2 = 0
         iend2 = 0
         call tpsym_evalExpression (scommandtrimmed(istart:),rcmdStatus,inestlevel,istart2,iend2,rvalue)
@@ -995,7 +995,7 @@ contains
       end if
     end do
 
-    ! Release memory    
+    ! Release memory
     call cmdprs_donecmdblock (rcmdBlock)
     sin = ""
     sinput = ""
@@ -1153,7 +1153,7 @@ contains
       iend = 0
       call tpsym_evalExpression (stemp,rcmdStatus,0,istart,iend,rvalue)
       return
-    end if    
+    end if
 
     ! Not found
     ierror = 1
@@ -1364,7 +1364,7 @@ contains
         call cmdprs_nexttoken (sstring,istart,iend,ilength)
         if (istart .eq. 0) return
         
-      else      
+      else
 
         ! Right operator more important. Evaluate the right expression first and
         ! calculate a new value with the operator.
@@ -1633,8 +1633,8 @@ contains
         else if (ssource(istart:iend) .eq. ")") then
           ibracket = ibracket-1
           ! Check if we are done.
-          if (ibracket .eq. 0) exit 
-        else if ((ssource(istart:iend) .eq. ",") .and. (ibracket .eq. 1)) then  
+          if (ibracket .eq. 0) exit
+        else if ((ssource(istart:iend) .eq. ",") .and. (ibracket .eq. 1)) then
           ! Our argument
           iargs = iargs + 1
         end if
@@ -1676,9 +1676,9 @@ contains
       
         ! Evaluate the next expression up to the closing bracket.
         call tpsym_evalExpression (ssource,&
-            rcmdStatus,inestlevel,istart,iend,p_Rvalues(i))            
+            rcmdStatus,inestlevel,istart,iend,p_Rvalues(i))
             
-        if (istart2 .ne. 0) then            
+        if (istart2 .ne. 0) then
           if (ssource(istart2:iend2) .eq. "=") then
             ! Optional argument. Get its name as variable tag.
             ! For that purpose, go one token back from the "=" sign.
@@ -1762,7 +1762,7 @@ contains
     isemicolon2 = 0
     berror = .false.
     call cmdprs_nexttoken (scommand,istart,iend,ilength)
-    do while (istart .ne. 0) 
+    do while (istart .ne. 0)
       ! Find the semicola
       if (scommand(istart:iend) .eq. ";") then
         if (isemicolon1 .eq. 0) then
@@ -1777,7 +1777,7 @@ contains
       ! their ends (before the ")").
       else if (scommand(istart:iend) .eq. "(") then
         istartarg = iend+2
-      else if (scommand(istart:iend) .eq. ")") then  
+      else if (scommand(istart:iend) .eq. ")") then
         iendarg = istart-2
       end if
 
@@ -1794,7 +1794,7 @@ contains
     
       ! Execute the FOR loop in an endless DO loop.
       bfirst = .true.
-      do while (.not. rcmdStatus%bterminate .and. (rcmdStatus%ierror .eq. 0)) 
+      do while (.not. rcmdStatus%bterminate .and. (rcmdStatus%ierror .eq. 0))
       
         if (.not. bfirst) then
           ! Check termination criterion
@@ -1911,7 +1911,7 @@ contains
       call output_line ("Invalid arguments!")
       return
 
-    else 
+    else
     
       ! Try to evaluate a FEAT command
       call fcmd_evalCommand (sstring,rcmdStatus,inestlevel,rvalue,bunknown,Rvalues)

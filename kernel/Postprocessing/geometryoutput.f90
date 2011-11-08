@@ -108,7 +108,7 @@ contains
   subroutine geoout_writeGnuplotTria2D (Dpoints,ifile,sfilename)
   
 !<description>
-  ! Writes a 2D tria element to a Gnuplot file. 
+  ! Writes a 2D tria element to a Gnuplot file.
 !</description>
 
 !<input>
@@ -169,7 +169,7 @@ contains
   subroutine geoout_writeGnuplotQuad2D (Dpoints,ifile,sfilename)
   
 !<description>
-  ! Writes a 2D quad element to a Gnuplot file. 
+  ! Writes a 2D quad element to a Gnuplot file.
 !</description>
 
 !<input>

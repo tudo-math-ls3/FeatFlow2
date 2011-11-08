@@ -89,7 +89,7 @@ CONTAINS
              rCHproblem%NLMAX)%rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
     do i=1,rCHproblem%RlevelInfo(rCHproblem%NLMAX)%rtriangulation%NVT
-      call CH_iniconPhi(p_DvertexCoords(1,i),p_DvertexCoords(2,i), p_vectordata(i))	
+      call CH_iniconPhi(p_DvertexCoords(1,i),p_DvertexCoords(2,i), p_vectordata(i))
     end do
 
     ! for initial solution of chemical potential
@@ -198,7 +198,7 @@ CONTAINS
     ! An object for the block discretisation on one level
 	! MCai,
 	! In CH problem, we have two blocks. If we apply Ciarlet-Raviart type mixed
-	! finite element, two blocks have same discretisation. But, it is better to 
+	! finite element, two blocks have same discretisation. But, it is better to
 	! use two pointers to denote two blocks
 	
     ! An object for the block discretisation on one level
@@ -212,7 +212,7 @@ CONTAINS
     integer(i32) ::  ieltype_A, ieltype_B
 
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Which discretisation is to use?
     ! Which cubature formula should be used?
     call parlst_getvalue_int (rCHproblem%rparamList,'CH-DISCRETISATION',&
@@ -278,7 +278,7 @@ CONTAINS
       allocate(p_rdiscretisationMass)
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
-      ! solution vector. 
+      ! solution vector.
 	  
       ! MCai,
       ! In CH problem, we have two blocks. If we apply Ciarlet-Raviart type mixed
@@ -292,7 +292,7 @@ CONTAINS
       call spdiscr_initBlockDiscr(&
         p_rdiscretisation,2,p_rtriangulation,p_rboundary)
 
-      ! rdiscretisation%RspatialDiscr is a list of scalar 
+      ! rdiscretisation%RspatialDiscr is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with two components:
       !  Component 1 = Phase variable
@@ -308,7 +308,7 @@ CONTAINS
       p_rdiscretisation%RspatialDiscr(1)% &
         RelementDistr(1)%ccubTypeLinForm = icubF
 
-      ! 2nd discretisation, icubB should be equal to icubA, we do not need it now. 
+      ! 2nd discretisation, icubB should be equal to icubA, we do not need it now.
       call spdiscr_initDiscr_simple ( &
         p_rdiscretisation%RspatialDiscr(2), &
         ieltype_B,icubB,p_rtriangulation, p_rboundary)

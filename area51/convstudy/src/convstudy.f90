@@ -233,7 +233,7 @@ contains
     type(t_collection) :: rcollection
     type(t_vectorBlock), target :: rvector
     real(DP) :: derrorL1, derrorL2, derrorH1
-    integer :: i,j 
+    integer :: i,j
 
     do i = 1, size(rdataSetRef%Rvector)
       do j = 1, size(rdataSet%Rvector)

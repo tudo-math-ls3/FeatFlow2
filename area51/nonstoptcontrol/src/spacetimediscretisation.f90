@@ -7,7 +7,7 @@
 !# This module contains routines for the space time discretisation.
 !# The structure t_ccoptSpaceTimeDiscretisation defines the general
 !# discretisation of the underlying problem in space and time and can be
-!# initialised and cleaned up with the routines in this module. 
+!# initialised and cleaned up with the routines in this module.
 !#
 !# The following routines can be found here:
 !#

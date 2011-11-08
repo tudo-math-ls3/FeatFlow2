@@ -1001,7 +1001,7 @@ contains
 
 #ifndef USE_OPENMP
     pure&
-#endif    
+#endif
     subroutine doStdPrelimitDble(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
       
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
@@ -1211,7 +1211,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -1383,7 +1383,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -1664,7 +1664,7 @@ contains
 
         ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
-        ! Get the maximum edge number, such that we handle 
+        ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
         
         IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -1827,7 +1827,7 @@ contains
 
         ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
-        ! Get the maximum edge number, such that we handle 
+        ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
         
         IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -1944,7 +1944,7 @@ contains
           j  = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
-          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge) 
+          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
  
           ! Apply limited antidiffusive fluxes
           Dy(i,:) = Dy(i,:) + F_ij
@@ -1998,7 +1998,7 @@ contains
           j  = IedgeList(2,iedge)
           
           ! Correct antidiffusive flux
-          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge) 
+          F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
 
           ! Apply limited antidiffusive fluxes
           Dy(i,:) = Dy(i,:) + F_ij/ML(i)
@@ -2558,7 +2558,7 @@ contains
 
 #ifndef USE_OPENMP
     pure&
-#endif    
+#endif
     subroutine doStdPrelimitDble(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
       
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
@@ -2767,7 +2767,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -2907,7 +2907,7 @@ contains
       real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
       ! local variables
-      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j     
+      integer :: IEDGEmax,IEDGEset,i,idx,iedge,igroup,j
 
       !$omp parallel default(shared)&
       !$omp private(DdataAtEdge,DtransformedDataAtEdge,idx,IEDGEmax,i,j,iedge)&
@@ -2939,7 +2939,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3150,7 +3150,7 @@ contains
       real(DP), dimension(NVAR) :: F_ij,R_ij
       integer :: iedge,i,j
 
-      ! Loop over all edges      
+      ! Loop over all edges
       !$omp parallel do default(shared) private(i,j,F_ij,R_ij)&
       !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
       do iedge = 1, NEDGE
@@ -3221,7 +3221,7 @@ contains
 
         ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
-        ! Get the maximum edge number, such that we handle 
+        ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
         
         IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3384,7 +3384,7 @@ contains
 
         ! We always handle  edges simultaneously.
         ! How many edges have we actually here?
-        ! Get the maximum edge number, such that we handle 
+        ! Get the maximum edge number, such that we handle
         ! at most  edges simultaneously.
         
         IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3764,7 +3764,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3864,7 +3864,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3978,7 +3978,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4084,7 +4084,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4172,7 +4172,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4286,7 +4286,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4392,7 +4392,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4486,7 +4486,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4574,7 +4574,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4656,7 +4656,7 @@ contains
       !$omp private(Daux1,Daux2,Dflux,i,ivar,j)
       do idx = 1, size(DcharVariablesAtEdge,2)
         
-        ! Compute unidirectional antidiffusive fluxes 
+        ! Compute unidirectional antidiffusive fluxes
         Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
                  DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
@@ -4727,7 +4727,7 @@ contains
       !$omp private(Daux1,Daux2,Dflux,daux,i,ivar,j,jvar)
       do idx = 1, size(DcharVariablesAtEdge,2)
         
-        ! Compute unidirectional antidiffusive fluxes 
+        ! Compute unidirectional antidiffusive fluxes
         Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
                  DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
@@ -4742,7 +4742,7 @@ contains
         i = IedgeList(1,idx)
         j = IedgeList(2,idx)
 
-        ! Loop over all characteristic variables 
+        ! Loop over all characteristic variables
         ! and limit characteristic fluxes
         do ivar = 1, NVAR
 
@@ -4752,7 +4752,7 @@ contains
             else
               Daux2(ivar) = Daux2(ivar)+Drm(ivar,i)*Dflux(ivar)
             end if
-          else   
+          else
             if (Dflux(ivar) .lt. 0) then
               Daux2(ivar) = Daux2(ivar)+Drp(ivar,j)*Dflux(ivar)
             else
@@ -4966,7 +4966,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5066,7 +5066,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5180,7 +5180,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5286,7 +5286,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5374,7 +5374,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5488,7 +5488,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5594,7 +5594,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5688,7 +5688,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5776,7 +5776,7 @@ contains
 
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5857,7 +5857,7 @@ contains
       !$omp private(Daux1,Daux2,Dflux,i,ivar,j)
       do idx = 1, size(DcharVariablesAtEdge,2)
         
-        ! Compute unidirectional antidiffusive fluxes 
+        ! Compute unidirectional antidiffusive fluxes
         Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
                  DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
@@ -5927,7 +5927,7 @@ contains
       !$omp private(Daux1,Daux2,Dflux,daux,i,ivar,j,jvar)
       do idx = 1, size(DcharVariablesAtEdge,2)
         
-        ! Compute unidirectional antidiffusive fluxes 
+        ! Compute unidirectional antidiffusive fluxes
         Daux1 = (DcoeffsAtEdge(idirection,2,idx)-&
                  DcoeffsAtEdge(idirection,1,idx))*&
                  DeigenvaluesAtEdge(:,idx)/2.0_DP
@@ -5942,7 +5942,7 @@ contains
         i = IedgeList(1,idx)
         j = IedgeList(2,idx)
 
-        ! Loop over all characteristic variables 
+        ! Loop over all characteristic variables
         ! and limit characteristic fluxes
         do ivar = 1, NVAR
 
@@ -5952,7 +5952,7 @@ contains
             else
               Daux2(ivar) = Daux2(ivar)+Drm(ivar,i)*Dflux(ivar)
             end if
-          else   
+          else
             if (Dflux(ivar) .lt. 0) then
               Daux2(ivar) = Daux2(ivar)+Drp(ivar,j)*Dflux(ivar)
             else
@@ -6016,7 +6016,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Switch for flux assembly
-    ! TRUE  : fluxes are not modified externally so that 
+    ! TRUE  : fluxes are not modified externally so that
     !         quicker assembly procedures may be feasible
     ! FALSE : fluxes are truely assembled even if this
     !         leads to an expensive addition of zeros
@@ -6187,7 +6187,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.     
+        buseCallback = .false.
       end if
 
       !-------------------------------------------------------------------------
@@ -6364,7 +6364,7 @@ contains
             else
               ! The implicit part of the raw-antidiffusive fluxes does
               ! not exists; the fluxes should be cleared so just
-              ! overwrite them by the explicit part 
+              ! overwrite them by the explicit part
               call lalg_copyVector(p_Dflux0, p_Dflux)
             end if
             ! if theta = 1 then the explicit part does not exist
@@ -6429,7 +6429,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.     
+        buseCallback = .false.
       end if
 
       ! Assemble spatial part of raw-antidiffusive fluxes
@@ -6679,7 +6679,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -6725,7 +6725,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -6756,7 +6756,7 @@ contains
             ! Get actual edge number
             iedge = idx+IEDGEset-1
             
-            ! Add antidiffusive fluxes            
+            ! Add antidiffusive fluxes
             Dflux(:,iedge) = Dflux(:,iedge) + DfluxAtEdge(:,idx)
           end do
         end do
@@ -6966,7 +6966,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Switch for flux assembly
-    ! TRUE  : fluxes are not modified externally so that 
+    ! TRUE  : fluxes are not modified externally so that
     !         quicker assembly procedures may be feasible
     ! FALSE : fluxes are truely assembled even if this
     !         leads to an expensive addition of zeros
@@ -7089,7 +7089,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.     
+        buseCallback = .false.
       end if
 
       !-------------------------------------------------------------------------
@@ -7266,7 +7266,7 @@ contains
             else
               ! The implicit part of the raw-antidiffusive fluxes does
               ! not exists; the fluxes should be cleared so just
-              ! overwrite them by the explicit part 
+              ! overwrite them by the explicit part
               call lalg_copyVector(p_Dflux0, p_Dflux)
             end if
             ! if theta = 1 then the explicit part does not exist
@@ -7331,7 +7331,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.     
+        buseCallback = .false.
       end if
 
       ! Assemble spatial part of raw-antidiffusive fluxes
@@ -7712,7 +7712,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -7758,7 +7758,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -7789,7 +7789,7 @@ contains
             ! Get actual edge number
             iedge = idx+IEDGEset-1
 
-            ! Add antidiffusive fluxes            
+            ! Add antidiffusive fluxes
             Dflux(:,iedge) = Dflux(:,iedge) + DfluxAtEdge(:,idx)
           end do
         end do
@@ -8213,7 +8213,7 @@ contains
       !-------------------------------------------------------------------------
       ! 4) Apply failsafe correction. In the current implementation
       !    the correciton term has already been applied to the
-      !    low-order solution. Therefe, we have to overwrite the 
+      !    low-order solution. Therefe, we have to overwrite the
       !    solution vector rx by the low-order backup rxBackup if
       !    this routine is enforced NOT to apply the correction.
       !-------------------------------------------------------------------------
@@ -8427,7 +8427,7 @@ contains
           i  = IedgeList(1,iedge)
           j  = IedgeList(2,iedge)
           
-          ! Check if solution exceeds 
+          ! Check if solution exceeds
           if ((Dx(i,ivar) .lt. Dlbound(i,ivar)-dtol) .or.&
               (Dx(j,ivar) .lt. Dlbound(j,ivar)-dtol) .or.&
               (Dx(i,ivar) .gt. Dubound(i,ivar)+dtol) .or.&
@@ -8797,7 +8797,7 @@ contains
       !-------------------------------------------------------------------------
       ! 4) Apply failsafe correction. In the current implementation
       !    the correciton term has already been applied to the
-      !    low-order solution. Therefe, we have to overwrite the 
+      !    low-order solution. Therefe, we have to overwrite the
       !    solution vector rx by the low-order backup rxBackup if
       !    this routine is enforced NOT to apply the correction.
       !-------------------------------------------------------------------------
@@ -9016,7 +9016,7 @@ contains
           i  = IedgeList(1, iedge)
           j  = IedgeList(2, iedge)
           
-          ! Check if solution exceeds 
+          ! Check if solution exceeds
           if ((Dx(i,ivar) .lt. Dlbound(i,ivar)-dtol) .or.&
               (Dx(j,ivar) .lt. Dlbound(j,ivar)-dtol) .or.&
               (Dx(i,ivar) .gt. Dubound(i,ivar)+dtol) .or.&

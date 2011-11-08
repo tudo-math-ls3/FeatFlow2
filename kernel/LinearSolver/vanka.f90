@@ -5,14 +5,14 @@
 !#
 !# <purpose>
 !# This module contains the implementations of the VANKA preconditioner.
-!# These are more or less auxiliary routines called by the VANKA 
+!# These are more or less auxiliary routines called by the VANKA
 !# preconditioner in the linearsolver.f90 solver library.
 !#
 !# The following routines can be found here:
 !#
 !#  1.) vanka_initConformal
 !#      -> Initialise the VANKA for conformal discretisations.
-!# 
+!#
 !#  2.) vanka_conformal
 !#      -> Perform one step of the VANKA solver conformal discretisations. Calls a
 !#         specialised sub-VANKA-variant to do the work.
@@ -25,7 +25,7 @@
 !#
 !# The following list of routines are all used internally. There is no need to
 !# call them directly.
-!# 
+!#
 !#  4.) vanka_initGeneralVanka
 !#      -> Initialise the general Vanka solver
 !#
@@ -40,55 +40,55 @@
 !#         with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Deprecated, ist not used.
 !#
-!#  8.) vanka_init2DNavierStokes 
-!#      -> Initialise the VANKA solver for the problem class 
-!#         '2D Navier-Stokes equation'. 
+!#  8.) vanka_init2DNavierStokes
+!#      -> Initialise the VANKA solver for the problem class
+!#         '2D Navier-Stokes equation'.
 !#
-!#  9.) vanka_2DNavierStokes 
-!#      -> Apply the VANKA solver for the problem class 
-!#         '2D Navier-Stokes equation'. 
+!#  9.) vanka_2DNavierStokes
+!#      -> Apply the VANKA solver for the problem class
+!#         '2D Navier-Stokes equation'.
 !#
 !# 10.) vanka_2DSPQ1TQ0simple
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation
 !#
 !# 11.) vanka_2DSPQ1TQ0simpleConf
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 12.) vanka_2DSPQ1TQ0simpleCoupConf
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#         This variant can handle fully coupled matrices.
 !#
 !# 13.) vanka_2DSPQ1TQ0fullConf
-!#      -> Perform one step of the specialised 'full' VANKA solver for 2D saddle 
+!#      -> Perform one step of the specialised 'full' VANKA solver for 2D saddle
 !#         point problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 14.) vanka_2DSPQ1TQ0fullCoupConf
-!#      -> Perform one step of the specialised 'full' VANKA solver for 2D saddle 
+!#      -> Perform one step of the specialised 'full' VANKA solver for 2D saddle
 !#         point problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#         This variant can handle fully coupled matrices.
 !#
 !# 15.) vanka_2DSPQ2QP1simple
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Diagonal VANKA approach.
 !#
 !# 16.) vanka_2DSPQ2QP1full
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Full VANKA approach.
 !#
 !# 17.) vanka_2DSPQ2QP1simpleConf
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Diagonal VANKA approach.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 18.) vanka_2DSPQ2QP1fullConf
-!#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 2D saddle point
 !#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Full VANKA approach.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
@@ -100,30 +100,30 @@
 !#      -> Perform one step of the VANKA solver for 2D Navier-Stokes optimal
 !#         control problems. Specialised $\tilde Q1/Q0$ version, full VANKA approach.
 !#
-!# 21.) vanka_init3DNavierStokes 
-!#      -> Initialise the VANKA solver for the problem class 
-!#         '3D Navier-Stokes equation'. 
+!# 21.) vanka_init3DNavierStokes
+!#      -> Initialise the VANKA solver for the problem class
+!#         '3D Navier-Stokes equation'.
 !#
-!# 22.) vanka_3DNavierStokes 
-!#      -> Apply the VANKA solver for the problem class 
-!#         '3D Navier-Stokes equation'. 
+!# 22.) vanka_3DNavierStokes
+!#      -> Apply the VANKA solver for the problem class
+!#         '3D Navier-Stokes equation'.
 !#
 !# 23.) vanka_3DSPQ1TQ0simple
-!#      -> Perform one step of the specialised VANKA solver for 3D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 3D saddle point
 !#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation
 !#
 !# 24.) vanka_3DSPQ1TQ0simpleConf
-!#      -> Perform one step of the specialised VANKA solver for 3D saddle point 
+!#      -> Perform one step of the specialised VANKA solver for 3D saddle point
 !#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 25.) vanka_3DSPQ1TQ0fullConf
-!#      -> Perform one step of the specialised 'full' VANKA solver for 3D saddle 
+!#      -> Perform one step of the specialised 'full' VANKA solver for 3D saddle
 !#         point problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 26.) vanka_2DSPQ2QP1simpleCoupConf
-!#      -> VANKA for 2D Navier-Stokes with completely different A11/A12/A21/A22, 
+!#      -> VANKA for 2D Navier-Stokes with completely different A11/A12/A21/A22,
 !#         Q2/QP1 discretisation.
 !#
 !#  History
@@ -195,7 +195,7 @@ module vanka
   public :: t_vankaPointer2DNavSt
   public :: t_matrixPointer79Vanka
   public :: t_vankaPointer2DNavStOptC
-  public :: t_vankaPointer3DNavSt 
+  public :: t_vankaPointer3DNavSt
   public :: vanka_initPerfConfig
   public :: vanka_initConformal
   public :: vanka_doneConformal
@@ -294,7 +294,7 @@ module vanka
     ! The scaling factor of the matrix; from the matrix structure.
     real(DP) :: dscaleFactor
   
-    ! Pointer to the data - currently only double precision 
+    ! Pointer to the data - currently only double precision
     real(DP), dimension(:), pointer :: p_DA
     
     ! Pointer to the column structure
@@ -623,10 +623,10 @@ module vanka
 
 !    ! Pointer to the column structure of the velocity matrix A12 and A21
 !    INTEGER, DIMENSION(:), POINTER :: p_KcolA12 => NULL()
-!    
+!
 !    ! Pointer to the row structure of the velocity matrix A12 and A21
 !    INTEGER, DIMENSION(:), POINTER :: p_KldA12 => NULL()
-!    
+!
 !    ! Pointer to diagonal entries in the velocity matrix A12 and A21
 !    INTEGER, DIMENSION(:), POINTER :: p_KdiagonalA12 => NULL()
 !
@@ -1010,7 +1010,7 @@ contains
     case default
       call output_line ('Unknown VANKA problem class!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_conformal')
-      call sys_halt()  
+      call sys_halt()
       
     end select
     
@@ -1174,7 +1174,7 @@ contains
     rvankaGeneral%nmaxLocalDOFs = nmaxLocalDOFs
     rvankaGeneral%ndofsPerElement = ndofsPerElement
     
-    ! We know the maximum number of DOF`s now. For the later loop over the 
+    ! We know the maximum number of DOF`s now. For the later loop over the
     ! elements, allocate memory for storing the DOF`s of an element set.
     allocate(rvankaGeneral%p_IelementDOFs(nmaxLocalDOFs,p_rperfconfig%NELEMSIM,nblocks))
     
@@ -1244,7 +1244,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The general-VANKA structure. Must have been initialised with 
+  ! The general-VANKA structure. Must have been initialised with
   ! vanka_initGeneralVanka before.
   type(t_vankaGeneral), intent(inout) :: rvankaGeneral
 
@@ -1331,7 +1331,7 @@ contains
           end do
         end if
       
-      end do  
+      end do
     
       ! Now, IdofsTotal contains all DOF`s on each element, over all discretisations.
       !
@@ -1357,8 +1357,8 @@ contains
              IelementDofs)
 
 !<description>
-  ! This routine applies one step of the VANKA solver (local block 
-  ! gauss-seidel) to a given set of solution/RHS vector. 
+  ! This routine applies one step of the VANKA solver (local block
+  ! gauss-seidel) to a given set of solution/RHS vector.
   ! All given matrices are assumed to be format 7/9,
   ! double precision. The given vector is assumed to be double precision.
 !</description>
@@ -1399,7 +1399,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The initial (block) solution vector. Is overwritten by the new (block) 
+  ! The initial (block) solution vector. Is overwritten by the new (block)
   ! solution vector.
   real(DP), dimension(:), intent(inout) :: Dvector
 !</inputoutput>
@@ -1415,7 +1415,7 @@ contains
     !
     ! Let us first describe the method used here.
     !
-    ! The above block system can be written as a general block system of 
+    ! The above block system can be written as a general block system of
     ! the form
     !
     !             A x = f
@@ -1431,10 +1431,10 @@ contains
     ! not for the full system at once.
     !
     ! This local approach is based on a geometric point of view.
-    ! In general, one could imagine a set of connected cells in the 
-    ! global domain \Omega where to apply the algorithm to (the LMPSC 
+    ! In general, one could imagine a set of connected cells in the
+    ! global domain \Omega where to apply the algorithm to (the LMPSC
     ! approach), but for simplicity, consider only one cell. Again for
-    ! simplicity, imagine that our FE-spaces is Q1~/Q0. 
+    ! simplicity, imagine that our FE-spaces is Q1~/Q0.
     !
     ! We loop over each cell in the domain, one after the other, and
     ! change the DOF`s in the solution vector there:
@@ -1451,10 +1451,10 @@ contains
     !     |---X---|                |---X---|
     !        old                      new
     !
-    ! From the second cell on, there might be "old" data and "new" 
+    ! From the second cell on, there might be "old" data and "new"
     ! data on that cell - the old data that has not been updated and
     ! perhaps some already updated velocity data from a neighbor cell.
-    ! 
+    !
     !        new     old                   new     new
     !     |---X---|---X---|             |---X---|---X---|
     !     |       |       |             |       |       |
@@ -1477,16 +1477,16 @@ contains
     !
     !             A x = f
     !
-    ! We assume, that all components in the vector x are      
+    ! We assume, that all components in the vector x are
     ! given - except for the unknowns current element; these unknowns
-    ! are located anywhere in the vector x. The idea is to    
-    ! shift "everything known" to the right hand side to obtain   
-    ! a system for only these unknowns!  
-    !                         
+    ! are located anywhere in the vector x. The idea is to
+    ! shift "everything known" to the right hand side to obtain
+    ! a system for only these unknowns!
+    !
     ! We extract all the lines of the system that correspond to
-    ! our 'unknown' DOF`s on our element; this results in a rectangular      
-    ! system of the form                                            
-    !                                                               
+    ! our 'unknown' DOF`s on our element; this results in a rectangular
+    ! system of the form
+    !
     !    [ === A~ === ] x  = (f~)
     !
     ! So #rows(A~)=#rows(f~)=#DOF`s on the element! Furthermore we set
@@ -1511,7 +1511,7 @@ contains
     ! For full linear systems, one would choose C=A, which ist the
     ! theoretically best preconditioner. What we do here is simply
     ! extracting all columns of A~ that correspond to the DOF`s
-    ! on the current element: 
+    ! on the current element:
     !
     !   C:=delete columns of A~ that do not belong to DOF`s on the element
     !
@@ -1555,7 +1555,7 @@ contains
               'General VANKA does not support transposed matrices!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_general_double_mat79')
           call sys_halt()
-        end if 
+        end if
       end do ! j
     end do ! i
         
@@ -1614,7 +1614,7 @@ contains
             ! Block column j in the global matrix corresponds to
             ! block column j in the small local matrix we have to fill with data.
             !
-            !   ....      :           
+            !   ....      :
             !   ....      :           a11 a12         a15
             !                         a21 a22         a25
             !        .... :   ==>             a33 a34 a35
@@ -1644,7 +1644,7 @@ contains
 
                 ! Get the column number in the global matrix. This gives
                 ! the global DOF = number of the element in x that must be multiplied
-                ! with that matrix entry.             
+                ! with that matrix entry.
                 icol = Rmatrices(i,j)%p_Kcol(k)+IblockOffset(j)
 
                 ! Build the defect
@@ -1686,7 +1686,7 @@ contains
       !  if the element is completely inside of a rigid fictitious boundary
       !  object.
       ! What to do in this case? Nothing! Ignore the system!
-      ! Why? 
+      ! Why?
       !  - The values for the 'velocity' DOF`s are fixed, so it is no use
       !    to try to calculate them.
       !  - If there is a zero-block involved in a saddle-point problem,
@@ -1733,9 +1733,9 @@ contains
   subroutine vanka_init2DNavierStokes (rmatrix,rvanka,csubtype)
   
 !<description>
-  ! Initialises the VANKA variant for 2D Navier-Stokes problems 
+  ! Initialises the VANKA variant for 2D Navier-Stokes problems
   ! for conformal discretisations.
-  ! Checks if the "2D-Navier-Stokes" VANKA variant 
+  ! Checks if the "2D-Navier-Stokes" VANKA variant
   ! for conformal discretisations can be applied to the system given by rmatrix.
   ! If not, the program is stopped.
   !
@@ -1748,7 +1748,7 @@ contains
   type(t_matrixBlock), intent(in), target :: rmatrix
 
   ! Desired subtype
-  integer, intent(in) :: csubtype  
+  integer, intent(in) :: csubtype
 !</input>
 
 !<inputoutput>
@@ -1813,12 +1813,12 @@ contains
           ! For scaled matrices, we have to use an extended sub-version of VANKA.
           if ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) .and. &
               (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 0.0_DP)) then
-            bextended = .true.  
+            bextended = .true.
           end if
           
           if ((i .eq. j) .and. &
               (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) ) then
-            bextended = .true. 
+            bextended = .true.
           end if
           
         end if ! neq != 0
@@ -1839,7 +1839,7 @@ contains
       call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokes')
       call sys_halt()
-    end if      
+    end if
   
     ! Fill the output structure with data of the matrices.
     call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
@@ -2029,7 +2029,7 @@ contains
   integer :: csubtype
 
   ! The sub-subtype of VANKA that should handle the above problem class.
-  ! =0: use standard VANKA. =1: use extended VANKA (e.g. with different 
+  ! =0: use standard VANKA. =1: use extended VANKA (e.g. with different
   !     multipliers in the matrices)
   integer :: csubsubtype
   
@@ -2050,7 +2050,7 @@ contains
     integer, dimension(:), pointer :: p_IelementList
     type(t_elementDistribution), pointer :: p_relementDistrU
     type(t_elementDistribution), pointer :: p_relementDistrV
-    type(t_elementDistribution), pointer :: p_relementDistrP 
+    type(t_elementDistribution), pointer :: p_relementDistrP
     
     ! 2D Navier Stokes problem.
 
@@ -2161,7 +2161,7 @@ contains
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-          call sys_halt()  
+          call sys_halt()
         
         end select
         
@@ -2220,7 +2220,7 @@ contains
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-          call sys_halt()  
+          call sys_halt()
         
         end select
         
@@ -2276,7 +2276,7 @@ contains
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DNavierStokes')
-          call sys_halt()  
+          call sys_halt()
           
         end select
           
@@ -2523,7 +2523,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -2557,10 +2557,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -2618,70 +2618,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -2720,7 +2720,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -2764,7 +2764,7 @@ contains
                         - DD1(inode)*p_Dvector(idof) &
                         - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -2785,14 +2785,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -2939,7 +2939,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -2973,10 +2973,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -3034,70 +3034,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -3128,7 +3128,7 @@ contains
 
         do ib = ib1,ib2
           ! Subtract contributions from the RHS which do not belong to our element.
-          if (p_KcolB(ib) .ne. IEL) then 
+          if (p_KcolB(ib) .ne. IEL) then
           
             J = p_KcolB(ib)
             daux = p_Dvector(j+ioffsetp)
@@ -3168,7 +3168,7 @@ contains
             !             - DD1(inode)*p_Dvector(idof) &
             !             - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             ! EXIT
           end if
@@ -3189,14 +3189,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -3336,7 +3336,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -3370,10 +3370,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -3429,70 +3429,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -3522,7 +3522,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -3560,7 +3560,7 @@ contains
                         - DD1(inode)*p_Dvector(idof) &
                         - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -3581,14 +3581,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -3631,8 +3631,8 @@ contains
   pure subroutine vanka_getcorr_2DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,DD1,DD2)
   
 !<description>
-  ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 9x9 Jacobi-type Schur complement system for two
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
 !</description>
@@ -3693,7 +3693,7 @@ contains
     !      ( D1  D2     )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -3715,10 +3715,10 @@ contains
     !               =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -3750,7 +3750,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 4x1 matrix 
+    ! a) B is a 4x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 4 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -3812,8 +3812,8 @@ contains
   pure subroutine vanka_getcorr_2DSPQ1TQ0simple2 (UU,FF,AA1,AA2,BB1,BB2,DD1,DD2,di)
   
 !<description>
-  ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 9x9 Jacobi-type Schur complement system for two
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
   !
@@ -3886,7 +3886,7 @@ contains
     !      ( D1  D2  I  )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -3908,10 +3908,10 @@ contains
     !                 =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -3950,7 +3950,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 4x1 matrix 
+    ! a) B is a 4x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 4 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -4139,7 +4139,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -4173,10 +4173,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -4233,70 +4233,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -4335,7 +4335,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -4373,7 +4373,7 @@ contains
                         - DD1(inode)*p_Dvector(idof) &
                         - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -4394,14 +4394,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -4444,8 +4444,8 @@ contains
   pure subroutine vanka_getcorr_2DSPQ1TQ0CPsimple (UU,FF,AA,BB1,BB2,DD1,DD2)
   
 !<description>
-  ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 9x9 Jacobi-type Schur complement system for two
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure for system where the velocity is fully coupled.
 !</description>
@@ -4506,7 +4506,7 @@ contains
     !      ( D1  D2     )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -4528,10 +4528,10 @@ contains
     !               =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -4563,7 +4563,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 4x1 matrix 
+    ! a) B is a 4x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 4 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -4743,7 +4743,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -4769,25 +4769,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -4808,13 +4808,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -4840,70 +4840,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity      
-        ! components and B~ being an (2*4) x 2 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity
+        ! components and B~ being an (2*4) x 2 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 2 submatrices (originally, every velocity couples with
-        ! the pressure DOF`s on that cell, so we have       
-        ! 1 column in the B-matrix).                                   
+        ! the pressure DOF`s on that cell, so we have
+        ! 1 column in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -4915,7 +4915,7 @@ contains
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -4923,7 +4923,7 @@ contains
               AA (inode+nnvel,k+nnvel) = daux
               exit
             end if
-          end do          
+          end do
         end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -4943,7 +4943,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -4981,7 +4981,7 @@ contains
                         - AA(2*nnvel+1,inode)*p_Dvector(idof) &
                         - AA(2*nnvel+1,inode+nnvel)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -5002,14 +5002,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
@@ -5196,7 +5196,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -5222,25 +5222,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -5261,13 +5261,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -5293,71 +5293,71 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity      
-        ! components and B~ being an (2*4) x 2 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity
+        ! components and B~ being an (2*4) x 2 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with four square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with four square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 2 submatrices (originally, every velocity couples with
-        ! the pressure DOF`s on that cell, so we have       
-        ! 1 column in the B-matrix).                                   
+        ! the pressure DOF`s on that cell, so we have
+        ! 1 column in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -5368,7 +5368,7 @@ contains
           FF(inode)       = FF(inode)      -p_DA(ia)*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -5376,7 +5376,7 @@ contains
               AA (inode+nnvel,k+nnvel) = p_DA22(ia)
               exit
             end if
-          end do          
+          end do
         end do
 
         ! Process the 'off-diagonal' matrices A12 and A21
@@ -5388,7 +5388,7 @@ contains
           FF(inode)       = FF(inode)      -p_DA12(ia)*p_Dvector(J+ioffsetv)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -5396,7 +5396,7 @@ contains
               AA (inode+nnvel,k) = p_DA21(ia)
               exit
             end if
-          end do          
+          end do
         end do
                 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -5416,7 +5416,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -5454,7 +5454,7 @@ contains
                         - AA(2*nnvel+1,inode)*p_Dvector(idof) &
                         - AA(2*nnvel+1,inode+nnvel)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -5475,14 +5475,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  ..............    AA( 1, 5) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B1): )
@@ -5663,7 +5663,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -5697,10 +5697,10 @@ contains
     !        X---X---X                X---X---X
     !      old  old  old            new  new  new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !      new  new new old  old         new  new newer new new
     !        X---X---X---X---X             X---X---|---X---X
     !        |       |       |             |   1   |   2   |
@@ -5725,13 +5725,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -5766,60 +5766,60 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B~ being an (2*9) x 12 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
-        ! 4*3 pressure elements on the neighbour cell, so we have       
-        ! 12 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity
+        ! components and B~ being an (2*9) x 12 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most
+        ! 4*3 pressure elements on the neighbour cell, so we have
+        ! 12 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! or
         !
-        !              IEL   
+        !              IEL
         ! |--------|--------|
         ! |        |        |
         ! |   Q1   |   P    |
@@ -5831,18 +5831,18 @@ contains
         ! |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF`s on that cell, so we have       
-        ! 3 columns in the B-matrix).                                   
+        ! the 3 pressure DOF`s on that cell, so we have
+        ! 3 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -5871,7 +5871,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of the original B has at most 12 entries:
         !
@@ -5886,8 +5886,8 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
-        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with
+        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on
         ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
@@ -5901,7 +5901,7 @@ contains
           else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
           else
-            ! Cycle the loop - the entry belongs to another 
+            ! Cycle the loop - the entry belongs to another
             ! element, not to the current one
             cycle
           end if
@@ -5943,14 +5943,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1) :: :: :: )
       !     (          ..                                               :AA :: )
       !     (               ..                                          :(B1): )
@@ -6126,7 +6126,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -6160,10 +6160,10 @@ contains
     !        X---X---X                X---X---X
     !      old  old  old            new  new  new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !      new  new new old  old         new  new newer new new
     !        X---X---X---X---X             X---X---|---X---X
     !        |       |       |             |   1   |   2   |
@@ -6190,18 +6190,18 @@ contains
       ! Clear the B and D-matrices.
       ! Note: THis is not necessary as all entries of BB and DD
       ! will be overwritten later! Reason: Because of the FEM
-      ! coupling, all entries are affected. 
+      ! coupling, all entries are affected.
       ! BB(:,:) = 0.0_DP
       ! DD(:,:) = 0.0_DP
     
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -6236,60 +6236,60 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B~ being an (2*9) x 12 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
-        ! 4*3 pressure elements on the neighbour cell, so we have       
-        ! 12 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity
+        ! components and B~ being an (2*9) x 12 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most
+        ! 4*3 pressure elements on the neighbour cell, so we have
+        ! 12 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! or
         !
-        !              IEL   
+        !              IEL
         ! |--------|--------|
         ! |        |        |
         ! |   Q1   |   P    |
@@ -6301,18 +6301,18 @@ contains
         ! |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF`s on that cell, so we have       
-        ! 3 columns in the B-matrix).                                   
+        ! the 3 pressure DOF`s on that cell, so we have
+        ! 3 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -6340,7 +6340,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of the original B has at most 12 entries:
         !
@@ -6355,8 +6355,8 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
-        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with
+        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on
         ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
@@ -6370,7 +6370,7 @@ contains
           else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
           else
-            ! Cycle the loop - the entry belongs to another 
+            ! Cycle the loop - the entry belongs to another
             ! element, not to the current one
             cycle
           end if
@@ -6412,14 +6412,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1) :: :: :: )
       !     (          ..                                               :AA :: )
       !     (               ..                                          :(B1): )
@@ -6595,7 +6595,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -6629,10 +6629,10 @@ contains
     !        X---X---X                X---X---X
     !      old  old  old            new  new  new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !      new  new new old  old         new  new newer new new
     !        X---X---X---X---X             X---X---|---X---X
     !        |       |       |             |   1   |   2   |
@@ -6659,18 +6659,18 @@ contains
       ! Clear the B and D-matrices.
       ! Note: THis is not necessary as all entries of BB and DD
       ! will be overwritten later! Reason: Because of the FEM
-      ! coupling, all entries are affected. 
+      ! coupling, all entries are affected.
       ! BB(:,:) = 0.0_DP
       ! DD(:,:) = 0.0_DP
     
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -6705,60 +6705,60 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B~ being an (2*9) x 12 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
-        ! 4*3 pressure elements on the neighbour cell, so we have       
-        ! 12 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity
+        ! components and B~ being an (2*9) x 12 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most
+        ! 4*3 pressure elements on the neighbour cell, so we have
+        ! 12 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! or
         !
-        !              IEL   
+        !              IEL
         ! |--------|--------|
         ! |        |        |
         ! |   Q1   |   P    |
@@ -6770,18 +6770,18 @@ contains
         ! |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF`s on that cell, so we have       
-        ! 3 columns in the B-matrix).                                   
+        ! the 3 pressure DOF`s on that cell, so we have
+        ! 3 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -6819,7 +6819,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of the original B has at most 12 entries:
         !
@@ -6834,8 +6834,8 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
-        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with
+        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on
         ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
@@ -6849,7 +6849,7 @@ contains
           else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
           else
-            ! Cycle the loop - the entry belongs to another 
+            ! Cycle the loop - the entry belongs to another
             ! element, not to the current one
             cycle
           end if
@@ -6891,14 +6891,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1) :: :: :: )
       !     (          ..                                               :AA :: )
       !     (               ..                                          :(B1): )
@@ -7053,7 +7053,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -7087,10 +7087,10 @@ contains
     !        X---X---X                X---X---X
     !      old  old  old            new  new  new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !      new  new new old  old         new  new newer new new
     !        X---X---X---X---X             X---X---|---X---X
     !        |       |       |             |   1   |   2   |
@@ -7115,13 +7115,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -7151,60 +7151,60 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B~ being an (2*9) x 12 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
-        ! 4*3 pressure elements on the adjacent cells, so we have       
-        ! 12 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity
+        ! components and B~ being an (2*9) x 12 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most
+        ! 4*3 pressure elements on the adjacent cells, so we have
+        ! 12 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! or
         !
-        !              IEL   
+        !              IEL
         ! |--------|--------|
         ! |        |        |
         ! |   Q1   |   P    |
@@ -7216,18 +7216,18 @@ contains
         ! |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF`s on that cell, so we have       
-        ! 3 columns in the B-matrix).                                   
+        ! the 3 pressure DOF`s on that cell, so we have
+        ! 3 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -7239,7 +7239,7 @@ contains
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -7247,7 +7247,7 @@ contains
               AA (inode+nnvel,k+nnvel) = daux
               exit
             end if
-          end do          
+          end do
         end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -7266,7 +7266,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most 12 entries:
         !
@@ -7281,8 +7281,8 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
-        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with
+        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on
         ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
@@ -7296,7 +7296,7 @@ contains
           else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
           else
-            ! Cycle the loop - the entry belongs to another 
+            ! Cycle the loop - the entry belongs to another
             ! element, not to the current one
             cycle
           end if
@@ -7338,14 +7338,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
@@ -7517,7 +7517,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -7551,10 +7551,10 @@ contains
     !        X---X---X                X---X---X
     !      old  old  old            new  new  new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !      new  new new old  old         new  new newer new new
     !        X---X---X---X---X             X---X---|---X---X
     !        |       |       |             |   1   |   2   |
@@ -7582,13 +7582,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -7618,60 +7618,60 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B~ being an (2*9) x 12 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
-        ! 4*3 pressure elements on the adjacent cells, so we have       
-        ! 12 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity
+        ! components and B~ being an (2*9) x 12 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most
+        ! 4*3 pressure elements on the adjacent cells, so we have
+        ! 12 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! or
         !
-        !              IEL   
+        !              IEL
         ! |--------|--------|
         ! |        |        |
         ! |   Q1   |   P    |
@@ -7683,18 +7683,18 @@ contains
         ! |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF`s on that cell, so we have       
-        ! 3 columns in the B-matrix).                                   
+        ! the 3 pressure DOF`s on that cell, so we have
+        ! 3 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -7706,7 +7706,7 @@ contains
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -7714,7 +7714,7 @@ contains
               AA (inode+nnvel,k+nnvel) = daux
               exit
             end if
-          end do          
+          end do
         end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -7733,7 +7733,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most 12 entries:
         !
@@ -7748,8 +7748,8 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
-        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with
+        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on
         ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
@@ -7763,7 +7763,7 @@ contains
           else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
           else
-            ! Cycle the loop - the entry belongs to another 
+            ! Cycle the loop - the entry belongs to another
             ! element, not to the current one
             cycle
           end if
@@ -7805,14 +7805,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
@@ -7987,7 +7987,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -8021,10 +8021,10 @@ contains
     !        X---X---X                X---X---X
     !      old  old  old            new  new  new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !      new  new new old  old         new  new newer new new
     !        X---X---X---X---X             X---X---|---X---X
     !        |       |       |             |   1   |   2   |
@@ -8052,13 +8052,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -8088,60 +8088,60 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B~ being an (2*9) x 12 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
-        ! 4*3 pressure elements on the adjacent cells, so we have       
-        ! 12 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity
+        ! components and B~ being an (2*9) x 12 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most
+        ! 4*3 pressure elements on the adjacent cells, so we have
+        ! 12 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! or
         !
-        !              IEL   
+        !              IEL
         ! |--------|--------|
         ! |        |        |
         ! |   Q1   |   P    |
@@ -8153,18 +8153,18 @@ contains
         ! |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF`s on that cell, so we have       
-        ! 3 columns in the B-matrix).                                   
+        ! the 3 pressure DOF`s on that cell, so we have
+        ! 3 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         !
@@ -8176,7 +8176,7 @@ contains
           FF(inode)       = FF(inode)      -p_DA11(ia)*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -8184,7 +8184,7 @@ contains
               AA (inode+nnvel,k+nnvel) = p_DA22(ia)
               exit
             end if
-          end do          
+          end do
         end do
         
         ! Offdiagonal matrices
@@ -8195,7 +8195,7 @@ contains
           FF(inode)       = FF(inode)      -p_DA12(ia)*p_Dvector(J+ioffsetv)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -8203,7 +8203,7 @@ contains
               AA (inode+nnvel,k) = p_DA21(ia)
               exit
             end if
-          end do          
+          end do
         end do
 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -8222,7 +8222,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most 12 entries:
         !
@@ -8237,8 +8237,8 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
-        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with
+        ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on
         ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
@@ -8252,7 +8252,7 @@ contains
           else if (p_KcolB(ib) .eq. IEL+NEL*2) then
             isubdof = 3
           else
-            ! Cycle the loop - the entry belongs to another 
+            ! Cycle the loop - the entry belongs to another
             ! element, not to the current one
             cycle
           end if
@@ -8294,14 +8294,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  ..............    AA(1,10) ............... :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B1): )
@@ -8392,8 +8392,8 @@ contains
   ! this routine, as this holds a reference to the system matrix.
   !
   ! vanka_2DNSSQ1TQ0fullCoupConf supports fully coupled velocity submatrices.
-  ! The matrices A11, A22 must have the same structure. 
-  ! The matrices A12 and A21 must have the same structure. 
+  ! The matrices A11, A22 must have the same structure.
+  ! The matrices A12 and A21 must have the same structure.
   ! The structure of A11 and A12 may be different from each other.
 !</description>
 
@@ -8483,7 +8483,7 @@ contains
       p_DA21 => rvanka%p_DA21
     else
       nullify(p_KcolA12)
-      nullify(p_KldA12) 
+      nullify(p_KldA12)
       nullify(p_DA12 )
       nullify(p_DA21 )
     end if
@@ -8522,7 +8522,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -8548,25 +8548,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -8587,13 +8587,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FF.
       ! The numbers of the DOF`s coincide with the definition
@@ -8621,63 +8621,63 @@ contains
         FF(inode+lofsu) = p_Drhs(idof+ioffsetu)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
 
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u)  = (f  )                                        
-        !    [ B^t 0 ] (p)    (g  )                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!   
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! Extracting all the lines of the system that correspond to     
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u)  = (f  )
+        !    [ B^t 0 ] (p)    (g  )
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
         ! DOF`s on our single element IEL results in rectangular
-        ! systems of the form                                            
-        !                                                               
-        !    [ === A^ === B~  ] (| ) = (f1 )                                
-        !    [ B~^t       I1~ ] (u )   (f2 )                                
-        !                       (| )   (g  )                                   
-        !                       (p )   
-        !                                     
-        !                                                               
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        ! systems of the form
+        !
+        !    [ === A^ === B~  ] (| ) = (f1 )
+        !    [ B~^t       I1~ ] (u )   (f2 )
+        !                       (| )   (g  )
+        !                       (p )
+        !
+        !
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         !
         ! Now, throw all summands to the RHS vector to build a local
         ! 'defect' on our single element IEL.
-        !                                                               
-        !  (d1 ) = (f1 ) -  [ === A^ === B~  ] (| )                                 
-        !  (d2 )   (f2 )    [ B~^t       I1~ ] (u )                                 
-        !  (dg )   (g  )                       (| )                                    
-        !                                      (p ) 
+        !
+        !  (d1 ) = (f1 ) -  [ === A^ === B~  ] (| )
+        !  (d2 )   (f2 )    [ B~^t       I1~ ] (u )
+        !  (dg )   (g  )                       (| )
+        !                                      (p )
         !
         ! Extract those entries in the A-, B- and M-matrices to our local
         ! matrix AA, which belong to DOF`s in our current solution vector.
@@ -8701,7 +8701,7 @@ contains
           FF(inode+lofsv) = FF(inode+lofsv) &
                           - rvanka%Dmultipliers(2,2)*p_DA22(ia)*p_Dvector(J+ioffsetv)
 
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -8709,7 +8709,7 @@ contains
               AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
               exit
             end if
-          end do          
+          end do
         end do
 
         ! Process the 'off-diagonal' matrices A12 and A21
@@ -8730,7 +8730,7 @@ contains
             FF(inode+lofsv) = FF(inode+lofsv) &
                             - rvanka%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -8738,7 +8738,7 @@ contains
                 AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
         
@@ -8774,7 +8774,7 @@ contains
 
           J = p_KcolB(ib)
           
-          daux = p_Dvector(j+ioffsetp) 
+          daux = p_Dvector(j+ioffsetp)
           FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
@@ -8787,7 +8787,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -8811,9 +8811,9 @@ contains
           !
           ! In AA, we simultaneously set up (locally):
           !
-          !   (  .   .  B1   ) 
-          !   (  .   .  B2   ) 
-          !   ( D1  D2   .   ) 
+          !   (  .   .  B1   )
+          !   (  .   .  B2   )
+          !   ( D1  D2   .   )
 
           if (p_KcolB(ib) .eq. IEL) then
           
@@ -8839,7 +8839,7 @@ contains
                         - AA(1+lofsp,inode+lofsu)*p_Dvector(idof+ioffsetu) &
                         - AA(1+lofsp,inode+lofsv)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -8907,9 +8907,9 @@ contains
   subroutine vanka_init2DNavierStokesOptC (rmatrix,rvanka)
   
 !<description>
-  ! Initialises the VANKA variant for 2D Navier-Stokes problems 
+  ! Initialises the VANKA variant for 2D Navier-Stokes problems
   ! for conformal discretisations.
-  ! Checks if the "2D-Navier-Stokes" VANKA variant 
+  ! Checks if the "2D-Navier-Stokes" VANKA variant
   ! for conformal discretisations can be applied to the system given by rmatrix.
   ! If not, the program is stopped.
   !
@@ -8997,7 +8997,7 @@ contains
       call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
       call sys_halt()
-    end if      
+    end if
   
     ! The structure of A(4,6) must be identical to A(6,4) and
     ! that of A(5,6) must be identical to A(6,5).
@@ -9016,7 +9016,7 @@ contains
       call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
       call sys_halt()
-    end if      
+    end if
     
     if (.not. lsyssc_isMatrixContentShared( &
         rmatrix%RmatrixBlock(1,3),rmatrix%RmatrixBlock(4,6))) then
@@ -9141,7 +9141,7 @@ contains
       
       call lsyssc_getbase_double(rmatrix%RmatrixBlock(5,4),&
           rvanka%rvanka2DNavStOptC%p_DA54 )
-    end if    
+    end if
     
     ! Is there an identity matrix present at A(3,3) and/or A(6,6)?
     if (lsysbl_isSubmatrixPresent(rmatrix,3,3)) then
@@ -9221,7 +9221,7 @@ contains
           
     end if
 
-    ! Get the coupling matrix from the primal to the dual system. 
+    ! Get the coupling matrix from the primal to the dual system.
     ! This may be the mass matrix or a completely decoupled matrix.
     ! In all cases, the submatrices have the same structure as the mass
     ! matrix, so if the structure of the mass matrix is not yet set,
@@ -9326,7 +9326,7 @@ contains
   subroutine vanka_2DNavierStokesOptC (rvanka2DNavStOptC, rvector, rrhs, domega, csubtype)
   
 !<description>
-  ! This routine applies the VANKA variant for 2D Navier-Stokes 
+  ! This routine applies the VANKA variant for 2D Navier-Stokes
   ! optimal control problems to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanka structure has to be initialised before calling
@@ -9369,7 +9369,7 @@ contains
     integer, dimension(:), pointer :: p_IelementList
     type(t_elementDistribution), pointer :: p_relementDistrU
     type(t_elementDistribution), pointer :: p_relementDistrV
-    type(t_elementDistribution), pointer :: p_relementDistrP 
+    type(t_elementDistribution), pointer :: p_relementDistrP
     
     ! 2D Navier Stokes problem.
 
@@ -9423,7 +9423,7 @@ contains
 
         case (VANKATP_DIAGOPTC)
         
-          ! Apply the conformal diagonal VANKA that allows different 
+          ! Apply the conformal diagonal VANKA that allows different
           ! matrices in A11, A22, A33 and A44!
           call vanka_2DNSSOCQ1TQ0diagCoupConf (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList)
@@ -9435,7 +9435,7 @@ contains
           call vanka_2DNSSOCQ1TQ0fullCoupConf (rvanka2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList)
 
-        end select          
+        end select
 
       else
 
@@ -9488,9 +9488,9 @@ contains
   ! this routine, as this holds a reference to the system matrix.
   !
   ! vanka_2DNSSOCQ1TQ0fullCoupConf supports fully coupled velocity submatrices.
-  ! The matrices A11, A22, A44 and A55 must have the same structure. 
-  ! The matrices A12 and A21 must have the same structure. 
-  ! The matrices A45 and A54 must have the same structure. 
+  ! The matrices A11, A22, A44 and A55 must have the same structure.
+  ! The matrices A12 and A21 must have the same structure.
+  ! The matrices A45 and A54 must have the same structure.
   ! The structure of A11 and A12 may be different from each other.
 !</description>
 
@@ -9524,7 +9524,7 @@ contains
     real(DP) :: dmult33,dmult66
 
     real(DP) :: dmult12,dmult21,dmult45,dmult54
-    real(DP) :: dmult41,dmult52,dmult51,dmult42 
+    real(DP) :: dmult41,dmult52,dmult51,dmult42
     real(DP) :: dmult14,dmult25,dmult15,dmult24
     
     real(DP) :: di1,di2
@@ -9669,7 +9669,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -9703,10 +9703,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -9770,70 +9770,70 @@ contains
         FFd1 = p_Drhs(idof+ioffsetl1)
         FFd2 = p_Drhs(idof+ioffsetl2)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -9957,7 +9957,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -10005,7 +10005,7 @@ contains
                  - DD3(inode)*p_Dvector(idof+ioffsetl1) &
                  - DD4(inode)*p_Dvector(idof+ioffsetl2)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -10021,7 +10021,7 @@ contains
       end do ! inode
       
       ! If we have blocks at A33 or A66, get the corresponding elements.
-      ! We need the IF-commands here as the arrays p_DaXX/p_KdiagonalXX may 
+      ! We need the IF-commands here as the arrays p_DaXX/p_KdiagonalXX may
       ! be undefined.
 
       di1 = 0.0_DP
@@ -10048,14 +10048,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -10138,9 +10138,9 @@ contains
   ! this routine, as this holds a reference to the system matrix.
   !
   ! vanka_2DNSSOCQ1TQ0fullCoupConf supports fully coupled velocity submatrices.
-  ! The matrices A11, A22, A44 and A55 must have the same structure. 
-  ! The matrices A12 and A21 must have the same structure. 
-  ! The matrices A45 and A54 must have the same structure. 
+  ! The matrices A11, A22, A44 and A55 must have the same structure.
+  ! The matrices A12 and A21 must have the same structure.
+  ! The matrices A45 and A54 must have the same structure.
   ! The structure of A11 and A12 may be different from each other.
 !</description>
 
@@ -10246,7 +10246,7 @@ contains
       p_DA21 => rvanka%p_DA21
     else
       nullify(p_KcolA12)
-      nullify(p_KldA12) 
+      nullify(p_KldA12)
       nullify(p_DA12 )
       nullify(p_DA21 )
     end if
@@ -10323,7 +10323,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -10349,25 +10349,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -10388,13 +10388,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FF.
       ! The numbers of the DOF`s coincide with the definition
@@ -10429,71 +10429,71 @@ contains
         FF(inode+lofsl1) = p_Drhs(idof+ioffsetl1)
         FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B  M     ] (u)  = (f  )                                        
-        !    [ B^t 0        ] (p)    (g  )                                        
-        !    [ M      A   B ] (l)    (fl )                                        
-        !    [        B^t 0 ] (xi)   (fxi)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!   
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! Extracting all the lines of the system that correspond to     
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B  M     ] (u)  = (f  )
+        !    [ B^t 0        ] (p)    (g  )
+        !    [ M      A   B ] (l)    (fl )
+        !    [        B^t 0 ] (xi)   (fxi)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
         ! DOF`s on our single element IEL results in rectangular
-        ! systems of the form                                            
-        !                                                               
-        !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
-        !    [ B~^t       I1~               ] (u )   (f2 )                                
-        !    [ === M^ ===     === A^ === B~ ] (| )   (g  )                                   
+        ! systems of the form
+        !
+        !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )
+        !    [ B~^t       I1~               ] (u )   (f2 )
+        !    [ === M^ ===     === A^ === B~ ] (| )   (g  )
         !    [                B~^t       I2~] (p )   (fl1)
         !                                     (| )   (fl2)
         !                                     (l )   (flg)
         !                                     (| )
         !                                     (xi)
-        !                                     
-        !                                                               
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !
+        !
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         !
         ! Now, throw all summands to the RHS vector to build a local
         ! 'defect' on our single element IEL.
-        !                                                               
-        !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )                                 
-        !  (d2 )   (f2 )    [ B~^t       I1~               ] (u )                                 
-        !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )                                    
-        !  (dl1)   (fl1)    [                B~^t       I2~] (p ) 
-        !  (dl2)   (fl2)                                     (| ) 
-        !  (dlg)   (flg)                                     (l ) 
+        !
+        !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )
+        !  (d2 )   (f2 )    [ B~^t       I1~               ] (u )
+        !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )
+        !  (dl1)   (fl1)    [                B~^t       I2~] (p )
+        !  (dl2)   (fl2)                                     (| )
+        !  (dlg)   (flg)                                     (l )
         !                                                    (| )
         !                                                    (xi)
         !
@@ -10528,7 +10528,7 @@ contains
           FF(inode+lofsl2) = FF(inode+lofsl2) &
                            - rvanka%Dmultipliers(5,5)*p_DA55(ia)*p_Dvector(J+ioffsetl2)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -10539,7 +10539,7 @@ contains
               AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanka%Dmultipliers(5,5)
               exit
             end if
-          end do          
+          end do
         end do
 
         ! Process the 'off-diagonal' matrices A12 and A21
@@ -10563,7 +10563,7 @@ contains
             FF(inode+lofsv) = FF(inode+lofsv) &
                             - rvanka%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -10571,7 +10571,7 @@ contains
                 AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
         
@@ -10595,7 +10595,7 @@ contains
             FF(inode+lofsl2) = FF(inode+lofsl2) &
                              - rvanka%Dmultipliers(5,4)*p_DA54(ia)*p_Dvector(J+ioffsetl1)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -10603,7 +10603,7 @@ contains
                 AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanka%Dmultipliers(5,4)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
                 
@@ -10668,7 +10668,7 @@ contains
           J = p_KcolB(ib)
           
           ! primal equation
-          daux = p_Dvector(j+ioffsetp) 
+          daux = p_Dvector(j+ioffsetp)
           FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
@@ -10706,7 +10706,7 @@ contains
             FF(inode+lofsu) = FF(inode+lofsu)-daux*p_DM(ia)*p_Dvector(J+ioffsetl1)
             FF(inode+lofsv) = FF(inode+lofsv)-daux*p_DM(ia)*p_Dvector(J+ioffsetl2)
 
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -10714,7 +10714,7 @@ contains
                 AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
 
@@ -10742,7 +10742,7 @@ contains
             FF(inode+lofsl1) = FF(inode+lofsl1)-daux*p_DR41(ia)*p_Dvector(J+ioffsetu)
             FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DR52(ia)*p_Dvector(J+ioffsetv)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -10750,7 +10750,7 @@ contains
                 AA (inode+lofsl2,k+lofsv) = daux2*p_DR52(ia)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
 
@@ -10777,7 +10777,7 @@ contains
             FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DR42(ia)*p_Dvector(J+ioffsetv)
             FF(inode+lofsl2) = FF(inode+lofsl2)-daux*p_DR51(ia)*p_Dvector(J+ioffsetu)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -10785,7 +10785,7 @@ contains
                 AA (inode+lofsl1,k+lofsv) = daux2*p_DR42(ia)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
         
@@ -10794,7 +10794,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -10821,12 +10821,12 @@ contains
           !
           ! In AA, we simultaneously set up (locally):
           !
-          !   (  .   .  B1   .   .   .  ) 
-          !   (  .   .  B2   .   .   .  ) 
-          !   ( D1  D2   .   .   .   .  ) 
-          !   (  .   .   .   .   .  B1  ) 
-          !   (  .   .   .   .   .  B2  ) 
-          !   (  .   .   .  D1  D2   .  ) 
+          !   (  .   .  B1   .   .   .  )
+          !   (  .   .  B2   .   .   .  )
+          !   ( D1  D2   .   .   .   .  )
+          !   (  .   .   .   .   .  B1  )
+          !   (  .   .   .   .   .  B2  )
+          !   (  .   .   .  D1  D2   .  )
 
           if (p_KcolB(ib) .eq. IEL) then
           
@@ -10864,7 +10864,7 @@ contains
                          - AA(1+lofsxi,inode+lofsl1)*p_Dvector(idof+ioffsetl1) &
                          - AA(1+lofsxi,inode+lofsl2)*p_Dvector(idof+ioffsetl2)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -10992,17 +10992,17 @@ contains
       csystemPart)
   
 !<description>
-  ! This routine applies the specialised forward-backward full local system 
-  ! VANKA algorithm for 2D Navier Stokes optimal control problems with 
+  ! This routine applies the specialised forward-backward full local system
+  ! VANKA algorithm for 2D Navier Stokes optimal control problems with
   ! Q1~/Q0 discretisation to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanka structure has to be initialised before calling
   ! this routine, as this holds a reference to the system matrix.
   !
   ! vanka_2DNSSOCQ1TQ0fullCoupCfFB supports fully coupled velocity submatrices.
-  ! The matrices A11, A22, A44 and A55 must have the same structure. 
-  ! The matrices A12 and A21 must have the same structure. 
-  ! The matrices A45 and A54 must have the same structure. 
+  ! The matrices A11, A22, A44 and A55 must have the same structure.
+  ! The matrices A12 and A21 must have the same structure.
+  ! The matrices A45 and A54 must have the same structure.
   ! The structure of A11 and A12 may be different from each other.
 !</description>
 
@@ -11115,7 +11115,7 @@ contains
       p_DA21 => rvanka%p_DA21
     else
       nullify(p_KcolA12)
-      nullify(p_KldA12) 
+      nullify(p_KldA12)
       nullify(p_DA12 )
       nullify(p_DA21 )
     end if
@@ -11184,7 +11184,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -11210,25 +11210,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -11254,13 +11254,13 @@ contains
         AA(:,:) = 0.0_DP
         
         ! We now have the element
-        !                                               
+        !
         ! +---------+                       +----3----+
         ! |         |                       |         |
-        ! |   IEL   |   with DOF`s          4    P    2      
+        ! |   IEL   |   with DOF`s          4    P    2
         ! |         |                       |    Q0   |
         ! +---------+                       +----1----+
-        !                                               
+        !
         !
         ! Fetch the pressure P on the current element into FF.
         ! The numbers of the DOF`s coincide with the definition
@@ -11295,71 +11295,71 @@ contains
           FF(inode+lofsl1) = p_Drhs(idof+ioffsetl1)
           FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
           
-          ! What do we have at this point?                           
+          ! What do we have at this point?
           ! FF     : "local" RHS vector belonging to the DOF`s on the
-          !          current element                                 
-          ! AA     : Diagonal entries of A belonging to these DOF`s  
-          !                                                          
-          ! And at the moment:                                       
-          ! idof      : number of current DOF on element IEL            
-          ! inode     : "local" number of DOF on element IEL, i.e.      
-          !              number of the edge         
-          !                     
-          ! Now comes the crucial point with the "update": How to         
-          ! subsequently update the vertex values, such that the whole    
-          ! thing still converges to the solution, even if a node         
-          ! is updated more than once? Here, we use a typical             
-          ! matrix-decomposition approach:                                
-          !                                                               
-          ! Again consider the problem:                                   
-          !                                                               
-          !    [ A   B  M     ] (u)  = (f  )                                        
-          !    [ B^t 0        ] (p)    (g  )                                        
-          !    [ M      A   B ] (l)    (fl )                                        
-          !    [        B^t 0 ] (xi)   (fxi)                                        
-          !                                                               
-          ! We assume, that all components in the vector (u,p) are        
-          ! given - except for the velocity and pressure unknowns 
-          ! on the current element; these 21 unknowns  
-          ! are located anywhere in the (u,p) vector. The idea is to      
-          ! shift "everything known" to the right hand side to obtain     
-          ! a system for only these unknowns!   
+          !          current element
+          ! AA     : Diagonal entries of A belonging to these DOF`s
           !
-          ! Extracting all the lines of the system that correspond to     
+          ! And at the moment:
+          ! idof      : number of current DOF on element IEL
+          ! inode     : "local" number of DOF on element IEL, i.e.
+          !              number of the edge
+          !
+          ! Now comes the crucial point with the "update": How to
+          ! subsequently update the vertex values, such that the whole
+          ! thing still converges to the solution, even if a node
+          ! is updated more than once? Here, we use a typical
+          ! matrix-decomposition approach:
+          !
+          ! Again consider the problem:
+          !
+          !    [ A   B  M     ] (u)  = (f  )
+          !    [ B^t 0        ] (p)    (g  )
+          !    [ M      A   B ] (l)    (fl )
+          !    [        B^t 0 ] (xi)   (fxi)
+          !
+          ! We assume, that all components in the vector (u,p) are
+          ! given - except for the velocity and pressure unknowns
+          ! on the current element; these 21 unknowns
+          ! are located anywhere in the (u,p) vector. The idea is to
+          ! shift "everything known" to the right hand side to obtain
+          ! a system for only these unknowns!
+          !
+          ! Extracting all the lines of the system that correspond to
           ! DOF`s on our single element IEL results in rectangular
-          ! systems of the form                                            
-          !                                                               
-          !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
-          !    [ B~^t       I1~               ] (u )   (f2 )                                
-          !    [ === M^ ===     === A^ === B~ ] (| )   (g  )                                   
+          ! systems of the form
+          !
+          !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )
+          !    [ B~^t       I1~               ] (u )   (f2 )
+          !    [ === M^ ===     === A^ === B~ ] (| )   (g  )
           !    [                B~^t       I2~] (p )   (fl1)
           !                                     (| )   (fl2)
           !                                     (l )   (flg)
           !                                     (| )
           !                                     (xi)
-          !                                     
-          !                                                               
-          ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-          ! 2*1 pressure elements on the adjacent cells, so we have       
-          ! 2 columns in the B-matrix.                                    
-          !                                                               
-          !        IEL                              IEL                   
-          !     |--------|             |--------|--------|                
-          !     |        |             |        |        |                
-          !     |   P    |      or     |   Q    X   P    |                
-          !     |   X    |             |        |        |                
-          !   --|--------|--           |--------|--------|                
+          !
+          !
+          ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+          ! 2*1 pressure elements on the adjacent cells, so we have
+          ! 2 columns in the B-matrix.
+          !
+          !        IEL                              IEL
+          !     |--------|             |--------|--------|
+          !     |        |             |        |        |
+          !     |   P    |      or     |   Q    X   P    |
+          !     |   X    |             |        |        |
+          !   --|--------|--           |--------|--------|
           !
           !
           ! Now, throw all summands to the RHS vector to build a local
           ! 'defect' on our single element IEL.
-          !                                                               
-          !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )                                 
-          !  (d2 )   (f2 )    [ B~^t       I1~               ] (u )                                 
-          !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )                                    
-          !  (dl1)   (fl1)    [                B~^t       I2~] (p ) 
-          !  (dl2)   (fl2)                                     (| ) 
-          !  (dlg)   (flg)                                     (l ) 
+          !
+          !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )
+          !  (d2 )   (f2 )    [ B~^t       I1~               ] (u )
+          !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )
+          !  (dl1)   (fl1)    [                B~^t       I2~] (p )
+          !  (dl2)   (fl2)                                     (| )
+          !  (dlg)   (flg)                                     (l )
           !                                                    (| )
           !                                                    (xi)
           !
@@ -11394,7 +11394,7 @@ contains
             FF(inode+lofsl2) = FF(inode+lofsl2) &
                             - rvanka%Dmultipliers(5,5)*p_DA55(ia)*p_Dvector(J+ioffsetl2)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -11405,7 +11405,7 @@ contains
                 AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanka%Dmultipliers(5,5)
                 exit
               end if
-            end do          
+            end do
           end do
 
           ! Process the 'off-diagonal' matrices A12 and A21
@@ -11429,7 +11429,7 @@ contains
               FF(inode+lofsv) = FF(inode+lofsv) &
                               - rvanka%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
               
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -11437,7 +11437,7 @@ contains
                   AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
           
@@ -11461,7 +11461,7 @@ contains
               FF(inode+lofsl2) = FF(inode+lofsl2) &
                               - rvanka%Dmultipliers(5,4)*p_DA54(ia)*p_Dvector(J+ioffsetl1)
               
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -11469,7 +11469,7 @@ contains
                   AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanka%Dmultipliers(5,4)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
                   
@@ -11534,7 +11534,7 @@ contains
             J = p_KcolB(ib)
             
             ! primal equation
-            daux = p_Dvector(j+ioffsetp) 
+            daux = p_Dvector(j+ioffsetp)
             FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
             FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
@@ -11575,7 +11575,7 @@ contains
               FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DM(ia)*p_Dvector(J+ioffsetu)
               FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DM(ia)*p_Dvector(J+ioffsetv)
               
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -11588,7 +11588,7 @@ contains
                   ! AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
           
@@ -11598,7 +11598,7 @@ contains
           ! to our element and pressure DOF IEL - which makes it necessary
           ! to compare the column numbers in KcolB with IEL.
           ! Remember: The column numbers in B correspond to the pressure-DOF`s
-          ! and so to element numbers. 
+          ! and so to element numbers.
           !
           ! Btw: Each row of B has at most two entries:
           !
@@ -11625,12 +11625,12 @@ contains
             !
             ! In AA, we simultaneously set up (locally):
             !
-            !   (  .   .  B1   .   .   .  ) 
-            !   (  .   .  B2   .   .   .  ) 
-            !   ( D1  D2   .   .   .   .  ) 
-            !   (  .   .   .   .   .  B1  ) 
-            !   (  .   .   .   .   .  B2  ) 
-            !   (  .   .   .  D1  D2   .  ) 
+            !   (  .   .  B1   .   .   .  )
+            !   (  .   .  B2   .   .   .  )
+            !   ( D1  D2   .   .   .   .  )
+            !   (  .   .   .   .   .  B1  )
+            !   (  .   .   .   .   .  B2  )
+            !   (  .   .   .  D1  D2   .  )
 
             if (p_KcolB(ib) .eq. IEL) then
             
@@ -11668,7 +11668,7 @@ contains
                           - AA(1+lofsxi,inode+lofsl1)*p_Dvector(idof+ioffsetl1) &
                           - AA(1+lofsxi,inode+lofsl2)*p_Dvector(idof+ioffsetl2)
             
-              ! Quit the loop - the other possible entry belongs to another 
+              ! Quit the loop - the other possible entry belongs to another
               ! element, not to the current one
               exit
             end if
@@ -11734,7 +11734,7 @@ contains
       
       end do ! iel
 
-    ! -------------------------------------------------------------------------      
+    ! -------------------------------------------------------------------------
     case (1)
       ! VANKA applied to 9x9 primal system
 
@@ -11751,13 +11751,13 @@ contains
         end do
         
         ! We now have the element
-        !                                               
+        !
         ! +---------+                       +----3----+
         ! |         |                       |         |
-        ! |   IEL   |   with DOF`s          4    P    2      
+        ! |   IEL   |   with DOF`s          4    P    2
         ! |         |                       |    Q0   |
         ! +---------+                       +----1----+
-        !                                               
+        !
         !
         ! Fetch the pressure P on the current element into FF.
         ! The numbers of the DOF`s coincide with the definition
@@ -11785,16 +11785,16 @@ contains
           FF(inode+lofsu) = p_Drhs(idof+ioffsetu)
           FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
 
-          ! What do we have at this point?                           
+          ! What do we have at this point?
           ! FF     : "local" RHS vector belonging to the DOF`s on the
-          !          current element                                 
-          ! AA     : Diagonal entries of A belonging to these DOF`s  
-          !                                                          
-          ! And at the moment:                                       
-          ! idof      : number of current DOF on element IEL            
-          ! inode     : "local" number of DOF on element IEL, i.e.      
-          !              number of the edge         
-          !                     
+          !          current element
+          ! AA     : Diagonal entries of A belonging to these DOF`s
+          !
+          ! And at the moment:
+          ! idof      : number of current DOF on element IEL
+          ! inode     : "local" number of DOF on element IEL, i.e.
+          !              number of the edge
+          !
 
           ! Extract those entries in the A-, B- and M-matrices to our local
           ! matrix AA, which belong to DOF`s in our current solution vector.
@@ -11821,7 +11821,7 @@ contains
             FF(inode+lofsv) = FF(inode+lofsv) &
                             - rvanka%Dmultipliers(2,2)*p_DA22(ia)*p_Dvector(J+ioffsetv)
 
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -11829,7 +11829,7 @@ contains
                 AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
                 exit
               end if
-            end do          
+            end do
           end do
 
           ! Process the 'off-diagonal' matrices A12 and A21
@@ -11853,7 +11853,7 @@ contains
               FF(inode+lofsv) = FF(inode+lofsv) &
                               - rvanka%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
               
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -11861,7 +11861,7 @@ contains
                   AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
           
@@ -11904,7 +11904,7 @@ contains
             J = p_KcolB(ib)
             
             ! primal equation
-            daux = p_Dvector(j+ioffsetp) 
+            daux = p_Dvector(j+ioffsetp)
             FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
             FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
@@ -11934,7 +11934,7 @@ contains
               FF(inode+lofsu) = FF(inode+lofsu)-daux*p_DM(ia)*p_Dvector(J+ioffsetl1)
               FF(inode+lofsv) = FF(inode+lofsv)-daux*p_DM(ia)*p_Dvector(J+ioffsetl2)
 
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -11942,7 +11942,7 @@ contains
                   AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
           
@@ -11952,7 +11952,7 @@ contains
           ! to our element and pressure DOF IEL - which makes it necessary
           ! to compare the column numbers in KcolB with IEL.
           ! Remember: The column numbers in B correspond to the pressure-DOF`s
-          ! and so to element numbers. 
+          ! and so to element numbers.
           !
           ! Btw: Each row of B has at most two entries:
           !
@@ -11979,12 +11979,12 @@ contains
             !
             ! In AA, we simultaneously set up (locally):
             !
-            !   (  .   .  B1   .   .   .  ) 
-            !   (  .   .  B2   .   .   .  ) 
-            !   ( D1  D2   .   .   .   .  ) 
-            !   (  .   .   .   .   .   .  ) 
-            !   (  .   .   .   .   .   .  ) 
-            !   (  .   .   .   .   .   .  ) 
+            !   (  .   .  B1   .   .   .  )
+            !   (  .   .  B2   .   .   .  )
+            !   ( D1  D2   .   .   .   .  )
+            !   (  .   .   .   .   .   .  )
+            !   (  .   .   .   .   .   .  )
+            !   (  .   .   .   .   .   .  )
 
             if (p_KcolB(ib) .eq. IEL) then
             
@@ -12010,7 +12010,7 @@ contains
                           - AA(1+lofsp,inode+lofsu)*p_Dvector(idof+ioffsetu) &
                           - AA(1+lofsp,inode+lofsv)*p_Dvector(idof+ioffsetv)
             
-              ! Quit the loop - the other possible entry belongs to another 
+              ! Quit the loop - the other possible entry belongs to another
               ! element, not to the current one
               exit
             end if
@@ -12089,13 +12089,13 @@ contains
         end do
         
         ! We now have the element
-        !                                               
+        !
         ! +---------+                       +----3----+
         ! |         |                       |         |
-        ! |   IEL   |   with DOF`s          4    P    2      
+        ! |   IEL   |   with DOF`s          4    P    2
         ! |         |                       |    Q0   |
         ! +---------+                       +----1----+
-        !                                               
+        !
         !
         ! Fetch the pressure P on the current element into FF.
         ! The numbers of the DOF`s coincide with the definition
@@ -12123,16 +12123,16 @@ contains
           FF(inode+lofsl1) = p_Drhs(idof+ioffsetl1)
           FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
           
-          ! What do we have at this point?                           
+          ! What do we have at this point?
           ! FF     : "local" RHS vector belonging to the DOF`s on the
-          !          current element                                 
-          ! AA     : Diagonal entries of A belonging to these DOF`s  
-          !                                                          
-          ! And at the moment:                                       
-          ! idof      : number of current DOF on element IEL            
-          ! inode     : "local" number of DOF on element IEL, i.e.      
-          !              number of the edge         
-          !                     
+          !          current element
+          ! AA     : Diagonal entries of A belonging to these DOF`s
+          !
+          ! And at the moment:
+          ! idof      : number of current DOF on element IEL
+          ! inode     : "local" number of DOF on element IEL, i.e.
+          !              number of the edge
+          !
           ! At first build: fi = fi-Aui
           
           ia1 = p_KldA11(idof)
@@ -12155,7 +12155,7 @@ contains
             FF(inode+lofsl2) = FF(inode+lofsl2) &
                             - rvanka%Dmultipliers(5,5)*p_DA55(ia)*p_Dvector(J+ioffsetl2)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -12163,7 +12163,7 @@ contains
                 AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanka%Dmultipliers(5,5)
                 exit
               end if
-            end do          
+            end do
           end do
 
 
@@ -12187,7 +12187,7 @@ contains
               FF(inode+lofsl2) = FF(inode+lofsl2) &
                               - rvanka%Dmultipliers(5,4)*p_DA54(ia)*p_Dvector(J+ioffsetl1)
               
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -12195,7 +12195,7 @@ contains
                   AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanka%Dmultipliers(5,4)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
                   
@@ -12268,7 +12268,7 @@ contains
               FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DM(ia)*p_Dvector(J+ioffsetu)
               FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DM(ia)*p_Dvector(J+ioffsetv)
               
-              ! Whereever we find a DOF that couples to another DOF on the 
+              ! Whereever we find a DOF that couples to another DOF on the
               ! same element, we put that to both A-blocks of our local matrix.
               do k=1,nnvel
                 if (j .eq. IdofGlobal(k)) then
@@ -12276,7 +12276,7 @@ contains
                   AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
                   exit
                 end if
-              end do          
+              end do
             end do
           end if
           
@@ -12286,7 +12286,7 @@ contains
           ! to our element and pressure DOF IEL - which makes it necessary
           ! to compare the column numbers in KcolB with IEL.
           ! Remember: The column numbers in B correspond to the pressure-DOF`s
-          ! and so to element numbers. 
+          ! and so to element numbers.
           !
           ! Btw: Each row of B has at most two entries:
           !
@@ -12313,12 +12313,12 @@ contains
             !
             ! In AA, we simultaneously set up (locally):
             !
-            !   (  .   .   .   .   .   .  ) 
-            !   (  .   .   .   .   .   .  ) 
-            !   (  .   .   .   .   .   .  ) 
-            !   (  .   .   .   .   .  B1  ) 
-            !   (  .   .   .   .   .  B2  ) 
-            !   (  .   .   .  D1  D2   .  ) 
+            !   (  .   .   .   .   .   .  )
+            !   (  .   .   .   .   .   .  )
+            !   (  .   .   .   .   .   .  )
+            !   (  .   .   .   .   .  B1  )
+            !   (  .   .   .   .   .  B2  )
+            !   (  .   .   .  D1  D2   .  )
 
             if (p_KcolB(ib) .eq. IEL) then
             
@@ -12344,7 +12344,7 @@ contains
                           - AA(1+lofsxi,inode+lofsl1)*p_Dvector(idof+ioffsetl1) &
                           - AA(1+lofsxi,inode+lofsl2)*p_Dvector(idof+ioffsetl2)
             
-              ! Quit the loop - the other possible entry belongs to another 
+              ! Quit the loop - the other possible entry belongs to another
               ! element, not to the current one
               exit
             end if
@@ -12422,8 +12422,8 @@ contains
   subroutine vanka_init3DNavierStokes (rmatrix,rvanka)
   
 !<description>
-  ! Initialises the VANKA variant for 3D Navier-Stokes problems 
-  ! for conformal discretisations. Checks if the "3D-Navier-Stokes" VANKA variant 
+  ! Initialises the VANKA variant for 3D Navier-Stokes problems
+  ! for conformal discretisations. Checks if the "3D-Navier-Stokes" VANKA variant
   ! for conformal discretisations can be applied to the system given by rmatrix.
   ! If not, the program is stopped.
   !
@@ -12498,12 +12498,12 @@ contains
           ! For scaled matrices, we have to use an extended sub-version of VANKA.
           if ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) .and. &
               (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 0.0_DP)) then
-            bextended = .true.  
+            bextended = .true.
           end if
           
           if ((i .eq. j) .and. &
               (rmatrix%RmatrixBlock(i,j)%dscaleFactor .ne. 1.0_DP) ) then
-            bextended = .true. 
+            bextended = .true.
           end if
           
         end if ! neq != 0
@@ -12524,14 +12524,14 @@ contains
       call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
       call sys_halt()
-    end if      
+    end if
   
     if ((rmatrix%RmatrixBlock(3,4)%NA .ne. rmatrix%RmatrixBlock(4,3)%NA) .or. &
         (rmatrix%RmatrixBlock(3,4)%NEQ .ne. rmatrix%RmatrixBlock(4,3)%NCOLS)) then
       call output_line ('Structure of B3 and B3^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_init3DNavierStokes')
       call sys_halt()
-    end if      
+    end if
 
     ! Fill the output structure with data of the matrices.
     call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
@@ -12603,12 +12603,12 @@ contains
 !        (rmatrix%RmatrixBlock(1,2)%dscaleFactor .EQ. 1.0_DP)) THEN
 !      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
 !          rvanka%rvanka2DNavSt%p_DA12 )
-!          
+!
 !      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
 !          rvanka%rvanka2DNavSt%p_KcolA12)
 !      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
 !          rvanka%rvanka2DNavSt%p_KldA12 )
-!          
+!
 !      ! Get the structure. It is assumed that A12 and A21 have the same!
 !      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
 !        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
@@ -12616,13 +12616,13 @@ contains
 !      ELSE
 !        rvanka%rvanka2DNavSt%p_KdiagonalA12 => rvanka%rvanka2DNavSt%p_KldA12
 !      END IF
-!      
+!
 !      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
 !        CALL output_line ('If A12 is given, A21 must also be given!',&
 !            OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesO')
 !        CALL sys_halt()
 !      END IF
-!      
+!
 !      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
 !          rvanka%rvanka2DNavSt%p_DA21 )
 !    END IF
@@ -12710,7 +12710,7 @@ contains
   integer :: csubtype
 
   ! The sub-subtype of VANKA that should handle the above problem class.
-  ! =0: use standard VANKA. =1: use extended VANKA (e.g. with different 
+  ! =0: use standard VANKA. =1: use extended VANKA (e.g. with different
   !     multipliers in the matrices)
   integer :: csubsubtype
   
@@ -12729,7 +12729,7 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistrU
     type(t_elementDistribution), pointer :: p_relementDistrV
     type(t_elementDistribution), pointer :: p_relementDistrW
-    type(t_elementDistribution), pointer :: p_relementDistrP 
+    type(t_elementDistribution), pointer :: p_relementDistrP
     
     ! 3D Navier Stokes problem.
 
@@ -12823,7 +12823,7 @@ contains
           call output_line (&
               'Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_3DNavierStokes')
-          call sys_halt()  
+          call sys_halt()
         
         end select
         
@@ -13156,7 +13156,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         ! Either two (if the velocity DOF is an face with two neighbouring
@@ -13197,7 +13197,7 @@ contains
                         - DD2(inode)*p_Dvector(idof+ioffsetv) &
                         - DD3(inode)*p_Dvector(idof+ioffsetw)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -13218,14 +13218,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -13448,7 +13448,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         ! Either two (if the velocity DOF is an face with two neighbouring
@@ -13489,7 +13489,7 @@ contains
                         - DD2(inode)*p_Dvector(idof+ioffsetv) &
                         - DD3(inode)*p_Dvector(idof+ioffsetw)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -13510,14 +13510,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -13562,8 +13562,8 @@ contains
   pure subroutine vanka_getcorr_3DSPQ1TQ0simple (UU,FF,AA,BB1,BB2,BB3,DD1,DD2,DD3)
   
 !<description>
-  ! This routine solves a 19x19 Jacobi-type Schur complement system for three 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 19x19 Jacobi-type Schur complement system for three
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
 !</description>
@@ -13621,7 +13621,7 @@ contains
     !      ( D1  D2     )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -13643,10 +13643,10 @@ contains
     !               =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -13677,7 +13677,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 6x1 matrix 
+    ! a) B is a 6x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 6 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -13745,8 +13745,8 @@ contains
                                           BB1,BB2,BB3,DD1,DD2,DD3,di)
   
 !<description>
-  ! This routine solves a 19x19 Jacobi-type Schur complement system for three 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 19x19 Jacobi-type Schur complement system for three
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
   !
@@ -13818,7 +13818,7 @@ contains
     !      ( D1  D2  I  )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -13840,10 +13840,10 @@ contains
     !                 =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -13888,7 +13888,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 6x1 matrix 
+    ! a) B is a 6x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 6 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -14119,7 +14119,7 @@ contains
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           FF(inode+lofsw) = FF(inode+lofsw)-daux*p_Dvector(J+ioffsetw)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to all A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -14128,7 +14128,7 @@ contains
               AA (inode+lofsw,k+lofsw) = daux
               exit
             end if
-          end do          
+          end do
         end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -14148,7 +14148,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         ! Either two (if the velocity DOF is an face with two neighbouring
@@ -14181,7 +14181,7 @@ contains
                         - AA(lofsp+1,inode+lofsv)*p_Dvector(idof+ioffsetv) &
                         - AA(lofsp+1,inode+lofsw)*p_Dvector(idof+ioffsetw)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -14202,14 +14202,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
@@ -14376,7 +14376,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -14410,10 +14410,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -14469,70 +14469,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -14562,7 +14562,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -14600,7 +14600,7 @@ contains
                         - DD1(inode)*p_Dvector(idof) &
                         - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -14621,14 +14621,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                     BB1(1) )
       !     (        AA(2)                              BB1(2) )
       !     (               AA(3)                       BB1(3) )
@@ -14669,8 +14669,8 @@ contains
   pure subroutine vanka_getcorr_2DSPP1TP0simple2 (UU,FF,AA1,AA2,BB1,BB2,DD1,DD2,di)
   
 !<description>
-  ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 9x9 Jacobi-type Schur complement system for two
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
   !
@@ -14741,7 +14741,7 @@ contains
     !      ( D1  D2  I  )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -14763,10 +14763,10 @@ contains
     !                 =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -14805,7 +14805,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 3x1 matrix 
+    ! a) B is a 3x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 3 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -14979,7 +14979,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -15013,10 +15013,10 @@ contains
     !        |---X---|                |---X---|
     !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
+    !
     !           new     old                   new     new
     !        |---X---|---X---|             |---X---|---X---|
     !        |       |       |             |       |       |
@@ -15073,70 +15073,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 4 x (2*NVT) matrix for the two velocity      
-        ! components and B being an (2*4) x 1 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
-        ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the four velocity unknowns and the
+        ! pressure unknown on the current element; these five unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 4 x (2*NVT) matrix for the two velocity
+        ! components and B being an (2*4) x 1 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |        |             |        |        |
+        !   --|---X----|--           |--------|--------|
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL!
+        !
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to
         ! two 4 x 1 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix).                                   
+        ! two pressure elements on the neighbour cell, so we have
+        ! 2 columns in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -15175,7 +15175,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -15213,7 +15213,7 @@ contains
                         - DD1(inode)*p_Dvector(idof) &
                         - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -15234,14 +15234,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1)                                                   BB1(1) )
       !     (        AA(2)                                            BB1(2) )
       !     (               AA(3)                                     BB1(3) )
@@ -15284,8 +15284,8 @@ contains
   pure subroutine vanka_getcorr_2DSPP1TP0CPsimple (UU,FF,AA,BB1,BB2,DD1,DD2,di)
   
 !<description>
-  ! This routine solves a 7x7 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It is used as auxiliary 
+  ! This routine solves a 7x7 Jacobi-type Schur complement system for two
+  ! velocity vectors and one pressure vector. It is used as auxiliary
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure for system where the velocity is fully coupled.
 !</description>
@@ -15349,7 +15349,7 @@ contains
     !      ( D1  D2     )
     !
     ! What we want to calculate are two things: 1.) a new pressure and
-    ! 2.) a new velocity. Both can be calculated from the 
+    ! 2.) a new velocity. Both can be calculated from the
     ! RHS using the Schur-Complement approach.
     !
     ! Assume we have a system:
@@ -15371,10 +15371,10 @@ contains
     !               =: DP              =: FF(pressure)
     !
     ! Note that DP is a 1x1-system, i.e. a scalar! Therefore
-    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial! 
+    ! calculating DP^-1 to get p=DP^-1*FF(pressure) is trivial!
     ! So FF(pressure)/DP will be the pressure on the element IEL.
     !
-    ! Calculating an update for the velocity 
+    ! Calculating an update for the velocity
     !
     !      u = S^-1 (f-Bp)
     !
@@ -15406,7 +15406,7 @@ contains
     ! To calculate that for local B, S, f and p, consider at first
     ! the dimensions in this system:
     !
-    ! a) B is a 3x1 matrix 
+    ! a) B is a 3x1 matrix
     ! b) S^-1 is a diagonal matrix, given by the 3 diagonal entries of A
     ! c) D^t S^-1 B is therefore a 1x1 matrix, thus a scalar
     !
@@ -15572,7 +15572,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -15598,25 +15598,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -15637,13 +15637,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -15669,70 +15669,70 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity      
-        ! components and B~ being an (2*3) x 2 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity
+        ! components and B~ being an (2*3) x 2 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 3 x 3. The 6 x 2-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with two square
+        ! submatrices A~ of size 3 x 3. The 6 x 2-matrix B~ reduces to
         ! two 3 x 2 submatrices (originally, every velocity couples with
-        ! the pressure DOF`s on that cell, so we have       
-        ! 1 column in the B-matrix).                                   
+        ! the pressure DOF`s on that cell, so we have
+        ! 1 column in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -15744,7 +15744,7 @@ contains
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -15752,7 +15752,7 @@ contains
               AA (inode+nnvel,k+nnvel) = daux
               exit
             end if
-          end do          
+          end do
         end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -15772,7 +15772,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -15810,7 +15810,7 @@ contains
                         - AA(2*nnvel+1,inode)*p_Dvector(idof) &
                         - AA(2*nnvel+1,inode+nnvel)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -15831,14 +15831,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  .............. :: :: :: )
       !     (    :                  :                                   :AA :: )
       !     (    :                  :                                   :(B1): )
@@ -16011,7 +16011,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -16037,25 +16037,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -16076,13 +16076,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FFP.
       ! The numbers of the DOF`s coincide with the definition
@@ -16108,71 +16108,71 @@ contains
         FF(inode)       = p_Drhs(idof)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u) = (f)                                        
-        !    [ B^t 0 ] (p)   (g)                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!                             
-        !                                                               
-        ! Extracting all the lines of the system that correspond to     
-        ! DOF`s on our single element IEL results in a rectangular      
-        ! system of the form                                            
-        !                                                               
-        !    [ === A^ === B~ ] (|) = (f1)                                
-        !    [ B~^t       0  ] (u)   (f2)                                
-        !                      (|)   (g )                                   
-        !                      (p)                                      
-        !                                                               
-        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity      
-        ! components and B~ being an (2*3) x 2 matrix that couples the   
-        ! velocities to the pressure on our current element.            
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
+        !
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u) = (f)
+        !    [ B^t 0 ] (p)   (g)
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
+        ! DOF`s on our single element IEL results in a rectangular
+        ! system of the form
+        !
+        !    [ === A^ === B~ ] (|) = (f1)
+        !    [ B~^t       0  ] (u)   (f2)
+        !                      (|)   (g )
+        !                      (p)
+        !
+        ! with A^ being an 8 x 2*(NMT) matrix for the two velocity
+        ! components and B~ being an (2*3) x 2 matrix that couples the
+        ! velocities to the pressure on our current element.
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         !
         ! Now, throw all summands to the RHS vector to build a local
-        ! 'defect' on our single element IEL!  
-        !                                                               
-        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)                               
-        !   (d2)    (f2)   [ B~^t       0  ] (u2)                             
-        !   (dp)    (g )                     (p)
-        !                                                                 
+        ! 'defect' on our single element IEL!
         !
-        ! That way, A^ is reduced to a square matrix with four square    
-        ! submatrices A~ of size 3 x 3. The 6 x 2-matrix B~ reduces to  
+        !   (d1)  = (f1) - [ === A^ === B~ ] (u1)
+        !   (d2)    (f2)   [ B~^t       0  ] (u2)
+        !   (dp)    (g )                     (p)
+        !
+        !
+        ! That way, A^ is reduced to a square matrix with four square
+        ! submatrices A~ of size 3 x 3. The 6 x 2-matrix B~ reduces to
         ! two 3 x 2 submatrices (originally, every velocity couples with
-        ! the pressure DOF`s on that cell, so we have       
-        ! 1 column in the B-matrix).                                   
+        ! the pressure DOF`s on that cell, so we have
+        ! 1 column in the B-matrix).
         !
         ! At first build: fi = fi-Aui
         
@@ -16183,7 +16183,7 @@ contains
           FF(inode)       = FF(inode)      -p_DA(ia)*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -16191,7 +16191,7 @@ contains
               AA (inode+nnvel,k+nnvel) = p_DA22(ia)
               exit
             end if
-          end do          
+          end do
         end do
 
         ! Process the 'off-diagonal' matrices A12 and A21
@@ -16203,7 +16203,7 @@ contains
           FF(inode)       = FF(inode)      -p_DA12(ia)*p_Dvector(J+ioffsetv)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J)
           
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -16211,7 +16211,7 @@ contains
               AA (inode+nnvel,k) = p_DA21(ia)
               exit
             end if
-          end do          
+          end do
         end do
                 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -16231,7 +16231,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -16269,7 +16269,7 @@ contains
                         - AA(2*nnvel+1,inode)*p_Dvector(idof) &
                         - AA(2*nnvel+1,inode+nnvel)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -16290,14 +16290,14 @@ contains
       !
       ! The only question now will be: What is C^{-1}?
       !
-      ! Well, here we have different choices. 
+      ! Well, here we have different choices.
       ! For full linear systems, one would choose C=A, which ist the
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF`s on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner
       ! in the above variables. It has the form:
-      ! 
+      !
       ! C = ( AA(1,1)  ..............    AA( 1, 4) .............. :: :: :: )
       !     (    :                  :        :                  :       :AA :: )
       !     (    :                  :        :                  :       :(B1): )
@@ -16365,8 +16365,8 @@ contains
   ! this routine, as this holds a reference to the system matrix.
   !
   ! vanka_2DNSSQ1TQ0fullCoupConf supports fully coupled velocity submatrices.
-  ! The matrices A11, A22 must have the same structure. 
-  ! The matrices A12 and A21 must have the same structure. 
+  ! The matrices A11, A22 must have the same structure.
+  ! The matrices A12 and A21 must have the same structure.
   ! The structure of A11 and A12 may be different from each other.
 !</description>
 
@@ -16456,7 +16456,7 @@ contains
       p_DA21 => rvanka%p_DA21
     else
       nullify(p_KcolA12)
-      nullify(p_KldA12) 
+      nullify(p_KldA12)
       nullify(p_DA12 )
       nullify(p_DA21 )
     end if
@@ -16495,7 +16495,7 @@ contains
 
     ! Basic algorithm:
     !
-    ! What are we doing here? Well, we want to perform 
+    ! What are we doing here? Well, we want to perform
     ! *preconditioning*, i.e. we have to solve the problem
     !
     !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
@@ -16521,25 +16521,25 @@ contains
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new     
+    !           old                      new
     !        +---X---+                +---X---+
     !        |       |                |       |
     !    old X       X       -->  new X   X   X new
     !        |   1   |                |   1   |
     !        +---X---+                +---X---+
-    !           old                      new     
+    !           old                      new
     !
-    !    From the second cell on, there might be "old" data and "new" 
+    !    From the second cell on, there might be "old" data and "new"
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
-    !    
-    !           new     old                   new       new    
+    !
+    !           new     old                   new       new
     !        +---X---+---X---+             +---X---+---X---+
     !        |     1 |     2 |             |     1 |     2 |
     !    new X       X       X old --> new X       X       X new
     !        |       |new    |             |       |newer  |
     !        +---X---+---X---+             +---X---+---X---+
-    !           new     old                   new       new    
+    !           new     old                   new       new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -16560,13 +16560,13 @@ contains
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                               
+      !
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF`s          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
-      !                                               
+      !
       !
       ! Fetch the pressure P on the current element into FF.
       ! The numbers of the DOF`s coincide with the definition
@@ -16594,63 +16594,63 @@ contains
         FF(inode+lofsu) = p_Drhs(idof+ioffsetu)
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
 
-        ! What do we have at this point?                           
+        ! What do we have at this point?
         ! FF     : "local" RHS vector belonging to the DOF`s on the
-        !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF`s  
-        !                                                          
-        ! And at the moment:                                       
-        ! idof      : number of current DOF on element IEL            
-        ! inode     : "local" number of DOF on element IEL, i.e.      
-        !              number of the edge         
-        !                     
-        ! Now comes the crucial point with the "update": How to         
-        ! subsequently update the vertex values, such that the whole    
-        ! thing still converges to the solution, even if a node         
-        ! is updated more than once? Here, we use a typical             
-        ! matrix-decomposition approach:                                
-        !                                                               
-        ! Again consider the problem:                                   
-        !                                                               
-        !    [ A   B ] (u)  = (f  )                                        
-        !    [ B^t 0 ] (p)    (g  )                                        
-        !                                                               
-        ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the velocity and pressure unknowns 
-        ! on the current element; these 21 unknowns  
-        ! are located anywhere in the (u,p) vector. The idea is to      
-        ! shift "everything known" to the right hand side to obtain     
-        ! a system for only these unknowns!   
+        !          current element
+        ! AA     : Diagonal entries of A belonging to these DOF`s
         !
-        ! Extracting all the lines of the system that correspond to     
+        ! And at the moment:
+        ! idof      : number of current DOF on element IEL
+        ! inode     : "local" number of DOF on element IEL, i.e.
+        !              number of the edge
+        !
+        ! Now comes the crucial point with the "update": How to
+        ! subsequently update the vertex values, such that the whole
+        ! thing still converges to the solution, even if a node
+        ! is updated more than once? Here, we use a typical
+        ! matrix-decomposition approach:
+        !
+        ! Again consider the problem:
+        !
+        !    [ A   B ] (u)  = (f  )
+        !    [ B^t 0 ] (p)    (g  )
+        !
+        ! We assume, that all components in the vector (u,p) are
+        ! given - except for the velocity and pressure unknowns
+        ! on the current element; these 21 unknowns
+        ! are located anywhere in the (u,p) vector. The idea is to
+        ! shift "everything known" to the right hand side to obtain
+        ! a system for only these unknowns!
+        !
+        ! Extracting all the lines of the system that correspond to
         ! DOF`s on our single element IEL results in rectangular
-        ! systems of the form                                            
-        !                                                               
-        !    [ === A^ === B~  ] (| ) = (f1 )                                
-        !    [ B~^t       I1~ ] (u )   (f2 )                                
-        !                       (| )   (g  )                                   
-        !                       (p )   
-        !                                     
-        !                                                               
-        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
-        ! 2*1 pressure elements on the adjacent cells, so we have       
-        ! 2 columns in the B-matrix.                                    
-        !                                                               
-        !        IEL                              IEL                   
-        !     |--------|             |--------|--------|                
-        !     |        |             |        |        |                
-        !     |   P    |      or     |   Q    X   P    |                
-        !     |   X    |             |        |        |                
-        !   --|--------|--           |--------|--------|                
+        ! systems of the form
+        !
+        !    [ === A^ === B~  ] (| ) = (f1 )
+        !    [ B~^t       I1~ ] (u )   (f2 )
+        !                       (| )   (g  )
+        !                       (p )
+        !
+        !
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most
+        ! 2*1 pressure elements on the adjacent cells, so we have
+        ! 2 columns in the B-matrix.
+        !
+        !        IEL                              IEL
+        !     |--------|             |--------|--------|
+        !     |        |             |        |        |
+        !     |   P    |      or     |   Q    X   P    |
+        !     |   X    |             |        |        |
+        !   --|--------|--           |--------|--------|
         !
         !
         ! Now, throw all summands to the RHS vector to build a local
         ! 'defect' on our single element IEL.
-        !                                                               
-        !  (d1 ) = (f1 ) -  [ === A^ === B~  ] (| )                                 
-        !  (d2 )   (f2 )    [ B~^t       I1~ ] (u )                                 
-        !  (dg )   (g  )                       (| )                                    
-        !                                      (p ) 
+        !
+        !  (d1 ) = (f1 ) -  [ === A^ === B~  ] (| )
+        !  (d2 )   (f2 )    [ B~^t       I1~ ] (u )
+        !  (dg )   (g  )                       (| )
+        !                                      (p )
         !
         ! Extract those entries in the A-, B- and M-matrices to our local
         ! matrix AA, which belong to DOF`s in our current solution vector.
@@ -16674,7 +16674,7 @@ contains
           FF(inode+lofsv) = FF(inode+lofsv) &
                           - rvanka%Dmultipliers(2,2)*p_DA22(ia)*p_Dvector(J+ioffsetv)
 
-          ! Whereever we find a DOF that couples to another DOF on the 
+          ! Whereever we find a DOF that couples to another DOF on the
           ! same element, we put that to both A-blocks of our local matrix.
           do k=1,nnvel
             if (j .eq. IdofGlobal(k)) then
@@ -16682,7 +16682,7 @@ contains
               AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanka%Dmultipliers(2,2)
               exit
             end if
-          end do          
+          end do
         end do
 
         ! Process the 'off-diagonal' matrices A12 and A21
@@ -16703,7 +16703,7 @@ contains
             FF(inode+lofsv) = FF(inode+lofsv) &
                             - rvanka%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
             
-            ! Whereever we find a DOF that couples to another DOF on the 
+            ! Whereever we find a DOF that couples to another DOF on the
             ! same element, we put that to both A-blocks of our local matrix.
             do k=1,nnvel
               if (j .eq. IdofGlobal(k)) then
@@ -16711,7 +16711,7 @@ contains
                 AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanka%Dmultipliers(2,1)
                 exit
               end if
-            end do          
+            end do
           end do
         end if
         
@@ -16747,7 +16747,7 @@ contains
 
           J = p_KcolB(ib)
           
-          daux = p_Dvector(j+ioffsetp) 
+          daux = p_Dvector(j+ioffsetp)
           FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
@@ -16760,7 +16760,7 @@ contains
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF`s
-        ! and so to element numbers. 
+        ! and so to element numbers.
         !
         ! Btw: Each row of B has at most two entries:
         !
@@ -16784,9 +16784,9 @@ contains
           !
           ! In AA, we simultaneously set up (locally):
           !
-          !   (  .   .  B1   ) 
-          !   (  .   .  B2   ) 
-          !   ( D1  D2   .   ) 
+          !   (  .   .  B1   )
+          !   (  .   .  B2   )
+          !   ( D1  D2   .   )
 
           if (p_KcolB(ib) .eq. IEL) then
           
@@ -16812,7 +16812,7 @@ contains
                         - AA(1+lofsp,inode+lofsu)*p_Dvector(idof+ioffsetu) &
                         - AA(1+lofsp,inode+lofsv)*p_Dvector(idof+ioffsetv)
           
-            ! Quit the loop - the other possible entry belongs to another 
+            ! Quit the loop - the other possible entry belongs to another
             ! element, not to the current one
             exit
           end if
@@ -16871,4 +16871,4 @@ contains
 
   end subroutine
 
-end module 
+end module

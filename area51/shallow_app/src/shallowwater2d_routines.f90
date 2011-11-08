@@ -75,7 +75,7 @@ contains
     case(1) ! MinMod
        limiterfunc2 = h1*min(abs(z),abs(n))
     case(2) ! Van Leer
-       if (abs(z)+abs(n)>0.001_DP) then	
+       if (abs(z)+abs(n)>0.001_DP) then
           limiterfunc2 = h1*2.0_DP*abs(z*n)/(abs(n)+abs(z))
        else
           limiterfunc2 = 0.0_DP
@@ -236,49 +236,49 @@ contains
 ! !        scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
 ! !        cRoe = sqrt(g*Q(1))    ! c_Roe=sqrt(g*h)
 ! !        ! cRoe = sqrt(0.5*gravconst*(Qi(1)+Qj(1)))
-! !        uRoe = Q(2)/Q(1) 
+! !        uRoe = Q(2)/Q(1)
 ! !        vRoe = Q(3)/Q(1)
 ! !        lambda = sqrt((cxij/scalefactor*uRoe)**2.0_DP+(cyij/scalefactor*vRoe)**2.0_DP)+cRoe
 ! !        scalarDissipation = scalefactor*lambda
 ! !
 ! !        Dij=scalarDissipation*Eye
-!         
+!
 !         Qroe = calculateQroe(Qi, Qj)
 !         cRoe = sqrt(0.5_DP*g*(Qi(1)+Qj(1)))
-!         uRoe = QRoe(2)/QRoe(1) 
+!         uRoe = QRoe(2)/QRoe(1)
 !         vRoe = QRoe(3)/QRoe(1)
-!         
+!
 ! !         if ((Qi(1)<1e-6_dp).or.(Qj(1)<1e-6_dp)) then
 ! !           uRoe = max(Qi(2)/Qi(1),Qj(2)/Qj(1))
 ! !           vRoe = max(Qi(3)/Qi(1),Qj(3)/Qj(1))
 ! !           cRoe = 2.0_dp*max(sqrt(g*Qi(1)),sqrt(g*Qj(1)))
 ! !         end if
-!         
+!
 !         scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
 !         lambda = abs(cxij*uRoe+cyij*vRoe)/scalefactor+2.0_DP*cRoe
 !         scalarDissipation = scalefactor*lambda
-!         
+!
 !         scalarDissipation = abs(cxij*uRoe) + cxij*cRoe + abs(cyij*vRoe) + cyij*cRoe
-!         
+!
 !         Dij=scalarDissipation*Eye
-!         
-!         
-!         
-!         
-!         
+!
+!
+!
+!
+!
 !         A=cxij*buildJacobi(Qroe,1,g)+cyij*buildJacobi(Qroe,2,g)
 !         v=(/1.0_dp,1.0_dp,1.0_dp/)
 !         v=1.0_dp/sqrt(v(1)*v(1)+v(2)*v(2)+v(3)*v(3))*v
-!         
-!         
+!
+!
 !         findeig: do l = 1, 100
 !           !w=A*v
 !           w=matmul(A,v)
-!           
-!           
+!
+!
 !            if (sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)).le.1e-12_dp) exit findeig
-!           
-!           
+!
+!
 !           w=1.0_dp/sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))*w
 !           !diff=v-w
 !           !if (sqrt(diff(1)*diff(1)+diff(2)*diff(2)+diff(3)*diff(3)).le.1e-3_dp) exit findeig
@@ -286,11 +286,11 @@ contains
 !         end do findeig
 !         !w=A*w
 !         w=matmul(A,w)
-!         
+!
 !         scalarDissipation = sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))
-!         
-! 
-!         
+!
+!
+!
 !         Dij=scalarDissipation*Eye
 
 
@@ -309,7 +309,7 @@ contains
 !          ! Entropy Fix
 !          lambda1 = ui-ci
 !          if (abs(ui-ci)<0.1_dp) then
-!           
+!
 !          end if
          
         end if
@@ -338,9 +338,9 @@ contains
     
 
         Dij=scalarDissipation*Eye
-!         
-!         
-!         
+!
+!
+!
 !         Qroe = calculateQroe(Qi,Qj)
 !         cRoe = sqrt(g/2.0_dp * ( Qi(1) + Qj(1)))
 !         lambda1=(cxij/scalefactor1*Qroe(2)/Qroe(1)+cyij/scalefactor1*Qroe(3)/Qroe(1))-cRoe
@@ -349,9 +349,9 @@ contains
 !         if(abs(lambda1)<0.1_dp) then
 !         write(*,*)'*'
 !          ! lambda1l=(cxij/scalefactor1*Qroe(2)/Qroe(1)+cyij/scalefactor1*Qroe(3)/Qroe(1))-cRoe
-!         
+!
 !         end if
-!         
+!
         
         
         
@@ -361,22 +361,22 @@ contains
         
         
         
-!         
-!         
-!         
+!
+!
+!
 !               A=cxij*buildJacobi(Qroe,1,g)+cyij*buildJacobi(Qroe,2,g)
 !         v=(/1.0_dp,1.0_dp,1.0_dp/)
 !         v=1.0_dp/sqrt(v(1)*v(1)+v(2)*v(2)+v(3)*v(3))*v
-!         
-!         
+!
+!
 !         findeig1: do l = 1, 100
 !           !w=A*v
 !           w=matmul(A,v)
-!           
-!           
+!
+!
 !            if (sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)).le.1e-12_dp) exit findeig1
-!           
-!           
+!
+!
 !           w=1.0_dp/sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))*w
 !           !diff=v-w
 !           !if (sqrt(diff(1)*diff(1)+diff(2)*diff(2)+diff(3)*diff(3)).le.1e-3_dp) exit findeig
@@ -384,22 +384,22 @@ contains
 !         end do findeig1
 !         !w=A*w
 !         w=matmul(A,w)
-!         
+!
 !         scalarDissipation = sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))
-!         
+!
 !         A=cxji*buildJacobi(Qroe,1,g)+cyji*buildJacobi(Qroe,2,g)
 !         v=(/1.0_dp,1.0_dp,1.0_dp/)
 !         v=1.0_dp/sqrt(v(1)*v(1)+v(2)*v(2)+v(3)*v(3))*v
-!         
-!         
+!
+!
 !         findeig2: do l = 1, 100
 !           !w=A*v
 !           w=matmul(A,v)
-!           
-!           
+!
+!
 !            if (sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)).le.1e-12_dp) exit findeig2
-!           
-!           
+!
+!
 !           w=1.0_dp/sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))*w
 !           !diff=v-w
 !           !if (sqrt(diff(1)*diff(1)+diff(2)*diff(2)+diff(3)*diff(3)).le.1e-3_dp) exit findeig
@@ -407,12 +407,12 @@ contains
 !         end do findeig2
 !         !w=A*w
 !         w=matmul(A,w)
-!         
+!
 !         scalarDissipation = max(scalardissipation,sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)))
-!         
-!         
-!         
-!         
+!
+!
+!
+!
 !         Dij=scalarDissipation*Eye
         
         
@@ -420,18 +420,18 @@ contains
         
        ! This one works for non dry bed
 !        Qroeij = calculateQroe(Qi,Qj)
-! 
+!
 !        JcoeffxA = (cxij-cxji)/2.0_DP
 !        JcoeffyA = (cyij-cyji)/2.0_DP
 !        JcoeffxB = (cxij+cxji)/2.0_DP
 !        JcoeffyB = (cyij+cyji)/2.0_DP
-! 
+!
 !        scalarDissipation = max(scalardissipation,&
 !             abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
 !             abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))))
-!        
+!
 !        scalardissipation = max(scalardissipation,SYS_EPSREAL_DP)
-! 
+!
 !        Dij = scalarDissipation*Eye
        
        
@@ -443,17 +443,17 @@ contains
 !        ! Compute the jacobi matrices for x- and y- direction
 !        JacobixRoeij = buildJacobi(Qroeij,1,g)
 !        JacobiyRoeij = buildJacobi(Qroeij,2,g)
-! 
+!
 !        ! Compute the coeffitients for the jacobi matrices
 !        JcoeffxA = (CXij-CXji)/2.0_DP
 !        JcoeffyA = (CYij-CYji)/2.0_DP
 !        JcoeffxB = (CXij+CXji)/2.0_DP
 !        JcoeffyB = (CYij+CYji)/2.0_DP
-! 
+!
 !        ! Now we can compute Aij and Bij
 !        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
 !        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
-!        
+!
 !        Dij = Dij + Bij
 
  Qroe = calculateQroe(Qi, Qj)
@@ -1112,7 +1112,7 @@ contains
        ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u
        do l = 1, nvar2d
           rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaKi(l) &
-               + (1-theta)*dt*deltaDi(l) 
+               + (1-theta)*dt*deltaDi(l)
           rarrayRhs(l)%Da(j) = rarrayRhs(l)%Da(j) + (1-theta)*dt*deltaKj(l) &
                + (1-theta)*dt*deltaDj(l)
        end do
@@ -1460,7 +1460,7 @@ contains
                 abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
-!        
+!
 !        ! Now we take care of the bottom profile
 !        select case (deltabtype)
 !         case(0)
@@ -2034,7 +2034,7 @@ contains
           ! Finally we can transform back to deltaFij
           deltaFij = matmul(Rij,deltaGij)
 
-          ! And save 
+          ! And save
           do ivar = 1, nvar2d
              p_fld2(2+2*(ivar-1),iedge) = deltaFij(ivar)
           end do
@@ -2154,7 +2154,7 @@ contains
     ! get pointer to IverticesAtBoundary, which saves die numbers of the vertices on the boundary
     call storage_getbase_int (rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
 
-    ! get pointer to DvertexParameterValue, which saves the parametervalues 
+    ! get pointer to DvertexParameterValue, which saves the parametervalues
     call storage_getbase_double (rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
 
 
@@ -2210,7 +2210,7 @@ contains
 !                  end do
 !                end if
 !             end do
-!             
+!
 !             do ivar = 1, nvar2d
 !               rarraySol(ivar)%Da(i) = rarraySol(ivar)%Da(i) + up(ivar)/rarrayP(ivar)%Da(ii)
 !             end do
@@ -2555,7 +2555,7 @@ end if !dry or wet bed
 !           else
 !              p_fld1(5+6*(ivar-1),i) = 0.0_DP
 !           end if
-! 
+!
 !           if (p_fld1(2+6*(ivar-1),i)<-1e-3) then
 !              p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)*&
 !                   p_fld1(4+6*(ivar-1),i)/p_fld1(2+6*(ivar-1),i)/dt)! Ri-
@@ -2581,7 +2581,7 @@ end if !dry or wet bed
 !          if (p_fld1(3+6*(ivar-1),i)<1e-12) then
 !            p_fld1(6+6*(ivar-1),i) = 0
 !          end if
-!          
+!
 !          ! If we are at a minimum (Qi- = 0) then cancel positive flux (set Ri+ = 0) to avoid clipping
 !          if (p_fld1(4+6*(ivar-1),i)>1e-12) then
 !            p_fld1(5+6*(ivar-1),i) = 0
@@ -2596,7 +2596,7 @@ end if !dry or wet bed
     
 !!!!!! New Idea: Cancel antidiffusive fluxes at the boundary:
 !!!!!! Set Ri+/- = 0 at boundary nodes
-!    
+!
 !    ! get number of boundary components
 !    nbct = rtriangulation%NBCT
 !
@@ -2664,7 +2664,7 @@ end if !dry or wet bed
           !Limit the antidiffusive fluxes Gij = Gij * alphaij
           deltaGij = deltaGij * alphaij
        CASE (3)
-          ! Last Method: Limit every component on its own...  
+          ! Last Method: Limit every component on its own...
           do ivar = 1, nvar2d
              if (deltaGij(ivar)>0.0_DP) then
                 alphaij = min(p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
@@ -2683,7 +2683,7 @@ end if !dry or wet bed
 
        deltaFij = deltaGij
 
-       ! And save 
+       ! And save
        do ivar = 1, nvar2d
           p_fld2(2+2*(ivar-1),iedge) = deltaFij(ivar)
        end do

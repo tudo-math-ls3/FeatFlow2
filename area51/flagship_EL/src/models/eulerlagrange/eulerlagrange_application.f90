@@ -97,7 +97,7 @@
 !# 1.) eulerlagrange_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -383,7 +383,7 @@ module eulerlagrange_application
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then    
+    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
       
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
@@ -424,7 +424,7 @@ module eulerlagrange_application
           ! Start time measurement for solution procedure
           !call stat_startTimer(p_rtimerParticlephase)
 
-            !do 
+            !do
           
               ! Subroutine to compute the particle movement
               call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
@@ -598,7 +598,7 @@ module eulerlagrange_application
       nlmin, nlmax, rproblem)
 
 !<description>
-    ! This subroutine initializes the abstract problem structure 
+    ! This subroutine initializes the abstract problem structure
     ! based on the parameters settings given by the parameter list
 !</description>
 
@@ -1511,7 +1511,7 @@ module eulerlagrange_application
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
       
-      ! Attach the simulation time and the name of the 
+      ! Attach the simulation time and the name of the
       ! function parser to the collection structure
       rcollection%DquickAccess(1) = dtime
       rcollection%SquickAccess(1) = "rfparser"
@@ -1647,7 +1647,7 @@ module eulerlagrange_application
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
         
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
-        ! callback function for assembling the antidiffusive fluxes since it 
+        ! callback function for assembling the antidiffusive fluxes since it
         ! will not be used for assembling antidiffusive mass fluxes !!!
         call afcsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
             rafcstab, rvectorHigh, rvectorHigh, eulerlagrange_calcFluxFCTScalarDiss1d,&
@@ -1987,14 +1987,14 @@ module eulerlagrange_application
             case (NDIM1D)
               call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
                   'velo_part_x', p_Dsolution, p_Ddata4)
-              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata4)   
+              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata4)
                    
             case (NDIM2D)
 
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
                   rParticles%p_PartVelox, rParticles%p_PartVeloy)
                   
-            case (NDIM3D)           
+            case (NDIM3D)
               call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
                   'velo_part_x', p_Dsolution, p_Ddata4)
               call eulerlagrange_getVarBlockFormat(rvector5%NEQ, NVAR2D,&
@@ -2043,7 +2043,7 @@ module eulerlagrange_application
           call lsyssc_releaseVector(rvector2)
           call lsyssc_releaseVector(rvector4)
           call lsyssc_releaseVector(rvector5)
-      case (NDIM3D)           
+      case (NDIM3D)
           call lsyssc_releaseVector(rvector1)
           call lsyssc_releaseVector(rvector2)
           call lsyssc_releaseVector(rvector3)
@@ -2076,8 +2076,8 @@ module eulerlagrange_application
           write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
         end do
           
-      case (2) 
-        ! Store position, mass, density, diameter, temperature and velocity of the particles          
+      case (2)
+        ! Store position, mass, density, diameter, temperature and velocity of the particles
         write(20+rParticles%iTimestep,*) '<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">'
         write(20+rParticles%iTimestep,*) '  <UnstructuredGrid>'
         write(20+rParticles%iTimestep,*) '      <Piece NumberOfPoints="', rParticles%nPart, '" NumberOfCells="0">'
@@ -2110,7 +2110,7 @@ module eulerlagrange_application
         end do
         write(20+rParticles%iTimestep,*) '</DataArray>'
         write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Density" format="ascii">'
-        do iPart = 1, rParticles%nPart   
+        do iPart = 1, rParticles%nPart
           write(20+rParticles%iTimestep,*) rParticles%p_density(iPart)
         end do
         write(20+rParticles%iTimestep,*) '</DataArray>'
@@ -2165,8 +2165,8 @@ module eulerlagrange_application
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
     type(t_timer), pointer :: p_rtimerAssemblyMatrix
     type(t_timer), pointer :: p_rtimerAssemblyVector
-    type(t_timer), pointer :: p_rtimerPrePostprocess 
-    type(t_timer), pointer :: p_rtimerParticlephase 
+    type(t_timer), pointer :: p_rtimerPrePostprocess
+    type(t_timer), pointer :: p_rtimerParticlephase
     real(DP) :: dtotalTime, dfraction
 
     
@@ -2465,7 +2465,7 @@ module eulerlagrange_application
         BisactiveElement)
 
       integer, dimension(:,:), intent(in) :: IverticesAtElement
-      integer, dimension(:,:), intent(in) :: IneighboursAtElement     
+      integer, dimension(:,:), intent(in) :: IneighboursAtElement
       real(DP), intent(in) :: dthreshold
       integer, intent(in) :: NEL
       
@@ -2695,9 +2695,9 @@ module eulerlagrange_application
     type(t_vectorBlock), intent(inout), target :: rsolution
 
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection   
+    type(t_collection), intent(inout) :: rcollection
     
-    type(t_Particles), intent(inout) :: rParticles 
+    type(t_Particles), intent(inout) :: rParticles
 !</inputoutput>
 !</subroutine>
 
@@ -3282,35 +3282,35 @@ module eulerlagrange_application
         call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
         
       elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--timestep')) then 
+              (trim(adjustl(cbuffer)) .eq. '--timestep')) then
         
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--solver')) then 
+              (trim(adjustl(cbuffer)) .eq. '--solver')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--output')) then 
+              (trim(adjustl(cbuffer)) .eq. '--output')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then 
+              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then 
+              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
@@ -3398,7 +3398,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
 
 
 !<description>
-    ! This subroutine initialise the data for the particles. 
+    ! This subroutine initialise the data for the particles.
 
 !<input>
     ! Parameterlist
@@ -3425,7 +3425,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -3453,7 +3453,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -3708,7 +3708,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
     ! Get variable for temperature of the particles
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "itemppart", itemppart)
 
-    ! Store particlesnumber, viscosity of the gas and gravity  
+    ! Store particlesnumber, viscosity of the gas and gravity
     rParticles%npart = nPart
     rParticles%nu_g= gas_nu
     rParticles%gravity(1)= gravityx
@@ -3717,7 +3717,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
     rParticles%p_PartVol= 0.0_dp
     rParticles%p_PartVolAver= 0.0_dp
-    rParticles%iPartVolCount= 1    
+    rParticles%iPartVolCount= 1
     rParticles%p_PartVelox= 0.0_dp
     rParticles%p_PartVeloy= 0.0_dp
     
@@ -3865,7 +3865,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
           call random_number(random1)
           call random_number(random2)
 
-          ! Set barycentric coordinates          
+          ! Set barycentric coordinates
           rParticles%p_lambda1(iPart)= random1
           rParticles%p_lambda2(iPart)= (1-rParticles%p_lambda1(iPart))*random2
           rParticles%p_lambda3(iPart)= 1-rParticles%p_lambda1(iPart)-rParticles%p_lambda2(iPart)
@@ -4003,7 +4003,7 @@ subroutine eulerlagrange_initpart(rparlist,p_rproblemLevel,rsolution,rtimestep,r
     ! Subroutine to calculate the volume part of the particles
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
 
-    ! Subroutine to calculate the velocity of the particles 
+    ! Subroutine to calculate the velocity of the particles
     !call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
 
@@ -4016,7 +4016,7 @@ end subroutine eulerlagrange_initpart
 subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
 !<description>
-    ! This subroutine computes 
+    ! This subroutine computes
 
 !<input>
     ! Parameterlist
@@ -4063,7 +4063,7 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Subroutine to calculate the volume part of the particles
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
 
-    ! Subroutine to calculate the velocity of the particles 
+    ! Subroutine to calculate the velocity of the particles
     !call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
 end subroutine eulerlagrange_step

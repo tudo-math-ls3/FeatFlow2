@@ -19,9 +19,9 @@
 !#      for this case CHI should be defined in the underlying callback file chemotaxis_callback.f90
 !#
 !# The equation is discretised in time by an implicit Euler Method, providing the
-!# following discrete equation:									
-!#												
-!#	
+!# following discrete equation:
+!#
+!#
 !#	!!!! imlicit Euler !!!!!
 !#
 !#	1/dt * ( u_{n+1}-u{n} ) = Laplace u_{n+1} - grad (CHI*u_{n+1} * grad c_{n+1})	/ multiplying with test func and dt, take int
@@ -33,7 +33,7 @@
 !#      (c_{n+1},phi) 		=  dt*( Laplace c_{n+1},phi ) - dt*( c_{n+1} +u_{n},phi ) + ( c_{n},phi )
 !#	__________________
 !#
-!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi ) 
+!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi )
 !#
 !#      (c_{n+1},phi) 		= - dt*( grad c_{n+1},grad phi ) - dt*( u_{n} + c_{n+1},phi ) + ( c_{n},phi )
 !#	__________________
@@ -41,15 +41,15 @@
 !#	[M + dt*L - dt*M_2] u_{n+1} 	= [ M ] u_{n}
 !#
 !#   [M + dt*L + dt*M] c_{n+1} 		= [ M ] c_{n} + dt* M u_n
-!#	
 !#
-!# The whole solution process is divided into serveral subroutines, using 
+!#
+!# The whole solution process is divided into serveral subroutines, using
 !# the BiCG-solver (defect correction ) for the linear (nonlinear) subproblems in every
 !# timestep
 !#
 !# The module bases on the standard heatconduction example and shows which
 !# modifications are necessary to create a chemotaxis solver from a heatconduction
-!# solver. Boundary conditions, matrices and vectors are not all reassembled in 
+!# solver. Boundary conditions, matrices and vectors are not all reassembled in
 !# every timestep, in contrast to the heatcond_method1.f90
 !# </purpose>
 !##############################################################################
@@ -81,7 +81,7 @@ module chemotaxis_pattern_FCT
   use matrixio
   use vectorio
   use collection
-  use paramlist    
+  use paramlist
   use linearalgebra
   use analyticprojection
   use feevaluation
@@ -106,21 +106,21 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file if desired 
+  ! 7.) Write solution to GMV file if desired
   ! 8.) Release all variables, finish
 !</description>
 
 !</subroutine>
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!! Definitions of variables. !!!!! 
+    !!!!! Definitions of variables. !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! A parameter list structure accepting the parameters from the DAT file.
     type(t_parlist) :: rparams
     !
-    !!!!! parameters' variables !!!!! 
+    !!!!! parameters' variables !!!!!
     ! maximum level of refinment
-    integer :: NLMAX    
+    integer :: NLMAX
     !
     ! Defining the output level
     ! =0 means no gmv files generated
@@ -172,9 +172,9 @@ contains
     real(DP) :: uerror, cerror, tol
 
     
-    !!!!! triangulation variables !!!!! 
+    !!!!! triangulation variables !!!!!
     ! maximum level of refinment
-    ! 
+    !
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
     !
@@ -188,8 +188,8 @@ contains
 
     !!!!! solution + rhs + def vectors !!!!!
     type(t_vectorScalar) :: ranalyticcells , ranalyticchemo, rcold, ruold
-    !A pointer to the entries of vector rchemoattract				
-    real(DP), dimension(:), pointer ::  p_analyticcells, p_analyticchemo, p_cold, p_uold    
+    !A pointer to the entries of vector rchemoattract
+    real(DP), dimension(:), pointer ::  p_analyticcells, p_analyticchemo, p_cold, p_uold
     real(DP), dimension(:), pointer ::  p_vectordata, p_chemodata
     !
     ! cell and chemoattractant solution vectors
@@ -197,29 +197,29 @@ contains
     !
     ! defect vectors
     type(t_vectorScalar)  :: rdef
-    !    
+    !
     ! block vectors
-    type(t_vectorBlock) :: rchemoattractBlock, rdefBlock, rrhsBlockchemo   
+    type(t_vectorBlock) :: rchemoattractBlock, rdefBlock, rrhsBlockchemo
     type(t_vectorBlock) :: rcellBlock
     type(t_vectorBlock) :: rtempBlock
     
     !!!!! matrices !!!!!
     type(t_matrixScalar)  :: rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rtemp
     !
-    ! block matrices 
-    type(t_matrixBlock) :: rmatrixBlockchemo 
+    ! block matrices
+    type(t_matrixBlock) :: rmatrixBlockchemo
     !
  
-    !!!!! boundary conditions !!!!!   
-    ! A variable describing the discrete boundary conditions.    
-    type(t_discreteBC), target :: rdiscreteBC, rdiscreteBCchemo 
+    !!!!! boundary conditions !!!!!
+    ! A variable describing the discrete boundary conditions.
+    type(t_discreteBC), target :: rdiscreteBC, rdiscreteBCchemo
 
     !!!!! Filter chains !!!!!
     type(t_filterChain), dimension(1), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     !!!!! solver stuff !!!!!
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rsolverNode_cells,p_rpreconditioner_cells
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -231,8 +231,8 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
 
     !!!!! Error indicators !!!!!!
-    ! Error indicator during initialisation of the solver 
-    integer :: ierror 
+    ! Error indicator during initialisation of the solver
+    integer :: ierror
     
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -243,7 +243,7 @@ contains
      call parlst_readfromfile(rparams, 'data/chemotaxis.dat')
 
     ! Getting some general params for the pb
-    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7) 
+    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
     call parlst_getvalue_int (rparams, 'GENERAL' , 'OUTPUT' , OUTPUT , 0)
     call parlst_getvalue_int (rparams, 'GENERAL' , 'ISTEP_GMV' , ISTEP_GMV , 1)
     call parlst_getvalue_int (rparams, 'GENERAL' , 'INITSOL' , INITSOL , 1)
@@ -295,7 +295,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Reading the mesh file + triangulation !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './tri'
 
@@ -323,9 +323,9 @@ contains
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Creating and initializing matrices !!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     call chemo_creatematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
-                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef , rdiscretisation)    
+                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef , rdiscretisation)
   
     ! We construct some matrices in advance, so the actual loop computations
     ! will be much faster
@@ -339,17 +339,17 @@ contains
     ! Get some pointers  for the errorctrl
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
-    call lsyssc_getbase_double(rcold,p_cold) 
+    call lsyssc_getbase_double(rcold,p_cold)
     call lsyssc_getbase_double(ruold,p_uold)
     !
     ! introducing vector blocks
     call lsysbl_createVecFromScalar (rcell,rcellBlock,rdiscretisation)
-    call lsysbl_createVecFromScalar (rchemoattract,rchemoattractBlock,rdiscretisation)    
+    call lsysbl_createVecFromScalar (rchemoattract,rchemoattractBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (rdef,rdefBlock,rdiscretisation)
     ! introducing matrix blocks
     call lsysbl_createMatFromScalar (rsysmatrix,rmatrixBlockchemo,rdiscretisation)
 
-    !!!!! initial conditions !!!!! 
+    !!!!! initial conditions !!!!!
     ! setting the initial conditions for the two solution vectors  rcell and chemoattract.
     call chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
         
@@ -359,10 +359,10 @@ contains
     !!!!!  1) ~~~ chemoattractant (+solver preparation) ~~~ !!!!!
     !!!!!  2) ~~~ cells                                 ~~~ !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !~~~~~ chemoattractant preparation for the time loop ~~~~~!    
+    !~~~~~ chemoattractant preparation for the time loop ~~~~~!
     !!!!! Missed the boundary conditions ??? !!!!!
     ! Create a t_discreteBC structure for the chemoattractant (where we store all discretised boundary conditions)
-    call chemo_initBC ( rdiscreteBCchemo )      
+    call chemo_initBC ( rdiscreteBCchemo )
 
     !!!!! solver/filter preparations for the chemoattract !!!!!
     ! Hang the pointer into the vector and matrix. That way, these
@@ -393,22 +393,22 @@ contains
     Rmatrices = (/rmatrixBlockchemo/)
     call linsol_setMatrices(p_RsolverNode,Rmatrices)
       
-    ! Initialise structure/data of the solver. 
+    ! Initialise structure/data of the solver.
     call linsol_initStructure (p_rsolverNode, ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop    
-    !~~~~~ end: with chemoattractant preparation for the time loop is done ~~~~~!    
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    !~~~~~ end: with chemoattractant preparation for the time loop is done ~~~~~!
         
 
-    !~~~~~ cell preparation for the time loop ~~~~~!    
+    !~~~~~ cell preparation for the time loop ~~~~~!
     !!!!! Missed the boundary conditions ??? !!!!!
     ! Create a t_discreteBC structure for the chemoattractant (where we store all discretised boundary conditions)
     call chemo_initBC ( rdiscreteBC )
 
     rcellBlock%p_rdiscreteBC => rdiscreteBC
     rdefBlock%p_rdiscreteBC => rdiscreteBC
-    !~~~~~ cell preparation for the time loop ~~~~~!    
+    !~~~~~ cell preparation for the time loop ~~~~~!
         
     !!!!! printing out the initial conditions into a gmv_file !!!!!
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
@@ -440,12 +440,12 @@ contains
       call lalg_copyVectorDble ( p_vectordata, p_uold )
       call lalg_copyVectorDble ( p_chemodata, p_cold )
                 
-      ! STEP 1.1: Form the right hand side for c:  
+      ! STEP 1.1: Form the right hand side for c:
       ! It consists of M c_n +dt * ( u_{n} , phi )
       call chemo_initrhsC (rchemoattract, rrhschemo, rcell, rdiscretisation, rmassmatrix, dtstep, PHI)
                  
       call lsysbl_createVecFromScalar (rrhschemo, rrhsBlockchemo, rdiscretisation)
-      ! Next step is to implement boundary conditions into the RHS, solution and matrix. 
+      ! Next step is to implement boundary conditions into the RHS, solution and matrix.
       call vecfil_discreteBCrhs (rrhsBlockchemo)
       call vecfil_discreteBCsol (rchemoattractBlock)
 
@@ -469,7 +469,7 @@ contains
      end if
      iteration_c_average = iteration_c_average + p_rsolverNode%iiterations
 
-    end do timeloop        
+    end do timeloop
     !!!!! end: now the time loop !!!!
         
     
@@ -483,15 +483,15 @@ contains
 
     ! releasing matrices and vectors
      call chemo_releasematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
-                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef)    
+                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef)
 
     ! Release parameterlist
      call parlst_done (rparams)
 
     ! releasing block vectors
     call lsysbl_releaseVector (rcellBlock)
-    call lsysbl_releaseVector (rchemoattractBlock)    
-    call lsysbl_releaseVector (rdefBlock)    
+    call lsysbl_releaseVector (rchemoattractBlock)
+    call lsysbl_releaseVector (rdefBlock)
     ! releasing block matrices
     call lsysbl_releaseMatrix (rmatrixBlockchemo)
 
@@ -499,7 +499,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     
@@ -545,7 +545,7 @@ contains
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rchemoattract,.true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rrhschemo, .true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcell,.true.)
-    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhscell,.true.) 
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhscell,.true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rdef,.true.)
 
     end subroutine
@@ -567,7 +567,7 @@ contains
     rform%Idescriptors(2,1) = DER_FUNC
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
     call bilf_buildMatrixScalar (rform,.true.,rmassmatrix)
 
     rform%itermCount = 3
@@ -584,7 +584,7 @@ contains
     !rform%Dcoefficients(2)  = dtstep * D_1
     rform%Dcoefficients(2)  = 1.0
     !rform%Dcoefficients(2)  = dtstep * D_1
-    rform%Dcoefficients(3)  = 1.0 
+    rform%Dcoefficients(3)  = 1.0
     call bilf_buildMatrixScalar (rform,.true.,rlaplace)
     
     call lsyssc_copymatrix(rmassmatrix,rsysmatrix)
@@ -623,10 +623,10 @@ contains
     subroutine chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
 
     ! sol vectors
-    type(t_vectorBlock), intent (INOUT) :: rcellBlock, rchemoattractBlock 
+    type(t_vectorBlock), intent (INOUT) :: rcellBlock, rchemoattractBlock
 
     ! mass matrix
-    type(t_matrixScalar), intent (IN) :: rmassmatrix 
+    type(t_matrixScalar), intent (IN) :: rmassmatrix
 
     ! Underlying discretisation
     type(t_blockDiscretisation) , intent (IN) :: rdiscretisation
@@ -638,7 +638,7 @@ contains
     type(t_vectorBlock), target :: rinitSolVectorBlock
 
     ! A local collection
-    type(t_collection) :: rcollection 
+    type(t_collection) :: rcollection
     
     ! Some pointers
     real(DP) , dimension(:,:) , pointer :: p_DvertexCoords
@@ -658,20 +658,20 @@ contains
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rinitSolVector,.true.)
         !
         ! user defined subroutine for initial conditions
-        call lsyssc_getbase_double(rinitSolVector, p_vectordata) 
+        call lsyssc_getbase_double(rinitSolVector, p_vectordata)
         ! get coordinates
         call storage_getbase_double2D(rtriangulation%h_DvertexCoords,p_DvertexCoords)
         ! prescribe initial conditions
         do i=1,rtriangulation%NVT
            p_vectordata(i) = userPresc_cellsInitCond(p_DvertexCoords(1,i),p_DvertexCoords(2,i),p_DvertexCoords(3,i))
-        end do   
+        end do
         
 
         call lsyssc_copyVector (rinitSolVector,rchemoattractBlock%RvectorBlock(1))
 
-        !!!!! perform projection !!!!!            
+        !!!!! perform projection !!!!!
         ! create initSolVectorBlock (block structure)
-        !>>>call lsysbl_createVecFromScalar (rinitSolVector,rinitSolVectorBlock,rdiscretisation)        
+        !>>>call lsysbl_createVecFromScalar (rinitSolVector,rinitSolVectorBlock,rdiscretisation)
         ! we put the initial_condition vector to the collection (needed in fcoeff_solCells)
         !>>>rcollection%p_rvectorQuickAccess1 => rinitSolVectorBlock
         ! setting the initial conditions for cells
@@ -686,7 +686,7 @@ contains
         !call lsyssc_clearVector(rvector)
                                              
         !release rinitSolVector and rinitSolVectorBlock
-        call lsyssc_releaseVector (rinitSolVector)        
+        call lsyssc_releaseVector (rinitSolVector)
         call lsysbl_releaseVector (rinitSolVectorBlock)
 
         ! Releasing the collection
@@ -697,7 +697,7 @@ contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!! Construction of the RHS for the chemoattractant !!!!!
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine chemo_initrhsC (rchemoattract, rhschemo, rcell, &
                                                  rdiscretisation, rmassmatrix, dtstep,  PHI)
 
@@ -720,16 +720,16 @@ contains
 
 
     call collct_init (rcollection)
-    call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.) 
+    call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.)
     rcollection%DquickAccess(1) = PHI
     ! To assemble the RHS , set up the corresponding linear  form (u*g(u),Phi_j):
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
                                 rlinform, .true., rhschemo, coeff_hillenX_RHS_c, rcollection)
-    ! remark: subroutine coeff_hillenX_RHS_c sets M u^n into rhschemo                                 
+    ! remark: subroutine coeff_hillenX_RHS_c sets M u^n into rhschemo
 
-    ! Since we approx. the 1st deriv. by the backward euler, there's still one component 
+    ! Since we approx. the 1st deriv. by the backward euler, there's still one component
     !missing in the RHS:
     ! rmassmatrix* c_{old}
     ! The corressponding massmatrix is already built ( just before the loop starts )
@@ -775,7 +775,7 @@ contains
     ! The BC_type which should be initialized
     type(t_discreteBC) , intent (INOUT) ::rdiscreteBC
 
-    call bcasm_initDiscreteBC(rdiscreteBC) 
+    call bcasm_initDiscreteBC(rdiscreteBC)
 
     end subroutine
 
@@ -832,8 +832,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
@@ -855,8 +855,8 @@ contains
 
     !DO iel = 1, nelements
     !  DO icub = 1, npointsPerElement
-    !     Dcoefficients( 1, icub, iel ) = userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), & 
-    !                                                       Dpoints ( 2, icub, iel ), & 
+    !     Dcoefficients( 1, icub, iel ) = userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), &
+    !                                                       Dpoints ( 2, icub, iel ), &
     !                                                       Dpoints ( 3, icub, iel ))
     !    END DO
     !END DO
@@ -864,7 +864,7 @@ contains
     ! Evaluate copmponent icomponent
     icomponent = rcollection%IquickAccess(1)
      
-    call fevl_evaluate_sim (&      
+    call fevl_evaluate_sim (&
         rcollection%p_rvectorQuickAccess1%RvectorBlock(icomponent), &
         rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
   
@@ -875,7 +875,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! User prescribed function for setting initial conditions for cells !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	function userPresc_cellsInitCond(x,y,z) result (func_result)		
+	function userPresc_cellsInitCond(x,y,z) result (func_result)
 	    !
 	    ! coordinates
 	    real(DP) :: x, y, z
@@ -885,10 +885,10 @@ contains
 
         ! part of a user code: prescribe initial conditions for cells
         if( ((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 20.25 ) then
-            func_result = 100_DP 
+            func_result = 100_DP
         else
-            func_result = 0_DP     
-        endif 		
+            func_result = 0_DP
+        endif
 	end function userPresc_cellsInitCond
   
 end module

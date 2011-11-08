@@ -15,7 +15,7 @@
 !#        scheme.
 !#
 !# 2.) tdiscr_initFSTheta
-!#     -> Initialise a time discretisation structure according to a 
+!#     -> Initialise a time discretisation structure according to a
 !#        FS-theta scheme.
 !#
 !# 3.) tdiscr_initdG0
@@ -98,7 +98,7 @@ module timediscretisation
     integer :: nintervals          = 0
 
     ! Absolute start time of the simulation
-    real(DP) :: dtimeInit          = 0.0_DP     
+    real(DP) :: dtimeInit          = 0.0_DP
     
     ! Maximum time of the simulation
     real(DP) :: dtimeMax           = 0.0_DP
@@ -326,16 +326,16 @@ contains
   
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   integer function tdiscr_igetNDofGlob(rtimediscr)
 
 !<description>
-  ! This function returns for a given time discretisation the number of 
+  ! This function returns for a given time discretisation the number of
   ! degrees of freedom in time.
 !</description>
 
-!<input>    
+!<input>
   ! The tiome discretisation structure that specifies the time discretisation.
   type(t_timeDiscretisation), intent(in) :: rtimediscr
 !</input>
@@ -470,7 +470,7 @@ contains
   ! Calculates the weights in the timestep scheme for the current interval.
   ! iinterval is allowed in the range 0..rtimediscr%nintervals. The weight
   ! computed here corresponds to the weights used to calculate u_(iinterval+1)
-  ! from u_iinterval (so to say, how to come to the "end" of the interval). 
+  ! from u_iinterval (so to say, how to come to the "end" of the interval).
   ! The value iinterval=0 returns the weights used to calculate u_1.
 !</description>
 
@@ -517,7 +517,7 @@ contains
       
       if (iinterval .lt. 1) then
         dweightold = 0.0_DP
-        dweightnew = 1.0_DP 
+        dweightnew = 1.0_DP
       end if
       if (iinterval .gt. rtimediscr%nintervals) then
         dweightold = 1.0_DP
@@ -650,6 +650,6 @@ contains
         //sys_adjustr(sys_sd(rtimediscr%dtstep,6),14) &
         //sys_adjustr(sys_sd(rtimediscr%dtheta,3),6),cdateTimeLogPolicy=OU_DTP_NONE )
 
-  end subroutine 
+  end subroutine
 
 end module

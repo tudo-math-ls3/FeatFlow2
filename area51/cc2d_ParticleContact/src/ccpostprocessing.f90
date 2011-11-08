@@ -142,7 +142,7 @@ module ccpostprocessing
     ! A vector that describes the H1-error of the pressure in the cells
     type(t_vectorScalar) :: rvectorH1errCells
     
-    !rpostprocessing%rvectorScalarFB    
+    !rpostprocessing%rvectorScalarFB
     type(t_vectorBlock) :: rvectorBlockProj
   
   end type
@@ -168,7 +168,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocessing structure. 
+  ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -185,7 +185,7 @@ contains
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
-    if(rproblem%iParticles .gt. 0)then    
+    if(rproblem%iParticles .gt. 0)then
     ! Drag/Lift Calculation
       call cc_forcesNonStat(rvector,rproblem)
     end if
@@ -241,7 +241,7 @@ contains
   ! if there is no previous timestep.
   real(dp), intent(in) :: dtimePrev
 
-  ! Solution vector of the current timestep. 
+  ! Solution vector of the current timestep.
   type(t_vectorBlock), intent(in) :: rvector
 
   ! Time of the current timestep.
@@ -250,7 +250,7 @@ contains
   ! Number of the timestep. =0: initial solution
   integer, intent(in) :: istep
   
-  type (t_explicitTimeStepping), intent(in) ::rtimestepping  
+  type (t_explicitTimeStepping), intent(in) ::rtimestepping
   
 !</input>
 
@@ -296,9 +296,9 @@ contains
         ! Write the raw solution
         call cc_writeSolution (rproblem,rvector,dtime)
       end if
-    end if    
+    end if
     
-    if(rproblem%iParticles .gt. 0)then    
+    if(rproblem%iParticles .gt. 0)then
     ! Drag/Lift Calculation
       call cc_forcesNonStat(rvector,rproblem)
     end if
@@ -665,8 +665,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -777,7 +777,7 @@ contains
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
             dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         
-      case (2)      
+      case (2)
         ! Extended calculation method.
         !
         ! Select the tensor formulation to use.
@@ -956,7 +956,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
-        ! Create a temporary vector 
+        ! Create a temporary vector
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.true.)
 
@@ -979,7 +979,7 @@ contains
       
       end if
       
-    end if    
+    end if
     
   end subroutine
 
@@ -1138,7 +1138,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1168,7 +1168,7 @@ contains
     real(DP) :: dtimebackup
     
     integer :: ioutputUCD,ilevelUCD, j,iin,iloop
-    integer :: ieltype,ipart,ipolyHandle 
+    integer :: ieltype,ipart,ipolyHandle
     
     ! Parameters used for the moving frame formulation
     integer :: imovingFrame
@@ -1180,7 +1180,7 @@ contains
     
     type(t_geometryObject) :: rgeometryObject1
     
-    real(DP), dimension(:,:), pointer :: p_Dvertices 
+    real(DP), dimension(:,:), pointer :: p_Dvertices
     
     integer, dimension(64) :: iconnect
     
@@ -1189,13 +1189,13 @@ contains
     real(DP), dimension(2) :: Dp1,Dp2,DpointA
     real(dp), dimension(:,:), pointer :: p_DbdyEdg
     real(DP), dimension(:,:), pointer :: p_Dcoord
-    real(DP), dimension(:), pointer   :: p_Ddata3   
-    real(DP), dimension(:), pointer   :: p_Ddata4   
+    real(DP), dimension(:), pointer   :: p_Ddata3
+    real(DP), dimension(:), pointer   :: p_Ddata4
        
     
-    call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)    
+    call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -1262,7 +1262,7 @@ contains
     ! Initialise the dynamic level information structure
     call cc_initDynamicLevelInfo (rdynamicInfo)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection,.true.)
@@ -1278,7 +1278,7 @@ contains
     ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC`s for fictitious 
+    ! Filter the solution vector to implement discrete BC`s for fictitious
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -1342,19 +1342,19 @@ contains
     call storage_getbase_double2D (p_rtriangulation%h_DvertexCoords,&
         p_Dcoord)
     
-!    allocate(p_Ddata3(p_rtriangulation%NVT))    
-!    
+!    allocate(p_Ddata3(p_rtriangulation%NVT))
+!
 !    do iloop=1,p_rtriangulation%NVT
 !      Dp1(:)=p_DbdyEdg(:,7)
 !      Dp2(:)=p_DbdyEdg(:,8)
 !      DpointA(1)=p_Dcoord(1,iloop)
 !      DpointA(2)=p_Dcoord(2,iloop)
 !      p_Ddata3(iloop)=gaux_calcDistPEdg2D(DpointA,Dp1,Dp2)
-!    end do    
-!    
+!    end do
+!
 !    call ucd_addVariableVertexBased (rexport,'dist',UCD_VAR_STANDARD, &
 !        p_Ddata3(1:p_rtriangulation%NVT))
-!    
+!
 !    deallocate(p_Ddata3)
     
     ! Is the moving-frame formulatino active?
@@ -1422,12 +1422,12 @@ contains
     end if
     
     
-    allocate(p_Ddata3(p_rtriangulation%NVT))        
-    allocate(p_Ddata4(p_rtriangulation%NVT))            
+    allocate(p_Ddata3(p_rtriangulation%NVT))
+    allocate(p_Ddata4(p_rtriangulation%NVT))
     if(rproblem%iParticles .gt. 0)then
       p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
       do ipart=1,p_rparticleCollection%nparticles
-        p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+        p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
         
         call geom_polygonise(p_rgeometryObject,ipolyHandle)
         ! Get the vertices
@@ -1435,15 +1435,15 @@ contains
         call ucd_addPolygon(rexport,p_Dvertices,ipart+1)
         call storage_free(ipolyHandle)
         ipolyHandle = ST_NOHANDLE
-        ! postprocess forces        
+        ! postprocess forces
         do iloop=1,p_rtriangulation%NVT
           call geom_isInGeometry (p_rgeometryObject, (/p_Dcoord(1,iloop),p_Dcoord(2,iloop)/), iin)
           if(iin .eq. 1)then
-            p_Ddata3(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)          
-            p_Ddata4(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)          
+            p_Ddata3(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)
+            p_Ddata4(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)
           else
-            p_Ddata3(iloop)=0.0_dp          
-            p_Ddata4(iloop)=0.0_dp          
+            p_Ddata3(iloop)=0.0_dp
+            p_Ddata4(iloop)=0.0_dp
           end if
         end do
         
@@ -1459,7 +1459,7 @@ contains
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     
-    call ucd_release (rexport)    
+    call ucd_release (rexport)
     
 !    deallocate(p_Data3)
     ! Release the auxiliary vector
@@ -1494,7 +1494,7 @@ contains
   subroutine cc_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! Writes Film output (raw data vectors) to a file as configured in the
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -1516,7 +1516,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1529,10 +1529,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -1631,7 +1631,7 @@ contains
   type(t_problem), intent(in),target :: rproblem
 !</input>
 
-!<output>  
+!<output>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(out) :: rpostprocessing
 !</output>
@@ -1699,7 +1699,7 @@ contains
   type(t_c2d2postprocessing), intent(in) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessingDst
 !</inputoutput>
@@ -1731,7 +1731,7 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
@@ -1768,7 +1768,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -1796,7 +1796,7 @@ contains
   ! structure for a geometry object
   !<inputoutput>
   type(t_problem), intent(INOUT) :: rproblem
-  !</inputoutput>  
+  !</inputoutput>
 
   !<input>
   type(t_vectorBlock), intent(IN) :: rvector
@@ -1805,8 +1805,8 @@ contains
   !</subroutine>
 
   ! Local variables
-  ! pointer to the entries of the alpha vector  
-  real(DP), dimension(:), pointer :: p_Dvector  
+  ! pointer to the entries of the alpha vector
+  real(DP), dimension(:), pointer :: p_Dvector
 
   ! save the particle mass centers in a temp variable
   real(DP) :: dcenterx
@@ -1819,20 +1819,20 @@ contains
   
   type(t_particleCollection), pointer :: p_rparticleCollection
 
-  type(t_geometryObject), pointer :: p_rgeometryObject        
+  type(t_geometryObject), pointer :: p_rgeometryObject
 
   ! get the particle_collection out of the collection
   p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
   ! loop over all particles to calculate the hydrodynamic forces for
-  ! each particle  
+  ! each particle
   do ipart=1,p_rparticleCollection%nparticles
   
     ! if the vector contains data, we release it
     if (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB%NEQ .ne. 0) &
       call lsyssc_releaseVector (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB)
 
-    ! create the fictitious boundary fem-vector from the discretisation 
+    ! create the fictitious boundary fem-vector from the discretisation
     call lsyssc_createVecByDiscr(rvector%RvectorBlock(1)%p_rspatialDiscr, &
     p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,.true.)
 
@@ -1843,7 +1843,7 @@ contains
     
     
     ! get the pointer to the current geometry object
-    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
     
     ! get a pointer to the triangulation
     p_rtriangulation => &
@@ -1853,7 +1853,7 @@ contains
     ! calculate the fem-function by a l2-projection
     ! here for every particle this has to be evaluated individually
     call anprj_discrDirect (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,cc_Particle,&
-                            rproblem%rcollection,iorder=1)  
+                            rproblem%rcollection,iorder=1)
     
     
     
@@ -1861,7 +1861,7 @@ contains
     call output_lbrk ()
     call output_separator(OU_SEP_EQUAL)
     call output_line ('Q1 Vector recalculated ')
-    call output_separator(OU_SEP_EQUAL)   
+    call output_separator(OU_SEP_EQUAL)
     
     ! get the center coordinates of the object
     ! to pass them to the forces function
@@ -1879,7 +1879,7 @@ contains
     
     call output_lbrk()
     call output_line ('Drag forces')
-    call output_line ('-----------')  
+    call output_line ('-----------')
     print*, p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)," / ",&
     p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
     
@@ -1887,7 +1887,7 @@ contains
   
   end subroutine
   
-! ***************************************************************************  
+! ***************************************************************************
 
 !<subroutine>
   subroutine cc_forcesIntegrationNonStat(rproblem,rvectorSol,&
@@ -1900,8 +1900,8 @@ contains
 
   ! The body forces are defined as the integrals
   !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
+  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds
+  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
@@ -1927,8 +1927,8 @@ contains
   
 !</input>
   real(dp), dimension(2), intent(inout) :: DforceX
-  real(dp), dimension(2), intent(inout) :: DforceY  
-  real(dp), dimension(2), intent(inout) :: Dtor 
+  real(dp), dimension(2), intent(inout) :: DforceY
+  real(dp), dimension(2), intent(inout) :: Dtor
   type(t_problem), intent(INOUT) :: rproblem
 !</subroutine>
 
@@ -1964,7 +1964,7 @@ contains
     ! Arrays for saving Jacobian determinants and matrices
     real(DP), dimension(:,:), pointer :: p_Ddetj
     
-    ! Array for saving Jacobian 
+    ! Array for saving Jacobian
     real(DP), dimension(7) :: Dj
     
     ! Current element distribution
@@ -1998,7 +1998,7 @@ contains
     integer, dimension(:,:), allocatable, target :: IdofsFunc2
     
   
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -2010,13 +2010,13 @@ contains
     character(len=SYS_STRLEN) :: sfilenameBodyForces
     integer :: iunit
     integer :: cflag
-    logical :: bfileExists    
+    logical :: bfileExists
     
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
     if (present(df1)) dpf1 = df1
-    if (present(df2)) dpf2 = df2    
+    if (present(df2)) dpf2 = df2
 
     ! make the l2 projection to get the normal vector
 
@@ -2051,7 +2051,7 @@ contains
       ! Get the number of local DOF's for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
       
-      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement) 
+      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement)
       
       indofFunc2 = elem_igetNDofLoc(p_relementDistributionP%celement)
       
@@ -2061,7 +2061,7 @@ contains
       if (NVE .NE. elem_igetNVE(p_relementDistributionA%celement)) then
         print *,'cc_forcesIntegration: element spaces incompatible!'
         call sys_halt()
-      end if      
+      end if
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -2087,19 +2087,19 @@ contains
       
       allocate(IdofsFunc1(indofFunc1,nelementsPerBlock))
     
-      allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))      
+      allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))
 
       ! Allocate memory for the coefficients
       allocate(Dcoefficients(ncubp,nelementsPerBlock,13))
     
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistributionU%celement)
       
       cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionP%celement))
       
-      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))     
+      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))
                       
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
@@ -2120,8 +2120,8 @@ contains
       dTorque = 0.0_dp
       
           
-      ! Prepare the call to the evaluation routine of the analytic function.    
-      CALL elprep_init(rintSubset)    
+      ! Prepare the call to the evaluation routine of the analytic function.
+      CALL elprep_init(rintSubset)
   
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, PPERR_NELEMSIM
@@ -2141,15 +2141,15 @@ contains
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorSol%p_rblockDiscr%RspatialDiscr(1), &
                                      p_IelementList(IELset:IELmax),IdofsTrial)
-        !--------------------------------------------------------------------------------                                     
+        !--------------------------------------------------------------------------------
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorAlpha%p_rspatialDiscr, &
                                      p_IelementList(IELset:IELmax),IdofsFunc1)
-        !--------------------------------------------------------------------------------                                     
+        !--------------------------------------------------------------------------------
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorSol%p_rblockDiscr%RspatialDiscr(3), &
                                      p_IelementList(IELset:IELmax),IdofsFunc2)
-        !--------------------------------------------------------------------------------                                     
+        !--------------------------------------------------------------------------------
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
@@ -2175,35 +2175,35 @@ contains
         !   | |       -p(x_i)      | + |...  you know this works  ...| + u^t | * | -dalpha/dy (x_i) |
         !    \                                                              /
         !
-        ! 
+        !
         ! Get the pressure in the cubature points
         ! Save the result to Dcoefficients(:,:,1)
 
         ! Build the p matrix
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(3), rintSubset, &
                 p_relementDistributionP%celement, &
-                IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))                
+                IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))
 
         ! Build the jacobi matrix of this (u1,u2,u3)
         ! First Row -------------------------------
         ! Save the result to Dcoefficients(:,:,2:4)
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(1), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))  
+                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(1), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))  
+                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))
 
         ! Second Row -------------------------------
         ! Save the result to Dcoefficients(:,:,4:5)
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(2), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))  
+                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(2), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))  
+                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))
 
         ! Build the alpha vector
         ! Save the result to Dcoefficients(:,:,6:7)
@@ -2250,11 +2250,11 @@ contains
 !            ah1 = -dpp*dn1+dpf1*(2.0_dp*du1x*dn1+(du1y+du2x)*dn2)
 !            ah2 = -dpp*dn2+dpf1*((du1y+du2x)*dn1+2.0_dp*du2y*dn2)
             
-            Dfx = Dfx + ah1 * om         
+            Dfx = Dfx + ah1 * om
             Dfy = Dfy + ah2 * om
             
             ! for the torque calculate in 2d:
-            ! (x-x_i) .perpdot. (sigma * n) 
+            ! (x-x_i) .perpdot. (sigma * n)
             ! calculate the (x-x_i) part
             xtorque = rintSubset%p_DpointsReal(1,icubp,iel) - dcenterx
             ytorque = rintSubset%p_DpointsReal(2,icubp,iel) - dcentery
@@ -2269,7 +2269,7 @@ contains
             ! add up the forces
             dTorque = dTorque + atq * OM
 
-          end do ! ICUBP 
+          end do ! ICUBP
 
         end do ! IEL
         
@@ -2293,7 +2293,7 @@ contains
       Dfy = Dfy * 2.0_dp/dpf2
 
       sfilenameBodyForces='ns/DLBFMDT001'
-      cflag = SYS_APPEND      
+      cflag = SYS_APPEND
       ! Write the result to a text file.
       ! Format: timestep current-time value
       call io_openFileForWriting(sfilenameBodyForces, iunit, &
@@ -2305,7 +2305,7 @@ contains
       close (iunit)
       
       ! save the coefficients
-      rproblem%dCoefficientDrag = Dfx 
+      rproblem%dCoefficientDrag = Dfx
       rproblem%dCoefficientLift = Dfy
       
       ! Release memory
@@ -2321,12 +2321,12 @@ contains
     
   end subroutine
   
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
   subroutine cc_updateParticlePosition(rproblem,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -2353,14 +2353,14 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
     real(DP), dimension(:,:), pointer :: p_Dcoords
-    integer, dimension(:,:), pointer :: p_Iedges    
+    integer, dimension(:,:), pointer :: p_Iedges
     real(DP), dimension(2) :: Dp1,Dp2,DpointA,DX,Dnormal,r,DV,DCollNormal
-    real(dp), dimension(:,:), pointer :: p_DbdyEdg   
+    real(dp), dimension(:,:), pointer :: p_DbdyEdg
     real(dp),dimension(:),pointer :: Ddistances
     
     call cc_calcDistPart(rproblem,dtimestep)
     
-    call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)    
+    call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)
     
     p_rtriangulation => rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation
     
@@ -2399,7 +2399,7 @@ contains
     ! individually
     do ipart=1,p_rparticleCollection%nparticles
   
-      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
     
       ! position
       dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
@@ -2411,8 +2411,8 @@ contains
       
       ! some physical parameters
       dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
-      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume 
-      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume 
+      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
+      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
       
       ! Calculate the moment of inertia by formula,
       ! this formula is valid only for a circle
@@ -2423,9 +2423,9 @@ contains
       ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
       ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
       ! we already calculated earlier; so we just need to divide...
-      ! moment of inertia 
+      ! moment of inertia
       dimomir  = &
-      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp 
+      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp
       
       ! Mean resistance forces for the given time step
       dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
@@ -2436,13 +2436,13 @@ contains
       allocate(Ddistances(rproblem%isegments))
       FWy=0.0_dp
       FWx=0.0_dp
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                        CALCULATE WALL REPULSIVE FORCES
-      !---------------------------------------------------------------------------------------- 
+      !----------------------------------------------------------------------------------------
       if(iwallforce .eq. 1)then
         do iseg=1,rproblem%isegments
         
-          Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
+          Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1)
           Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
           DpointA(1)=dCenterX
           DpointA(2)=dCenterY
@@ -2452,7 +2452,7 @@ contains
           DX(2)=Dp1(2)+t*(Dp2(2)-Dp1(2))
           Ddistances(iseg)=ddist
           call output_line ('SegmentNo: = '//trim(sys_si(iseg,2)) )
-          dwall=1.5_dp  
+          dwall=1.5_dp
           if(ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist)then
             FWx=FWx+0.0_dp
             FWy=FWy+0.0_dp
@@ -2461,14 +2461,14 @@ contains
           elseif((ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad).and. &
                  (ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist))then
             FWx=FWx+&
-            ew1*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2             
+            ew1*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
             FWy=FWy+&
             ew1*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
             call output_line ('Case 2: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
             call output_line ('Case 2: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
           elseif(ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad)then
             FWx=FWx+&
-            ew2*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)      
+            ew2*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
             FWy=FWy+&
             ew2*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
             call output_line ('Case 3: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
@@ -2479,13 +2479,13 @@ contains
       p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)=FWx
       p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)=FWy
 
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                        CALCULATE PARTICLE REPULSIVE FORCES
-      !---------------------------------------------------------------------------------------- 
+      !----------------------------------------------------------------------------------------
       !initialize the forces for this particle by 0!
-      FPx = 0.0_dp     
+      FPx = 0.0_dp
       FPy = 0.0_dp
-      if(ipartforce .eq. 0)then     
+      if(ipartforce .eq. 0)then
       do jpart=1,p_rparticleCollection%nparticles
         if(jpart .eq. ipart)cycle
         p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
@@ -2493,34 +2493,34 @@ contains
         dprad=p_rparticleCollection%p_rParticles(ipart)%drad
         dprad2=p_rparticleCollection%p_rParticles(jpart)%drad
         CenterX2=p_rgeometryObject2%rcoord2D%Dorigin(1)
-        CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)               
+        CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)
         if(ddist .gt. (dprad+dprad2+pdist))then
           FPx = FPx + 0.0_dp
           FPy = FPy + 0.0_dp
           call output_line ('Case 1: CollforcesX: = '//trim(sys_sdEP(0.0_dp,15,6)) )
-          call output_line ('Case 1: CollforcesY: = '//trim(sys_sdEP(0.0_dp,15,6)) )          
+          call output_line ('Case 1: CollforcesY: = '//trim(sys_sdEP(0.0_dp,15,6)) )
         elseif((ddist .ge. dprad+dprad2).and.(ddist .le. dprad+dprad2+pdist))then
           FPx = FPx + (1.0_dp/eps1)*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2
           FPy = FPy + (1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2
           call output_line ('Case 2: CollforcesX: = '//trim(sys_sdEP(&
           (1.0_dp/eps1)*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )
           call output_line ('Case 2: CollforcesY: = '//trim(sys_sdEP(&
-          (1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )          
+          (1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )
         elseif(ddist .le. dprad+dprad2)then
           FPx = FPx + (1.0_dp/eps2)*(dCenterX-CenterX2)*(dprad+dprad2-ddist)
           FPy = FPy + (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist)
           call output_line ('Case 3: CollforcesX: = '//trim(sys_sdEP(&
           (1.0_dp/eps2)*(dCenterX-CenterX2)*(dprad+dprad2-ddist),15,6)) )
           call output_line ('Case 3: CollforcesY: = '//trim(sys_sdEP(&
-          (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist),15,6)) )          
+          (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist),15,6)) )
         end if
       
       end do
       end if ! ipartforce
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !               CALCULATE CHANGE IN TRANSLATIONAL AND ANGULAR VELOCITY
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! Velocity difference for the given time step
       dvelx   = dtimestep*(FPx+FWx+1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
       dvely   = dtimestep*(FPy+FWy+1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
@@ -2531,18 +2531,18 @@ contains
       domega = dtimestep*0.5_dp*(p_rparticleCollection%p_rParticles(ipart)%dTorque(2) &
                + p_rparticleCollection%p_rParticles(ipart)%dTorque(1)) /dimomir
 
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE TORQUE
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! set the new values for the torque
       ! torque_old=torque_new
       p_rparticleCollection%p_rParticles(ipart)%dTorque(2)= &
       p_rparticleCollection%p_rParticles(ipart)%dTorque(1)
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE ANGLES AND ANGULAR VELOCITY
-      !----------------------------------------------------------------------------------------   
-      ! 
+      !----------------------------------------------------------------------------------------
+      !
       ! a_new = a_old + time*(avel_old + 0.5*avel_new)
       ! Overwrite rotation angle
       p_rgeometryObject%rcoord2D%drotation = &
@@ -2558,19 +2558,19 @@ contains
       p_rparticleCollection%p_rParticles(ipart)%dangVelocity= &
       p_rparticleCollection%p_rParticles(ipart)%dangVelocity + domega
     
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE FORCES
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! save the old forces for the next time step
       p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) = &
-      p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)      
+      p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)
 
       p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) = &
-      p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)      
+      p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE PARTICLE POSITION
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! update the position of the x-center
       dCenterX = dCenterX + dtimestep * &
       (p_rparticleCollection%p_rParticles(ipart)%dtransVelX+0.5_dp*dvelx)
@@ -2586,9 +2586,9 @@ contains
       p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
 
 
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE PARTICLE VELOCITY
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! save old velocity
       p_rparticleCollection%p_rParticles(ipart)%dtransVelXold=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
       p_rparticleCollection%p_rParticles(ipart)%dtransVelYold=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
@@ -2603,7 +2603,7 @@ contains
       if(ipartforce .eq. 1)then
       do jpart=1,p_rparticleCollection%nparticles
         if(jpart .eq. ipart)cycle
-        ! get the data of the 2nd particle      
+        ! get the data of the 2nd particle
         p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
         ! get the distance between the centers
         ddist=rproblem%dDistMatrix(ipart,jpart)
@@ -2619,7 +2619,7 @@ contains
         
         ! get the center of the 2nd particle
         CenterX2=p_rgeometryObject2%rcoord2D%Dorigin(1)
-        CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)               
+        CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)
         
         ! the distance between the outlines
         distout=ddist-dprad+dprad2
@@ -2631,8 +2631,8 @@ contains
         dvolume2  = &
         (p_rparticleCollection%p_rParticles(jpart)%drad)**2 * SYS_PI
         dmasssl2  = &
-        p_rparticleCollection%p_rParticles(jpart)%drho * dvolume2 
-        !AMASLDIJ=AMASSLDI+AMASSLDJ       
+        p_rparticleCollection%p_rParticles(jpart)%drho * dvolume2
+        !AMASLDIJ=AMASSLDI+AMASSLDJ
         dri=dmasssl*dovlap/(dmasssl2+dmasssl)
         drj=dmasssl2*dovlap/(dmasssl2+dmasssl)
         
@@ -2676,15 +2676,15 @@ contains
         
         end if
         
-      end do ! end jpart      
+      end do ! end jpart
       end if ! ipartforce
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          Collision with walls
       !----------------------------------------------------------------------------------------
       do iseg=1,rproblem%isegments
       
-        Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
+        Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1)
         Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
         DpointA(1)=dCenterX
         DpointA(2)=dCenterY
@@ -2699,18 +2699,18 @@ contains
           DV(1)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
           DV(2)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
         
-          Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
-          Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)        
+          Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1)
+          Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
         
           Dnormal(1)=-1.0_dp*(Dp2(2)-Dp1(2))
-          Dnormal(2)= (Dp2(1)-Dp1(1))    
+          Dnormal(2)= (Dp2(1)-Dp1(1))
   
-          ! normalize the "normal"        
+          ! normalize the "normal"
           length=sqrt(Dnormal(1)**2 + Dnormal(2)**2)
           Dnormal(1)=Dnormal(1)/length
           Dnormal(2)=Dnormal(2)/length
           
-          ! reflect velocity vector 
+          ! reflect velocity vector
           r(:)=DV(:)-2.0_dp*Dnormal(:)*(Dnormal(1)*DV(1)+Dnormal(2)*DV(2))
     
           ! compute the distance between the outline of
@@ -2729,23 +2729,23 @@ contains
 !          ! the position is updated, now update the velocity
 !          p_rparticleCollection%p_rParticles(ipart)%dtransVelX=0.984*r(1)
 !          p_rparticleCollection%p_rParticles(ipart)%dtransVelY=0.984*r(2)
-!          call output_line ('VelX: = '//trim(sys_sdEP(DV(1),15,6)) )                    
-!          call output_line ('Vely: = '//trim(sys_sdEP(DV(2),15,6)) )                    
-!          call output_line ('RefVelX: = '//trim(sys_sdEP(r(1),15,6)) )                    
-!          call output_line ('RefVelX: = '//trim(sys_sdEP(r(2),15,6)) )                    
-!          call output_line ('NormalX: = '//trim(sys_sdEP(Dnormal(1),15,6)) )                    
-!          call output_line ('NormalY: = '//trim(sys_sdEP(Dnormal(2),15,6)) ) 
-!          call output_line ('dcx: = '//trim(sys_sdEP(dcx,15,6)) )                    
-!          call output_line ('dcy: = '//trim(sys_sdEP(dcy,15,6)) ) 
-!          call output_line ('NewPoX: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(1),15,6)) )                    
-!          call output_line ('NewPoY: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(2),15,6)) ) 
+!          call output_line ('VelX: = '//trim(sys_sdEP(DV(1),15,6)) )
+!          call output_line ('Vely: = '//trim(sys_sdEP(DV(2),15,6)) )
+!          call output_line ('RefVelX: = '//trim(sys_sdEP(r(1),15,6)) )
+!          call output_line ('RefVelX: = '//trim(sys_sdEP(r(2),15,6)) )
+!          call output_line ('NormalX: = '//trim(sys_sdEP(Dnormal(1),15,6)) )
+!          call output_line ('NormalY: = '//trim(sys_sdEP(Dnormal(2),15,6)) )
+!          call output_line ('dcx: = '//trim(sys_sdEP(dcx,15,6)) )
+!          call output_line ('dcy: = '//trim(sys_sdEP(dcy,15,6)) )
+!          call output_line ('NewPoX: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(1),15,6)) )
+!          call output_line ('NewPoY: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(2),15,6)) )
           
         end if
       end do
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          SCREEN OUTPUT
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! Output some values to get some readable stuff on the
       ! the screen
       call output_line('--------------------------')
@@ -2782,7 +2782,7 @@ contains
     
   end subroutine
 
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
   subroutine cc_Particle(cderivative,rdiscretisation, &
@@ -2839,8 +2839,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -2864,26 +2864,26 @@ contains
   !p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
   
   ipart=rcollection%DQuickaccess(7)
-  p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+  p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
   select case (cderivative)
   case (DER_FUNC)
   
   ! loop over all elements and calculate the
   ! values in the cubature points
   do i=1,nelements
-    do j=1,npointsPerElement 
+    do j=1,npointsPerElement
       
       ! Get the distance to the center
       call geom_isInGeometry (p_rgeometryObject, (/Dpoints(1,j,i),Dpoints(2,j,i)/), iin)
-      ! check if it is inside      
-      if(iin .eq. 1)then 
-        Dvalues(j,i) =  1.0_DP 
+      ! check if it is inside
+      if(iin .eq. 1)then
+        Dvalues(j,i) =  1.0_DP
       else
         Dvalues(j,i) = 0.0_DP
       end if
       
     end do
-  end do    
+  end do
     
   case (DER_DERIV_X)
     ! Not really useful in the case at hand
@@ -2899,12 +2899,12 @@ contains
   
   end subroutine
 
-! *************************************************************************** 
+! ***************************************************************************
 
 !<subroutine>
   subroutine cc_calcDistPart(rproblem,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -2926,7 +2926,7 @@ contains
     ! individually
     do ipart=1,p_rparticleCollection%nparticles
     
-      p_rgeometryObject1 => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+      p_rgeometryObject1 => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
       
       ! position
       dCenterX1=p_rgeometryObject1%rcoord2D%Dorigin(1)
@@ -2949,12 +2949,12 @@ contains
 
   end subroutine
   
-! *************************************************************************** 
+! ***************************************************************************
   
 ! <subroutine>
   subroutine cc_moveParticles(rproblem,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -2983,15 +2983,15 @@ contains
     isegments = rproblem%isegments
     dnu = rproblem%dnu
     
-    !----------------------------------------------------------------------------------------   
+    !----------------------------------------------------------------------------------------
     !                           COLLISION OF PARTICLES WITH WALL
-    !----------------------------------------------------------------------------------------   
+    !----------------------------------------------------------------------------------------
 !     call collisionwall(p_rparticleCollection,dtimestep)
     call collisionwall_adv(p_rparticleCollection,isegments,p_DbdyEdg,dtimestep)
     
-    !----------------------------------------------------------------------------------------   
+    !----------------------------------------------------------------------------------------
     !                         COLLISION OF PARTICLES WITH OTHER PARTICLES
-    !----------------------------------------------------------------------------------------   
+    !----------------------------------------------------------------------------------------
     ! model name (1,2,3,4 or 5)
     ! since we have five models at the time being
     model = 3
@@ -3029,8 +3029,8 @@ contains
       
       ! some physical parameters
       dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
-      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume 
-      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume 
+      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
+      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
       
       ! Calculate the moment of inertia by formula,
       ! this formula is valid only for a circle
@@ -3041,9 +3041,9 @@ contains
       ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
       ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
       ! we already calculated earlier; so we just need to divide...
-      ! moment of inertia 
+      ! moment of inertia
       dimomir  = &
-      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp 
+      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp
       
       ! Mean resistance forces for the given time step
 
@@ -3073,9 +3073,9 @@ contains
       ! angular velocity difference for the given time step
       domega = dtimestep*(dtrq + dtrq1)/dimomir
 
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE TORQUE
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! set the new values for the torque
       ! torque_old=torque_new
       p_rparticleCollection%p_rParticles(ipart)%dTorque(2)= &
@@ -3083,10 +3083,10 @@ contains
 
       p_rparticleCollection%p_rParticles(ipart)%pTorque(1) = 0.0_dp
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE ANGLES AND ANGULAR VELOCITY
-      !----------------------------------------------------------------------------------------   
-      ! 
+      !----------------------------------------------------------------------------------------
+      !
       ! a_new = a_old + time*(avel_old + 0.5*avel_new)
       ! Overwrite rotation angle
       p_rgeometryObject%rcoord2D%drotation = &
@@ -3102,9 +3102,9 @@ contains
       p_rparticleCollection%p_rParticles(ipart)%dangVelocity= &
       p_rparticleCollection%p_rParticles(ipart)%dangVelocity + domega
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE FORCES
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! save the old forces for the next time step
       p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) = &
       p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)
@@ -3116,9 +3116,9 @@ contains
 
       p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = 0.0_dp
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE PARTICLE POSITION
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! update the position of the x-center
       dCenterX = dCenterX + dtimestep * &
       (p_rparticleCollection%p_rParticles(ipart)%dtransVelX+0.5_dp*dvelx)
@@ -3130,21 +3130,21 @@ contains
        dCenterY = dCenterY + dtimestep * &
       (p_rparticleCollection%p_rParticles(ipart)%dtransVelY+0.5_dp*dvely)
       
-      ! update the position of the geometry object      
+      ! update the position of the geometry object
       p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
 
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          UPDATE THE PARTICLE VELOCITY
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! save the current velocity
       p_rparticleCollection%p_rParticles(ipart)%dtransVelX=&
       p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
       p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
       p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
       
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       !                          SCREEN OUTPUT
-      !----------------------------------------------------------------------------------------   
+      !----------------------------------------------------------------------------------------
       ! Output some values to get some readable stuff on the
       ! the screen
       print *,"--------------------------"
@@ -3167,12 +3167,12 @@ contains
     
   end subroutine
   
-! ***************************************************************************   
+! ***************************************************************************
   
 !<subroutine>
   subroutine collisionwall(p_rparticleCollection,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -3223,12 +3223,12 @@ contains
     
   end subroutine
   
-! ***************************************************************************   
+! ***************************************************************************
   
 !<subroutine>
   subroutine collisionwall_adv(p_rparticleCollection,isegments,p_DbdyEdg,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -3288,7 +3288,7 @@ contains
 !<subroutine>
   subroutine collisionparticle1(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -3400,7 +3400,7 @@ contains
 !<subroutine>
   subroutine collisionparticle2(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -3501,37 +3501,37 @@ contains
 !         print *, 'The test is ok! This is case:1.0'
 !         kDist=beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
-! 
+!
 !         kDist1=beta*meu*6.0_dp*SYS_PI*log(d0/Dist_exact)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
 !         ! end if
 !         end if
-! 
+!
 !         if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .lt. epsln)) then
 !         print *, 'The test is ok! This is case:1.1'
 !         kDist=beta*meu*6.0_dp*SYS_PI*(1.0_dp/d1)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
-! 
+!
 !         kDist1=beta*meu*6.0_dp*SYS_PI*log(d0/d1)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
 !         ! end if
 !         end if
-! 
+!
 !         if ((-epsln .le. Dist_exact) .and. (Dist_exact .lt. 0.0_dp)) then
 !         print *, 'The test is ok! This is case:-1.0'
 !         kDist=beta*meu*6.0_dp*SYS_PI*(1.0_dp/d1)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
-! 
+!
 !         kDist1=beta*meu*6.0_dp*SYS_PI*log(d0/d1)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
 !         ! end if
 !         end if
-! 
+!
 !         if (Dist_exact .lt. -epsln) then
 !         print *, 'The test is ok! This is case:-1.1'
 !         kDist=-beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
-! 
+!
 !         kDist1=beta*meu*6.0_dp*SYS_PI*log(-d0/Dist_exact)* &
 !         (radi**2 * radj**2)/(radi + radj)**2
 !         ! end if
@@ -3561,7 +3561,7 @@ contains
 !<subroutine>
   subroutine collisionparticle3(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -3753,7 +3753,7 @@ contains
 !<subroutine>
   subroutine collisionparticle4(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -3923,7 +3923,7 @@ contains
 !         dmasssli  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolumei
 !         dvolumej  = (p_rparticleCollection%p_rParticles(jpart)%drad)**2 * SYS_PI
 !         dmassslj  = p_rparticleCollection%p_rParticles(jpart)%drho * dvolumej
-! 
+!
 !         soln(ipart) = gamma(m)/dmasssli
 !         soln(jpart) = gamma(m)/dmassslj
 !         soln(n+ipart) = gamma(m)/dmasssli
@@ -3980,7 +3980,7 @@ contains
 !<subroutine>
   subroutine collisionparticle5(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -4178,22 +4178,22 @@ contains
     
   end subroutine gauss_pivot
 
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
   subroutine collisionWall_normal(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<input>
   ! the viscosity
   real(dp), intent(in)                               :: dnu
   ! the timestepsize, that was used to calculate the current solution
-  real(dp), intent(in)                               :: dtimestep  
-!</input>  
+  real(dp), intent(in)                               :: dtimestep
+!</input>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_particleCollection), pointer, intent(inout) :: p_rparticleCollection
 !</inputoutput>
 
@@ -4212,22 +4212,22 @@ contains
 
   end subroutine ! collisionWall_normal
   
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
   subroutine collisionParticle_normal(p_rparticleCollection,dnu,dtimestep)
 !<description>
-  ! 
+  !
 !</description>
 
 !<input>
   ! the viscosity
   real(dp), intent(in)                               :: dnu
   ! the timestepsize, that was used to calculate the current solution
-  real(dp), intent(in)                               :: dtimestep  
-!</input>  
+  real(dp), intent(in)                               :: dtimestep
+!</input>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_particleCollection), pointer, intent(inout) :: p_rparticleCollection
 !</inputoutput>
 

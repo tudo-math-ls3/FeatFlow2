@@ -73,7 +73,7 @@ contains
   ! This routine receives a boundary region rregion describing a part on the
   ! boundary. According to the triangulation, this boundary region contains
   ! some vertices and edges on the boundary. The routine now figures out,
-  ! which index in the IverticesAtBoundary in the triangulation structure 
+  ! which index in the IverticesAtBoundary in the triangulation structure
   ! of the vertices that are inside of this boundary region.
   !
   ! Each boundary region is simply connected, but they may cross the
@@ -167,7 +167,7 @@ contains
   ! Remark: dbegin/dend are not used anymore here - maybe in a later
   ! version if necessary for some reasons...
   !
-  ! For now, use a simple linear search. 
+  ! For now, use a simple linear search.
   ! The boundary region structure tells us which boundary component
   ! to use; loop through all vertices there.
   
@@ -223,7 +223,7 @@ contains
     ImaxIndex(ifoundRegions+1) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
     ! Complete the region and finish.
     icount = ifoundRegions + 1
-  else 
+  else
     ! No we are not. So we were awaiting points for another part of the region
     ! that never came! Reset the last index pair and quit.
     IminIndex(ifoundRegions+1) = 0
@@ -262,7 +262,7 @@ contains
   ! This routine receives a boundary region rregion describing a part on the
   ! boundary. According to the triangulation, this boundary region contains
   ! some vertices and edges on the boundary. The routine now figures out,
-  ! which  index in the IverticesAtBoundary in the triangulation structure 
+  ! which  index in the IverticesAtBoundary in the triangulation structure
   ! of the vertices that are inside of this boundary region.
   !
   ! Each boundary region is simply connected, but they may cross the
@@ -356,7 +356,7 @@ contains
   ! Remark: dbegin/dend are not used anymore here - maybe in a later
   ! version if necessary for some reasons...
   !
-  ! For now, use a simple linear search. 
+  ! For now, use a simple linear search.
   ! The boundary region structure tells us which boundary component
   ! to use; loop through all vertices there.
   
@@ -412,7 +412,7 @@ contains
     ImaxIndex(ifoundRegions+1) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
     ! Complete the region and finish.
     icount = ifoundRegions + 1
-  else 
+  else
     ! No we are not. So we were awaiting points for another part of the region
     ! that never came! Reset the last index pair and quit.
     IminIndex(ifoundRegions+1) = 0
@@ -467,10 +467,10 @@ contains
   integer, intent(out) :: ncount
   
   ! A list of edges in the region. The array must be large enough to hold
-  ! all vertices in the region. 
+  ! all vertices in the region.
   ! If not specified, the routine only calculates ncount, the number
   ! of edges on the boundary.
-  integer, dimension(:), intent(out), optional :: Ivertices 
+  integer, dimension(:), intent(out), optional :: Ivertices
 !</output>
 
 !</subroutine>
@@ -531,7 +531,7 @@ contains
   integer, intent(out) :: ncount
   
   ! A list of edges in the region. The array must be large enough to hold
-  ! all edges in the region. 
+  ! all edges in the region.
   ! If not specified, the routine only calculates ncount, the number
   ! of edges on the boundary.
   integer, dimension(:), intent(out), optional :: Iedges
@@ -576,13 +576,13 @@ contains
 !<description>
   ! This routine receives a boundary region rregion describing a part on the
   ! boundary. According to the triangulation, this boundary region contains
-  ! some vertices and edges on the boundary. 
+  ! some vertices and edges on the boundary.
   !
   ! The routine will search all elements that touch (with a vertex or an edge)
   ! the boundary region. All these elements are written to IelList.
-  ! If a vertex of the element touches it, the corresponding entry in IvtLocal 
+  ! If a vertex of the element touches it, the corresponding entry in IvtLocal
   ! is set to the local vertex number of that vertex, otherwise it is set to to 0.
-  ! If an edge of the element touches it, the corresponding entry in IvtLocal 
+  ! If an edge of the element touches it, the corresponding entry in IvtLocal
   ! is set to the local edge number of that edge, otherwise it is set to to 0.
   !
   ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
@@ -765,9 +765,9 @@ contains
 !</description>
 
 !<input>
-  ! The discretisation structure of the underlying discretisation. 
+  ! The discretisation structure of the underlying discretisation.
   type(t_spatialDiscretisation), intent(in), target :: rspatialDiscr
-!</input>  
+!</input>
 
 !<inputoutput>
   ! Handle to an array that contains the DOF's.
@@ -871,19 +871,19 @@ contains
 !</description>
 
 !<input>
-  ! The discretisation structure of the underlying discretisation. 
+  ! The discretisation structure of the underlying discretisation.
   type(t_spatialDiscretisation), intent(in), target :: rspatialDiscr
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   type(t_boundaryRegion), intent(in) :: rboundaryRegion
-!</input>  
+!</input>
 
 !<inputoutput>
   ! OPTIONAL: Handle to an array that contains the DOF's.
   ! If the handle is set to ST_NOHANDLE, memory is automatically allocated.
   ! Otherwise, the memory must be large enough to hold all DOF's.
-  ! If the pointer is ST_NOHANDLE, it stays =ST_NOHANDLE if there are no DOF's on 
+  ! If the pointer is ST_NOHANDLE, it stays =ST_NOHANDLE if there are no DOF's on
   ! the region. The caller must deallocate the memory!
   integer, intent(out), optional :: h_Idofs
   
@@ -920,7 +920,7 @@ contains
     real(DP) :: Dpar
     
     ! Position of cubature points for 2-point Gauss formula on an edge.
-    ! Used for Q2T. 
+    ! Used for Q2T.
     real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
     real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
     
@@ -969,7 +969,7 @@ contains
     ! As we are in 2D, we can use parameter values at first to figure out,
     ! which points and which edges are on the boundary.
     ! What we have is a boundary segment. Now ask the boundary-index routine
-    ! to give us the vertices and edges on the boundary that belong to 
+    ! to give us the vertices and edges on the boundary that belong to
     ! this boundary segment.
     
     allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
@@ -991,7 +991,7 @@ contains
                                    
     ! Reserve some memory to save temporarily all DOF`s of all boundary
     ! elements.
-    ! We handle all boundary elements simultaneously - let us hope that there are 
+    ! We handle all boundary elements simultaneously - let us hope that there are
     ! never so many elements on the boundary that our memory runs out :-)
     allocate (Idofs(EL_MAXNBAS,icount))
     
@@ -1069,7 +1069,7 @@ contains
       
       case (EL_P0,EL_Q0)
 
-        ! This element has no DOF's associated to boundary edges.        
+        ! This element has no DOF's associated to boundary edges.
         
       case (EL_P1,EL_Q1)
 
@@ -1130,7 +1130,7 @@ contains
         end if
 
       case (EL_QP1)
-        ! Three DOF`s: Function value in the element midpoint 
+        ! Three DOF`s: Function value in the element midpoint
         ! and derivatives.
         ! No DOF is on a boundary edge.
 
@@ -1180,7 +1180,7 @@ contains
         ! On the other hand, we have integral mean values of function*parameter
         ! value on the edge.
         !
-        ! Edge inside? 
+        ! Edge inside?
         if ( iedge .ne. 0 ) then
           
           ! Set the DOF number < 0 to indicate that this DOF is in the region.
@@ -1200,7 +1200,7 @@ contains
       
     end do
 
-    ! Temp arrays no more necessary    
+    ! Temp arrays no more necessary
     deallocate(IverticesAtBoundaryIdx)
     deallocate(IedgesAtBoundaryIdx)
     deallocate(IelementsAtBoundary)

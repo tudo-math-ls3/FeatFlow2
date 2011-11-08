@@ -69,33 +69,33 @@ module ccbasic
     ! Precalculated Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
-    ! Precalculated B1-matrix for that specific level. 
+    ! Precalculated B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! Precalculated B2-matrix for that specific level. 
+    ! Precalculated B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
     
-    ! Precalculated D1-matrix for that specific level. 
+    ! Precalculated D1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD1
 
-    ! Precalculated D2-matrix for that specific level. 
+    ! Precalculated D2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD2
 
-    ! Precalculated D1^T-matrix for that specific level. 
+    ! Precalculated D1^T-matrix for that specific level.
     ! This matrix either coincides with rmatrixB1 (in case D1=B1^T)
     ! or describes an independent D1 matrix.
     type(t_matrixScalar) :: rmatrixD1T
 
-    ! Precalculated D2-matrix for that specific level. 
+    ! Precalculated D2-matrix for that specific level.
     ! This matrix either coincides with rmatrixB1 (in case D2=B2^T)
     ! or describes an independent D2 matrix.
     type(t_matrixScalar) :: rmatrixD2T
 
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the velocity FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMass
 
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the pressure FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMassPressure
 
@@ -106,7 +106,7 @@ module ccbasic
     type(t_matrixScalar) :: rmatrixMassPressure
 
     ! An object specifying the discretisation in the velocity space
-    ! to be used for (edge) stabilisation. Only used if edge stabilisation 
+    ! to be used for (edge) stabilisation. Only used if edge stabilisation
     ! is activated, otherwise this coincides with the default discretisation
     ! of the velocity space.
     type(t_spatialDiscretisation) :: rdiscretisationStabil
@@ -186,10 +186,10 @@ module ccbasic
     integer :: niterations         = 0
     
     ! Absolute start time of the simulation
-    real(DP) :: dtimeInit          = 0.0_DP     
+    real(DP) :: dtimeInit          = 0.0_DP
     
     ! Time step size; former TSTEP
-    real(DP) :: dtimeStep          = 0.0_DP       
+    real(DP) :: dtimeStep          = 0.0_DP
     
     ! Maximum time of the simulation
     real(DP) :: dtimeMax           = 0.0_DP
@@ -238,10 +238,10 @@ module ccbasic
     ! Total number of calculated timesteps
     integer :: ntimesteps = 0
 
-    ! Total time used for nonlinear solver 
+    ! Total time used for nonlinear solver
     real(DP) :: dtimeNonlinearSolver = 0.0_DP
     
-    ! Total time used for linear solver 
+    ! Total time used for linear solver
     real(DP) :: dtimeLinearSolver = 0.0_DP
 
     ! Total time used for symbolical/numerical factorisation
@@ -300,7 +300,7 @@ module ccbasic
     
     real(dp) :: drad
     
-    real(dp) :: drho2    
+    real(dp) :: drho2
     
     ! Type of problem.
     ! =0: Stokes.
@@ -316,7 +316,7 @@ module ccbasic
     ! Model for the viscosity.
     ! =0: Constant viscosity.
     ! =1: Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
-    integer :: cviscoModel 
+    integer :: cviscoModel
         
     ! Exponent parameter for the viscosity model
     real(DP) :: dviscoexponent
@@ -336,7 +336,7 @@ module ccbasic
     !     prssure drop and/or Neumann boundary parts
     integer :: iboundary
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer           :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -346,7 +346,7 @@ module ccbasic
     
     ! Type of simulation.
     ! =0: stationary simulation.
-    ! =1: time-dependent simulation with explicit time stepping configured 
+    ! =1: time-dependent simulation with explicit time stepping configured
     !     by rtimedependence
     integer                               :: itimedependence
     
@@ -357,8 +357,8 @@ module ccbasic
     ! A configuration block for the stabilisation of the convection.
     type(t_problem_stabilisation) :: rstabilisation
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection)                    :: rcollection
     
@@ -377,7 +377,7 @@ module ccbasic
     
     real(dp),dimension(2) :: DVelX
 
-    real(dp),dimension(2) :: DVelY    
+    real(dp),dimension(2) :: DVelY
     
     real(dp),dimension(2) :: DAngVel
 
@@ -430,7 +430,7 @@ module ccbasic
 ! During the assembly of RHS vectors and boundary conditions, the following
 ! additional information is valid in the collection:
 !
-!   collection%IquickAccess(1)   = 0: stationary, 
+!   collection%IquickAccess(1)   = 0: stationary,
 !                                  1: nonstationary with explicit time stepping
 !   collection%DquickAccess(1)   = current simulation time
 !   collection%DquickAccess(2)   = minimum simulation time

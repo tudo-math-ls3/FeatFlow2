@@ -36,7 +36,7 @@
 !# Solving the local Boussinesq System \\
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
 !# Our local Boussinesq system looks as follows:
-!# 
+!#
 !# <verb>
 !#                   / A11 A12 B1 M1 \   / u1 \   / f_u1 \
 !#                   | A21 A22 B2 M2 | * | u2 | = | f_u2 |
@@ -62,7 +62,7 @@
 !#                   \ 0 0 N /   \ t /   \ f_t /
 !# </verb>
 !#
-!# 
+!#
 !# 1.) Solve the last equation to get the temperature t:
 !#
 !#     <tex> $$                  t := N^{-1} * f_t  $$ </tex>
@@ -270,9 +270,9 @@ contains
   subroutine vanka_initBoussinesq2D (rmatrix,rvanka,csubtype)
   
 !<description>
-  ! Initialises the VANKA variant for 2D Boussinesq problems 
+  ! Initialises the VANKA variant for 2D Boussinesq problems
   ! for conformal discretisations.
-  ! Checks if the "2D-Boussinesq" VANKA variant 
+  ! Checks if the "2D-Boussinesq" VANKA variant
   ! for conformal discretisations can be applied to the system given by rmatrix.
   ! If not, the program is stopped.
   !
@@ -285,7 +285,7 @@ contains
   type(t_matrixBlock), intent(in), target :: rmatrix
 
   ! Desired subtype
-  integer, intent(in) :: csubtype  
+  integer, intent(in) :: csubtype
 !</input>
 
 !<inputoutput>
@@ -320,7 +320,7 @@ contains
       call output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
       call sys_halt()
-    end if      
+    end if
   
     ! Fill the output structure with data of the matrices.
     call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
@@ -503,7 +503,7 @@ contains
   subroutine vanka_doneBoussinesq2D (rvanka)
   
 !<description>
-  ! Releases the VANKA variant for 2D Boussinesq problems 
+  ! Releases the VANKA variant for 2D Boussinesq problems
   ! for conformal discretisations.
 !</description>
 
@@ -653,7 +653,7 @@ contains
         case default
           call output_line ('Unknown VANKA subtype!',&
               OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
-          call sys_halt()  
+          call sys_halt()
         
         end select
     
@@ -1263,7 +1263,7 @@ contains
           Dut(i) = Dft(i) / Dn(i)
         end do
         
-        ! Calculate new RHS 
+        ! Calculate new RHS
         ! f_u := f_u - M1*t
         ! f_v := f_v - M2*t
         do i = 1, ndofV
@@ -1282,7 +1282,7 @@ contains
         end do
 
         ! Calculate Schur-Complement of A
-        ! S := -C + D * A^-1 * B 
+        ! S := -C + D * A^-1 * B
         do j = 1, ndofP
           Ds(j) = -Dc(j)
           do i = 1, ndofV
@@ -1700,7 +1700,7 @@ contains
             end do
           end do
           
-          ! Calculate new RHS 
+          ! Calculate new RHS
           ! f_u := f_u - M1*t
           ! f_v := f_v - M2*t
           do i = 1, ndofV
@@ -1723,7 +1723,7 @@ contains
           end do
           
           ! Calculate Schur-Complement of A
-          ! S := -C + D * A^-1 * B 
+          ! S := -C + D * A^-1 * B
           do j = 1, ndofP
             do k = 1, ndofP
               Ds(j,k) = -Dc(j,k)

@@ -37,7 +37,7 @@ contains
     real(DP), dimension(:), pointer :: p_Da_mass, p_Da
     integer , dimension(:) , allocatable :: iaux
 
-    call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
     call lsyssc_getbase_double (rmatrix,p_Da)
@@ -46,7 +46,7 @@ contains
     DO i = 1,nvt
         Do j = p_Kld(i), p_Kld(i+1)-1
             print *,i,": ",p_Kcol(j),": ",p_Da( j )
-        end Do            
+        end Do
     end do
     
   end subroutine
@@ -54,7 +54,7 @@ contains
 
 
   !<subroutine>
-  ! test purposes: print vektor 
+  ! test purposes: print vektor
   subroutine testPrintVector (rvector)
   
     type(t_vectorScalar) , intent(IN) :: rvector
@@ -63,7 +63,7 @@ contains
     ! some local variables
     integer :: i, j, nvt
 
-    call lsyssc_getbase_double (rvector,p_vector)		
+    call lsyssc_getbase_double (rvector,p_vector)
     nvt = rvector%NEQ
     
     DO i = 1,nvt
@@ -78,7 +78,7 @@ contains
   ! multiplication of the inverse lumped matrix by vector
   subroutine multInvLumpedVector (rmatrix, rvector)
 
-    type(t_matrixScalar) , intent(IN) :: rmatrix    
+    type(t_matrixScalar) , intent(IN) :: rmatrix
     type(t_vectorScalar) , intent(INOUT) :: rvector
     real(DP), dimension(:), pointer :: p_vector
     
@@ -89,25 +89,25 @@ contains
     real(DP), dimension(:), pointer :: p_Da_mass, p_Da
 
     !matrix initialization things
-    !call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+    !call lsyssc_getbase_Kld (rmatrix,p_Kld)
     !call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
     call lsyssc_getbase_double (rmatrix,p_Da)
     nvt = rmatrix%NEQ
     
     !vector initialization things
-    call lsyssc_getbase_double (rvector,p_vector)		
+    call lsyssc_getbase_double (rvector,p_vector)
     nvt = rvector%NEQ
     
     DO i = 1,nvt
         p_vector( i ) = (1.0_DP/p_Da(p_Kdiagonal(i)))*p_vector( i )
     end do
     
-  end subroutine   
+  end subroutine
 
 
   !<subroutine>
-  ! test purposes: print vektor 
+  ! test purposes: print vektor
   subroutine vector_writeToFile (rtria, rvector, fileName, fileNumber, itimestep)
   
     type(t_vectorScalar), intent(IN) :: rvector
@@ -117,29 +117,29 @@ contains
     type(t_triangulation), intent(IN) :: rtria
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    !auxiliary	        
+    !auxiliary
     real(DP), dimension(:), pointer :: p_vector
     integer :: i, j, nvt
     integer :: fileNumber_local
   
     ! set variables
-    call lsyssc_getbase_double (rvector,p_vector)		
+    call lsyssc_getbase_double (rvector,p_vector)
     nvt = rvector%NEQ
-    if(present(fileNumber)) then 
+    if(present(fileNumber)) then
 	fileNumber_local=fileNumber
     else
-	fileNumber_local=1313	
+	fileNumber_local=1313
     endif
 
     ! get coordinates
-    call storage_getbase_double2d (rtria%h_DvertexCoords,p_DvertexCoords) 
+    call storage_getbase_double2d (rtria%h_DvertexCoords,p_DvertexCoords)
 
-    !open(fileNumber,FILE=fileName//trim(sys_si0L(itimestep,5)),STATUS="NEW")    	
+    !open(fileNumber,FILE=fileName//trim(sys_si0L(itimestep,5)),STATUS="NEW")
     if(present(itimestep)) then
-	open(fileNumber_local,FILE=fileName//trim('_y05')//trim(sys_si0L(itimestep,5)),STATUS="REPLACE")    	
-    else	 
-    	open(fileNumber_local,FILE=fileName//trim('_y05'),STATUS="REPLACE")    	
-    endif    
+	open(fileNumber_local,FILE=fileName//trim('_y05')//trim(sys_si0L(itimestep,5)),STATUS="REPLACE")
+    else
+    	open(fileNumber_local,FILE=fileName//trim('_y05'),STATUS="REPLACE")
+    endif
     DO i = 1,nvt
 	!print fileNumber,p_vector(i)
 	!write(mfile,'(A,1X,I10)') 'nodes',rexport%nvertices
@@ -150,13 +150,13 @@ contains
     end do
     close(fileNumber_local)
 
-    !write x=0.5 cutline	
-    !open(fileNumber,FILE=fileName//trim(sys_si0L(itimestep,5)),STATUS="NEW")    	
+    !write x=0.5 cutline
+    !open(fileNumber,FILE=fileName//trim(sys_si0L(itimestep,5)),STATUS="NEW")
     if(present(itimestep)) then
-	open(fileNumber_local,FILE=fileName//trim('_x05')//trim(sys_si0L(itimestep,5)),STATUS="REPLACE")    	
-    else	 
-    	open(fileNumber_local,FILE=fileName//trim('_x05'),STATUS="REPLACE")    	
-    endif    
+	open(fileNumber_local,FILE=fileName//trim('_x05')//trim(sys_si0L(itimestep,5)),STATUS="REPLACE")
+    else
+    	open(fileNumber_local,FILE=fileName//trim('_x05'),STATUS="REPLACE")
+    endif
     DO i = 1,nvt
 	!print fileNumber,p_vector(i)
 	!write(mfile,'(A,1X,I10)') 'nodes',rexport%nvertices

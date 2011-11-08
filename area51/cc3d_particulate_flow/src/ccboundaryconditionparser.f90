@@ -73,10 +73,10 @@ module ccboundaryconditionparser
   ! Text expression, evaluated by parsing
   integer, parameter :: BDC_EXPRESSION = -1
   
-  ! Fixed double precision value 
+  ! Fixed double precision value
   integer, parameter :: BDC_VALDOUBLE = 0
 
-  ! Fixed integer value 
+  ! Fixed integer value
   integer, parameter :: BDC_VALINT    = 1
 
   ! Parabolic profile with prescribed maximum value
@@ -183,8 +183,8 @@ contains
     ! of the Y-velocity.
     !
     ! Get the expression/bc sections from the bondary condition block
-    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
-    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
+    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection)
+    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond)
     
     ! For intermediate storing of expression types, we use a local collection
     call collct_init (rcoll)
@@ -232,7 +232,7 @@ contains
         ! Real-value
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS) 
+                                   0, SEC_SBDEXPRESSIONS)
       case (BDC_VALINT)
         ! Integer-value
         read(cstr,*) cname,ityp,ivalue
@@ -243,7 +243,7 @@ contains
         ! Parabolic profile with specified maximum velocity
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS) 
+                                   0, SEC_SBDEXPRESSIONS)
                                    
       case DEFAULT
         call output_line ('Expressions not implemented!', &
@@ -253,7 +253,7 @@ contains
       end select
       
       ! Put the type of the expression to the temporary collection section
-      call collct_setvalue_int (rcoll, cname, ityp, .true.) 
+      call collct_setvalue_int (rcoll, cname, ityp, .true.)
       
     end do
     
@@ -265,7 +265,7 @@ contains
     call ccdc_getNumRegions(rproblem, inumRegions)
     
     ! Now to the actual boundary conditions.
-    !    
+    !
     ! Put some information to the quick access arrays for access
     ! in the callback routine.
     rcoll%Iquickaccess(1) = rproblem%itimedependence
@@ -282,7 +282,7 @@ contains
     end select
     
     ! DquickAccess(4:) is reserved for BC specific information.
-    !    
+    !
     ! Put a link to the previous collection into that local collection.
     ! That allows us to access it or to pass it to user defined callback
     ! functions.
@@ -319,8 +319,8 @@ contains
         ! Now, which type of BC is to be created?
         select case (ibctyp)
         case (0)
-          ! Usually there's Neumann boundary in this region, but we can't be 
-          ! sure. 
+          ! Usually there's Neumann boundary in this region, but we can't be
+          ! sure.
           ! TODO: Check if there is at least one face in that region.
           bNeumann = .true.
         
@@ -452,11 +452,11 @@ contains
           end if
 
   !      CASE (2)
-  !      
+  !
   !        ! Pressure drop boundary conditions.
   !        ! Read the line again to get the actual parameters
   !        READ(cstr,*) ibctyp,sbdex1
-  !        
+  !
   !        ! For any string <> '', create the appropriate pressure drop boundary
   !        ! condition and add it to the list of boundary conditions.
   !        !
@@ -470,7 +470,7 @@ contains
   !        !  SquickAccess(1) = Name of the expression
   !        !
   !        IF (sbdex1 .NE. '') THEN
-  !        
+  !
   !          ! IquickAccess(3) saves the type of the expression
   !          iexptyp = collct_getvalue_int (rcoll, sbdex1)
   !          rcoll%IquickAccess(3) = iexptyp
@@ -478,7 +478,7 @@ contains
   !          ! The first element in the sting quick access array is
   !          ! the name of the expression to evaluate.
   !          rcoll%SquickAccess(1) = sbdex1
-  !          
+  !
   !          ! Dquickaccess(3) / IquickAccess(2) saves information
   !          ! about the expression.
   !          SELECT CASE (iexptyp)
@@ -492,20 +492,20 @@ contains
   !            rcoll%IquickAccess(4) = &
   !                collct_getvalue_int (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
   !          END SELECT
-  !        
+  !
   !          IvelEqns = (/1,2/)
   !          CALL bcasm_newPdropBConRealBd (&
   !              rdiscretisation,IvelEqns,rboundaryRegion,rdiscreteBC,&
-  !              cc_getBDconditions,rcoll)     
+  !              cc_getBDconditions,rcoll)
   !        END IF
-  !        
-  !        
+  !
+  !
   !      CASE (3)
-  !        
+  !
   !        ! Nonlinear slip boundary conditions.
   !        IvelComp = (/1,2/)
   !        CALL bcasm_newSlipBConRealBd (&
-  !            rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,rdiscreteBC)     
+  !            rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,rdiscreteBC)
         
         case DEFAULT
           call output_line ('Unknown boundary condition!', &
@@ -518,7 +518,7 @@ contains
                                           
       end do
     else
-      ! There is no parameter configuring the boundary condition on that 
+      ! There is no parameter configuring the boundary condition on that
       ! component - so we have Neumann boundary there.
       bNeumann = .true.
     end if
@@ -560,7 +560,7 @@ contains
     rproblem%RlevelInfo(rproblem%NLMIN:rproblem%NLMAX)%bhasNeumannBoundary = &
         bNeumann
         
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
 
@@ -582,9 +582,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the solution component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...,
   !   3=3rd solution component, e.g. pressure)
   ! For pressure drop boundary / normal stress:
@@ -628,16 +628,16 @@ contains
   real(DP), dimension(:), intent(IN)                          :: Dcoords
 !</input>
 
-!<inputoutput>    
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+!<inputoutput>
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional                 :: rcollection
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -696,7 +696,7 @@ contains
       !  IquickAccess(3) = expression type
       !  IquickAccess(4) = expression identifier
       !
-      ! Get the type of the expression to evaluate from the 
+      ! Get the type of the expression to evaluate from the
       ! integer tag of the BC-region - if there is an expression to evaluate
       ! at all.
       select case(iexprtyp)
@@ -743,7 +743,7 @@ contains
 
       case (BDC_VALPARPROFILE)
         ! A parabolic profile. DquickAccess(4) expresses the
-        ! maximum value of the profile. 
+        ! maximum value of the profile.
         ! To evaluate the parabolic profile, we have to call the domain
         ! control:
         call ccdc_calcParProfile (Dvalues(1), iregion, dx, dy, dz, &
@@ -804,6 +804,6 @@ contains
 !        getBoundaryValuesFBC3,rcollection)
 
     
-  end subroutine  
+  end subroutine
 
 end module

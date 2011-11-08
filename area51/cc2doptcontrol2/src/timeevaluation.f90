@@ -10,7 +10,7 @@
 !# The module contains the following routines:
 !#
 !# 1.) fetevl_evaluate
-!#     -> Evaluate a space-time FE function at a given time. 
+!#     -> Evaluate a space-time FE function at a given time.
 !# </purpose>
 !##############################################################################
 
@@ -90,7 +90,7 @@ contains
       itimestep = int(dabstime + 0.5_DP)
       
       if (dabstime .eq. real(itimestep,DP)) then
-        ! Nice coincidence, we have exactly timestep itimestep. Ok, then we 
+        ! Nice coincidence, we have exactly timestep itimestep. Ok, then we
         ! can call the routine to get that timestep; this saves us some
         ! time as the interpolation can be omitted.
         call sptivec_getTimestepData (rspaceTimeVector, 1+itimestep, rvector)
@@ -103,7 +103,7 @@ contains
         ! Get the 'relative' evaluation time; this in the interval 0..1
         dreltime = dabstime/dntimesteps
         
-        ! Interpolate linearly. 
+        ! Interpolate linearly.
         call interpolateLinear (dreltime,0,1,rspaceTimeVector,rvector)
       else
         ! Get the 'relative' evaluation time; this in the interval -1..1
@@ -111,11 +111,11 @@ contains
         
         ! Is this the first or the last timestep?
         if (itimestep .eq. 0) then
-          ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
+          ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate
           ! near timestep 0.
           call interpolateQuadratic (dreltime-1.0_DP,0,1,2,rspaceTimeVector,rvector)
         else if (itimestep .eq. ntimesteps) then
-          ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
+          ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate
           ! near timestep n.
           call interpolateQuadratic (dreltime+1.0_DP,&
             ntimesteps-2,ntimesteps-1,ntimesteps,rspaceTimeVector,rvector)
@@ -133,7 +133,7 @@ contains
       itimestep = int(dabstime)
       
       if ((dabstime-0.5_DP) .eq. real(itimestep,DP)) then
-        ! Nice coincidence, we have exactly timestep itimestep. Ok, then we 
+        ! Nice coincidence, we have exactly timestep itimestep. Ok, then we
         ! can call the routine to get that timestep; this saves us some
         ! time as the interpolation can be omitted.
         call sptivec_getTimestepData (rspaceTimeVector, 1+itimestep, rvector)
@@ -156,11 +156,11 @@ contains
       else
         ! Is this the first or the last timestep?
         if (itimestep .eq. 0) then
-          ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
+          ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate
           ! near timestep 0.
           call interpolateQuadratic (dreltime-1.0_DP,0,1,2,rspaceTimeVector,rvector)
         else if (itimestep .eq. ntimesteps-1) then
-          ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
+          ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate
           ! near timestep n.
           call interpolateQuadratic (dreltime+1.0_DP,&
             ntimesteps-1-2,ntimesteps-1-1,ntimesteps-1,rspaceTimeVector,rvector)
@@ -174,7 +174,7 @@ contains
               
     else
       call output_line ('Unsupported time discretisation.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'fetevl_evaluate')    
+                        OU_CLASS_ERROR,OU_MODE_STD,'fetevl_evaluate')
       call sys_halt()
     end if
     

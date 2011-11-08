@@ -51,7 +51,7 @@ contains
   !   $$ J(y,u) = 1/2||y-z||_{L^2}^2  + \alpha/2||u||^2 $$
   ! over a spatial domain $\Omega$.
   !
-  ! For this purpose, the routine evaluates the user-defined callback functions 
+  ! For this purpose, the routine evaluates the user-defined callback functions
   ! ffunction_TargetX and ffunction_TargetY. The collection must be initialised
   ! for postprocessing before calling his routine!
 !</description>
@@ -123,7 +123,7 @@ contains
   !   $$ J(y,u) = 1/2||y-z||^2_{L^2} + \alpha/2||u||^2_{L^2} + gamma/2||y(T)-z(T)||^2_{L^2}$$
   ! over a spatial domain $\Omega$.
   !
-  ! For this purpose, the routine evaluates the user-defined callback functions 
+  ! For this purpose, the routine evaluates the user-defined callback functions
   ! ffunction_TargetX and ffunction_TargetY. The collection must be initialised
   ! for postprocessing before calling his routine!
   !
@@ -227,7 +227,7 @@ contains
       call pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
       call pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
             
-      ! We use the summed trapezoidal rule.             
+      ! We use the summed trapezoidal rule.
       if ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) then
         Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
       else
@@ -313,8 +313,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -338,7 +338,7 @@ contains
     real(dp), dimension(:,:), allocatable :: p_Dval
     
     ! Get the parser object with the RHS expressions from the collection
-    p_rparser => collct_getvalue_pars (rcollection, 'SOLPARSER') 
+    p_rparser => collct_getvalue_pars (rcollection, 'SOLPARSER')
     
     ! Current time
     dtime = rcollection%DquickAccess(1)
@@ -486,7 +486,7 @@ contains
     ! routine.
     call collct_init(rcollection)
     call collct_setvalue_pars (rcollection, 'SOLPARSER', &
-        rsolParser, .true.) 
+        rsolParser, .true.)
           
     do isubstep = 0,rsolution%NEQtime-1
       ! Current point in time
@@ -541,7 +541,7 @@ contains
     derrorXi = sqrt(derrorXi)
     
     ! Clean up
-    call collct_deletevalue (rcollection, 'SOLPARSER') 
+    call collct_deletevalue (rcollection, 'SOLPARSER')
     call collct_done(rcollection)
     
     ! Release the parser

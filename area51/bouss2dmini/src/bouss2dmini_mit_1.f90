@@ -56,7 +56,7 @@ module bouss2dmini_mit_1
     ! An object specifying the discretisation
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
     
@@ -66,10 +66,10 @@ module bouss2dmini_mit_1
     ! A-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixA
 
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
     
     ! M1- / M2-matrix for that specific level.
@@ -78,7 +78,7 @@ module bouss2dmini_mit_1
     ! Laplace-Matrix of the secondary system for that specific level.
     type(t_matrixScalar) :: rmatrixN
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -133,10 +133,10 @@ contains
     type(t_vectorBlock) :: rrhs,rtmp,rdef
     
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolver,p_rpreconditioner,&
                                    p_rcoarseGridSolver,p_rsmoother
 
@@ -181,7 +181,7 @@ contains
     real(DP) :: dnlRes
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -194,7 +194,7 @@ contains
     ! A timer for time measuring
     type(t_timer) :: rtimer
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! We want to solve our Stokes problem on level...
     NLMIN = 3
@@ -254,7 +254,7 @@ contains
                                    Rlevels(i)%rtriangulation, rboundary)
     end do
 
-    ! rdiscretisation%RspatialDiscr is a list of scalar 
+    ! rdiscretisation%RspatialDiscr is a list of scalar
     ! discretisation structures for every component of the solution vector.
     ! We have a solution vector with three components:
     !  Component 1 = X-velocity
@@ -262,20 +262,20 @@ contains
     !  Component 3 = Pressure
     !  Component 4 = Temperature
     do i = NLMIN, NLMAX
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           EL_EM30, CUB_G3X3, Rlevels(i)%rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards.
       call spdiscr_duplicateDiscrSc (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
 
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
@@ -291,7 +291,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,&
-                                         Rlevels(i)%rmatrix)    
+                                         Rlevels(i)%rmatrix)
       
       ! Inform the matrix that we build a saddle-point problem.
       ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
@@ -492,9 +492,9 @@ contains
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -708,7 +708,7 @@ contains
     call stat_stopTimer(rtimer)
     call output_line('Total time for non-linear loop: ' // stat_sgetTime_byTimer(rtimer))
 
-    ! We can now start the postprocessing. 
+    ! We can now start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
         Rlevels(NLMAX)%rtriangulation,'gmv/u_mit_1.vtk')
@@ -780,7 +780,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = NLMAX, NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do

@@ -36,7 +36,7 @@ module adaptivecubature
   use elementpreprocessing
   use fsystem
   use genoutput
-  use perfconfig  
+  use perfconfig
   use triangulation
 
   implicit none
@@ -85,7 +85,7 @@ contains
   
   ! List of elements where the integration should be carried out.
   ! All elements must be of the same type!!! (i.e. all must be triangles,
-  ! quads, hexas or similar); it is not allowed to mix e.g. triangles and 
+  ! quads, hexas or similar); it is not allowed to mix e.g. triangles and
   ! quads in this list.
   integer, dimension(:), intent(in) :: Ielements
   
@@ -165,7 +165,7 @@ contains
   
   ! List of elements where the integration should be carried out.
   ! All elements must be of the same type!!! (i.e. all must be triangles,
-  ! quads, hexas or similar); it is not allowed to mix e.g. triangles and 
+  ! quads, hexas or similar); it is not allowed to mix e.g. triangles and
   ! quads in this list.
   integer, dimension(:), intent(in), target :: Ielements
   
@@ -264,12 +264,12 @@ contains
       ! on the reference elements anymore.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
-      ! Calculate the values in the cubature points.      
+      ! Calculate the values in the cubature points.
       call ffunctionRefSimple (IELmax-IELset+1,ncubp,Ielements(IELset:IELmax),&
           revalElementSet%p_DpointsReal,Dcoefficients(:,1:IELmax-IELset+1),rcollection,&
           revalElementSet%p_DpointsRef,revalElementSet%p_Djac,revalElementSet%p_Ddetj)
       
-      ! Sum up to the contribution of the integral.                                
+      ! Sum up to the contribution of the integral.
       do IEL = 1, IELmax-IELset+1
         
         ! Loop over all cubature points on the current element
@@ -286,7 +286,7 @@ contains
           
           dvalue = dvalue + OM * Dcoefficients(icubp,IEL)
           
-        end do ! ICUBP 
+        end do ! ICUBP
         
       end do ! iel
     

@@ -19,9 +19,9 @@
 !#      for this case CHI should be defined in the underlying callback file chemotaxis_callback.f90
 !#
 !# The equation is discretised in time by an implicit Euler Method, providing the
-!# following discrete equation:									
-!#												
-!#	
+!# following discrete equation:
+!#
+!#
 !#	!!!! imlicit Euler !!!!!
 !#
 !#	1/dt * ( u_{n+1}-u{n} ) = Laplace u_{n+1} - grad (CHI*u_{n+1} * grad c_{n+1})	/ multiplying with test func and dt, take int
@@ -33,7 +33,7 @@
 !#      (c_{n+1},phi) 		=  dt*( Laplace c_{n+1},phi ) - dt*( c_{n+1} +u_{n},phi ) + ( c_{n},phi )
 !#	__________________
 !#
-!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi ) 
+!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi )
 !#
 !#      (c_{n+1},phi) 		= - dt*( grad c_{n+1},grad phi ) - dt*( u_{n} + c_{n+1},phi ) + ( c_{n},phi )
 !#	__________________
@@ -41,15 +41,15 @@
 !#	[M + dt*L - dt*M_2] u_{n+1} 	= [ M ] u_{n}
 !#
 !#      [M + dt*L + dt*M] c_{n+1} 		= [ M ] c_{n} - dt* M u_n
-!#	
 !#
-!# The whole solution process is divided into serveral subroutines, using 
+!#
+!# The whole solution process is divided into serveral subroutines, using
 !# the BiCG-solver (defect correction ) for the linear (nonlinear) subproblems in every
 !# timestep
 !#
 !# The module bases on the standard heatconduction example and shows which
 !# modifications are necessary to create a chemotaxis solver from a heatconduction
-!# solver. Boundary conditions, matrices and vectors are not all reassembled in 
+!# solver. Boundary conditions, matrices and vectors are not all reassembled in
 !# every timestep, in contrast to the heatcond_method1.f90
 !# </purpose>
 !##############################################################################
@@ -81,7 +81,7 @@ module chemotaxis_pattern_FCT
   use matrixio
   use vectorio
   use collection
-  use paramlist    
+  use paramlist
   use linearalgebra
   use analyticprojection
 
@@ -122,7 +122,7 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file if desired 
+  ! 7.) Write solution to GMV file if desired
   ! 8.) Release all variables, finish
 !</description>
 
@@ -142,7 +142,7 @@ contains
     ! This contains also information about trial/test functions,...
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A trilinear , bilinear and linear form describing the analytic problem to solve		
+    ! A trilinear , bilinear and linear form describing the analytic problem to solve
     type(t_trilinearForm) :: rtriform
     type(t_bilinearForm) :: rform
     type(t_linearForm) :: rlinform
@@ -166,11 +166,11 @@ contains
     type(t_vectorBlock) :: rcellBlock,rvectorBlockchemo,rrhsBlock,rrhsBlockchemo,rtempBlock, rdefBlock
 
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC, rdiscreteBCchemo
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rsolverNode_cells,p_rpreconditioner_cells
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -187,7 +187,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -269,14 +269,14 @@ contains
     ! A data collection to specify the BCs lateron
     type(t_collection) :: rcollection
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     call parlst_init(rparams)
 
      call parlst_readfromfile(rparams, 'data/chemotaxis.dat')
 
     ! Getting some general params for the pb
-    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7) 
+    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
     call parlst_getvalue_int (rparams, 'GENERAL' , 'OUTPUT' , OUTPUT , 0)
     call parlst_getvalue_int (rparams, 'GENERAL' , 'ISTEP_GMV' , ISTEP_GMV , 1)
     call parlst_getvalue_int (rparams, 'GENERAL' , 'INITSOL' , INITSOL , 1)
@@ -333,7 +333,7 @@ contains
     call tria_readTriFile2D (rtriangulation, './pre/patternQUAD.tri', rboundary)
     
     ! Refine it.
-    call tria_quickRefine2LevelOrdering (NLMAX,rtriangulation,rboundary)		
+    call tria_quickRefine2LevelOrdering (NLMAX,rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
@@ -353,13 +353,13 @@ contains
                                    EL_E011,CUB_G2X2,rtriangulation, rboundary)
                                    
     ! Now as the discretisation is set up, we can start to generate
-    ! the structure of the system matrix 
+    ! the structure of the system matrix
     ! We create the matrices and vectors for the pb
                  
     ! Get some pointers  for the errorctrl
       call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
       call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
-      call lsyssc_getbase_double(rcold,p_cold) 
+      call lsyssc_getbase_double(rcold,p_cold)
       call lsyssc_getbase_double(ruold,p_uold)
                    
     call chemo_creatematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
@@ -439,7 +439,7 @@ contains
       
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
-      ! only have one level here), then call the initialisation 
+      ! only have one level here), then call the initialisation
       ! routine to attach all these matrices.
       ! Remark: Don't make a call like
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -521,8 +521,8 @@ contains
 
     ! to determine negativ solution values.
     quit =.false.
-    ! We will now start assembling the solutionvectors by first computing a new value of 
-    ! the chemoattractant vector, e.g. c_n --->c_{n+1}. Then we use this updated value for the 
+    ! We will now start assembling the solutionvectors by first computing a new value of
+    ! the chemoattractant vector, e.g. c_n --->c_{n+1}. Then we use this updated value for the
     ! attractant to compute the actual solution of our problem,e.g. the solution vector u_{n+1}
     ! ( u_n, c_{n+1} ---> u_{n+1} ). We will use in both cases am implicit Euler method.
     !
@@ -530,7 +530,7 @@ contains
     ! STEP 2 : compute u
 
 
-    if(steps /= 0) then 
+    if(steps /= 0) then
         ntimesteps = steps
     end if
 
@@ -550,7 +550,7 @@ contains
     call lalg_copyVectorDble (p_vectordata,p_uold)
     call lalg_copyVectorDble (p_chemodata,p_cold)
                    
-      ! STEP 1.1: Form the right hand side for c:  
+      ! STEP 1.1: Form the right hand side for c:
       ! It consists of M c_n +dt * ( u_{n} , phi )
         call chemo_initrhsC (rrhsBlockchemo , rchemoattract ,rrhschemo , rcell , rdiscretisation , rmassmatrix , dtstep, PHI )
 
@@ -591,33 +591,33 @@ contains
       ! STEP 7: Postprocessing
       !
       ! That's it, rcellBlock now contains our solution. We can now
-      ! start the postprocessing. 
+      ! start the postprocessing.
 
 !    if(OUTPUT.eq.1)then
 !      ! Start UCD export to GMV file:
 !    select case  (gmvfolder)
-! 
+!
 !        case (0)
 !        	call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
 !                        'gmvcpld/chemoattract.gmv.'//trim(sys_si0L(itimestep,5)))
 !        case default
 !                call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
 !                        'gmvcpld2/chemoattract.gmv.'//trim(sys_si0L(itimestep,5)))
-! 
+!
 !    end select
-! 
-!      	call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
+!
+!      	call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
 !      	call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-!      
+!
 !      	! Write the file to disc, that's it.
 !      	call ucd_write (rexport)
 !      	call ucd_release (rexport)
-! 
+!
 !    end if
                
     !     We  compute the norm of the difference between two successive timesteps. This will be used as a basic error control, coming up below...
     !     The same will be done for the celldensity function
-    cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)     
+    cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)
 !     print*,"cerror/dtstep = ", cerror/dtstep
                 
       ! Release the block matrix/vectors
@@ -638,8 +638,8 @@ contains
 
             ! STEP 2.1: Form the right hand side for c:  @@@@@!!!!M u_{old}!!!!!@@@@@
             ! It consists of M u_n
-!             call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.) 
-            !!!!!!!!!#########-->there should rest a instantiated rrhs for the MatVecMultiplication                            
+!             call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.)
+            !!!!!!!!!#########-->there should rest a instantiated rrhs for the MatVecMultiplication
             
             call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,rtemp)
             call lsyssc_copyMatrix(rmassmatrix, rtemp)
@@ -648,16 +648,16 @@ contains
             ! Now form the actual RHS by matrix vector multiplication!
             ! rmatrix * u_{old}
             ! The massmatrix has already been built outside the loop !!!
-            call lsyssc_scalarMatVec(rtemp,rcell,rrhscell,1.0_DP,0.0_DP)		!constructs the RHS 
+            call lsyssc_scalarMatVec(rtemp,rcell,rrhscell,1.0_DP,0.0_DP)		!constructs the RHS
 
 
 !             call collct_init (rcollection)
-!             call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.) 
+!             call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.)
 !             rlinform%itermCount = 1
 !             rlinform%Idescriptors(1) = DER_FUNC
 !             call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
 !                                         rlinform, .false., rrhscell, coeff_pattern_RHS_u, rcollection)
-! 
+!
 !             ! Release the collection structure
 !             call collct_done(rcollection)
 
@@ -670,7 +670,7 @@ contains
 !             rcollection%DquickAccess(2) = CHI
 !             rcollection%DquickAccess(3) = SCALE_C
 !             rcollection%DquickAccess(4) = SCALE_U
-!         
+!
 !             rlinform%itermCount = 1
 !             rlinform%Idescriptors(1) = DER_FUNC
 !             call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
@@ -693,7 +693,7 @@ contains
       ! STEP 2.7: Postprocessing
       !
       ! That's it, rcellBlock now contains our solution. We can now
-      ! start the postprocessing. 
+      ! start the postprocessing.
     if(OUTPUT .eq. 1) then
       ! Start UCD export to GMV file:
     select case (gmvfolder)
@@ -709,7 +709,7 @@ contains
 
       call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
       call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
-      call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
+      call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
       call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
       
       ! Write the file to disc, that's it.
@@ -736,7 +736,7 @@ contains
     
         call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
         call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
-        call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
+        call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
         call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
         
         ! Write the file to disc, that's it.
@@ -747,9 +747,9 @@ contains
     end if
       
            
-    ! We  compute the norm of the difference between two successive timesteps 
+    ! We  compute the norm of the difference between two successive timesteps
     ! (as mentioned above). This will be used as a basic error control, coming up below...
-    uerror = lalg_errorNormDble (p_uold,p_vectordata, CTRLNORM ) 
+    uerror = lalg_errorNormDble (p_uold,p_vectordata, CTRLNORM )
 !   print*,"uerror/dtstep",uerror/dtstep
 
 
@@ -776,7 +776,7 @@ contains
 !            ! Write the file to disc, that's it.
 !            call ucd_write (rexport)
 !            call ucd_release (rexport)
-!    
+!
 !            call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
 !                    'gmvcpld/chemoattractEND.gmv.'//trim(sys_si0L(itimestep,5)))
 !            call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
@@ -793,7 +793,7 @@ contains
 !            ! Write the file to disc, that's it.
 !            call ucd_write (rexport)
 !            call ucd_release (rexport)
-!    
+!
 !            call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
 !                    'gmvcpld2/chemoattractEND.gmv.'//trim(sys_si0L(itimestep,5)))
 !            call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
@@ -804,7 +804,7 @@ contains
 !
 !    end select
 !    else
-    ! If we compute a negative solution, we'll export the actual negativ 
+    ! If we compute a negative solution, we'll export the actual negativ
     ! solutions andexit the computations
    if ( checkneg .eq. 1) then
    checkneg_loop :  do i=1,rtriangulation%NVT
@@ -850,7 +850,7 @@ contains
 
             end  select
             quit = .true.
-         end if 
+         end if
     end do checkneg_loop
     end if
 !    end if
@@ -934,8 +934,8 @@ contains
     end if
 
 
-    ! Again if we end up in a non steady state or if we are computing certain steps, we print 
-    !out the steady state error as well as the 
+    ! Again if we end up in a non steady state or if we are computing certain steps, we print
+    !out the steady state error as well as the
     ! absolute error of the numerical solution:
     ! norm(sol_analytic - sol_numerical)
     ! Just printing out the params we use in our computational work
@@ -980,7 +980,7 @@ contains
     print*, "min time per iteration: ", time_min
     if(time_accum > 10800) then
         print*, "total time for iterations : ", time_accum/3600, " h"
-    else 
+    else
         print *, "total time for iterations :", time_accum/60, " mn"
     end if
     print*, "----------------------------"
@@ -1006,7 +1006,7 @@ contains
     print *,"min iteration needed :", iteration_defcorr_min
     if ( quit ) then
         print*, "average iterations needed :", iteration_defcorr_average / itimestep
-    else 
+    else
         print*, "average iterations needed :", iteration_defcorr_average / (itimestep-1)
     end if
                       
@@ -1068,7 +1068,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.
@@ -1094,7 +1094,7 @@ contains
     rform%Idescriptors(2,1) = DER_FUNC
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
     call bilf_buildMatrixScalar (rform,.true.,rmassmatrix)
 
     rform%itermCount = 2
@@ -1163,7 +1163,7 @@ contains
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcell,.true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rdef,.true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rrhschemo, .true.)
-    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.) 
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.)
 
     end subroutine
 
@@ -1180,7 +1180,7 @@ contains
     ! sol vectors
     type(t_vectorScalar) , intent (INOUT) :: rchemoattract, rcell
 
-    real(DP), dimension(:) , pointer , intent(INOUT):: p_vectordata 
+    real(DP), dimension(:) , pointer , intent(INOUT):: p_vectordata
     ! Underlying triangulation to derive vector-coords
     type(t_triangulation) , intent (IN) :: rtriangulation
 
@@ -1189,7 +1189,7 @@ contains
     integer , intent (IN) :: L2PROJ , INITSOL
 
     ! A local collection
-    type(t_collection) :: rcollection 
+    type(t_collection) :: rcollection
 
     ! Some pointers
     real(DP) , dimension(:,:) , pointer :: p_DvertexCoords
@@ -1198,7 +1198,7 @@ contains
     ! integer loop
     integer :: i
 
-    call lsyssc_getbase_double(rcell,p_vectordata) 
+    call lsyssc_getbase_double(rcell,p_vectordata)
     call lsyssc_getbase_double(rchemoattract,p_rchemoattract)
     call storage_getbase_double2D(rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
@@ -1287,7 +1287,7 @@ contains
 
     type(t_boundaryRegion) :: rboundaryRegion
 
-    call bcasm_initDiscreteBC(rdiscreteBC) 
+    call bcasm_initDiscreteBC(rdiscreteBC)
       !
       ! We 'know' already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
@@ -1308,7 +1308,7 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC's for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC's can be applied
       !   to matrices and vectors
@@ -1320,7 +1320,7 @@ contains
       ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
 !       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&		
+!                                       rboundaryRegion,rdiscreteBC,&
 !                                       getBoundaryValues_constC,rcollection)
                                									
       ! Edge 3 of boundary component 1.
@@ -1367,7 +1367,7 @@ contains
 
 
     call collct_init (rcollection)
-    call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.) 
+    call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.)
     rcollection%DquickAccess(1) = PHI
     ! To assemble the RHS , set up the corresponding linear  form (u*g(u),Phi_j):
     rlinform%itermCount = 1
@@ -1375,7 +1375,7 @@ contains
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
                                 rlinform, .true., rhschemo, coeff_hillenX_RHS_c, rcollection)
 
-    ! Since we approx. the 1st deriv. by the backward euler, there's still one component 
+    ! Since we approx. the 1st deriv. by the backward euler, there's still one component
     !missing in the RHS:
     ! rmassmatrix* c_{old}
     ! The corressponding massmatrix is already built ( just before the loop starts )
@@ -1400,7 +1400,7 @@ contains
     
 
     ! sol vectors
-    type(t_vectorScalar) ,  intent(INOUT) :: rcell , rchemoattract 
+    type(t_vectorScalar) ,  intent(INOUT) :: rcell , rchemoattract
     ! The solution block -vector
     type(t_vectorBlock) , intent(INOUT) :: rcellBlock
     ! Some matrices for computing the LHS
@@ -1413,7 +1413,7 @@ contains
     ! Some params (needed to derive the sys matrix)
     real(DP) , intent(IN) :: dtstep , D_1, CHI, ALPHA, r, GAMMA, N
     integer , intent(IN) :: maxiterationdef
-    real(DP) , intent(IN) ::defectTol  
+    real(DP) , intent(IN) ::defectTol
     integer , intent(INOUT) :: iteration_u_max, iteration_u_min,&
                                          iteration_defcorr_max, iteration_defcorr_min
     real(DP), intent(INOUT) ::  iteration_u_average, iteration_defcorr_average
@@ -1445,7 +1445,7 @@ contains
     real(DP), dimension(:), allocatable ::dedge, aedge_mass
     integer, dimension(:,:), allocatable ::kedge
     ! a local average iterationcounter for  iteration_u_average
-    real(DP) :: u_average_local 
+    real(DP) :: u_average_local
 
 
     u_average_local = 0.0_DP
@@ -1477,7 +1477,7 @@ contains
             call collct_setvalue_vecsca ( rcollection , 'cbvector1' , rchemoattract , .true.)
             call collct_setvalue_vecsca ( rcollection , 'cbvector2' , rcell , .true.)
             rcollection%DquickAccess(1) = dtstep
-            rcollection%DquickAccess(2) = CHI 
+            rcollection%DquickAccess(2) = CHI
             rcollection%DquickAccess(3) = GAMMA
             rcollection%DquickAccess(4) = ALPHA
             rform%itermCount = 2
@@ -1495,8 +1495,8 @@ contains
             if(k.eq.1) then
                 allocate ( kedge ( 2, rK%NA ) )
                 allocate ( dedge ( rK%NA ) )
-                allocate ( aedge_mass ( rK%NA ) ) 
-            endif     
+                allocate ( aedge_mass ( rK%NA ) )
+            endif
 
             !**********************
             ! Adding some artificial diffusion to obtain positivity + smooth sol.
@@ -1510,7 +1510,7 @@ contains
 
 !             ! Adding the logistic growth that Hillen and Painter introduced in their paper, (M8)
 !             rcollection%DquickAccess(1) = dtstep
-!             rcollection%DquickAccess(2) = r 
+!             rcollection%DquickAccess(2) = r
 !             rform%itermCount = 1
 !             rform%Idescriptors(1,1) = DER_FUNC
 !             rform%Idescriptors(2,1) = DER_FUNC
@@ -1531,7 +1531,7 @@ contains
 
             !call chemo_artdiff( rmassmatrix, rK, dedge, kedge, nedge, aedge_mass )
 
-            ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the 
+            ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the
             ! lumped massmatrix to the existing matrix
             call lsyssc_matrixLinearComb(rmatrix, 1.0_DP,rK , -dtstep, rtempLinComb, .true. , .true. , .true.)
             call lsyssc_copyMatrix(rtempLinComb, rmatrix)
@@ -1559,7 +1559,7 @@ contains
 
                 
             ! STEP 2.3: Create block vectors and boundary conditions.
-            !      
+            !
             ! The linear solver only works for block matrices/vectors - but above,
             ! we created scalar ones. So the next step is to make a 1x1 block
             ! system from the matrices/vectors above which the linear solver
@@ -1605,7 +1605,7 @@ contains
 
             !print *, " residuum : " , defect
 
-            ! Here is the time to CHECK SOME RESIDUAL CONVERGENCE to exit the iteration of the 
+            ! Here is the time to CHECK SOME RESIDUAL CONVERGENCE to exit the iteration of the
             ! nonlinear pb
             ! But since we 're testing just constant CHI there's nether the need to iterate nor to check
             ! residual issues.
@@ -1642,7 +1642,7 @@ contains
         
             ! Attach the system matrix to the solver.
             ! First create an array with the matrix data (on all levels, but we
-            ! only have one level here), then call the initialisation 
+            ! only have one level here), then call the initialisation
             ! routine to attach all these matrices.
             ! Remark: Don't make a call like
             !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -1700,7 +1700,7 @@ contains
             ! test block for the linearity
             if(k.eq.3) then
                 print *,' problem is nonlinear!!! '
-!                 stop    
+!                 stop
             end if
             
     end do def_correction
@@ -1723,7 +1723,7 @@ contains
 
     deallocate ( kedge )
     deallocate ( dedge )
-    deallocate ( aedge_mass ) 
+    deallocate ( aedge_mass )
 
     call lsyssc_releaseMatrix (rK)
     call lsyssc_releaseMatrix (rlumpedmass)
@@ -1745,7 +1745,7 @@ contains
     real(DP), dimension (:), intent(OUT) :: dedge
     integer, dimension(:,:), intent(OUT) :: kedge
     integer, intent(INOUT) :: nedge
-    real(DP), dimension (:), intent(OUT) :: aedge_mass 
+    real(DP), dimension (:), intent(OUT) :: aedge_mass
 
     ! some local variables
     integer :: i , j , k, nvt ,counter, iedge
@@ -1758,7 +1758,7 @@ contains
 
     ! Get the structure (rmassmatrix and rmatrix have the same structure)
     call lsyssc_getbase_double (rmassmatrix,p_Da_mass)
-    call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
     call lsyssc_getbase_double (rmatrix,p_Da)
@@ -1791,10 +1791,10 @@ contains
         dedge ( iedge ) = d_ij
         kedge ( 1, iedge ) = i
         kedge ( 2, iedge ) = j
-        aedge_mass( iedge ) =  p_Da_mass( ij_loc )       
+        aedge_mass( iedge ) =  p_Da_mass( ij_loc )
         
         END DO
-    END DO 
+    END DO
 
     nedge = iedge
     
@@ -1853,10 +1853,10 @@ contains
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rvector_temp,.true.)
         call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,rtemp)
         !construction
-        call lsyssc_matrixLinearComb(rK, 1.0_DP, rlaplace, -1.0_DP, rtemp, .true. , .true. , .true.)        
-        call lsyssc_scalarMatVec(rtemp, rvector, rvector_temp, 1.0_DP, 0.0_DP)        
+        call lsyssc_matrixLinearComb(rK, 1.0_DP, rlaplace, -1.0_DP, rtemp, .true. , .true. , .true.)
+        call lsyssc_scalarMatVec(rtemp, rvector, rvector_temp, 1.0_DP, 0.0_DP)
         call lsyssc_invertedDiagMatVec ( rlumpedmatrix, rvector_temp, 1.0_DP, ru_dot)
-        !get ru_dot data  
+        !get ru_dot data
         call lsyssc_getbase_double( ru_dot, p_udot )
   
         !Constructing fluxes
@@ -1877,7 +1877,7 @@ contains
             j = kedge ( 2, iedge )
 
             ! Antidiffusive fluxes to be limeted
-            du = p_vectorentries ( j ) - p_vectorentries ( i ) 
+            du = p_vectorentries ( j ) - p_vectorentries ( i )
             f_ij = flux ( iedge )
 
             ! Prelimiting of antidiffusive fluxes
@@ -1886,20 +1886,20 @@ contains
             end if
 
             ! Positive/negative edge contributions
-            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij ) 
+            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij )
             pp ( j ) = pp ( j ) + MAX ( 0.0_DP , -f_ij )
-            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij ) 
+            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij )
             pm ( j ) = pm ( j ) + MIN ( 0.0_DP , -f_ij )
 
             ! Maximum / minimum solution increments
-            qp ( i ) = MAX ( qp ( i ) , du ) 
+            qp ( i ) = MAX ( qp ( i ) , du )
             qp ( j ) = MAX ( qp ( j ) , -du )
-            qm ( i ) = MIN ( qm ( i ) , du ) 
+            qm ( i ) = MIN ( qm ( i ) , du )
             qm ( j ) = MIN ( qm ( j ) , -du )
 
         END DO
 
-        ! Computation of nodal correction factors     
+        ! Computation of nodal correction factors
         WHERE ( pp > eps )  rp = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
         WHERE ( pm < -eps ) rm = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
              
@@ -1907,7 +1907,7 @@ contains
         DO iedge = 1 , nedge
 
             ! Node numbers for the current edge
-            i = kedge ( 1 , iedge )  
+            i = kedge ( 1 , iedge )
             j = kedge ( 2 , iedge )
 
             ! Antidiffusive flux to be limeted
@@ -1922,7 +1922,7 @@ contains
             END IF
 
             ! Insertion into the global vector
-            f ( i ) = f ( i ) + f_ij 
+            f ( i ) = f ( i ) + f_ij
             f ( j ) = f ( j ) - f_ij
 
         END DO
@@ -1984,10 +1984,10 @@ contains
 !    ! This subroutine should construct the arrays which are used in the CES matrix format
 !    ! the arrays should be deallocated,  as soon this routine is called
 !    subroutine chemo_makeCES(rdiscretisation, rmatrix, kedge , aedge , nedge)
-!    
+!
 !        ! The matrix which should be considered
 !        type(t_matrixScalar), intent(IN) :: rmatrix
-!    
+!
 !        type(t_Blockdiscretisation), intent(IN) :: rdiscretisation
 !
 !        ! Arrays which will contain the CES structure
@@ -1995,7 +1995,7 @@ contains
 !        integer, dimension(:,:), intent(INOUT) :: kedge
 !
 !        integer, intent( OUT ) :: nedge
-!    
+!
 !        ! local variables
 !        type(t_matrixScalar) :: rmatrixT
 !        integer :: i, j, ji_loc, ij_loc, nvt, na, bias, iedge
@@ -2006,7 +2006,7 @@ contains
 !
 !        ! Get the transposed matrix
 !        call lsyssc_transposeMatrix ( rmatrix, rmatrixT )
-!        
+!
 !        ! Get the current matrix structure
 !        call lsyssc_getbase_Kld (rmatrix,p_Kld)
 !        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
@@ -2025,11 +2025,11 @@ contains
 !
 !        ! Calculating the maximal number of nonzero off-diagonal entries , e.g. nedge
 !        nedge = (na-nvt) / 2
-!    
+!
 !        ! Allocate some mem for the CES-Arrays
 !!         allocate ( kedge( 2,nedge ) )
 !!         allocate ( aedge( 2,nedge ) )
-!    
+!
 !        iedge = 1
 !
 !
@@ -2043,7 +2043,7 @@ contains
 !            ! upper triangular entries which are non-zero
 !            DO ij_loc = p_Kdiagonal( i ) +1 , p_Kld ( i+1 ) -1
 !
-!                ! loop through the entry-array of rmatrixT. we 're concerned about the 
+!                ! loop through the entry-array of rmatrixT. we 're concerned about the
 !                ! lower triangular entries which are non-zero
 !
 !                DO ji_loc = p_KdiagonalT ( i ) +1 +bias , p_KldT ( i+1 ) -1

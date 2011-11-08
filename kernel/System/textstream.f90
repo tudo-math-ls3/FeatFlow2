@@ -172,7 +172,7 @@ contains
 
 !</subroutine>
 
-    ! Allocate memory for the buffer The other variables are set 
+    ! Allocate memory for the buffer The other variables are set
     ! by default initialisation.
     allocate(rtextstream%p_Sbuf(TSTREAM_BUFSIZE))
     
@@ -377,7 +377,7 @@ contains
     
     ! Read text until we find a CHAR(11) EOL character or the end of the stream.
     ilength = 0
-    do 
+    do
 
       ! Cancel if we are at the end of the stream.
       if (rtextstream%ipositionRead .ge. rtextstream%ipositionWrite) exit
@@ -558,7 +558,7 @@ contains
     ! Read all lines from the file
     ios = 0
     ilinenum = 0
-    do while (ios .eq. 0) 
+    do while (ios .eq. 0)
       
       ! Read a line from the file into sbuf
       call preadlinefromfile (iunit, sdata, isbuflen, ios)
@@ -621,7 +621,7 @@ contains
         ! Proceed to next character
         cycle
         
-        ! End of file. 
+        ! End of file.
 10      ios = -1
         exit
         
@@ -646,7 +646,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A text stream object which data should be written out. 
+  ! A text stream object which data should be written out.
   type(t_textstream), intent(inout) :: rtextstream
 !</inputoutput>
 
@@ -676,7 +676,7 @@ contains
     ioldpos2 = rtextstream%icurrentLine
     rtextstream%ipositionRead = 1
     rtextstream%icurrentLine = 1
-    do 
+    do
       if (tstream_eof(rtextstream)) exit
       call tstream_readLine(rtextstream,sdata)
       write (iunit,'(A)') trim(sdata)

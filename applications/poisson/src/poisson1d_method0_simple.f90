@@ -94,10 +94,10 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -110,7 +110,7 @@ contains
     type(t_filterChain), dimension(1), target :: RfilterChain
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -123,7 +123,7 @@ contains
     ! The number of sub-intervals for the discretisation
     integer :: nintervals = 16
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     ! At first, create the basic triangulation.
     ! Our domain is [0, 1], divided into nintervals sub-intervals.
     call tria_createRawTria1D(rtriangulation, 0.0_DP, 1.0_DP, nintervals)
@@ -178,8 +178,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -276,7 +276,7 @@ contains
 
     ! Attach the above filter chain to the solver, so that the solver
     ! automatically filters the vector during the solution process!
-    !    
+    !
     ! We now have the option to create a preconditioner for the solver.
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Preconditioner Remark:
@@ -325,7 +325,7 @@ contains
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -350,7 +350,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -405,7 +405,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
   end subroutine

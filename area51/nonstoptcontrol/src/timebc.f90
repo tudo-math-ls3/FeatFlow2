@@ -105,7 +105,7 @@ contains
     if (present(rrhs)) then
     
       ! Incorporate the primal RHS into the given RHS.
-      call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector2,.true.)    
+      call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rvector2,.true.)
       call sptivec_getTimestepData (rrhs, 1, rvector2)
 
       call stmat_applyOperator (rmatrix, 1, 1, 1, rvector, rvector2)

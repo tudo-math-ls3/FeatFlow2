@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module encapsules an analytic solution. The solution may be given
 !# as stationary FE solution with an arbitrary underlying mesh, as a
-!# nonstationary solution or as analytical expression. 
+!# nonstationary solution or as analytical expression.
 !#
 !# The following routines can be found here:
 !#
@@ -27,13 +27,13 @@
 !#     -> Reads a solution from a file, configures the function to be stationary
 !#
 !# 5.) ansol_configNonstationaryFile
-!#     -> Reads a solution from a sequence of files, configures the function 
+!#     -> Reads a solution from a sequence of files, configures the function
 !#        to be nonstationary
 !#
 !# 6.) ansol_configNonstatPrecalc
 !#     -> Configures a nonstationary function based on a precalculated solution
 !#
-!# 7.) ansol_prepareEval = 
+!# 7.) ansol_prepareEval =
 !#       ansol_prepareEvalCollection / ansol_prepareEvalDirect
 !#     -> Prepares the evaluation of an solution using a collection or
 !#     -> Prepares the direct evaluation of an solution
@@ -84,10 +84,10 @@ module analyticsolution
   use analyticprojection
   
   use spatialdiscretisation
-  use timediscretisation  
+  use timediscretisation
   use timeevaluation
 
-  use meshhierarchy  
+  use meshhierarchy
   use fespacehierarchybase
   use fespacehierarchy
 
@@ -189,7 +189,7 @@ module analyticsolution
     integer :: ncomponents = 0
     
     ! Analytical expression that defines the solution for the all coordinates
-    ! in case ctype = ANSOL_TP_MBNONSTATIONARY/ANSOL_TP_MBNONSTATIONARYFILE. 
+    ! in case ctype = ANSOL_TP_MBNONSTATIONARY/ANSOL_TP_MBNONSTATIONARYFILE.
     character(SYS_STRLEN), dimension(:), pointer :: p_Sexpressions => null()
     
     ! Parser object for the expressions.
@@ -482,8 +482,8 @@ contains
 
 !<description>
   ! Initialises a solution structure to be used with a mesh.
-  ! rboundary/rtriangulation describes the underlying discretisation on refinement 
-  ! level ilevel (mesh + domain). ilevelDiscr defines the refinement level of the 
+  ! rboundary/rtriangulation describes the underlying discretisation on refinement
+  ! level ilevel (mesh + domain). ilevelDiscr defines the refinement level of the
   ! mesh in rsolution; if necessary, the mesh in rdiscr is automatically refined.
   ! Only applicable for solutions given as analytic expressions.
 !</description>
@@ -558,7 +558,7 @@ contains
 !</description>
 
 !<input>
-  ! Refinement level used for the solution. 
+  ! Refinement level used for the solution.
   ! The underlying mesh is automatically refined using regular refinement
   ! up to this level. Level 1 identrifies the coarse mesh without refinement.
   integer, intent(in) :: ilevel
@@ -968,7 +968,7 @@ contains
 
 !<description>
   ! Adds a solution structure at a definite time as variable to a collection.
-  ! The routine evaluates the solution at time dtime and adds this snapshot 
+  ! The routine evaluates the solution at time dtime and adds this snapshot
   ! to the collection rcollection. (For stationary solutions, dtime is ignored.)
 !</description>
 
@@ -994,10 +994,10 @@ contains
 
     ! Put the type and id to the collection.
     call collct_setvalue_int (rcollection, trim(sname)//"_CTYPE", &
-        rsolution%ctype, .true.) 
+        rsolution%ctype, .true.)
 
     call collct_setvalue_int (rcollection, trim(sname)//"_ID", &
-        rsolution%iid, .true.) 
+        rsolution%iid, .true.)
 
     ! What to do depends on the type.
     select case (rsolution%ctype)
@@ -1013,11 +1013,11 @@ contains
 
       ! Add a reference to the parser to the collection
       call collct_setvalue_pars (rcollection, trim(sname)//"_PARS", &
-          rsolution%rparserExpression, .true.) 
+          rsolution%rparserExpression, .true.)
           
       ! Add the current time to the collection
       call collct_setvalue_real (rcollection, trim(sname)//"_TIME", &
-          dtime, .true.) 
+          dtime, .true.)
           
       ! Prepare the evaluation of the sub-functions.
       call ansol_prepareEvalCollection (rsolution%p_rsubsolution1,rcollection,trim(sname)//"1",dtime)
@@ -1027,17 +1027,17 @@ contains
     
       ! Add a reference to the parser to the collection
       call collct_setvalue_pars (rcollection, trim(sname)//"_PARS", &
-          rsolution%rparserExpression, .true.) 
+          rsolution%rparserExpression, .true.)
           
       ! Add the current time to the collection
       call collct_setvalue_real (rcollection, trim(sname)//"_TIME", &
-          dtime, .true.) 
+          dtime, .true.)
     
     case (ANSOL_TP_MBSTATIONARYFILE,ANSOL_TP_MBSTATIONARY)
     
       ! Add a reference to the stationary solution vector to the collection.
       call collct_setvalue_vec (rcollection, trim(sname)//"_VEC", &
-          rsolution%rstationary, .true.) 
+          rsolution%rstationary, .true.)
     
     case (ANSOL_TP_MBNONSTATIONARYFILE,ANSOL_TP_MBNONSTATIONARY)
 
@@ -1049,9 +1049,9 @@ contains
       call tmevl_evaluate(rsolution%rnonstationary,dtime,p_rvector)
 
       ! Add a reference to the stationary solution vector to the collection.
-      call collct_setvalue_vec (rcollection, trim(sname)//"_VEC", p_rvector, .true.) 
+      call collct_setvalue_vec (rcollection, trim(sname)//"_VEC", p_rvector, .true.)
 
-    case default      
+    case default
       call output_line('Case not implemented!',&
           OU_CLASS_ERROR, OU_MODE_STD,'ansol_doneEvalCollection')
       call sys_halt()
@@ -1087,9 +1087,9 @@ contains
     
     ! Type of the solution?
     ctype = collct_getvalue_int (rcollection, trim(sname)//"_CTYPE")
-    call collct_deletevalue (rcollection, trim(sname)//"_CTYPE") 
+    call collct_deletevalue (rcollection, trim(sname)//"_CTYPE")
 
-    call collct_deletevalue (rcollection, trim(sname)//"_ID") 
+    call collct_deletevalue (rcollection, trim(sname)//"_ID")
 
     ! What to do depends on the type.
     select case (ctype)
@@ -1122,7 +1122,7 @@ contains
     case (ANSOL_TP_MBSTATIONARYFILE,ANSOL_TP_MBSTATIONARY)
     
       ! Delete the reference to the stationary solution.
-      call collct_deletevalue (rcollection, trim(sname)//"_VEC") 
+      call collct_deletevalue (rcollection, trim(sname)//"_VEC")
     
     case (ANSOL_TP_MBNONSTATIONARYFILE,ANSOL_TP_MBNONSTATIONARY)
 
@@ -1132,9 +1132,9 @@ contains
       deallocate(p_rvector)
 
       ! Delete the reference to the stationary solution.
-      call collct_deletevalue (rcollection, trim(sname)//"_VEC") 
+      call collct_deletevalue (rcollection, trim(sname)//"_VEC")
 
-    case default      
+    case default
       call output_line('Case not implemented!',&
           OU_CLASS_ERROR, OU_MODE_STD,'ansol_doneEvalCollection')
       call sys_halt()
@@ -1150,7 +1150,7 @@ contains
       npoints,nelements,Dpoints,Ielements,ierror,iid)
 
 !<description>
-  ! Evaluate component idim of a solution in a set of points on a set of 
+  ! Evaluate component idim of a solution in a set of points on a set of
   ! elements. The solution is given as part of a collection structure
   ! rcollection. sname identifies the name of the solution.
   ! For nonstationary functions, the solution is given as a snapshot
@@ -1301,7 +1301,7 @@ contains
           end do
         end do
         
-      case default      
+      case default
         call output_line('Case not implemented!',&
             OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
         call sys_halt()
@@ -1494,11 +1494,11 @@ contains
       npoints,nelements,Dpoints,Ielements,ierror,iid)
 
 !<description>
-  ! Evaluate component idim of a solution in a set of points on a set of 
+  ! Evaluate component idim of a solution in a set of points on a set of
   ! elements. The solution is given as part of a collection structure
   ! rcollection. sname identifies the name of the solution.
   ! For nonstationary functions, the solution is given as a snapshot
-  ! of a point in time. 
+  ! of a point in time.
   !
   ! Before calling this routine, the evaluation must have been prepared
   ! with ansol_prepareEvalDirect!
@@ -1630,7 +1630,7 @@ contains
           end do
         end do
 
-      case default      
+      case default
         call output_line('Case not implemented!',&
             OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
         call sys_halt()
@@ -1692,7 +1692,7 @@ contains
           end do
         end do
 
-      case default      
+      case default
         call output_line('Case not implemented!',&
             OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateDirect')
         call sys_halt()
@@ -1805,8 +1805,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional :: rcollection
   
 !</input>
@@ -1826,7 +1826,7 @@ contains
         rcollection%IquickAccess(1),Dvalues,&
         npointsPerElement,nelements,Dpoints,rdomainIntSubset%p_Ielements)
 
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1886,8 +1886,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional :: rcollection
   
 !</input>

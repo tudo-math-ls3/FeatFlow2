@@ -5,7 +5,7 @@
 *
 * The structure itselves is realized as integer/double precision
 * arrays:
-*   STIMIN = array [1..SZTIMG] of integer 
+*   STIMIN = array [1..SZTIMG] of integer
 *          = TTimings
 * where the different entries can be accessed with the offsets defined
 * here, e.g.
@@ -14,10 +14,10 @@
 * The content of the structure is as follows:
 *
 * TTimings = record
-*  
+*
 *   // The first part of the structure coincides with the timing
 *   // result part of the MG solver structure:
-*  
+*
 *   TTMG   : Total time for MG solver
 *   TTPROL : Time for prolongation in MG
 *   TTREST : Time for restriction in MG
@@ -34,7 +34,7 @@
 *   TTLSOL : Total time for solving of linear equations
 *            (as subproblems of the nonlinear equation),
 *            independent of the linear solver
-*   TTUPW  : Total time for setting up nonlinearity (Upwind/Streamline 
+*   TTUPW  : Total time for setting up nonlinearity (Upwind/Streamline
 *            diff.) and inclusion of stabilisation terms
 *   TTADF  : Total time for setting up linear part of nonlinear system
 *            matrices
@@ -47,7 +47,7 @@
 * end
 ************************************************************************
 
-      INTEGER OTTMG,OTTPROL,OTTREST,OTTDEF,OTTSMTH,OTTCGSL,OTTBC,OTTCGC 
+      INTEGER OTTMG,OTTPROL,OTTREST,OTTDEF,OTTSMTH,OTTCGSL,OTTBC,OTTCGC
 
       INTEGER OTTNL,OTTUPW ,OTTADF ,OTTBDR ,OTTCOR ,OTTPOST,OTTLC
       INTEGER OTTLSOL
@@ -64,7 +64,7 @@
       PARAMETER (OTTNL   =  9)
       PARAMETER (OTTLSOL = 10)
       PARAMETER (OTTUPW  = 11)
-      PARAMETER (OTTADF  = 12) 
+      PARAMETER (OTTADF  = 12)
       PARAMETER (OTTBDR  = 13)
       PARAMETER (OTTCOR  = 14)
       PARAMETER (OTTPOST = 15)

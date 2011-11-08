@@ -7,7 +7,7 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# This module is based on poisson2d_method0_simple, but using a multi-grid 
+!# This module is based on poisson2d_method0_simple, but using a multi-grid
 !# solver.
 !# </purpose>
 !##############################################################################
@@ -56,11 +56,11 @@ module tridef2d_method1_mg
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -118,7 +118,7 @@ contains
     ! A variable that is used to specify a region on the boundary.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -141,7 +141,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -154,17 +154,17 @@ contains
     ! Some temporary variables
     integer :: i
     
-    type(t_griddefWork) :: rgriddefWork    
+    type(t_griddefWork) :: rgriddefWork
     
     ! dummy
-    integer :: idummy,iloop,idupFlag,iiter   
+    integer :: idummy,iloop,idupFlag,iiter
 
     ! grid deform structure
     type(t_griddefInfo) :: rgriddefInfo
 
     type(t_timer) :: rtimerGridDeformation
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = 3
@@ -173,7 +173,7 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -197,7 +197,7 @@ contains
     ! Now refine the grid for the fine levels.
     do i = NLMIN, NLMAX
 
-      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'                                      
+      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
       ! Start UCD export to GMV file:
       ! write out the mesh before refinement
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
@@ -208,7 +208,7 @@ contains
       ! griddeformation setup
       call griddef_deformationInit(rgriddefInfo,Rlevels(i)%rtriangulation,&
                                    NLMIN,&
-                                   i,rboundary,2)                 
+                                   i,rboundary,2)
 
       do iloop=NLMIN,i
         call griddef_buildHGrid(rgriddefInfo,Rlevels(iloop)%rtriangulation,iloop)
@@ -245,7 +245,7 @@ contains
       ! Release Deformation structures
       call griddef_DeformationDone(rgriddefInfo,rgriddefWork)
 
-      if(i .lt. NLMAX)then                              
+      if(i .lt. NLMAX)then
         ! Refine the grid that was just deformed to get the next level mesh
         call tria_refine2LevelOrdering(Rlevels(i)%rtriangulation,&
             Rlevels(i+1)%rtriangulation,rboundary)
@@ -254,7 +254,7 @@ contains
         call tria_initStandardMeshFromRaw(Rlevels(i+1)%rtriangulation,&
           rboundary)
 
-      end if            
+      end if
 
 
       ! postsmoothing
@@ -298,7 +298,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (&
-          Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
+          Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -325,8 +325,8 @@ contains
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
       rform%BconstantCoeff = .true.
-      rform%Dcoefficients(1)  = 1.0 
-      rform%Dcoefficients(2)  = 1.0 
+      rform%Dcoefficients(1)  = 1.0
+      rform%Dcoefficients(2)  = 1.0
 
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_Laplace for the coefficients.
@@ -344,7 +344,7 @@ contains
     ! to create it by using our matrix as template:
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
 
-    ! The vector structure is ready but the entries are missing. 
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -365,13 +365,13 @@ contains
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.
       call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Now to the edge 2 of boundary component 1 the domain. 
+      ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -499,7 +499,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That's it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -555,7 +555,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = NLMAX, NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do
@@ -569,12 +569,12 @@ contains
  
 !******************************************************************************
   
-  !<subroutine>  
+  !<subroutine>
     subroutine tridef2d_monitorfct(DvertexCoords,Dentries)
   
   
     !<description>
-      ! In this function we build the nodewise area distribution out 
+      ! In this function we build the nodewise area distribution out
       ! of an elementwise distribution
     !</description>
 
@@ -591,7 +591,7 @@ contains
      real(DP) :: Dist,t,dt,dmin
      iMethod = 1
       
-     ipoints = ubound(Dentries,1) 
+     ipoints = ubound(Dentries,1)
       
       
      select case(iMethod)
@@ -629,7 +629,7 @@ contains
          Dpoints(2,i1) = 0.5_dp + 0.2_dp * sin(t)
          t = t + dt
         end do
-        ! loop over all points on the elipse      
+        ! loop over all points on the elipse
         do ive=1,ipoints
           dmin = 10000.0_dp
           do i1=1,10000
@@ -638,7 +638,7 @@ contains
           end do
           Dentries(ive) = dmin
         end do
-       !Case 4 
+       !Case 4
        case(4)
          do ive=1,ipoints
            Dist = sqrt((0.5_dp - DvertexCoords(1,ive))**2 + (0.2_dp - DvertexCoords(2,ive))**2)
@@ -658,10 +658,10 @@ contains
   subroutine gd_MultigridDeformation(rgriddefInfo, rgriddefWork, &
                                         h_Dcontrib,&
                                         bstartNew, blevelHasChanged, bterminate, &
-                                        bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,& 
+                                        bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,&
                                         def_monitorfct)
   !<description>
-    ! This subroutine is the main routine for the grid deformation process, as all 
+    ! This subroutine is the main routine for the grid deformation process, as all
     ! necessary steps are included here. For performing grid deformation, it is sufficient
     ! to define a monitor function and call this routine or to have an error distribution
     ! at hand and call this subroutine.

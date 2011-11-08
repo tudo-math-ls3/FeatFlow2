@@ -91,7 +91,7 @@ module postprocessing
   
   private
   
-  public :: t_optcPostprocessing  
+  public :: t_optcPostprocessing
   public :: optcpp_initpostprocessing
   public :: optcpp_donepostprocessing
   public :: optcpp_postprocessSingleSol
@@ -107,10 +107,10 @@ module postprocessing
 !
 !  ! The space-time vector is created as copy of a single vector.
 !  integer, parameter :: CCSTV_STATIONARY = 1
-!  
+!
 !  ! The space-time vector is created by reading in files.
 !  integer, parameter :: CCSTV_READFILES = 2
-!  
+!
 !  ! The space-time vector is created as forward simulation starting from an
 !  ! initial solution.
 !  integer, parameter :: CCSTV_FORWARDSIMULATION = 3
@@ -381,7 +381,7 @@ contains
       end select
     end subroutine
 
-    ! Linear interpolation formula  
+    ! Linear interpolation formula
   
     real(DP) function lincoeff1 (t1,t2,t)
       real(DP), intent(in) :: t1,t2,t
@@ -603,7 +603,7 @@ contains
   type(t_vectorBlock), intent(inout) :: rrhs
   
   ! Solution vector of the previous timestep. May coincide with
-  ! rvector if there is none; then, bfirstFile=.true. 
+  ! rvector if there is none; then, bfirstFile=.true.
   type(t_vectorBlock), intent(inout) :: rvectorPrev
 
   ! The RHS of the previous timestep.
@@ -889,13 +889,13 @@ contains
         ! If we have a simple Q1~ discretisation, calculate the streamfunction.
   !      IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
   !          ccomplexity .EQ. SPDISC_UNIFORM) THEN
-  !          
+  !
   !        celement = rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
   !                  RelementDistr(1)%itrialElement
-  !                  
+  !
   !        IF (elem_getPrimaryElement(celement) .EQ. EL_Q1T) THEN
-  !        
-  !          ! Create a temporary vector 
+  !
+  !          ! Create a temporary vector
   !          CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
   !              rtempVector,.TRUE.)
   !
@@ -910,18 +910,18 @@ contains
   !          CALL lsyssc_scalarMatVec (&
   !              rBmatrix, rvector%RvectorBlock(2), &
   !              rtempVector, 1.0_DP, 1.0_DP)
-  !          
+  !
   !          CALL output_lbrk()
   !          CALL output_line ('Divergence = ' &
   !              //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
-  !              
+  !
   !          CALL lsyssc_releaseVector (rtempVector)
-  !        
+  !
   !        END IF
-  !        
-  !      END IF    
+  !
+  !      END IF
 
-        ! Initialise boundary condition structures    
+        ! Initialise boundary condition structures
         call bcasm_initDiscreteBC(rdiscreteBC)
         call bcasm_initDiscreteFBC(rdiscreteFBC)
 
@@ -944,7 +944,7 @@ contains
         ! Filter the solution vector to implement discrete BC's.
         call vecfil_discreteBCsol (rprjVector,rdiscreteBC)
 
-        ! Filter the solution vector to implement discrete BC's for fictitious 
+        ! Filter the solution vector to implement discrete BC's for fictitious
         ! boundary components.
         call vecfil_discreteFBCsol (rprjVector,rdiscreteFBC)
         
@@ -1088,7 +1088,7 @@ contains
             
           end if
 
-          ! Include the RHS.        
+          ! Include the RHS.
           call spdp_projectSolution (rrhs,rprjVector)
           call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
           call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
@@ -1234,25 +1234,25 @@ contains
             rvector,rpostproc%ranalyticRefFunction,&
             DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
         call output_lbrk()
-        call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))   
-        call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))   
-        call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))   
-        call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))   
+        call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))
+        call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))
+        call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))
+        call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))
         
-        call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))   
-        call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))   
-        call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))   
-        call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))   
+        call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))
+        call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))
+        call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))
+        call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))
         
-        call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))   
-        call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))   
-        call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))   
-        call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))   
+        call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))
+        call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))
+        call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))
+        call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))
 
-        call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))   
-        call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))   
-        call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))   
-        call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
+        call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))
+        call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))
+        call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))
+        call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))
       end if
 
       ! Should we calculate the functional?
@@ -1372,7 +1372,7 @@ contains
       ispacetimeFormulation,rvectorControl)
   
 !<description>
-  ! Uses the dual solution in rvectorSol to calculate the discrete 
+  ! Uses the dual solution in rvectorSol to calculate the discrete
   ! control into rvectorControl.
 !</description>
 
@@ -1447,7 +1447,7 @@ contains
                 rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                 rconstrSpace%p_rvectorumax%RvectorBlock(2))
             
-            ! Done.    
+            ! Done.
             call stlin_doneSpaceConstraints (rconstrSpace)
           end select
         end if
@@ -1481,7 +1481,7 @@ contains
                 rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                 rconstrSpace%p_rvectorumax%RvectorBlock(2))
             
-            ! Done.    
+            ! Done.
             call stlin_doneSpaceConstraints (rconstrSpace)
           end select
         end if
@@ -1507,13 +1507,13 @@ contains
 !  ! A space-time discretisation structure defining the discretisation of
 !  ! rvector.
 !  type(t_spatialDiscretisation), intent(in), target :: rspaceDiscr
-!  
+!
 !  ! Underlying time discretisation
 !  type(t_timeDiscretisation), intent(in),target :: rtimeDiscr
 !
 !!</input>
 !
-!!<output>  
+!!<output>
 !  type(t_optcPostprocessing), intent(out) :: rpostprocessing
 !!</output>
 !
@@ -1530,7 +1530,7 @@ contains
 !    !
 !    ! For simplicity, we use only the discretisation structure of the X-velocity
 !    ! to derive everything.
-!    
+!
 !    p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 !
 !    ! Piecewise constant space:
@@ -1544,17 +1544,17 @@ contains
 !                 rspaceDiscr%RspatialDiscr(1), &
 !                 EL_Q1, CUB_G2X2, &
 !                 rpostprocessing%rdiscrLinear)
-!  
+!
 !    ! Piecewise quadratic space:
 !    call spdiscr_deriveSimpleDiscrSc (&
 !                 rspaceDiscr%RspatialDiscr(1), &
 !                 EL_Q2, CUB_G3X3, &
 !                 rpostprocessing%rdiscrQuadratic)
-!  
+!
 !  end subroutine
 !
 !  !****************************************************************************
-!  
+!
 !!<subroutine>
 !
 !  subroutine cc_clearpostprocessing (rpostprocessing)
@@ -1567,7 +1567,7 @@ contains
 !  ! in the postprocessing structure.
 !!</description>
 !
-!!<inputoutput>  
+!!<inputoutput>
 !  type(t_optcPostprocessing), intent(INOUT) :: rpostprocessing
 !!</inputoutput>
 !
@@ -1585,7 +1585,7 @@ contains
 !  end subroutine
 !
 !  !****************************************************************************
-!  
+!
 !!<subroutine>
 !
 !  subroutine cc_donepostprocessing (rpostprocessing)
@@ -1595,7 +1595,7 @@ contains
 !  ! is released.
 !!</description>
 !
-!!<inputoutput>  
+!!<inputoutput>
 !  type(t_optcPostprocessing), intent(INOUT) :: rpostprocessing
 !!</inputoutput>
 !
@@ -1608,7 +1608,7 @@ contains
 !    call spdiscr_releaseDiscr(rpostprocessing%rdiscrQuadratic)
 !    call spdiscr_releaseDiscr(rpostprocessing%rdiscrLinear)
 !    call spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
-!  
+!
 !  end subroutine
 !
 !  ! ***************************************************************************
@@ -1616,9 +1616,9 @@ contains
 !!<subroutine>
 !
 !  subroutine cc_printControlFunctionalStat (rproblem,dtime,rvector)
-!  
+!
 !!<description>
-!  ! Calculates and prints the value of the optimal control functional J(y,u) 
+!  ! Calculates and prints the value of the optimal control functional J(y,u)
 !  ! in the stationary case.
 !!</description>
 !
@@ -1630,13 +1630,13 @@ contains
 !!<input>
 !  ! The solution vector which is to be evaluated by the postprocessing routines.
 !  type(t_vectorBlock), intent(IN) :: rvector
-!  
+!
 !  ! Current simulation time.
 !  real(dp), intent(in) :: dtime
 !!</input>
 !
 !!</subroutine>
-!    
+!
 !    ! local variables
 !    real(DP), dimension(3) :: Derror
 !    real(DP) :: dalphaC
@@ -1655,14 +1655,14 @@ contains
 !    call output_line ('||y-z||_L2: '//trim(sys_sdEL(Derror(1),2)))
 !    call output_line ('||u||_L2  : '//trim(sys_sdEL(Derror(2),2)))
 !    call output_line ('J(y,u)    : '//trim(sys_sdEL(Derror(3),2)))
-!    
+!
 !    ! Release assembly-stuff from the collection
 !    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-!    
+!
 !  end subroutine
 !
 !  !****************************************************************************
-!  
+!
 !!<subroutine>
 !
 !  subroutine cc_createVector (rvector,cvectorType,rinitialSol)
@@ -1686,10 +1686,10 @@ contains
 !  type(t_vectorBlock), intent(in), optional :: rinitialSol
 !!</input>
 !
-!!<inputoutput>  
+!!<inputoutput>
 !  ! Space-time vector to be created.
 !  type(t_spacetimevector), intent(inout) :: rvector
-!  
+!
 !!</inputoutput>
 !
 !!</subroutine>
@@ -1702,10 +1702,10 @@ contains
 !    case (CCSTV_ZERO)
 !      ! Initialise by zero.
 !      call sptivec_clearVector (rvector)
-!      
+!
 !    case (CCSTV_STATIONARY)
 !      ! Copy the initial solution to all timesteps.
-!      
+!
 !    end select
 !
 !  end subroutine
@@ -1725,7 +1725,7 @@ contains
 !  !  rvector%rvectorBlock(1) = X-velocity,
 !  !  rvector%rvectorBlock(2) = Y-velocity,
 !  !  rvector%rvectorBlock(3) = pressure,
-!  ! and that X- and Y-velocity is discretised with the same 
+!  ! and that X- and Y-velocity is discretised with the same
 !  ! finite element.
 !  ! rregion specifies a boundary region where to calculate
 !  ! the force integral. Dforces(1:NDIM2D) receives the forces in the
@@ -1737,17 +1737,17 @@ contains
 !!<input>
 !  ! The FE solution vector.
 !  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
-!  
+!
 !  ! Boundary region where to calculate the boundary forces.
 !  ! Can be created e.g. by boundary_createRegion.
 !  TYPE(t_boundaryRegion), INTENT(OUT) :: rregion
-!  
+!
 !  ! Type identifier that specifies the formulation of the Navier Stokes
 !  ! equation that should be used for performing the integration.
 !  ! ... = gradient formulation,
 !  ! ... = deformation formulation
 !  INTEGER, INTENT(IN) :: cformulation
-!  
+!
 !  ! OPTIONAL: Array with cubature formula identifiers when integrating
 !  ! the velocity. If specified, there must be a cubature formula identifier
 !  ! for each of the element distributions specified in the discretisation
@@ -1775,14 +1775,14 @@ contains
 !
 !  ! Array to tell the element which derivatives to calculate.
 !  LOGICAL, DIMENSION(EL_MAXNDER) :: BderU, BderP
-!  
+!
 !  ! Cubature point coordinates on the reference element.
 !  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: DxiU, DxiP
 !
 !  ! For every cubature point on the reference element,
 !  ! the corresponding cubature weight
 !  REAL(DP), DIMENSION(CUB_MAXCUBP) :: DomegaU, DomegaP
-!  
+!
 !  ! number of cubature points on the reference element
 !  INTEGER :: ncubpU, ncubpP
 !
@@ -1791,10 +1791,10 @@ contains
 !
 !  ! An allocateable array accepting the DOF's of a set of elements.
 !  integer, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrialU, IdofsTrialP
-!  
+!
 !  ! Allocateable arrays for the values of the basis functions.
 !  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTrialU,DbasTrialP
-!  
+!
 !  ! Number of entries in the vector - for quicker access
 !  INTEGER(I32) :: neqU, neqP
 !
@@ -1804,17 +1804,17 @@ contains
 !
 !  ! Pointer to KVERT of the triangulation
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-!  
+!
 !  ! Pointer to DCORVG of the triangulation
 !  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-!  
+!
 !  ! Current element distribution
 !  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,
 !  ! except if there are less elements in the discretisation.
 !  INTEGER :: nelementsPerBlock
-!  
+!
 !
 !  BderU = .FALSE.
 !  BderP = .FALSE.
@@ -1822,7 +1822,7 @@ contains
 !  ! Get the vector data
 !  neqU = rvector%RvectorBlock(1)%NEQ
 !  neqP = rvector%RvectorBlock(3)%NEQ
-!  
+!
 !  IF (rvector%cdataType .NE. ST_DOUBLE) THEN
 !    PRINT *,'ppns2D_fbdforces: Unsupported vector precision.'
 !    STOP
@@ -1839,7 +1839,7 @@ contains
 !    PRINT *,'ppns2D_fbdforces: Discretisation too complex!'
 !    STOP
 !  END IF
-!  
+!
 !  ! Get pointers to the subvectors from the block vector
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
@@ -1854,9 +1854,9 @@ contains
 !
 !
 !  !END DO ! icurrentElementDistr
-!  
+!
 !  Dforces = 0.0_DP
-!  
+!
 !  END SUBROUTINE
 !
 !
@@ -1873,7 +1873,7 @@ contains
 !  !  rvector%rvectorBlock(1) = X-velocity,
 !  !  rvector%rvectorBlock(2) = Y-velocity,
 !  !  rvector%rvectorBlock(3) = pressure,
-!  ! and that X- and Y-velocity is discretised with the same 
+!  ! and that X- and Y-velocity is discretised with the same
 !  ! finite element.
 !  ! rregion specifies a boundary region where to calculate
 !  ! the force integral. Dforces(1:NDIM2D) receives the forces in the
@@ -1885,17 +1885,17 @@ contains
 !!<input>
 !  ! The FE solution vector.
 !  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
-!  
+!
 !  ! Boundary region where to calculate the boundary forces.
 !  ! Can be created e.g. by boundary_createRegion.
 !  TYPE(t_boundaryRegion), INTENT(OUT) :: rregion
-!  
+!
 !  ! Type identifier that specifies the formulation of the Navier Stokes
 !  ! equation that should be used for performing the integration.
 !  ! ... = gradient formulation,
 !  ! ... = deformation formulation
 !  INTEGER, INTENT(IN) :: cformulation
-!  
+!
 !  ! 1D Cubature formula identifier to use for the line integration.
 !  ! One of the CUB_xxxx_1D constants in the cubature.f90.
 !  INTEGER, DIMENSION(:), INTENT(IN) :: CcubU
@@ -1911,21 +1911,21 @@ contains
 !
 !  ! Spatial discretisation structure of velocity and pressure
 !  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrU, p_rdiscrP
-!  
+!
 !  ! Element distribution of velocity and pressure
 !  TYPE(t_elementDistribution), POINTER :: p_elemDistrU,p_elemDistrP
 !
 !
 !  ! Array to tell the element which derivatives to calculate.
 !  LOGICAL, DIMENSION(EL_MAXNDER) :: BderU, BderP
-!  
+!
 !  ! Cubature point coordinates on the reference element.
 !  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi1D, DXi2D
 !
 !  ! For every cubature point on the reference element,
 !  ! the corresponding cubature weight
 !  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
-!  
+!
 !  ! number of cubature points on the reference element
 !  INTEGER :: ncubp
 !
@@ -1934,10 +1934,10 @@ contains
 !
 !  ! An allocateable array accepting the DOF's of a set of elements.
 !  integer, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrialU, IdofsTrialP
-!  
+!
 !  ! Allocateable arrays for the values of the basis functions.
 !  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTrialU,DbasTrialP
-!  
+!
 !  ! Number of entries in the vector - for quicker access
 !  INTEGER(I32) :: neqU, neqP
 !
@@ -1947,22 +1947,22 @@ contains
 !
 !  ! Pointer to KVERT of the triangulation
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-!  
+!
 !  ! Pointer to DCORVG of the triangulation
 !  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-!  
+!
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,
 !  ! except if there are less elements in the discretisation.
 !  INTEGER :: nelementsPerBlock
-!  
+!
 !  BderU = .FALSE.
 !  BderP = .FALSE.
 !
 !  ! Get the vector data
 !  neqU = rvector%RvectorBlock(1)%NEQ
 !  neqP = rvector%RvectorBlock(3)%NEQ
-!  
+!
 !  IF (rvector%cdataType .NE. ST_DOUBLE) THEN
 !    PRINT *,'ppns2D_bdforces: Unsupported vector precision.'
 !    STOP
@@ -1979,12 +1979,12 @@ contains
 !    PRINT *,'ppns2D_bdforces: Discretisation too complex!'
 !    STOP
 !  END IF
-!  
+!
 !  ! Get pointers to the subvectors from the block vector
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataP)
-!  
+!
 !  ! Get pointers to the spatial discretisation structures of the
 !  ! velocity and pressure
 !  p_rdiscrU => rvector%RvectorBlock(1)%p_spatialDiscretisation
@@ -2004,17 +2004,17 @@ contains
 !    ! Get the element distribution structure of that FE-space comination
 !    p_relemDistrU => p_rdiscrU%RelementDistr(RelementDistr)
 !    p_relemDistrP => p_rdiscrP%RelementDistr(RelementDistr)
-!    
+!
 !    ! By that we know
 !    ! - what's the element
 !    ! - which transformation from the reference element to use
-!    
-!    
-!    
-!    
+!
+!
+!
+!
 !
 !  END DO ! icurrentElementDistr
-!  
+!
 !  END SUBROUTINE
 
 end module

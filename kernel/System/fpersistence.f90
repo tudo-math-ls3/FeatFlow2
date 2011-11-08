@@ -43,10 +43,10 @@
 !#
 !# The ObjectItems are stored in the object table which is organised as
 !# a binary tree using the UUIDs as unique keys. Typically, objects are
-!# retrieved by their UUID so that an efficient search algorithm is 
+!# retrieved by their UUID so that an efficient search algorithm is
 !# essential. The complete object table is exported to disk by using
 !# Fortran`s direct-access facility to read and write files record-based.
-!# A second file is created - the so-called data table. It stores all 
+!# A second file is created - the so-called data table. It stores all
 !# meta-information about the data such as data type, dimension and size.
 !# In addition, it provides the UUID which is associated with the actual
 !# data file (a standard binary file). For atomic data such as a single
@@ -131,7 +131,7 @@ module fpersistence
   
   implicit none
   
-  private 
+  private
 
 !<constants>
 
@@ -323,7 +323,7 @@ module fpersistence
     ! Filename of the persistence database
     character(LEN=SYS_NAMELEN) :: sfilename = 'feat2pdb'
     
-    ! Database specification flag. This is a bitfield coming from an OR 
+    ! Database specification flag. This is a bitfield coming from an OR
     ! combination of different FPDB_MSPEC_xxxx constants and specifies
     ! various details of the database.
     integer :: idatabaseSpec = FPDB_MSPEC_STANDARD
@@ -355,7 +355,7 @@ module fpersistence
   
   type t_fpdbObjectItem
       
-    ! Universally unique identifier of the item 
+    ! Universally unique identifier of the item
     type(t_uuid) :: ruuid
 
     ! Type descriptor of the item
@@ -559,7 +559,7 @@ contains
 
 !<output>
     ! Database structure to initialise.
-    type(t_fpdb), intent(out) :: rfpdb    
+    type(t_fpdb), intent(out) :: rfpdb
 !</output>
 !</subroutine>
     
@@ -614,7 +614,7 @@ contains
     open(unit=rfpdb%iunitDataTable,&
          file=trim(rfpdb%spath)//trim(rfpdb%sfilename)//'_data.tbl',&
          status=trim(cstatus), access='direct', recl=irecordLength,&
-         form='unformatted', action=trim(caction), err=2)   
+         form='unformatted', action=trim(caction), err=2)
         
     ! That is it
     return
@@ -776,7 +776,7 @@ contains
     
     ! Phase1: Import persistence database starting at record number 1
     irecordNumber = 1
-    import: do 
+    import: do
 
       ! Pseudo read to determine end-of-file
       read(rfpdb%iunitObjectTable, rec=irecordNumber, err=1)
@@ -813,7 +813,7 @@ contains
       type(t_fpdbObjectItem), intent(out) :: rfpdbObjectItem
 
       ! Record number of the ObjectItem
-      integer, intent(in) :: irecordNumber      
+      integer, intent(in) :: irecordNumber
       
       ! local variables
       character(LEN=36) :: suuid
@@ -966,7 +966,7 @@ contains
                                    iunit, bformatted=.false.)
         read(iunit, err=2) rfpdbDataItem%Ilbounds,&
                            rfpdbDataItem%Iubounds
-        close(iunit)        
+        close(iunit)
 
         ! ----------------------------------------------------------------------
         ! Below, we deal with 2D data:
@@ -1050,7 +1050,7 @@ contains
 
     !**************************************************************
     ! Preorder traversal of the object table.
-    ! Each DataItem which contains an ObjectItem is 
+    ! Each DataItem which contains an ObjectItem is
     ! relinked to the corresponding ObjectItem
     
     recursive subroutine relinkObjectItem(rfpdbObjectItem)
@@ -1580,7 +1580,7 @@ contains
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
-        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1   
+        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
        
 
       case (FPDB_DOUBLE2D)
@@ -1855,7 +1855,7 @@ contains
         write(rfpdb%iunitDataTable, rec=rfpdb%irecnumDataTable, err=1)&
               rfpdbDataItem%ctype, rfpdbDataItem%sname,&
               uuid_conv2String(rfpdbDataItem%ruuid)
-        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1   
+        rfpdb%irecnumDataTable = rfpdb%irecnumDataTable+1
        
 
       case (FPDB_DOUBLE3D)
@@ -2135,7 +2135,7 @@ contains
 
 !<input>
     ! Database structure
-    type(t_fpdb), intent(in) :: rfpdb    
+    type(t_fpdb), intent(in) :: rfpdb
 !</input>
 !</subroutine>
 
@@ -2443,7 +2443,7 @@ contains
     ! ObjectItem is actually stored in the tree. It only
     ! performs the standard remove algorithm, that is, the
     ! largest child (right-most leaf) in the left subtree is
-    ! determined and used to replace the removed ObjectItem.    
+    ! determined and used to replace the removed ObjectItem.
 !</description>
 
 !<inputoutput>
@@ -2469,7 +2469,7 @@ contains
 !!$        p_rfpdbObjectItemTmp => p_rfpdbObjectItemTmp%p_rfpdbObjectRight
 !!$      end do
 !!$
-!!$      ! Update ObjectItem by the 
+!!$      ! Update ObjectItem by the
 !!$      rfpdbObjectItem%ruuid             = p_rfpdbObjectItem%ruuid
 !!$      rfpdbObjectItem%stype             = p_rfpdbObjectItem%stype
 !!$      rfpdbObjectItem%sname             = p_rfpdbObjectItem%sname
@@ -2480,8 +2480,8 @@ contains
 !!$
 !!$    ! Check if the ObjectItem has a father node
 !!$    if (.not.associated(rfpdbObjectItem%p_rfpdbObjectFather)) then
-!!$      
-!!$      
+!!$
+!!$
 !!$
 !!$    else
 !!$
@@ -2688,7 +2688,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the single float array. If not given, 
+    ! OPTIONAL: the single float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(SP), dimension(:), intent(inout), target, optional :: Fsingle1D
 !</output>
@@ -2755,7 +2755,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the double float array. If not given, 
+    ! OPTIONAL: the double float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(DP), dimension(:), intent(inout), target, optional :: Ddouble1D
 !</output>
@@ -2822,7 +2822,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the quad float array. If not given, 
+    ! OPTIONAL: the quad float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(QP), dimension(:), intent(inout), target, optional :: Qquad1D
 !</output>
@@ -2890,7 +2890,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer, dimension(:), intent(inout), target, optional :: Iinteger1D
 !</output>
@@ -2957,7 +2957,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I8), dimension(:), intent(inout), target, optional :: Iint8_1D
 !</output>
@@ -3025,7 +3025,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I16), dimension(:), intent(inout), target, optional :: Iint16_1D
 !</output>
@@ -3093,7 +3093,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I32), dimension(:), intent(inout), target, optional :: Iint32_1D
 !</output>
@@ -3161,7 +3161,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I64), dimension(:), intent(inout), target, optional :: Iint64_1D
 !</output>
@@ -3228,7 +3228,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the logical array. If not given, 
+    ! OPTIONAL: the logical array. If not given,
     ! the pointer of the DataItem is used instead.
     logical, dimension(:), intent(inout), target, optional :: Blogical1D
 !</output>
@@ -3295,7 +3295,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the character array. If not given, 
+    ! OPTIONAL: the character array. If not given,
     ! the pointer of the DataItem is used instead.
     character, dimension(:), intent(inout), target, optional :: Schar1D
 !</output>
@@ -3362,7 +3362,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the single float array. If not given, 
+    ! OPTIONAL: the single float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(SP), dimension(:,:), intent(inout), target, optional :: Fsingle2D
 !</output>
@@ -3414,7 +3414,7 @@ contains
 1   call output_line ('Unable to import data from file!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'fpdb_getdata_single2d')
     call sys_halt()
-  end subroutine fpdb_getdata_single2d  
+  end subroutine fpdb_getdata_single2d
 
 !************************************************************************
 
@@ -3432,7 +3432,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the double float array. If not given, 
+    ! OPTIONAL: the double float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(DP), dimension(:,:), intent(inout), target, optional :: Ddouble2D
 !</output>
@@ -3502,7 +3502,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the quad float array. If not given, 
+    ! OPTIONAL: the quad float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(QP), dimension(:,:), intent(inout), target, optional :: Qquad2D
 !</output>
@@ -3572,7 +3572,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer, dimension(:,:), intent(inout), target, optional :: Iinteger2D
 !</output>
@@ -3642,7 +3642,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I8), dimension(:,:), intent(inout), target, optional :: Iint8_2D
 !</output>
@@ -3713,7 +3713,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I16), dimension(:,:), intent(inout), target, optional :: Iint16_2D
 !</output>
@@ -3784,7 +3784,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I32), dimension(:,:), intent(inout), target, optional :: Iint32_2D
 !</output>
@@ -3855,7 +3855,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I64), dimension(:,:), intent(inout), target, optional :: Iint64_2D
 !</output>
@@ -3926,7 +3926,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the logical array. If not given, 
+    ! OPTIONAL: the logical array. If not given,
     ! the pointer of the DataItem is used instead.
     logical, dimension(:,:), intent(inout), target, optional :: Blogical2D
 !</output>
@@ -3996,7 +3996,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the character array. If not given, 
+    ! OPTIONAL: the character array. If not given,
     ! the pointer of the DataItem is used instead.
     character, dimension(:,:), intent(inout), target, optional :: Schar2D
 !</output>
@@ -4066,7 +4066,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the single float array. If not given, 
+    ! OPTIONAL: the single float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(SP), dimension(:,:,:), intent(inout), target, optional :: Fsingle3D
 !</output>
@@ -4139,7 +4139,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the double float array. If not given, 
+    ! OPTIONAL: the double float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(DP), dimension(:,:,:), intent(inout), target, optional :: Ddouble3D
 !</output>
@@ -4212,7 +4212,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the quad float array. If not given, 
+    ! OPTIONAL: the quad float array. If not given,
     ! the pointer of the DataItem is used instead.
     real(QP), dimension(:,:,:), intent(inout), target, optional :: Qquad3D
 !</output>
@@ -4285,7 +4285,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer, dimension(:,:,:), intent(inout), target, optional :: Iinteger3D
 !</output>
@@ -4358,7 +4358,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I8), dimension(:,:,:), intent(inout), target, optional :: Iint8_3D
 !</output>
@@ -4432,7 +4432,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I16), dimension(:,:,:), intent(inout), target, optional :: Iint16_3D
 !</output>
@@ -4506,7 +4506,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I32), dimension(:,:,:), intent(inout), target, optional :: Iint32_3D
 !</output>
@@ -4580,7 +4580,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the integer array. If not given, 
+    ! OPTIONAL: the integer array. If not given,
     ! the pointer of the DataItem is used instead.
     integer(I64), dimension(:,:,:), intent(inout), target, optional :: Iint64_3D
 !</output>
@@ -4654,7 +4654,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the logical array. If not given, 
+    ! OPTIONAL: the logical array. If not given,
     ! the pointer of the DataItem is used instead.
     logical, dimension(:,:,:), intent(inout), target, optional :: Blogical3D
 !</output>
@@ -4727,7 +4727,7 @@ contains
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL: the character array. If not given, 
+    ! OPTIONAL: the character array. If not given,
     ! the pointer of the DataItem is used instead.
     character, dimension(:,:,:), intent(inout), target, optional :: Schar3D
 !</output>

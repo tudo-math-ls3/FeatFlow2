@@ -62,7 +62,7 @@ module spacetimediscretisation
     !INTEGER :: niterations         = 0
 
     ! Absolute start time of the simulation
-    !REAL(DP) :: dtimeInit          = 0.0_DP     
+    !REAL(DP) :: dtimeInit          = 0.0_DP
     
     ! Maximum time of the simulation
     !REAL(DP) :: dtimeMax           = 1.0_DP
@@ -91,7 +91,7 @@ module spacetimediscretisation
     ! A value of 0.0 disables the terminal condition.
     real(DP) :: dalphaC = 1.0_DP
     
-    ! Regularisation parameter for the terminal condition 
+    ! Regularisation parameter for the terminal condition
     ! $\gamma/2*||y(T)-z(T)||$.
     ! A value of 0.0 disables the terminal condition.
     real(DP) :: dgammaC = 0.0_DP
@@ -116,7 +116,7 @@ contains
       rspaceTimeDiscr)
   
 !<description>
-  ! Initialises a space time discretisation structure according to the 
+  ! Initialises a space time discretisation structure according to the
   ! parameters in the DAT file and the problem structure.
 !</description>
 
@@ -152,7 +152,7 @@ contains
     
     ! Initialise the time discretisation
     select case (rproblem%rtimedependence%ctimeStepScheme)
-    case (0) 
+    case (0)
       call tdiscr_initOneStepTheta(rspaceTimeDiscr%rtimeDiscr,&
           rproblem%rtimedependence%dtimeInit,&
           rproblem%rtimedependence%dtimeMax,&

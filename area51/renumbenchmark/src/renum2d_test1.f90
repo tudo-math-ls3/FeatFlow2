@@ -49,11 +49,11 @@ module renum2d_test1
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
     
     ! Resorting strategy
@@ -162,7 +162,7 @@ contains
       
       call boundary_read_prm(rboundary, sprmfile)
           
-      ! Ok, let's start. 
+      ! Ok, let's start.
       
       NLMIN = 1
       
@@ -257,7 +257,7 @@ contains
               ! Initialise the block matrix with default values based on
               ! the discretisation.
               call lsysbl_createMatBlockByDiscr (&
-                  Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
+                  Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
 
               ! Now as the discretisation is set up, we can start to generate
               ! the structure of the system matrix which is to solve.
@@ -284,8 +284,8 @@ contains
               ! In the standard case, we have constant coefficients:
               rform%ballCoeffConstant = .true.
               rform%BconstantCoeff = .true.
-              rform%Dcoefficients(1)  = 1.0 
-              rform%Dcoefficients(2)  = 1.0 
+              rform%Dcoefficients(1)  = 1.0
+              rform%Dcoefficients(2)  = 1.0
 
               ! Now we can build the matrix entries.
               ! We specify the callback function coeff_Laplace for the coefficients.
@@ -303,7 +303,7 @@ contains
             ! to create it by using our matrix as template:
             call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
 
-            ! The vector structure is ready but the entries are missing. 
+            ! The vector structure is ready but the entries are missing.
             ! So the next thing is to calculate the content of that vector.
             !
             ! At first set up the corresponding linear form (f,Phi_j):
@@ -324,13 +324,13 @@ contains
               ! Initialise the discrete BC structure
               call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-              ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+              ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.
               call boundary_createRegion(rboundary,1,1,rboundaryRegion)
               call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                                 getBoundaryValues_2D)
                                         
-              ! Now to the edge 2 of boundary component 1 the domain. 
+              ! Now to the edge 2 of boundary component 1 the domain.
               call boundary_createRegion(rboundary,1,2,rboundaryRegion)
               call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -494,7 +494,7 @@ contains
             ! MFLOPs:
             if (rtimerSolver%delapsedReal .eq. 0.0_DP) then
               dmflops = 0.0
-            else          
+            else
               dmflops = dmflops / (rtimerSolver%delapsedReal * 1000000.0_DP)
             end if
             
@@ -526,7 +526,7 @@ contains
               ', Time=',rtimerSolver%delapsedReal,&
               ', MFLOPS= ',dmflops
             
-            ! Release the triangulation. 
+            ! Release the triangulation.
             do i = NLMAX, NLMIN, -1
               if ((NLMAX .eq. 11) .and. (isortStrategy .eq. 4)) then
                 call tria_infoStatistics (Rlevels(i)%rtriangulation,i .eq. NLMAX,i)

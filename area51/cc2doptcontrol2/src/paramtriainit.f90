@@ -160,7 +160,7 @@ contains
                               'iRHS',i1,0)
     rproblem%irhs = i1
 
-    ! If the RHS is given as expression, create a parser object for the 
+    ! If the RHS is given as expression, create a parser object for the
     ! expression.
     if (rproblem%irhs .eq. -1) then
       
@@ -256,7 +256,7 @@ contains
   ! local variables
   integer :: i,imeshType,ncellsX
   
-    ! Variable for a filename:  
+    ! Variable for a filename:
     character(LEN=60) :: sPRMFile, sTRIFile
 
     ! Get the .prm and the .tri file from the parameter list.

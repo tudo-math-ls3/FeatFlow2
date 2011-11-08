@@ -38,12 +38,12 @@
     ! DIMENSION(#dimensions,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)            :: Dpoints
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional       :: rcollection
     
     ! Optional: Coordinates of the evaluation points in the reference
-    ! coordinate system. 
+    ! coordinate system.
     ! If this information is not available, this parameter is omitted.
     ! DIMENSION(#dimensions,npointsPerElement,nelements)
     real(DP), dimension(:,:,:),intent(in), optional   :: DpointsRef

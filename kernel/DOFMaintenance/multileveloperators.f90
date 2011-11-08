@@ -105,7 +105,7 @@ module multileveloperators
     ! column identifiers of a matrix
     integer, dimension(:), pointer :: p_Icol
     
-    ! A pointer to a 1D memory block of integers - receives 
+    ! A pointer to a 1D memory block of integers - receives
     ! indices of next entries in the list of each line in the matrix
     integer, dimension(:), pointer :: p_Iindx
   end type
@@ -203,8 +203,8 @@ contains
   ! constants.
   integer, intent(in) :: iformat
 
-  ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
-  ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
+  ! OPTIONAL: An initial guess about how much memory the matrix needs. If set
+  ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix
   ! entries) is assumed.
   integer, intent(in), optional :: imemGuess
   
@@ -252,7 +252,7 @@ contains
     end if
     
     ! Which matrix structure do we have to create?
-    select case (iformat) 
+    select case (iformat)
     
     case (LSYSSC_MATRIX9)
     
@@ -352,7 +352,7 @@ contains
     end if
 
     ! Which matrix structure do we have?
-    select case (rmatrixScalar%cmatrixFormat) 
+    select case (rmatrixScalar%cmatrixFormat)
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlMass9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,rperfconfig)
@@ -363,7 +363,7 @@ contains
       call lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
           
-      ! Convert the matrix 
+      ! Convert the matrix
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
       
       ! Create the matrix in structure 9
@@ -472,7 +472,7 @@ contains
     end if
 
     ! Which matrix structure do we have?
-    select case (rmatrixScalar%cmatrixFormat) 
+    select case (rmatrixScalar%cmatrixFormat)
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlProl9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
@@ -484,7 +484,7 @@ contains
       call lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
           
-      ! Convert the matrix 
+      ! Convert the matrix
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
       
       ! Create the matrix in structure 9
@@ -593,7 +593,7 @@ contains
     end if
 
     ! Which matrix structure do we have?
-    select case (rmatrixScalar%cmatrixFormat) 
+    select case (rmatrixScalar%cmatrixFormat)
     case (LSYSSC_MATRIX9)
       call mlop_build2LvlInterp9_conf (rdiscretisationCoarse,&
                       rdiscretisationFine,bclear,rmatrixScalar,&
@@ -605,7 +605,7 @@ contains
       call lsyssc_duplicateMatrix (rmatrixScalar,rmatrixBackup,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
           
-      ! Convert the matrix 
+      ! Convert the matrix
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
       
       ! Create the matrix in structure 9
@@ -639,10 +639,10 @@ contains
                                              rmatrixScalar,imemGuess,rperfconfig)
   
 !<description>
-  ! This routine creates according to a given discretisation the matrix 
+  ! This routine creates according to a given discretisation the matrix
   ! structure of a structure-9 matrix. The discretisation is assumed to be
   ! conformal, i.e. the DOF`s of different FE spaces in the trial space
-  ! fit together. The function space for trial and test functions 
+  ! fit together. The function space for trial and test functions
   ! may be different.
 !</description>
 
@@ -679,7 +679,7 @@ contains
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
 
-  ! An allocateable list of handles for memory blocks. Size is dynamically 
+  ! An allocateable list of handles for memory blocks. Size is dynamically
   ! increased if there are too many columns in the matrix.
   integer, dimension(:), pointer :: p_Ihcol, p_Ihindx, p_IhTmp
   integer, dimension(:), pointer :: p_Isize, p_ISizeTmp
@@ -804,10 +804,10 @@ contains
     ! temporary matrix structure.
     ! We make an initial guess of iblkSize*iblkSize*NEQ elements in the matrix,
     ! if imemguess is not given.
-    if (imemguess .ne. 0) then 
+    if (imemguess .ne. 0) then
       ! at least one element per line!
-      iallocated = max(NEQ,imemguess) 
-    else  
+      iallocated = max(NEQ,imemguess)
+    else
       iallocated = max(10000,iblkSize*iblkSize*NEQ)
     end if
     iblocks = 1
@@ -840,9 +840,9 @@ contains
     ! Iindx points for every entry in the matrix to the position
     ! inside of Icol of the next entry in the line.
     !
-    ! At the beginning, we no entries in the matrix. 
+    ! At the beginning, we no entries in the matrix.
     ! We initialise the "head" of this collection of linked
-    ! lists with 0 to indicate this. 
+    ! lists with 0 to indicate this.
     ! Iindx(IEQ) is set to 0 to indicate that there is no following
     ! element in each line, i.e. we only have diagonal elements.
     ! Later, we fill Icol(1..NEQ) with the first column number in
@@ -867,7 +867,7 @@ contains
     ! i.e. row 1 can be computed as:
     !   Icol(1)               (=1),
     !   Icol(Iindx(1))        (=3),
-    !   Icol(Iindx(Iindx(1))  -> not defined, as Iindx(Iindx(1))=0, 
+    !   Icol(Iindx(Iindx(1))  -> not defined, as Iindx(Iindx(1))=0,
     !                            line finished
     
     do IEQ=1,NEQ
@@ -895,10 +895,10 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL)
       
       ! Now calculate the number of fine mesh elements we want to process
-      ! in one run. 
+      ! in one run.
       select case(p_rtriaFine%ndim)
       case (1)
         nelementsFine = 2*nelementsCoarse + 10
@@ -937,7 +937,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relementDistribution%NEL)
       
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that the trial functions
@@ -949,13 +949,13 @@ contains
 
       ! Set the pointers/indices to the initial position. During the
       ! search for new DOF`s, these might be changed if there is not enough
-      ! memory in the first block.    
+      ! memory in the first block.
       icurrentblock = 1
       istartidx = 0
       p_Icol => Rmemblock(1)%p_Icol
       p_Iindx => Rmemblock(1)%p_Iindx
       
-      ! Loop over the elements. 
+      ! Loop over the elements.
       nelementsDone = 0
       do while(nelementsDone .lt. NELC)
       
@@ -1049,7 +1049,7 @@ contains
               do JDOFE=1,indofCoarse
                 
                 ! Get the global DOF - our "X". This gives the column number
-                ! in the matrix where an entry occurs in row IROW (the line of 
+                ! in the matrix where an entry occurs in row IROW (the line of
                 ! the current global DOF "O").
                 JCOL = p_IdofsCoarse(JDOFE,IELC)
 
@@ -1060,9 +1060,9 @@ contains
                 ! element (imagine Q1, where there are two vertices on an edge
                 ! and the edge is shared between two elements)...
                 !
-                ! We start walking through the linked list of row IROW to 
-                ! look for column JCOL. IPOS is the position in the KCOL1 
-                ! array of the column in row IROW we want to test. 
+                ! We start walking through the linked list of row IROW to
+                ! look for column JCOL. IPOS is the position in the KCOL1
+                ! array of the column in row IROW we want to test.
                 ! KINDX(IPOS) is =0 if we reach the end of the linked list.
                 !
                 ! Start searching at the "head" of the list, which is the
@@ -1091,9 +1091,9 @@ contains
 
                   ! No, the list is not empty, we have a "head".
                   !
-                  ! We start walking through the linked list of row IROW to 
-                  ! look for column JCOL. IPOS is the position in the KCOL1 
-                  ! array of the column in row IROW we want to test. 
+                  ! We start walking through the linked list of row IROW to
+                  ! look for column JCOL. IPOS is the position in the KCOL1
+                  ! array of the column in row IROW we want to test.
                   ! KINDX(IPOS) is =0 if we reach the end of the linked list.
                   !
                   ! Start searching at the "head" of the list, which is the
@@ -1132,7 +1132,7 @@ contains
                         ! Do we have enough pointers left or do we have
                         ! to enlarge our list?
                         
-                        if (iblocks .ge. size(p_Ihcol)) then 
+                        if (iblocks .ge. size(p_Ihcol)) then
                         
                           ! Not enough blocks, we have to reallocate the pointer lists!
                           allocate (p_IhTmp(iblocks+NmemBlkCount))
@@ -1213,12 +1213,12 @@ contains
                       p_Icol(NA-istartIdx) = JCOL
                       
                       ! We have to make sure that p_Indx(NA)=0 to indicate the end of
-                      ! the list. Ok, this is trivial because we allocated it with 
+                      ! the list. Ok, this is trivial because we allocated it with
                       ! storage_new, configured to fill the memory with 0, so it is 0.
                       !
                       ! The searchloop ends here, continue with next JDOFE
                       
-                      exit 
+                      exit
                     
                     else
                     
@@ -1264,12 +1264,12 @@ contains
     ! Release the fine mesh element list
     deallocate(p_IelementRef)
 
-    ! Clean up the DOF`s arrays    
+    ! Clean up the DOF`s arrays
     deallocate(p_IdofsFine)
     deallocate(p_IdofsCoarse)
     
     ! Ok, p_Icol is built. The hardest part is done!
-    ! Now build KCOL by collecting the entries in the linear lists of 
+    ! Now build KCOL by collecting the entries in the linear lists of
     ! each row.
     !
     ! At first, as we now NA, we can allocate the real KCOL now!
@@ -1351,7 +1351,7 @@ contains
       
         BSORT=.true.
 
-        !  Loop through the line 
+        !  Loop through the line
 
         do JCOL=p_KLD(IEQ),p_KLD(IEQ+1)-2
         
@@ -1373,7 +1373,7 @@ contains
           
         end do ! JCOL
         
-      end do ! (not BSORT)      
+      end do ! (not BSORT)
 
       ! Grab the largest column number. As the current line is sorted,
       ! we can find this using the end of the line.
@@ -1457,7 +1457,7 @@ contains
   ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasCoarse,DbasFine
   
@@ -1465,7 +1465,7 @@ contains
   integer :: NA
   integer :: NEQ
   
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoCoarse, ctrafoFine
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -1647,7 +1647,7 @@ contains
     ! with something like
     !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     allocate(DbasFine(inmaxdofFine,nmaxDerFine,nmaxcubpFine,nmaxelementsFine))
     allocate(DbasCoarse(inmaxdofCoarse,nmaxDerCoarse,nmaxcubpCoarse,nmaxelementsCoarse))
@@ -1692,7 +1692,7 @@ contains
 
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC)
       
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
@@ -1797,7 +1797,7 @@ contains
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
             
-              ! Row IDOFE of the local matrix corresponds 
+              ! Row IDOFE of the local matrix corresponds
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
               ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
@@ -1811,7 +1811,7 @@ contains
               ! matrix.
               do JDOFE=1,indofCoarse
                 
-                ! Get the global DOF of the "X" which interacts with 
+                ! Get the global DOF of the "X" which interacts with
                 ! our "O".
                 JDFG = IdofsCoarse(JDOFE,IELC)
                 
@@ -1823,7 +1823,7 @@ contains
                   if (p_KCOL(JCOL) .eq. JDFG) exit
                 end do
 
-                ! Because columns in the global matrix are sorted 
+                ! Because columns in the global matrix are sorted
                 ! ascendingly (except for the diagonal element),
                 ! the next search can start after the column we just found.
                 
@@ -1858,7 +1858,7 @@ contains
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
-        ! a combined evaluation tag. 
+        ! a combined evaluation tag.
         cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
         cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
                         
@@ -1886,7 +1886,7 @@ contains
         
         ! --------------------- DOF COMBINATION PHASE ------------------------
         
-        ! Values of all basis functions calculated. Now we can start 
+        ! Values of all basis functions calculated. Now we can start
         ! to integrate!
         
         ! Clear the local matrix
@@ -1923,12 +1923,12 @@ contains
               ! the test functions:
               do IDOFE=1,indofFine
               
-                ! Get the value of the (test) basis function 
+                ! Get the value of the (test) basis function
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
                 
                 ! Perform an inner loop through the other DOF`s
-                ! (the "X"). 
+                ! (the "X").
                 do JDOFE=1,indofCoarse
                 
                   Dentry(JDOFE,IDOFE,NELF+IELF) = Dentry(JDOFE,IDOFE,NELF+IELF) + &
@@ -1939,7 +1939,7 @@ contains
               
               end do ! IDOFE
 
-            end do ! ICUBP 
+            end do ! ICUBP
             
           end do ! IELF
           
@@ -2050,7 +2050,7 @@ contains
   ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasCoarse,DbasFine
   
@@ -2058,7 +2058,7 @@ contains
   integer :: NA
   integer :: NEQ
   
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoCoarse, ctrafoFine
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -2253,7 +2253,7 @@ contains
     ! with something like
     !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     allocate(DbasFine(inmaxdofFine,nmaxDerFine,nmaxcubpFine,nmaxelementsFine))
     allocate(DbasCoarse(inmaxdofCoarse,nmaxDerCoarse,nmaxcubpCoarse,nmaxelementsCoarse))
@@ -2312,7 +2312,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL)
 
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
@@ -2417,7 +2417,7 @@ contains
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
             
-              ! Row IDOFE of the local matrix corresponds 
+              ! Row IDOFE of the local matrix corresponds
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
               ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
@@ -2431,7 +2431,7 @@ contains
               ! matrix.
               do JDOFE=1,indofCoarse
                 
-                ! Get the global DOF of the "X" which interacts with 
+                ! Get the global DOF of the "X" which interacts with
                 ! our "O".
                 JDFG = IdofsCoarse(JDOFE,IELC)
                 
@@ -2443,7 +2443,7 @@ contains
                   if (p_KCOL(JCOL) .eq. JDFG) exit
                 end do
 
-                ! Because columns in the global matrix are sorted 
+                ! Because columns in the global matrix are sorted
                 ! ascendingly (except for the diagonal element),
                 ! the next search can start after the column we just found.
                 
@@ -2478,7 +2478,7 @@ contains
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
-        ! a combined evaluation tag. 
+        ! a combined evaluation tag.
         cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
         cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
                         
@@ -2506,7 +2506,7 @@ contains
         
         ! --------------------- DOF COMBINATION PHASE ------------------------
         
-        ! Values of all basis functions calculated. Now we can start 
+        ! Values of all basis functions calculated. Now we can start
         ! to integrate!
         
         ! Clear the local matrix
@@ -2544,12 +2544,12 @@ contains
               ! the test functions:
               do IDOFE=1,indofFine
               
-                ! Get the value of the (test) basis function 
+                ! Get the value of the (test) basis function
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
                 
                 ! Perform an inner loop through the other DOF`s
-                ! (the "X"). 
+                ! (the "X").
                 do JDOFE=1,indofCoarse
                 
                   Dentry(IDOFE,JDOFE,NELF+IELF) = Dentry(IDOFE,JDOFE,NELF+IELF) + &
@@ -2567,7 +2567,7 @@ contains
               
               end do ! IDOFE
 
-            end do ! ICUBP 
+            end do ! ICUBP
             
           end do ! IELF
           
@@ -2732,14 +2732,14 @@ contains
   ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasCoarse,DbasFine
   
   ! Number of entries in the matrix - for quicker access
   integer :: NA, NEQ, NCOLS
   
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoCoarse, ctrafoFine
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -2935,7 +2935,7 @@ contains
     ! with something like
     !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     allocate(DbasFine(inmaxdofFine,nmaxDerFine,nmaxcubpFine,nmaxelementsFine))
     allocate(DbasCoarse(inmaxdofCoarse,nmaxDerCoarse,nmaxcubpCoarse,nmaxelementsCoarse))
@@ -2991,7 +2991,7 @@ contains
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
-      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL) 
+      nelementsCoarse = min(p_rperfconfig%NELEMSIM,p_relemDistCoarse%NEL)
 
       ! Now we need to transform the points from the fine mesh into the coarse mesh
       ! Please note that the following trick does only work for 2-level ordered
@@ -3093,7 +3093,7 @@ contains
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
             
-              ! Row IDOFE of the local matrix corresponds 
+              ! Row IDOFE of the local matrix corresponds
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
               ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
@@ -3107,7 +3107,7 @@ contains
               ! matrix.
               do JDOFE=1,indofCoarse
                 
-                ! Get the global DOF of the "X" which interacts with 
+                ! Get the global DOF of the "X" which interacts with
                 ! our "O".
                 JDFG = IdofsCoarse(JDOFE,IELC)
                 
@@ -3119,7 +3119,7 @@ contains
                   if (p_KCOL(JCOL) .eq. JDFG) exit
                 end do
 
-                ! Because columns in the global matrix are sorted 
+                ! Because columns in the global matrix are sorted
                 ! ascendingly (except for the diagonal element),
                 ! the next search can start after the column we just found.
                 
@@ -3154,7 +3154,7 @@ contains
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
-        ! a combined evaluation tag. 
+        ! a combined evaluation tag.
         cevalTagCoarse = elem_getEvaluationTag(p_relemDistCoarse%celement)
         cevalTagFine = elem_getEvaluationTag(p_relemDistFine%celement)
                         
@@ -3182,7 +3182,7 @@ contains
         
         ! --------------------- DOF COMBINATION PHASE ------------------------
         
-        ! Values of all basis functions calculated. Now we can start 
+        ! Values of all basis functions calculated. Now we can start
         ! to integrate!
         
         ! Clear the local matrix
@@ -3217,7 +3217,7 @@ contains
               ! Build the 2-level mass matrix.
               do IDOFE=1,indofFine
               
-                ! Get the value of the (test) basis function 
+                ! Get the value of the (test) basis function
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
                 
@@ -3245,7 +3245,7 @@ contains
               
               end do ! IDOFE
 
-            end do ! ICUBP 
+            end do ! ICUBP
             
           end do ! IELF
           

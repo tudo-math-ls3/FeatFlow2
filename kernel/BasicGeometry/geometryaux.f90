@@ -211,37 +211,37 @@ contains
     !
     ! The formula was discovered by Pierre Varignon and first published in 1731.
     !
-    ! `In modern linear algebra, as already noted, the area of a planar parallelogram 
-    !  is the magnitude of the cross product of two adjacent edge vectors.  So, for 
+    ! `In modern linear algebra, as already noted, the area of a planar parallelogram
+    !  is the magnitude of the cross product of two adjacent edge vectors.  So, for
     !  any 3D planar parallelogram V0V1V2V3, we have:`
     !
     !     A(V0V1V2V3) = 2 A(M0M1M2M3)
     !                 = 2 | (V1-V0) X (V3-V0) |     (cross product)
     !                 = ...
-    !                 = (x1-x0)(y3-y0) - (x3-x1)(y1-y0) 
+    !                 = (x1-x0)(y3-y0) - (x3-x1)(y1-y0)
     !
     !                     V3                V2
     !                       +--------------+
-    !                     /              /       
-    !                   /              /        
-    !                 /              /          
-    !               /              /                
-    !             /              /               
-    !           /              /                 
-    !         /              /                   
+    !                     /              /
+    !                   /              /
+    !                 /              /
+    !               /              /
+    !             /              /
+    !           /              /
+    !         /              /
     !       +--------------+
     !     V0                V1
     !
     !
-    ! `Next, for an arbitrary quadrilateral, one can compute its area using a 
-    !  parallelogram discovered by Pierre Varignon (first published in 1731). 
-    !  It is amazing that the Greeks missed Varignon`s simple result which was 
-    !  discovered 2000 years after Euclid!  Given any quadrilateral, one can take 
-    !  the midpoints of its 4 edges to get 4 vertices which form a new quadrilateral.  
-    !  It is then easy to show that this midpoint quadrilateral is always a 
-    !  parallelogram, called the "Varignon parallelogram", and that its area is 
-    !  exactly one-half the area of the original quadrilateral.  So, for a 
-    !  quadrilateral Q=V0V1V2V3, let this parallelogram have midpoint vertices 
+    ! `Next, for an arbitrary quadrilateral, one can compute its area using a
+    !  parallelogram discovered by Pierre Varignon (first published in 1731).
+    !  It is amazing that the Greeks missed Varignon`s simple result which was
+    !  discovered 2000 years after Euclid!  Given any quadrilateral, one can take
+    !  the midpoints of its 4 edges to get 4 vertices which form a new quadrilateral.
+    !  It is then easy to show that this midpoint quadrilateral is always a
+    !  parallelogram, called the "Varignon parallelogram", and that its area is
+    !  exactly one-half the area of the original quadrilateral.  So, for a
+    !  quadrilateral Q=V0V1V2V3, let this parallelogram have midpoint vertices
     !  M0M1M2M3 as shown in the diagram:`
     !
     !     V3         M2          V2
@@ -256,11 +256,11 @@ contains
     !       +---------X---------+
     !     V0         M0          V1
     !
-    ! `From elementary geometry, we know that in triangle V0V1V2 the midpoint 
-    !  line M0M1 is parallel to the base V0V2.  In triangle V0V1V2V3, the line M3M2 
-    !  is parallel to that same base V0V2.  Thus, M0M1 and M3M2 are parallel to each other.  
-    !  Similarly, M0M3 and M1M2 are parallel, which shows that M0M1M2M3 is a parallelogram.  
-    !  The area relation is also easy to demonstrate, and we can compute the quadrilateral`s 
+    ! `From elementary geometry, we know that in triangle V0V1V2 the midpoint
+    !  line M0M1 is parallel to the base V0V2.  In triangle V0V1V2V3, the line M3M2
+    !  is parallel to that same base V0V2.  Thus, M0M1 and M3M2 are parallel to each other.
+    !  Similarly, M0M3 and M1M2 are parallel, which shows that M0M1M2M3 is a parallelogram.
+    !  The area relation is also easy to demonstrate, and we can compute the quadrilateral`s
     !  area as:`
     !
     !     A(V0V1V2V3) = 2 A(M0M1M2M3)
@@ -268,14 +268,14 @@ contains
     !                 = ...
     !                 = 1/2 | (V2-V0) X (V3-V1) |
     !                 = ...
-    !                 = (x2-x0)(y3-y1) - (x3-x1)(y2-y0) 
+    !                 = (x2-x0)(y3-y1) - (x3-x1)(y2-y0)
     !
-    ! `This formula for an arbitrary quadrilateral is just as efficient as the one for an 
-    !  arbitrary triangle, using only 2 multiplications and 5 additions.  For simple 
-    !  quadrilaterals, the area is positive when the vertices are oriented counterclockwise, 
-    !  and negative when they are clockwise.  However, it also works for nonsimple 
-    !  quadrilaterals and is equal to the difference in area of the two regions the 
-    !  quadrilateral bounds.  For example, in the following diagram where I is the 
+    ! `This formula for an arbitrary quadrilateral is just as efficient as the one for an
+    !  arbitrary triangle, using only 2 multiplications and 5 additions.  For simple
+    !  quadrilaterals, the area is positive when the vertices are oriented counterclockwise,
+    !  and negative when they are clockwise.  However, it also works for nonsimple
+    !  quadrilaterals and is equal to the difference in area of the two regions the
+    !  quadrilateral bounds.  For example, in the following diagram where I is the
     !  self-intersection point of a nonsimple quadrilateral V0V1V2V3, we have:`
     !
     !     A(V0V1V2V3) = A(V0V1I) + A(IV2V3)
@@ -283,10 +283,10 @@ contains
     !
     !     V2                V3
     !       +--------------+
-    !         \           /      
-    !           \       /       
-    !             \   /         
-    !               + I             
+    !         \           /
+    !           \       /
+    !             \   /
+    !               + I
     !             /   \                 .
     !           /       \               .
     !         /           \             .
@@ -407,7 +407,7 @@ contains
       dx1,dy1,dx2,dy2,dx3,dy3,dx4,dy4, bintersect)
   
 !<description>
-  ! Checks whether the two 2D lines given by the start/endpoints 
+  ! Checks whether the two 2D lines given by the start/endpoints
   ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4) intersect each other.
 !</description>
 
@@ -454,7 +454,7 @@ contains
     ! Determine if the lines truely intersect by checking the sign
 
     bintersect = ((daux3*daux4 .le. 0.0_DP) .and. &
-                  (daux1*daux2 .le. 0.0_DP)) 
+                  (daux1*daux2 .le. 0.0_DP))
 
   end subroutine
 
@@ -466,7 +466,7 @@ contains
       dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect, da)
   
 !<description>
-  ! Calculates the intersection point of two 2D rays given by 
+  ! Calculates the intersection point of two 2D rays given by
   ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4).
 !</description>
 
@@ -513,7 +513,7 @@ contains
     iintersect = 0
     
     ! We have (hopefully) the situation
-    !            
+    !
     !               (X1,Y1)
     !                  |
     !                  |
@@ -533,7 +533,7 @@ contains
     !
     ! The determinant of the system is:
 
-    ddet = dx1*dy2-dx1*dy3-dx0*dy2+dx0*dy3-dy1*dx2+dy1*dx3+dy0*dx2-dy0*dx3 
+    ddet = dx1*dy2-dx1*dy3-dx0*dy2+dx0*dy3-dy1*dx2+dy1*dx3+dy0*dx2-dy0*dx3
        
     ! If it is =0, the lines are the same or completely different...
         
@@ -552,7 +552,7 @@ contains
      
     else
 
-      ! There is an intersection point. Calculate one of the 
+      ! There is an intersection point. Calculate one of the
       ! "parameter" values along the two lines.
 
       da = (dy0*dx2+dx3*dy2-dy0*dx3-dx2*dy3-dx0*dy2+dx0*dy3) / ddet
@@ -654,7 +654,7 @@ contains
       ! multiplying distance vectors with corresponding normal vectors.
       ! The sign of this scalar product determines whether we are
       ! 'left' or 'right' of the edge (because of the cosine formula).
-      ! If the point is "righthand" of all four edges, it is inside 
+      ! If the point is "righthand" of all four edges, it is inside
       ! of the element.
 
       dsproduct = dxdist*dxnormal + dydist*dynormal
@@ -701,7 +701,7 @@ contains
     ! local variables
     real(DP) :: DAX, DAY, DBX, DBY, DCX, DCY, DDET
 
-    DAX = DcornerCoords(1, 1) 
+    DAX = DcornerCoords(1, 1)
     DAY = DcornerCoords(2, 1)
     DBX = DcornerCoords(1, 2)
     DBY = DcornerCoords(2, 2)
@@ -709,10 +709,10 @@ contains
     DCY = DcornerCoords(2, 3)
     
     ! Example where to find this formula here:
-    ! http://home.t-online.de/home/nagel.klaus/matdir/bary.htm 
+    ! http://home.t-online.de/home/nagel.klaus/matdir/bary.htm
     
     DDET = 1.0_DP / ( DAX*(DBY-DCY) + DBX*(DCY-DAY) + DCX*(DAY-DBY) )
-    dxi1 = (dx*(DBY-DCY)+DBX*(DCY-dy)+DCX*(dy-DBY)) * DDET 
+    dxi1 = (dx*(DBY-DCY)+DBX*(DCY-dy)+DCX*(dy-DBY)) * DDET
     dxi2 = (DAX*(dy-DCY)+dx*(DCY-DAY)+DCX*(DAY-dy)) * DDET
     dxi3 = (DAX*(DBY-dy)+DBX*(dy-DAY)+dx*(DAY-DBY)) * DDET
 
@@ -762,7 +762,7 @@ contains
     ! we are inside of the element
     binside = (dxi1 .ge. 0.0_DP) .and. (dxi1 .le. 1.0_DP) .and. &
               (dxi2 .ge. 0.0_DP) .and. (dxi2 .le. 1.0_DP) .and. &
-              (dxi3 .ge. 0.0_DP) .and. (dxi3 .le. 1.0_DP) 
+              (dxi3 .ge. 0.0_DP) .and. (dxi3 .le. 1.0_DP)
 
   end subroutine
 
@@ -893,13 +893,13 @@ contains
                 - ((Dpoints(2,3) - Dpoints(2,1)) * (Dpoints(1,2) - Dpoints(1,1)))
   
   ! calculate all p-v
-  Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,4) 
+  Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,4)
   
-  Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,3) 
+  Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,3)
   
-  Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,2) 
+  Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,2)
   
-  Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,1) 
+  Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,1)
   
   ddot1 = Dpv(1,1) * Dnormals(1,1) + Dpv(2,1) * Dnormals(2,1) + Dpv(3,1) * Dnormals(3,1)
   ddot2 = Dpv(1,2) * Dnormals(1,2) + Dpv(2,2) * Dnormals(2,2) + Dpv(3,2) * Dnormals(3,2)
@@ -907,12 +907,12 @@ contains
   ddot4 = Dpv(1,4) * Dnormals(1,4) + Dpv(2,4) * Dnormals(2,4) + Dpv(3,4) * Dnormals(3,4)
   
   if((ddot1 .le. 0.0001_dp).and.(ddot2 .le. 0.0001_dp).and.(ddot3 .le. 0.0001_dp).and.(ddot4 .le. 0.0001_dp))then
-    binside = .true.  
+    binside = .true.
   else
     binside = .false.
   end if
 
-  end subroutine  
+  end subroutine
 
 !************************************************************************
 
@@ -1024,17 +1024,17 @@ contains
   
   
   ! calculate all p-v
-  Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,1) 
+  Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,1)
   
-  Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,2) 
+  Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,2)
   
-  Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,3) 
+  Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,3)
   
-  Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,4) 
+  Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,4)
   
-  Dpv(1:3,5)= DP1(1:3,1) - Dpoints(1:3,5) 
+  Dpv(1:3,5)= DP1(1:3,1) - Dpoints(1:3,5)
   
-  Dpv(1:3,6)= DP1(1:3,1) - Dpoints(1:3,6) 
+  Dpv(1:3,6)= DP1(1:3,1) - Dpoints(1:3,6)
   
   ddot1 = Dpv(1,1) * Dnormals(1,1) + Dpv(2,1) * Dnormals(2,1) + Dpv(3,1) * Dnormals(3,1)
   ddot2 = Dpv(1,2) * Dnormals(1,2) + Dpv(2,2) * Dnormals(2,2) + Dpv(3,2) * Dnormals(3,2)
@@ -1045,12 +1045,12 @@ contains
   
   if((ddot1 .le. eps).and.(ddot2 .le. eps).and.(ddot3 .le. eps).and.&
      (ddot4 .le. eps).and.(ddot5 .le. eps).and.(ddot6 .le. eps))then
-    binside = .true.  
+    binside = .true.
   else
     binside = .false.
   end if
  
-  end subroutine  
+  end subroutine
   
 !************************************************************************
 
@@ -1068,7 +1068,7 @@ contains
 !</description>
 
 !<input>
-  ! First point on ray 
+  ! First point on ray
   real(DP), dimension(3), intent(in) :: Dpoint1
 
   ! second point on ray
@@ -1107,7 +1107,7 @@ contains
     end if
     
     ! test for intersection
-    call gaux_isIntersection_triangle(Dpoint1,Dpoint2,Dtri2,bintersect)    
+    call gaux_isIntersection_triangle(Dpoint1,Dpoint2,Dtri2,bintersect)
 
     if (bintersect) then
       return
@@ -1120,7 +1120,7 @@ contains
 
 !************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   pure subroutine gaux_isIntersection_triangle(&
       Dpoint1,Dpoint2,Dtri, bintersect)
@@ -1166,11 +1166,11 @@ contains
   De1(1:3) = Dtri(1:3,2) - Dtri(1:3,1)
   De2(1:3) = Dtri(1:3,3) - Dtri(1:3,1)
       
-  p(1) = Ddirect(2)*De2(3) - Ddirect(3)*De2(2)  
-  p(2) = Ddirect(3)*De2(1) - Ddirect(1)*De2(3)  
-  p(3) = Ddirect(1)*De2(2) - Ddirect(2)*De2(1)  
+  p(1) = Ddirect(2)*De2(3) - Ddirect(3)*De2(2)
+  p(2) = Ddirect(3)*De2(1) - Ddirect(1)*De2(3)
+  p(3) = Ddirect(1)*De2(2) - Ddirect(2)*De2(1)
   
-  dot = p(1) * De1(1) + p(2) * De1(2) + p(3) * De1(3) 
+  dot = p(1) * De1(1) + p(2) * De1(2) + p(3) * De1(3)
   
   if(dot > -eps .and. dot < eps)then
     bintersect = .false.
@@ -1181,7 +1181,7 @@ contains
   
   s(:) = Dpoint1(:) - Dtri(:,1)
   
-  dot2 =  s(1) * p(1) + s(2) * p(2) + s(3) * p(3) 
+  dot2 =  s(1) * p(1) + s(2) * p(2) + s(3) * p(3)
   
   u = dot * dot2
   
@@ -1190,9 +1190,9 @@ contains
     return
   end if
   
-  q(1) = s(2)*De1(3) - s(3)*De1(2)  
-  q(2) = s(3)*De1(1) - s(1)*De1(3)  
-  q(3) = s(1)*De1(2) - s(2)*De1(1)  
+  q(1) = s(2)*De1(3) - s(3)*De1(2)
+  q(2) = s(3)*De1(1) - s(1)*De1(3)
+  q(3) = s(1)*De1(2) - s(2)*De1(1)
 
   dot3 =  q(1) * Ddirect(1) + q(2) * Ddirect(2) + q(3) * Ddirect(3)
   
@@ -1209,7 +1209,7 @@ contains
     bintersect = .true.
   end if
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
 
@@ -1222,7 +1222,7 @@ contains
 !</description>
 
 !<input>
-  ! 
+  !
   ! The coordinates of the point
   ! DpointA(1) = x-coordinates,
   ! DpointA(2) = y-coordinates
@@ -1230,7 +1230,7 @@ contains
   ! the first vertex of the edge in real coordinates
   real(DP), dimension(2), intent(in) :: Dedge1
   ! the 2nd vertex of the edge in real coordinates
-  real(DP), dimension(2), intent(in) :: Dedge2        
+  real(DP), dimension(2), intent(in) :: Dedge2
 !</input>
   real(dp), intent(out)              :: dist
   real(dp), intent(out)              :: t
@@ -1261,7 +1261,7 @@ contains
     r(:)=r(:)+Dedge1(:)
     YP(:)=DpointA(:)-r(:)
     dist = sqrt(YP(1)**2 + YP(2)**2)
-    return    
+    return
   end if
 
   end subroutine gaux_calcDistPEdg2D
@@ -1285,20 +1285,20 @@ contains
   ! the r2 in the equation for E above
   real(DP), dimension(3), intent(in) :: DR2
   ! the point that should be projected
-!</input> 
-!<inputoutput>   
+!</input>
+!<inputoutput>
   real(DP), dimension(3), intent(inout) :: DQ
   ! the projection of DQ onto the plane
   real(DP), dimension(3), intent(inout) :: DQP
-!</inputoutput>  
+!</inputoutput>
 !</subroutine>
   ! local variables
   real(DP) :: d,n,q
   real(DP), dimension(3) :: DN, DNscaled
   
-  DN(1)=DR1(2)*DR2(3)-DR1(3)*DR2(2)    
-  DN(2)=DR1(3)*DR2(1)-DR1(1)*DR2(3)    
-  DN(3)=DR1(1)*DR2(2)-DR1(2)*DR2(1) 
+  DN(1)=DR1(2)*DR2(3)-DR1(3)*DR2(2)
+  DN(2)=DR1(3)*DR2(1)-DR1(1)*DR2(3)
+  DN(3)=DR1(1)*DR2(2)-DR1(2)*DR2(1)
   
   n=sqrt(DN(1)**2 + DN(2)**2 + DN(3)**2)
   DN(:)=DN(:)/n
@@ -1400,7 +1400,7 @@ contains
      binside=.false.
   end if
   
-  end subroutine  
+  end subroutine
 
 !************************************************************************
 
@@ -1431,10 +1431,10 @@ contains
   !   |    |
   !   4----3
   ! Iresult(1)=2 if there are 2 intersection on edge 12
-  ! Iresult(1)=1 if there is 1 intersection on edge 12  
-  ! Iresult(1)=0 if there is no intersection on edge 12  
+  ! Iresult(1)=1 if there is 1 intersection on edge 12
+  ! Iresult(1)=0 if there is no intersection on edge 12
   ! Iresult(2)=2 if there are 2 intersection on edge 23
-  ! ... and so on  
+  ! ... and so on
   integer, dimension(4), intent(out) :: Iresult
   ! the possible 8 points of intersection
   ! if Iresult(1)=2 then Dintersection(:,1-2) stores the
@@ -1442,7 +1442,7 @@ contains
   ! if Iresult(1)=1 then Dintersection(:,1) stores the
   ! point of intersection on edge 12 and Dintersection(:,2) is empty
   ! ... and so on
-  real(DP), dimension(2,8), intent(out) :: Dintersection  
+  real(DP), dimension(2,8), intent(out) :: Dintersection
 !</result>
 
 !</subroutine>
@@ -1455,18 +1455,18 @@ contains
   ! loop over all edges of the quad
   do i=1,4
     iintersections=0
-    Dintersec=0  
-    Dedge(:,1) = Dquad(:,i)    
-    Dedge(:,2) = Dquad(:,mod(i,4)+1)  
+    Dintersec=0
+    Dedge(:,1) = Dquad(:,i)
+    Dedge(:,2) = Dquad(:,mod(i,4)+1)
     call gaux_intersect_edgecircle(drad,Dc,Dedge,iintersections,Dintersec)
     Iresult(i)=iintersections
     Dintersection(:,2*i-1)=Dintersec(:,1)
     Dintersection(:,2*i)=Dintersec(:,2)
   end do
   
-  end subroutine  
+  end subroutine
   
-!************************************************************************  
+!************************************************************************
 
 !<subroutine>
 
@@ -1509,7 +1509,7 @@ contains
 
 	Dp1(:)=Dedge(:,1)
 	
-	Ddelta(:)=Dp1(:)-Dc(:)  	
+	Ddelta(:)=Dp1(:)-Dc(:)
 	
 	dir2=Ddir(1)**2+Ddir(2)**2
 	
@@ -1540,15 +1540,15 @@ contains
 	  dt2=(-dirdotdelta - root)/dir2
 		if((0.0_dp .le. dt1).and.(dt1 .le. 1.0_dp))then
 		  iresult = iresult + 1
-		  Dintersec(:,1)=Dp1(:)+ dt1*Ddir(:)		  
+		  Dintersec(:,1)=Dp1(:)+ dt1*Ddir(:)
 		end if
 		if((0.0_dp .le. dt2).and.(dt2 .le. 1.0_dp))then
 		  iresult = iresult + 1
-		  Dintersec(:,2)=Dp1(:)+ dt2*Ddir(:)		  		  
-		end if		
+		  Dintersec(:,2)=Dp1(:)+ dt2*Ddir(:)
+		end if
 	end if
 
-  end subroutine  
+  end subroutine
 
 end module
 

@@ -176,7 +176,7 @@
 !#         to the device memory.
 !#
 !# 17.) gfem_copyD2H_CoeffsAtEdge
-!#      -> Copies the coefficients at matrix diagonals from the 
+!#      -> Copies the coefficients at matrix diagonals from the
 !#         device memory to the host  memory.
 !#
 !# 18.) gfem_copyH2D_CoeffsAtDiag
@@ -388,7 +388,7 @@ module groupfembase
   integer(I32), parameter, public :: GFEM_SHARE_NODEDATA = GFEM_HAS_NODEDATA
 
   ! Share edge-based coefficient array: CoeffsAtEdge
-  integer(I32), parameter, public :: GFEM_SHARE_EDGEDATA = GFEM_HAS_EDGEDATA 
+  integer(I32), parameter, public :: GFEM_SHARE_EDGEDATA = GFEM_HAS_EDGEDATA
 !</constantblock>
 !</constants>
 
@@ -499,7 +499,7 @@ module groupfembase
     ! Handle to nodal structure
     !
     ! If no restriction of DOFs is used:
-    ! InodeList(1:NA)   : the global column number of the node j 
+    ! InodeList(1:NA)   : the global column number of the node j
     !
     ! OR
     !
@@ -545,7 +545,7 @@ module groupfembase
     integer :: nblocks = 0
 
     ! A 1D array with sets of degrees of freedom
-    type(t_groupFEMSet), dimension(:), pointer :: RgroupFEMBlock => null() 
+    type(t_groupFEMSet), dimension(:), pointer :: RgroupFEMBlock => null()
 
   end type t_groupFEMBlock
 !</typeblock>
@@ -555,7 +555,7 @@ module groupfembase
 
   ! This structure can be used to realise arrays-of-pointers which is
   ! necessary to address the content of multiple scalar submatrices
-  ! simultaneously. 
+  ! simultaneously.
 
   type t_array
 
@@ -1785,7 +1785,7 @@ contains
     integer, intent(in) :: NEQ
 
     ! Number of edges
-    integer, intent(in) :: NEDGE   
+    integer, intent(in) :: NEDGE
 !</input>
 
 !<inputoutput>
@@ -2433,7 +2433,7 @@ contains
       
       checkOwner = (iand(idupFlag,ibitfield) .ne. ibitfield)
 
-    end function checkOwner    
+    end function checkOwner
 
   end subroutine gfem_duplicateGroupFEMSet
 
@@ -3203,7 +3203,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'gfem_isMatrixCompatibleBl')
         call sys_halt()
       end if
-    end if      
+    end if
 
   end subroutine gfem_isMatrixCompatibleBl
 
@@ -3959,7 +3959,7 @@ contains
           iidx = iidx+1
           
           ! Loop over all matrix entries in current row
-          do jcol = 1, rmatrix%NCOLS           
+          do jcol = 1, rmatrix%NCOLS
             
             ! Set column number and matrix position
             p_InodeList1D(idx) = jcol
@@ -5065,7 +5065,7 @@ contains
 
     ! Allocate edge-based data array
     if ((rgroupFEMSet%NEDGE .gt. 0) .and. (rgroupFEMSet%ncoeffsAtEdge .gt. 0)) then
-      Isize3D = (/rgroupFEMSet%ncoeffsAtEdge, 2, rgroupFEMSet%NEDGE/)  
+      Isize3D = (/rgroupFEMSet%ncoeffsAtEdge, 2, rgroupFEMSet%NEDGE/)
       call storage_new('gfem_allocCoeffs', 'CoeffsAtEdge',&
           Isize3D, rgroupFEMSet%cdataType, rgroupFEMSet%h_CoeffsAtEdge,&
           ST_NEWBLOCK_NOINIT)

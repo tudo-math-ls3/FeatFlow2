@@ -5,14 +5,14 @@
 !#
 !# <purpose>
 !# This module is a demonstation program how to solve a stationary
-!# Navier-Stokes problem 
+!# Navier-Stokes problem
 !#
 !#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p = f $$
 !#              $$ \Nable \cdot p = 0$$
 !#
 !# on a 2D domain for a 2D function $u=(u_1,u_2)$ and a pressure $p$.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -63,7 +63,7 @@ module cc2dmini_method1
   
   implicit none
   
-  ! Maximum allowed level in this application; must be =9 for 
+  ! Maximum allowed level in this application; must be =9 for
   ! FEAT 1.x compatibility (still)!
   integer, parameter :: NNLEV = 9
   
@@ -80,16 +80,16 @@ module cc2dmini_method1
     ! (size of subvectors in the solution vector, trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! A system matrix for that specific level. 
+    ! A system matrix for that specific level.
     type(t_matrixBlock) :: rmatrix
 
-    ! Laplace matrix for that specific level. 
+    ! Laplace matrix for that specific level.
     type(t_matrixScalar) :: rmatrixLaplace
 
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
 
     ! A temporary vector for building the solution when assembling the
@@ -120,13 +120,13 @@ module cc2dmini_method1
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! A solution vector and a RHS vector on the finest level. 
+    ! A solution vector and a RHS vector on the finest level.
     type(t_vectorBlock) :: rvector,rrhs
 
-    ! A variable describing the analytic boundary conditions.    
+    ! A variable describing the analytic boundary conditions.
     type(t_boundaryConditions), pointer :: p_rboundaryConditions
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -134,8 +134,8 @@ module cc2dmini_method1
     ! only one level supported, identified by NLMAX!
     type(t_problem_lvl), dimension(NNLEV) :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
 
@@ -259,13 +259,13 @@ contains
       ! for later use.
       rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
 
-      ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+      ! p_rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   p_rdiscretisation%RspatialDiscr(1), &
@@ -273,12 +273,12 @@ contains
                   p_rtriangulation, p_rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards.
       call spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscr(1),&
           p_rdiscretisation%RspatialDiscr(2))
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (p_rdiscretisation%RspatialDiscr(1),&
@@ -372,7 +372,7 @@ contains
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.true.,&
@@ -389,9 +389,9 @@ contains
                 p_rdiscretisation%RspatialDiscr(1))
                 
       ! Duplicate the B1 matrix structure to the B2 matrix, so use
-      ! lsyssc_duplicateMatrix to create B2. Share the matrix 
-      ! structure between B1 and B2 (B1 is the parent and B2 the child). 
-      ! Don't create a content array yet, it will be created by 
+      ! lsyssc_duplicateMatrix to create B2. Share the matrix
+      ! structure between B1 and B2 (B1 is the parent and B2 the child).
+      ! Don't create a content array yet, it will be created by
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
                   rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_COPY,LSYSSC_DUP_REMOVE)
@@ -431,7 +431,7 @@ contains
       
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
       
       ! Save the system matrix to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -465,7 +465,7 @@ contains
       call lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
                   p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      ! Manually change the discretisation structure of the Y-velocity 
+      ! Manually change the discretisation structure of the Y-velocity
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
@@ -495,7 +495,7 @@ contains
                                    p_rmatrix%RmatrixBlock(3,2),&
                                    LSYSSC_TR_VIRTUAL)
 
-      ! Now on all levels except for the maximum one, create a temporary 
+      ! Now on all levels except for the maximum one, create a temporary
       ! vector on that level, based on the matrix template.
       ! It's used for building the matrices on lower levels.
       if (i .lt. rproblem%NLMAX) then
@@ -513,7 +513,7 @@ contains
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
 
     ! Although we could manually create the solution/RHS vector,
@@ -527,7 +527,7 @@ contains
     call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.true.)
     
-    ! The vector structure is ready but the entries are missing. 
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -535,10 +535,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     !
@@ -589,7 +589,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_boundaryRegion) :: rboundaryRegion    
+    type(t_boundaryRegion) :: rboundaryRegion
     type(t_boundary), pointer :: p_rboundary
     
     p_rboundary => rdiscretisation%p_rboundary
@@ -615,7 +615,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   Dirichlet BC's for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC's can be applied
     !   to matrices and vectors
@@ -712,7 +712,7 @@ contains
   ! local variables
   integer :: i
 
-  ! A pointer to the system matrix and the RHS vector as well as 
+  ! A pointer to the system matrix and the RHS vector as well as
   ! the discretisation
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -761,7 +761,7 @@ contains
     ! to the matrix on the finest level.
     p_rdiscreteBC => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscreteBC
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
@@ -789,7 +789,7 @@ contains
   ! local variables
   integer :: i,ilvmax
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -797,7 +797,7 @@ contains
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
     ilvmax = rproblem%NLMAX
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
     ! Filter the solution and RHS vectors through the boundary-condition-
@@ -808,7 +808,7 @@ contains
     call vecfil_discreteBCrhs (p_rrhs)
     call vecfil_discreteBCsol (p_rvector)
 
-    ! Implement discrete boundary conditions into the matrices on all 
+    ! Implement discrete boundary conditions into the matrices on all
     ! levels, too.
     ! In fact, this modifies the B-matrices. The A-matrices are overwritten
     ! later and must then be modified again!
@@ -830,9 +830,9 @@ contains
     
   !<description>
     ! FOR NONLINEAR ITERATION:
-    ! Defect vector calculation callback routine. Based on the current iteration 
-    ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
+    ! Defect vector calculation callback routine. Based on the current iteration
+    ! vector rx and the right hand side vector rb, this routine has to compute the
+    ! defect vector rd. The routine accepts a pointer to a collection structure
     ! p_rcollection, which allows the routine to access information from the
     ! main application (e.g. system matrices).
   !</description>
@@ -877,7 +877,7 @@ contains
       p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
       p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,'LAPLACE',ilvmax)
       
-      ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace 
+      ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace
       ! on the main diagonal:
       !
       ! (  L    0   B1 )
@@ -930,7 +930,7 @@ contains
       ! As we calculate only the defect, the matrix is ignored!
       call conv_upwind2d (rx, rx, 1.0_DP, 0.0_DP,&
                           rupwind, CONV_MODDEFECT, &
-                          p_rmatrix%RmatrixBlock(1,1), rx, rd)      
+                          p_rmatrix%RmatrixBlock(1,1), rx, rd)
       
       ! Apply the filter chain to the defect vector again - since the
       ! implementation of the nonlinearity usually changes the Dirichlet
@@ -958,11 +958,11 @@ contains
     !
     ! with $d_n$ the nonlinear defect and $C^{-1}$ a preconditioner (usually
     ! the linearised system).
-    ! Based on the current solution $u_n$, the defect vector $d_n$, the RHS 
-    ! vector $f_n$ and the previous parameter OMEGA, a new 
+    ! Based on the current solution $u_n$, the defect vector $d_n$, the RHS
+    ! vector $f_n$ and the previous parameter OMEGA, a new
     ! OMEGA=domega value is calculated.
     !
-    ! The nonlinear system matrix on the finest level in the collection is 
+    ! The nonlinear system matrix on the finest level in the collection is
     ! overwritten by $A(u_n+domega_{old}*C^{-1}d_n)$.
   !</description>
 
@@ -973,7 +973,7 @@ contains
     ! Current RHS vector of the nonlinear equation
     type(t_vectorBlock), intent(in)               :: rb
 
-    ! Defect vector b-A(x)x. 
+    ! Defect vector b-A(x)x.
     type(t_vectorBlock), intent(in)               :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
@@ -1066,7 +1066,7 @@ contains
       !                                        = Y = (y1,y2,yp) = rd
       !
       ! with KST1=KST1(u1,u2,p) and Y=rd being the solution from
-      ! the Oseen equation with 
+      ! the Oseen equation with
       !
       !                  [ A         B1 ]
       !    C = T(u_n) =  [      A    B2 ]
@@ -1084,7 +1084,7 @@ contains
       ! when choosing omegaold=previous omega, which is a good choice
       ! as one can see by linearization (see p. 170, Turek's book).
       !
-      ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian 
+      ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian
       ! scalar product <.,.>.
       
       ! ==================================================================
@@ -1101,7 +1101,7 @@ contains
       call lsysbl_vectorLinearComb (rx,rtemp1,1.0_DP,domega)
 
       ! Construct the linear part of the nonlinear matrix on the maximum
-      ! level. 
+      ! level.
       !
       ! The system matrix looks like:
       !   (  A    0   B1 )
@@ -1121,7 +1121,7 @@ contains
       ! in the point rtemp1.
       call conv_upwind2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
                           rupwind, CONV_MODMATRIX, &
-                          p_rmatrix%RmatrixBlock(1,1))      
+                          p_rmatrix%RmatrixBlock(1,1))
                                     
       ! Apply the filter chain to the matrix.
       ! As the filter consists only of an implementation filter for
@@ -1148,7 +1148,7 @@ contains
 
       call lsysbl_blockMatVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
       
-      ! This is a defect vector against 0 - filter it! This e.g. 
+      ! This is a defect vector against 0 - filter it! This e.g.
       ! implements boundary conditions.
       call filter_applyFilterChainVec (rtemp1, RfilterChain)
       
@@ -1193,15 +1193,15 @@ contains
     
   !<description>
     ! FOR NONLINEAR ITERATION:
-    ! Defect vector calculation callback routine. Based on the current iteration 
-    ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
+    ! Defect vector calculation callback routine. Based on the current iteration
+    ! vector rx and the right hand side vector rb, this routine has to compute the
+    ! defect vector rd. The routine accepts a pointer to a collection structure
     ! p_rcollection, which allows the routine to access information from the
     ! main application (e.g. system matrices).
   !</description>
 
   !<inputoutput>
-    ! Number of current iteration. 
+    ! Number of current iteration.
     integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
@@ -1300,7 +1300,7 @@ contains
           p_rvectorCoarse => rx
         else
           ! Get the temporary vector on level i. Will receive the solution
-          ! vector on that level. 
+          ! vector on that level.
           p_rvectorCoarse => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev)
           
           ! Get the solution vector on level i+1. This is either the temporary
@@ -1340,7 +1340,7 @@ contains
         ! Call the upwind method to calculate the nonlinear matrix.
         call conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                             rupwind, CONV_MODMATRIX, &
-                            p_rmatrix%RmatrixBlock(1,1))      
+                            p_rmatrix%RmatrixBlock(1,1))
                                      
         ! Apply the filter chain to the matrix.
         ! As the filter consists only of an implementation filter for
@@ -1427,20 +1427,20 @@ contains
     integer :: imaxmem
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
     type(t_vectorScalar), target :: rtempVectorSc,rtempVectorSc2
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -1462,7 +1462,7 @@ contains
     
     ! Get our right hand side / solution / matrix on the finest
     ! level from the problem structure.
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
@@ -1476,9 +1476,9 @@ contains
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -1539,7 +1539,7 @@ contains
       ! to interpolate the solution vector from finer level to coarser ones.
       ! We need temporary memory for this purpose...
       if (i .gt. ilvmin) then
-        ! Pass the system metrices on the coarse/fine grid to 
+        ! Pass the system metrices on the coarse/fine grid to
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryMat (rprojection,&
@@ -1700,7 +1700,7 @@ contains
     ! new discretisation:
     call spdp_projectSolution (p_rvector,rprjVector)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation:
     call c2d1_discretiseBC (rprjDiscretisation,rdiscreteBC)
                             
@@ -1720,9 +1720,9 @@ contains
       p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u1.gmv')
     
@@ -1904,7 +1904,7 @@ contains
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (This is somehow a cleaner implementation than using a collection!).
@@ -1934,7 +1934,7 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! Allocate the problem structure on the heap -- it's rather large.
     allocate(p_rproblem)
@@ -1963,8 +1963,8 @@ contains
     !
     ! Initialisation
     call c2d1_initParamTriang (NLMIN,NLMAX,p_rproblem)
-    call c2d1_initDiscretisation (p_rproblem)    
-    call c2d1_initMatVec (p_rproblem)    
+    call c2d1_initDiscretisation (p_rproblem)
+    call c2d1_initMatVec (p_rproblem)
     call c2d1_initDiscreteBC (p_rproblem)
     
     ! Implementation of boundary conditions

@@ -68,18 +68,18 @@ contains
   ! local variables
   integer :: i,ilvmin,ilvmax,nmdb
   
-  ! Variable for a filename:  
+  ! Variable for a filename:
   character(LEN=SYS_STRLEN) :: sString
   character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
   type(t_timer) :: rtimer
   ! make all the regions
   type(t_boundaryRegion), dimension(:),pointer :: p_rregion
   
-  real(dp), dimension(:,:), pointer :: p_DbdyEdg      
+  real(dp), dimension(:,:), pointer :: p_DbdyEdg
   
   real(DP) :: dx,dy
-  integer :: iregions,iend,iindex   
-  integer, dimension(2) :: Isize        
+  integer :: iregions,iend,iindex
+  integer, dimension(2) :: Isize
 
   call stat_clearTimer(rtimer)
   call stat_startTimer(rtimer)
@@ -114,18 +114,18 @@ contains
   call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
       sTRIFile, rproblem%rboundary)
       
-  !---------------------------------------------------------------------------------        
+  !---------------------------------------------------------------------------------
       
   call tria_initStandardMeshFromRaw (&
       rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%rboundary)
       
   ! get the number of boundary segments in
-  ! the boundary component 
+  ! the boundary component
   iend = boundary_igetNsegments(rproblem%rboundary,1)
 
   rproblem%isegments=iend
 
-  allocate(p_rregion(iend)) 
+  allocate(p_rregion(iend))
 
   ! create the boundary regions
   do iregions=1,iend
@@ -141,33 +141,33 @@ contains
   
   call storage_new ('cc_initParamTriang', 'edgesBdy',&
       Isize, ST_DOUBLE, &
-      rproblem%h_DedgesAtBoundary, ST_NEWBLOCK_NOINIT)  
+      rproblem%h_DedgesAtBoundary, ST_NEWBLOCK_NOINIT)
   
   call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)
 
   ! create the boundary regions
   do iregions=1,iend
 
-    ! get the x,y coordinates for the current parameter value      
+    ! get the x,y coordinates for the current parameter value
     call boundary_getCoords(rproblem%rboundary, 1,&
                             p_rregion(iregions)%dminParam, dx, dy)
           
-    iindex=iregions*2-1 
-    p_DbdyEdg(1,iindex) = dx                       
-    p_DbdyEdg(2,iindex) = dy                       
+    iindex=iregions*2-1
+    p_DbdyEdg(1,iindex) = dx
+    p_DbdyEdg(2,iindex) = dy
                                     
-    ! get the x,y coordinates for the current parameter value      
+    ! get the x,y coordinates for the current parameter value
     call boundary_getCoords(rproblem%rboundary, 1,&
                             p_rregion(iregions)%dmaxParam, dx, dy)
 
-    p_DbdyEdg(1,iindex+1) = dx                       
-    p_DbdyEdg(2,iindex+1) = dy                       
+    p_DbdyEdg(1,iindex+1) = dx
+    p_DbdyEdg(2,iindex+1) = dy
                         
   end do
                         
-  deallocate(p_rregion)        
+  deallocate(p_rregion)
 
-  !-----------------------------------------------------------------------------------------------    
+  !-----------------------------------------------------------------------------------------------
 
   ! Refine the mesh up to the minimum level
   call tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&

@@ -1615,7 +1615,7 @@ contains
         call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameHydro, ssectionNameTransport, p_rproblemLevel,&
             p_rsolutionHydro, p_rsolutionTransport, rtimestep%dTime, &
-            dscale, .true., Rforce(1), rcollection)       
+            dscale, .true., Rforce(1), rcollection)
       end if
       
       ! Prepare quick access arrays/vectors
@@ -1891,35 +1891,35 @@ contains
         call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
         
       elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--timestep')) then 
+              (trim(adjustl(cbuffer)) .eq. '--timestep')) then
         
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--solver')) then 
+              (trim(adjustl(cbuffer)) .eq. '--solver')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--output')) then 
+              (trim(adjustl(cbuffer)) .eq. '--output')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then 
+              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then 
+              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)

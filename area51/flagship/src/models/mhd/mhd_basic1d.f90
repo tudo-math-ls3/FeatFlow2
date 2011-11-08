@@ -615,7 +615,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_getVarBlockformat1d')
       call sys_halt()
       
-    end if    
+    end if
 
   end subroutine mhd_getVarBlockformat1d
 

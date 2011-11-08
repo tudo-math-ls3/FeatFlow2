@@ -64,13 +64,13 @@ program chemotaxis
 
   implicit none
 
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   
   call system_init()
 
-  ! The very second thing in every program: 
-  ! Initialise the storage management: 
+  ! The very second thing in every program:
+  ! Initialise the storage management:
   !
   ! 2.) Initialise FEAT 2.0 storage management:
   call storage_init(999, 100)

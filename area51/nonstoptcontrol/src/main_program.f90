@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module solves an optimal control problem for the stationary and
-!# nonstationary Navier-Stokes optimal control problem 
+!# nonstationary Navier-Stokes optimal control problem
 !#
 !#  $$ min J(y,u) = 1/2||y-z||_{L^2} + \gamma/2||y(T)-z(T)||_{L^2} + \alphga/2||u||^2 $$
 !#
@@ -13,13 +13,13 @@
 !#  $$ \Nabla \cdot y = 0$$
 !#  $$- \nu Delta(\lambda) - y*\Nabla(\lambda) + \lambda\Nabla y + \Nabla \xi = y-z $$
 !#  $$ \Nabla \cdot \lambda = 0$$
-!#              
+!#
 !#
 !# on a 2D domain for a 2D function $y=(y_1,y_2)$, a pressure $p$,
 !# a dual velocity $\lambda$ and a dual pressure $\xi$. $u$ is the control
 !# and $z$ a desired flow field.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -144,7 +144,7 @@ module main_program
     ! Smoothers for a MG solver
     type(t_spacetimelinsol), dimension(:), pointer :: p_Rsmoothers
 
-    ! Preconditioner of the smoothers 
+    ! Preconditioner of the smoothers
     type(t_spacetimelinsol), dimension(:), pointer :: p_RsmootherPrecond
     
     ! DEBUG!!! Preconditioners on each level
@@ -922,20 +922,20 @@ contains
         "ithetaschemetype", ithetaschemetype)
         
     call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
-        "sboundary", sboundary,bdequote=.true.)    
+        "sboundary", sboundary,bdequote=.true.)
     call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
-        "smesh", smesh,bdequote=.true.)    
+        "smesh", smesh,bdequote=.true.)
 
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "iwriteUCD", iwriteUCD)
     call parlst_getvalue_string (rparlist, "POSTPROC", &
-        "sucdfilename", sucdfilename,bdequote=.true.)    
+        "sucdfilename", sucdfilename,bdequote=.true.)
 
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "icalcError", icalcError)
 
     call parlst_getvalue_string (rparlist, "POSTPROC", &
-        "scubTimeError", scubTimeError,bdequote=.true.)    
+        "scubTimeError", scubTimeError,bdequote=.true.)
 
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "cfespace", cfespace, -1)
@@ -1109,7 +1109,7 @@ contains
         call stls_setMatrix (rlinearSolver%rsolver,ilev,p_Rmatrices(ilev))
       end do
 
-      ! Apply initial/boundary conditions, prepare to solve.    
+      ! Apply initial/boundary conditions, prepare to solve.
       call sptivec_initVector (rsolution,p_rtimeDiscr,p_rspaceDiscr)
       call sptivec_clearVector (rsolution)
 
@@ -1126,7 +1126,7 @@ contains
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
 
-      ! Initial defect    
+      ! Initial defect
       !call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
       !    rsolution,rrhs,rtemp)
       
@@ -1204,7 +1204,7 @@ contains
         exit
       end if
 
-    end do    
+    end do
 
   end subroutine
 
@@ -1218,7 +1218,7 @@ contains
     character(LEN=SYS_STRLEN) :: smaster
     logical :: bexists
     
-    ! The very first thing in every application: 
+    ! The very first thing in every application:
     ! Initialise system-wide settings:
     call system_init()
     
@@ -1242,7 +1242,7 @@ contains
     
     ! Initialise log file for output.
     call parlst_getvalue_string (rparlist, "OUTPUT", &
-        "soutputFile", soutput,bdequote=.true.)    
+        "soutputFile", soutput,bdequote=.true.)
     call output_init (soutput)
     OU_LINE_LENGTH = 132
     cdefaultDateTimeLogPolicy = OU_DTP_ADDDATETIME
@@ -1252,14 +1252,14 @@ contains
     
     ! Now we can really start!
     !
-    ! Initialise the storage management: 
+    ! Initialise the storage management:
     call storage_init(999, 100)
     call exstor_init (999,100)
     
     ! Initialise the parser
     call fparser_init ()
     
-    ! Call the problem to solve. 
+    ! Call the problem to solve.
     call output_lbrk ()
     call output_line ('Calculating problem')
     
@@ -1306,13 +1306,13 @@ contains
 !    ! Create the RHS vector on the two levels
 !    call sth_getLevel (rspacetimeHierarchy,ilevel,p_rfeSpaceLevel,p_rtimeDiscr)
 !    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
-!    
+!
 !    ! Create the right hand side.
 !    call sptivec_initVector (rdefectFine,p_rtimeDiscr,p_rspaceDiscr)
 !    call strhs_assembleRHS (rphysics,rdefectFine)
 !
 !    call spop_applyBC (RspaceTimeBC(ilevel), SPOP_DEFECT, rdefectFine)
-!    
+!
 !    ! Allocate temp vectors
 !    call sptivec_initVector (rtempVecFine,p_rtimeDiscr,p_rspaceDiscr)
 !    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecFine,.false.)
@@ -1320,29 +1320,29 @@ contains
 !    ! Create the RHS vector on the lower levels
 !    call sth_getLevel (rspacetimeHierarchy,ilevel-1,p_rfeSpaceLevel,p_rtimeDiscr)
 !    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
-!    
+!
 !    call sptivec_initVector (rdefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
 !    call strhs_assembleRHS (rphysics,rdefectCoarse)
 !
 !    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
-!     
+!
 !    ! Allocate temp vectors
 !    call sptivec_initVector (rtempVecCoarse,p_rtimeDiscr,p_rspaceDiscr)
-!    
+!
 !    ! Restrict the fine grid defect.
 !    call sptivec_initVector (rrestDefectCoarse,p_rtimeDiscr,p_rspaceDiscr)
 !    call lsysbl_createVectorBlock (p_rspaceDiscr,rspaceTempVecCoarse,.false.)
-!    
+!
 !    call sptipr_performRestriction (rprojHier,ilevel,rrestDefectCoarse, &
 !      rdefectFine,rspaceTempVecCoarse,rspaceTempVecFine,&
 !      rtempVecCoarse,rtempVecFine)
-!    
+!
 !    call spop_applyBC (RspaceTimeBC(ilevel-1), SPOP_DEFECT, rdefectCoarse)
-!      
+!
 !    ! Calculate the L2-norm of the difference
 !    call sptivec_vectorLinearComb (rrestDefectCoarse,rdefectCoarse,1.0_DP,-1.0_DP)
 !    call test_vectorNormExt (rdefectCoarse,LINALG_NORML2)
-!      
+!
 !    ! Clean up
 !    call lsysbl_releaseVector (rspaceTempVecFine)
 !    call lsysbl_releaseVector (rspaceTempVecCoarse)
@@ -1407,7 +1407,7 @@ contains
       end if
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (rxBlock)
     
     ! Calculate the actual norm.

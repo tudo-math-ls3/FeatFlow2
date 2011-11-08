@@ -2,7 +2,7 @@
 !# ****************************************************************************
 !# <name> element_prism3d </name>
 !# ****************************************************************************
-!# 
+!#
 !# <purpose>
 !# This module contains the implementations of the 3D prism basis
 !# functions.
@@ -22,28 +22,28 @@ module element_prism3d
   
   private
   
-  public :: elem_R0_3D 
-  public :: elem_R0_3D_mult 
-  public :: elem_R0_3D_sim 
-  public :: elem_R1_3D 
-  public :: elem_R1_3D_mult 
-  public :: elem_R1_3D_sim 
+  public :: elem_R0_3D
+  public :: elem_R0_3D_mult
+  public :: elem_R0_3D_sim
+  public :: elem_R1_3D
+  public :: elem_R1_3D_mult
+  public :: elem_R1_3D_sim
 
 contains
 
 !**************************************************************************
 ! Element subroutines for parametric 3D R0 element.
-! The routines are defines with the F95 PURE statement as they work 
+! The routines are defines with the F95 PURE statement as they work
 ! only on the parameters; helps some compilers in optimisation.
  
-!<subroutine>  
+!<subroutine>
 
   pure subroutine elem_R0_3D (celement, Dcoords, Djac, ddetj, Bder, &
                               Dpoint, Dbas)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at the given point on the reference element. 
+  ! finite element at the given point on the reference element.
 !</description>
 
 !<input>
@@ -91,9 +91,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
-  !   basis function of the finite element in the point (dx,dy) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
+  !   basis function of the finite element in the point (dx,dy) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -110,18 +110,18 @@ contains
   ! The function value of the basis function is =1, the derivatives are all 0!
   DBas(1,DER_FUNC) = 1.0_DP
 
-  end subroutine 
+  end subroutine
   
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   pure subroutine elem_R0_3D_mult (celement, Dcoords, Djac, Ddetj, &
                                    Bder, Dbas, npoints, Dpoints)
 
   !<description>
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at multiple given points on the reference element. 
+  ! finite element at multiple given points on the reference element.
   !</description>
 
   !<input>
@@ -177,9 +177,9 @@ contains
   
   !<output>
   
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
-  !   basis function of the finite element in the point Dcoords(j) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -197,18 +197,18 @@ contains
   ! The function value of the basis function is =1, the derivatives are all 0!
   DBas(1,DER_FUNC,:) = 1.0_DP
 
-  end subroutine 
+  end subroutine
 
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   pure subroutine elem_R0_3D_sim (celement, Dcoords, Djac, Ddetj, &
                                   Bder, Dbas, npoints, nelements, Dpoints)
 
   !<description>
-  ! This subroutine simultaneously calculates the values of the basic 
-  ! functions of the finite element at multiple given points on the reference 
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the reference
   ! element for multiple given elements.
   !</description>
 
@@ -278,9 +278,9 @@ contains
   
   !<output>
   
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
-  !   basis function of the finite element in the point Dcoords(j) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -299,21 +299,21 @@ contains
   ! The function value of the basis function is =1, the derivatives are all 0!
   DBas(1,DER_FUNC,:,:) = 1.0_DP
 
-  end subroutine 
+  end subroutine
 
 !**************************************************************************
 ! Element subroutines for parametric R1 element.
-! The routines are defines with the F95 PURE statement as they work 
+! The routines are defines with the F95 PURE statement as they work
 ! only on the parameters; helps some compilers in optimisation.
  
-!<subroutine>  
+!<subroutine>
 
   pure subroutine elem_R1_3D (celement, Dcoords, Djac, ddetj, Bder, &
                               Dpoint, Dbas)
 
   !<description>
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at the given point on the reference element. 
+  ! finite element at the given point on the reference element.
   !</description>
 
   !<input>
@@ -364,9 +364,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
-  !   basis function of the finite element in the point (dx,dy) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
+  !   basis function of the finite element in the point (dx,dy) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -503,18 +503,18 @@ contains
 !    endif
 !  endif
     
-  end subroutine 
+  end subroutine
   
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   pure subroutine elem_R1_3D_mult (celement, Dcoords, Djac, Ddetj, &
                                    Bder, Dbas, npoints, Dpoints)
 
 !<description>
   ! This subroutine calculates the values of the basic functions of the
-  ! finite element at multiple given points on the reference element. 
+  ! finite element at multiple given points on the reference element.
 !</description>
 
 !<input>
@@ -569,9 +569,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
-  !   basis function of the finite element in the point Dcoords(j) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -689,11 +689,11 @@ contains
     end do
 !  ENDIF
     
-  end subroutine 
+  end subroutine
 
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
 #ifndef USE_OPENMP
   pure &
@@ -704,8 +704,8 @@ contains
                              Dpoints, rperfconfig)
 
 !<description>
-  ! This subroutine simultaneously calculates the values of the basic 
-  ! functions of the finite element at multiple given points on the reference 
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the reference
   ! element for multiple given elements.
 !</description>
 
@@ -778,9 +778,9 @@ contains
 !</input>
   
 !<output>
-  ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
-  !   basis function of the finite element k in the point Dcoords(j) on the 
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th
+  !   basis function of the finite element k in the point Dcoords(j) on the
   !   reference element,
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
@@ -912,6 +912,6 @@ contains
       
   end if
     
-  end subroutine 
+  end subroutine
 
 end module

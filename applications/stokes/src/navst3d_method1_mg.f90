@@ -15,7 +15,7 @@
 !# system instead of a Stokes system.
 !#
 !# This example can be seen as the most simple stationary 3D Navier-Stokes
-!# solver without any fancy features as optimal damping parameter control or 
+!# solver without any fancy features as optimal damping parameter control or
 !# Newton-iteration.
 !# </purpose>
 !##############################################################################
@@ -78,16 +78,16 @@ module navst3d_method1_mg
     ! The Laplace matrix for that level.
     type(t_matrixScalar) :: rmatrixStokes
 
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
     
     ! B3-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB3
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -144,7 +144,7 @@ contains
     ! with data for the linear solver.
     type(t_vectorBlock) :: rrhs,rvecDef,rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,&
                                    p_rcoarseGridSolver,p_rsmoother
 
@@ -173,7 +173,7 @@ contains
     real(DP) :: dnu
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -229,7 +229,7 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -282,7 +282,7 @@ contains
                                    Rlevels(i)%rtriangulation)
     end do
 
-    ! rdiscretisation%RspatialDiscr is a list of scalar 
+    ! rdiscretisation%RspatialDiscr is a list of scalar
     ! discretisation structures for every component of the solution vector.
     ! We have a solution vector with three components:
     !  Component 1 = X-velocity
@@ -290,7 +290,7 @@ contains
     !  Component 3 = Z-velocity
     !  Component 4 = Pressure
     do i = NLMIN, NLMAX
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
@@ -307,7 +307,7 @@ contains
           Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(3))
 
-      ! For the pressure (4th component), we set up a separate discretisation 
+      ! For the pressure (4th component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
@@ -320,7 +320,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,&
-                                         Rlevels(i)%rmatrix)    
+                                         Rlevels(i)%rmatrix)
       
       ! Inform the matrix that we build a saddle-point problem.
       ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
@@ -359,9 +359,9 @@ contains
           Rlevels(i)%rdiscretisation%RspatialDiscr(1))
                 
       ! Duplicate the B1 matrix structure to the B2/B3 matrix, so use
-      ! lsyssc_duplicateMatrix to create B2/B3. Share the matrix 
-      ! structure between B1 and B2/B3 (B1 is the parent and B2/B3 the children). 
-      ! Do not create a content array yet, it will be created by 
+      ! lsyssc_duplicateMatrix to create B2/B3. Share the matrix
+      ! structure between B1 and B2/B3 (B1 is the parent and B2/B3 the children).
+      ! Do not create a content array yet, it will be created by
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
@@ -393,7 +393,7 @@ contains
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
       !
@@ -421,7 +421,7 @@ contains
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
           Rlevels(i)%rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
-      ! Manually change the discretisation structure of the Y-/Z-velocity 
+      ! Manually change the discretisation structure of the Y-/Z-velocity
       ! matrix to the Y-/Z-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
@@ -541,7 +541,7 @@ contains
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhs,.false.)
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvecDef,.false.)
 
-    ! The vector structure is ready but the entries are missing. 
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -549,7 +549,7 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC3D
     
     ! ... and then discretise the RHS to the first three subvectors of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! corresponding block.
     !
     ! Note that the vector is unsorted after calling this routine!
@@ -578,7 +578,7 @@ contains
       ! Now we need to implement the boundary conditions. To do this, we
       ! first need to create a mesh region describing the mesh`s boundary.
       ! We want to prescribe Dirichlet on the cube`s boundary, except for
-      ! the face where the X-coordinate is 1. 
+      ! the face where the X-coordinate is 1.
       ! We could now manually create a mesh region based on the triangulation`s
       ! nodal-property array and then kick out everything that belongs to the
       ! right face. But we will use the dom3d_cube module, which performs
@@ -634,9 +634,9 @@ contains
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -811,7 +811,7 @@ contains
           
           ! Now how do we assemble the convective term?
           select case (iConvAsm)
-          case (1) 
+          case (1)
             ! Use the streamline-diffusion
             call conv_streamlineDiffusion3d(Rlevels(i)%rvecSol,&
                  Rlevels(i)%rvecSol, 1.0_DP, 0.0_DP, rsd, CONV_MODMATRIX, &
@@ -949,7 +949,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = NLMAX, NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do

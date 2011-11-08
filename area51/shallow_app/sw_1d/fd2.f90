@@ -90,7 +90,7 @@ contains
 
   ! Hilfsfunktionen für gul
   ! flux-function f_{i+1/2}  =f^L für alpha = 0, f^H für alpha = 1
-    double precision function fl(i) 
+    double precision function fl(i)
 	double precision	:: k2, tempa
 	integer, intent(in) 	:: i
         tempa = approxa(i);
@@ -165,7 +165,7 @@ contains
 
   ! Hilfsfunktionen für gtvd
   ! flux-function f_{i+1/2}  =f^L für alpha = 0, f^H für alpha = 1 (alpha = erg. des limiters)
-    double precision function fl(i) 
+    double precision function fl(i)
 	double precision	:: k2, tempa
 	integer, intent(in) 	:: i
 	integer			:: j

@@ -76,7 +76,7 @@
 !#    By using filter techniques, this data can be imposed to the PDE, e.g.
 !#    into the right hand side, the solution or into the matrix.\\
 !#
-!# Fictitious boundary objects are identified to the application by 
+!# Fictitious boundary objects are identified to the application by
 !# t_fictBoundaryRegion structures. The content of the structure is more or less
 !# application specific; it simply contains a couple of information that allow
 !# the evaluation routines to identify a fictitious boundary object.
@@ -91,7 +91,7 @@
 !# iteration. Nonlinear boundary conditions are implemented usually in a
 !# nonlinear loop and need a special implementation there, which might
 !# be different from when a linear system is solved.
-!# 
+!#
 !#
 !# The following routines can be found here:\\
 !#
@@ -102,18 +102,18 @@
 !#     -> Cleans up a boundary condition structure, releases memory
 !#
 !# 3.) bcond_newBC
-!#     -> Adds a general boundary condition for the real boundary to a 
+!#     -> Adds a general boundary condition for the real boundary to a
 !#        boundary-condition object; normally used only internally.
 !#
 !# 4.) bcond_getBCRegion
 !#     -> Finds the index of the first boundary condition region containing a point.
 !#
 !# 5.) bcond_newDirichletBConRealBD
-!#     -> Adds a Dirichlet boundary condition the real boundary to a 
+!#     -> Adds a Dirichlet boundary condition the real boundary to a
 !#        boundary-condition object
 !#
 !# 6.) bcond_newPressureDropBConRealBD
-!#     -> Adds a pressure-drop boundary condition the real boundary to a 
+!#     -> Adds a pressure-drop boundary condition the real boundary to a
 !#        boundary-condition object
 !#
 !# 7.) bcond_newSlipBConRealBD
@@ -121,7 +121,7 @@
 !#        to a boundary-condition object
 !#
 !# 8.) bcond_newFeastMirrorBConRealBD
-!#     -> Adds a Dirichlet boundary condition the real boundary to a 
+!#     -> Adds a Dirichlet boundary condition the real boundary to a
 !#        boundary-condition object
 !#
 !# </purpose>
@@ -225,7 +225,7 @@ module boundarycondition
     
     ! Number of equations, this BC refers to. This is usually =1 but can be
     ! higher if the BC couples multiple equations (like <tex>$u_x + u_y = c$</tex> or so).
-    ! Normally, this is the length of the Iequations list below, but the 
+    ! Normally, this is the length of the Iequations list below, but the
     ! meaning might be different for special type BC`s.
     integer :: nequations = 0
     
@@ -239,7 +239,7 @@ module boundarycondition
     ! b) A simple Dirichlet-boundary condition for the Y-velocity on real
     !   boundary is identified by "nequations=1" + "Iequations=[2]".
     !
-    ! c) "Pressure drop" boundary conditions on real boundary that must 
+    ! c) "Pressure drop" boundary conditions on real boundary that must
     !   modify two "velocity" components 1(=x), 2(=y) are identified by
     !   "nequations=2" + "Iequations=[1 2]".
     !
@@ -263,7 +263,7 @@ module boundarycondition
     !  region only once and then never touch it anymore when called again.
     ! If FALSE, the discretisation routine assumes that the boundary
     !  region might have changed from one call to the other (e.g. in a
-    !  time dependent simulation, the position or values might have changed) 
+    !  time dependent simulation, the position or values might have changed)
     !  and will therefore always rebuild the information for this boundary
     !  region when being called again.
     logical :: bisStatic = .false.
@@ -315,7 +315,7 @@ module boundarycondition
   
   type t_boundaryConditions
   
-    ! Pointer to the domain that is connected with this boundary 
+    ! Pointer to the domain that is connected with this boundary
     ! condition
     type(t_boundary), pointer :: p_rboundary => null()
     
@@ -371,7 +371,7 @@ contains
   
 !<description>
   ! This routine initialises a boundary condition structure.
-  ! If p_rboundaryConditions is NULL(), a new structure will be created. 
+  ! If p_rboundaryConditions is NULL(), a new structure will be created.
   ! Otherwise, the existing structure is recreated/updated.
 !</description>
 
@@ -382,7 +382,7 @@ contains
   ! OPTIONAL: The initial size of the lists saving boundary conditions.
   ! When adding boundary conditions to the rboundaryConditions structure,
   ! if there is not enough space, the lists saving the boundary conditions
-  ! are dynamically increased (in terms of BC_LISTBLOCKSIZE). 
+  ! are dynamically increased (in terms of BC_LISTBLOCKSIZE).
   integer, intent(in), optional :: ibcRegionsCount
 !</input>
 
@@ -432,9 +432,9 @@ contains
 !</description>
 
 !<input>
-  ! OPTIONAL: If set to TRUE, the structure p_rboundaryConditions itself is not 
-  ! released from memory. If set to FALSE or not existent (the usual setting), 
-  ! the structure p_rboundaryConditions will also be removed from the heap after 
+  ! OPTIONAL: If set to TRUE, the structure p_rboundaryConditions itself is not
+  ! released from memory. If set to FALSE or not existent (the usual setting),
+  ! the structure p_rboundaryConditions will also be removed from the heap after
   ! cleaning up.
   logical, intent(in), optional :: bkeepStructure
 !</input>
@@ -474,7 +474,7 @@ contains
                           p_rbcRegion, rboundaryRegion, rfictBoundaryRegion)
   
 !<description>
-  ! Adds a general boundary condition region to the boundary condition structure.. 
+  ! Adds a general boundary condition region to the boundary condition structure..
   ! A pointer to the region is returned
   ! in p_rbcRegion, the caller can add some user-defined information there
   ! if necessary (e.g. the name, a tag or something else).
@@ -491,7 +491,7 @@ contains
   ! This is a BC_RTYPE_xxxx flag.
   integer, intent(in) :: cbdtype
 
-  ! OPTIONAL: A boundary-region object, describing the position 
+  ! OPTIONAL: A boundary-region object, describing the position
   ! on the boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
   ! This parameter must be present for boundary conditions on the real
@@ -502,7 +502,7 @@ contains
   ! fictitious boundary region.
   ! A copy of this is added to the rboundaryConditions structure.
   ! This parameter must be present for boundary conditions on the fictitious
-  ! boundary but can be omitted when adding boundary condition on the real 
+  ! boundary but can be omitted when adding boundary condition on the real
   ! boundary.
   type(t_fictBoundaryRegion), intent(in), optional :: rfictBoundaryRegion
 !</input>
@@ -654,8 +654,8 @@ contains
       end if
     end if
 
-    ! Loop through the boundary condition regions    
-    do while (iindexBC .le. rboundaryConditions%iregionCount) 
+    ! Loop through the boundary condition regions
+    do while (iindexBC .le. rboundaryConditions%iregionCount)
     
       ! Convert the parameter value to the correct parametrisation if necessary
       dparValue = boundary_convertParameter(rboundaryConditions%p_rboundary, &
@@ -694,9 +694,9 @@ contains
                                            rboundaryRegion,p_rbcRegion)
   
 !<description>
-  ! Adds a Dirichlet boundary condition region to the boundary condition 
-  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
-  ! can add some user-defined information there if necessary 
+  ! Adds a Dirichlet boundary condition region to the boundary condition
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller
+  ! can add some user-defined information there if necessary
   ! (e.g. the name, a tag or something else).
   ! The boundary conditions are assumed to be on the 'real' boundary -
   ! fictitious-boundary boundary conditions are supported by another routine.
@@ -704,7 +704,7 @@ contains
 
 !<input>
   ! An identifier for the equation, this boundary condition refers to.
-  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
   ! Y-velocity), etc.
   integer, intent(in) :: iequation
 
@@ -720,7 +720,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! OPTIONAL: A pointer to the added boundary region. The caller can make 
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make
   ! more specific modifications to this if necessary.
   type(t_bcRegion), optional, pointer :: p_rbcRegion
 !</output>
@@ -762,9 +762,9 @@ contains
                                              rboundaryRegion,p_rbcRegion)
   
 !<description>
-  ! Adds a FEAST mirror boundary condition region to the boundary condition 
-  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
-  ! can add some user-defined information there if necessary 
+  ! Adds a FEAST mirror boundary condition region to the boundary condition
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller
+  ! can add some user-defined information there if necessary
   ! (e.g. the name, a tag or something else).
   ! The boundary conditions are assumed to be on the 'real' boundary -
   ! fictitious-boundary boundary conditions are supported by another routine.
@@ -772,7 +772,7 @@ contains
 
 !<input>
   ! An identifier for the equation, this boundary condition refers to.
-  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
   ! Y-velocity), etc.
   integer, intent(in) :: iequation
 
@@ -788,7 +788,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! OPTIONAL: A pointer to the added boundary region. The caller can make 
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make
   ! more specific modifications to this if necessary.
   type(t_bcRegion), optional, pointer :: p_rbcRegion
 !</output>
@@ -830,9 +830,9 @@ contains
                                               rboundaryRegion,p_rbcRegion)
   
 !<description>
-  ! Adds a Pressure-Drop boundary condition region to the boundary condition 
-  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
-  ! can add some user-defined information there if necessary 
+  ! Adds a Pressure-Drop boundary condition region to the boundary condition
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller
+  ! can add some user-defined information there if necessary
   ! (e.g. the name, a tag or something else).
 !</description>
 
@@ -895,9 +895,9 @@ contains
                                       rboundaryRegion,p_rbcRegion)
   
 !<description>
-  ! Adds a nonlinear Slip boundary condition region to the boundary condition 
-  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
-  ! can add some user-defined information there if necessary 
+  ! Adds a nonlinear Slip boundary condition region to the boundary condition
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller
+  ! can add some user-defined information there if necessary
   ! (e.g. the name, a tag or something else).
 !</description>
 
@@ -960,15 +960,15 @@ contains
                                            rboundaryRegion,p_rbcRegion)
   
 !<description>
-  ! Adds a Dirichlet boundary condition region for a fictitious boundary 
-  ! component to the boundary condition structure. 
-  ! A pointer to the region is returned in p_rfbcRegion, the caller 
-  ! can add some user-defined information there if necessary 
+  ! Adds a Dirichlet boundary condition region for a fictitious boundary
+  ! component to the boundary condition structure.
+  ! A pointer to the region is returned in p_rfbcRegion, the caller
+  ! can add some user-defined information there if necessary
   ! (e.g. the name, a tag or something else).
 !</description>
 
 !<input>
-  ! An array of identifiers for the equations, this boundary condition 
+  ! An array of identifiers for the equations, this boundary condition
   ! refers to. Example: Iequations = [1 2] for X-velocity-component (1) and
   ! Y-velocity component (2).
   integer, dimension(:), intent(in) :: Iequations
@@ -985,7 +985,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! OPTIONAL: A pointer to the added boundary condition region. The caller can 
+  ! OPTIONAL: A pointer to the added boundary condition region. The caller can
   ! make more specific modifications to this if necessary.
   type(t_bcRegion), optional, pointer :: p_rbcRegion
 !</output>

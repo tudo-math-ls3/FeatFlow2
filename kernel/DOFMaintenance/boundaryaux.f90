@@ -147,7 +147,7 @@ contains
 
 !<input>
     ! A t_boundaryRegion specifying the boundary region where
-    ! to calculate. 
+    ! to calculate.
     type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
     ! A discretisation structure
@@ -263,7 +263,7 @@ contains
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
           
-          ! Element orientation; i.e. the local number of the boundary edge 
+          ! Element orientation; i.e. the local number of the boundary edge
           do ilocaledge = 1,ubound(p_IedgesAtElement,1)
             if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
                 p_IedgesAtBoundary(iedge)) exit
@@ -296,7 +296,7 @@ contains
         ! Element number
         IelementList(iel) = p_IelementsAtBoundary(iedge)
 
-        ! Element orientation; i.e. the local number of the boundary edge 
+        ! Element orientation; i.e. the local number of the boundary edge
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
           if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
               p_IedgesAtBoundary(iedge)) exit
@@ -340,7 +340,7 @@ contains
           ! Element number
           IelementList(iel) = p_IelementsAtBoundary(iedge)
           
-          ! Element orientation; i.e. the local number of the boundary edge 
+          ! Element orientation; i.e. the local number of the boundary edge
           do ilocaledge = 1,ubound(p_IedgesAtElement,1)
             if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
                 p_IedgesAtBoundary(iedge)) exit
@@ -383,7 +383,7 @@ contains
         ! Element number
         IelementList(iel) = p_IelementsAtBoundary(iedge)
         
-        ! Element orientation; i.e. the local number of the boundary edge 
+        ! Element orientation; i.e. the local number of the boundary edge
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
           if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
               p_IedgesAtBoundary(iedge)) exit
@@ -635,12 +635,12 @@ contains
 !<description>
     ! This function calculates an upper bound for the number of
     ! elements which are adjacent to the boundary using the given
-    ! triangulation. 
+    ! triangulation.
 !</description>
 
 !<input>
     ! A t_boundaryRegion specifying the boundary region where
-    ! to calculate. 
+    ! to calculate.
     type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
     ! The triangulation structure

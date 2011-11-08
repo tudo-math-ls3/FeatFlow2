@@ -7,7 +7,7 @@
 !# This module maintains time scales and hierarchies of time scales.
 !#
 !# A time scale hierarchy is a hierarchy of time discretisation structures
-!# with increasing number of timesteps. Every refinement usually doubles the 
+!# with increasing number of timesteps. Every refinement usually doubles the
 !# number of timesteps.
 !#
 !# The following routines can be found here:
@@ -46,7 +46,7 @@ module timescalehierarchy
     integer :: nlevels = 0
     
     ! Absolute start time of the simulation
-    real(DP) :: dtimeInit = 0.0_DP     
+    real(DP) :: dtimeInit = 0.0_DP
     
     ! Maximum time of the simulation
     real(DP) :: dtimeMax = 0.0_DP
@@ -93,8 +93,8 @@ contains
 
     ! Basic initialisation
     rtimeHierarchy%nlevels = nlevels
-    rtimeHierarchy%dtimeInit       = dtimeInit              
-    rtimeHierarchy%dtimeMax        = dtimeMax          
+    rtimeHierarchy%dtimeInit       = dtimeInit
+    rtimeHierarchy%dtimeMax        = dtimeMax
     allocate(rtimeHierarchy%p_rtimeLevels(nlevels))
     
     ! Initialise the coarse mesh. Copy rcoarseDiscr.

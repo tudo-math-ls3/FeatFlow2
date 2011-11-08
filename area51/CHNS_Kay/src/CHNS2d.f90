@@ -26,7 +26,7 @@ program CHNS2d
   
   character(LEN=SYS_STRLEN) :: slogfile,serrorfile
   
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   call system_init()
   
@@ -43,14 +43,14 @@ program CHNS2d
   call output_init (slogfile,serrorfile)
   
   ! Now we can really start!
-  ! 
-  ! Initialise the storage management: 
+  !
+  ! Initialise the storage management:
   call storage_init(999, 100)
   
   ! Initialise the parser
   call fparser_init ()
 
-  ! Call the problem to solve. 
+  ! Call the problem to solve.
   call output_lbrk ()
   call output_line ('Calculating CHNS2d-Problem')
   call output_separator (OU_SEP_MINUS)

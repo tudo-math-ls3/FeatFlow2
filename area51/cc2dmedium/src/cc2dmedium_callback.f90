@@ -72,17 +72,17 @@
 !#
 !# 10.) c2d2_doneCollectForAssembly
 !#      -> Is called after the assembly process.
-!#      -> Releases information stored in the collection by 
+!#      -> Releases information stored in the collection by
 !#         c2d2_initCollectForAssembly.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
-!# framework calls c2d2_initCollectForAssembly to stores the current point 
+!# framework calls c2d2_initCollectForAssembly to stores the current point
 !# in time (and probably other necessary information) to the quickaccess-array
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
 !#
-!# -> p_rcollection%IquickAccess(1)   = 0: stationary, 
+!# -> p_rcollection%IquickAccess(1)   = 0: stationary,
 !#                                      1: nonstationary with explicit time stepping
 !# -> p_rcollection%DquickAccess(1)   = current simulation time
 !# -> p_rcollection%DquickAccess(2)   = minimum simulation time
@@ -175,7 +175,7 @@ contains
   ! and has usually not to be changed by the user.
   !
   ! After the assembly process, this subroutine is called to release temporary
-  ! information from the collection which was stored there by 
+  ! information from the collection which was stored there by
   ! c2d2_initCollectForAssembly.
 !</description>
   
@@ -193,7 +193,7 @@ contains
 
     ! Currently, this subroutine is empty as all information stored in
     ! the collection in c2d2_initCollectForAssembly is put to the quick-access
-    ! arrays -- which do not have to be cleaned up. 
+    ! arrays -- which do not have to be cleaned up.
     ! This might change in future...
 
   end subroutine
@@ -258,7 +258,7 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                      :: p_rcollection
     
@@ -339,7 +339,7 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                      :: p_rcollection
     
@@ -418,7 +418,7 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                      :: p_rcollection
     
@@ -506,7 +506,7 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                      :: p_rcollection
     
@@ -554,7 +554,7 @@ contains
   use dofmapping
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
@@ -595,7 +595,7 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
+  ! A pointer to a collection structure to provide additional
   ! information to the coefficient routine. May point to NULL() if not defined.
   type(t_collection), pointer                      :: p_rcollection
   
@@ -652,7 +652,7 @@ contains
   use dofmapping
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the Y-velocity.
@@ -693,7 +693,7 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
+  ! A pointer to a collection structure to provide additional
   ! information to the coefficient routine. May point to NULL() if not defined.
   type(t_collection), pointer                      :: p_rcollection
   
@@ -750,7 +750,7 @@ contains
   use dofmapping
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the pressure
@@ -791,7 +791,7 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
+  ! A pointer to a collection structure to provide additional
   ! information to the coefficient routine. May point to NULL() if not defined.
   type(t_collection), pointer                      :: p_rcollection
   
@@ -850,9 +850,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -877,29 +877,29 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer, intent(IN)                                         :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! A pointer to a collection structure to provide additional 
+  ! A pointer to a collection structure to provide additional
   ! information to the coefficient routine. May point to NULL() if not defined.
   type(t_collection), pointer                  :: p_rcollection
 
@@ -907,8 +907,8 @@ contains
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -949,12 +949,12 @@ contains
 
       ! Now, depending on the problem, calculate the return value.
       
-      ! Get the type of the expression to evaluate from the 
+      ! Get the type of the expression to evaluate from the
       ! integer tag of the BC-region - if there is an expression to evaluate
       ! at all.
       iexprtyp = rbcRegion%ibdrexprtype
             
-      ! Now, which boundary condition do we have here?                       
+      ! Now, which boundary condition do we have here?
       select case (rbcRegion%ctype)
       case (BC_DIRICHLET)
         ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
@@ -964,7 +964,7 @@ contains
                                     p_rcollection)
     
       case (BC_PRESSUREDROP)
-        ! Normal stress / pressure drop. Evaluate Evaluate the 
+        ! Normal stress / pressure drop. Evaluate Evaluate the
         ! expression iexprtyp.
         Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
                                     iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
@@ -1013,7 +1013,7 @@ contains
     ! A compiled expression for evaluation at runtime
     type(t_fparser), pointer :: p_rparser
     
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                  :: p_rcollection
 
@@ -1057,9 +1057,9 @@ contains
         ! Get the local parameter value 0 <= d <= 1.
         ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
         ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par 
+        ! although 0 <= dminpar <= max.par
         !      and 0 <= dmaxpar <= max.par!
-        d = dpar 
+        d = dpar
         if (d .lt. rboundaryRegion%dminParam) &
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
@@ -1072,7 +1072,7 @@ contains
         Rval(5) = dpar
         Rval(6) = boundary_convertParameter(rdiscretisation%p_rboundary, &
                                             rboundaryRegion%iboundCompIdx, dpar, &
-                                            BDR_PAR_01, BDR_PAR_LENGTH) 
+                                            BDR_PAR_01, BDR_PAR_LENGTH)
         Rval(7) = dtime
         
         ! Evaluate the expression. ivalue is the number of
@@ -1081,20 +1081,20 @@ contains
         
       case (BDC_VALPARPROFILE)
         ! A parabolic profile. dvalue expresses the
-        ! maximum value of the profile. 
+        ! maximum value of the profile.
         !
         ! Get the local parameter value 0 <= d <= 1.
         ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
         ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par 
+        ! although 0 <= dminpar <= max.par
         !      and 0 <= dmaxpar <= max.par!
-        d = dpar 
+        d = dpar
         if (d .lt. rboundaryRegion%dminParam) &
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
     
-        evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
+        evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue)
       end select
     
     end function
@@ -1115,8 +1115,8 @@ contains
   
 !<description>
   ! This subroutine is called during the discretisation of boundary
-  ! conditions on fictitious boundary components. It calculates a special quantity 
-  ! on the boundary, which is then used by the discretisation routines to 
+  ! conditions on fictitious boundary components. It calculates a special quantity
+  ! on the boundary, which is then used by the discretisation routines to
   ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
   !
   ! The routine must calculate the values on all elements of the element
@@ -1128,10 +1128,10 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
-  !   the value should be calculated for 
-  !   (e.g. 1=1st solution component, e.g. X-velocity, 
+  !   the value should be calculated for
+  !   (e.g. 1=1st solution component, e.g. X-velocity,
   !         2=2nd solution component, e.g. Y-velocity,...,
   !         3=3rd solution component, e.g. pressure)
   !   Example: Icomponents(:) = [1,2] -> Compute values for X- and Y-velocity
@@ -1144,19 +1144,19 @@ contains
   type(t_blockDiscretisation), intent(IN)                     :: rdiscretisation
   
   ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are 
+  ! (This e.g. defines the type of boundary conditions that are
   !  currently being calculated (Dirichlet, Robin,...), as well as information
   !  about the current boundary region 'what is discretised at the moment'.)
   type(t_bcRegion), intent(IN)                                :: rbcRegion
   
-  ! A pointer to a collection structure to provide additional 
+  ! A pointer to a collection structure to provide additional
   ! information to the coefficient routine. May point to NULL() if not defined.
   type(t_collection), pointer                                 :: p_rcollection
 
 !</input>
 
 !<inputoutput>
-  ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+  ! A t_discreteFBCevaluation structure array that defines what to evaluate,
   ! where to evaluate and which accepts the return values.
   ! This callback routine must check out the cinfoNeeded-entry in this structure
   ! to find out what to evaluate.
@@ -1169,9 +1169,9 @@ contains
   ! For Dirichlet boundary:
   !   revaluation contains as many entries as Icomponents; every entry in
   !   Icomponent corresponds to one entry in revaluation
-  !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+  !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the
   !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
-  !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+  !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values
   !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
   !
   type(t_discreteFBCevaluation), dimension(:), intent(INOUT) :: Revaluation
@@ -1187,7 +1187,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx
     
-    ! Note: the definition of (analytic) fictitious boundary components 
+    ! Note: the definition of (analytic) fictitious boundary components
     ! is performed in 'c2d2_parseFBDconditions'.
     
     ! Are we evaluating our fictitious boundary component?
@@ -1243,37 +1243,37 @@ contains
 !      dxcenter = 1.1
 !      dycenter = 0.31
 !      dradius  = 0.05
-!      
+!
 !      ! Loop through the points where to evaluate:
 !      DO idx = 1,Revaluation(1)%nvalues
-!      
+!
 !        ! Get the number of the point to process; may also be number of an
 !        ! edge or element...
 !        ipoint = Revaluation(1)%p_Iwhere(idx)
-!        
+!
 !        ! Get x- and y-coordinate
 !        CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
 !                         p_DvertexCoordinates,&
 !                         p_IverticesAtElement,p_IverticesAtEdge,&
 !                         p_rtriangulation%NVT,&
 !                         dx,dy)
-!        
+!
 !        ! Get the distance to the center
 !        ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!        
+!
 !        ! Point inside?
 !        IF (ddistance .LE. dradius) THEN
-!        
+!
 !          ! Denote in the p_Iinside array that we prescribe a value here:
 !          Revaluation(1)%p_Iinside (idx) = 1
 !          Revaluation(2)%p_Iinside (idx) = 1
-!          
+!
 !          ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
 !          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
 !          Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!        
+!
 !        END IF
-!        
+!
 !      END DO
     
     end if

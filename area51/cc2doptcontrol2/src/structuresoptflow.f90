@@ -27,7 +27,7 @@ module structuresoptflow
   use timediscretisation
   use timescalehierarchy
 
-  use meshhierarchy  
+  use meshhierarchy
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
@@ -106,7 +106,7 @@ module structuresoptflow
 
     ! Analytic reference function to be used during error calculation
     ! if icalcError > 0.
-    type(t_anSolution) :: ranalyticRefFunction   
+    type(t_anSolution) :: ranalyticRefFunction
     
     ! Whether to calculate drag/lift forces.
     integer :: icalcForces = 0
@@ -119,7 +119,7 @@ module structuresoptflow
     real(DP) :: dbdForcesCoeff1 = 0.0_DP
     
     ! 2nd coefficient in the boundary integral of the drag coefficient.
-    ! If this is commented out, 0.004 is assumed (corresonds to flow 
+    ! If this is commented out, 0.004 is assumed (corresonds to flow
     ! around cylinder with RE=1000: Umean=0.2, len=0.1
     ! -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
     real(DP) :: dbdForcesCoeff2 = 0.0_DP
@@ -176,7 +176,7 @@ module structuresoptflow
     
     ! Type of the point value to evaluate. Every entry corresponds to one
     ! point coordinate in p_DcoordsPointEval. The tuples are formed by
-    ! (type,der) with 
+    ! (type,der) with
     !   type=1: primal x-velocity, =2: primal y-velocity, =3: primal pressure,
     !       =4: dual x-velocity, =5: dual y-velocity, =6: dual pressure,
     !   der =0: function value, =1: x-derivative, =2: y-derivative
@@ -191,7 +191,7 @@ module structuresoptflow
 !    ! A discretisation structure that describes a piecewise constant discretisation
 !    ! (usually P0 or Q0).
 !    type(t_spatialDiscretisation) :: rdiscrConstant
-!    
+!
 !    ! A discretisation structure that describes a piecewise linear discretisation
 !    ! (usually P1 or Q1).
 !    type(t_spatialDiscretisation) :: rdiscrLinear
@@ -214,13 +214,13 @@ module structuresoptflow
 !
 !    ! A vector that describes the streamfunction
 !    type(t_vectorScalar) :: rvectorStreamfunction
-!    
+!
 !    ! A vector that describes the H1-error of the velocity field in the vertices
 !    type(t_vectorScalar) :: rvectorH1err
 !
 !    ! A vector that describes the H1-error of the pressure in the cells
 !    type(t_vectorScalar) :: rvectorH1errCells
-!  
+!
   end type
 
 !</typeblock>
@@ -230,9 +230,9 @@ module structuresoptflow
   ! Structure collecting all settings of the space-time optflow solver.
   type t_settings_optflow
 
-    !<!-- 
+    !<!--
     ! ################
-    ! INPUT PARAMETERS 
+    ! INPUT PARAMETERS
     ! ################
     !
     ! The following parameters must be set by the main program in order to
@@ -268,7 +268,7 @@ module structuresoptflow
     type(t_meshHierarchy) :: rmeshHierarchy
     
     ! A hierarchy of time levels
-    type(t_timescaleHierarchy) :: rtimeHierarchy 
+    type(t_timescaleHierarchy) :: rtimeHierarchy
     
     ! A level info hierarchy for the assembly of stuff on all levels.
     type(t_staticSpaceAsmHierarchy) :: rspaceAsmHierarchy
@@ -335,28 +335,28 @@ module structuresoptflow
 !
 !  ! Application-specific type block for the Nav.St. problem
 !  type t_problem
-!  
+!
 !    ! Output level during the initialisation phase.
 !    integer :: MSHOW_Initialisation
-!  
+!
 !    ! Output level of the application.
 !    integer :: MT_OutputLevel
-!  
+!
 !    ! Physics of the problem
 !    type(t_settings_physics) :: rphysicsPrimal
-!    
+!
 !    ! A parameter block for everything that controls the optimal control
 !    ! problem.
 !    type(t_settings_optcontrol) :: roptcontrol
-!    
+!
 !    ! An object for saving the domain:
 !    type(t_boundary) :: rboundary
-!    
-!    ! A collection object that saves structural data and some 
-!    ! problem-dependent information which is e.g. passed to 
+!
+!    ! A collection object that saves structural data and some
+!    ! problem-dependent information which is e.g. passed to
 !    ! callback routines.
 !    type(t_collection)                    :: rcollection
-!    
+!
 !    ! A param list that saves all parameters from the DAT/INI file(s).
 !    type(t_parlist)                       :: rparamList
 !

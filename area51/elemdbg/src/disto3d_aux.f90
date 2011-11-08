@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains a hand full of auxiliary routines for the 
+!# This module contains a hand full of auxiliary routines for the
 !# elemdbg3d_testX debugger modules.
 !#
 !# The following routines can be found in this module:
@@ -95,7 +95,7 @@ contains
 
   pure subroutine disto3d_calcFaceNormal(Dtrafo, dx, dy, Dnormal)
 
-!<description>  
+!<description>
   ! AUXILIARY ROUTINE:
   ! Calculates the normal vector on a face.
 !</description>
@@ -567,7 +567,7 @@ contains
       iZ = int(p_Dvtx(3,ivt) * dh2) + 1
       
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the 
+      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
         p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(3*iX,17),DP)*dhdist
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
@@ -635,7 +635,7 @@ contains
       idx = iX*invt + iY
       
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the 
+      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
         p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(idx,17),DP)*dhdist
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
@@ -703,7 +703,7 @@ contains
       idx = iX*invt + iZ
       
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the 
+      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
         p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(idx,17),DP)*dhdist
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
@@ -771,7 +771,7 @@ contains
       idx = iY*invt + iZ
       
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the 
+      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
         p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(ivt,17),DP)*dhdist2
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &

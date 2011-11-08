@@ -9,7 +9,7 @@
 !# The basic type here is t_directAccessIntSet which capsules a set of
 !# integer numbers that can directly be accessed. Elements can be added and
 !# removed from the set up to its maximum size, and it can be checked
-!# if an element is in the set. 
+!# if an element is in the set.
 !# Note: This structure is realised as a bitfield for memory efficient
 !# storage of the set.
 !#
@@ -29,7 +29,7 @@
 !#
 !# 5.) nsets_DASetContains
 !#     -> Checks if a number is in a direct-access set for integer numbers.
-!# 
+!#
 !# 6.) nsets_clearDASet
 !#     -> Removes all elements from a direct-access set for integer numbers.
 !#
@@ -37,7 +37,7 @@
 !#     -> Inverts a direct-access set for integer numbers.
 !#
 !# 8.) nsets_addAllDASet
-!#     -> Adds all possible elements to a direct-access set for integer 
+!#     -> Adds all possible elements to a direct-access set for integer
 !#        numbers.
 !#
 !# 9.) nsets_nelementsInSet
@@ -224,7 +224,7 @@ contains
 
 !</subroutine>
 
-    ! Set the bit. 
+    ! Set the bit.
     rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)) = &
         ibset(rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
             iand(ielement-1,rset%ibitmask))

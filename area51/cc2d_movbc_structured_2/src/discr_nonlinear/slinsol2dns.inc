@@ -11,14 +11,14 @@
 * SLINSOL.INC must me included prior to this file!
 *
 * The structure itself is realized as integer array:
-*   IPARAM = array [1..SZN2VI] of integer 
+*   IPARAM = array [1..SZN2VI] of integer
 *          = TNS2DVectorParams
 *
 * TNS2DVectorParams = record (TLinearSolverParams)
 *
 *   // The first part is identical to the TLinearSolverParams structure,
 *   // as it contains general information about the solution vectors:
-*  
+*
 *   NEQ    : Number of equations in solution vector
 *   ...
 *   LTMP   : Handle to array [1..NEQ] of double precision.

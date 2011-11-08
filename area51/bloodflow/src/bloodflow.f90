@@ -32,7 +32,7 @@
 !#
 !# 8.) bloodflow_performAdaptation
 !#     -> Performs (r)h-adaptation
-!# 
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) TestPointInTriangle2D
@@ -71,7 +71,7 @@ module bloodflow
   ! Every subroutine is declared private by default
   private
 
-  ! Subroutine which are accessable from outside 
+  ! Subroutine which are accessable from outside
   ! this module are explicitly declared public
   public :: t_bloodflow
   public :: bloodflow_init
@@ -154,7 +154,7 @@ module bloodflow
     integer :: h_DobjectCoords = ST_NOHANDLE
 
     ! Marker array
-    type(t_vectorScalar) :: rmarker    
+    type(t_vectorScalar) :: rmarker
 
     ! List of elements intersected by object
     type(t_list) :: relementList
@@ -177,7 +177,7 @@ contains
 
 !<description>
 
-    ! This subroutine performs 
+    ! This subroutine performs
     !
     ! - all low-level initialization tasks of Featflow subsystems
     ! - reads in the parameter file(s) describing the bloodflow structure
@@ -1097,17 +1097,17 @@ contains
     !---------------------------------------------------------------------------
     
 !!$    locking: do iel = 1, rbloodflow%rhadapt%NEL
-!!$      
+!!$
 !!$      ! Get number of vertices per elements
 !!$      nve = hadapt_getNVE(rbloodflow%rhadapt, iel)
 !!$
 !!$      ! Loop over all edges of the element
 !!$      do ive = 1, nve
-!!$        
+!!$
 !!$        ! Get global vertex numbers
 !!$        ivt = p_IverticesAtElement(ive, iel)
 !!$        jvt = p_IverticesAtElement(mod(ive, nve)+1, iel)
-!!$        
+!!$
 !!$        ! Check if endpoints have different age and "lock" the older one
 !!$        if (abs(p_IvertexAge(ivt)) .lt.&
 !!$            abs(p_IvertexAge(jvt))) then
@@ -1123,7 +1123,7 @@ contains
 !!$    ! (1) Loop over all elements and check if there is an object
 !!$    !     point that can be captured by repositioning a corner node
 !!$    !---------------------------------------------------------------------------
-!!$    
+!!$
 !!$    ! Loop over all elements adjacent to the object
 !!$    ipos = list_getNextInList(rbloodflow%relementList, .true.)
 !!$    list1: do while(ipos .ne. LNULL)
@@ -1134,12 +1134,12 @@ contains
 !!$
 !!$      ! Get number of vertices of current element
 !!$      nve = tria_getNVE(p_IverticesAtElement, iel)
-!!$      
+!!$
 !!$      ! Get vertices at element
 !!$      i1 = p_IverticesAtElement(1, iel)
 !!$      i2 = p_IverticesAtElement(2, iel)
 !!$      i3 = p_IverticesAtElement(3, iel)
-!!$      
+!!$
 !!$      ! Get global coordinates of corner vertices
 !!$      DtriaCoords(:,1) = p_DvertexCoords(:,i1)
 !!$      DtriaCoords(:,2) = p_DvertexCoords(:,i2)
@@ -1150,18 +1150,18 @@ contains
 !!$
 !!$      ! Loop over all segments and check intersection point
 !!$      do ipoint = 1, size(p_DobjectCoords,2)
-!!$        
+!!$
 !!$        ! Test if point is inside the triangle
 !!$        call TestPointInTriangle2D(DtriaCoords,&
 !!$            p_DobjectCoords(:,ipoint), POINT_EQUAL_TOLERANCE,&
 !!$            istatus, DbarycentricCoords)
-!!$        
+!!$
 !!$        if (istatus .eq. 1) then
 !!$          ! The point is inside the element. Check if it is in the
 !!$          ! neighborhood of one corner vertex that can be
 !!$          ! repositioned. If more than one point is in the
 !!$          ! neighborhood reposition the corner w.r.t. to first one
-!!$          
+!!$
 !!$          if (DbarycentricCoords(1) .ge.&
 !!$              max(DbarycentricCoords(2),DbarycentricCoords(3))) then
 !!$            if ((IcornerStatus(1) .ne. 0) .or.&
@@ -1191,7 +1191,7 @@ contains
 !!$          end if
 !!$        end if
 !!$      end do
-!!$      
+!!$
 !!$      do ive = 1, nve
 !!$        ivt = p_IverticesAtElement(ive, iel)
 !!$        if (IcornerStatus(ive) .ne. 0) then
@@ -1200,13 +1200,13 @@ contains
 !!$              rbloodflow%rhadapt%rVertexCoordinates2D,&
 !!$              p_DvertexCoords(:,ivt),&
 !!$              p_DobjectCoords(:,IcornerStatus(ive)))
-!!$          
+!!$
 !!$          ! Adjust vertex coordinates and lock it
 !!$          p_DvertexCoords(:,ivt) = p_DobjectCoords(:,IcornerStatus(ive))
 !!$          p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
 !!$        end if
 !!$      end do
-!!$          
+!!$
 !!$    end do list1
       
     !---------------------------------------------------------------------------
@@ -1275,7 +1275,7 @@ contains
               if (Iedgestatus(ive) .eq. 1) p_Imarker(iel) =&
                   ibset(p_Imarker(iel), BITFIELD_MULTIINTERSECT)
 
-              ! Update global element values    
+              ! Update global element values
               Iedgestatus(ive)    = IedgestatusAux(ive)
               DedgeParam(ive)     = DedgeParamAux(ive)
               DpointCoords(:,ive) = DpointCoordsAux(:,ive)
@@ -1294,7 +1294,7 @@ contains
 !!$        elseif (sum(IedgeStatus) .eq. 2) then
 !!$
 !!$          print *, "Two edges"
-!!$          
+!!$
 !!$        elseif (sum(IedgeStatus) .eq. 1) then
 !!$
 !!$          print *, "One edge"
@@ -1523,7 +1523,7 @@ contains
     ! The line between two points P and Q is parametrized as follows:
     !
     ! $ X = P + t*(Q-P) $
-    ! 
+    !
     ! with parameter value $0\le t\le 1$. A necessary condition for
     ! intersection of the line with the triangle is
     !
@@ -1582,7 +1582,7 @@ contains
              - (DtriaCoords(2,2)-DtriaCoords(2,3))&
              * (DlineCoords(1,1)-DtriaCoords(1,3))
       
-      ! Compute parameter value of the intersection point 
+      ! Compute parameter value of the intersection point
       ! located on the line through points P and Q
       dpar = detaux/detu
 
@@ -1785,10 +1785,10 @@ contains
     ! work, and hence, it is checked after the computationally less
     ! expensive tests for the second and third edge.
     
-    ! Compute determinate for the first edge AB 
+    ! Compute determinate for the first edge AB
     detuv = detu + detv
     
-    ! Intersection test for the first edge AB. 
+    ! Intersection test for the first edge AB.
     if (abs(detuv) .gt. SYS_EPSREAL_DP) then
       
       ! Compute auxiliary determinant with third column
@@ -2018,7 +2018,7 @@ contains
     area3 = signedArea2D(P, TriaCoords(:,1), TriaCoords(:,2))
     
     ! Compute barycentric coordinates
-    BarycentricCoords(1) = area1/area                             
+    BarycentricCoords(1) = area1/area
     BarycentricCoords(2) = area2/area
     BarycentricCoords(3) = area3/area
     

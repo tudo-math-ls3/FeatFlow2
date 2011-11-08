@@ -50,7 +50,7 @@ module heatcond_basic
     ! The mass matrix
     type(t_matrixBlock) :: rmatrixMass
 
-    ! System matrix. May change during the time iteration    
+    ! System matrix. May change during the time iteration
     type(t_matrixBlock) :: rmatrix
     
     ! A variable describing the discrete boundary conditions.
@@ -104,7 +104,7 @@ module heatcond_basic
     ! A RHS vector on the finest level used for solving linear systems
     type(t_vectorBlock) :: rrhs
     
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
     
     ! An interlevel projection structure for changing levels
@@ -127,8 +127,8 @@ module heatcond_basic
     ! only one level supported, identified by NLMAX!
     type(t_problem_lvl), dimension(:), pointer :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
     

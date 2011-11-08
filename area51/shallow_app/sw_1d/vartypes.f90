@@ -63,7 +63,7 @@ contains
 		BV%nblocks = numBlocks
 		do i = 1, numBlocks
 			call make_vectorScalar(BV%DvectorBlock(i),numEntries)
-		end do    
+		end do
 	end subroutine make_vectorBlock
 
 	
@@ -212,8 +212,8 @@ contains
     		do
     			x%datas(i)=d%datas(i)-(c%datas(i)*x%datas(i+1))
     			i=i-1
-    			if(i==0) exit    
-  			end do 
+    			if(i==0) exit
+  			end do
     		
     		! Speicher für Hilfsvariablen freigeben
     		call unmake_vectorScalar(c)

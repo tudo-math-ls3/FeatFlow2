@@ -261,7 +261,7 @@ contains
       else if (Dcoords(3,i) .gt. done) then
         Ihit(i) = 6
       
-      ! Inner face? 
+      ! Inner face?
       else
         Ihit(i) = 0
       end if

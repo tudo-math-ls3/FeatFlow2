@@ -141,7 +141,7 @@
 !#
 !# 35.) eulerlagrange_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 36.) eulerlagrange_calcBoundaryvalues1d
@@ -1578,7 +1578,7 @@ contains
       ! Compute skew-symmetric coefficient and its norm
       a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,idx)-&
                   DmatrixCoeffsAtEdge(1,1,idx))
-      anorm = abs(a(1))      
+      anorm = abs(a(1))
 
       if (anorm .gt. SYS_EPSREAL) then
 
@@ -1697,7 +1697,7 @@ contains
       
       ! Compute auxiliary variables
       ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
-      Ei = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)      
+      Ei = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
       uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
       Ej = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
       

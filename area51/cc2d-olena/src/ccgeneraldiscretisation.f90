@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains the basic spatial discretisation related routines for 
+!# This module contains the basic spatial discretisation related routines for
 !# CC2D. Here, matrix and RHS creation routines can be found as well as
 !# routines to initialise/clean up discretisation structures and routines
 !# to read/write solution vectors.
@@ -49,7 +49,7 @@
 !#
 !# 2.) cc_deriveDiscretisation
 !#     -> Derives a block discretisation structure according to
-!#        an element type combination from an existing discretisation 
+!#        an element type combination from an existing discretisation
 !#        structure.
 !# </purpose>
 !##############################################################################
@@ -135,7 +135,7 @@ contains
       icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'icubStokes',icubtemp,icubtemp)
-      icubA = icubtemp                       
+      icubA = icubtemp
     else
       icubA = cub_igetID(sstr)
     end if
@@ -216,7 +216,7 @@ contains
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(3), &
           rproblem%RlevelInfo(i)%rdiscretisationMassPressure,.true.)
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(4), &
-          rproblem%RlevelInfo(i)%rdiscretisationMassC,.true.)   
+          rproblem%RlevelInfo(i)%rdiscretisationMassC,.true.)
     
       p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
       p_rdiscretisationMassPressure => &
@@ -294,7 +294,7 @@ contains
   subroutine cc_getDiscretisation (ielementType,rdiscretisation,&
      rtriangulation, rboundary, icubA, icubB, icubF)
       
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
   
@@ -400,14 +400,14 @@ contains
     call spdiscr_initBlockDiscr (&
         rdiscretisation,nequations,rtriangulation,rboundary)
 
-    ! rdiscretisation%RspatialDiscr is a list of scalar 
+    ! rdiscretisation%RspatialDiscr is a list of scalar
     ! discretisation structures for every component of the solution vector.
     ! We have a solution vector with four components:
     !  Component 1 = X-velocity
     !  Component 2 = Y-velocity
     !  Component 3 = Pressure
-    !  Component 4 = Concentration 
-    ! For simplicity, we set up one discretisation structure for the 
+    !  Component 4 = Concentration
+    ! For simplicity, we set up one discretisation structure for the
     ! velocity...
     call spdiscr_initDiscr_simple ( &
         rdiscretisation%RspatialDiscr(1), &
@@ -419,12 +419,12 @@ contains
       RelementDistr(1)%ccubTypeLinForm = icubF
                 
     ! ...and copy this structure also to the discretisation structure
-    ! of the 2nd component (Y-velocity). This needs no additional memory, 
+    ! of the 2nd component (Y-velocity). This needs no additional memory,
     ! as both structures will share the same dynamic information afterwards.
     call spdiscr_duplicateDiscrSc(rdiscretisation%RspatialDiscr(1),&
         rdiscretisation%RspatialDiscr(2))
 
-    ! For the pressure (3rd component), we set up a separate discretisation 
+    ! For the pressure (3rd component), we set up a separate discretisation
     ! structure, as this uses different finite elements for trial and test
     ! functions.
     call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1),  &
@@ -544,7 +544,7 @@ contains
         ieltypeP, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(3))
         
     call spdiscr_deriveSimpleDiscrSc (rsourceDiscretisation%RspatialDiscr(4),  &
-        ieltypeP, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(4))    
+        ieltypeP, SPDISC_CUB_NOCHANGE,rdestDiscretisation%RspatialDiscr(4))
   
   end subroutine
 
@@ -702,14 +702,14 @@ contains
       
       CALL bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscr(4),LSYSSC_MATRIX9,&
-                p_rmatrixTemplateCoupMass,p_rdiscretisation%RspatialDiscr(3)) 
+                p_rmatrixTemplateCoupMass,p_rdiscretisation%RspatialDiscr(3))
       
       
       p_rmatrixTemplatePMass=>rproblem%RlevelInfo(i)%rmatrixTemplatePMass
       
       CALL bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
-                p_rmatrixTemplatePMass)                   
+                p_rmatrixTemplatePMass)
       ! Ok, now we use the matrices from above to create the actual submatrices
       ! that are used in the global system.
       !
@@ -719,7 +719,7 @@ contains
       ! Connect the Stokes matrix to the template FEM matrix such that they
       ! use the same structure.
       !
-      ! Don't create a content array yet, it will be created by 
+      ! Don't create a content array yet, it will be created by
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   p_rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -733,7 +733,7 @@ contains
       ! Connect the Stokes matrix to the template FEM matrix such that they
       ! use the same structure.
       !
-      ! Don't create a content array yet, it will be created by 
+      ! Don't create a content array yet, it will be created by
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (p_rmatrixTemplateQ1,&
                   p_rmatrixStokesC,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -748,7 +748,7 @@ contains
       ! Create the matrices structure of the pressure using the 3rd
       ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
       !
-      ! Don't create a content array yet, it will be created by 
+      ! Don't create a content array yet, it will be created by
       ! the assembly routines later.
       ! Allocate memory for the entries; don't initialise the memory.
       
@@ -791,7 +791,7 @@ contains
       ! -----------------------------------------------------------------------
       ! Temporary vectors
       !
-      ! Now on all levels except for the maximum one, create a temporary 
+      ! Now on all levels except for the maximum one, create a temporary
       ! vector on that level, based on the block discretisation structure.
       ! It's used for building the matrices on lower levels.
       if (i .lt. rproblem%NLMAX) then
@@ -825,11 +825,11 @@ contains
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
-  ! in the specified problem structure, i.e. the entries of all matrices 
+  ! in the specified problem structure, i.e. the entries of all matrices
   ! that do not change during the computation or which serve as a template for
   ! generating other matrices.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -891,11 +891,11 @@ contains
     ! convection matrix, resulting in the nonlinear system matrix,
     ! as well as both B-matrices.
     
-!    ! For assembling of the entries, we need a bilinear form, 
+!    ! For assembling of the entries, we need a bilinear form,
 !    ! which first has to be set up manually.
 !    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
 !    ! scalar system matrix in 2D.
-!    
+!
 !    rform%itermCount = 2
 !    rform%Idescriptors(1,1) = DER_DERIV_X
 !    rform%Idescriptors(2,1) = DER_DERIV_X
@@ -914,7 +914,7 @@ contains
 !    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
 !    ! the framework will call the callback routine to get analytical data.
 !    !
-!    ! We pass our collection structure as well to this routine, 
+!    ! We pass our collection structure as well to this routine,
 !    ! so the callback routine has access to everything what is
 !    ! in the collection.
 !    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
@@ -993,12 +993,12 @@ contains
     
     end if
           
-    ! Concentration mass matrices          
+    ! Concentration mass matrices
     CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixTemplatePMass,&
         DER_FUNC,DER_FUNC,1.0_DP)
         
     CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixTemplateCoupMass,&
-        DER_FUNC,DER_FUNC,1.0_DP)                            
+        DER_FUNC,DER_FUNC,1.0_DP)
                               
     ! -----------------------------------------------------------------------
     ! Fast edge-oriented stabilisation
@@ -1050,7 +1050,7 @@ contains
     call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEMPressure,&
                 rlevelInfo%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateQ1,&
-                rlevelInfo%rmatrixMassC,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)            
+                rlevelInfo%rmatrixMassC,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
             
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
@@ -1062,7 +1062,7 @@ contains
     call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMassC,&
         rlevelInfo%rdiscretisationMassC)
 
-    ! Call the standard matrix setup routine to build the matrix.                    
+    ! Call the standard matrix setup routine to build the matrix.
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMass,DER_FUNC,DER_FUNC)
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassC,DER_FUNC,DER_FUNC)
@@ -1099,7 +1099,7 @@ contains
 !<description>
   ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -1128,7 +1128,7 @@ contains
   
 !<description>
   ! Calculates the entries of the basic right-hand-side vector on the finest
-  ! level. Boundary conditions or similar things are not implemented into 
+  ! level. Boundary conditions or similar things are not implemented into
   ! the vector.
   ! Memory for the RHS vector must have been allocated in advance.
 !</description>
@@ -1162,10 +1162,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     !
@@ -1197,7 +1197,7 @@ contains
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscr(4),rlinform,.TRUE.,&
               rrhs%RvectorBlock(4),coeff_RHS_C,&
-              rproblem%rcollection)                            
+              rproblem%rcollection)
     ! Clean up the collection (as we are done with the assembly, that's it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
@@ -1236,7 +1236,7 @@ contains
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev,ierror
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     type(t_linearForm) :: rlinform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
@@ -1381,8 +1381,8 @@ contains
       call linf_buildVectorScalar (&
                p_rdiscretisation%RspatialDiscr(4),rlinform,.true.,&
                 rvector1%RvectorBlock(4),coeff_AnalyticSolution_C,&
-                rproblem%rcollection)                          
-      !call anprj_discrDirect (rvector1%RvectorBlock(4),ffunction_TargetC)                          
+                rproblem%rcollection)
+      !call anprj_discrDirect (rvector1%RvectorBlock(4),ffunction_TargetC)
       ! Clean up the collection (as we are done with the assembly.
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -1491,7 +1491,7 @@ contains
             call lsysbl_releaseVector (rsingleRHS)
             call lsysbl_releaseVector (rsingleSol)
             call lsysbl_releaseVector (rvector2)
-            call lsysbl_releaseMatrix (Rmatrices(1))     
+            call lsysbl_releaseMatrix (Rmatrices(1))
             
         ! And the concentration. For that one we have to reinitialise the solver,
             ! the matrices,...
@@ -1516,7 +1516,7 @@ contains
             ! Cancel, there is something wrong.
             call output_line('Cannot compute L2 projection, solver broke down. Using zero!')
             call lsysbl_clearVector (rvector)
-        end if  
+        end if
         
          !
 
@@ -1536,7 +1536,7 @@ contains
       call linsol_doneStructure (p_rsolverNode,ierror)
       call linsol_releaseSolver (p_rsolverNode)
     
-    end select        
+    end select
 
   end subroutine
 
@@ -1569,7 +1569,7 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
 
     ! Get the parameter what to do with rvector

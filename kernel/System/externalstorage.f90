@@ -26,9 +26,9 @@
 !#
 !#  6.) exstor_new = exstor_new1D/exstor_new
 !#      -> Creates a new memory block
-!#  
+!#
 !#  7.) exstor_free
-!#      -> Releases a memory block 
+!#      -> Releases a memory block
 !#
 !#  8.) exstor_getsize = exstor_getsize1D/exstor_getsize
 !#      -> Returns the size of a memory block
@@ -56,21 +56,21 @@
 !#      -> Copies the content of one array to another.
 !#
 !# The external storage management consists of a number of 'storage containers'.
-!# A storage container can be for example a directory on a hard disc. Each 
+!# A storage container can be for example a directory on a hard disc. Each
 !# storage container contains a set of data blocks of different data type.
 !#
 !# Data blocks are them primarily maintained by the following routines:
 !#
-!# - exstor_new 
+!# - exstor_new
 !#   -> will create a new memory block in such a container and identify it
-!#      with a handle. 
+!#      with a handle.
 !#
 !# - exstor_getdata_xxxx and exstor_setdata_xxxx
 !#   -> allow to read/write from/to a memory block. The block can be released
 !#
 !# - exstor_free
 !#   -> Releases a memory block
-!# 
+!#
 !# It is possible to maintain more than one type of storage container.
 !# By default, exstor_init creates at least one storage container, the so
 !# called 'RamDrive container' (with Id=1), which is actually a mapping to the
@@ -96,7 +96,7 @@
 !# <code>
 !#   ! Initialise external storage managemeng
 !#   CALL exstor_init (999,100)
-!#   
+!#
 !#   ! Append a directory as 2nd storage container
 !#   CALL exstor_attachDirectory('./ff2storage')
 !#
@@ -104,7 +104,7 @@
 !#   ! Read/write data from/to the container using
 !#   ! exstor_getdata_XXXX / exstor_setdata_XXXX.
 !#   ! Remove the data with exstor_free.
-!# 
+!#
 !#   ! Clean up the external storage management.
 !#   CALL exstor_done()
 !# </code>
@@ -185,7 +185,7 @@ module externalstorage
     ! For ctype=EXSTOR_CONT_DIRECTORY: Basic filename of the data files.
     character(LEN=SYS_NAMELEN) :: sfilename = 'feat2exstorage'
     
-    ! For ctype=EXSTOR_CONT_DIRECTORY: Whether to save the data formatted 
+    ! For ctype=EXSTOR_CONT_DIRECTORY: Whether to save the data formatted
     ! or unformatted.
     logical :: bformatted = .false.
 
@@ -209,7 +209,7 @@ module externalstorage
     ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
     integer :: cdataType = ST_NOHANDLE
 
-    ! Dimension associated to the handle 
+    ! Dimension associated to the handle
     ! (0=not assigned, 1=1D, 2=2D array, 3=3D array)
     integer :: idimension = 0
 
@@ -228,14 +228,14 @@ module externalstorage
     
     ! Whether the storage block is bound to a container or not.
     ! TRUE=The memory block is bound to container icontainerId.
-    ! FALSE=The memory management system may automatically move the memory 
+    ! FALSE=The memory management system may automatically move the memory
     !       block from one container to another if necessary.
     logical :: bcontainerBound = .false.
 
     ! Flag that identifies whether this storage block is initialised
     ! somehow.
-    ! 
-    ! Flag that specifies whether the data in this vector is 
+    !
+    ! Flag that specifies whether the data in this vector is
     ! treated as being completely zero.
     ! ST_NEWBLOCK_NOINIT:  The storage block contains data.
     ! ST_NEWBLOCK_ZERO:    The storage block is to be treated as zero.
@@ -245,7 +245,7 @@ module externalstorage
     
     ! This is a handle to a memory block. The handle is valid if the
     ! storage block is realised in the main memory as part of a RamDrive
-    ! container. (A RamDrive container uses the standard memory management 
+    ! container. (A RamDrive container uses the standard memory management
     ! of the storage.f90 and saves memory blocks in the main memory.)
     integer :: istorageHandle = ST_NOHANDLE
     
@@ -783,7 +783,7 @@ contains
 !</description>
 
 !<input>
-  ! OPTIONAL: If set to TRUE, the information about the storage containers 
+  ! OPTIONAL: If set to TRUE, the information about the storage containers
   ! is printed to the terminal.
   logical, intent(in), optional :: bprintContainers
 
@@ -1187,8 +1187,8 @@ contains
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
   integer, intent(in) :: cinitNewBlock
   
-  ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain 
-  ! the memory block. If not specified, a container will automatically be 
+  ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain
+  ! the memory block. If not specified, a container will automatically be
   ! chosen (depending on the allocation strategy ccontainerStrategy of the
   ! container).
   ! Container-Id=1 always identifies the standard RamDrive container that
@@ -1296,7 +1296,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
 
@@ -1370,8 +1370,8 @@ contains
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
   integer, intent(in) :: cinitNewBlock
   
-  ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain 
-  ! the memory block. If not specified, a container will automatically be 
+  ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain
+  ! the memory block. If not specified, a container will automatically be
   ! chosen (depending on the allocation strategy ccontainerStrategy of the
   ! container).
   ! Container-Id=1 always identifies the standard RamDrive container that
@@ -1478,7 +1478,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
 
@@ -1533,7 +1533,7 @@ contains
 !</description>
 
 !<input>
-  ! Handle of the memory block 
+  ! Handle of the memory block
   integer, intent(in) :: ihandle
 !</input>
 
@@ -1731,7 +1731,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -1754,7 +1754,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -1893,7 +1893,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -1915,7 +1915,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2055,7 +2055,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -2077,7 +2077,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2156,7 +2156,7 @@ contains
   subroutine exstor_setdata_int1D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -2221,7 +2221,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2282,7 +2282,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -2299,7 +2299,7 @@ contains
   subroutine exstor_setdata_int2D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -2365,7 +2365,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2426,7 +2426,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -2443,7 +2443,7 @@ contains
   subroutine exstor_setdata_int3D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -2510,7 +2510,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2571,7 +2571,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -2650,7 +2650,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -2673,7 +2673,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2812,7 +2812,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -2834,7 +2834,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -2974,7 +2974,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -2996,7 +2996,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3075,7 +3075,7 @@ contains
   subroutine exstor_setdata_int8_1D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -3140,7 +3140,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3201,7 +3201,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -3218,7 +3218,7 @@ contains
   subroutine exstor_setdata_int8_2D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -3284,7 +3284,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3345,7 +3345,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -3362,7 +3362,7 @@ contains
   subroutine exstor_setdata_int8_3D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -3429,7 +3429,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3490,7 +3490,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -3569,7 +3569,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -3592,7 +3592,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3731,7 +3731,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -3753,7 +3753,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3893,7 +3893,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -3915,7 +3915,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -3994,7 +3994,7 @@ contains
   subroutine exstor_setdata_int16_1D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -4059,7 +4059,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -4120,7 +4120,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -4137,7 +4137,7 @@ contains
   subroutine exstor_setdata_int16_2D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -4203,7 +4203,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -4264,7 +4264,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -4281,7 +4281,7 @@ contains
   subroutine exstor_setdata_int16_3D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -4348,7 +4348,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -4409,7 +4409,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -4488,7 +4488,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -4511,7 +4511,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -4650,7 +4650,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -4672,7 +4672,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -4812,7 +4812,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -4834,7 +4834,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -4913,7 +4913,7 @@ contains
   subroutine exstor_setdata_int32_1D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -4978,7 +4978,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5039,7 +5039,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -5056,7 +5056,7 @@ contains
   subroutine exstor_setdata_int32_2D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -5122,7 +5122,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5183,7 +5183,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -5200,7 +5200,7 @@ contains
   subroutine exstor_setdata_int32_3D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -5267,7 +5267,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5328,7 +5328,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -5407,7 +5407,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -5430,7 +5430,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5569,7 +5569,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -5591,7 +5591,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5731,7 +5731,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -5753,7 +5753,7 @@ contains
         call getdata_ramdrive (p_rnode,Iarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5832,7 +5832,7 @@ contains
   subroutine exstor_setdata_int64_1D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -5897,7 +5897,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -5958,7 +5958,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -5975,7 +5975,7 @@ contains
   subroutine exstor_setdata_int64_2D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -6041,7 +6041,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -6102,7 +6102,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -6119,7 +6119,7 @@ contains
   subroutine exstor_setdata_int64_3D (ihandle, Iarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -6186,7 +6186,7 @@ contains
       call setdata_ramdrive (p_rnode,Iarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Iarray)
 
@@ -6247,7 +6247,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -6326,7 +6326,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -6349,7 +6349,7 @@ contains
         call getdata_ramdrive (p_rnode,Farray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Farray)
 
@@ -6488,7 +6488,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -6510,7 +6510,7 @@ contains
         call getdata_ramdrive (p_rnode,Farray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Farray)
 
@@ -6650,7 +6650,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -6672,7 +6672,7 @@ contains
         call getdata_ramdrive (p_rnode,Farray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Farray)
 
@@ -6751,7 +6751,7 @@ contains
   subroutine exstor_setdata_single1D (ihandle, Farray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -6816,7 +6816,7 @@ contains
       call setdata_ramdrive (p_rnode,Farray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Farray)
 
@@ -6877,7 +6877,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -6894,7 +6894,7 @@ contains
   subroutine exstor_setdata_single2D (ihandle, Farray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -6960,7 +6960,7 @@ contains
       call setdata_ramdrive (p_rnode,Farray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Farray)
 
@@ -7021,7 +7021,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -7038,7 +7038,7 @@ contains
   subroutine exstor_setdata_single3D (ihandle, Farray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -7105,7 +7105,7 @@ contains
       call setdata_ramdrive (p_rnode,Farray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Farray)
 
@@ -7166,7 +7166,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -7245,7 +7245,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -7268,7 +7268,7 @@ contains
         call getdata_ramdrive (p_rnode,Darray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Darray)
 
@@ -7407,7 +7407,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -7429,7 +7429,7 @@ contains
         call getdata_ramdrive (p_rnode,Darray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Darray)
 
@@ -7569,7 +7569,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -7591,7 +7591,7 @@ contains
         call getdata_ramdrive (p_rnode,Darray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Darray)
 
@@ -7670,7 +7670,7 @@ contains
   subroutine exstor_setdata_double1D (ihandle, Darray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -7735,7 +7735,7 @@ contains
       call setdata_ramdrive (p_rnode,Darray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Darray)
 
@@ -7796,7 +7796,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -7813,7 +7813,7 @@ contains
   subroutine exstor_setdata_double2D (ihandle, Darray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -7879,7 +7879,7 @@ contains
       call setdata_ramdrive (p_rnode,Darray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Darray)
 
@@ -7957,7 +7957,7 @@ contains
   subroutine exstor_setdata_double3D (ihandle, Darray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -8024,7 +8024,7 @@ contains
       call setdata_ramdrive (p_rnode,Darray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Darray)
 
@@ -8164,7 +8164,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -8187,7 +8187,7 @@ contains
         call getdata_ramdrive (p_rnode,Qarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Qarray)
 
@@ -8326,7 +8326,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -8348,7 +8348,7 @@ contains
         call getdata_ramdrive (p_rnode,Qarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Qarray)
 
@@ -8488,7 +8488,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -8510,7 +8510,7 @@ contains
         call getdata_ramdrive (p_rnode,Qarray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Qarray)
 
@@ -8589,7 +8589,7 @@ contains
   subroutine exstor_setdata_quad1D (ihandle, Qarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -8654,7 +8654,7 @@ contains
       call setdata_ramdrive (p_rnode,Qarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Qarray)
 
@@ -8715,7 +8715,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -8732,7 +8732,7 @@ contains
   subroutine exstor_setdata_quad2D (ihandle, Qarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -8798,7 +8798,7 @@ contains
       call setdata_ramdrive (p_rnode,Qarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Qarray)
 
@@ -8876,7 +8876,7 @@ contains
   subroutine exstor_setdata_quad3D (ihandle, Qarray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -8943,7 +8943,7 @@ contains
       call setdata_ramdrive (p_rnode,Qarray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Qarray)
 
@@ -9080,7 +9080,7 @@ contains
     end if
     
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with .false., that is all
@@ -9102,7 +9102,7 @@ contains
         call getdata_ramdrive (p_rnode,Larray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Larray)
 
@@ -9245,7 +9245,7 @@ contains
     end if
     
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with .false., that is all
@@ -9267,7 +9267,7 @@ contains
         call getdata_ramdrive (p_rnode,Larray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Larray)
 
@@ -9413,7 +9413,7 @@ contains
     end if
     
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with .false., that is all
@@ -9435,7 +9435,7 @@ contains
         call getdata_ramdrive (p_rnode,Larray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Larray)
 
@@ -9522,7 +9522,7 @@ contains
   subroutine exstor_setdata_logical1D (ihandle, Larray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -9587,7 +9587,7 @@ contains
       call setdata_ramdrive (p_rnode,Larray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Larray)
 
@@ -9652,7 +9652,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -9669,7 +9669,7 @@ contains
   subroutine exstor_setdata_logical2D (ihandle, Larray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -9735,7 +9735,7 @@ contains
       call setdata_ramdrive (p_rnode,Larray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Larray)
 
@@ -9819,7 +9819,7 @@ contains
   subroutine exstor_setdata_logical3D (ihandle, Larray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -9886,7 +9886,7 @@ contains
       call setdata_ramdrive (p_rnode,Larray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Larray)
 
@@ -10031,7 +10031,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -10053,7 +10053,7 @@ contains
         call getdata_ramdrive (p_rnode,Carray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Carray)
 
@@ -10196,7 +10196,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -10218,7 +10218,7 @@ contains
         call getdata_ramdrive (p_rnode,Carray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Carray)
 
@@ -10364,7 +10364,7 @@ contains
     end if
 
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
@@ -10386,7 +10386,7 @@ contains
         call getdata_ramdrive (p_rnode,Carray)
                 
       case (EXSTOR_CONT_DIRECTORY)
-        ! This is a directory container maintaining the data as files on the 
+        ! This is a directory container maintaining the data as files on the
         ! hard disc.
         call getdata_directory (p_rcontainer,p_rnode,Carray)
 
@@ -10473,7 +10473,7 @@ contains
   subroutine exstor_setdata_char1D (ihandle, Carray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -10538,7 +10538,7 @@ contains
       call setdata_ramdrive (p_rnode,Carray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Carray)
 
@@ -10603,7 +10603,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:)
       else
-        write(cf) dataarray(:) 
+        write(cf) dataarray(:)
       end if
       
       ! Close the file, finish
@@ -10620,7 +10620,7 @@ contains
   subroutine exstor_setdata_char2D (ihandle, Carray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -10686,7 +10686,7 @@ contains
       call setdata_ramdrive (p_rnode,Carray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Carray)
 
@@ -10753,7 +10753,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:)
       else
-        write(cf) dataarray(:,:) 
+        write(cf) dataarray(:,:)
       end if
       
       ! Close the file, finish
@@ -10770,7 +10770,7 @@ contains
   subroutine exstor_setdata_char3D (ihandle, Carray, rheap)
 
 !<description>
-  ! This routine writes data from a local array top an external storage 
+  ! This routine writes data from a local array top an external storage
   ! container.
 !</description>
 
@@ -10837,7 +10837,7 @@ contains
       call setdata_ramdrive (p_rnode,Carray)
               
     case (EXSTOR_CONT_DIRECTORY)
-      ! This is a directory container maintaining the data as files on the 
+      ! This is a directory container maintaining the data as files on the
       ! hard disc.
       call setdata_directory (p_rcontainer,p_rnode,Carray)
 
@@ -10906,7 +10906,7 @@ contains
       if (rcontainer%bformatted) then
         write(cf,*) dataarray(:,:,:)
       else
-        write(cf) dataarray(:,:,:) 
+        write(cf) dataarray(:,:,:)
       end if
       
       ! Close the file, finish
@@ -10937,7 +10937,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Handle to a memory block in the main memory, maintained by the 
+  ! Handle to a memory block in the main memory, maintained by the
   ! storage.f90. Data read from the data container is directly saved
   ! to this memory block.
   ! If this is ST_NOHANDLE, a new handle is automatically created
@@ -11057,7 +11057,7 @@ contains
     end if
     
     ! If the memory block is a pre-initialised block, we can directly
-    ! fill it with data...    
+    ! fill it with data...
     if (p_rnode%cinitNewBlock .ne. ST_NEWBLOCK_NOINIT) then
       call storage_initialiseBlock (istoragehandle, p_rnode%cinitNewBlock, rstorageheap)
       return
@@ -11195,7 +11195,7 @@ contains
   ! The handle
   integer, intent(in) :: ihandle
   
-  ! Handle to a memory block in the main memory, maintained by the 
+  ! Handle to a memory block in the main memory, maintained by the
   ! storage.f90. The data in this memory block is directly saved
   ! to the the data container.
   integer, intent(in) :: istoragehandle

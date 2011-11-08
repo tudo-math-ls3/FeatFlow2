@@ -6,7 +6,7 @@
 
   interface
 
-!<subroutine>  
+!<subroutine>
   subroutine def_monitorfct(DvertexCoords,Dentries)
   
   use triangulation
@@ -18,7 +18,7 @@
   use pprocgradients
   use fsystem
   !<description>
-    ! In this function we build the nodewise area distribution out 
+    ! In this function we build the nodewise area distribution out
     ! of an elementwise distribution
   !</description>
 

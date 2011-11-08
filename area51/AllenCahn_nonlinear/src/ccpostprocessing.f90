@@ -377,7 +377,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
-        ! Create a temporary vector 
+        ! Create a temporary vector
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.true.)
 
@@ -403,7 +403,7 @@ contains
       
       end if
       
-    end if    
+    end if
     
   end subroutine
 
@@ -434,7 +434,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -496,7 +496,7 @@ contains
       
     end if
 
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -552,7 +552,7 @@ contains
     ! Initialise the discrete BC structure
     call bcasm_initDiscreteBC(rdiscreteBC)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdiscreteBC,rproblem%rcollection,.true.)
@@ -569,7 +569,7 @@ contains
     ! Filter the solution vector to implement discrete BC's.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC's for fictitious 
+    ! Filter the solution vector to implement discrete BC's for fictitious
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -694,7 +694,7 @@ contains
   subroutine cc_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! Writes Film output (raw data vectors) to a file as configured in the
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -716,7 +716,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -730,10 +730,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -849,7 +849,7 @@ contains
   type(t_problem), intent(IN),target :: rproblem
 !</input>
 
-!<output>  
+!<output>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(OUT) :: rpostprocessing
 !</output>
@@ -919,7 +919,7 @@ contains
   type(t_c2d2postprocessing), intent(IN) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination Postprocessing structure.
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessingDst
 !</inputoutput>
@@ -954,7 +954,7 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
@@ -990,7 +990,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 

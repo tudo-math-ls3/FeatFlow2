@@ -1042,7 +1042,7 @@ contains
 
 !<description>
   ! This subroutine performs data-dependent initialisation of the SP-SOR
-  ! solver for 2D Navier-Stokes systems. 
+  ! solver for 2D Navier-Stokes systems.
 !</description>
 
 !<inputoutput>
@@ -1179,9 +1179,9 @@ contains
     call lsyssc_getbase_double(rdata%rS, p_DS)
     
     ! Calculate the scaling factors
-    dsf1 = (rdata%p_rB1%dscaleFactor * rdata%p_rD1%dscaleFactor) & 
+    dsf1 = (rdata%p_rB1%dscaleFactor * rdata%p_rD1%dscaleFactor) &
          / rdata%p_rA11%dscaleFactor
-    dsf2 = (rdata%p_rB2%dscaleFactor * rdata%p_rD2%dscaleFactor) & 
+    dsf2 = (rdata%p_rB2%dscaleFactor * rdata%p_rD2%dscaleFactor) &
          / rdata%p_rA22%dscaleFactor
     
     if(bHaveC) then
@@ -2213,7 +2213,7 @@ contains
     domegaA = domega
     !domegaA = 1.0_DP
     domegaS = domega
-    !domegaS = 1.0_DP    
+    !domegaS = 1.0_DP
     
     ! Step One
     ! --------

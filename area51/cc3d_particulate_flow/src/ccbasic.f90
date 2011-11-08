@@ -65,13 +65,13 @@ module ccbasic
     ! Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
 
-    ! B3-matrix for that specific level. 
+    ! B3-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB3
 
     ! Temporary vector in the size of the RHS/solution vector on that level.
@@ -88,7 +88,7 @@ module ccbasic
     ! Nonstationary simulation: Mass matrix
     type(t_matrixScalar) :: rmatrixMass
 
-    ! Nonstationary simulation: A scalar discretisation structure that 
+    ! Nonstationary simulation: A scalar discretisation structure that
     ! specifies how to generate the mass matrix.
     type(t_spatialDiscretisation) :: rdiscretisationMass
 
@@ -117,10 +117,10 @@ module ccbasic
     integer :: niterations         = 0
     
     ! Absolute start time of the simulation
-    real(DP) :: dtimeInit          = 0.0_DP     
+    real(DP) :: dtimeInit          = 0.0_DP
     
     ! Time step size; former TSTEP
-    real(DP) :: dtimeStep          = 0.0_DP       
+    real(DP) :: dtimeStep          = 0.0_DP
     
     ! Maximum time of the simulation
     real(DP) :: dtimeMax           = 0.0_DP
@@ -198,7 +198,7 @@ module ccbasic
     !     pressure drop and/or Neumann boundary parts
     integer :: iboundary
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer           :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -208,7 +208,7 @@ module ccbasic
     
     ! Type of simulation.
     ! =0: stationary simulation.
-    ! =1: time-dependent simulation with explicit time stepping configured 
+    ! =1: time-dependent simulation with explicit time stepping configured
     !     by rtimedependence
     integer                               :: itimedependence
     
@@ -219,8 +219,8 @@ module ccbasic
     ! A configuration block for the stabilisation of the convection.
     type(t_problem_stabilisation)         :: rstabilisation
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection)                    :: rcollection
     
@@ -278,7 +278,7 @@ module ccbasic
 ! During the assembly of RHS vectors and boundary conditions, the following
 ! additional information is valid in the collection:
 !
-!   collection%IquickAccess(1)   = 0: stationary, 
+!   collection%IquickAccess(1)   = 0: stationary,
 !                                  1: nonstationary with explicit time stepping
 !   collection%DquickAccess(1)   = current simulation time
 !   collection%DquickAccess(2)   = minimum simulation time

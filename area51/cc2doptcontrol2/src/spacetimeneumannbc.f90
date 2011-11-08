@@ -249,7 +249,7 @@ contains
             rneumannBoudaryOperator,&
             rboundaryRegion=p_rdualNeumannBd%rboundaryRegion)
 
-        ! Next segment            
+        ! Next segment
         p_rdualNeumannBd => p_rdualNeumannBd%p_nextNeumannRegion
       end do
     end do

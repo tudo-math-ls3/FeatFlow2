@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module maintains a hierarchy of triangulations. 
+!# This module maintains a hierarchy of triangulations.
 !#
 !# The following routines can be found here:
 !#
@@ -79,10 +79,10 @@ module meshhierarchy
     ! Reference to the underlying domain or NULL() if no domain is attached.
     type(t_boundary), pointer :: p_rboundary => null()
 
-    ! Reference to the coarse mesh. 
+    ! Reference to the coarse mesh.
     type(t_triangulation), pointer :: p_rcoarseMesh => null()
 
-    ! Reference to the finest mesh. 
+    ! Reference to the finest mesh.
     type(t_triangulation), pointer :: p_rfineMesh => null()
     
     ! Current number of levels available in this structure.
@@ -128,7 +128,7 @@ contains
   integer, intent(in) :: nlevels
 
   ! OPTIONAL: Flags that specify additional information about the refinement.
-  ! One of the MSHH_REF_xxxx constants. 
+  ! One of the MSHH_REF_xxxx constants.
   ! If not specified, MSHH_REF_SHAREDCOORDS is assumed.
   integer(I32), intent(in), optional :: cflags
 
@@ -162,7 +162,7 @@ contains
       call output_line ('Hierarchy not initialised.', &
           OU_CLASS_ERROR,OU_MODE_STD,'mshh_initHierarchyFromFile')
       call sys_halt()
-    end if    
+    end if
     
     if (nlevels .le. 0) return
     
@@ -191,7 +191,7 @@ contains
       end if
     end if
     
-    ! Initialise the FE spaces on all levels. Refine the mesh by 2-level 
+    ! Initialise the FE spaces on all levels. Refine the mesh by 2-level
     ! refinement to create all missing levels.
     do i=rmeshHierarchy%nlevels+1,max(rmeshHierarchy%nmaxlevels,nlevels)
     
@@ -249,7 +249,7 @@ contains
   ! OPTIONAL: A boundary object that defines the domain.
   type(t_boundary), intent(in), target, optional :: rboundary
 
-  ! OPTIONAL: Duplication flag. Defines how data is copied from 
+  ! OPTIONAL: Duplication flag. Defines how data is copied from
   ! rtriangulation to the coarse mesh in rmeshHierarchy. One of the TR_SHARE_xxxx
   ! constants. If not specified, TR_SHARE_ALL is assumed, i.e. the coarse
   ! mesh shares all information with rtriangulation.
@@ -313,7 +313,7 @@ contains
   type(t_meshHierarchy), intent(in) :: rmeshHierarchySource
   
   ! OPTIONAL: The minimum level from rmeshHierarchySource that should be
-  ! used as coarse mesh in rmeshHierarchyDest. 
+  ! used as coarse mesh in rmeshHierarchyDest.
   ! If not specified, this defaults to 1.
   integer, intent(in), optional :: nminLevel
 
@@ -327,7 +327,7 @@ contains
   ! rmeshHierarchySource.
   integer, intent(in), optional :: nmaxLevels
   
-  ! OPTIONAL: Duplication flag. Defines how data is copied from 
+  ! OPTIONAL: Duplication flag. Defines how data is copied from
   ! rmeshHierarchySource to rmeshHierarchyDest. One of the TR_SHARE_xxxx
   ! constants. If not specified, TR_SHARE_ALL is assumed.
   integer(I32), intent(in), optional :: cdupFlag
@@ -371,7 +371,7 @@ contains
         rmeshHierarchySource%p_Rtriangulations(nmax),&
         rmeshHierarchyDest%p_Rtriangulations(rmeshHierarchyDest%nlevels),cdup)
         
-    ! Copy mesh data of the lower levels. 
+    ! Copy mesh data of the lower levels.
     do i=rmeshHierarchyDest%nlevels-1,1,-1
     
       if (iand(rmeshHierarchySource%cflags,MSHH_FLG_2LVREF+MSHH_FLG_COMPRESSED) &
@@ -503,7 +503,7 @@ contains
     if (rmeshHierarchy%nmaxLevels .eq. 0)then
       ! Hierarchy not initialised.
       return
-    end if    
+    end if
 
     ! Release all levels
     do i=rmeshHierarchy%nlevels,1,-1

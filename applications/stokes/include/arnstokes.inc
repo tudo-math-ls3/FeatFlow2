@@ -8,7 +8,7 @@
 ***********************************************************************
 
       CHARACTER CARRST*12
-      DIMENSION CARRST(NNLEV)      
+      DIMENSION CARRST(NNLEV)
       DATA CARRST/'data/VST.1 ','data/VST.2 ','data/VST.3 ',
      *            'data/VST.4 ','data/VST.5 ','data/VST.6 ',
      *            'data/VST.7 ','data/VST.8 ','data/VST.9 '/

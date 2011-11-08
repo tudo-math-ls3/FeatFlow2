@@ -79,17 +79,17 @@ module stokes2d_method1_schur
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -138,10 +138,10 @@ contains
     type(t_vectorBlock) :: rvector,rrhs,rtempBlock
     
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsubsolverA, p_rsubsolverS, p_rsolverNode,&
                                    p_rsmoother, p_rsolverSchur
 
@@ -170,7 +170,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -183,7 +183,7 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Stokes problem on level...
     NLMIN = 2
@@ -192,7 +192,7 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -251,7 +251,7 @@ contains
     
       ! Initialise a saddle-point block matrix
       call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,&
-                                         Rlevels(i)%rmatrix)    
+                                         Rlevels(i)%rmatrix)
       Rlevels(i)%rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
       
       ! Create matrix structure for A
@@ -379,7 +379,7 @@ contains
     ! Please note that the filter chain is not passed to the multigrid solver,
     ! as the filter-chain belongs to the global system and not only to the
     ! A-submatrices!
-    ! (Todo: Test whether multigrid survives without a filter chain in the 
+    ! (Todo: Test whether multigrid survives without a filter chain in the
     !        case of 'harder' problems, too...)
     call linsol_initMultigrid2 (p_rsubsolverA,NLMAX-NLMIN+1)
     

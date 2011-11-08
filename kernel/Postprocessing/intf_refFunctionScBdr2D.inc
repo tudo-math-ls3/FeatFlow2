@@ -11,7 +11,7 @@
                                    DpointsRef, Dpoints, ibct, DpointPar,&
                                    Ielements, Dvalues, rcollection)
 
-    use fsystem    
+    use fsystem
     use basicgeometry
     use triangulation
     use scalarpde
@@ -21,9 +21,9 @@
     
   !<description>
     ! This subroutine is called during the calculation of errors with boundary
-    ! integrals. It has to compute the (analytical) values of a 
+    ! integrals. It has to compute the (analytical) values of a
     ! function in a couple of points Dpoints on a couple of elements
-    ! Ielements. These values are compared to those of a computed FE 
+    ! Ielements. These values are compared to those of a computed FE
     ! function to calculate an error.
     !
     ! The routine accepts a set of elements and a set of points on these
@@ -72,8 +72,8 @@
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</input>
   
@@ -100,7 +100,7 @@
     subroutine ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
                                 ibct, DpointPar, Ielements, Dvalues, rcollection)
 
-    use fsystem    
+    use fsystem
     use basicgeometry
     use triangulation
     use scalarpde
@@ -120,7 +120,7 @@
     ! values for all these points.
   !</description>
     
-  !<input> 
+  !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
@@ -156,8 +156,8 @@
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</input>
   

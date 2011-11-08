@@ -19,11 +19,11 @@
 *
 * The realization of the structures as arrays is made e.g. by:
 *
-*   IGEODT = array [1..SZGEOI] of integer 
+*   IGEODT = array [1..SZGEOI] of integer
 *          = TIGeometryData
 *   DGEODT = array [1..SZGEOD] of double
 *          = TDGeometryData
-* 
+*
 * The Oxxxxx-constants below can be used to access the different
 * variables inside of the structure-array, e.g.:
 *
@@ -46,7 +46,7 @@
 *            This is passed to the FBDMON function for the
 *            fictitious boundary definition and more or less user
 *            defined.
-*   ISCMNT - Whether or not to rescale the monitor function for 
+*   ISCMNT - Whether or not to rescale the monitor function for
 *            adapting the triangulation to the geometry.
 *            This is passed to the FBDMON function for the
 *            fictitious boundary definition and more or less user
@@ -59,7 +59,7 @@
 *   // A user defined block where arbitrary information can be stored
 *
 *   IGEOUD - array [1..16] of integer
-*            A user defined block where arbitrary information can 
+*            A user defined block where arbitrary information can
 *            be stored, eng. by fictitious boundary routines.
 *
 *   // More complex objects can be composed by simple ones using
@@ -73,7 +73,7 @@
 *   IGEODL - Handle to an array [1..*] of double on the heap
 *            to store additional information
 *   IGEOMS - array [1..3,1..100] of integer
-*            Saves handles/information for up to 100 (composed) geometry 
+*            Saves handles/information for up to 100 (composed) geometry
 *            objects. The first entry in each 3-tuple decides on
 *            how the framework handles the object:
 *
@@ -85,7 +85,7 @@
 *            IGEOMS(1,.) = 1
 *              Simple-type object that belongs to a group of objects.
 *              No precalculated information.
-*              IGEOMS(2,.) gives the starting address of the 
+*              IGEOMS(2,.) gives the starting address of the
 *              corresponding TGEOxxx-structure in the IGEODL
 *              array. IGEOMS(3,.) gives the number of the guiding
 *              object that defines the group.
@@ -97,21 +97,21 @@
 *              TGEOSIM structure that defines the coordinate system of
 *              the whole group. IGEOMS(3,.) is the starting address of
 *              a user defined block in IGEOIL that gives additional
-*              information about the group (e.g. how many and which 
+*              information about the group (e.g. how many and which
 *              objects are contained in the group,...)
 *            IGEOMS(1,.) = 11
 *              Complex-type composed geometry object.
 *              The object noes not use precalculated information.
-*              IGEOMS(2,.) = handle to an array in KWORK which 
+*              IGEOMS(2,.) = handle to an array in KWORK which
 *                represents TGEOCOMIDX
-*              IGEOMS(3,.) = handle to an array in DWORK which 
+*              IGEOMS(3,.) = handle to an array in DWORK which
 *                represents the corresponding TGEOCOM.
 *            IGEOMS(1,.) = 12
 *              Complex-type composed geometry object.
 *              The object uses precalculated information.
-*              IGEOMS(2,.) = handle to an array in KWORK which 
+*              IGEOMS(2,.) = handle to an array in KWORK which
 *                represents TGEOCOMIDX
-*              IGEOMS(3,.) = handle to an array in DWORK which 
+*              IGEOMS(3,.) = handle to an array in DWORK which
 *                represents the corresponding TGEOCOM.
 *
 *   // A flag tells the routines whether we are calculating stationary
@@ -135,10 +135,10 @@
 *   DCROT  - Roration of the obstacle, 0..360°.
 *
 *   DCRLX,
-*   DCRLY  - DCRLX and DCRLY define a "radius relaxation" - a small 
-*            value that is added to the "radius" of simple-type 
+*   DCRLY  - DCRLX and DCRLY define a "radius relaxation" - a small
+*            value that is added to the "radius" of simple-type
 *            objects like circle or square when checking which points
-*            are inside an object and which not. This gives usually 
+*            are inside an object and which not. This gives usually
 *            better results as it prevents some rounding difficulties.
 *            Normally, these values are set to 0.0, but values like
 *            0.00001 without negative influence of the computation.
@@ -171,10 +171,10 @@
 *   // A user defined block where arbitrary information can be stored
 *
 *   DGEOUD - array [1..16] of integer
-*            A user defined block where arbitrary information can 
+*            A user defined block where arbitrary information can
 *            be stored, eng. by fictitious boundary routines.
 * end
-* 
+*
 ************************************************************************
 
 C     Maximum number of composed geometries.
@@ -186,7 +186,7 @@ C     Each composed geometry is composed of multiple single objects.
 C     TIGeometryData:
 C     ---------------
 
-      INTEGER OICIRTP,OIGEOCN,OIGEOMS,OIFBMNT,OISCMNT,OINSGEO,OIGEOUI 
+      INTEGER OICIRTP,OIGEOCN,OIGEOMS,OIFBMNT,OISCMNT,OINSGEO,OIGEOUI
       INTEGER OIGEOIL,OIGEODL,OIOVMNT
       
       PARAMETER (OICIRTP = 1)
@@ -200,7 +200,7 @@ C     ---------------
       PARAMETER (OINSGEO = 9)
       PARAMETER (OIOVMNT = 10)
       
-      INTEGER SZGEOI      
+      INTEGER SZGEOI
       PARAMETER (SZGEOI  = 16+16+3*MAXGEO)
 
 C     TDGeometryData:

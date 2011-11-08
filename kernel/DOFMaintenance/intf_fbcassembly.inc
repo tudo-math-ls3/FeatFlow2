@@ -18,8 +18,8 @@
     
   !<description>
     ! This subroutine is called during the discretisation of boundary
-    ! conditions on fictitious boundary components. It calculates a special quantity 
-    ! on the boundary, which is then used by the discretisation routines to 
+    ! conditions on fictitious boundary components. It calculates a special quantity
+    ! on the boundary, which is then used by the discretisation routines to
     ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
     !
     ! The routine must calculate the values on all elements of the element
@@ -31,10 +31,10 @@
     
   !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
-    !   the value should be calculated for 
-    !   (e.g. 1=1st solution component, e.g. X-velocity, 
+    !   the value should be calculated for
+    !   (e.g. 1=1st solution component, e.g. X-velocity,
     !         2=2nd solution component, e.g. Y-velocity,...,
     !         3=3rd solution component, e.g. pressure)
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
@@ -46,14 +46,14 @@
     ! analytic boundary boundary description etc.
     type(t_blockDiscretisation), intent(in) :: rdiscretisation
     
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 
   !</input>
   
   !<inputoutput>
-    ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+    ! A t_discreteFBCevaluation structure array that defines what to evaluate,
     ! where to evaluate and which accepts the return values.
     ! This callback routine must check out the cinfoNeeded-entry in this structure
     ! to find out what to evaluate.
@@ -66,9 +66,9 @@
     ! For Dirichlet boundary:
     !   revaluation contains as many entries as Icomponents; every entry in
     !   Icomponent corresponds to one entry in revaluation
-    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the
     !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
-    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values
     !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
     !
     type(t_discreteFBCevaluation), dimension(:), intent(inout) :: Revaluation

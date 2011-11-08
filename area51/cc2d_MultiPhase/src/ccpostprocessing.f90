@@ -165,7 +165,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocessing structure. 
+  ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -233,7 +233,7 @@ contains
   ! if there is no previous timestep.
   real(dp), intent(in) :: dtimePrev
 
-  ! Solution vector of the current timestep. 
+  ! Solution vector of the current timestep.
   type(t_vectorBlock), intent(in) :: rvector
 
   ! Time of the current timestep.
@@ -614,8 +614,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -726,7 +726,7 @@ contains
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
             dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         
-      case (2)      
+      case (2)
         ! Extended calculation method.
         !
         ! Select the tensor formulation to use.
@@ -746,7 +746,7 @@ contains
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
           
-        ! Prepare the collection. The "next" collection points to the user defined 
+        ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
         rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -794,7 +794,7 @@ contains
         ! Prepare a collection structure in the form necessary for
         ! the computation of a nonconstant viscosity.
         !
-        ! Prepare the collection. The "next" collection points to the user defined 
+        ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
         rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -878,7 +878,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
-        ! Create a temporary vector 
+        ! Create a temporary vector
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.true.)
 
@@ -901,7 +901,7 @@ contains
       
       end if
       
-    end if    
+    end if
     
   end subroutine
 
@@ -1060,7 +1060,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1098,7 +1098,7 @@ contains
     
     character(SYS_STRLEN) :: sfile,sfilename
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -1120,7 +1120,7 @@ contains
     ! create a Q1/P1 solution from rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
-    ! structure based on Q1/P1 by copying the main guiding block 
+    ! structure based on Q1/P1 by copying the main guiding block
     ! discretisation structure and modifying the discretisation
     ! structures of the two velocity subvectors:
     
@@ -1165,7 +1165,7 @@ contains
     ! Initialise the dynamic level information structure
     call cc_initDynamicLevelInfo (rdynamicInfo)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection,.true.)
@@ -1181,7 +1181,7 @@ contains
     ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC`s for fictitious 
+    ! Filter the solution vector to implement discrete BC`s for fictitious
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -1340,7 +1340,7 @@ contains
   subroutine cc_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! Writes Film output (raw data vectors) to a file as configured in the
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -1362,7 +1362,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1375,10 +1375,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -1477,7 +1477,7 @@ contains
   type(t_problem), intent(in),target :: rproblem
 !</input>
 
-!<output>  
+!<output>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(out) :: rpostprocessing
 !</output>
@@ -1544,7 +1544,7 @@ contains
   type(t_c2d2postprocessing), intent(in) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessingDst
 !</inputoutput>
@@ -1576,7 +1576,7 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
@@ -1612,7 +1612,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 

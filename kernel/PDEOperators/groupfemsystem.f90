@@ -411,7 +411,7 @@ contains
 
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
-        ! Get the maximum position of matrix entries, such that we handle 
+        ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
         
         IAmax = min(size(InodeList), IAset-1+p_rperfconfig%NASIM)
@@ -576,7 +576,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -765,7 +765,7 @@ contains
         
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
-        ! Get the maximum position of matrix entries, such that we handle 
+        ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
         
         IAmax = min(size(InodeList,2), IAset-1+p_rperfconfig%NASIM)
@@ -919,7 +919,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -1462,7 +1462,7 @@ contains
 
             case (GFEM_MATC_LUMPED)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-              call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D) 
+              call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
               call doOperatorLumpedDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                   p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
                   dscale, bclear, p_Ddata)
@@ -1537,7 +1537,7 @@ contains
 
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
-        ! Get the maximum position of matrix entries, such that we handle 
+        ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
         
         IAmax = min(size(InodeList), IAset-1+p_rperfconfig%NASIM)
@@ -1648,7 +1648,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -1792,7 +1792,7 @@ contains
         
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
-        ! Get the maximum position of matrix entries, such that we handle 
+        ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
         
         IAmax = min(size(InodeList,2), IAset-1+p_rperfconfig%NASIM)
@@ -1892,7 +1892,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -2067,7 +2067,7 @@ contains
     ! local variables
     type(t_array), dimension(:,:), allocatable  :: rarray
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
-    real(DP), dimension(:,:), pointer :: p_DcoeffsAtDiag   
+    real(DP), dimension(:,:), pointer :: p_DcoeffsAtDiag
     real(DP), dimension(:), pointer :: p_Dx
     integer, dimension(:,:), pointer :: p_IdiagList,p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
@@ -2251,7 +2251,7 @@ contains
 
         ! We always handle NEQSIM equations simultaneously.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations simultaneously.
         
         IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
@@ -2411,7 +2411,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -2597,7 +2597,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3045,7 +3045,7 @@ contains
     type(t_matrixBlock) :: rmatrixBlock
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
-    real(DP), dimension(:,:), pointer :: p_DcoeffsAtDiag   
+    real(DP), dimension(:,:), pointer :: p_DcoeffsAtDiag
     integer, dimension(:,:), pointer :: p_IdiagList,p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
@@ -3249,7 +3249,7 @@ contains
 
         ! We always handle NEQSIM equations simultaneously.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations simultaneously.
         
         IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
@@ -3360,7 +3360,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3484,7 +3484,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3778,7 +3778,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -3916,7 +3916,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -4214,7 +4214,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -4352,7 +4352,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -4644,7 +4644,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4897,7 +4897,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)

@@ -14,7 +14,7 @@
 !# The following routines can be found here:
 !#
 !# 1.) cc_allocSystemMatrix
-!#     -> Allocates memory for the basic system matrix representing the 
+!#     -> Allocates memory for the basic system matrix representing the
 !#        core equation.
 !#
 !# 2.) cc_initNonlinearLoop
@@ -24,7 +24,7 @@
 !#
 !# 3.) cc_doneNonlinearLoop
 !#     -> Cleans up a 'nonlinear iteration structure' initialised by
-!#        cc_initNonlinearLoop. 
+!#        cc_initNonlinearLoop.
 !#     -> Extension to cc_releaseNonlinearLoop.
 !#
 !# 4.) cc_initPreconditioner
@@ -157,19 +157,19 @@ contains
 
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
       
     ! Let's consider the global system in detail. It has roughly
     ! the following shape:
     !
     !    / A11  A12  A13  B1  \   / A11  A12  A13  A14 \
     !    | A21  A22  A23  B2  | = | A21  A22  A23  A24 |
-    !    | A31  A32  A33  B3  |   | A31  A32  A33  A34 | 
+    !    | A31  A32  A33  B3  |   | A31  A32  A33  A34 |
     !    \ B1^T B2^T B3^T     /   \ A41  A42  A43  A44 /
     !
     ! All matices may have multiplication factors in their front.
     !
-    ! The structure of the matrices A11 and A22 of the global system matrix 
+    ! The structure of the matrices A11 and A22 of the global system matrix
     ! is governed by the template FEM matrix.
     ! Initialise them with the same structure, i.e. A11, A22 share (!) their
     ! structure (not the entries) with that of the template matrix.
@@ -308,7 +308,7 @@ contains
     rnonlinearIteration%DresidualInit = 0.0_DP
     rnonlinearIteration%DresidualOld  = 0.0_DP
     
-    call parlst_querysection(rproblem%rparamList, sname, p_rsection) 
+    call parlst_querysection(rproblem%rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create nonlinear solver; no section '''//&
@@ -439,7 +439,7 @@ contains
     
     p_rparamList => rproblem%rparamList
         
-    call parlst_querysection(p_rparamList, ssection, p_rsection) 
+    call parlst_querysection(p_rparamList, ssection, p_rsection)
     
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create linear solver; no section '''//trim(ssection)//&
@@ -485,7 +485,7 @@ contains
       call linsol_initMultigrid2 (p_rsolverNode,nlevels,&
           rnonlinearIteration%p_RfilterChain)
       
-      ! Manually trim the coarse grid correction in Multigrid to multiply the 
+      ! Manually trim the coarse grid correction in Multigrid to multiply the
       ! pressure equation with -1. This (un)symmetrises the operator and gives
       ! much better convergence rates.
       call cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
@@ -567,7 +567,7 @@ contains
 
       ! Now after the coarse grid solver is done, we turn to the smoothers
       ! on all levels. Their initialisation is similar to the coarse grid
-      ! solver. Note that we use the same smoother on all levels, for 
+      ! solver. Note that we use the same smoother on all levels, for
       ! presmoothing as well as for postsmoothing.
       do ilev = 2,nlevels
 
@@ -636,7 +636,7 @@ contains
       call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,&
           rnonlinearIteration%p_RfilterChain)
 
-    end select    
+    end select
 
     ! Put the final solver node to the preconditioner structure.
     rnonlinearIteration%rpreconditioner%p_rsolverNode => p_rsolverNode
@@ -710,7 +710,7 @@ contains
     integer :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
 
-    ! At first, ask the parameters in the INI/DAT file which type of 
+    ! At first, ask the parameters in the INI/DAT file which type of
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
     call parlst_getvalue_int (rproblem%rparamList, 'CC3D-NONLINEAR', &
@@ -764,7 +764,7 @@ contains
 
       imaxmem = 0
       do i=NLMIN+1,NLMAX
-        ! Pass the system metrices on the coarse/fine grid to 
+        ! Pass the system metrices on the coarse/fine grid to
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryDirect (&
@@ -834,7 +834,7 @@ contains
   logical, intent(in) :: binit
 
   ! Whether the structure of the system matrices is new.
-  ! This variable has to be set to TRUE whenever there was a structure in 
+  ! This variable has to be set to TRUE whenever there was a structure in
   ! the system matrices. This reinitialises the linear solver.
   logical, intent(in) :: bstructuralUpdate
 !</input>
@@ -854,7 +854,7 @@ contains
     logical :: btranspose
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A pointer to the matrix of the preconditioner
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner
@@ -885,7 +885,7 @@ contains
       ! Initialise the preconditioner matrices on all levels.
       do i=NLMIN,NLMAX
       
-        ! Prepare the preconditioner matrices level i. 
+        ! Prepare the preconditioner matrices level i.
         if (binit .or. bstructuralUpdate) then
 
           ! What type of matrix do we have? Is it a 'primitive' matrix
@@ -1036,7 +1036,7 @@ contains
               if ((rnonlinearIteration%rprecSpecials%ismootherType .eq. 0) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 1)) then
                 btranspose = .true.
-              end if              
+              end if
               
             end if
 
@@ -1160,7 +1160,7 @@ contains
     ! local variables
     integer :: i
 
-    ! Which preconditioner do we have?    
+    ! Which preconditioner do we have?
     select case (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
     case (CCPREC_NONE)
       ! No preconditioning
@@ -1255,7 +1255,7 @@ contains
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       ! We use the default configuration; stop here.
@@ -1326,7 +1326,7 @@ contains
   !
   ! The routine must always be called if the situation changes during a
   ! simulation (e.g. if a nonstationary simulation proceeds to a new timestep
-  ! and changes boundary conditions). It is usually called in 
+  ! and changes boundary conditions). It is usually called in
   ! cc_updatePreconditioner.
 !</description>
 
@@ -1340,9 +1340,9 @@ contains
 !</inputoutput>
 
 !<inputoutput>
-  ! Nonlinear iteration structure. 
-  ! The t_ccPreconditionerSpecials substructure that receives information how to 
-  ! finally assembly the matrices such that everything in the callback routines 
+  ! Nonlinear iteration structure.
+  ! The t_ccPreconditionerSpecials substructure that receives information how to
+  ! finally assembly the matrices such that everything in the callback routines
   ! will work.
   type(t_ccPreconditionerSpecials), intent(inout) :: rprecSpecials
 !</inputoutput>

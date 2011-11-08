@@ -121,7 +121,7 @@ contains
     ! new discretisation:
     call spdp_projectSolution (p_rvector,rprjVector)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call c2d2_discretiseBC (rprjDiscretisation,rdiscreteBC)
                             
@@ -138,7 +138,7 @@ contains
       p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u2.gmv')
     

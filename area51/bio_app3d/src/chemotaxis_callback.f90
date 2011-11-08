@@ -64,7 +64,7 @@ module chemotaxis_callback
 
 contains
 	
-! *******************************************************************************	
+! *******************************************************************************
 !# functions to implement the chemoattractant influence to the actual chemotaxis model
                
 
@@ -103,7 +103,7 @@ contains
         ! Here we specify the operators which influce the chemotaxis-sensitivity function
         ! This determines the density-dependent sensitivity.
         ! If = 1 there's no strong density-dependency
-        ! If = ( 1 - u/GAMMA ) it simulates, that "...occupation ( by cells )of an area limits other cells from penetrating it ..." ( Hillen, Painter paper ) 
+        ! If = ( 1 - u/GAMMA ) it simulates, that "...occupation ( by cells )of an area limits other cells from penetrating it ..." ( Hillen, Painter paper )
         function A( u, GAMMA ) result (f_result)
             implicit none
             real(DP) :: u, GAMMA, f_result
@@ -129,11 +129,11 @@ contains
             f_result = u * ( 1.0_DP - u )
         end function f
 
-        ! This function is corresponding to the generic functional g ( . ) in the Hillen, Painter 
+        ! This function is corresponding to the generic functional g ( . ) in the Hillen, Painter
         !paper
-        ! This determines the saturating signal production rate. If =1 cells will continue 
-        !producing chemoattractants, even if the cell population blows-up. 
-        ! If = 1 / ( 1 + PHI * u ) "this would prevent excessive chemoattractant production as 
+        ! This determines the saturating signal production rate. If =1 cells will continue
+        !producing chemoattractants, even if the cell population blows-up.
+        ! If = 1 / ( 1 + PHI * u ) "this would prevent excessive chemoattractant production as
         !the cell density increases" ( Hillen, Painter paper )
         function func_g ( u, PHI ) result (f_result)
             implicit none
@@ -145,9 +145,9 @@ contains
         ! This should realize a small pertubation at the center of the domain
         function ic_pattern (x,y) result(f_result)
             implicit none
-            intrinsic RANDOM_NUMBER 
+            intrinsic RANDOM_NUMBER
             real(DP) :: x, y, f_result, random_num
-            if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then 
+            if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then
                 CALL RANDOM_NUMBER (random_num)
                 !f_result = random_num
 		        f_result = 0.2_DP
@@ -162,7 +162,7 @@ contains
         function ic_cos( x, y ) result (f_result)
             implicit none
             real(DP) :: x, y, f_result
-            if ( sqrt ( (x-5)**2 + (y-5)**2) <=4 ) then 
+            if ( sqrt ( (x-5)**2 + (y-5)**2) <=4 ) then
                 f_result = 5.0_DP * cos ( 2 * ( PI * sqrt ( (x-5)**2 + (y-5)**2 ) ) / 4 ) **2
             else
                 f_result = 0.0_DP
@@ -181,7 +181,7 @@ contains
                 real(DP) :: x, y, f_result, random_num
                 CALL RANDOM_NUMBER (random_num)
                 f_result = random_num
-                !f_result = rand( 0 )                
+                !f_result = rand( 0 )
         end function f_sigma
 
 ! the following two fcts. are used for the nontrivial initial sol
@@ -214,7 +214,7 @@ contains
                         f_resultc = a*(x-1)*x*y*(y-1)
                 end function C_nonconst
                 
-! The following function is needed to asseble the RHS f in the 
+! The following function is needed to asseble the RHS f in the
 ! u-part. See coeff_cherkur3_f for further details
 ! f_chemo  = ALPHA * grad * ( u / ( 1+c )^2 * grad(c) )
 !               = ALPHA* { (u / ( 1+c )^2 * c_x )_x + (u / ( 1+c )^2 * c_y )_y }
@@ -264,7 +264,7 @@ contains
 		real(DP) :: c_result3, x, y, a, b
 
 		c_result3 = -2*b*c(x,y,a,b)+4*b**2*(x-0.5)**2*c(x,y, a, b)
-	end function c_xx	
+	end function c_xx
 
 
 	function c_y(x,y,a,b) result (c_result4)
@@ -281,7 +281,7 @@ contains
 		real(DP) :: c_result5, x, y, a, b
 
 		c_result5 = -2*b*c(x,y, a, b)+4*b**2*(y-0.5)**2*c(x,y, a, b)
-	end function c_yy	
+	end function c_yy
 
   ! ***************************************************************************
   !<subroutine>
@@ -349,8 +349,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -366,11 +366,11 @@ contains
   !</subroutine>
 	
     real(DP) :: amp = 1.0_DP   ! Amplifies the chemotaxis
-    integer :: i,j	
+    integer :: i,j
     real(DP) :: a,b
     ! Determines whether or not we use an implicit scheme, e.g. =1 for impli
-    !  =-1 for explicit    
-    integer :: impli = 1	
+    !  =-1 for explicit
+    integer :: impli = 1
     
     real(DP) :: dtimestep
     dtimestep = rcollection%Dquickaccess(1)
@@ -459,8 +459,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -492,7 +492,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -541,8 +541,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -591,7 +591,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -639,8 +639,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -691,7 +691,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -740,8 +740,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)      :: rcollection
     
   !</input>
@@ -775,8 +775,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -819,7 +819,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -868,8 +868,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional : A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional : A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -908,7 +908,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -957,8 +957,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -990,8 +990,8 @@ END IF
     SCALE_U = rcollection%DquickAccess(11)
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -999,7 +999,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! should rpresent the rhs fct g since 2*c=u=....
@@ -1084,8 +1084,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -1111,8 +1111,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -1120,7 +1120,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
@@ -1132,7 +1132,7 @@ END IF
 !     END DO
 
     Dvalues(:,:) =  SCALE_X* ( Dpoints(1,:,:)**2 -  Dpoints(1,:,:) ) * ( Dpoints(2,:,:)**2&
- - Dpoints(2,:,:) ) 
+ - Dpoints(2,:,:) )
   end subroutine
 
   ! ***************************************************************************
@@ -1201,8 +1201,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -1291,8 +1291,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -1313,8 +1313,8 @@ END IF
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
             Dvalues( icub, iel ) = 1_DP
-            !userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), & 
-            !                                               Dpoints ( 2, icub, iel ), & 
+            !userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), &
+            !                                               Dpoints ( 2, icub, iel ), &
             !                                               Dpoints ( 1, icub, iel ))
         END DO
     END DO
@@ -1387,8 +1387,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -1432,7 +1432,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1481,8 +1481,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1513,8 +1513,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -1522,7 +1522,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! should rpresent the rhs fct g since 2*c=u=....
@@ -1552,7 +1552,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1601,8 +1601,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1634,8 +1634,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -1643,7 +1643,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! should rpresent the rhs fct g. E.g. g= c_t -D_2*Laplacian c -BETA*u + ALPHA*u*c
@@ -1674,7 +1674,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1723,8 +1723,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1757,8 +1757,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -1766,7 +1766,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! should rpresent the rhs fct g. E.g. g= c_t -D_2*Laplacian c -BETA*u + ALPHA*u*c
@@ -1800,7 +1800,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1849,8 +1849,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1884,8 +1884,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -1893,7 +1893,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! this represents the fct. f for u=2c=2*(x-1)x(y-1)yexp(t)
@@ -1930,7 +1930,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1979,8 +1979,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -2010,8 +2010,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -2019,7 +2019,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! should rpresent the rhs fct f. E.g. f = u_t - D_1 Laplacian u + CHI* grad dot ( u* grad c )
@@ -2055,9 +2055,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2078,38 +2078,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2137,7 +2137,7 @@ END IF
 
 !<subroutine>
 
-! is used to set the BC for the constant sol. 
+! is used to set the BC for the constant sol.
 ! To achieve U=2*c=2*1 we have certain constant BCs
   subroutine getBoundaryValuesU (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
@@ -2155,9 +2155,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2178,38 +2178,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2239,7 +2239,7 @@ END IF
   ! ***************************************************************************
 
 !<subroutine>
-! is used to set the BC for the constant sol. 
+! is used to set the BC for the constant sol.
 ! To achieve U=2*c=2*1 we have certain constant BCs
   subroutine getBoundaryValuesC (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
@@ -2257,9 +2257,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2280,38 +2280,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2357,9 +2357,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2380,38 +2380,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2465,9 +2465,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2488,38 +2488,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2576,9 +2576,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2599,38 +2599,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2687,9 +2687,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2710,38 +2710,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2794,9 +2794,9 @@ END IF
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -2817,38 +2817,38 @@ END IF
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2897,7 +2897,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -2946,8 +2946,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -2968,7 +2968,7 @@ END IF
     real(DP) :: PHI
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -2978,7 +2978,7 @@ END IF
     PHI = rcollection%DquickAccess(1)
 
     ! Fetching the vector
-!    rvector = rcollection%p_rvectorQuickAccess1 
+!    rvector = rcollection%p_rvectorQuickAccess1
     rvector = collct_getvalue_vecsca (rcollection, "cbvector",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
@@ -2989,7 +2989,7 @@ END IF
     call fevl_evaluate_sim4(rvector, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
+    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third
     ! chertock kurganov example
     Dcoefficients(1,:,:) = DvaluesFevl(1,:,:) / ( 1 + PHI * DvaluesFevl(1,:,:) )
 
@@ -3017,7 +3017,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3066,8 +3066,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3089,7 +3089,7 @@ END IF
     integer :: icub, iel
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -3099,7 +3099,7 @@ END IF
     PHI = rcollection%DquickAccess(1)
 
     ! Fetching the vector
-!    rvector = rcollection%p_rvectorQuickAccess1 
+!    rvector = rcollection%p_rvectorQuickAccess1
     rvector = collct_getvalue_vecsca (rcollection, "cbvector",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
@@ -3137,7 +3137,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3186,8 +3186,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3209,7 +3209,7 @@ END IF
     integer :: icub, iel
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -3217,7 +3217,7 @@ END IF
 
 
     ! Fetching the vector
-!    rvector = rcollection%p_rvectorQuickAccess1 
+!    rvector = rcollection%p_rvectorQuickAccess1
     rcell = collct_getvalue_vecsca (rcollection, "cbvector",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
@@ -3259,7 +3259,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3308,8 +3308,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3330,7 +3330,7 @@ END IF
     real(DP) :: PHI
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -3340,7 +3340,7 @@ END IF
     PHI = rcollection%DquickAccess(1)
 
     ! Fetching the vector
-!    rvector = rcollection%p_rvectorQuickAccess1 
+!    rvector = rcollection%p_rvectorQuickAccess1
     rvector = collct_getvalue_vecsca (rcollection, "cbvector",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
@@ -3351,7 +3351,7 @@ END IF
     call fevl_evaluate_sim4(rvector, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
+    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third
     ! chertock kurganov example
     Dcoefficients(1,:,:) = DvaluesFevl(1,:,:)
 
@@ -3380,7 +3380,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3429,8 +3429,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3451,7 +3451,7 @@ END IF
     real(DP) :: W, SIGMA, BETA
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -3463,7 +3463,7 @@ END IF
     BETA = rcollection%DquickAccess(3)
 
     ! Fetching the vector
-!    rvector = rcollection%p_rvectorQuickAccess1 
+!    rvector = rcollection%p_rvectorQuickAccess1
     rvector = collct_getvalue_vecsca (rcollection, "cbvector",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
@@ -3474,7 +3474,7 @@ END IF
     call fevl_evaluate_sim4(rvector, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
+    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third
     ! chertock kurganov example
     Dcoefficients(1,:,:) = BETA*( W*DvaluesFevl(1,:,:)*DvaluesFevl(1,:,:) ) / ( SIGMA+DvaluesFevl(1,:,:)*DvaluesFevl(1,:,:) )
 
@@ -3503,7 +3503,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3552,8 +3552,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3574,7 +3574,7 @@ END IF
     real(DP) :: ALPHA
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -3584,7 +3584,7 @@ END IF
     ALPHA = rcollection%DquickAccess(1)
 
     ! Fetching the vector
-!    rvector = rcollection%p_rvectorQuickAccess1 
+!    rvector = rcollection%p_rvectorQuickAccess1
     rvector = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
     rvector_star = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     ! Alllocate some memory for the array, since it'll be written by
@@ -3597,7 +3597,7 @@ END IF
     call fevl_evaluate_sim4(rvector_star, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 2)
 
-    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
+    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third
     ! chertock kurganov example
     Dcoefficients(1,:,:) = ALPHA*DvaluesFevl(1,:,:)*dexp( - DvaluesFevl(1,:,:) / DvaluesFevl(2,:,:) )
 
@@ -3611,7 +3611,7 @@ END IF
  ! ***************************************************************************
 !<subroutine>
     ! Used for chemotaxis_cherkur_3.f90.
-    ! calculates the chemosensitivity function, since in this model  it's no more 
+    ! calculates the chemosensitivity function, since in this model  it's no more
     ! constant, but nonlinear.
     ! We'll iterate once, so there's no loop and no residual-check.
   subroutine coeff_cherkur3_u(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -3623,7 +3623,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3673,8 +3673,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3692,7 +3692,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -3704,8 +3704,8 @@ END IF
     ! allocate some memory for the calls of Fevl
     allocate (DvaluesFevl(4,npointsPerElement,nelements))
     ! Fetching the vector
-!     rvector_c => rcollection%p_rvectorQuickAccess1 
-!     rvector_u => rcollection%p_rvectorQuickAccess2 
+!     rvector_c => rcollection%p_rvectorQuickAccess1
+!     rvector_u => rcollection%p_rvectorQuickAccess2
 
     rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
@@ -3723,7 +3723,7 @@ END IF
 !     call fevl_evaluate_sim4(rvector_c, &
 !                                  rdomainIntSubset, DER_DERIV_Y, DvaluesFevl, 4)
 
-    ! calculate the term u_n / (1+c_n+1)^2   * c_n+1_x  (resp. c_n+1_y ) for the 
+    ! calculate the term u_n / (1+c_n+1)^2   * c_n+1_x  (resp. c_n+1_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     ! first term
@@ -3750,7 +3750,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3799,8 +3799,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3824,8 +3824,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -3833,12 +3833,12 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
     Dcoefficients(1,:,:) =  A_COEFF * exp ( -B_COEFF* ( &
-                ( Dpoints(1,:,:) - 0.5_DP )**2 + ( Dpoints(2,:,:) - 0.5_DP)**2)  )  
+                ( Dpoints(1,:,:) - 0.5_DP )**2 + ( Dpoints(2,:,:) - 0.5_DP)**2)  )
 
   end subroutine
 
@@ -3858,7 +3858,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -3907,8 +3907,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -3932,8 +3932,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -3941,7 +3941,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
@@ -4015,8 +4015,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4041,8 +4041,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -4050,7 +4050,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
@@ -4126,8 +4126,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4221,8 +4221,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4247,8 +4247,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -4256,7 +4256,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
@@ -4330,8 +4330,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4356,8 +4356,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -4365,7 +4365,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
@@ -4447,8 +4447,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4473,8 +4473,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -4482,7 +4482,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! The values of an bell-shaped exp fct. are returned
@@ -4564,8 +4564,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4653,8 +4653,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4671,7 +4671,7 @@ END IF
 
     ! The values of an bell-shaped exp fct. at the unit square corner are returned
     Dvalues(:,:) =  1.0_DP + 0.1_DP * dexp ( -10.0_DP * ( &
-                ( Dpoints(1,:,:) - 1.0_DP )**2 + ( Dpoints(2,:,:) - 1.0_DP)**2)  )  
+                ( Dpoints(1,:,:) - 1.0_DP )**2 + ( Dpoints(2,:,:) - 1.0_DP)**2)  )
 
   end subroutine
 
@@ -4740,8 +4740,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4828,8 +4828,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -4857,7 +4857,7 @@ END IF
  ! ***************************************************************************
 !<subroutine>
     ! Used for chemotaxis_cherkur_3.f90.
-    ! calculates the chemosensitivity function, since in this model  it's no more 
+    ! calculates the chemosensitivity function, since in this model  it's no more
     ! constant, but nonlinear.
     ! We'll iterate once, so there's no loop and no residual-check.
   subroutine coeff_cherkurbilf(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -4869,7 +4869,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -4919,8 +4919,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -4938,7 +4938,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -4953,8 +4953,8 @@ END IF
     ! allocate some memory for the calls of Fevl
     allocate (DvaluesFevl(4,npointsPerElement,nelements))
     ! Fetching the vector
-!     rvector_c => rcollection%p_rvectorQuickAccess1 
-!     rvector_u => rcollection%p_rvectorQuickAccess2 
+!     rvector_c => rcollection%p_rvectorQuickAccess1
+!     rvector_u => rcollection%p_rvectorQuickAccess2
     rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
@@ -4962,7 +4962,7 @@ END IF
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
 
     ! Fetching the values of rvector_c in the cubature pts.
@@ -4977,17 +4977,17 @@ END IF
     call fevl_evaluate_sim4(rvector_c, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
             Dcoefficients(1,icub,iel) =   f_CHI ( DvaluesFevl(3,icub,iel) ,&
-                                                 DvaluesFevl(4,icub,iel) , CHI ) *  DvaluesFevl(1,icub,iel) 
+                                                 DvaluesFevl(4,icub,iel) , CHI ) *  DvaluesFevl(1,icub,iel)
             ! second term
             Dcoefficients(2,icub,iel) =   f_CHI ( DvaluesFevl(3,icub,iel) ,&
-                                                  DvaluesFevl(4,icub,iel) , CHI )* DvaluesFevl(2,icub,iel) 
+                                                  DvaluesFevl(4,icub,iel) , CHI )* DvaluesFevl(2,icub,iel)
         END DO
     END DO
 
@@ -5004,7 +5004,7 @@ END IF
  ! ***************************************************************************
 !<subroutine>
     ! Used for chemotaxis_cherkur_3.f90.
-    ! calculates the chemosensitivity function, since in this model  it's no more 
+    ! calculates the chemosensitivity function, since in this model  it's no more
     ! constant, but nonlinear.
     ! We'll iterate once, so there's no loop and no residual-check.
   subroutine coeff_hillenbilf(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -5016,7 +5016,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5066,8 +5066,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5085,7 +5085,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -5100,8 +5100,8 @@ END IF
     ! allocate some memory for the calls of Fevl
     allocate (DvaluesFevl(4,npointsPerElement,nelements))
     ! Fetching the vector
-!     rvector_c => rcollection%p_rvectorQuickAccess1 
-!     rvector_u => rcollection%p_rvectorQuickAccess2 
+!     rvector_c => rcollection%p_rvectorQuickAccess1
+!     rvector_u => rcollection%p_rvectorQuickAccess2
     rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
@@ -5111,7 +5111,7 @@ END IF
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
 
     ! Fetching the values of rvector_c in the cubature pts.
@@ -5126,17 +5126,17 @@ END IF
     call fevl_evaluate_sim4(rvector_c, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
             Dcoefficients(1,icub,iel) =   CHI * ( ( DvaluesFevl(3,icub,iel) * ( 1 - DvaluesFevl(3,icub,iel) / GAMMA ) ) /&
-                                                    ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(1,icub,iel) 
+                                                    ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(1,icub,iel)
             ! second term
             Dcoefficients(2,icub,iel) =   CHI * ( ( DvaluesFevl(3,icub,iel) * ( 1 - DvaluesFevl(3,icub,iel) / GAMMA ) ) /&
-                                                     ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(2,icub,iel) 
+                                                     ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(2,icub,iel)
         END DO
     END DO
 
@@ -5156,7 +5156,7 @@ END IF
     ! this is induced by hillen's set of models
     ! The chemo sensitivity function reads
     ! \nabla ( A(u)*B(c)* \nabla c))
-    ! where A and B are operators which influence the cell density distribution 
+    ! where A and B are operators which influence the cell density distribution
     ! ( e.g. evolution of peaks ).
     ! A and B are specified as functions ( on top of this module )
   subroutine coeff_hillenX(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -5168,7 +5168,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5218,8 +5218,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5237,7 +5237,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -5280,11 +5280,11 @@ END IF
             ! first term
             Dcoefficients(1,icub,iel) =   A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
                                                     B ( DvaluesFevl(4,icub,iel), CHI, ALPHA ) * &
-                                                    DvaluesFevl(1,icub,iel) 
+                                                    DvaluesFevl(1,icub,iel)
             ! second term
             Dcoefficients(2,icub,iel) =   A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
                                                     B ( DvaluesFevl(4,icub,iel), CHI, ALPHA )  * &
-                                                    DvaluesFevl(2,icub,iel) 
+                                                    DvaluesFevl(2,icub,iel)
         END DO
     END DO
 
@@ -5314,7 +5314,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5364,8 +5364,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5383,7 +5383,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -5425,10 +5425,10 @@ END IF
         DO icub = 1,npointsPerElement
             ! first term
             Dcoefficients(1,icub,iel) =   CHI * ( DvaluesFevl(3,icub,iel)  /&
-                                                    ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(1,icub,iel) 
+                                                    ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(1,icub,iel)
             ! second term
             Dcoefficients(2,icub,iel) =   CHI * (  DvaluesFevl(3,icub,iel) /&
-                                                     ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(2,icub,iel) 
+                                                     ( 1 + ALPHA * DvaluesFevl(4,icub,iel) )**2 ) *  DvaluesFevl(2,icub,iel)
         END DO
     END DO
 
@@ -5444,7 +5444,7 @@ END IF
  ! ***************************************************************************
 !<subroutine>
     ! Used for chemotaxis_cherkur_3.f90.
-    ! calculates the chemosensitivity function, since in this model  it's no more 
+    ! calculates the chemosensitivity function, since in this model  it's no more
     ! constant, but nonlinear.
     ! We'll iterate once, so there's no loop and no residual-check.
   subroutine coeff_hillen_laplace(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -5456,7 +5456,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5506,8 +5506,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5525,7 +5525,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -5548,12 +5548,12 @@ END IF
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
     call fevl_evaluate_sim4(rvector_u, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
@@ -5580,7 +5580,7 @@ END IF
  ! ***************************************************************************
 !<subroutine>
     ! Used for chemotaxis_cherkur_3.f90.
-    ! calculates the chemosensitivity function, since in this model  it's no more 
+    ! calculates the chemosensitivity function, since in this model  it's no more
     ! constant, but nonlinear.
     ! We'll iterate once, so there's no loop and no residual-check.
   subroutine coeff_pattern_growthterm(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -5592,7 +5592,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5642,8 +5642,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5661,7 +5661,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -5681,12 +5681,12 @@ END IF
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
     call fevl_evaluate_sim4(rvector_u, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
@@ -5707,7 +5707,7 @@ END IF
  ! ***************************************************************************
 !<subroutine>
     ! Used for chemotaxis_cherkur_3.f90.
-    ! calculates the chemosensitivity function, since in this model  it's no more 
+    ! calculates the chemosensitivity function, since in this model  it's no more
     ! constant, but nonlinear.
     ! We'll iterate once, so there's no loop and no residual-check.
   subroutine coeff_m8bilf(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -5719,7 +5719,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5769,8 +5769,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5788,7 +5788,7 @@ END IF
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -5803,21 +5803,21 @@ END IF
     ! allocate some memory for the calls of Fevl
     allocate (DvaluesFevl(4,npointsPerElement,nelements))
     ! Fetching the vector
-!     rvector_c => rcollection%p_rvectorQuickAccess1 
-!     rvector_u => rcollection%p_rvectorQuickAccess2 
+!     rvector_c => rcollection%p_rvectorQuickAccess1
+!     rvector_u => rcollection%p_rvectorQuickAccess2
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
     R = rcollection%DquickAccess(2)
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
 
     ! These calls are neccessary to fit the signature of f_CHI
     call fevl_evaluate_sim4(rvector_u, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 3)
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
@@ -5849,7 +5849,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -5898,8 +5898,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -5929,7 +5929,7 @@ END IF
     BETA = rcollection%DquickAccess(4)
     dtstep = rcollection%DquickAccess(5)
 
-    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
+    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third
     ! chertock kurganov example
 
     DO i = 1,npointsPerElement
@@ -5941,7 +5941,7 @@ END IF
                                                         ( SIGMA + ( U_nonconst(2.0_DP,Dpoints(1,i,j),Dpoints(2,i,j))**2 ) ) &
                                                     )
         END DO
-    END DO 
+    END DO
 
   end subroutine
 
@@ -5962,7 +5962,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -6011,8 +6011,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -6039,7 +6039,7 @@ END IF
     ALPHA = rcollection%DquickAccess(2)
     dtstep = rcollection%DquickAccess(3)
 
-    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
+    ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third
     ! chertock kurganov example
 
    DO i = 1,npointsPerElement
@@ -6069,7 +6069,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -6118,8 +6118,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -6144,8 +6144,8 @@ END IF
     SCALE_U = rcollection%DquickAccess(3)
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")
@@ -6153,7 +6153,7 @@ END IF
 !                   call output_lbrk ()
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-! 
+!
 !       else
 
     ! should rpresent the rhs fct g since 2*c=u=....
@@ -6184,7 +6184,7 @@ END IF
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -6233,8 +6233,8 @@ END IF
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)      :: rcollection
     
   !</input>
@@ -6261,8 +6261,8 @@ END IF
 
 !       if(present(rcollection))then
 !             uvector => collct_getvalue_vecsca (rcollection, "cbvector",0,'',bexists)
-! 
-! 
+!
+!
 !             IF(.NOT.bexists)then
 ! 	          call output_lbrk ()
 !                   call output_line ("***************ERROR:***************")

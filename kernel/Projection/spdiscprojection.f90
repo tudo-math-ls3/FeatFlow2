@@ -83,8 +83,8 @@ contains
 !</input>
 
 !<output>
-  ! An existing scalar vector structure that receives the projected 
-  ! solution vector. Must provide a scalar discretisation structure 
+  ! An existing scalar vector structure that receives the projected
+  ! solution vector. Must provide a scalar discretisation structure
   ! that specifies the destination FE spaces.
   type(t_vectorScalar), intent(inout) :: rdestVector
 !</output>
@@ -95,7 +95,7 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rsourceDiscr,p_rdestDiscr
     type(t_triangulation), pointer :: p_rtriangulation
     real(DP), dimension(:), pointer :: p_Dsource,p_Ddest
-    integer, dimension(:), pointer :: p_IelementsAtVertexIdx 
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx
     integer, dimension(:), pointer :: p_IelementsAtVertex
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement,&
@@ -117,14 +117,14 @@ contains
     if (.not. associated(p_rsourceDiscr)) then
       call output_line ('No source discretisation!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end if
 
     if (.not. associated(p_rdestDiscr)) then
       call output_line ('No destination discretisation!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end if
     
@@ -135,7 +135,7 @@ contains
                            p_rdestDiscr%p_rboundary)) then
         call output_line ('Different boundaries!', &
                           OU_CLASS_ERROR,OU_MODE_STD,&
-                          'spdp_projectSolutionScalar')  
+                          'spdp_projectSolutionScalar')
         call sys_halt()
       end if
     end if
@@ -144,7 +144,7 @@ contains
                          p_rdestDiscr%p_rtriangulation)) then
       call output_line ('Different triangulations!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end if
     
@@ -152,7 +152,7 @@ contains
         (p_rdestDiscr%ccomplexity .ne. SPDISC_UNIFORM)) then
       call output_line ('Only uniform discretisations supported!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end if
     
@@ -160,7 +160,7 @@ contains
         (rdestVector%isortStrategy .gt. 0)) then
       call output_line ('Vectors must be unsorted for projection!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end if
     
@@ -184,7 +184,7 @@ contains
         (rdestVector%cdataType .ne. ST_DOUBLE)) then
       call output_line ('Only double precision vectors supported!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end if
     
@@ -405,7 +405,7 @@ contains
         case default
           call output_line ('Unsupported element in source space!', &
                             OU_CLASS_ERROR,OU_MODE_STD,&
-                            'spdp_projectSolutionScalar')  
+                            'spdp_projectSolutionScalar')
           call sys_halt()
 
       case (EL_Q2_3D)
@@ -420,7 +420,7 @@ contains
     case default
       call output_line ('Unsupported element in destination space!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolutionScalar')  
+                        'spdp_projectSolutionScalar')
       call sys_halt()
     end select
     
@@ -446,7 +446,7 @@ contains
   integer, intent(in) :: NVT
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx
 
   ! IelementsAtVertex array of the triangulation
   integer, dimension(:), intent(in) :: IelementsAtVertex
@@ -464,7 +464,7 @@ contains
     integer :: nadj
     integer :: ielidx
 
-    ! Loop through the vertices   
+    ! Loop through the vertices
     do iv=1,NVT
     
       ! On each vertex, loop through the adjacent elements
@@ -500,7 +500,7 @@ contains
   integer, intent(in) :: NEL
   
   ! IverticesAtElement array of the triangulation
-  integer, dimension(:,:), intent(in) :: IverticesAtElement 
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 !</input>
   
 !<output>
@@ -513,10 +513,10 @@ contains
     ! local variables
     integer :: iel,iv,NVE
 
-    ! Loop through the elements   
+    ! Loop through the elements
     do iel=1,NEL
     
-      ! On each element, loop through the vertices to get the mean value on 
+      ! On each element, loop through the vertices to get the mean value on
       ! the element
       Ddest(iel) = 0.0_DP
       NVE = tria_getNVE(IverticesAtElement,iel)
@@ -554,7 +554,7 @@ contains
   integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx
   
   ! IverticesAtElement array of the triangulation (old KVERT)
   integer, dimension(:,:), intent(in) :: IverticesAtElement
@@ -645,7 +645,7 @@ contains
   integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx
   
   ! IverticesAtElement array of the triangulation (old KVERT)
   integer, dimension(:,:), intent(in) :: IverticesAtElement
@@ -740,7 +740,7 @@ contains
   integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx
   
   ! IverticesAtElement array of the triangulation (old KVERT)
   integer, dimension(:,:), intent(in) :: IverticesAtElement
@@ -817,7 +817,7 @@ contains
   integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx
   
   ! IverticesAtElement array of the triangulation (old KVERT)
   integer, dimension(:,:), intent(in) :: IverticesAtElement
@@ -904,7 +904,7 @@ contains
   integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx
   
   ! IverticesAtElement array of the triangulation (old KVERT)
   integer, dimension(:,:), intent(in) :: IverticesAtElement
@@ -953,7 +953,7 @@ contains
       ! value in each corner:
       Ddest(IV1) = Ddest(IV1) + DUH1 - DUH2 + DUH3
       Ddest(IV2) = Ddest(IV2) + DUH1 + DUH2 - DUH3
-      Ddest(IV3) = Ddest(IV3) - DUH1 + DUH2 + DUH3 
+      Ddest(IV3) = Ddest(IV3) - DUH1 + DUH2 + DUH3
       
     end do
 
@@ -974,8 +974,8 @@ contains
 !<description>
   ! This routine 'converts' a given solution vector rsourceVector to
   ! another solution vector rdestVector. The discretisation structures
-  ! in the subvertors of rdestVector specifies the new FE spaces, rsourceVector 
-  ! should be converted to. The new 'projected' solution is build in 
+  ! in the subvertors of rdestVector specifies the new FE spaces, rsourceVector
+  ! should be converted to. The new 'projected' solution is build in
   ! rdestVector.
 !</description>
 
@@ -989,7 +989,7 @@ contains
 !</input>
 
 !<output>
-  ! An existing vector structure that receives the projected 
+  ! An existing vector structure that receives the projected
   ! solution vector. Must provide a scalar discretisation structures
   ! that specifies the destination FE spaces.
   type(t_vectorBlock), intent(inout) :: rdestVector
@@ -1003,7 +1003,7 @@ contains
     if (rsourceVector%nblocks .ne. rdestVector%nblocks) then
       call output_line ('Different block structure!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_projectSolution')  
+                        'spdp_projectSolution')
       call sys_halt()
     end if
     
@@ -1031,10 +1031,10 @@ contains
   ! (Such vertex based solution vectors are typically written out
   ! to external files like GMV during the postprocessing).
   !
-  ! If rdestDiscretisation is defined, it must describe a discretisation 
-  ! with <tex>$P_1$</tex> and <tex>$Q_1$</tex> elements, respectively. 
-  ! If rdestDiscretisation is undefined, the routine automatically 
-  ! creates and returns rdestDiscretisation for the destination vector 
+  ! If rdestDiscretisation is defined, it must describe a discretisation
+  ! with <tex>$P_1$</tex> and <tex>$Q_1$</tex> elements, respectively.
+  ! If rdestDiscretisation is undefined, the routine automatically
+  ! creates and returns rdestDiscretisation for the destination vector
   ! rdestVector based on the discretisation of the source vector.
   ! The caller must take care, that this discretisation structure
   ! is destroyed when rdestVector is destroyed to avoid memory leaks!
@@ -1056,13 +1056,13 @@ contains
 !</input>
 
 !<inputoutput>
-  ! A scalar vector structure that receives the projected 
+  ! A scalar vector structure that receives the projected
   ! solution vector. If undefined, a vector is created.
   type(t_vectorScalar), intent(inout) :: rdestVector
 
   ! A discretisation structure that defines a discretisation with
   ! $P_1$ and/or <tex>$Q_1$</tex> elements. If undefines, the structure
-  ! is automatically created.  
+  ! is automatically created.
   type(t_spatialDiscretisation), intent(inout) :: rdestDiscretisation
 !</inputoutput>
 
@@ -1072,7 +1072,7 @@ contains
     if (rsourceVector%p_rspatialDiscr%ndimension .ne. NDIM2D) then
       call output_line ('Only 2D discretisation supported!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdp_stdProjectionToP1Q1')  
+                        'spdp_stdProjectionToP1Q1')
       call sys_halt()
     end if
 

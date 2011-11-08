@@ -25,7 +25,7 @@ module mlproj
   type t_mldiscrPointer
   
     ! Pointer to a discretisation
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation  
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
   end type
 
@@ -117,7 +117,7 @@ contains
 !<description>
   ! Initialises level ilevel of the projection hierarchy using the block
   ! discretisation rdiscretisation.
-  ! After the initialisation of all levels, the routine 
+  ! After the initialisation of all levels, the routine
   ! mlprj_commitProjectionHierarchy must be called!
 !</description>
 
@@ -127,7 +127,7 @@ contains
   
   ! Block discretisation of this level. A pointer to this structure
   ! is written to rprjHierarchy, so the structure must persist until
-  ! the hierarchy is released. 
+  ! the hierarchy is released.
   type(t_blockDiscretisation), intent(in),target :: rdiscretisation
 !</input>
 
@@ -138,7 +138,7 @@ contains
 
 !</subroutine>
 
-    ! Initialise all levels except for the coarse one, this does not need 
+    ! Initialise all levels except for the coarse one, this does not need
     ! initialisation.
     if (ilevel .gt. rprjHierarchy%nlmin) then
       call mlprj_initProjectionDiscr (&
@@ -158,7 +158,7 @@ contains
   subroutine mlprj_commitPrjHierarchy (rprjHierarchy)
 
 !<description>
-  ! Commits a level hierarchy. This routine must be called after the 
+  ! Commits a level hierarchy. This routine must be called after the
   ! initialisation of all levels using mlprj_initHierarchyLevel.
   ! It does some final changes to rprjHierarchy to make it ready to use.
 !</description>
@@ -179,7 +179,7 @@ contains
                  
     imaxmem = 1
     do i=rprjHierarchy%nlmin+1,rprjHierarchy%nlmax
-      ! Pass the system metrices on the coarse/fine grid to 
+      ! Pass the system metrices on the coarse/fine grid to
       ! mlprj_getTempMemoryDirect to specify the discretisation structures
       ! of all equations in the PDE there.
       ! This calculates the overall size of the temp vector needed for the

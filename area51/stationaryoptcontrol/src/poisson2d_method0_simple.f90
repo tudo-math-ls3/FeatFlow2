@@ -22,7 +22,7 @@
 !#   z = target solution
 !#
 !# The boundary conditions for the dual solution are =0 on the
-!# Dirichlet boundary. 
+!# Dirichlet boundary.
 !# The projection operator
 !#
 !#   P(g) = P(g)g = P[a,b](g)g = max(a,min(b,g))
@@ -43,7 +43,7 @@
 !#  -Laplace(y) + 1/alpha p = f
 !#  -Laplace(p) - u = -z
 !#
-!# which corresponds to the system 
+!# which corresponds to the system
 !#
 !#  (  A    1/alpha M ) ( y )= (  f )
 !#  ( -M    A         ) ( p )  ( -z )
@@ -69,7 +69,7 @@
 !#  ( y_n+1 ) = ( y_n ) + (  A    P'(u_n)(1/alpha .) )^-1 [ (  f ) - (  A    P(u_n)(1/alpha .) ) ( y_n ) ]
 !#  ( p_n+1 )   ( p_n )   ( -M    A                  )    [ ( -z )   ( -M    A                 ) ( p_n ) ]
 !#
-!# where u_n = -1/alpha p_n and P'(g) (and its corresponding matrix) is 
+!# where u_n = -1/alpha p_n and P'(g) (and its corresponding matrix) is
 !# the semismooth Newton operator the projection P(g). This operator is defined by
 !#
 !#   P'(h)g (x) = g(x)  , if a <= h(x) <= b
@@ -102,7 +102,7 @@
 !#          dy/dn = 0    on boundary of [0,1]^2 \ (0,0)
 !#       -1 <= u <= 1
 !#              z = x1 + x2
-!# 
+!#
 !# 2.) bpointBC=FALSE:
 !#
 !#  min J(y,u) = |y-z|^2 + alpha/2 |u|
@@ -110,10 +110,10 @@
 !# with alpha=0.001 and
 !#
 !#    -Laplace(y) = u
-!#              y = 0    on boundary of [0,1]^2 
+!#              y = 0    on boundary of [0,1]^2
 !#        0 <= u <= 15
 !#              z = x1 + x2
-!# 
+!#
 !##############################################################################
 
 module poisson2d_method0_simple
@@ -206,7 +206,7 @@ contains
     
     deallocate(p_Idofs)
 
-  end subroutine    
+  end subroutine
 
   ! ***************************************************************************
   
@@ -246,7 +246,7 @@ contains
       p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
     end do
 
-  end subroutine 
+  end subroutine
   
   ! ***************************************************************************
 
@@ -299,11 +299,11 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempRhsBlock
     type(t_vectorScalar) :: rvectorTmp,rvectorOutput
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -314,7 +314,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -332,7 +332,7 @@ contains
     type(t_ucdExport) :: rexport
     real(DP), dimension(:), pointer :: p_Ddata
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 6
@@ -413,7 +413,7 @@ contains
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValuesPrimal_2D)
            
-    if (.not. bpointBC) then                  
+    if (.not. bpointBC) then
       ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
@@ -440,7 +440,7 @@ contains
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValuesDual_2D)
-    if (.not. bpointBC) then                  
+    if (.not. bpointBC) then
       ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
@@ -495,8 +495,8 @@ contains
     do ite = 1,nmaxIterations
     
       ! Create the nonliear defect
-      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y ) 
-      !  (d2)    ( -z )   ( -M    A                 ) ( p ) 
+      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y )
+      !  (d2)    ( -z )   ( -M    A                 ) ( p )
       ! We do this manually...
       
       call lsysbl_copyVector (rrhsBlock,rtempRhsBlock)
@@ -565,7 +565,7 @@ contains
       
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
-      ! only have one level here), then call the initialisation 
+      ! only have one level here), then call the initialisation
       ! routine to attach all these matrices.
       ! Remark: Don't make a call like
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -601,7 +601,7 @@ contains
     end do
     
     ! That's it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                        'gmv/ups2d_0_simple.gmv')
@@ -660,7 +660,7 @@ contains
     call spdiscr_releaseDiscr(rdiscrOutput)
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that's it.

@@ -6,15 +6,15 @@
 !# <purpose>
 !# This module contains matrix-vector assembly routines for the heat conduction
 !# problem. The following routines can be found here:
-!# 0.) 
+!# 0.)
 !# 1.) CH_allocMatVec
 !#     -> Allocate memory for matrices/vectors, generate 'static' matrices that
 !#        don't change in time.
 !#
-!# 2') CH_generateStaticMatrices 
+!# 2') CH_generateStaticMatrices
 !#     -> generate static matrix for CH problem including Laplacian and Mass matrix
-!#  
-!# 2.) CH_calcRHS 
+!#
+!# 2.) CH_calcRHS
 !#     -> Calculate RHS vector. (doesn't implement BC's.)
 !#
 !# 3.) CH_doneMatVec
@@ -22,9 +22,9 @@
 !#
 !# 4.) CH_nonlinearMatMul
 !#     -> Calculate multiplication of nonlinear matrix times a vector
-!# 
-!# 5.) CH_assembleMatrix 
-!#     -> Assemble linear and (nonliear) Matrix. 
+!#
+!# 5.) CH_assembleMatrix
+!#     -> Assemble linear and (nonliear) Matrix.
 !#
 !# </purpose>
 !##############################################################################
@@ -62,11 +62,11 @@ module CahnHilliard_matvec
 !~~~~~~~~NS modules~~~~~~~~~~~~~~~~~~~
    use ccbasic
 !   use cccallback
-! !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
+! !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    use CahnHilliard_callback
    use CahnHilliard_basic
-!   
+!
   IMPLICIT NONE
 
 !</constantblock>
@@ -98,7 +98,7 @@ module CahnHilliard_matvec
 !  (  D     C  )  [w] = [g]
 !
 !  with A = \alpha M + \gamma {\bf u} grad, where M <--> Identity operator in c
-!       B = \eta - div(grad w), where \eta including time stepping, b(c) and \rho(c) 
+!       B = \eta - div(grad w), where \eta including time stepping, b(c) and \rho(c)
 !       D = \tau N(c) + \theta div(grad c)
 !       C = \beta M   where M <--> Identity operator in w
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +124,7 @@ module CahnHilliard_matvec
     real(DP) :: dtau = 0.0_DP
 
     ! BETA-parameter that switch the B-term on/off.
-    real(DP) :: dbeta = 0.0_DP    
+    real(DP) :: dbeta = 0.0_DP
 
     ! Weight for the Newton matrix N*(u).
     ! = 0.0 deactivates the Newton part.
@@ -132,12 +132,12 @@ module CahnHilliard_matvec
 
     ! STABILISATION: so far we don't need it. For stabilization, refer to Feng's paper
     
-    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
+    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when
     ! a nonlinearity is set up.
     real(DP) :: dnu = 0.0_DP
     
-    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and 
-    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of 
+    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and
+    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of
     ! 0.0 deactivates any stabilisation.
     real(DP) :: dupsam = 0.0_DP
     
@@ -149,7 +149,7 @@ module CahnHilliard_matvec
     integer :: iadaptiveMatrices = 0
     
     ! MATRIX RESTRICTION: Threshold parameter for adaptive matrix generation
-    ! of coarse grid matrices (here: maximum aspect ratio). 
+    ! of coarse grid matrices (here: maximum aspect ratio).
     ! Only applicable if iadaptiveMatrices <> 0.
     ! Standard = 20.0
     real(DP) :: dadmatthreshold = 20.0_DP
@@ -158,11 +158,11 @@ module CahnHilliard_matvec
     ! (size of subvectors in the solution vector, trial/test functions,...).
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! pointer to a template FEM matrix that defines the structure of 
-    ! Laplace/... matrices. 
+    ! pointer to a template FEM matrix that defines the structure of
+    ! Laplace/... matrices.
     type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM => null()
 
-    ! pointer to Laplace matrix. 
+    ! pointer to Laplace matrix.
     type(t_matrixScalar), pointer :: p_rmatrixLaplace => null()
     ! pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
@@ -187,9 +187,9 @@ module CahnHilliard_matvec
   
 CONTAINS
 
-  ! ***************************************************************************  
+  ! ***************************************************************************
 !~~~~~~~We may first remark this part, Shall we assemble matrix for all levels?
-! MCai, assembling matrix part need to be rewritten, if we want to use multigrid 
+! MCai, assembling matrix part need to be rewritten, if we want to use multigrid
 ! code to solve the system.  How to do that? for all levels?
 ! rewrite this part according to cc2d
 
@@ -214,11 +214,11 @@ CONTAINS
   type(t_parlist), intent(IN) :: rCHparams
 
   ! A t_nonlinearCHMatrix structure providing all necessary 'source' information
-  ! about how to set up the matrix. 
+  ! about how to set up the matrix.
   !
-  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX 
+  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX
   ! must be initialised as well as p_rdiscretisation!
-  ! The new matrix is created based p_rmatrixTemplateXXXX as well as 
+  ! The new matrix is created based p_rmatrixTemplateXXXX as well as
   ! p_rdiscretisation. Memory is allocated automatically if it's missing.
   type(t_nonlinearCHMatrix), intent(INOUT) :: rnonlinearCHMatrix
 
@@ -227,7 +227,7 @@ CONTAINS
   type(t_vectorBlock), intent(IN), optional :: rCHvector
 
   ! The destination matrix which should be set up.
-  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx 
+  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx
   ! was specified).
   ! If initialised, the existing matrix is updated or recreated, depending on
   ! coperation.
@@ -260,7 +260,7 @@ CONTAINS
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Arrays for the Cuthill McKee renumbering strategy
-    !integer, dimension(1) :: H_Iresort 
+    !integer, dimension(1) :: H_Iresort
     !integer(PREC_VECIDX), dimension(:), pointer :: p_Iresort
  
     ! Parameters from the DAT file
@@ -280,7 +280,7 @@ CONTAINS
 
 !    print *, rmatrix%RmatrixBlock(1,1)%h_Da
 
- ! For (1,1) block <------> matrix A 
+ ! For (1,1) block <------> matrix A
 
       ! Release the matrix if present.
     call lsysbl_releaseMatrix (rmatrix)
@@ -289,7 +289,7 @@ CONTAINS
 !      p_rmatrixTemplateFEM => rnonlinearCHMatrix%p_rmatrixTemplateFEM
 
     if (associated(p_rdiscretisation)) then
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
     else
       ! No discretisation structure; create the matrix directly as 3x3 matrix.
       call lsysbl_createEmptyMatrix (rmatrix,NDIM2D)
@@ -308,14 +308,14 @@ CONTAINS
     call lsysbl_updateMatStrucInfo (rmatrix)
 
     ! (1,1) Block include both variable density based Mass + Conv
-!	if (rnonlinearCHMatrix%dalpha .ne. 0.0_DP) then 
+!	if (rnonlinearCHMatrix%dalpha .ne. 0.0_DP) then
 !	  call CH_generateVarMass (rnonlinearCHmatrix,rCHvector, rmatrix%RmatrixBlock(1,1))
 !	  call lsyssc_scaleMatrix(rmatrix%RmatrixBlock(1,1), &
-!	                             rnonlinearCHMatrix%dalpha)           
+!	                             rnonlinearCHMatrix%dalpha)
 !	end if
 
 !   ! (1,1) Block, mass matrix does not depend on c.
-    if (rnonlinearCHMatrix%dalpha .ne. 0.0_DP) then 
+    if (rnonlinearCHMatrix%dalpha .ne. 0.0_DP) then
       call lsyssc_matrixLinearComb (&
         rnonlinearCHMatrix%p_rmatrixMass,rnonlinearCHMatrix%dalpha,&
         rmatrix%RmatrixBlock(1,1),0.0_DP,&
@@ -323,9 +323,9 @@ CONTAINS
         .false.,.false.,.true.,.true.)
     end if
 
-! For (1,1) block, we also have the convective term. 
+! For (1,1) block, we also have the convective term.
 ! For {\bf u}(t_n) \cdot grad c, we need to first create a scalar matrix for this
-! How can we incorporate in the velocity in previous step for assembling convetion 
+! How can we incorporate in the velocity in previous step for assembling convetion
 ! term?
 ! Do we need upwind?
 ! call the upwind method to calculate the nonlinear matrix.
@@ -335,9 +335,9 @@ CONTAINS
 !      call conv_upwind2d (rvector, rvector, &
 !                         dvecWeight, 0.0_DP,&
 !                         rupwind, CONV_MODMATRIX, &
-!                         rConvmatrixTmp) 
+!                         rConvmatrixTmp)
 
-!      ! the convection depending on other outer vector 
+!      ! the convection depending on other outer vector
       call CH_generateConvMatrix(rCHproblem,rCHvector, rmatrixConvTmp, &
 	                             rNSproblem,rNSvector)
       ! Add the convective matrix to (1,1) block
@@ -348,9 +348,9 @@ CONTAINS
         .false.,.false.,.true.,.true.)
 
   ! MCai
-  ! We use rmatrixConvTmp to evaluate p_rMatrixConv, 
-  ! Question: how to pass a matrix to ...p_rMatrixConv, 
-  ! rnonlinearCHMatrix is just input parameter. 
+  ! We use rmatrixConvTmp to evaluate p_rMatrixConv,
+  ! Question: how to pass a matrix to ...p_rMatrixConv,
+  ! rnonlinearCHMatrix is just input parameter.
   !         rnonlinearCHMatrix%p_rMatrixConv=>rmatrixConvTmp
 
     end if
@@ -362,11 +362,11 @@ CONTAINS
 !      .false.,.false.,.true.,.true.)
 
 ! For (1,2) block <----------> B, we need c(t_n)
-    if (rnonlinearCHMatrix%deta .ne. 0.0_DP) then 
+    if (rnonlinearCHMatrix%deta .ne. 0.0_DP) then
       ! Concentration dependent Mobility
 	  call CH_generateVarLaplace (rnonlinearCHMatrix,rCHvector, rmatrix%RmatrixBlock(1,2))
 	  call lsyssc_scaleMatrix(rmatrix%RmatrixBlock(1,2), &
-	                            rnonlinearCHMatrix%deta/Pe)   
+	                            rnonlinearCHMatrix%deta/Pe)
 
       ! Constant Mobility
 !      call lsyssc_matrixLinearComb (&
@@ -378,17 +378,17 @@ CONTAINS
 
 ! For (2,1) block <----------> D, this one is nonlinear part, how to do this?
 ! Nonlinear part : 1/eps*2 N(.)
-    if (rnonlinearCHMatrix%dtau .ne. 0.0_DP) then 
+    if (rnonlinearCHMatrix%dtau .ne. 0.0_DP) then
 ! MCai, we first remark this part, because we are only constructing preconditioner
 
-! For N'(.)/eps: here we use Jacobian N', and eps is in callback. 
+! For N'(.)/eps: here we use Jacobian N', and eps is in callback.
       call CH_generateNonlinearMat (rCHproblem, rCHvector, &
-	                             rmatrix%RmatrixBlock(2,1))	    
+	                             rmatrix%RmatrixBlock(2,1))
 	end if
 
-! Add Lapace term to nonlinear matrix. 	 
+! Add Lapace term to nonlinear matrix.
 ! for Laplacian term in (2,1) block: Laplace term: - eps* Laplace
-    if (rnonlinearCHMatrix%dtheta .ne. 0.0_DP) then 
+    if (rnonlinearCHMatrix%dtheta .ne. 0.0_DP) then
       call lsyssc_matrixLinearComb (rnonlinearCHMatrix%p_rmatrixLaplace,&
 	        eps*rnonlinearCHMatrix%dtheta,&
             rmatrix%RmatrixBlock(2,1),1.0_DP,&
@@ -397,8 +397,8 @@ CONTAINS
     end if
 
 !-------------------------------------------------------------------------------
-! For (2,2) block <----------> C, this one corresponds to Mass matrix 
-    if (rnonlinearCHMatrix%dbeta .ne. 0.0_DP) then       
+! For (2,2) block <----------> C, this one corresponds to Mass matrix
+    if (rnonlinearCHMatrix%dbeta .ne. 0.0_DP) then
       call lsyssc_matrixLinearComb (&
 	        rnonlinearCHMatrix%p_rmatrixMass,rnonlinearCHMatrix%dbeta,&
 	    	rmatrix%RmatrixBlock(2,2), 0.0_DP,&
@@ -413,10 +413,10 @@ CONTAINS
     call lsysbl_updateMatStrucInfo(rMatrix)
 
 
-    ! release tmp matrix 
+    ! release tmp matrix
     call lsyssc_releaseMatrix(rmatrixConvTmp)
 ! Perhaps, we need to release some tmp matrix....
-!    call lsyssc_releaseMatrix (rConvmatrixTmp)   
+!    call lsyssc_releaseMatrix (rConvmatrixTmp)
 ! We need to write this ....   MCai
 
   end subroutine
@@ -432,7 +432,7 @@ CONTAINS
   ! matrix:
   !      rd := dcx A(ry) rx + dcd rd
   ! with the system matrix A(.) defined by the configuration in rnonlinearCHMatrix.
-  ! The caller must initialise the rnonlinearCHMatrix according to how the 
+  ! The caller must initialise the rnonlinearCHMatrix according to how the
   ! matrix should look like.
   !
   ! The parameter ry is optional. If specified, this parameter defines where to
@@ -443,7 +443,7 @@ CONTAINS
 !</description>
 
   ! A t_nonlinearCHMatrix structure providing all necessary 'source' information
-  ! about how to set up the matrix. 
+  ! about how to set up the matrix.
   type(t_nonlinearCHMatrix), intent(INOUT) :: rnonlinearCHMatrix
 
   ! This vector specifies the 'x' that is multiplied to the matrix.
@@ -493,28 +493,28 @@ CONTAINS
     end if
     
     ! The system matrix looks like:
-    !          
-    !    ( A   B  ) 
-    !    ( D   C  ) 
+    !
+    !    ( A   B  )
+    !    ( D   C  )
     ! Create a temporary matrix that covers this structure.
     call lsysbl_createEmptyMatrix (rmatrix,NDIM2D)
 
-    ! Put references to the Laplace- and B-matrices to Aij. assembleDefect 
+    ! Put references to the Laplace- and B-matrices to Aij. assembleDefect
     ! needs this template matrix to provide the structure for the stabilisation
     ! routines! The B-matrices are needed later.
 !     call lsyssc_duplicateMatrix (rnonlinearCHMatrix%p_rmatrixA,&
 !         rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-! 
+!
 !     call lsyssc_duplicateMatrix (rnonlinearCHMatrix%p_rmatrixC,&
 !         rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-!     
+!
 !     call lsyssc_duplicateMatrix (rnonlinearCHMatrix%p_rmatrixB,&
 !         rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-! 
+!
 ! ! MCai, we may also duplicate content(for nonlinear matrix..)
 ! !    call lsyssc_duplicateMatrix (rnonlinearCHMatrix%p_rmatrixB,&
 ! !        rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!    
+!
 !     call lsyssc_duplicateMatrix (rnonlinearCHMatrix%p_rmatrixD,&
 !         rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
@@ -522,13 +522,13 @@ CONTAINS
     ! changed the submatrices:
     call lsysbl_updateMatStrucInfo (rmatrix)
     
-    ! First, we assemble the defect that arises in the velocity components. 
+    ! First, we assemble the defect that arises in the velocity components.
     ! assembleDefect handles exactly these submatrices.
     call assembleDefect (rnonlinearCHMatrix,rmatrix,rx,rd,p_ry, -dcx, &
 	                     rNSproblem, rNSvector)
 
 ! MCai, ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-! MCai, Note that here it is different from cc2d 
+! MCai, Note that here it is different from cc2d
 
     ! Release the temporary matrix, we don't need it anymore.
     call lsysbl_releaseMatrix (rmatrix)
@@ -538,7 +538,7 @@ CONTAINS
     subroutine assembleDefect (rnonlinearCHMatrix,&
         rmatrix,rvector,rdefect,ry,dvectorWeight, rNSproblem, rNSvector)
 
-    ! Calculate defect: 
+    ! Calculate defect:
     !       rdefect = rdefect - dvectorWeight * rmatrix(ry) * rvector
     ! Assembles the velocity defect in the block matrix rmatrix at position
     ! itop..itop+1 in the velocity vector. rdefect must have been initialised
@@ -556,7 +556,7 @@ CONTAINS
     ! and c=dvectorWeight, the routine will construct
     !
     ! A t_nonlinearCHMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearCHMatrix), intent(INOUT) :: rnonlinearCHMatrix
 
     ! Reference to the system matrix. Only the structure of the matrix
@@ -574,7 +574,7 @@ CONTAINS
     ! Weight for the velocity vector; usually = 1.0
     real(DP), intent(IN) :: dvectorWeight
     
-    ! the vector for nonlinearity. 
+    ! the vector for nonlinearity.
     type(t_vectorBlock), intent(IN) :: ry
 
 !~~~~~~~~~~~~~~~~~~~~~~~~NS problem~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -589,7 +589,7 @@ CONTAINS
 	  real(DP) :: eps=0.02_DP
 !	  real(DP) :: gamma=0.1_DP
 
-      ! A tmp Mass matrix 
+      ! A tmp Mass matrix
 	  type(t_matrixScalar) :: rmatrixMassTmp
 	  ! A tmp Laplace matrix
 	  type(t_matrixScalar) :: rmatrixLaplaceTmp
@@ -597,7 +597,7 @@ CONTAINS
 	  type(t_matrixScalar) :: rmatrixConvTmp
 
     ! DEBUG!!!
-     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD    
+     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
       ! DEBUG
       call lsysbl_getbase_double (rvector,p_DdataX)
       call lsysbl_getbase_double (rdefect,p_DdataD)
@@ -624,7 +624,7 @@ CONTAINS
 
       if (rnonlinearCHMatrix%dgamma .ne. 0.0_DP) then
          ! MCai, we need to use convective matrix, \gamma ConvMat
-!MCai, we need to evaluate p_rmatrixConv first, we can not do this so far. 
+!MCai, we need to evaluate p_rmatrixConv first, we can not do this so far.
 !         call lsyssc_scalarMatVec (rnonlinearCHMatrix%p_rmatrixConv, &
 !           rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
 !           -rnonlinearCHMatrix%gamma, 1.0_DP)
@@ -638,7 +638,7 @@ CONTAINS
         ! release temporary convection matrix
         call lsyssc_releaseMatrix(rmatrixConvTmp)
 
-      end if 
+      end if
 	      
       ! ---------------------------------------------------
 	  ! (1,2) block
@@ -663,15 +663,15 @@ CONTAINS
       end if
 
 !-----------------Then the second equation--------------------------
-      ! (2,1) block 
+      ! (2,1) block
 
 	  ! then the Laplace term:  -eps * Lap
-      if (rnonlinearCHMatrix%dtheta .ne. 0.0_DP) then 
+      if (rnonlinearCHMatrix%dtheta .ne. 0.0_DP) then
 	    call lsyssc_scalarMatVec (rnonlinearCHMatrix%p_rmatrixLaplace, &
                rvector%RvectorBlock(1), rdefect%RvectorBlock(2), &
                -eps*rnonlinearCHMatrix%dtheta, 1.0_DP)
-	  end if 
-      ! That was not easy -- the adventure begins now... The nonlinearity! 
+	  end if
+      ! That was not easy -- the adventure begins now... The nonlinearity!
       ! It is different from preconditioner
       ! Since this subroutine is for setting up right hand side, where we need it again?
       ! first the nonlinear term: 1/eps * f(c)
@@ -688,7 +688,7 @@ CONTAINS
 	  end if
       
 	  ! (2,2) block
-      if (rnonlinearCHMatrix%dbeta .ne. 0.0_DP) then 
+      if (rnonlinearCHMatrix%dbeta .ne. 0.0_DP) then
 	    call lsyssc_scalarMatVec (rnonlinearCHMatrix%p_rmatrixMass, &
                rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
                -rnonlinearCHMatrix%dbeta, 1.0_DP)
@@ -702,9 +702,9 @@ CONTAINS
 !<subroutine>
 !MCai
   subroutine nonlinear_calcDefect (rnonlinearMatrix, rvectorScalar, &
-		         rdefect, dcx, dcd) 
+		         rdefect, dcx, dcd)
 !<description>
-  ! Calculates: 
+  ! Calculates:
   !      rd=dcd * rd + dcx * N(rx)
 !</description>
 
@@ -747,20 +747,20 @@ CONTAINS
     !
     ! At first set up the corresponding linear form (f,Phi_j):
 
-    ! Create two temp vectors. 
+    ! Create two temp vectors.
      call lsysbl_createVecFromScalar (rvectorScalar,rvectorBlocktmp)
-     call lsyssc_duplicateVector (rdefect,rdefecttmp,& 
+     call lsyssc_duplicateVector (rdefect,rdefecttmp,&
 	                       LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
 
-    ! get the discretisation  
+    ! get the discretisation
     p_rdiscretisation => rnonlinearMatrix%p_rdiscretisation
 
     call collct_init(rcollectionTmp)
   
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
 
     rcollectionTmp%p_rvectorQuickAccess2 => rvectorBlocktmp
@@ -828,8 +828,8 @@ CONTAINS
     rCHproblem%rcollection%Dquickaccess (1) = rCHproblem%rtimedependence%dtime
 
     call collct_setvalue_real(rCHproblem%rcollection,'TIME',&
-         rCHproblem%rtimedependence%dtime,.TRUE.) 
-    ! The vector structure is done but the entries are missing. 
+         rCHproblem%rtimedependence%dtime,.TRUE.)
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -839,7 +839,7 @@ CONTAINS
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the first block
 
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
 	
@@ -857,7 +857,7 @@ CONTAINS
 !~~~~~~~~~NS problem need to be used to generate RHS~~~~~~~~~~~~~~~~~~~
 ! Time dependent cases: coupled with Navier-Stokes equations
 
-! In this model, we treat convective term explicitly, so we do not need to worry 
+! In this model, we treat convective term explicitly, so we do not need to worry
 ! about right hand side, (no matter whether we have rNSvector)
 
     if(present(rNSvector)) then
@@ -872,9 +872,9 @@ CONTAINS
   !  mcai=lsysbl_isVectorSorted (rNSvector)
   !  print *, mcai
 
-  !      Implicit_Convective=0 
+  !      Implicit_Convective=0
 
- !	  if (Implicit_Convective .eq. 0) then 
+ !	  if (Implicit_Convective .eq. 0) then
 
 ! we need to calculate ({\bf u} \cdot \nabla \phi, \psi)
 !        rlinform%itermCount = 1
@@ -893,17 +893,17 @@ CONTAINS
     	! First, deal with the source term from AC problem
 	    !MCai, here we set bclear=.false. and call coeff_RHS0
         ! in the collection.
-        ! if (rACproblem%rtimedependence%dtime .eq. 0.0_DP) then 
-!	! at the initial step, the right hand side is 0.  
+        ! if (rACproblem%rtimedependence%dtime .eq. 0.0_DP) then
+!	! at the initial step, the right hand side is 0.
 !	! Debug,
 !	  write(*,*)'Make sure that this step is called at the very beginning'
 !      call linf_buildVectorScalar (&
 !              p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
 !              rACrhs%RvectorBlock(1),coeff_RHS0)
-!	else 
+!	else
 
 ! MCai, we do not need to treat the nonlinear term and mass conservation term(AllenCah problem)
-! in the right hand side, but we keep it here if needed. 
+! in the right hand side, but we keep it here if needed.
 !      ! first calculate (f(phi(t_n)), psi)
 !        call linf_buildVectorScalar (&
 !              p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
@@ -937,7 +937,7 @@ CONTAINS
  !<description>
   ! Calculates entries of Convetive matrix, it is done by using trilinear form eval
   !
-  ! the matrix should first be generated by 
+  ! the matrix should first be generated by
 !</description>
 
 !<inputoutput>
@@ -993,8 +993,8 @@ CONTAINS
     ! In this case, we have nonconstant coefficients.
     rform%ballCoeffConstant = .false.
     rform%BconstantCoeff(:) = .false.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -1026,19 +1026,19 @@ CONTAINS
 !    ! For second term of velocity, we use coeff_Conv2
 !    rtriform%Idescriptors(2,1)=DER_DERIV_Y
  
-!    !MCai, question, shall we use rvector%rvectorBlock(2)? 
-!    ! No, there is only 1 block is needed.        
+!    !MCai, question, shall we use rvector%rvectorBlock(2)?
+!    ! No, there is only 1 block is needed.
 !    CALL trilf_buildMatrixScalar (rtriform,.FALSE.,rmatrixConvTmp,&
 !             rvector%rvectorBlock(1),coeff_Conv2,rcollection)
     
 
 !MCai, or we should use the following code
 !    !MCai, we need the rVeclvector block to evaluate the coefficient.
-!	! because velocity act as convection coefficient.  
+!	! because velocity act as convection coefficient.
 !    rproblem%rcollection%p_rvectorQuickAccess1=>rNSvector
 
-!    ! use trilinear form evaluation. 
-!	! use coeff_Conv (in call_back) to pass the coefficient. 
+!    ! use trilinear form evaluation.
+!	! use coeff_Conv (in call_back) to pass the coefficient.
 !    call trilf_buildMatrixScalar (rform,.TRUE.,rmatrix,rvector,&
 !                                  coeff_Conv,rcollection)
 
@@ -1058,7 +1058,7 @@ CONTAINS
  !<description>
   ! Calculates entries of Convetive matrix, it is done by using trilinear form eval
   !
-  ! the matrix should first be generated by 
+  ! the matrix should first be generated by
 !</description>
 
 !<inputoutput>
@@ -1109,8 +1109,8 @@ CONTAINS
     ! In this case, we have nonconstant coefficients.
     rform%ballCoeffConstant = .false.
     rform%BconstantCoeff(:) = .false.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Prepare a collection structure to be passed to the callback
     ! routine. We attach the vector T in the quick-access variables
@@ -1148,19 +1148,19 @@ CONTAINS
 !    ! For second term of velocity, we use coeff_Conv2
 !    rtriform%Idescriptors(2,1)=DER_DERIV_Y
  
-!    !MCai, question, shall we use rvector%rvectorBlock(2)? 
-!    ! No, there is only 1 block is needed.        
+!    !MCai, question, shall we use rvector%rvectorBlock(2)?
+!    ! No, there is only 1 block is needed.
 !    CALL trilf_buildMatrixScalar (rtriform,.FALSE.,rmatrixConvTmp,&
 !             rvector%rvectorBlock(1),coeff_Conv2,rcollection)
     
 
 !MCai, or we should use the following code
 !    !MCai, we need the rVeclvector block to evaluate the coefficient.
-!	! because velocity act as convection coefficient.  
+!	! because velocity act as convection coefficient.
 !    rproblem%rcollection%p_rvectorQuickAccess1=>rNSvector
 
-!    ! use trilinear form evaluation. 
-!	! use coeff_Conv (in call_back) to pass the coefficient. 
+!    ! use trilinear form evaluation.
+!	! use coeff_Conv (in call_back) to pass the coefficient.
 !    call trilf_buildMatrixScalar (rform,.TRUE.,rmatrix,rvector,&
 !                                  coeff_Conv,rcollection)
 
@@ -1179,7 +1179,7 @@ CONTAINS
 !<description>
   ! Calculates entries of Nonlinear mass matrix, it is of polynomial form
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -1223,15 +1223,15 @@ CONTAINS
     ! In this case, we have nonconstant coefficients.
     rform%ballCoeffConstant = .false.
     rform%BconstantCoeff(:) = .false.
-    rform%Dcoefficients(1)  = 1.0 
-!    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+!    rform%Dcoefficients(2)  = 1.0
 
     ! Prepare a collection structure to be passed to the callback
     ! routine. We attach the vector T in the quick-access variables
     ! so the callback routine can access it.
     call collct_init(rcollectionTmp)
 
-!MCai, we need the first block to evaluate the coefficient. 
+!MCai, we need the first block to evaluate the coefficient.
     rcollectionTmp%p_rvectorQuickAccess1=>rvector
 
     ! coeff_NonlinearPrec is in callback subroutine.
@@ -1250,11 +1250,11 @@ CONTAINS
   subroutine CH_generateVarMass (rnonlinearCHmatrix,rvector, rmatrix)
   
 !<description>
-  ! Calculates entries of Laplace matrix with variable coefficient, the coefficient 
-  ! depending on rvector. This subroutine is similar to variable coeff Laplacian 
-  ! problem. 
+  ! Calculates entries of Laplace matrix with variable coefficient, the coefficient
+  ! depending on rvector. This subroutine is similar to variable coeff Laplacian
+  ! problem.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -1292,7 +1292,7 @@ CONTAINS
     call bilf_createMatrixStructure (p_rdiscretisation%RspatialDiscr(1),&
                                      LSYSSC_MATRIX9,rmatrix)
 
-    ! For Mass matrix itermCount =1. 
+    ! For Mass matrix itermCount =1.
     rform%itermCount = 1
     rform%Idescriptors(1,1) = DER_FUNC
     rform%Idescriptors(2,1) = DER_FUNC
@@ -1301,14 +1301,14 @@ CONTAINS
     ! In this case, we have nonconstant coefficients.
     rform%ballCoeffConstant = .false.
     rform%BconstantCoeff(:) = .false.
-    rform%Dcoefficients(1)  = 1.0_DP 
+    rform%Dcoefficients(1)  = 1.0_DP
 
     ! Prepare a collection structure to be passed to the callback
     ! routine. We attach the vector T in the quick-access variables
     ! so the callback routine can access it.
     call collct_init(rcollectionTmp)
 
-!MCai, we need the first block to evaluate the coefficient. 
+!MCai, we need the first block to evaluate the coefficient.
     rcollectionTmp%p_rvectorQuickAccess1=>rvector
 
     ! coeff_VarMass is in callback subroutine.
@@ -1329,11 +1329,11 @@ CONTAINS
   subroutine CH_generateVarLaplace (rnonlinearCHMatrix,rvector, rmatrix)
   
 !<description>
-  ! Calculates entries of Laplace matrix with variable coefficient, the coefficient 
-  ! depending on rvector. This subroutine is similar to variable coeff Laplacian 
-  ! problem. 
+  ! Calculates entries of Laplace matrix with variable coefficient, the coefficient
+  ! depending on rvector. This subroutine is similar to variable coeff Laplacian
+  ! problem.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -1380,15 +1380,15 @@ CONTAINS
     ! In this case, we have nonconstant coefficients.
     rform%ballCoeffConstant = .false.
     rform%BconstantCoeff(:) = .false.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Prepare a collection structure to be passed to the callback
     ! routine. We attach the vector T in the quick-access variables
     ! so the callback routine can access it.
     call collct_init(rcollectionTmp)
 
-!MCai, we need the first block to evaluate the coefficient. 
+!MCai, we need the first block to evaluate the coefficient.
     rcollectionTmp%p_rvectorQuickAccess1=>rvector
 
     ! coeff_VarLaplace is in callback subroutine.
@@ -1407,7 +1407,7 @@ CONTAINS
 
   subroutine CH_allocMatVec (rCHproblem, rCHparams)
 !<description>
-  ! Allocate memory for rCHproblem system matrix. 
+  ! Allocate memory for rCHproblem system matrix.
   ! Allocates memory for all matrices and vectors of the problem on the heap
   ! by evaluating the parameters in the problem structure.
   ! Matrices/vectors of global importance are added to the collection
@@ -1494,7 +1494,7 @@ CONTAINS
 !       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
 !                    rCHproblem%RlevelInfo(i)%rmatrixD,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
-!~~~~~It seems that one the following codes is not needed~~~~~~~~~~~~~~~~~~~~                        
+!~~~~~It seems that one the following codes is not needed~~~~~~~~~~~~~~~~~~~~
       ! Allocate memory for the entries; don't initialise the memory.
 !       call lsyssc_allocEmptyMatrix ( rCHproblem%RlevelInfo(i)%rmatrixA,LSYSSC_SETM_UNDEFINED)
 !       call lsyssc_allocEmptyMatrix ( rCHproblem%RlevelInfo(i)%rmatrixB,LSYSSC_SETM_UNDEFINED)
@@ -1506,7 +1506,7 @@ CONTAINS
       ! Initialise the block matrix with default values based on
       ! the discretisation.
 !      if (associated(p_rdiscretisation)) then
-!        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+!        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
 !      else
 !        ! No discretisation structure; create the matrix directly as 3x3 matrix.
 !        call lsysbl_createEmptyMatrix (rmatrix,NDIM2D)
@@ -1521,10 +1521,10 @@ CONTAINS
 !   rCHproblem%RlevelInfo(i)%rmatrix%RmatirxBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
  
      ! -----------------------------------------------------------------------
-	  ! MCai, we may need temporary vector 
-      ! Temporary vectors  
+	  ! MCai, we may need temporary vector
+      ! Temporary vectors
       !
-      ! Now on all levels except for the maximum one, create a temporary 
+      ! Now on all levels except for the maximum one, create a temporary
       ! vector on that level, based on the block discretisation structure.
       ! It's used for building the matrices on lower levels.
 
@@ -1550,7 +1550,7 @@ CONTAINS
 ! later (e.g. in nonlinear problems)
     call collct_setvalue_vec(rCHproblem%rcollection,'RHS',p_rrhs,.TRUE.)
  
-  end subroutine 
+  end subroutine
 
 
   ! ***************************************************************************
@@ -1561,11 +1561,11 @@ CONTAINS
   
 !<description>
   ! Calculates entries of all static matrices: Laplace and Mass matrix
-  ! in the specified problem structure, i.e. the entries of all matrices 
+  ! in the specified problem structure, i.e. the entries of all matrices
   ! that do not change during the computation or which serve as a template for
   ! generating other matrices.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -1582,21 +1582,21 @@ CONTAINS
     ! local variables
     integer :: j
 
-    ! A pointer to the Laplace and mass matrix. Remark: Usually, p_rmatrixConv 
+    ! A pointer to the Laplace and mass matrix. Remark: Usually, p_rmatrixConv
 	! is not a static matrix, because it will depend velocity, changing with time.
     type(t_matrixScalar), pointer :: p_rmatrixLaplace, p_rmatrixMass, p_rmatrixConv
 
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-!MCai    
+!MCai
 !	! We may need bilinear form if we use it
 !	type(t_bilinearform) :: rform
 
     ! The trilinear form specifying the underlying PDE of the discretisation.
     type(t_trilinearForm) :: rtriform
   
-    ! 
+    !
     ! -----------------------------------------------------------------------
     ! Basic CH problem
     ! -----------------------------------------------------------------------
@@ -1611,7 +1611,7 @@ CONTAINS
     
     ! The global system looks as follows:
     !
-    !    ( A    B )   
+    !    ( A    B )
     !    ( D    C )
     !
     ! with A = ? B=? C=? D=?
@@ -1622,34 +1622,34 @@ CONTAINS
     call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
                 rlevelInfo%rmatrixLaplace,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
-! We assemble Laplace matrix, we can use two ways. 
+! We assemble Laplace matrix, we can use two ways.
 !     rform%itermCount = 2
 !     rform%Idescriptors(1,1) = DER_DERIV_X
 !     rform%Idescriptors(2,1) = DER_DERIV_X
 !     rform%Idescriptors(1,2) = DER_DERIV_Y
 !     rform%Idescriptors(2,2) = DER_DERIV_Y
-! 
+!
 !     ! In the standard case, we have constant coefficients:
 !     rform%ballCoeffConstant = .TRUE.
 !     rform%BconstantCoeff = .TRUE.
 !     rform%Dcoefficients(1)  = 1.0_DP
 !     rform%Dcoefficients(2)  = 1.0_DP
-! 
+!
 !     ! Now we can build the matrix entries.
 !     ! We specify the callback function coeff_Stokes for the coefficients.
 !     ! As long as we use constant coefficients, this routine is not used.
 !     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
 !     ! the framework will call the callback routine to get analytical data.
 !     !
-!     ! We pass our collection structure as well to this routine, 
+!     ! We pass our collection structure as well to this routine,
 !     ! so the callback routine has access to everything what is
 !     ! in the collection.
-!   
+!
 !     call bilf_buildMatrixScalar (rform,.TRUE.,&
 !                                  p_rmatrixLaplace,coeff_CahnHilliard,&
 !                                  rCHproblem%rcollection)
-! 
-! ! Alternatively, 
+!
+! ! Alternatively,
      call stdop_assembleLaplaceMatrix (p_rmatrixLaplace,.true.,1.0_DP)
 
     ! -----------------------------------------------------------------------
@@ -1671,36 +1671,36 @@ CONTAINS
     call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMass,&
         rlevelInfo%rdiscretisationMass)
 !MCai
-!or 
+!or
 !    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMass,&
 !        rlevelInfo%rdiscretisation(1))
-!or 
+!or
 !    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMass,&
 !        rlevelInfo%rdiscretisation)
 
-    ! call the standard matrix setup routine to build the matrix.                    
+    ! call the standard matrix setup routine to build the matrix.
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMass,DER_FUNC,DER_FUNC)
 
 ! For convective matrix, we need to assemble it each timestep
 ! !    ! -----------------------------------------------------------------------
 ! !    ! Conv matrices. if the velocity field does not change with time
 ! !    ! -----------------------------------------------------------------------
-! 
+!
 ! !    ! If there is an existing Conv matrix, release it.
 !     call lsyssc_releaseMatrix (rlevelInfo%rmatrixConv)
-! 
+!
 ! !    ! Generate mass matrix. The matrix has basically the same structure as
 ! !    ! our template FEM matrix, so we can take that.
 !     call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
 !                 rlevelInfo%rmatrixConv,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-!                 
+!
 ! !    ! Change the discretisation structure of the mass matrix to the
 ! !    ! correct one; at the moment it points to the discretisation structure
 ! !    ! of the Laplace matrix...
 !     call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixConv,&
 !         rlevelInfo%rdiscretisationMass)
 
-    ! We assemble Convective matrix, we can use two ways. 
+    ! We assemble Convective matrix, we can use two ways.
 ! MCai
 ! where to get rVelvector????????, we do not have it in generate_static
 !     rCHproblem%rcollection%p_rvectorQuickAccess1 => rVelvector
@@ -1711,14 +1711,14 @@ CONTAINS
 !     rtriform%Idescriptors(1,1)=DER_FUNC
 !     rtriform%Idescriptors(2,1)=DER_DERIV_X
 !     rtriform%Idescriptors(3,1)=DER_FUNC
-!          
+!
 !     ! Now we can build the matrix entries. We use coeff_Conv1
 !     CALL trilf_buildMatrixScalar (rtriform,.FALSE.,p_rmatrixConv,&
 !              rvector%rvectorBlock(1),coeff_Conv1,rCHproblem%rcollection)
-!          
+!
 !     ! For second term of velocity, we use coeff_Conv2
 !     rtriform%Idescriptors(2,1)=DER_DERIV_Y
-!         
+!
 !     CALL trilf_buildMatrixScalar (rtriform,.FALSE.,p_rmatrixConv,&
 !              rvector%rvectorBlock(2),coeff_Conv2,rCHproblem%rcollection)
    
@@ -1758,7 +1758,7 @@ CONTAINS
 !       call lsyssc_releaseMatrix (rCHproblem%RlevelInfo(i)%rmatrixC)
 !       call lsyssc_releaseMatrix (rCHproblem%RlevelInfo(i)%rmatrixD)
 
-! Delete the static matrices    
+! Delete the static matrices
       call lsyssc_releaseMatrix (rCHproblem%RlevelInfo(i)%rmatrixLaplace)
       call lsyssc_releaseMatrix (rCHproblem%RlevelInfo(i)%rmatrixMass)
 !      call lsyssc_releaseMatrix (rCHproblem%RlevelInfo(i)%rmatrixConv)

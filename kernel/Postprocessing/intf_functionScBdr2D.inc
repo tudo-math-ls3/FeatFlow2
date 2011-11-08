@@ -1,6 +1,6 @@
   ! -*- mode: f90; -*-
   
-  ! This file describes the interface for a function that is used in 
+  ! This file describes the interface for a function that is used in
   ! bdint_scalarBoundary2D to calculate integral values on the boundary.
   
   interface
@@ -19,7 +19,7 @@
     
   !<description>
     ! This subroutine is called during the calculation of boundary
-    ! integrals. It has to compute the (analytical) values of a 
+    ! integrals. It has to compute the (analytical) values of a
     ! function in a couple of points Dpoints on a couple of elements
     ! Ielements. The integral evaluation function uses these values
     ! to compute integrals.
@@ -60,8 +60,8 @@
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
   !</input>
   

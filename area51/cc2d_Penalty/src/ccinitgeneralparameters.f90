@@ -89,7 +89,7 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
   
 end subroutine ! end cc_initParticleDescriptor
   
-  ! ***************************************************************************  
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -187,7 +187,7 @@ end subroutine ! end cc_initParticleDescriptor
       ! contains references to subfiles with data.
       call parlst_readfromfile (rparamList, smaster)
     else
-      ! Each 'readfromfile' command adds the parameter of the specified file 
+      ! Each 'readfromfile' command adds the parameter of the specified file
       ! to the parameter list.
       call parlst_readfromfile (rparamList, './data/discretisation.dat')
       call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')

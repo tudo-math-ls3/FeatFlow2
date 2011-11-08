@@ -142,7 +142,7 @@ contains
     ! We want to solve our Poisson problem on level...
     NLMAX = 5
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -250,7 +250,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -259,7 +259,7 @@ contains
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
                              
-    ! Now to the edge 2 of boundary component 1 the domain. 
+    ! Now to the edge 2 of boundary component 1 the domain.
     call boundary_createRegion(rboundary,1,2,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
@@ -350,7 +350,7 @@ contains
     ! -------------------------------------------------------------------------
 
     ! Now, Our vector block is off the way GMV`s style. We need to convert the vector
-    ! to Q1 as that is the format, GMV`s understands. So the task is to 
+    ! to Q1 as that is the format, GMV`s understands. So the task is to
     ! create a Q1 solution from rvectorBlock.
     !
     ! Step 1: Create a discretisation structure for Q1, based on our
@@ -378,7 +378,7 @@ contains
                                        rboundaryRegion,rdiscreteBC_Q1,&
                                        getBoundaryValues_2D)
               
-    ! 2nd edge               
+    ! 2nd edge
     call boundary_createRegion(rboundary,1,2,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC_Q1,&
@@ -400,7 +400,7 @@ contains
     rprjVector%p_rdiscreteBC => rdiscreteBC_Q1
 
     ! Step 5: Set up a boundary condition filter for Dirichtley boundary conditions
-    ! and pass the vetor through it. This finally implement the Dirichtley 
+    ! and pass the vetor through it. This finally implement the Dirichtley
     ! boundary conditions into the output vector
     RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
     call filter_applyFilterChainVec (rprjVector, RfilterChain)
@@ -408,8 +408,8 @@ contains
     ! Now we have a Q1 solution in rprjVector.
     !
     ! Step 6: Write the GMV file.
-    ! That is it, rvectorBlock now contains our solution in GMV`s style. 
-    ! We can now start the postprocessing. 
+    ! That is it, rvectorBlock now contains our solution in GMV`s style.
+    ! We can now start the postprocessing.
       
     ! Call the GMV library to write out a GMV file for our solution.
     !
@@ -480,7 +480,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
 
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
 
     ! Finally release the domain, that is it.

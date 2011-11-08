@@ -11,7 +11,7 @@
 ************************************************************************
 * Composed geometry structure
 *
-* A composed geometry is based on two arrays, which must be passed 
+* A composed geometry is based on two arrays, which must be passed
 * to all routines:
 *
 * TGEOCOMIDX = record
@@ -26,21 +26,21 @@
 *   MAIN    : TGEOSIM
 *   OBJS    : array [1..COUNT] of TGEOxxx
 * end
-* 
+*
 * realized as:
 *   GETCOM = array [1..SZGSIM+*] of double
 *
 * The TGEOCOM-structure is the main structure defining the composed
 * object and its components. It consists of two parts:
 * 1.) MAIN - This is the description of the composed object in the style
-*      of a simple-type object. The TYPE-identifier identifies the 
+*      of a simple-type object. The TYPE-identifier identifies the
 *      object as composed-object. All other parameters (coordinate
 *      of the reference point, rotation,...) affect the whole composed
 *      object.
 * 2.) OBJS - This is a list of all sub-objects contained in the composed
 *      object. All objects are realised by their appropriate structure.
 *      The coordinates of the reference point and the rotation of the
-*      sub-elements are all relative to thereference point of the 
+*      sub-elements are all relative to thereference point of the
 *      composed object!
 *      (e.g. an object reference-point of (0,0) places the sub-object
 *      at the same position as the complete composed object)
@@ -48,8 +48,8 @@
 * depending on the object. To provide direct access to each sub-object,
 * the TGEOCOMIDX-structure is used. COUNT describes the number of
 * sub-objects in the composed object and INDEX describes the starting
-* index of each sub-object in the GETCOM-array. 
-* 
+* index of each sub-object in the GETCOM-array.
+*
 * Remark:
 * 1.) The routines provided here can basically be divided into the same
 *  groups as described in the simple-object case. Nevertheless because

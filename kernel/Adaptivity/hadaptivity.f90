@@ -6,19 +6,19 @@
 !# <purpose>
 !# This module contains all routines which are required to perform h-adaptivity,
 !# namely, grid refinement and grid coarsening.
-!# In order to apply h-adaptivity, the initial mesh must be conforming, 
+!# In order to apply h-adaptivity, the initial mesh must be conforming,
 !# that is, it is allowed to contain a mixture of triangular and quadrilateral
 !# elements without 'hanging' nodes. After one grid adaptivity step, the
 !# resulting mesh is also conforming without 'hanging' nodes.
 !#
 !# This module makes extensive use of dynamic data structures such as quadtrees,
-!# binary search trees and so-called arraylists which need to be generated from 
-!# the static mesh structure. After grid adaptivity, the dynamic data needs to 
+!# binary search trees and so-called arraylists which need to be generated from
+!# the static mesh structure. After grid adaptivity, the dynamic data needs to
 !# be reconverted to the static structures required for the simulation.
 !#
 !# Note that this module is implemented as a 'black-box' tool for grid adaptivity.
 !# One of the building blocks is the t_hadapt data structure which provides all
-!# required information. 
+!# required information.
 !#
 !# The following routines are available:
 !#
@@ -38,7 +38,7 @@
 !#      -> Creates a duplicate / backup of an adaptivity structure.
 !#
 !#  6.) hadapt_restoreAdaptation
-!#      -> Restores an adaptivity structure previously backed up with 
+!#      -> Restores an adaptivity structure previously backed up with
 !#         hadapt_duplicateAdapation
 !#
 !#  7.) hadapt_refreshAdaptation
@@ -94,7 +94,7 @@ module hadaptivity
   public :: hadapt_performAdaptation
   public :: hadapt_infoStatistics
   public :: hadapt_writeGridGMV
-  public :: hadapt_checkConsistency 
+  public :: hadapt_checkConsistency
 
 contains
   
@@ -147,7 +147,7 @@ contains
   subroutine hadapt_initFromTriangulation(rhadapt, rtriangulation)
 
 !<description>
-    ! This subroutine initializes all required components of the adaptativit 
+    ! This subroutine initializes all required components of the adaptativit
     ! structure from the triangulation structure rtriangulation.
 !</description>
 
@@ -227,7 +227,7 @@ contains
   subroutine hadapt_generateRawMesh(rhadapt, rtriangulation)
 
 !<description>
-    ! This subroutine generates an (extended) 
+    ! This subroutine generates an (extended)
     ! raw mesh from the adaptivity structure.
 !</description>
 
@@ -336,7 +336,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_releaseAdaptation')
         call sys_halt()
       end select
-    end if   
+    end if
 
     ! Check if boundary structure exists
     if (associated(rhadapt%rBoundary)) then
@@ -419,14 +419,14 @@ contains
                                         iduplicationFlag, bupdate)
 
 !<description>
-    ! This subroutine makes a copy of an adaptivity structure in memory. The 
+    ! This subroutine makes a copy of an adaptivity structure in memory. The
     ! variable iduplicationFlag decides on which arrays are copied in memory
     ! and which are not.
     !
     ! By setting the corresponding bit in iduplicationFlag to 0, the array is
     ! duplicated in memory, and any change to the new array will not harm
     ! the original one.
-    ! By setting a flag HADAPT_SHARE_xxxx in iduplicationFlag, the corresponding 
+    ! By setting a flag HADAPT_SHARE_xxxx in iduplicationFlag, the corresponding
     ! array is not duplicated. The handle of the original structure is simply put
     ! into the new structure to make the information accessable. Then this array
     ! is shared between two adaptivity structures!
@@ -436,33 +436,33 @@ contains
     ! The source structure which provides all information
     type(t_hadapt), intent(in) :: rhadapt
 
-    ! Bitfield that decides which handles are a copy of another structure, thus 
-    ! which arrays are shared between the new and the old structure. 
-    ! The bitfield contains a combination of HADAPT_SHARE_xxxx constants. Every 
+    ! Bitfield that decides which handles are a copy of another structure, thus
+    ! which arrays are shared between the new and the old structure.
+    ! The bitfield contains a combination of HADAPT_SHARE_xxxx constants. Every
     ! information whose flag is set in iduplicationFlag is shared between rhadapt
     ! and rhadaptBackup.
     ! Therefore e.g., iduplicationFlag=0 copies all arrays from rhadapt in memory,
-    ! while HADAPT_SHARE_ALL will copy nothing, but will share everything between 
+    ! while HADAPT_SHARE_ALL will copy nothing, but will share everything between
     ! rhadapt and rhadaptBackup.
     integer(I32), intent(in) :: iduplicationFlag
   
     ! OPTIONAL. Defines how to create the backup.
-    ! = .FALSE.: Treat rhadaptBackup as empty destination structure. If necessary, 
-    !    information in rhadaptBackup is released. rhadaptBackup is rebuild 
-    !    according to rhadapt and iduplicationFlag. 
+    ! = .FALSE.: Treat rhadaptBackup as empty destination structure. If necessary,
+    !    information in rhadaptBackup is released. rhadaptBackup is rebuild
+    !    according to rhadapt and iduplicationFlag.
     !    This is the standard setting if bupdate is not specified.
-    ! = .TRUE. : Treat rhadaptBackup as existing copy of rhadapt which has to be 
+    ! = .TRUE. : Treat rhadaptBackup as existing copy of rhadapt which has to be
     !    updated. Recover all arrays of rhadaptBackup by those of rhadapt.
     !    (I.e. those arrays which were duplicated by a previous
     !    call to iduplicationFlag with IUPD=0.)
     !    iduplicationFlag can used to specify which data do copy
-    !    from rhadapt to rhadaptBackup. It is OR`ed with rhadaptBackup%iduplicationFlag 
+    !    from rhadapt to rhadaptBackup. It is OR`ed with rhadaptBackup%iduplicationFlag
     !    to get the actual duplication flag. This leads to the following interpretation
     !    of iduplicationFlag:
     !     =0:  Copy all data that was copied previously. This is the usual setting.
     !    <>0:  Copy all arrays where the corresponding flag in iduplicationFlag is not
     !          set and which exist as duplicates. Arrays corresponding to flags which
-    !          are set or where the handles in rhadapt and rhadaptBackup coincide 
+    !          are set or where the handles in rhadapt and rhadaptBackup coincide
     !          are not touched.
     logical, intent(in), optional :: bupdate
 !</input>
@@ -806,9 +806,9 @@ contains
   subroutine hadapt_refreshAdaptation(rhadapt, rtriangulation)
 
 !<description>
-    ! This subroutine refreshes the pointers and internal structure of the 
+    ! This subroutine refreshes the pointers and internal structure of the
     ! adaptation structure.
-    ! NOTE: The triangulation structure must be compatible with the adaptivity 
+    ! NOTE: The triangulation structure must be compatible with the adaptivity
     ! structure. This CANNOT be checked by the routine and must be guaranteed
     ! by the used. The philosophy behind this adaptivity structure is to not
     ! modify the triangulation externally. If external modifications are performed
@@ -985,7 +985,7 @@ contains
     ! What kind of grid refinement should be performed
     select case(rhadapt%iadaptationStrategy)
 
-    ! No grid refinement      
+    ! No grid refinement
     case (HADAPT_NOADAPTATION)
       
     ! Red-green grid refinement

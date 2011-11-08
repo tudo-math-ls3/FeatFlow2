@@ -36,14 +36,14 @@ program codire
   ! local variables
   character(len=SYS_STRLEN) :: slogdir,slogfile
 
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   
   call system_init()
 
   ! Initialise the output system.
   !
-  ! Normally, we write all the output to the screen and to a file 
+  ! Normally, we write all the output to the screen and to a file
   ! './log/output.txt'.
   ! In the case that environment variables "$logdir"/"$resultsfile" exists,
   ! we write all the output to that file. This can be used e.g. in
@@ -55,13 +55,13 @@ program codire
     call output_init ('./log/output.txt')
   end if
 
-  ! The very second thing in every program: 
-  ! Initialise the storage management: 
+  ! The very second thing in every program:
+  ! Initialise the storage management:
   !
   ! Initialise FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-  ! Call the problem to solve. 
+  ! Call the problem to solve.
   print *
   print *,'Calculating CoDiRe-Problem with method 3'
   print *,'----------------------------------------'

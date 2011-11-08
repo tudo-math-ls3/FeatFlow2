@@ -14,7 +14,7 @@
 !#         rotation and scaling factor.
 !#
 !#  2.) bgeom_transformPoint2D
-!#      -> Transforms a 2D point with coordinates relative to a given 
+!#      -> Transforms a 2D point with coordinates relative to a given
 !#         coordinate system to world coordinates.
 !#
 !#  3.) bgeom_transformBackPoint2D
@@ -22,7 +22,7 @@
 !#         to a given coordinate system.
 !#
 !#  4.) bgeom_transformPoint3D
-!#      -> Transforms a 3D point with coordinates relative to a given 
+!#      -> Transforms a 3D point with coordinates relative to a given
 !#         coordinate system to world coordinates.
 !#
 !#  5.) bgeom_transformBackPoint3D
@@ -473,7 +473,7 @@ contains
   ! This routine may be inefficient if a large number of of points is to
   ! be transformed. Then a matrix based transformation would be more efficient.
   ! But this would require a rewriting of the mechanism how routines, that call
-  ! this function(i.e. geom_isingeometry) work. 
+  ! this function(i.e. geom_isingeometry) work.
 !</description>
 
 !<input>
@@ -497,14 +497,14 @@ contains
   if (rcoordSys%drotationX .ne. 0.0_DP) then
 
     ! setup
-    sx = sin(rcoordSys%drotationX)             
+    sx = sin(rcoordSys%drotationX)
     cx = cos(rcoordSys%drotationX)
     sy = sin(rcoordSys%drotationY)
     cy = cos(rcoordSys%drotationY)
     sz = sin(rcoordSys%drotationZ)
     cz = cos(rcoordSys%drotationZ)
 
-    x1 =  DpointIn(1) * cz +  DpointIn(2) * sz  
+    x1 =  DpointIn(1) * cz +  DpointIn(2) * sz
     y1 =  DpointIn(2) * cz -  DpointIn(1) * sz
     z1 =  DpointIn(3)
     x2 = x1 * cy + z1 * sy
@@ -519,7 +519,7 @@ contains
     ! No rotation in the coordinate system, so simply copy the input coords.
     DpointOut(1) = DpointIn(1)
     DpointOut(2) = DpointIn(2)
-    DpointOut(3) = DpointIn(3)      
+    DpointOut(3) = DpointIn(3)
 
   end if
 
@@ -536,7 +536,7 @@ contains
 
   end subroutine
 
-  ! ***************************************************************************  
+  ! ***************************************************************************
   
 !<subroutine>
 
@@ -579,7 +579,7 @@ contains
 
     X = X / rcoordSys%dscalingFactor
     Y = Y / rcoordSys%dscalingFactor
-    Z = Z / rcoordSys%dscalingFactor    
+    Z = Z / rcoordSys%dscalingFactor
 
   else
 
@@ -595,14 +595,14 @@ contains
   if (rcoordSys%drotationX .ne. 0.0_DP) then
 
     ! setup
-    sx = sin(-rcoordSys%drotationX)             
+    sx = sin(-rcoordSys%drotationX)
     cx = cos(-rcoordSys%drotationX)
     sy = sin(-rcoordSys%drotationY)
     cy = cos(-rcoordSys%drotationY)
     sz = sin(-rcoordSys%drotationZ)
     cz = cos(-rcoordSys%drotationZ)
 
-    x1 =  X * cz + Y * sz  
+    x1 =  X * cz + Y * sz
     y1 =  Y * cz - X * sz
     z1 =  Z
     x2 = x1 * cy + z1 * sy

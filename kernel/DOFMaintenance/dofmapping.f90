@@ -17,12 +17,12 @@
 !#     -> Get number of global DOF`s described by a given block discretisation
 !#
 !# 3.) dof_locGlobMapping
-!#     -> Map the 'local' degrees of freedom 1..n on one element to the global 
+!#     -> Map the 'local' degrees of freedom 1..n on one element to the global
 !#        degrees of freedom according to a discretisaion
 !#
 !# 4.) dof_locGlobMapping_mult
-!#     -> Map the 'local' degrees of freedom 1..n on a set of elements to 
-!#        the global degrees of freedom according to a discretisaion. 
+!#     -> Map the 'local' degrees of freedom 1..n on a set of elements to
+!#        the global degrees of freedom according to a discretisaion.
 !#
 !# 5.) dof_infoDiscr
 !#     -> Prints out information about a discretisation to the terminal
@@ -74,7 +74,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   integer function dof_igetNDofGlob(rdiscretisation)
 
@@ -83,7 +83,7 @@ contains
   ! degrees of freedom in the corresponding scalar DOF vector.
 !</description>
 
-!<input>    
+!<input>
   ! The discretisation structure that specifies the (scalar) discretisation.
   type(t_spatialDiscretisation), intent(in) :: rdiscretisation
 !</input>
@@ -102,7 +102,7 @@ contains
   if (rdiscretisation%bprecompiledDofMapping) then
     ! The value is already available.
     dof_igetNDofGlob = rdiscretisation%ndof
-    return 
+    return
   end if
 
   select case(rdiscretisation%ndimension)
@@ -241,7 +241,7 @@ contains
       ! DOF`s in the vertices, edge midpoints and element midpoints
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NMT + rtriangulation%NEL
     case (EL_P3)
-      ! 1 DOF`s per vertices, 2 DOF per edge 
+      ! 1 DOF`s per vertices, 2 DOF per edge
       NDFG_uniform2D = rtriangulation%NVT + 2*rtriangulation%NMT
     case (EL_Q3)
       ! 1 DOF`s per vertices, 2 DOF per edge, 4 DOF in the inner
@@ -374,11 +374,11 @@ contains
     
     end function
 
-  end function 
+  end function
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   integer function dof_igetNDofGlobBlock(rdiscretisation)
 
@@ -387,7 +387,7 @@ contains
   ! degrees of freedom in the corresponding block DOF vector.
 !</description>
 
-!<input>    
+!<input>
   ! The discretisation structure that specifies the (block) discretisation.
   type(t_blockDiscretisation), intent(in) :: rdiscretisation
 !</input>
@@ -506,7 +506,7 @@ contains
     integer, dimension(:,:), pointer :: p_2darray,p_2darray2,p_2darray3
     integer, dimension(:), pointer :: p_IelementDofs,p_IelementDofIdx
     integer, dimension(:), pointer :: p_IelementCounter
-    type(t_triangulation), pointer :: p_rtriangulation     
+    type(t_triangulation), pointer :: p_rtriangulation
     integer(I32) :: celement
     integer(I32), dimension(2) :: Celements
     integer :: i,iel,isize,ipos,ielnr
@@ -631,8 +631,8 @@ contains
           call dof_locGlobUniMult_Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,&
                                      p_2darray, p_2darray2, IelIdx, IdofGlob)
           return
-        case (EL_P3) 
-        case (EL_Q3) 
+        case (EL_P3)
+        case (EL_Q3)
 
         case (EL_QP1)
           ! DOF`s for Q1
@@ -675,7 +675,7 @@ contains
         case (EL_DG_T2_2D)
           ! DOF`s for DG_T2_1D
           call dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
-          return          
+          return
         end select
         
         return
@@ -847,7 +847,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -893,12 +893,12 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
     end do
@@ -944,12 +944,12 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners and the cell midpoints.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
       IdofGlob(3,i) = NVT + IelIdx(i)
@@ -996,12 +996,12 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
       IdofGlob(3:4,i) = NVT + IdofGlob(1:2,i)
@@ -1054,7 +1054,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i,j
   
     ! Loop through the elements to handle
@@ -1098,7 +1098,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1144,17 +1144,17 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i,j
   
     ! Get the number of local DOF`s - usually either 3 or 4, depending on
-    ! the element. The first dimension of IdofGlob indicates the number of 
+    ! the element. The first dimension of IdofGlob indicates the number of
     ! DOF`s.
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
     
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
     end do
@@ -1192,7 +1192,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1237,7 +1237,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1283,7 +1283,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1343,14 +1343,14 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s.
       ! The P2 element has global DOF`s in the corners and edge midpoints
-      ! of the triangles. 
+      ! of the triangles.
       !
       ! Take the numbers of the corners of the triangles at first.
       IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
@@ -1407,7 +1407,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1485,7 +1485,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     if (NVE .eq. 3) then
@@ -1524,7 +1524,7 @@ contains
         ! At last append the element number - shifted by NVT+NMT to get
         ! a number behind. Note that we must not specify the actual element
         ! number here, but the element number in the set of quad elements!
-        ! This is due to the fact that the element midpoints of triangular 
+        ! This is due to the fact that the element midpoints of triangular
         ! elements do not contribute to DOF`s in a mixed P2/Q2 discretisatrion!
         IdofGlob(9,i) = IelementCounter(IelIdx(i))+NVT+NMT
         
@@ -1568,7 +1568,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1618,12 +1618,12 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       ! We always copy all elements of IedgesAtElement (:,.).
       ! There is no harm and the compiler can optimise better.
@@ -1668,7 +1668,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1720,12 +1720,12 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the numbers of the 
+      ! Calculate the global DOF`s - which are simply the numbers of the
       ! edges. The DOF in the element gets the element number.
       ! We always copy all elements of IedgesAtElement (:,.).
       ! There is no harm and the compiler can optimise better.
@@ -1774,7 +1774,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1836,7 +1836,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1889,7 +1889,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -1936,17 +1936,17 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i,j
   
     ! Get the number of local DOF`s - usually either 3 or 4, depending on
-    ! the element. The first dimension of IdofGlob indicates the number of 
+    ! the element. The first dimension of IdofGlob indicates the number of
     ! DOF`s.
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
     
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
     end do
@@ -2004,7 +2004,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2051,7 +2051,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2103,7 +2103,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2152,7 +2152,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2207,7 +2207,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2249,7 +2249,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2293,7 +2293,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2304,7 +2304,7 @@ contains
       IdofGlob(3,i) = 3*IelIdx(i)
     end do
 
-  end subroutine  
+  end subroutine
   
     ! ***************************************************************************
   
@@ -2337,7 +2337,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2379,7 +2379,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2424,7 +2424,7 @@ contains
 
 !</subroutine>
 
-  ! local variables 
+  ! local variables
   integer :: i
   
     ! Loop through the elements to handle
@@ -2438,7 +2438,7 @@ contains
       IdofGlob(6,i) = 6*IelIdx(i)
     end do
 
-  end subroutine  
+  end subroutine
  
   ! ***************************************************************************
   
@@ -2500,7 +2500,7 @@ contains
       
     end do
     
-  end subroutine  
+  end subroutine
 
 
   ! ***************************************************************************
@@ -2510,14 +2510,14 @@ contains
   subroutine dof_infoDiscrBlock (rblockDiscr,bdetailed)
   
 !<description>
-  ! This routine prints out statistical information about a block 
+  ! This routine prints out statistical information about a block
   ! discretisation to the terminal.
 !</description>
 
 !<input>
   ! Whether a detailed description is printed to the terminal or not.
   ! FALSE prints out information only about the block discretisation.
-  ! TRUE prints out more detailed information about the block 
+  ! TRUE prints out more detailed information about the block
   ! discretisation, the structure of the blocks, the used FE spaces etc.
   logical, intent(in) :: bdetailed
 
@@ -2604,7 +2604,7 @@ contains
       
       ! Build that array by looping through the element distributions and
       ! counting the number of local DOF`s.
-      do ieldistr = 1,rdiscretisation%inumFESpaces 
+      do ieldistr = 1,rdiscretisation%inumFESpaces
         call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
             p_IelementList)
         ndoflocal = elem_igetNDofLoc(rdiscretisation%RelementDistr(ieldistr)%celement)
@@ -2625,7 +2625,7 @@ contains
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofs,p_IelementDofs)
       
-      do ieldistr = 1,rdiscretisation%inumFESpaces 
+      do ieldistr = 1,rdiscretisation%inumFESpaces
 
         call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
             p_IelementList)
@@ -2654,7 +2654,7 @@ contains
       
     else
       call output_line ('Discretisation does not support precomputed DOF''s!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputeDofMapping')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputeDofMapping')
       call sys_halt()
     end if
 

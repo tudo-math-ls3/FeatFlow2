@@ -184,7 +184,7 @@
 !#
 !# 45.) hydro_trafoDiffDenPreVel3d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 46.) hydro_trafoNodalDenPreVel3d_sim
@@ -1494,7 +1494,7 @@ contains
         l4 = abs(vel_ij)
         l5 = abs(vel_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -2019,7 +2019,7 @@ contains
         l4 = abs(u_ij)
         l5 = abs(u_ij)
         
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -2098,7 +2098,7 @@ contains
         l4 = abs(v_ij)
         l5 = abs(v_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -2174,7 +2174,7 @@ contains
         l4 = abs(w_ij)
         l5 = abs(w_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -2610,7 +2610,7 @@ contains
                                    IDX3(DcoeffsAtEdge,2,1,idx,0,0,0))**2+&
                                   (IDX3(DcoeffsAtEdge,3,2,idx,0,0,0)-&
                                    IDX3(DcoeffsAtEdge,3,1,idx,0,0,0))**2)*ci )
-#else      
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj+&
                       IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)*vj+&
@@ -3304,7 +3304,7 @@ contains
       wi = ZVELOCITY2(DdataAtNode,IDX2,inode,0,0)
       Ei = SPECIFICTOTALENERGY2(DdataAtNode,IDX2,inode,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),
@@ -3571,7 +3571,7 @@ contains
       vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,1,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -4214,7 +4214,7 @@ contains
       vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -4968,7 +4968,7 @@ contains
       vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       wj = ZVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -5102,7 +5102,7 @@ contains
         l4 = abs(vel_ij)
         l5 = abs(vel_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -5914,7 +5914,7 @@ contains
         l4 = abs(vel_ij)
         l5 = abs(vel_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -6233,7 +6233,7 @@ contains
       Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),

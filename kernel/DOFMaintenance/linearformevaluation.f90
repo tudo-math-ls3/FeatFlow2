@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains routines for the discretisation of linear forms,
-!# i.e. the creation of vectors (which usually appear as RHS vectors). 
+!# i.e. the creation of vectors (which usually appear as RHS vectors).
 !#
 !# It contains the following set of routines:
 !#
@@ -72,7 +72,7 @@
 !#
 !# 18.) linf_buildVectorScalar2
 !#      -> Assembles the entries of a vector according to a linear form
-!#         defined in terms of a volume integral. This subroutine is a 
+!#         defined in terms of a volume integral. This subroutine is a
 !#         replacement of the previous version linf_buildVectorScalar.
 !#
 !# 19.) linf_buildVecIntlScalar2
@@ -140,8 +140,8 @@
 !#
 !#  assembles a vector just like the call to linf_buildVectorScalar, but using
 !#  another technique which you can also use if you want to assemble parts
-!#  of the vector on your own. 
-!# 
+!#  of the vector on your own.
+!#
 !#  To 'manually' assemble parts of the matrix, you can use the
 !#  linf_initAssembly / linf_doneAssembly / linf_assembleSubmeshVector
 !#  subroutines in conjunction with the linf_assembleSubmeshVector structure.
@@ -199,7 +199,7 @@
 !#  adaptive/summed cubature formulas. Some parts of the domain can that way
 !#  be assembled with a cubature formula which is high enough to capture the
 !#  behaviour of the integral for nonsmooth, nonconstant coefficients, while
-!#  other parts of the domain may be assembled with the standard cubature 
+!#  other parts of the domain may be assembled with the standard cubature
 !#  formula.
 !# </purpose>
 !##############################################################################
@@ -387,10 +387,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors).
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -419,7 +419,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorScalar), intent(inout) :: rvector
 
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -442,12 +442,12 @@ contains
 
   ! Do we have a uniform triangulation? Would simplify a lot...
   if ((rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-      (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+      (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then
     
     select case(rvector%cdataType)
       
     case(ST_DOUBLE)
-      call linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&  
+      call linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&
                                       fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 
     case DEFAULT
@@ -475,7 +475,7 @@ contains
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
   ! The discretisation is assumed to be conformal, i.e. the DOF`s
-  ! of all finite elements must 'match'. 
+  ! of all finite elements must 'match'.
   ! The linear form is defined by
   !        <tex>(f,$\phi_i$), i=1..*</tex>
   ! with <tex>$\phi_i$</tex> being the test functions defined in the discretisation
@@ -517,7 +517,7 @@ contains
  
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 !</inputoutput>
 
@@ -547,14 +547,14 @@ contains
   ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest
   
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test space.
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasTest
   
   ! Number of entries in the vector - for quicker access
   integer :: NEQ
   
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -721,7 +721,7 @@ contains
     ! with something like
     !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     allocate(DbasTest(indofTest,elem_getMaxDerivative(p_relementDistribution%celement),&
              ncubp,nelementsPerBlock))
@@ -766,7 +766,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! Evaluate real coordinates; they are needed in the callback function.
@@ -822,7 +822,7 @@ contains
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
       !
       ! Loop through elements in the set and for each element,
@@ -853,14 +853,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do IALBET = 1,rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -873,17 +873,17 @@ contains
             AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do IDOFE = 1,indofTest
             
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -895,7 +895,7 @@ contains
             
           end do ! IALBET
 
-        end do ! ICUBP 
+        end do ! ICUBP
 
         ! Incorporate the local vector into the global one.
         ! The 'local' DOF 1..indofTest is mapped to the global DOF using
@@ -942,10 +942,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors) in 1D.
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -975,7 +975,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorScalar), intent(inout) :: rvector
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -990,7 +990,7 @@ contains
     integer :: ibdc,ielementDistr,NELbdc
 
     ! If the vector does not exist, stop here.
-    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
     end if
@@ -1024,7 +1024,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvector%cdataType)
         
@@ -1077,7 +1077,7 @@ contains
             ! Check if element distribution is empty
             if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
             
-            ! Loop over all boundary components and call 
+            ! Loop over all boundary components and call
             ! the calculation routines for that
             do ibdc = 1, p_rtriangulation%nbct
             
@@ -1145,10 +1145,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors) in 1D.
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -1181,7 +1181,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorScalar), intent(inout) :: rvector
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -1208,7 +1208,7 @@ contains
     end if
 
     ! If the vector does not exist, stop here.
-    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
     end if
@@ -1256,7 +1256,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvector%cdataType)
         
@@ -1387,10 +1387,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors) in 1D.
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -1420,7 +1420,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorScalar), intent(inout) :: rvector
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -1435,7 +1435,7 @@ contains
     integer :: ibdc,ielementDistr,NELbdc
 
     ! If the vector does not exist, stop here.
-    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
     end if
@@ -1469,7 +1469,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvector%cdataType)
         
@@ -1522,7 +1522,7 @@ contains
             ! Check if element distribution is empty
             if (rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
             
-            ! Loop over all boundary components and call 
+            ! Loop over all boundary components and call
             ! the calculation routines for that
             do ibdc = 1, p_rtriangulation%nbct
               
@@ -1593,10 +1593,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors) in 2D.
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -1629,7 +1629,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorScalar), intent(inout) :: rvector
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -1656,7 +1656,7 @@ contains
     end if
     
     ! If the vector does not exist, stop here.
-    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
     end if
@@ -1698,7 +1698,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvector%cdataType)
         
@@ -1923,7 +1923,7 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     rvectorAssembly%cevaluationTag = elem_getEvaluationTag(rvectorAssembly%celement)
         
   end subroutine
@@ -1936,12 +1936,12 @@ contains
 
 !<description>
   ! Clean up a vector assembly structure.
-!</description>  
+!</description>
 
 !<inputoutput>
   ! Matrix assembly structure to clean up
   type(t_linfVectorAssembly), intent(inout) :: rvectorAssembly
-!</inputoutput>  
+!</inputoutput>
 
 !</subroutine>
   
@@ -2029,13 +2029,13 @@ contains
 
     deallocate(rvectorAssembly%p_Dcoefficients)
     deallocate(rvectorAssembly%p_Idofs)
-    deallocate(rvectorAssembly%p_Dbas)   
+    deallocate(rvectorAssembly%p_Dbas)
        
   end subroutine
   
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVector (rvectorAssembly, rvector, IelementList,&
       fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
@@ -2071,7 +2071,7 @@ contains
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -2178,7 +2178,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -2197,7 +2197,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
       ! In the first loop, calculate the coordinates on the reference element.
@@ -2254,7 +2254,7 @@ contains
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
       
       ! Clear the local data
@@ -2285,14 +2285,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -2305,17 +2305,17 @@ contains
             daux = domega * p_Dcoefficients(ialbet,icubp,iel)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do idofe = 1,indof
               
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -2365,7 +2365,7 @@ contains
 
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVecSc (rvectorAssembly, rvector, IelementList,&
       fcoeff_buildVectorBl_sim, rcollection, rperfconfig)
@@ -2401,7 +2401,7 @@ contains
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -2510,7 +2510,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -2529,7 +2529,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
       ! In the first loop, calculate the coordinates on the reference element.
@@ -2586,7 +2586,7 @@ contains
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
       
       ! Clear the local data
@@ -2617,14 +2617,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -2637,17 +2637,17 @@ contains
             Daux = domega * p_Dcoefficients(:,ialbet,icubp,iel)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do idofe = 1,indof
               
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -2701,7 +2701,7 @@ contains
 
   !****************************************************************************
 
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
@@ -2741,11 +2741,11 @@ contains
   type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
   
   ! A vector where to assemble the contributions to.
-  type(t_vectorScalar), intent(inout) :: rvector  
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -2825,7 +2825,7 @@ contains
     
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = rvectorAssembly%cevaluationTag
 
     ! The cubature points are already initialised.
@@ -2864,7 +2864,7 @@ contains
     
     ! --------------------- DOF COMBINATION PHASE ------------------------
       
-    ! Values of all basis functions calculated. Now we can start 
+    ! Values of all basis functions calculated. Now we can start
     ! to integrate!
     !
     ! Loop over the elements.
@@ -2877,38 +2877,38 @@ contains
       ! Loop over the additive factors in the linear form.
       do ialbet = 1,rvectorAssembly%rform%itermcount
         
-        ! Get from Idescriptors the type of the derivatives for the 
+        ! Get from Idescriptors the type of the derivatives for the
         ! test and trial functions. The summand we calculate
         ! here will be:
         !
         ! int_...  f * ( phi_i )_IA
         !
-        ! -> IA=0: function value, 
-        !      =1: first derivative, 
+        ! -> IA=0: function value,
+        !      =1: first derivative,
         !      =2: 2nd derivative,...
         !    as defined in the module 'derivative'.
         
         ia = p_Idescriptors(ialbet)
         
         ! Multiply the weighting factor in the cubature formula with the
-        ! coefficient of the form. 
+        ! coefficient of the form.
         ! This gives the actual value to multiply the function value
         ! with before summing up to the integral.  Get the precalculated
         ! coefficient from the coefficient array.
         daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(ialbet,1,iel)
         
         ! Now loop through all possible combinations of DOF`s
-        ! in the current cubature point. 
+        ! in the current cubature point.
         
         do idofe = 1,indof
         
-          ! Get the value of the basis function 
-          ! phi_o in the cubature point. 
+          ! Get the value of the basis function
+          ! phi_o in the cubature point.
           ! Them multiply:
           !    DBAS(..) * AUX
           ! ~= phi_i * coefficient * cub.weight
           ! Summing this up gives the integral, so the contribution
-          ! to the vector. 
+          ! to the vector.
           !
           ! Simply summing up DBAS(..) * AUX would give
           ! the additive contribution for the vector. We save this
@@ -2936,7 +2936,7 @@ contains
 
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
@@ -2966,7 +2966,7 @@ contains
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorScBdr2D.inc'
-  optional :: fcoeff_buildVectorScBdr2D_sim 
+  optional :: fcoeff_buildVectorScBdr2D_sim
   
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2980,11 +2980,11 @@ contains
   type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
   
   ! A vector where to assemble the contributions to.
-  type(t_vectorScalar), intent(inout) :: rvector  
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -3124,7 +3124,7 @@ contains
         do icubp = 1,ncubp
           ! Dxi1D is in [-1,1] while the current edge has parmeter values
           ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-          ! transformation to transform Dxi1D into that interval, this 
+          ! transformation to transform Dxi1D into that interval, this
           ! gives the parameter values in length parametrisation
           call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
               DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -3160,7 +3160,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -3179,7 +3179,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
       ! The cubature points are already initialised by 1D->2D mapping.
@@ -3252,7 +3252,7 @@ contains
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
       
       ! Clear the local data
@@ -3282,14 +3282,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -3302,17 +3302,17 @@ contains
             daux = domega * p_Dcoefficients(ialbet,icubp,iel)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do idofe = 1,indof
               
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -3324,7 +3324,7 @@ contains
             
           end do ! ialbet
 
-        end do ! icubp 
+        end do ! icubp
 
       end do ! iel
         
@@ -3362,7 +3362,7 @@ contains
 
   !****************************************************************************
 
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
@@ -3389,7 +3389,7 @@ contains
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
-  optional :: fcoeff_buildVectorBlBdr1D_sim 
+  optional :: fcoeff_buildVectorBlBdr1D_sim
   
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -3402,11 +3402,11 @@ contains
   type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
   
   ! A vector where to assemble the contributions to.
-  type(t_vectorScalar), intent(inout) :: rvector  
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -3489,7 +3489,7 @@ contains
     
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = rvectorAssembly%cevaluationTag
 
     ! The cubature points are already initialised.
@@ -3528,7 +3528,7 @@ contains
     
     ! --------------------- DOF COMBINATION PHASE ------------------------
       
-    ! Values of all basis functions calculated. Now we can start 
+    ! Values of all basis functions calculated. Now we can start
     ! to integrate!
     ! Loop through the DOF`s and cubature points to calculate the
     ! integral:
@@ -3541,38 +3541,38 @@ contains
       ! Loop over the additive factors in the linear form.
       do ialbet = 1,rvectorAssembly%rform%itermcount
         
-        ! Get from Idescriptors the type of the derivatives for the 
+        ! Get from Idescriptors the type of the derivatives for the
         ! test and trial functions. The summand we calculate
         ! here will be:
         !
         ! int_...  f * ( phi_i )_IA
         !
-        ! -> IA=0: function value, 
-        !      =1: first derivative, 
+        ! -> IA=0: function value,
+        !      =1: first derivative,
         !      =2: 2nd derivative,...
         !    as defined in the module 'derivative'.
         
         ia = p_Idescriptors(ialbet)
         
         ! Multiply the weighting factor in the cubature formula with the
-        ! coefficient of the form. 
+        ! coefficient of the form.
         ! This gives the actual value to multiply the function value
         ! with before summing up to the integral.  Get the precalculated
         ! coefficient from the coefficient array.
         Daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(:,ialbet,1,iel)
         
         ! Now loop through all possible combinations of DOF`s
-        ! in the current cubature point. 
+        ! in the current cubature point.
         
         do idofe = 1,indof
           
-          ! Get the value of the basis function 
-          ! phi_o in the cubature point. 
+          ! Get the value of the basis function
+          ! phi_o in the cubature point.
           ! Them multiply:
           !    DBAS(..) * AUX
           ! ~= phi_i * coefficient * cub.weight
           ! Summing this up gives the integral, so the contribution
-          ! to the vector. 
+          ! to the vector.
           !
           ! Simply summing up DBAS(..) * AUX would give
           ! the additive contribution for the vector. We save this
@@ -3603,7 +3603,7 @@ contains
 
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
@@ -3633,7 +3633,7 @@ contains
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
-  optional :: fcoeff_buildVectorBlBdr2D_sim 
+  optional :: fcoeff_buildVectorBlBdr2D_sim
   
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -3647,11 +3647,11 @@ contains
   type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
   
   ! A vector where to assemble the contributions to.
-  type(t_vectorScalar), intent(inout) :: rvector  
+  type(t_vectorScalar), intent(inout) :: rvector
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -3793,7 +3793,7 @@ contains
         do icubp = 1,ncubp
           ! Dxi1D is in [-1,1] while the current edge has parmeter values
           ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-          ! transformation to transform Dxi1D into that interval, this 
+          ! transformation to transform Dxi1D into that interval, this
           ! gives the parameter values in length parametrisation
           call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
               DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -3829,7 +3829,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -3848,7 +3848,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
       ! The cubature points are already initialised by 1D->2D mapping.
@@ -3920,7 +3920,7 @@ contains
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
       
       ! Clear the local data
@@ -3950,14 +3950,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -3970,17 +3970,17 @@ contains
             Daux = domega * p_Dcoefficients(:,ialbet,icubp,iel)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do idofe = 1,indof
               
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -4034,7 +4034,7 @@ contains
 
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVecBl (rvectorAssembly, rvector,&
       IelementList, fcoeff_buildVectorBl_sim, rcollection, rperfconfig)
@@ -4071,7 +4071,7 @@ contains
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -4180,7 +4180,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -4200,7 +4200,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
       ! In the first loop, calculate the coordinates on the reference element.
@@ -4257,7 +4257,7 @@ contains
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
       
       ! Clear the local data
@@ -4288,14 +4288,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -4308,17 +4308,17 @@ contains
             Daux = domega * p_Dcoefficients(:,ialbet,icubp,iel)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do idofe = 1,indof
               
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -4372,7 +4372,7 @@ contains
 
   !****************************************************************************
 
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvector,&
       iboundaryComp, IelementList, IelementOrientation, &
@@ -4399,7 +4399,7 @@ contains
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
-  optional :: fcoeff_buildVectorBlBdr1D_sim 
+  optional :: fcoeff_buildVectorBlBdr1D_sim
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -4416,7 +4416,7 @@ contains
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -4500,7 +4500,7 @@ contains
     
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = rvectorAssembly%cevaluationTag
 
     ! The cubature points are already initialised.
@@ -4539,7 +4539,7 @@ contains
     
     ! --------------------- DOF COMBINATION PHASE ------------------------
       
-    ! Values of all basis functions calculated. Now we can start 
+    ! Values of all basis functions calculated. Now we can start
     ! to integrate!
     ! Loop through the DOF`s and cubature points to calculate the
     ! integral:
@@ -4552,38 +4552,38 @@ contains
       ! Loop over the additive factors in the linear form.
       do ialbet = 1,rvectorAssembly%rform%itermcount
         
-        ! Get from Idescriptors the type of the derivatives for the 
+        ! Get from Idescriptors the type of the derivatives for the
         ! test and trial functions. The summand we calculate
         ! here will be:
         !
         ! int_...  f * ( phi_i )_IA
         !
-        ! -> IA=0: function value, 
-        !      =1: first derivative, 
+        ! -> IA=0: function value,
+        !      =1: first derivative,
         !      =2: 2nd derivative,...
         !    as defined in the module 'derivative'.
         
         ia = p_Idescriptors(ialbet)
         
         ! Multiply the weighting factor in the cubature formula with the
-        ! coefficient of the form. 
+        ! coefficient of the form.
         ! This gives the actual value to multiply the function value
         ! with before summing up to the integral.  Get the precalculated
         ! coefficient from the coefficient array.
         Daux = 0.5_DP * p_Domega(1) * p_Dcoefficients(:,ialbet,1,iel)
 
         ! Now loop through all possible combinations of DOF`s
-        ! in the current cubature point. 
+        ! in the current cubature point.
         
         do idofe = 1,indof
           
-          ! Get the value of the basis function 
-          ! phi_o in the cubature point. 
+          ! Get the value of the basis function
+          ! phi_o in the cubature point.
           ! Them multiply:
           !    DBAS(..) * AUX
           ! ~= phi_i * coefficient * cub.weight
           ! Summing this up gives the integral, so the contribution
-          ! to the vector. 
+          ! to the vector.
           !
           ! Simply summing up DBAS(..) * AUX would give
           ! the additive contribution for the vector. We save this
@@ -4615,7 +4615,7 @@ contains
 
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
@@ -4645,7 +4645,7 @@ contains
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
-  optional :: fcoeff_buildVectorBlBdr2D_sim 
+  optional :: fcoeff_buildVectorBlBdr2D_sim
   
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -4659,11 +4659,11 @@ contains
   type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
   
   ! A vector where to assemble the contributions to.
-  type(t_vectorBlock), intent(inout) :: rvector  
+  type(t_vectorBlock), intent(inout) :: rvector
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
@@ -4805,7 +4805,7 @@ contains
         do icubp = 1,ncubp
           ! Dxi1D is in [-1,1] while the current edge has parmeter values
           ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-          ! transformation to transform Dxi1D into that interval, this 
+          ! transformation to transform Dxi1D into that interval, this
           ! gives the parameter values in length parametrisation
           call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
               DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
@@ -4841,7 +4841,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -4861,7 +4861,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
       ! The cubature points are already initialised by 1D->2D mapping.
@@ -4933,7 +4933,7 @@ contains
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate!
 
       ! Clear the local data
@@ -4963,14 +4963,14 @@ contains
           ! Loop over the additive factors in the linear form.
           do ialbet = 1,rlocalVectorAssembly%rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be:
             !
             ! int_...  f * ( phi_i )_IA
             !
-            ! -> IA=0: function value, 
-            !      =1: first derivative, 
+            ! -> IA=0: function value,
+            !      =1: first derivative,
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
@@ -4983,17 +4983,17 @@ contains
             Daux = domega * p_Dcoefficients(:,ialbet,icubp,iel)
           
             ! Now loop through all possible combinations of DOF`s
-            ! in the current cubature point. 
+            ! in the current cubature point.
 
             do idofe = 1,indof
               
-              ! Get the value of the basis function 
-              ! phi_o in the cubature point. 
+              ! Get the value of the basis function
+              ! phi_o in the cubature point.
               ! Them multiply:
               !    DBAS(..) * AUX
               ! ~= phi_i * coefficient * cub.weight
               ! Summing this up gives the integral, so the contribution
-              ! to the vector. 
+              ! to the vector.
               !
               ! Simply summing up DBAS(..) * AUX would give
               ! the additive contribution for the vector. We save this
@@ -5005,7 +5005,7 @@ contains
             
           end do ! ialbet
 
-        end do ! icubp 
+        end do ! icubp
 
       end do ! iel
         
@@ -5057,10 +5057,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors).
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
   !
   ! IMPLEMENTATIONAL REMARK:
@@ -5096,7 +5096,7 @@ contains
   ! The vector must exist before being passed to this routine.
   type(t_vectorScalar), intent(inout) :: rvector
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -5119,7 +5119,7 @@ contains
     end if
 
     ! If the vector does not exist, stop here.
-    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     end if
@@ -5149,7 +5149,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvector%cdataType)
         
@@ -5191,7 +5191,7 @@ contains
       call sys_halt()
     end if
 
-  end subroutine  
+  end subroutine
 
   !****************************************************************************
 
@@ -5205,10 +5205,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors).
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
   !
   ! IMPLEMENTATIONAL REMARK:
@@ -5244,7 +5244,7 @@ contains
   ! The vector must exist before being passed to this routine.
   type(t_vectorScalar), intent(inout) :: rvector
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -5267,7 +5267,7 @@ contains
     end if
 
     ! If the vector does not exist, stop here.
-    if (rvector%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvector%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
     end if
@@ -5291,7 +5291,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (rvector%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvector%cdataType)
         
@@ -5333,7 +5333,7 @@ contains
       call sys_halt()
     end if
     
-  end subroutine  
+  end subroutine
 
   !****************************************************************************
 
@@ -5347,10 +5347,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors).
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
   !
   ! IMPLEMENTATIONAL REMARK:
@@ -5386,7 +5386,7 @@ contains
   ! The vector must exist before being passed to this routine.
   type(t_vectorBlock), intent(inout) :: rvectorBlock
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -5411,7 +5411,7 @@ contains
     end if
 
     ! If the vector does not exist, stop here.
-    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
     end if
@@ -5451,7 +5451,7 @@ contains
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
     
       select case(rvectorBlock%cdataType)
 
@@ -5507,10 +5507,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors) in 1D.
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -5540,7 +5540,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorBlock), intent(inout) :: rvectorBlock
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -5557,7 +5557,7 @@ contains
     logical :: bcompatible
 
     ! If the vector does not exist, stop here.
-    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
     end if
@@ -5607,7 +5607,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvectorBlock%cdataType)
         
@@ -5657,7 +5657,7 @@ contains
             ! Check if element distribution is empty
             if (p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
             
-            ! Loop over all boundary components and call 
+            ! Loop over all boundary components and call
             ! the calculation routines for that
             do ibdc = 1, p_rtriangulation%nbct
             
@@ -5724,10 +5724,10 @@ contains
   ! This routine assembles the entries of a vector according to a linear form
   ! (typically used for assembling RHS vectors) in 2D.
   !
-  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! If bclear=TRUE, the vector is cleared before the assembly and any
   ! sorting of the entries is switched off - the vector is set up unsorted.
   !
-  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -5760,7 +5760,7 @@ contains
   ! The FE vector. Calculated entries are imposed to this vector.
   type(t_vectorBlock), intent(inout) :: rvectorBlock
   
-  ! OPTIONAL: A collection structure. This structure is 
+  ! OPTIONAL: A collection structure. This structure is
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
@@ -5789,7 +5789,7 @@ contains
     end if
 
     ! If the vector does not exist, stop here.
-    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then  
+    if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
       call output_line('Vector not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
     end if
@@ -5847,7 +5847,7 @@ contains
     
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then
       
       select case(rvectorBlock%cdataType)
         

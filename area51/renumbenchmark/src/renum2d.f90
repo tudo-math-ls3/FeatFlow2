@@ -25,14 +25,14 @@ program poisson
   type(t_parlist) :: rparlist
   logical :: bexists
   
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   
   call system_init()
   
   ! Initialise the output system.
   !
-  ! Normally, we write all the output to the screen and to a file 
+  ! Normally, we write all the output to the screen and to a file
   ! './log/output.txt'.
   ! In the case that environment variables "$logdir"/"$resultsfile" exists,
   ! we write all the output to that file. This can be used e.g. in
@@ -44,8 +44,8 @@ program poisson
     call output_init ('./log/output.txt')
   end if
 
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
   
   ! Print the configuration

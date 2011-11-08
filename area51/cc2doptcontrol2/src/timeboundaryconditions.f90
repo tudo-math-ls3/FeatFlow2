@@ -125,7 +125,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! A space-time vector with the solution where the BC's should be 
+  ! A space-time vector with the solution where the BC's should be
   ! implemented to.
   type(t_spacetimeVector), intent(inout) :: rx
 
@@ -485,7 +485,7 @@ contains
         dtimeDual = dtimePrimal - (1.0_DP-rd%p_rtimeDiscr%dtheta)*dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
+        ! Discretise the boundary conditions at the new point in time --
         ! if the boundary conditions are nonconstant in time!
         
         call bcasm_clearDiscreteBC(rdiscreteBC)
@@ -721,7 +721,7 @@ contains
 
     real(DP), dimension(:),pointer :: p_Db
     
-    ! DEBUG!!!    
+    ! DEBUG!!!
     call lsysbl_getbase_double (rtempVectorD,p_Db)
 
     ! Overwrite the primal defect with 0 -- as the solution must not be changed.
@@ -754,7 +754,7 @@ contains
 
     real(DP), dimension(:),pointer :: p_Db
     
-    ! DEBUG!!!    
+    ! DEBUG!!!
     call lsysbl_getbase_double (rd,p_Db)
     
 !    CALL lsyssc_clearVector(rd%RvectorBlock(1))
@@ -787,8 +787,8 @@ contains
 !    imposed weakly, therefore for following lines of code are not used!
 !
 !    REAL(DP), DIMENSION(:),POINTER :: p_Db
-!    
-!    ! DEBUG!!!    
+!
+!    ! DEBUG!!!
 !    CALL lsysbl_getbase_double (rd,p_Db)
 !
 !    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
@@ -809,13 +809,13 @@ contains
 !      !     -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
 !      !
 !      ! which adds a mass matrix to a 'smoothing' Laplace part.
-!      
+!
 !      IF (rspaceTimeDiscr%itypeTerminalCondition .EQ. 0) THEN
 !        CALL lsyssc_clearVector(rd%RvectorBlock(4))
 !        CALL lsyssc_clearVector(rd%RvectorBlock(5))
 !        CALL lsyssc_clearVector(rd%RvectorBlock(6))
 !      END IF
-!      
+!
 !    END IF
 
   end subroutine
@@ -845,9 +845,9 @@ contains
 
   ! Global settings for callback routines.
   type(t_globalData), intent(inout), target :: rglobalData
-!</input>  
+!</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Source and destination RHS vector
   type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>

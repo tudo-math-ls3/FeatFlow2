@@ -70,7 +70,7 @@ contains
   ! local variables
   integer :: i,ilvmin,ilvmax
   
-    ! Variable for a filename:  
+    ! Variable for a filename:
     character(LEN=SYS_STRLEN) :: sString
     character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
     type(t_timer) :: rtimer
@@ -131,7 +131,7 @@ contains
     call storage_getbase_int (rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation%h_InodalProperty,&
     p_InodalProperty)
     
-    call cc_deform(rproblem)    
+    call cc_deform(rproblem)
     
     ! Compress the level hierarchy.
     ! Share the vertex coordinates of all levels, so the coarse grid coordinates
@@ -158,7 +158,7 @@ contains
   subroutine cc_deform(rproblem)
   
 !<description>
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -183,13 +183,13 @@ contains
   type(t_blockDiscretisation) :: rdiscretisation
   
   ! In this vector we will save the area of the deformed grid
-  type(t_vectorScalar) :: rvectorAreaQ0 
+  type(t_vectorScalar) :: rvectorAreaQ0
 
   ! NLMAX receives the level where we want to solve.
   integer :: NLMAX,NLMIN
   
   ! dummy
-  integer :: idummy,iloop    
+  integer :: idummy,iloop
   
   ! Output block for UCD output to GMV file
   type(t_ucdExport) :: rexport
@@ -197,7 +197,7 @@ contains
   ! grid deform structure
   type(t_griddefInfo) :: rgriddefInfo
 
-  ! Ok, let's start. 
+  ! Ok, let's start.
   !
   print *,"---------NumberOfElements---------"
   print *,rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation%NEL
@@ -208,7 +208,7 @@ contains
   !rgriddefInfo,NLMIN,NLMAX,rboundary,iStyle,iadaptSteps
   call griddef_deformationInit(rgriddefInfo,&
                                rproblem%NLMIN,&
-                               rproblem%NLMAX,rproblem%rboundary,GRIDDEF_CLASSICAL,5)                 
+                               rproblem%NLMAX,rproblem%rboundary,GRIDDEF_CLASSICAL,5)
   
   do iloop=rproblem%NLMIN,rproblem%NLMAX
     call griddef_buildHGrid(rgriddefInfo,rproblem%RlevelInfo(iloop)%rtriangulation,iloop)
@@ -227,12 +227,12 @@ contains
 
 !******************************************************************************
   
-  !<subroutine>  
+  !<subroutine>
     subroutine tridef2d_monitorfct(DvertexCoords,Dentries)
   
   
     !<description>
-      ! In this function we build the nodewise area distribution out 
+      ! In this function we build the nodewise area distribution out
       ! of an elementwise distribution
     !</description>
 
@@ -253,7 +253,7 @@ contains
      rad2=0.1_dp
      iMethod = 1
       
-     ipoints = ubound(Dentries,1) 
+     ipoints = ubound(Dentries,1)
       
       
      select case(iMethod)
@@ -291,7 +291,7 @@ contains
          Dpoints(2,i1) = cy + rad1 * sin(t)
          t = t + dt
         end do
-        ! loop over all points on the elipse      
+        ! loop over all points on the elipse
         do ive=1,ipoints
           dmin = 10000.0_dp
           do i1=1,10000
@@ -302,7 +302,7 @@ contains
           dmin=min(1.0_dp,dmin)
           Dentries(ive) = dmin
         end do
-       !Case 4 
+       !Case 4
        case(4)
          do ive=1,ipoints
            Dist = sqrt((0.5_dp - DvertexCoords(1,ive))**2 + (0.2_dp - DvertexCoords(2,ive))**2)

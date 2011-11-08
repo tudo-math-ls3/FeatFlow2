@@ -31,7 +31,7 @@ module structuresmain
   type t_settings_genoutput
   
     ! Level of output during the initialisation phase
-    ! =0: no output, 
+    ! =0: no output,
     ! =1: basic output
     ! =2: standard output
     integer :: ioutputInit = 2
@@ -115,10 +115,10 @@ module structuresmain
     ! Section defining the nonlinear space-time solver
     character(len=SYS_STRLEN) :: ssectionSpaceTimeSolver = "TIME-SOLVER";
 
-    ! Section defining the space-time preprocessing 
+    ! Section defining the space-time preprocessing
     character(len=SYS_STRLEN) :: ssectionSpaceTimePreprocessing = "TIME-PREPROCESSING";
 
-    ! Section defining the space-time postprocessing 
+    ! Section defining the space-time postprocessing
     character(len=SYS_STRLEN) :: ssectionSpaceTimePostprocessing = "TIME-POSTPROCESSING";
   
     ! Structure encapsuling output settings
@@ -128,7 +128,7 @@ module structuresmain
 
 !</typeblock>
 
-!</types>  
+!</types>
 
 contains
 

@@ -19,7 +19,7 @@
 !#
 !# 4.) btree_copyToTree = btree_copyToTree_handle /
 !#                        btree_copyToTree_arrayDble /
-!#                        btree_copyToTree_arraySngl / 
+!#                        btree_copyToTree_arraySngl /
 !#                        btree_copyToTree_arrayInt
 !#     -> Copy key and auxiliary data to tree
 !#
@@ -60,7 +60,7 @@
 !#      -> Search for key in tree
 !#
 !# 12.) btree_getItemInTree = btree_getItemInTreeDble /
-!#                            btree_getItemInTreeSngl / 
+!#                            btree_getItemInTreeSngl /
 !#                            btree_getItemInTreeInt
 !#      -> Search for key in tree and return position of item directly
 !#
@@ -316,7 +316,7 @@ module binarytree
     module procedure btree_getItemInTreeDble
     module procedure btree_getItemInTreeSngl
     module procedure btree_getItemInTreeInt
-  end interface  
+  end interface
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -1472,9 +1472,9 @@ contains
     ! data to be copied can be specified by the optional mask, e.g.
     ! mask=(/1,2,7/) only copies the first, second and seventh
     ! components of the auxiliary data.
-    ! 
+    !
     ! The type of auxiliary data to be copied (ST_DOUBLE, ST_SINGLE,
-    ! ST_INT) is specified by ctype. If the handle is already 
+    ! ST_INT) is specified by ctype. If the handle is already
     ! associated, then it is reallocated if required but the type
     ! is not allowed to change.
     !
@@ -2896,7 +2896,7 @@ contains
     ! binary tree
     type(t_btree), intent(inout) :: rtree
 !</inputoutput>
-!</subroutine>    
+!</subroutine>
     
     ! local variables
     integer :: v,x,w
@@ -3329,7 +3329,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>  
+!<subroutine>
   
   recursive subroutine rebalanceAfterDeletion(rtree, i)
 
@@ -3686,7 +3686,7 @@ contains
 
 !<description>
     ! This subroutine searches for a given Double key in the tree and
-    ! returns its position. If the item cannot not be found than 
+    ! returns its position. If the item cannot not be found than
     ! program execution is terminated.
 !</description>
 
@@ -3725,7 +3725,7 @@ contains
 
 !<description>
     ! This subroutine searches for a given Single key in the tree and
-    ! returns its position. If the item cannot not be found than 
+    ! returns its position. If the item cannot not be found than
     ! program execution is terminated.
 !</description>
 
@@ -3764,7 +3764,7 @@ contains
 
 !<description>
     ! This subroutine searches for a given Integer key in the tree and
-    ! returns its position. If the item cannot not be found than 
+    ! returns its position. If the item cannot not be found than
     ! program execution is terminated.
 !</description>
 

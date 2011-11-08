@@ -4,11 +4,11 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple 
-!# Convection-Diffusion-Reaction problem with constant coefficients 
+!# This module is a demonstation program how to solve a simple
+!# Convection-Diffusion-Reaction problem with constant coefficients
 !# on a simple domain.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -56,7 +56,7 @@ module codire_method5
   
   implicit none
   
-  ! Maximum allowed level in this application; must be =9 for 
+  ! Maximum allowed level in this application; must be =9 for
   ! FEAT 1.x compatibility (still)!
   integer, parameter :: NNLEV = 9
 
@@ -76,7 +76,7 @@ module codire_method5
     ! in scalar form. The matrix will receive the discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -94,13 +94,13 @@ module codire_method5
     ! Maximum refinement level
     integer :: ilvmax
 
-    ! A solution vector and a RHS vector on the finest level. 
+    ! A solution vector and a RHS vector on the finest level.
     type(t_vectorBlock) :: rvector,rrhs
 
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -108,8 +108,8 @@ module codire_method5
     ! only one level supported, identified by NLMAX!
     type(t_problem_lvl), dimension(NNLEV) :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
     
@@ -232,7 +232,7 @@ contains
       ! for later use.
       rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
 
-      ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+      ! p_rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! Initialise the first element of the list to specify the element
       ! and cubature rule for this solution component:
@@ -283,7 +283,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Arrays for the Cuthill McKee renumbering strategy
-    integer, dimension(1) :: H_Iresort 
+    integer, dimension(1) :: H_Iresort
     integer, dimension(:), pointer :: p_Iresort
 
     ! Parameters from the DAT file
@@ -319,7 +319,7 @@ contains
     rform%Idescriptors(2,6) = DER_FUNC
     
     ! gamma * u
-    rform%Idescriptors(1,7) = DER_FUNC       
+    rform%Idescriptors(1,7) = DER_FUNC
     rform%Idescriptors(2,7) = DER_FUNC
 
     ! In the standard case, we have constant coefficients:
@@ -358,7 +358,7 @@ contains
     
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -378,7 +378,7 @@ contains
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.true.,&
@@ -405,7 +405,7 @@ contains
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
 
     ! Save the solution/RHS vector to the collection. Might be used
@@ -419,7 +419,7 @@ contains
     ! to create it by using our matrix as template:
     call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
     
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -427,10 +427,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     call linf_buildVectorScalar (&
@@ -439,7 +439,7 @@ contains
               rproblem%rcollection)
     
     ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution. 
+    ! need additionally is a block vector for the solution.
     ! Create them using the RHS as template.
     ! Fill the solution vector with 0:
     call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
@@ -467,7 +467,7 @@ contains
   ! local variables
   integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -514,7 +514,7 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC`s for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
@@ -555,7 +555,7 @@ contains
     ! to the matrix on the finest level.
     p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
@@ -583,7 +583,7 @@ contains
   ! local variables
   integer :: i,ilvmax
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -591,7 +591,7 @@ contains
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
     ilvmax = rproblem%ilvmax
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
     ! Next step is to implement boundary conditions into the RHS,
@@ -603,7 +603,7 @@ contains
     call vecfil_discreteBCrhs (p_rrhs)
     call vecfil_discreteBCsol (p_rvector)
 
-    ! Implement discrete boundary conditions into the matrices on all 
+    ! Implement discrete boundary conditions into the matrices on all
     ! levels, too. Call the appropriate matrix filter to modify
     ! all matrices according to the attached discrete boundary conditions.
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -635,19 +635,19 @@ contains
     integer :: i
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -666,7 +666,7 @@ contains
     
     ! Get our right hand side / solution / matrix on the finest
     ! level from the problem structure.
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
@@ -688,9 +688,9 @@ contains
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -782,7 +782,7 @@ contains
     ! Release the multilevel projection structure.
     call mlprj_doneProjection (rprojection)
     
-    ! Unsort the vectors again in case they were resorted before calling 
+    ! Unsort the vectors again in case they were resorted before calling
     ! the solver.
     ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we only have one block.
@@ -834,7 +834,7 @@ contains
       p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
@@ -990,7 +990,7 @@ contains
 !<description>
   ! This is a 'separated' CoDiRe solver for solving a convection-diffusion-
   ! reaction problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (THis is somehow a cleaner implementation than using a collection!).
@@ -1030,7 +1030,7 @@ contains
     
     integer :: i
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     ! Minimum level in Multigrid
     NLMIN = 1
     
@@ -1072,8 +1072,8 @@ contains
     !
     ! Initialisation
     call cdrm5_initParamTriang (NLMIN,NLMAX,rproblem,sfilePRM,sfileTRI)
-    call cdrm5_initDiscretisation (rproblem)    
-    call cdrm5_initMatVec (rproblem,rparams)    
+    call cdrm5_initDiscretisation (rproblem)
+    call cdrm5_initMatVec (rproblem,rparams)
     call cdrm5_initDiscreteBC (rproblem)
     
     ! Implementation of boundary conditions

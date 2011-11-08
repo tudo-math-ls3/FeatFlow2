@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains routines that are usually executed to prepare the 
+!# This module contains routines that are usually executed to prepare the
 !# evaluation of a finite element in one or multiple points.
 !#
 !# The routines here will gather information from the triangulation, boundary
@@ -18,7 +18,7 @@
 !#     -> Initialises the global performance configuration.
 !#
 !# 3.) elprep_prepareForEvaluation
-!#     -> Prepares an element for the evaluation on a single point in a 
+!#     -> Prepares an element for the evaluation on a single point in a
 !#        single cell.
 !#
 !# 4.) elprep_prepareSetForEvaluation
@@ -99,7 +99,7 @@ contains
 
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine elprep_init (revalElementSet)
 
@@ -147,7 +147,7 @@ contains
 
   ! ****************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   subroutine elprep_prepareSetForEvaluation (revalElementSet, cevaluationTag, &
       rtriangulation, IelementList, ctrafoType, Dpoints, DpointsRef, &
@@ -161,7 +161,7 @@ contains
   ! IelementList from the triangulation rtriangulation.
   ! cevaluationTag specifies an 'evaluation tag' that defines which
   ! information must be prepared by this routine; that tag can be obtained
-  ! by asking the finite element what it needs by calling 
+  ! by asking the finite element what it needs by calling
   ! elem_getEvaluationTag.
 !</description>
 
@@ -185,8 +185,8 @@ contains
   ! Type of transformation from the reference element to the real element.
   integer(I32), intent(in) :: ctrafoType
   
-  ! OPTIONAL: A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the 
-  ! points where to evaluate. These coordinates define on the reference element 
+  ! OPTIONAL: A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the
+  ! points where to evaluate. These coordinates define on the reference element
   ! the coordinates of the cubature points where to evaluate the element.
   ! DIMENSION(ndimension,npointsPerElement)
   ! This array specifies the evaluation points for exactly one element
@@ -197,7 +197,7 @@ contains
   real(DP), dimension(:,:), optional :: Dpoints
   
   ! OPTIONAL: An array with coordinates of all points for all the elements
-  ! where to evaluate -- relative to the reference element. 
+  ! where to evaluate -- relative to the reference element.
   ! For each element, a set of points can be specified here.
   ! A pointer to this array is saved in the revalElementSet structure. The array
   ! is assumed to be maintained by the caller.
@@ -248,7 +248,7 @@ contains
     ndim = trafo_igetDimension(ctrafoType)
     nverticesPerElement = trafo_igetNVE(ctrafoType)
     nelements = size(IelementList)
-    if (revalElementSet%npointsPerElement .ne. 0) then 
+    if (revalElementSet%npointsPerElement .ne. 0) then
       ! Structure already initialised
       npointsPerElement = revalElementSet%npointsPerElement
     else if (present(Dpoints)) then
@@ -282,7 +282,7 @@ contains
       end if
       revalElementSet%p_DpointsRef => DpointsRef
       revalElementSet%bforeignPointsRef = .true.
-    end if 
+    end if
 
     if (present(DpointsReal)) then
       ! Save a pointer to DpointReal
@@ -292,7 +292,7 @@ contains
       end if
       revalElementSet%p_DpointsReal => DpointsReal
       revalElementSet%bforeignPointsReal = .true.
-    end if 
+    end if
 
     ! Is the structure initialised?
     ! If yes, check the size of all the arrays. If it is different, deallocate
@@ -301,7 +301,7 @@ contains
 
       ! Corner coordinates for the transformation
       if (iand(cevaluationTag,EL_EVLTAG_COORDS      ) .ne. 0) then
-        if (size(revalElementSet%p_Dcoords) .lt. & 
+        if (size(revalElementSet%p_Dcoords) .lt. &
             (ndim*nverticesPerElement*nelements)) then
           if (.not. revalElementSet%bforeignCoords) then
             ! Release the old Dcoords to create a new one.
@@ -311,12 +311,12 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,'elprep_prepareSetForEvaluation')
             call sys_halt()
           end if
-        end if 
+        end if
       end if
     
       if (iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) then
         if (associated(revalElementSet%p_DpointsRef)) then
-          if (size(revalElementSet%p_DpointsRef) .lt. & 
+          if (size(revalElementSet%p_DpointsRef) .lt. &
               (ndimRef*npointsPerElement*nelements)) then
             if (.not. revalElementSet%bforeignPointsRef) then
               deallocate(revalElementSet%p_DpointsRef)
@@ -394,14 +394,14 @@ contains
     end if
           
     ! Coordinates on the reference element are always necessary.
-    if ((iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) .or. &   
+    if ((iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) .or. &
         (iand(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .ne. 0)) then
         
       ! Create an empty array for the points if necessary.
       if (.not. associated(revalElementSet%p_DpointsRef)) then
         allocate(revalElementSet%p_DpointsRef(ndimRef,npointsPerElement,nelements))
         bemptyArray = .true.
-      else 
+      else
         bemptyArray = .false.
       end if
       
@@ -511,7 +511,7 @@ contains
     ! To be initialised.
     real(DP), dimension(:,:,:), intent(inout) :: DpointsRef
     
-    ! A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the points 
+    ! A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the points
     ! where to evaluate. These coordinates define on the reference the coordinates
     ! of the cubature points where to evaluate the element.
     real(DP), dimension(:,:), intent(in) :: Dpoints
@@ -540,7 +540,7 @@ contains
 
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine elprep_releaseElementSet (revalElementSet)
 
@@ -596,7 +596,7 @@ contains
 
   !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine elprep_prepareForEvaluation (revalElement, cevaluationTag, &
       rtriangulation, ielement, ctrafoType, DpointRef, DpointReal, Dcoords)
@@ -605,11 +605,11 @@ contains
   ! This subroutine prepares a t_evalElement structure to be used for
   ! the evaluation of a finite element in a single point on a single cell.
   ! Dpoint contains the coordinates on the reference element where to
-  ! evaluate. This point is mapped onto the element ielement from the 
+  ! evaluate. This point is mapped onto the element ielement from the
   ! triangulation rtriangulation.
   ! cevaluationTag specifies an 'evaluation tag' that defines which
   ! information must be prepared by this routine; that tag can be obtained
-  ! by asking the finite element what it needs by calling 
+  ! by asking the finite element what it needs by calling
   ! elem_getEvaluationTag.
 !</description>
 
@@ -640,7 +640,7 @@ contains
   real(DP), dimension(:), optional :: DpointRef
   
   ! OPTIONAL: A tuple (x,y) (or (x,y,z) in 3D) of the point where to evaluate
-  ! on the real element. 
+  ! on the real element.
   !
   ! If not specified, the routine will automatically calculate its position
   ! if necessary.
@@ -674,7 +674,7 @@ contains
     end if
           
     ! Coordinates on the reference element are always necessary.
-    if ((iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) .or. &   
+    if ((iand(cevaluationTag,EL_EVLTAG_REFPOINTS   ) .ne. 0) .or. &
         (iand(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .ne. 0)) then
       
       ! Calculate the coordinates on the reference element
@@ -717,7 +717,7 @@ contains
         ! Save the coordinates
         revalElement%DpointReal(1:min(NDIM3D,size(DpointReal))) = &
             DpointReal(1:min(NDIM3D,size(DpointReal)))
-      end if 
+      end if
 
     end if
 
@@ -740,4 +740,4 @@ contains
     
   end subroutine
   
-end module 
+end module

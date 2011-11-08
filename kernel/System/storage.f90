@@ -7,8 +7,8 @@
 !# This module contains the FEAT implementation of the global memory
 !# management. The usual memory management in Fortran 90 uses pointers
 !# for referring to a memory block. As this handling is rather nasty in
-!# many circumstances (e.g. it is hard to set up something like an 
-!# 'array of pointers'), we decided to implement our own memory management - 
+!# many circumstances (e.g. it is hard to set up something like an
+!# 'array of pointers'), we decided to implement our own memory management -
 !# based on ALLOCATE and DEALLOCATE.
 !#
 !# The new memory management makes use of 'handles'. A handle is an integer
@@ -26,7 +26,7 @@
 !# CHAR variables.
 !#
 !# Before any memory is allocated, the memory management must be initialised
-!# by a call to 'storage_init'! 
+!# by a call to 'storage_init'!
 !#
 !# The following routines can be found here:
 !#
@@ -256,7 +256,7 @@ module storage
     ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
     integer :: idataType = ST_NOHANDLE
 
-    ! Dimension associated to the handle 
+    ! Dimension associated to the handle
     ! (0=not assigned, 1=1D, 2=2D array, 3=3D array)
     integer :: idimension = 0
 
@@ -1746,7 +1746,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
     
@@ -1887,7 +1887,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
     
@@ -2021,7 +2021,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
     
@@ -2162,7 +2162,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
     
@@ -2298,7 +2298,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
     
@@ -2449,7 +2449,7 @@ contains
     ! Back up the array name. This is important for a very crual situation:
     ! The storage_newhandle below may reallocate the p_Rdescriptors array.
     ! If sname points to one of the old arrays, the pointer gets invalid
-    ! and the name cannot be accessed anymore. So make a backup of that 
+    ! and the name cannot be accessed anymore. So make a backup of that
     ! before creating a new handle!
     snameBackup = sname
     
@@ -2841,7 +2841,7 @@ contains
 #endif
     end if
 
-    ! Release the memory assigned to that 
+    ! Release the memory assigned to that
     if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
     if (associated(p_rnode%p_Ddouble1D))  deallocate(p_rnode%p_Ddouble1D)
     if (associated(p_rnode%p_Qquad1D))    deallocate(p_rnode%p_Qquad1D)
@@ -11771,7 +11771,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11792,7 +11792,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11813,7 +11813,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11834,7 +11834,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11855,7 +11855,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11885,7 +11885,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11906,7 +11906,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11927,7 +11927,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11948,7 +11948,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11969,7 +11969,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -11999,7 +11999,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12020,7 +12020,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12041,7 +12041,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12062,7 +12062,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12083,7 +12083,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12113,7 +12113,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12134,7 +12134,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12155,7 +12155,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12176,7 +12176,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12197,7 +12197,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12227,7 +12227,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12248,7 +12248,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12269,7 +12269,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12290,7 +12290,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -12311,7 +12311,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do j=1,Ilength(2)
           do i=1,Ilength(1)
@@ -13242,7 +13242,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13269,7 +13269,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13296,7 +13296,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13323,7 +13323,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13350,7 +13350,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13386,7 +13386,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13413,7 +13413,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13440,7 +13440,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13467,7 +13467,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13494,7 +13494,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13530,7 +13530,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13557,7 +13557,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13584,7 +13584,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13611,7 +13611,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13638,7 +13638,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13674,7 +13674,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13701,7 +13701,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13728,7 +13728,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13755,7 +13755,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13782,7 +13782,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13818,7 +13818,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13845,7 +13845,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13872,7 +13872,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13899,7 +13899,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -13926,7 +13926,7 @@ contains
           call output_line ('Subarrays incompatible!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
           call sys_halt()
-        end if      
+        end if
         ! Copy by hand
         do k=1,Ilength(3)
           do j=1,Ilength(2)
@@ -15246,7 +15246,7 @@ contains
             end do
           end do
 
-        case (ST_DOUBLE)         
+        case (ST_DOUBLE)
           ! Copy by hand
           do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
             do i=Ilbound2DOld(1),Iubound2Dold(1)
@@ -15254,7 +15254,7 @@ contains
             end do
           end do
 
-        case (ST_QUAD)         
+        case (ST_QUAD)
           ! Copy by hand
           do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
             do i=Ilbound2DOld(1),Iubound2Dold(1)
@@ -15473,7 +15473,7 @@ contains
             end do
           end do
 
-        case (ST_DOUBLE)         
+        case (ST_DOUBLE)
           ! Copy by hand
           do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
             do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
@@ -15483,7 +15483,7 @@ contains
             end do
           end do
 
-        case (ST_QUAD)         
+        case (ST_QUAD)
           ! Copy by hand
           do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
             do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
@@ -15999,7 +15999,7 @@ contains
   ! The full qualified name of the object
   character(LEN=*), intent(in) :: sname
   
-  ! OPTIONAL: local heap structure to initialise. 
+  ! OPTIONAL: local heap structure to initialise.
   ! If not given, the global heap is initialised.
   type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
@@ -16342,7 +16342,7 @@ contains
   subroutine storage_restoreFpdbObject (rfpdbObjectItem, rheap)
 
 !<description>
-    ! This subroutine restores the heap structure from the abstract ObjectItem 
+    ! This subroutine restores the heap structure from the abstract ObjectItem
 !</description>
 
 !<input>
@@ -16351,9 +16351,9 @@ contains
 !</input>
 
 !<inputoutput>
-    ! OPTIONAL: local heap structure to initialise. 
+    ! OPTIONAL: local heap structure to initialise.
     ! If not given, the global heap is initialised.
-    type(t_storageBlock), intent(inout), target, optional :: rheap   
+    type(t_storageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 !</subroutine>
 
@@ -16920,7 +16920,7 @@ contains
 !<description>
   ! This function tries to determine the corresponding data type
   !  ST_XXX from the string stype and return ST_NOHANDLE otherwise.
-!</description>  
+!</description>
 
 !<input>
   character(LEN=*), intent(in) :: stype
@@ -16971,7 +16971,7 @@ contains
   subroutine storage_allocMemory (ihandle, rheap)
 
 !<description>
-  ! This routine allocates a memory block in the device memory 
+  ! This routine allocates a memory block in the device memory
   ! associated with the given handle of the heap. The handle
   ! must already be associated with some memory block.
 !</description>
@@ -17037,7 +17037,7 @@ contains
   subroutine storage_deallocMemory (ihandle, rheap)
 
 !<description>
-  ! This routine deallocates a memory block in the device memory 
+  ! This routine deallocates a memory block in the device memory
   ! associated with the given handle of the heap. The handle must
   ! already be associated with some memory block.
 !</description>
@@ -17478,7 +17478,7 @@ contains
 
       ! Copy memory block associated with handle ihandle from device
       ! memory to host memory; if memory is not allocated on device
-      ! then an error is thrown and the program terminates. 
+      ! then an error is thrown and the program terminates.
 
       ! Check if memory on device is allocated
       if (p_rnode%p_memAddress .eq. 0_I64) then
@@ -17896,7 +17896,7 @@ contains
 
       do j=1,n2
         do i=1,n1
-          Fsingle2D_t(n2*(i-1)+j) = Fsingle2D(n1*(j-1)+i)          
+          Fsingle2D_t(n2*(i-1)+j) = Fsingle2D(n1*(j-1)+i)
         end do
       end do
     end subroutine transposeOutOfPlace_Single2D
@@ -18541,7 +18541,7 @@ contains
   subroutine storage_clearMemory (ihandle, rheap)
 
 !<description>
-  ! This routine clears a memory block in the device memory 
+  ! This routine clears a memory block in the device memory
   ! associated with the given handle of the heap. The handle must
   ! already be associated with some memory block.
 !</description>

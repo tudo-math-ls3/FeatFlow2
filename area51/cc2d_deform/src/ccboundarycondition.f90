@@ -72,11 +72,11 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(INOUT), target :: rproblem
   
-  ! A vector structure for the solution vector. The discrete BC structures are 
+  ! A vector structure for the solution vector. The discrete BC structures are
   ! attached to that.
   type(t_vectorBlock), intent(INOUT) :: rvector
 
-  ! A vector structure for the RHS vector. The discrete BC structures are 
+  ! A vector structure for the RHS vector. The discrete BC structures are
   ! attached to that.
   type(t_vectorBlock), intent(INOUT) :: rrhs
 !</inputoutput>
@@ -86,7 +86,7 @@ contains
     ! local variables
     integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
@@ -162,7 +162,7 @@ contains
     ! local variables
     integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
@@ -252,7 +252,7 @@ contains
       ! if there are any.
       call vecfil_discreteNLPDropBCrhs (rrhs)
       
-      ! Implement discrete boundary conditions into RHS vector by 
+      ! Implement discrete boundary conditions into RHS vector by
       ! filtering the vector.
       call vecfil_discreteBCrhs (rrhs)
 
@@ -267,8 +267,8 @@ contains
     ! of the nonlinear iteration!
     !
     !  IF (bmatrices) THEN
-    !  
-    !    ! Implement discrete boundary conditions into the matrices on all 
+    !
+    !    ! Implement discrete boundary conditions into the matrices on all
     !    ! levels, too.
     !    ! In fact, this modifies the B-matrices. The A-matrices are overwritten
     !    ! later and must then be modified again!
@@ -277,7 +277,7 @@ contains
     !      CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
     !      CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
     !    END DO
-    !    
+    !
     !  END IF
 
   end subroutine

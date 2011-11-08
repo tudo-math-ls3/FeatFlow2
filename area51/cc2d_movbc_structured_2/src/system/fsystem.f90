@@ -229,9 +229,9 @@ module fsystem
     character(len=SYS_STRLEN) :: soutputDataFileName
 
     ! data output level: l .gt. 0 : perform advanced output on level l
-    !                    l .lt. 0 : perform standard output (with duplicate vertices) 
+    !                    l .lt. 0 : perform standard output (with duplicate vertices)
     !                               on level -l
-    !                    l=0 : perform no output 
+    !                    l=0 : perform no output
     integer :: ioutputDataLevel
 
     ! flag if advanced output shall be used (advanced means: on macro boundaries there
@@ -1391,7 +1391,7 @@ module fsystem
 !</subroutine>
 
 #ifndef HAS_INTRINSIC_IARGC
-    !Definition of iargc needed for 
+    !Definition of iargc needed for
     !* Sun Fortran 95 8.1,
     !* Compaq Fortran Compiler X5.4A-1684-46B5P,
     !* Portland Group pgf90 6.0-5
@@ -1438,7 +1438,7 @@ module fsystem
     !</output>
 !</subroutine>
 
-    !Copy of input string plus additional blank to have a 
+    !Copy of input string plus additional blank to have a
     !token delimiter even after last token.
     character(len=len(sbuffer) + 1) :: sbufCopy
 
@@ -1459,7 +1459,7 @@ module fsystem
 
     itokCount = 0
     itokensStart  = 1
-    itokensEnd    = len(trim(sbufCopy)) + 1  ! +1 to find also a delimiter 
+    itokensEnd    = len(trim(sbufCopy)) + 1  ! +1 to find also a delimiter
                                              ! after the last token
     icurrTokStart = itokensStart
     do idx = itokensStart, itokensEnd
@@ -2048,8 +2048,8 @@ module fsystem
 
     !<description>
     ! This routine flushes the buffers associated with an open output unit.
-    ! This normally happens when the file is closed or the program ends, 
-    ! but this routine ensures the buffers are flushed before any other 
+    ! This normally happens when the file is closed or the program ends,
+    ! but this routine ensures the buffers are flushed before any other
     ! processing occurs.
     !</description>
 
@@ -2398,7 +2398,7 @@ module fsystem
           t=Iarray(i)
           j=i-1
           do while (Iarray(j)>t)
-            j=j-1	  
+            j=j-1
             if (j .eq. 0) exit
           end do
           Iarray(j+2:i)=Iarray(j+1:i-1)

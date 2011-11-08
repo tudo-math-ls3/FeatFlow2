@@ -146,7 +146,7 @@ contains
   ! OPTIONAL: Boundary condition structure in space.
   type(t_discreteBC), intent(in), target, optional :: rdiscreteBC
   
-    ! Create the basic matrix  
+    ! Create the basic matrix
     call lsysbl_createMatBlockByDiscr (rmatvecTempl%p_rspaceDiscr,rsubmatrix)
     if (present(rdiscreteBC)) then
       rsubmatrix%p_rdiscreteBC => rdiscreteBC
@@ -502,7 +502,7 @@ contains
             if (irow .eq. 1) then
               call lsyssc_matrixLinearComb (&
                   rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
-                  -dcouplePrimalToDual*(1.0_DP-dtheta),& 
+                  -dcouplePrimalToDual*(1.0_DP-dtheta),&
                   rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                   rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
             else if (irow .eq. p_rtimeDiscr%nintervals) then
@@ -777,7 +777,7 @@ contains
                   rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                   rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                   
-            else             
+            else
               call lsyssc_matrixLinearComb (&
                   rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
                   rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
@@ -817,7 +817,7 @@ contains
                   rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                   rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                   
-            else             
+            else
             
               call lsyssc_matrixLinearComb (&
                   rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*dtheta,&
@@ -968,7 +968,7 @@ contains
   
   ! Determines whether the primal and/or dual operator should be applied
   ! to the vector.
-  ! =1: only primal, decoupled. =2: only dual, decoupled. 
+  ! =1: only primal, decoupled. =2: only dual, decoupled.
   ! =3: primal + dual, both decoupled.
   integer, intent(in) :: cprimaldual
   

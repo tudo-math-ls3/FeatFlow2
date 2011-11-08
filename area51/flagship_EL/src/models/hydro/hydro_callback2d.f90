@@ -156,7 +156,7 @@
 !#
 !# 38.) hydro_trafoDiffDenPreVel2d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 39.) hydro_calcBoundaryvalues2d
@@ -287,7 +287,7 @@ module hydro_callback2d
 
   type , public :: t_Particles
       !number of particles
-      integer :: nPart 
+      integer :: nPart
       ! element
       integer(I32) :: h_element
       integer, dimension(:), pointer :: p_element
@@ -312,17 +312,17 @@ module hydro_callback2d
       ! barycentric coordinates
       integer(I32) :: h_lambda1, h_lambda2, h_lambda3, h_lambda4
       real(DP), dimension(:), pointer :: p_lambda1, p_lambda2, p_lambda3, p_lambda4
-      ! diameter, mass and alpha_n 
+      ! diameter, mass and alpha_n
       integer(I32) :: h_diam, h_mass, h_alpha_n, h_temp, h_density
       real(DP), dimension(:), pointer :: p_diam, p_mass, p_alpha_n, p_temp, p_density
-      ! midpoints of the element 
+      ! midpoints of the element
       integer(I32) :: h_midpoints_el
       real(DP), dimension(:,:), pointer :: p_midpoints_el
-      ! volume fraction of the particles 
+      ! volume fraction of the particles
       integer(I32) :: h_PartVol, h_PartVolAver
       real(DP), dimension(:), pointer :: p_PartVol, p_PartVolAver
       integer :: iPartVolCount
-      ! volumepart of the particles 
+      ! volumepart of the particles
       integer(I32) :: h_PartVelox, h_PartVeloy
       real(DP), dimension(:), pointer :: p_PartVelox, p_PartVeloy
       ! gravity
@@ -1600,7 +1600,7 @@ contains
                               DmatrixCoeffsAtEdge(2,1,idx))*vi)+&
                   abs(0.5_DP*(DmatrixCoeffsAtEdge(2,2,idx)-&
                               DmatrixCoeffsAtEdge(2,1,idx)))*ci )
-#else      
+#else
       ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
@@ -1754,7 +1754,7 @@ contains
       vi = Y_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
       Ei = SPECIFIC_TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR2D,inode)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       MATRIX_HYDRO_2T_2D(DcoefficientsAtNode,1,inode,\
         dscale,DmatrixCoeffsAtNode(1,inode),DmatrixCoeffsAtNode(2,inode),ui,vi,Ei)
@@ -1825,7 +1825,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_2D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),uj,vj)
@@ -1985,7 +1985,7 @@ contains
       uj = X_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_2D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),uj,vj)
@@ -2247,7 +2247,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_2D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),uj,vj)
@@ -2632,7 +2632,7 @@ contains
       vj = Y_VELOCITY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
       Ej = SPECIFIC_TOTAL_ENERGY_2T_FROM_CONSVAR(DdataAtEdge,NVAR2D,2,idx)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_2D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),uj,vj)
@@ -5071,7 +5071,7 @@ contains
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -5604,7 +5604,7 @@ contains
 !!$        ! Get mirrored boundary region from collection structure
 !!$        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
 !!$            'rboundaryRegionMirror')
-!!$        
+!!$
 !!$        ! Get minimum/maximum parameter values from collection structure
 !!$        dminParam = rcollection%DquickAccess(3)
 !!$        dmaxParam = rcollection%DquickAccess(4)
@@ -5633,7 +5633,7 @@ contains
 !!$
 !!$        do iel = 1, nelements
 !!$          do ipoint = 1, npointsPerElement
-!!$        
+!!$
 !!$            ! Compute auxiliary quantities based on the internal state
 !!$            ! vector evaluated on the boundary
 !!$            pI = (GAMMA-1.0_DP)*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
@@ -5689,7 +5689,7 @@ contains
 !!$            else
 !!$              DstateM(4) = dvnI+2.0_DP*cI/(GAMMA-1.0_DP)
 !!$            end if
-!!$            
+!!$
 !!$            ! Convert Riemann invariants into conservative state variables
 !!$            cM = 0.25*(GAMMA-1.0_DP)*(DstateM(4)-DstateM(1))
 !!$            rM = (cM*cM/GAMMA/DstateM(2))**(1.0_DP/(GAMMA-1.0_DP))
@@ -5702,17 +5702,17 @@ contains
 !!$            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
 !!$            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
 !!$            DstateM(4) = pM/(GAMMA-1.0_DP) + 0.5_DP*rM*(dvnM**2+dvtM**2)
-!!$            
+!!$
 !!$            ! Setup the computed internal state vector
 !!$            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
 !!$            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
 !!$            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
 !!$            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-!!$            
+!!$
 !!$            ! Invoke Riemann solver
 !!$            call doRiemannSolver(DstateI, DstateM,&
 !!$                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Ddiff)
-!!$            
+!!$
 !!$            ! Store flux in the cubature points
 !!$            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Ddiff)
 !!$          end do
@@ -6342,11 +6342,11 @@ contains
 
     ! pointer to the neighbour elements adjacent to an element
     !
-    ! Handle to 
+    ! Handle to
     !       p_IneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
     ! For each element, the numbers of adjacent elements
     ! in mathematically positive sense, meeting the element in an edge.
-    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent 
+    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent
     ! to IEL along the edges (p_RedgesOnElement(IEL)\%Iedges(.)-NVT).
     ! This is the old KADJ array.
     !
@@ -6364,7 +6364,7 @@ contains
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -6392,7 +6392,7 @@ contains
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -6407,7 +6407,7 @@ contains
     ! Element number
     integer :: iel
  
-    ! Particle is in element 
+    ! Particle is in element
     logical :: binside
     
     ! Search mode
@@ -6422,7 +6422,7 @@ contains
     ! Variables for raytrace2D
 	integer :: iresult
 	    ! =1 : The element was found successfully.
-        ! =0 : The raytracing search broke down inside of the domain. 
+        ! =0 : The raytracing search broke down inside of the domain.
         ! =-1: The search broke down because the domain was left.
 
     integer :: ilastElement
@@ -6431,13 +6431,13 @@ contains
         ! If iresult= 0: Number of the last analysed element before the search
         !                was stopped.
         ! If iresult=-1: Number of the element through which the
-        !                domain was left. 
+        !                domain was left.
     integer :: ilastEdge
         ! Number of the last analysed edge. Range 1..NMT.
         ! If iresult= 1: ilastEdge=0
         ! If iresult= 0: Number of the last analysed edge before the search
         !                was stopped.
-        ! If iresult=-1: Number of the edge through which the domain was left. 
+        ! If iresult=-1: Number of the edge through which the domain was left.
 
 
     real(DP), dimension(2,4) :: DcornerCoords
@@ -6460,9 +6460,9 @@ contains
     
     ! Set particles position
     particlepos(1)= rParticles%p_xpos(iPart)
-    particlepos(2)= rParticles%p_ypos(iPart) 
+    particlepos(2)= rParticles%p_ypos(iPart)
    
-    ! Get searchmode (brute force, raytrace, etc.)  
+    ! Get searchmode (brute force, raytrace, etc.)
     call parlst_getvalue_string(rparlist, 'Hydro', "search", searchmode)
 
     select case(trim(searchmode))
@@ -6482,7 +6482,7 @@ contains
             if (rParticles%p_element(iPart)==0) rParticles%p_element(iPart)=1
    
 		    ! Calculate the distances to the midpoints
-		    do i = 1, 3 
+		    do i = 1, 3
 		      if (p_IneighboursAtElement(i,rParticles%p_element(iPart)) > 0) then
 			    adj = p_IneighboursAtElement(i,rParticles%p_element(iPart))
 			    distances(i+1) = (rParticles%p_xpos(iPart)-rParticles%p_midpoints_el(1,adj))**2.0_dp +&
@@ -6541,7 +6541,7 @@ contains
 
     ! pointer to array containing the elements adjacent to a vertex.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtVertex = array(1..*) of integer
     ! p_IelementsAtVertex ( p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1 )
     ! contains the number of the adjacent element in a vertex.
@@ -6560,17 +6560,17 @@ contains
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
 
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtVertexIdx=array [1..NVT+1] of integer.
     ! Index array for p_IelementsAtVertex of length NVT+1 for describing the
     ! elements adjacent to a corner vertex. for vertex IVT, the array
     ! p_IelementsAtVertex contains the numbers of the elements around this
-    ! vertex at indices 
+    ! vertex at indices
     !     p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1.
     ! By subtracting
     !     p_IelementsAtVertexIdx(IVT+1)-p_IelementsAtVertexIdx(IVT)
@@ -6580,7 +6580,7 @@ contains
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -6639,13 +6639,13 @@ contains
 	dy= rParticles%p_ypos(iPart)
 	
     ! Loop over the vertices of the element
-	SearchVertex: do Vert = 1, 3												
+	SearchVertex: do Vert = 1, 3
 		
 		!Current vertex
 		nVertex = p_IverticesAtElement(Vert, currentelm)
 			
 		! Loop over the element containing to the vertex
-		SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+		SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))
 											
 	    	if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
 				exit SearchElement
@@ -6667,7 +6667,7 @@ contains
             ! If the particle is in the element, then exit loop
             if (binside) then
                 exit SearchVertex
-            end if 
+            end if
             
 		end do SearchElement
 
@@ -6717,9 +6717,9 @@ contains
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
     
-    ! pointer to elements adjacent to the boundary. 
+    ! pointer to elements adjacent to the boundary.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all elements on the (real) boundary
     ! in mathematically positive sense.
@@ -6738,7 +6738,7 @@ contains
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -6746,7 +6746,7 @@ contains
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -6800,7 +6800,7 @@ contains
     ! Volume fraction of the particles in the current position of the particle
     real(DP) :: dVolFrac
     
-    ! Heat transfer, Nusselt number, Prandtl number and gas temperatue in the position of the particle 
+    ! Heat transfer, Nusselt number, Prandtl number and gas temperatue in the position of the particle
     real(DP) :: HeatTransfer_T, Nusselt, Prandtl, Temp_gas
     
     ! Thermal conductivity and heat capacity at constant pressure
@@ -6839,15 +6839,15 @@ contains
         p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
     ! Initialize local variables
-    rho_g= 0.0_dp 
-    C_W=0.0_dp 
-    Re_p=0.0_dp 
+    rho_g= 0.0_dp
+    C_W=0.0_dp
+    Re_p=0.0_dp
     Velo_rel=0.0_dp
     dt=0.0_dp
     c_pi=0.0_dp
     parttemp= 0.0_dp
     HeatTransfer_T= 0.0_dp
-    Nusselt= 0.0_dp 
+    Nusselt= 0.0_dp
     Prandtl= 0.0_dp
     Temp_gas= 0.0_dp
     ThermConductivity_g= 0.0_dp
@@ -6900,7 +6900,7 @@ contains
 	! Calculate velocity of the gas
 	rParticles%p_xvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*ux1_part + &
 									rParticles%p_lambda2(iPart)*ux2_part + &
-									rParticles%p_lambda3(iPart)*ux3_part 
+									rParticles%p_lambda3(iPart)*ux3_part
 	rParticles%p_yvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*uy1_part + &
 									rParticles%p_lambda2(iPart)*uy2_part + &
 									rParticles%p_lambda3(iPart)*uy3_part
@@ -6911,7 +6911,7 @@ contains
 
 	! Calculate the density of the gas in the position of the particle
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
-	        rho_gas(2) + rParticles%p_lambda3(iPart)*rho_gas(3) 
+	        rho_gas(2) + rParticles%p_lambda3(iPart)*rho_gas(3)
 
 
 	! Calculate the relative velocity
@@ -6939,7 +6939,7 @@ contains
     E_intern_part= c_v_part*rParticles%p_temp(iPart)
 
     ! Calculate total energies for phase k (gas and particles)
-    ! 
+    !
     ! E_k= e_k + \frac{1}{2}|u_k|^2
     !
     E_total_gas= E_intern_gas + (rParticles%p_xvelo_gas(iPart)**2.0_dp + &
@@ -6956,12 +6956,12 @@ contains
 	end if
 
 	! Calculate alpha_n
-	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8.0_dp 
+	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8.0_dp
 
     alpha_p= 0.00002_dp
     if (Velo_rel.ge.500) pause
     ! Compute the dragforce
-    ! F_D= \frac{3}{4} * C_W * \frac{\alpha_p \rho_g}{d_p} |u_g - u_p| (u_g - u_p) 
+    ! F_D= \frac{3}{4} * C_W * \frac{\alpha_p \rho_g}{d_p} |u_g - u_p| (u_g - u_p)
     F_D(1)= 3*C_W*alpha_p*rho_g*Velo_rel*(rParticles%p_xvelo_gas(iPart)-&
             rParticles%p_xvelo_old(iPart))/(rParticles%p_diam(iPart)*4)
     F_D(2)= 3*C_W*alpha_p*rho_g*Velo_rel*(rParticles%p_yvelo_gas(iPart)-&
@@ -7248,7 +7248,7 @@ contains
             call hydro_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
-	end if	
+	end if
 
     if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
     if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = maxval(p_DvertexCoords(1,:))
@@ -7286,9 +7286,9 @@ contains
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
     
-    ! pointer to elements adjacent to the boundary. 
+    ! pointer to elements adjacent to the boundary.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all elements on the (real) boundary
     ! in mathematically positive sense.
@@ -7307,7 +7307,7 @@ contains
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -7315,7 +7315,7 @@ contains
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -7390,7 +7390,7 @@ contains
     real(DP) :: random1, random2, random3
 
     ! Coordinates and velocity of the gas phase in the current position
-    real(DP), dimension(2) :: Dcurrpos 
+    real(DP), dimension(2) :: Dcurrpos
     real(DP), dimension(3) :: Dbarycoords
 
     ! Variables for starting position from PGM-file
@@ -7481,7 +7481,7 @@ contains
 	! Calculate velocity of the gas
 	rParticles%p_xvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*ux1_part + &
 									rParticles%p_lambda2(iPart)*ux2_part + &
-									rParticles%p_lambda3(iPart)*ux3_part 
+									rParticles%p_lambda3(iPart)*ux3_part
 	rParticles%p_yvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*uy1_part + &
 									rParticles%p_lambda2(iPart)*uy2_part + &
 									rParticles%p_lambda3(iPart)*uy3_part
@@ -7489,7 +7489,7 @@ contains
 	! Calculate density of the gas
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + &
 			rParticles%p_lambda2(iPart)*rho_gas(2) + &
-			rParticles%p_lambda3(iPart)*rho_gas(3) 
+			rParticles%p_lambda3(iPart)*rho_gas(3)
 
     ! Scaling of the velocity for physical values
     rParticles%p_xvelo_gas(iPart)= velogasx*rParticles%p_xvelo_gas(iPart)
@@ -7505,7 +7505,7 @@ contains
     ! Reset all forces
     F_D = 0.0_dp
     F_G = 0.0_dp
-    F_VM = 0.0_dp 
+    F_VM = 0.0_dp
     F_B = 0.0_dp
     F_M = 0.0_dp
     F_S = 0.0_dp
@@ -7520,7 +7520,7 @@ contains
     
     ! Set temperature of the particles
     select case(isolutionpart)
-    case (11)  
+    case (11)
         !*******************************************************************
         ! implicit Euler method (interfacial forces)
         !*******************************************************************
@@ -7544,7 +7544,7 @@ contains
         if (0<Re_p .and. Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
         else
-	        C_W= 0.44_dp  !24.0_dp/Re_p 
+	        C_W= 0.44_dp  !24.0_dp/Re_p
         end if
 
         ! Compute \alpha= \frac{3}{4} * \frac{\rho_g}{d_p*\tho_p}*C_W*v_{rel}
@@ -7562,7 +7562,7 @@ contains
                 ! To compute the dragforce
                 ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 !(\Delta t * \alpha * v_g)  will be added to the numerator
-                ! and (\Delta t * \alpha) will be added to the denominator 
+                ! and (\Delta t * \alpha) will be added to the denominator
                 ! with \alpha=\frac{3}{4} \frac{\rho_g}{d_p*\rho_p} C_W * Velo_rel
                         
                 ! Add (dt*dalpha*v_g) to the numerator
@@ -7595,7 +7595,7 @@ contains
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/domscaley
 
  
-   case (1)  
+   case (1)
         !*******************************************************************
         ! explicit Euler method (interfacial forces)
         ! x_i+1 = x_i + \Delta t v_i
@@ -7682,7 +7682,7 @@ contains
         end do ! Loop over all forces
 
         ! Set resulting force for the particle
-        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1) 
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particle
@@ -7800,7 +7800,7 @@ contains
 
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -7811,10 +7811,10 @@ contains
             
         ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8035,7 +8035,7 @@ contains
 
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -8046,10 +8046,10 @@ contains
 
         ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8163,7 +8163,7 @@ contains
 
         ! Check if particle is out of the domain
 	    if (p2_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -8174,10 +8174,10 @@ contains
  
         ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8292,7 +8292,7 @@ contains
    
         ! Check if particle is out of the domain
 	    if (p3_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -8303,10 +8303,10 @@ contains
 
         ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8423,7 +8423,7 @@ contains
         rParticles%p_xvelo(iPart)= rk_k4(1)
         rParticles%p_yvelo(iPart)= rk_k4(2)
         
-    case (-1)  
+    case (-1)
         !*******************************************************************
         ! explicit Euler method (particle tracing)
         ! x_i+1 = x_i + \Delta t v_i
@@ -8454,7 +8454,7 @@ contains
  
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -8465,10 +8465,10 @@ contains
 
         ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8494,8 +8494,8 @@ contains
 					Dbarycoords(3) * uy3_part / rho_gas(3)
           
         ! Scaling the velocity
-        v1_i1(1)= v1_i1(1)*velogasx  
-        v1_i1(2)= v1_i1(2)*velogasx  
+        v1_i1(1)= v1_i1(1)*velogasx
+        v1_i1(2)= v1_i1(2)*velogasx
           
         ! Compute the new position with both velocities
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* &
@@ -8527,7 +8527,7 @@ contains
 
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -8538,10 +8538,10 @@ contains
 
         ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8567,8 +8567,8 @@ contains
 					Dbarycoords(3) * uy3_part / rho_gas(3)
 
         ! Scaling the velocity of the particle
-        v1_i1(1)= v1_i1(1)*velogasx  
-        v1_i1(2)= v1_i1(2)*velogasx  
+        v1_i1(1)= v1_i1(1)*velogasx
+        v1_i1(2)= v1_i1(2)*velogasx
 
         ! Compute the second position p2
         p2_i1(1)= rParticles%p_xpos(iPart) + dt*v1_i1(1)/(2.0_dp*domscalex)
@@ -8576,7 +8576,7 @@ contains
         
         ! Check if particle is out of the domain
 	    if (p2_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
 	    end if
@@ -8587,10 +8587,10 @@ contains
 
          ! Check if particle is out of the domain
 	    if (currentElement == 0) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
  
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8616,8 +8616,8 @@ contains
 					Dbarycoords(3) * uy3_part / rho_gas(3)
 
         ! Scaling the velocity
-        v2_i1(1)= v2_i1(1)*velogasx  
-        v2_i1(2)= v2_i1(2)*velogasx  
+        v2_i1(1)= v2_i1(1)*velogasx
+        v2_i1(2)= v2_i1(2)*velogasx
         
         ! Compute the third position p3
         p3_i1(1)= rParticles%p_xpos(iPart) + dt*v2_i1(1)/domscalex
@@ -8625,7 +8625,7 @@ contains
 
         ! Check if particle is out of the domain
 	    if (p3_i1(1).ge.rParticles%maxvalx) then
-	        ! If particle is out of the domain set new initial values 
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
         end if
@@ -8635,11 +8635,11 @@ contains
             rParticles,currentElement,iPart)
 
         ! Check if particle is out of the domain
-	    if (currentElement == 0) then 
-	        ! If particle is out of the domain set new initial values 
+	    if (currentElement == 0) then
+	        ! If particle is out of the domain set new initial values
 	        call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
 	        cycle
-	    end if     
+	    end if
 
         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
@@ -8665,8 +8665,8 @@ contains
 					Dbarycoords(3) * uy3_part / rho_gas(3)
  
         ! Scaling the velocity
-        v3_i1(1)= v3_i1(1)*velogasx  
-        v3_i1(2)= v3_i1(2)*velogasx  
+        v3_i1(1)= v3_i1(1)*velogasx
+        v3_i1(2)= v3_i1(2)*velogasx
           
         ! Set new position of the particle
         rParticles%p_xpos(iPart)= rParticles%p_xpos(iPart) + &
@@ -8687,10 +8687,10 @@ contains
  
  	! If the particle comes to the outlet
 	if (rParticles%p_xpos(iPart).ge.rParticles%maxvalx) then
-        ! If particle is out of the domain set new initial values 
+        ! If particle is out of the domain set new initial values
         call hydro_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
         cycle
-	end if	
+	end if
     
    	! Store old data
 	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
@@ -8734,9 +8734,9 @@ contains
     ! Current number of the particle
     integer, intent(in) :: iPart
     
-    ! pointer to elements adjacent to the boundary. 
+    ! pointer to elements adjacent to the boundary.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all elements on the (real) boundary
     ! in mathematically positive sense.
@@ -8755,7 +8755,7 @@ contains
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -8763,7 +8763,7 @@ contains
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -8808,7 +8808,7 @@ contains
     real(DP) :: particledensity, particledensitymin, particledensitymax
     real(DP) :: particlediam, particlediammin, particlediammax
     real(DP) :: parttemp, parttempmin, parttempmax
-    integer :: idensitypart, idiampart, itemppart, istartpos   
+    integer :: idensitypart, idiampart, itemppart, istartpos
    
     ! Scalar for velocity of the particles and the gas
     real(DP) :: velopartx, veloparty
@@ -8819,7 +8819,7 @@ contains
     real(DP) :: random1, random2, random3
 
     ! Coordinates and velocity of the gas phase in the current position
-    real(DP), dimension(2) :: Dcurrpos 
+    real(DP), dimension(2) :: Dcurrpos
     real(DP), dimension(3) :: Dbarycoords
 
     ! Variables for starting position from PGM-file
@@ -9145,7 +9145,7 @@ end subroutine hydro_setnewinitialvalue
 
     ! pointer to array containing the elements adjacent to a vertex.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtVertex = array(1..*) of integer
     ! p_IelementsAtVertex ( p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1 )
     ! contains the number of the adjacent element in a vertex.
@@ -9159,12 +9159,12 @@ end subroutine hydro_setnewinitialvalue
     integer, dimension(:), pointer :: p_IelementsAtVertex
 
 
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtVertexIdx=array [1..NVT+1] of integer.
     ! Index array for p_IelementsAtVertex of length NVT+1 for describing the
     ! elements adjacent to a corner vertex. for vertex IVT, the array
     ! p_IelementsAtVertex contains the numbers of the elements around this
-    ! vertex at indices 
+    ! vertex at indices
     !     p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1.
     ! By subtracting
     !     p_IelementsAtVertexIdx(IVT+1)-p_IelementsAtVertexIdx(IVT)
@@ -9173,11 +9173,11 @@ end subroutine hydro_setnewinitialvalue
 
     ! pointer to the neighbour elements adjacent to an element
     !
-    ! Handle to 
+    ! Handle to
     !       p_IneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
     ! For each element, the numbers of adjacent elements
     ! in mathematically positive sense, meeting the element in an edge.
-    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent 
+    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent
     ! to IEL along the edges (p_RedgesOnElement(IEL)\%Iedges(.)-NVT).
     ! This is the old KADJ array.
     !
@@ -9204,7 +9204,7 @@ end subroutine hydro_setnewinitialvalue
     real(DP), dimension(2,4) :: Dvert_coord
 
     ! Local variables
-    integer :: ivt, Vert, Elm, nVertex   
+    integer :: ivt, Vert, Elm, nVertex
     logical :: binside
 
     ! Variables for midpoints_el
@@ -9250,7 +9250,7 @@ end subroutine hydro_setnewinitialvalue
         if (currentElement==0) currentElement=1
 
         ! Calculate the distances to the midpoints
-        do i = 1, 3 
+        do i = 1, 3
           if (p_IneighboursAtElement(i,currentElement) > 0) then
 	        adj = p_IneighboursAtElement(i,currentElement)
 	        distances(i+1) = (Dcurrpos(1)-rParticles%p_midpoints_el(1,adj))**2.0_dp +&
@@ -9291,13 +9291,13 @@ end subroutine hydro_setnewinitialvalue
     if (binside == .false.) then
         
         ! Loop over the vertices of the element
-        SearchVertex: do Vert = 1, 3												
+        SearchVertex: do Vert = 1, 3
 
             !Current vertex
             nVertex = p_IverticesAtElement(Vert, currentElement)
 
             ! Loop over the element containing to the vertex
-            SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+            SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))
     							
                 if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
                 exit SearchElement
@@ -9334,7 +9334,7 @@ end subroutine hydro_setnewinitialvalue
         Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
         Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
 
-        ! Get barycentric coordinates for the current position    
+        ! Get barycentric coordinates for the current position
         call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
                 Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
     
@@ -9349,7 +9349,7 @@ end subroutine hydro_setnewinitialvalue
         
         ! iresult
         ! =1 : The element was found successfully.
-        ! =0 : The raytracing search broke down inside of the domain. 
+        ! =0 : The raytracing search broke down inside of the domain.
         ! =-1: The search broke down because the domain was left.
         ! =-2: The maximum number of iterations was exceeded
 
@@ -9358,15 +9358,15 @@ end subroutine hydro_setnewinitialvalue
         ! If iresult= 0: Number of the last analysed element before the search
         !                was stopped.
         ! If iresult=-1: Number of the element through which the
-        !                domain was left. 
+        !                domain was left.
         ! If iresult=-2: Number of the last element in the raytracing search
 
         ! ilastEdge: Number of the last analysed edge. Range 1..NMT.
         ! If iresult= 1: ilastEdge=0
         ! If iresult= 0: Number of the last analysed edge before the search
         !                was stopped.
-        ! If iresult=-1: Number of the edge through which the domain was left. 
-        ! If iresult=-2: Number of the last edge 
+        ! If iresult=-1: Number of the edge through which the domain was left.
+        ! If iresult=-2: Number of the last edge
   
         if (iresult ==  1) then
             ! Store coordinates of cornervertices
@@ -9377,7 +9377,7 @@ end subroutine hydro_setnewinitialvalue
             Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
             Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
 
-            ! Get barycentric coordinates for the current position    
+            ! Get barycentric coordinates for the current position
             call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
                     Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
 
@@ -9389,12 +9389,12 @@ end subroutine hydro_setnewinitialvalue
         elseif (iresult == -1) then
         
             ! If the particle has left the domain search for particle-wall-collisions
-            call hydro_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)     
+            call hydro_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
 
         end if !iresult
      
         ! If element hasn't found use brute force method
-        if (currentElement== 0) then  
+        if (currentElement== 0) then
             
             ! Reset the starting element
             currentElement = rParticles%p_element(iPart)
@@ -9405,14 +9405,14 @@ end subroutine hydro_setnewinitialvalue
         end if
             
         ! If element wasn't found after brute force method check for particle wall collisions
-        if (currentElement== 0) then 
+        if (currentElement== 0) then
         
             ! If the particle has left the domain search for particle-wall-collisions
-            call hydro_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)     
+            call hydro_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
             
         end if
         
-        if (currentElement .ne. 0) then 
+        if (currentElement .ne. 0) then
           
             ! Store coordinates of cornervertices
             Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
@@ -9422,7 +9422,7 @@ end subroutine hydro_setnewinitialvalue
             Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
             Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
 
-            ! Get barycentric coordinates for the current position    
+            ! Get barycentric coordinates for the current position
             call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
                     Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
                   
@@ -9456,13 +9456,13 @@ end subroutine hydro_setnewinitialvalue
     ! current number of particle
     integer, intent(in) :: iPart
 
-    ! Pointer to nodal property array. 
-    ! Handle to 
+    ! Pointer to nodal property array.
+    ! Handle to
     !       p_InodalProperty=array [1..NVT+NMT+NAT] of integer.
     ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
     ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
     ! its function inside of the geometry.
-    ! Generally said, the range of the p_InodalProperty-array 
+    ! Generally said, the range of the p_InodalProperty-array
     ! characterizes the type of the node (=vertex/edge):
     ! = 0    : The vertex/edge is an inner vertex/edge
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
@@ -9474,16 +9474,16 @@ end subroutine hydro_setnewinitialvalue
     ! In case there are hanging nodes in the mesh, this array
     ! has a special meaning for all hanging vertices and all edges
     ! containing hanging vertices.  Values < 0 indicate hanging
-    ! vertices at an edge. 
+    ! vertices at an edge.
     ! Let iedgeC (NVT+1..NVT+NMT) be the number of
-    ! a a 'full' edge containing the hanging vertex jvertex. 
+    ! a a 'full' edge containing the hanging vertex jvertex.
     ! Let iedge be one of the sub-edges inside of edge iedgeC.
     ! Then there is:
     !   p_InodalProperty(jvertex) = -iedgeC
     !   p_InodalProperty(iedge)   = -iedgeC
     !   p_InodalProperty(iedgeC)  = -jvertex
     ! Let kfaceC (NVT+NMT+1..NVT+NMT+NAT) be the number of a 'full' face
-    ! containing the hanging vertex jvertex. 
+    ! containing the hanging vertex jvertex.
     ! Let kface be the number of a one of the subfaces inside
     ! the face kfaceC. Let iedge be the number of one of the sub-edges
     ! inside face kfaceC.
@@ -9499,27 +9499,27 @@ end subroutine hydro_setnewinitialvalue
     integer, dimension(:), pointer :: p_InodalProperty
  
     ! Pointer to edges Adjacent to an Element.
-    ! Handle to 
+    ! Handle to
     !       p_IedgesAtElement = array [1..NVE,1..NEL] of integer
     ! For each element the node numbers of the edges following the
     ! corner vertices in mathematically positive sense.
     ! This is the old KMID array.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IedgesAtElement(4,.)=0 for a triangle in a quad mesh.
-    ! To be able to distinguish a number of an edge from a vertex number, 
-    ! edges are numbered in the range NVT+1..NVT+NMT. 
+    ! To be able to distinguish a number of an edge from a vertex number,
+    ! edges are numbered in the range NVT+1..NVT+NMT.
     integer, dimension(:,:), pointer :: p_IedgesAtElement
 
-    ! Pointer to vertices Adjacent to an Edge. 
-    ! Handle to 
+    ! Pointer to vertices Adjacent to an Edge.
+    ! Handle to
     !       p_IverticesAtEdge = array [1..2,1..NMT]
-    ! The numbers of the two vertices adjacent to an edge IMT. 
+    ! The numbers of the two vertices adjacent to an edge IMT.
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
    
-    ! pointer to vertices on boundary. 
+    ! pointer to vertices on boundary.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IverticesAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all vertices on the (real) boundary
     ! in mathematically positive sense.
@@ -9528,12 +9528,12 @@ end subroutine hydro_setnewinitialvalue
     ! This is the old KVBD array.
     integer, dimension(:), pointer :: p_IverticesAtBoundary
 
-    ! pointer to edges adjacent to the boundary. 
+    ! pointer to edges adjacent to the boundary.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IedgesAtBoundary = array [1..NMBD] of integer.
     ! This array contains a list of all edges on the (real) boundary.
-    ! 2D: in mathematically positive sense. 
+    ! 2D: in mathematically positive sense.
     ! 3D: with increasing number.
     ! The boundary edges of boundary component i are saved at
     !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1.
@@ -9542,9 +9542,9 @@ end subroutine hydro_setnewinitialvalue
     !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1 ).
     integer, dimension(:), pointer :: p_IedgesAtBoundary
 
-    ! pointer to elements adjacent to the boundary. 
+    ! pointer to elements adjacent to the boundary.
     !
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all elements on the (real) boundary
     ! in mathematically positive sense.
@@ -9559,7 +9559,7 @@ end subroutine hydro_setnewinitialvalue
     ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -9587,7 +9587,7 @@ end subroutine hydro_setnewinitialvalue
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -9595,7 +9595,7 @@ end subroutine hydro_setnewinitialvalue
     ! pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! local variables	
+    ! local variables
 	real(DP), dimension(2) :: velo_rest
 	real(DP) :: proj_tang, proj_norm
 	real(DP), dimension(2) :: bdy_move
@@ -9688,7 +9688,7 @@ end subroutine hydro_setnewinitialvalue
 		    velo_rest(2)= velo_rest(2)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
         end if
 
-		! Tangent in x-direction 
+		! Tangent in x-direction
 		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
 		! Tangent in y-direction
 		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
@@ -9779,7 +9779,7 @@ end subroutine hydro_setnewinitialvalue
     !
     ! 2D triangulation: Array with area of each element.
     ! 3D triangulation: Array with volume of each element.
-    ! Handle to 
+    ! Handle to
     !       p_DelementArea = array [1..NEL+1] of double.
     ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
     real(DP), dimension(:), pointer :: p_DelementVolume
@@ -9790,7 +9790,7 @@ end subroutine hydro_setnewinitialvalue
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -9802,7 +9802,7 @@ end subroutine hydro_setnewinitialvalue
 	integer :: i, current, ivt
 	real(DP) :: c_pi
 
-    ! Clean array for new computation of the volume fraction 
+    ! Clean array for new computation of the volume fraction
     rParticles%p_PartVol= 0
     
     ! Rise the counter for new volume fraction computation
@@ -9875,7 +9875,7 @@ end subroutine hydro_setnewinitialvalue
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -9884,7 +9884,7 @@ end subroutine hydro_setnewinitialvalue
     !
     ! 2D triangulation: Array with area of each element.
     ! 3D triangulation: Array with volume of each element.
-    ! Handle to 
+    ! Handle to
     !       p_DelementArea = array [1..NEL+1] of double.
     ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
     real(DP), dimension(:), pointer :: p_DelementVolume

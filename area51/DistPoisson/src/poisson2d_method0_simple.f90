@@ -95,12 +95,12 @@ contains
     type(t_matrixBlock) :: rmatrixBlock
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock,rgradient
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
     type(t_discreteFBC), target :: rdiscreteFBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -132,15 +132,15 @@ contains
     real(DP), dimension(:), pointer :: p_gradx
     real(DP), dimension(:), pointer :: p_grady
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(dp) :: ddist    
+    real(dp) :: ddist
     external initcurve
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 6
     call initcurve()
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -181,7 +181,7 @@ contains
                                      EL_E011,CUB_G2X2,rtriangulation, rboundary)
                                    
                                    
-    call lsysbl_createVecBlockByDiscr (rdiscretisationgrad,rgradient,.true.)                 
+    call lsysbl_createVecBlockByDiscr (rdiscretisationgrad,rgradient,.true.)
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -203,8 +203,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -259,7 +259,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -267,19 +267,19 @@ contains
 !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
 !                                       rboundaryRegion,rdiscreteBC,&
 !                                       getBoundaryValues_2D)
-!                             
+!
 !    ! Now to the edge 2 of boundary component 1 the domain.
 !    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
 !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
 !                                       rboundaryRegion,rdiscreteBC,&
 !                                       getBoundaryValues_2D)
-!                             
+!
 !    ! Edge 3 of boundary component 1.
 !    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
 !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
 !                                       rboundaryRegion,rdiscreteBC,&
 !                                       getBoundaryValues_2D)
-!    
+!
 !    ! Edge 4 of boundary component 1. That is it.
 !    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
 !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
@@ -295,7 +295,7 @@ contains
     ! vector.
     rmatrixBlock%p_rdiscreteBC => rdiscreteBC
     rrhsBlock%p_rdiscreteBC => rdiscreteBC
-    rmatrixBlock%p_rdiscreteBCfict => rdiscreteFBC    
+    rmatrixBlock%p_rdiscreteBCfict => rdiscreteFBC
     rrhsBlock%p_rdiscreteBCfict => rdiscreteFBC
     
                              
@@ -342,7 +342,7 @@ contains
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -368,7 +368,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -390,16 +390,16 @@ contains
 
     
     do i = 1, size(p_Ddata)
-         p_Ddata(i) =sqrt( (p_gradx(i)**2) + (p_grady(i)**2) +2*p_Ddata(i) ) -sqrt((p_gradx(i)**2) + (p_grady(i)**2)) 
+         p_Ddata(i) =sqrt( (p_gradx(i)**2) + (p_grady(i)**2) +2*p_Ddata(i) ) -sqrt((p_gradx(i)**2) + (p_grady(i)**2))
     end do
     
-    call ucd_addVariableVertexBased (rexport,'distance',UCD_VAR_STANDARD, p_Ddata)    
+    call ucd_addVariableVertexBased (rexport,'distance',UCD_VAR_STANDARD, p_Ddata)
     
     do i = 1, size(p_Ddata)
       call getdistance(p_DvertexCoords(1,i),p_DvertexCoords(2,i),p_Ddata(i))
     end do
     
-    call ucd_addVariableVertexBased (rexport,'analytic',UCD_VAR_STANDARD, p_Ddata)        
+    call ucd_addVariableVertexBased (rexport,'analytic',UCD_VAR_STANDARD, p_Ddata)
 
     eps=0.016_dp
     print *,rtriangulation%NVT
@@ -417,7 +417,7 @@ contains
 
     end do
 
-    call ucd_addVariableVertexBased (rexport,'FBM',UCD_VAR_STANDARD, p_Ddata)        
+    call ucd_addVariableVertexBased (rexport,'FBM',UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -465,7 +465,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that is it.

@@ -18,7 +18,7 @@
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
-!# 
+!#
 !# 2.) coeff_RHS_2D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 2D case, Q2 bubble solution.
@@ -157,8 +157,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -233,8 +233,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -251,7 +251,7 @@ contains
 
     !    u(x,y) = 16*x*(1-x)*y*(1-y)
     ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
-    Dcoefficients (1,:,:) = 0.0_DP 
+    Dcoefficients (1,:,:) = 0.0_DP
 !     Dcoefficients (1,:,:) = 32.0_DP * &
 !                     ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
 !                       Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
@@ -318,8 +318,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -336,7 +336,7 @@ contains
 
     !    u(x,y) = 16*x*(1-x)*y*(1-y)
     ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
-    !Dcoefficients (1,:,:) = 0.0_DP 
+    !Dcoefficients (1,:,:) = 0.0_DP
     Dcoefficients (1,:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
                               Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
 
@@ -410,8 +410,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -447,7 +447,7 @@ contains
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
-! ! ---------------------------For Sin Function--------  
+! ! ---------------------------For Sin Function--------
 !  select case (cderivative)
 !   case (DER_FUNC)
 !     ! u(x,y) = SIN(PI * x) * SIN(PI * y)
@@ -464,7 +464,7 @@ contains
 !     ! Unknown. Set the result to 0.0.
 !     Dvalues = 0.0_DP
 !   end select
-! 
+!
   end subroutine
 
 
@@ -488,9 +488,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -511,38 +511,38 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -591,9 +591,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -614,38 +614,38 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>

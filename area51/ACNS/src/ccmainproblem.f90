@@ -5,14 +5,14 @@
 !#
 !# <purpose>
 !# This module is a program how to solve a nonstationary
-!# Navier-Stokes problem 
+!# Navier-Stokes problem
 !#
 !#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p = f $$
 !#              $$ \Nable \cdot p = 0$$
 !#
 !# on a 2D domain for a 2D function $u=(u_1,u_2)$ and a pressure $p$.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -69,7 +69,7 @@ contains
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (This is somehow a cleaner implementation than using a collection!).
@@ -106,10 +106,10 @@ contains
 
     ! A problem structure saving problem-dependent information.
     type(t_ACproblem) :: rACproblem
-!    
+!
 !    ! A structure for the solution vector and the RHS vector of the problem.
     type(t_vectorBlock) :: rACvector,rACrhs
-!    
+!
 !    ! A structure for the postprocessing.
     type(t_c2d2postprocessing) :: rACpostprocessing
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,7 +130,7 @@ contains
     real(DP), dimension(:), pointer ::  p_data
 !    integer :: mcai
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
 
     ! Initialise the timers by zero:
     call stat_clearTimer(rtimerTotal)
@@ -151,7 +151,7 @@ contains
     ! Initialise the parameter list object. This creates an empty parameter list.
     call parlst_init (p_rproblem%rparamList)
     
-    ! Read parameters from the INI/DAT files into the parameter list. 
+    ! Read parameters from the INI/DAT files into the parameter list.
     call cc2d_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
@@ -207,7 +207,7 @@ contains
       call output_separator (OU_SEP_MINUS)
       call output_line('Initialising discretisation...')
     end if
-    call cc_initDiscretisation (p_rproblem)    
+    call cc_initDiscretisation (p_rproblem)
 
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
       call output_lbrk ()
@@ -233,7 +233,7 @@ contains
     
     call stat_startTimer(rtimerMatrixGeneration)
     
-    call cc_allocMatVec (p_rproblem,rvector,rrhs)    
+    call cc_allocMatVec (p_rproblem,rvector,rrhs)
     
     call stat_stopTimer(rtimerMatrixGeneration)
     call output_lbrk ()
@@ -278,7 +278,7 @@ contains
     allocate (rACproblem%RlevelInfo(rACproblem%NLMAX))
 
     call AC_initParamTriang (rACproblem%NLMIN,rACproblem%NLMAX,rACproblem)
-    call AC_initDiscretisation (rACproblem)    
+    call AC_initDiscretisation (rACproblem)
    
     call output_line('AC problem, Generating basic matrices...')
 !~~~~~~Here, we do not need NS problem
@@ -286,14 +286,14 @@ contains
 
     ! Use the auxiliary RHS vector on the finest level to create an
     ! initial RHS and solution vector, which we pass later to the timeloop.
-!~~~Here, is the problem? we did this part follow heat_cond, however, 
+!~~~Here, is the problem? we did this part follow heat_cond, however,
 ! in AC_initSolution, we follow cc_2d style.
     call lsysbl_createVecBlockIndirect (rACproblem%rrhs,rACrhs,.FALSE.)
     call lsysbl_createVecBlockIndirect (rACproblem%rrhs,rACvector,.TRUE.)
 
     ! Calculate the initial RHS, don't incorporate any BC's.
     !Here, we do not need rNSproblem, rNSvector....
-    call AC_calcRHS (rACproblem,rACvector,rACrhs)  
+    call AC_calcRHS (rACproblem,rACvector,rACrhs)
 
 ! debug
 !     call lsysbl_scaleVector(rACRhs, 0.0_DP)
@@ -329,14 +329,14 @@ contains
    call storage_getbase_double2D(rACproblem%RlevelInfo(rACproblem%NLMAX)%rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
      do i=1,rACproblem%RlevelInfo(rACproblem%NLMAX)%rtriangulation%NVT
-          call AllenCahn_inicon(p_DvertexCoords(1,i),p_DvertexCoords(2,i), p_vectordata(i))	
+          call AllenCahn_inicon(p_DvertexCoords(1,i),p_DvertexCoords(2,i), p_vectordata(i))
      end do
 
 !     call lsyssc_getbaseVector_double(rACvector%rvectorBlock(1), p_data)
   !   mcai = ubound(rACvector%rvectorBlock(1))
 !     do i=1, rACvector%rvectorBlock(1)%NEQ
 !         print *, p_data(i)
-!     end do 
+!     end do
 !     stop
 !~~~~~~
 !     stop ! first check the initial soluion is correct or not?
@@ -359,9 +359,9 @@ contains
         call output_line('Generating RHS vector...')
       end if
 
-! 
+!
 !Mcai, we should use the following, because at the very beginning, we need rACvector
-!therefore, we need to have the initial solution of rACvector. 
+!therefore, we need to have the initial solution of rACvector.
       call cc_generateBasicRHS (p_rproblem, rrhs, &
 	           rvector, rACproblem, rACvector, rACrhs)
       
@@ -371,7 +371,7 @@ contains
 !      stop
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      ! Initialise the boundary conditions, but 
+      ! Initialise the boundary conditions, but
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
@@ -389,9 +389,9 @@ contains
       
       call stat_startTimer(rtimerSolver)
 
-!~~~~~~~We need to modify the code here, solve both NS and Allen-Cahn equation~~      
-!~~~We may need more input parameters for rACproblem, rACvector, rACrhs, 
-!~~~~rACpostprocessing etc. 
+!~~~~~~~We need to modify the code here, solve both NS and Allen-Cahn equation~~
+!~~~We may need more input parameters for rACproblem, rACvector, rACrhs,
+!~~~~rACpostprocessing etc.
 !      call ACNS_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
 
 !~~~~~~~~~~Before, we go to next step, stop, make sure all ... are correct~~~
@@ -399,7 +399,7 @@ contains
        call ACNS_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing, &
                                rACproblem, rACvector, rACrhs, rACpostprocessing)
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       call stat_stopTimer(rtimerSolver)
       
     end if
@@ -417,7 +417,7 @@ contains
    call AC_doneParamTriang (rACproblem)
 !~~~~~~~~~~Release memory of AC problem~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    ! Gather statistics    
+    ! Gather statistics
     p_rproblem%rstatistics%dtimeSolver = &
       p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
     
@@ -428,7 +428,7 @@ contains
     call cc_doneMatVec (p_rproblem,rvector,rrhs)
     call cc_doneBC (p_rproblem)
     call cc_doneDiscretisation (p_rproblem)
-    call cc_donepostprocessing (rpostprocessing)    
+    call cc_donepostprocessing (rpostprocessing)
     call cc_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
@@ -450,7 +450,7 @@ contains
     ! Stop the timer
     call stat_stopTimer(rtimerTotal)
 
-    ! Gather statistics    
+    ! Gather statistics
     p_rproblem%rstatistics%dtimeTotal = &
       p_rproblem%rstatistics%dtimeTotal + rtimerTotal%delapsedReal
     
@@ -500,7 +500,7 @@ contains
 
     call output_line ("Total number of calculated timesteps:   "//&
       trim(sys_siL(p_rproblem%rstatistics%ntimesteps,10)))
-    ! That's it.    
+    ! That's it.
     deallocate(p_rproblem)
 
 !~~~~~~~~~~~~~~~~~~~~~~End of postprocessing of NS Equation~~~~~~~~~~~~~~~~~

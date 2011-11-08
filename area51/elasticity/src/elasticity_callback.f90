@@ -110,7 +110,7 @@ contains
     
 !<description>
     ! This subroutine is called during the vector assembly. It computes the function f
-    ! in the linear form (usually L(v) = (f,v)_0 + (g,v)_N), i.e. the volumetric 
+    ! in the linear form (usually L(v) = (f,v)_0 + (g,v)_N), i.e. the volumetric
     ! contributions.
 !</description>
     
@@ -259,7 +259,7 @@ contains
       enddo
     enddo
 
-    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
+    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       ! in case of an analytical test function, the Neumann contributions are given by
       ! grad(u) * n, where n is the normal vector
 
@@ -277,7 +277,7 @@ contains
       do iel = 1, nel
         do ipoint = 1, nptsPerEl
           ! get the parameter value corresponding to the current boundary point
-          dt = DpointPar(ipoint,iel) 
+          dt = DpointPar(ipoint,iel)
           ! Compute the normal vector in the current boundary point. At the endpoints of
           ! the interval the normal vector is based on the current edge.
           if (DpointPar(ipoint,iel) .eq. dminPar) then
@@ -583,7 +583,7 @@ contains
       do iel = 1, nel
         do ipoint = 1, nptsPerEl
           ! get the parameter value corresponding to the current boundary point
-          dt = DpointPar(ipoint,iel) 
+          dt = DpointPar(ipoint,iel)
           ! Compute the normal vector in the current boundary point. At the endpoints of
           ! the interval the normal vector is based on the current edge.
           if (DpointPar(ipoint,iel) .eq. dminPar) then
@@ -714,7 +714,7 @@ contains
     call elast_analFunc(2, DER_DERIV_X, rdiscretisation, nel, nptsPerEl, Dpoints, &
                         rdomainIntSubset, Du2x, rcollection)
     call elast_analFunc(2, DER_DERIV_Y, rdiscretisation, nel, nptsPerEl, Dpoints, &
-                        rdomainIntSubset, Du2y, rcollection)                       
+                        rdomainIntSubset, Du2y, rcollection)
     if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
         rprob%cformulation .eq. FORMULATION_STOKES) then
       ! Set rcollection%IquickAccess(4) = 1 in order to tell the routine
@@ -722,7 +722,7 @@ contains
       ! routine elast_calcErrors() in module elasticity_basic.)
       rcollection%IquickAccess(4) = 1
       call elast_analFunc(3, DER_FUNC, rdiscretisation, nel, nptsPerEl, Dpoints, &
-                          rdomainIntSubset, Dpfunc, rcollection)                       
+                          rdomainIntSubset, Dpfunc, rcollection)
     endif
     
     if (irow .eq. 1) then
@@ -751,7 +751,7 @@ contains
       call output_line('Invalid row number ' // trim(sys_siL(irow,4)) // '!', &
                        OU_CLASS_ERROR, OU_MODE_STD, 'elast_stressTensor')
       call sys_halt()
-    endif    
+    endif
 
     deallocate(Du1x, Du2x, Du1y, Du2y)
     if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
@@ -867,7 +867,7 @@ contains
           ! via p = - dlambda * div(u) = -dlambda * (u1_x + u2_y)
           Daux = -rprob%dlambda * &
             (elast_danalyticFunction(Dpoints, 1, 1, DER_DERIV_X, rprob%CfuncID(1)) &
-           + elast_danalyticFunction(Dpoints, 1, 1, DER_DERIV_Y, rprob%CfuncID(2)))  
+           + elast_danalyticFunction(Dpoints, 1, 1, DER_DERIV_Y, rprob%CfuncID(2)))
         endif
       endif
       Dvalues(1) = Daux(1,1)

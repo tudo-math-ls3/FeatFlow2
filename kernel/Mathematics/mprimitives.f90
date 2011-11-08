@@ -42,7 +42,7 @@
 !#
 !# 10.) mprim_signum
 !#      -> Signum function
-!# 
+!#
 !# 11.) mprim_linearRescale
 !#      -> Scales a coordinate x linearly from the interval [a,b] to the
 !#         interval [c,d]
@@ -207,7 +207,7 @@ contains
   ! Length of the line segment
   real(DP), intent(in) :: dlength
   
-  ! Maximum value of the profile 
+  ! Maximum value of the profile
   real(DP), intent(in) :: dmaxvalue
   
 !</input>
@@ -247,7 +247,7 @@ contains
       mprim_signum_dble = -1.0_DP
     else if (dval .gt. 0.0_DP) then
       mprim_signum_dble = 1.0_DP
-    else 
+    else
       mprim_signum_dble = 0.0_DP
     end if
 
@@ -278,7 +278,7 @@ contains
       mprim_signum_real = -1.0_SP
     else if (fval .gt. 0.0_SP) then
       mprim_signum_real = 1.0_SP
-    else 
+    else
       mprim_signum_real = 0.0_SP
     end if
 
@@ -324,10 +324,10 @@ contains
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
-    ! 
-    ! If the parameter ipar=0, then only factorization of matrix A is performed. 
-    ! For ipar=1, the vector x is calculated using the factorized matrix A. 
-    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f. 
+    !
+    ! If the parameter ipar=0, then only factorization of matrix A is performed.
+    ! For ipar=1, the vector x is calculated using the factorized matrix A.
+    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
     ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
     ! more expensive LAPACK routine.
 !</description>
@@ -349,7 +349,7 @@ contains
     integer, intent(in) :: ipar
 !</input>
 
-!<inputoutput> 
+!<inputoutput>
     ! source square matrix to be inverted
     real(DP), dimension(ndim,ndim), intent(inout) :: Da
 !</inputoutput>
@@ -374,7 +374,7 @@ contains
     real(DP) :: dpivot,daux
     integer :: idim1,idim2,ix,iy,indx,indy,info
 
-    interface 
+    interface
       pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
       use fsystem
       integer, intent(in) :: N,LDA,LDB,NRHS
@@ -417,7 +417,7 @@ contains
             &/dpivot
 
         do idim2=1,ndim
-          if (idim2 == indy) cycle 
+          if (idim2 == indy) cycle
           Da(1:indx-1,idim2)=Da(1:indx-1,idim2)-Da(1:indx-1,  &
               & indy)*Da(indx,idim2)/dpivot
           Da(indx+1:ndim,idim2)=Da(indx+1:ndim,idim2)-Da(indx+1:ndim&
@@ -466,7 +466,7 @@ contains
       end do
 
 
-    case (1)    
+    case (1)
       ! Perform inversion of Da to solve the system Da * Dx = Df
       do idim1=1,ndim
         Dx(idim1)=0
@@ -1285,7 +1285,7 @@ contains
           &/dpivot
 
       do idim2=1,ndim
-        if (idim2 == indy) cycle 
+        if (idim2 == indy) cycle
         Da(1:indx-1,idim2)=Da(1:indx-1,idim2)-Da(1:indx-1,  &
             & indy)*Da(indx,idim2)/dpivot
         Da(indx+1:ndim,idim2)=Da(indx+1:ndim,idim2)-Da(indx+1:ndim&
@@ -1345,10 +1345,10 @@ contains
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
-    ! 
-    ! If the parameter ipar=0, then only factorization of matrix A is performed. 
-    ! For ipar=1, the vector x is calculated using the factorized matrix A. 
-    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f. 
+    !
+    ! If the parameter ipar=0, then only factorization of matrix A is performed.
+    ! For ipar=1, the vector x is calculated using the factorized matrix A.
+    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
     ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
     ! more expensive LAPACK routine.
 !</description>
@@ -1370,7 +1370,7 @@ contains
     integer, intent(in) :: ipar
 !</input>
 
-!<inputoutput> 
+!<inputoutput>
     ! source square matrix to be inverted
     real(SP), dimension(ndim,ndim), intent(inout) :: Fa
 !</inputoutput>
@@ -1426,7 +1426,7 @@ contains
             &/fpivot
 
         do idim2=1,ndim
-          if (idim2 == indy) cycle 
+          if (idim2 == indy) cycle
           Fa(1:indx-1,idim2)=Fa(1:indx-1,idim2)-Fa(1:indx-1,  &
               & indy)*Fa(indx,idim2)/fpivot
           Fa(indx+1:ndim,idim2)=Fa(indx+1:ndim,idim2)-Fa(indx+1:ndim&
@@ -1475,7 +1475,7 @@ contains
       end do
 
 
-    case (1)    
+    case (1)
       ! Perform inversion of Da to solve the system Da * Dx = Df
       do idim1=1,ndim
         Fx(idim1)=0
@@ -1496,7 +1496,7 @@ contains
         Fb(2,2)= Fa(1,1)
         faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
             
-        if (faux .eq. 0.0_SP) return    
+        if (faux .eq. 0.0_SP) return
         
         Fx=matmul(Fb,Ff)/faux
 
@@ -1515,7 +1515,7 @@ contains
             &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
             &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
             
-        if (faux .eq. 0.0_SP) return    
+        if (faux .eq. 0.0_SP) return
         
         Fx=matmul(Fb,Ff)/faux
 
@@ -1585,7 +1585,7 @@ contains
             &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
             &,1)*Fa(4,2)
             
-        if (faux .eq. 0.0_SP) return    
+        if (faux .eq. 0.0_SP) return
         
         Fx=matmul(Fb,Ff)/faux
 
@@ -1610,7 +1610,7 @@ contains
   elemental function kronecker(i,j) result(kron)
     
 !<description>
-    ! Compute the Kronecker delta symbol 
+    ! Compute the Kronecker delta symbol
     ! <tex> $$
     !  \delta_{ij}\left\{\begin{array}{ll}
     !  1 & i=j\\
@@ -1663,7 +1663,7 @@ contains
 
     real(DP) :: d1,d2,d3
 
-    ! Calculate the coefficients of the transformation 
+    ! Calculate the coefficients of the transformation
     !    D1*A+D2 = C, D1*B+D2 = D.
     ! Use them to calculate Y=D1*X+D2.
 
@@ -1744,8 +1744,8 @@ contains
     ! $B$ is an n-by-n square matrix which is returned (instead
     ! of its transpose) as matrix Db.
     !
-    ! The optional parameter btransposedOpt can be used to indicate 
-    ! that matrix A is stored in transposed format. Note that 
+    ! The optional parameter btransposedOpt can be used to indicate
+    ! that matrix A is stored in transposed format. Note that
     ! matrices D and B are not affected by this fact.
     !
     ! The details of this algorithm are given in numerical recipes in F90.
@@ -2302,9 +2302,9 @@ contains
   subroutine mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
-    ! This subroutine solves <tex>$ A * x = f $</tex> for vector <tex>$ x $</tex>, 
+    ! This subroutine solves <tex>$ A * x = f $</tex> for vector <tex>$ x $</tex>,
     ! where the rectangular
-    ! matrix $A$ has been decomposed into <tex>$ Da $</tex>, <tex>$ Dd $</tex> 
+    ! matrix $A$ has been decomposed into <tex>$ Da $</tex>, <tex>$ Dd $</tex>
     ! and <tex>$ Db $</tex> by the routine
     ! mprim_SVD_factorise. The optional parameter btransposedOpt can be used
     ! to indicate that matrix A is stored in transposed format.
@@ -2378,7 +2378,7 @@ contains
     end do
     
     ! Compute x = B * aux
-    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
+    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)
   end subroutine mprim_SVD_backsubst1
 
   !************************************************************************
@@ -2467,7 +2467,7 @@ contains
     end do
     
     ! Compute x = B * aux
-    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
+    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)
   end subroutine mprim_SVD_backsubst2
 
   !************************************************************************
@@ -2929,7 +2929,7 @@ contains
     Db(1) = -(Da(1,2)*x2 - Da(2,2)*x1) * ddet
     Db(2) =  (Da(1,1)*x2 - Da(2,1)*x1) * ddet
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -2986,16 +2986,16 @@ contains
         -Da(2,1)*Da(1,3)*x3 &
         -Da(2,3)*Da(3,1)*x1 &
         +x2*Da(3,1)*Da(1,3) &
-        +Da(2,1)*x1*Da(3,3)) 
+        +Da(2,1)*x1*Da(3,3))
     Db(3) = ddet * &
         (Da(3,2)*Da(2,1)*x1 &
         -Da(1,1)*Da(3,2)*x2 &
         +Da(1,1)*Da(2,2)*x3 &
         -Da(2,2)*Da(3,1)*x1 &
         -Da(2,1)*Da(1,2)*x3 &
-        +Da(3,1)*Da(1,2)*x2) 
+        +Da(3,1)*Da(1,2)*x2)
     
-  end subroutine 
+  end subroutine
 
   ! ************************************************************************
 
@@ -3004,7 +3004,7 @@ contains
   pure subroutine mprim_solve2x2BandDiag (neqA,Da,Db,Dd,Dc,Dvec1,Dvec2)
   
 !<description>
-  ! This routine solves to a 2x2 block matrix with all blocks consisting 
+  ! This routine solves to a 2x2 block matrix with all blocks consisting
   ! of only diagonal bands.
   !
   ! <!--

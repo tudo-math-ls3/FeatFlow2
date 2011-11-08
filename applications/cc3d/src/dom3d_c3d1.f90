@@ -13,7 +13,7 @@
 !# To be (mathematically) more precise:
 !#
 !#   A := { (x,y,z) \in R^3 | 0 <= x <= 2.5 , 0 <= y, z <= 0.41 }
-!#   B := { (x,y,z) \in R^3 | 0.45 < x < 0.55 , 0.15 < y < 0.25 
+!#   B := { (x,y,z) \in R^3 | 0.45 < x < 0.55 , 0.15 < y < 0.25
 !#                          , 0 <= z <= 0.41 }
 !#
 !# Then the domain is A \ B.

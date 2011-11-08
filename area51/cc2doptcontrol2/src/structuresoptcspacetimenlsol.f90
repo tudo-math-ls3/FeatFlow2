@@ -50,7 +50,7 @@ module structuresoptcspacetimenlsol
   
   private
   
-!<constants>  
+!<constants>
 
 !<constantblock description="Identifiers for the different types of nonlinear solvers.">
 
@@ -104,16 +104,16 @@ module structuresoptcspacetimenlsol
           
     integer :: nmaxIterations     = 10
 
-    ! Damping of residuals, i.e. reduction of relative error 
+    ! Damping of residuals, i.e. reduction of relative error
     ! on finest grid; smaller -> more iterations
 
-    real(dp) :: depsRel            = 1E-8 
+    real(dp) :: depsRel            = 1E-8
 
-    ! Limit for residuals, i.e. absolute error on finest grid; 
-    ! The linear solver stops if both, absolute error < depsAbs and 
+    ! Limit for residuals, i.e. absolute error on finest grid;
+    ! The linear solver stops if both, absolute error < depsAbs and
     ! rel. error < depsRel
 
-    real(dp) :: depsAbs            = 1E-0 
+    real(dp) :: depsAbs            = 1E-0
 
     ! General damping parameter when adding the preconditioned defect
     ! to the solution in the nonlinear space-time iteration
@@ -125,7 +125,7 @@ module structuresoptcspacetimenlsol
 
     ! Output level of the solver
 
-    integer :: ioutputLevel       = 2 
+    integer :: ioutputLevel       = 2
 
     ! Maximum number of defect correction iterations before starting Newton.
     ! Standard=0=use Newton / inexact Newton immediately.
@@ -203,7 +203,7 @@ module structuresoptcspacetimenlsol
     ! STATISTICS: Total time needed for the coarse grid solver
     type(t_timer) :: rtimeCoarseGridSolver
     
-    ! STATISTICS: Time needed for linear algebra stuff (matrix-vector, 
+    ! STATISTICS: Time needed for linear algebra stuff (matrix-vector,
     ! vector-copy, prolongation/restriction,...)
     type(t_timer) :: rtimeLinearAlgebra
     
@@ -301,7 +301,7 @@ contains
           rsettings%rspaceTimeHierPrimalDual,rsettings%rprjHierSpaceTimePrimalDual)
     end if
     
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -341,7 +341,7 @@ contains
     deallocate(rsolver%p_rsptiNeumannBC)
     deallocate(rsolver%p_RprecMatrices)
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -400,6 +400,6 @@ contains
     call output_line ("Total time for prec. in space      = "//&
         sys_sdL(rsolver%rtimeSpacePrecond%delapsedReal,10))
 
-  end subroutine  
+  end subroutine
 
 end module

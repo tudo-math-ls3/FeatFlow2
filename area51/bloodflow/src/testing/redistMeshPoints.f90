@@ -50,7 +50,7 @@
     call lsyssc_allocEmptyMatrix(rmatrixScalar, LSYSSC_SETM_UNDEFINED)
 
     ! Create 1-block system matrix and set points
-    call lsysbl_createMatFromScalar(rmatrixScalar, Rmatrix(1), rdiscretisation)    
+    call lsysbl_createMatFromScalar(rmatrixScalar, Rmatrix(1), rdiscretisation)
     call lsyssc_getbase_double(rmatrixScalar, p_Dmatrix)
     call lsyssc_getbase_Kld(rmatrixScalar, p_Kld)
     call lsyssc_getbase_Kcol(rmatrixScalar, p_Kcol)
@@ -372,7 +372,7 @@
           j = p_IverticesAtElement(mod(ive,   3)+1, iel)
           k = p_IverticesAtElement(mod(ive+1, 3)+1, iel)
           
-          ! Compute auxiliary coefficients 
+          ! Compute auxiliary coefficients
           d_ij  = DvertexCoords(:,j) - DvertexCoords(:,i)
           d2_ij = d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2)
 
@@ -386,7 +386,7 @@
           dlength0 = (DvertexCoords(1,i)-p_l(1))**2 +&
                      (DvertexCoords(2,i)-p_l(2))**2
 
-          ! Compute auxiliary coefficients 
+          ! Compute auxiliary coefficients
           d_ij  = Dparticles(:,j) - Dparticles(:,i)
           d2_ij = d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2)
 

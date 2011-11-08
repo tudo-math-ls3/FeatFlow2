@@ -163,8 +163,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -239,8 +239,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -321,8 +321,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -375,25 +375,25 @@ contains
 
 
 !    ! Euler: SODs shock tube
-!    
+!
 !    iunit1 = sys_getFreeUnit()
 !    open(iunit1, file='./SODx.out')
 !    iunit2 = sys_getFreeUnit()
 !    open(iunit2, file='./SODrho.out')
-!    
+!
 !    do i = 1, 1601
 !      read(iunit1,*) Drefx(i)
 !      read(iunit2,*) Dreference(i)
 !    end do
-!    
+!
 !    close(iunit1)
 !    close(iunit2)
-!    
-!    
+!
+!
 !      select case (cderivative)
 !      case (DER_FUNC)
-!        
-!                        
+!
+!
 !        do ielement = 1, nelements
 !        do ipoint = 1, npointsPerElement
 !          dx = Dpoints(1,ipoint,ielement)
@@ -402,20 +402,20 @@ contains
 !              exit
 !            end if
 !          end do
-!          
+!
 !          dh = (dx-Drefx(i-1))/(Drefx(i)-Drefx(i-1))
-!                
+!
 !          Dvalues(ipoint,ielement) =(1.0_dp-dh)* Dreference(i-1) +(dh)* Dreference(i)
-!          
+!
 !        end do
 !        end do
-!                                  
+!
 !      case (DER_DERIV_X)
 !      write(*,*) 'Error in calculating L2-error'
-!        
+!
 !      case (DER_DERIV_Y)
 !      write(*,*) 'Error in calculating L2-error'
-!        
+!
 !      case DEFAULT
 !        ! Unknown. Set the result to 0.0.
 !        Dvalues = 0.0_DP
@@ -428,10 +428,10 @@ contains
 !    case (DER_FUNC)
 !
 !       do ielement = 1, nelements
-!          do ipoint = 1, npointsPerElement  
+!          do ipoint = 1, npointsPerElement
 !
 !             dx = Dpoints(1,ipoint,ielement)
-!             dy = Dpoints(2,ipoint,ielement)          
+!             dy = Dpoints(2,ipoint,ielement)
 !
 !             Dvalues(ipoint,ielement) =(dx*dx+dy*dy)**2.0_dp
 !
@@ -453,25 +453,25 @@ contains
     !! Implicit system step rad
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
+    !
     !    do ielement = 1, nelements
-    !    do ipoint = 1, npointsPerElement  
-    !    
+    !    do ipoint = 1, npointsPerElement
+    !
     !      dx = Dpoints(1,ipoint,ielement)
-    !      dy = Dpoints(2,ipoint,ielement)          
-    !            
+    !      dy = Dpoints(2,ipoint,ielement)
+    !
     !      Dvalues(ipoint,ielement) = 0.0_dp
     !      if (dx*dx+dy*dy.ge.1.0_dp) Dvalues(ipoint,ielement) =1.0
-    !      
+    !
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -484,20 +484,20 @@ contains
     !
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do i = 1, size(Dvalues,1)
     !    do j = 1, size(Dvalues,2)
     !       Dvalues(i,j) = sin(SYS_PI*(Dpoints(1,i,j) - Dpoints(2,i,j)))
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -507,20 +507,20 @@ contains
     !! Source Term 1
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do i = 1, size(Dvalues,1)
     !    do j = 1, size(Dvalues,2)
     !       Dvalues(i,j) = 1.0_dp+Dpoints(1,i,j) + Dpoints(2,i,j)
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -534,54 +534,54 @@ contains
     !! Source Term 2
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do i = 1, size(Dvalues,1)
     !    do j = 1, size(Dvalues,2)
     !       Dvalues(i,j) = (1.0_dp+Dpoints(1,i,j)**4.0_dp+Dpoints(2,i,j)**4.0_dp)
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
-    !  end select  
+    !  end select
 
 
     !  ! Quarter circular convection
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do i = 1, size(Dvalues,1)
     !    do j = 1, size(Dvalues,2)
     !      dx = Dpoints(1,i,j)
     !      dy = Dpoints(2,i,j)
-    !       
+    !
     !       dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
     !!       dr = abs( sqrt((dx-1.0_dp-dy)*(dx-1.0_dp-dy)) -0.5_dp)
-    !       
+    !
     !       Dvalues(i,j) = 0.3_DP*exp(-25.0_dp*dr*dr)
-    !          
+    !
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
-    !  end select  
+    !  end select
 
 
 
@@ -591,93 +591,93 @@ contains
     !
     !      ! An object for saving the domain:
     !    type(t_boundary) :: rboundary
-    !    
+    !
     !    ! An object for saving the triangulation on the domain
     !    type(t_triangulation) :: rtriangulation
-    !    
+    !
     !    type(t_vectorScalar) :: rsolLoaded
-    !    
+    !
     !    ! An object specifying the discretisation.
     !    ! This contains also information about trial/test functions,...
     !    type(t_blockDiscretisation) :: rdiscretisation2
-    !    
+    !
     !    integer :: NLMAX
-    !    
+    !
     !    real(DP), dimension(:), pointer :: p_Ddata
-    !    
+    !
     !    integer :: ielementtype, iel,i1,i2,i3
-    !    
+    !
     !    character (LEN=SYS_STRLEN) :: sofile
-    !    
+    !
     !    integer :: ilength
-    !  
-    !  
-    !  
-    !    
-    !    
+    !
+    !
+    !
+    !
+    !
     !    ielementtype = EL_DG_T2_2D
-    !    
+    !
     !    NLMAX = 8
-    !    
+    !
     !    sofile = 'l8.data'
-    !    
+    !
     !    call boundary_read_prm(rboundary, './pre/quad.PRM')
-    !    
+    !
     !    ! Now read in the basic triangulation.
-    !    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
-    !    
-    !    
-    !      
-    !    
+    !    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)
+    !
+    !
+    !
+    !
     !    ! Refine it.
     !    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
-    !    
+    !
     !    ! And create information about adjacencies and everything one needs from
     !    ! a triangulation.
     !    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-    !  
+    !
     !    ! Now we can start to initialise the discretisation. At first, set up
     !    ! a block discretisation structure that specifies the blocks in the
     !    ! solution vector. In this simple problem, we only have one block.
     !    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
     !                                 rtriangulation, rboundary)
-    !    
+    !
     !    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     !    ! structures for every component of the solution vector.
     !    ! Initialise the first element of the list to specify the element
     !    ! and cubature rule for this solution component:
     !    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
     !                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
-    !                 
-    !    
-    !    
+    !
+    !
+    !
     !    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
-    !    
-    !    
-    !    
+    !
+    !
+    !
     !  ! Get pointers to the data form the truangulation
     !  call lsyssc_getbase_double(rsolloaded,p_Ddata)
     !
     !  ! Get the length of the data array
-    !  ilength = size(p_Ddata,1)  
-    !  
-    !  
+    !  ilength = size(p_Ddata,1)
+    !
+    !
     !  ! ************ WRITE TO FILE PHASE *******************
-    !  
+    !
     !  iunit = sys_getFreeUnit()
     !  open(iunit, file=trim(sofile))
-    ! 
-    !  
+    !
+    !
     !  read(iunit,'(I10)') ilength
     !
     !  do i=1, ilength
     !    read(iunit,'(E25.16E3)') p_Ddata(i)
     !  end do
-    !  
+    !
     !  close(iunit)
-    !    
-    !    
-    !    
+    !
+    !
+    !
     !    do iel = 1, nelements
     !      ielement=0
     !      call tsrch_getElem_raytrace2D (&
@@ -686,15 +686,15 @@ contains
     !                                Dpoints=Dpoints(:,:,iel))
     !    end do
     !
-    !            
-    !    
+    !
+    !
     !    call lsyssc_releaseVector (rsolloaded)
-    !        
+    !
     !    call spdiscr_releaseBlockDiscr(rdiscretisation2)
     !
-    !    ! Release the triangulation. 
+    !    ! Release the triangulation.
     !    call tria_done (rtriangulation)
-    !        
+    !
     !    ! Finally release the domain, that is it.
     !    call boundary_release (rboundary)
 
@@ -734,28 +734,28 @@ contains
     !
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do ielement = 1, nelements
     !    do ipoint = 1, npointsPerElement
     !      r = sqrt(Dpoints(1,ipoint,ielement)*Dpoints(1,ipoint,ielement)+Dpoints(2,ipoint,ielement)*Dpoints(2,ipoint,ielement))
     !      n = 1+1000*r
-    !            
+    !
     !       Dvalues(ipoint,ielement) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
     !
     !      !Dvalues(i,j) =Dreference(int(n))
     !      !write(*,*)Dreference(int(n))
     !      !Dvalues(i,j) =1.0_dp
-    !      
+    !
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -780,32 +780,32 @@ contains
     !
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                   
+    !
+    !
     !    do ielement = 1, nelements
     !    do ipoint = 1, npointsPerElement
     !      r = sqrt((Dpoints(1,ipoint,ielement)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,ielement)-0.5_dp)**2.0_dp)
-    !      n = 200000+1+100000*r             
-    !                    
-    !    
-    !      
-    !     
-    !      
+    !      n = 200000+1+100000*r
+    !
+    !
+    !
+    !
+    !
     !       Dvalues(ipoint,ielement) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
     !
     !      !Dvalues(i,j) =Dreference(int(n))
     !      !write(*,*)Dreference(int(n))
     !      !Dvalues(i,j) =1.0_dp
-    !      
+    !
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -817,20 +817,20 @@ contains
     !
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do i = 1, size(Dvalues,1)
     !    do j = 1, size(Dvalues,2)
     !       Dvalues(i,j) = (Dpoints(1,i,j)-0.5_dp)**2.0_dp + (Dpoints(2,i,j)-0.5_dp)**2.0_dp
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -842,20 +842,20 @@ contains
     !
     !  select case (cderivative)
     !  case (DER_FUNC)
-    !    
-    !                    
+    !
+    !
     !    do i = 1, size(Dvalues,1)
     !    do j = 1, size(Dvalues,2)
     !       Dvalues(i,j) = (Dpoints(1,i,j)-0.5_dp)**3.0_dp + (Dpoints(2,i,j)-0.5_dp)**3.0_dp
     !    end do
     !    end do
-    !                              
+    !
     !  case (DER_DERIV_X)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case (DER_DERIV_Y)
     !  write(*,*) 'Error in calculating L2-error'
-    !    
+    !
     !  case DEFAULT
     !    ! Unknown. Set the result to 0.0.
     !    Dvalues = 0.0_DP
@@ -967,8 +967,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -1069,8 +1069,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -1151,8 +1151,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -1207,9 +1207,9 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the boundary component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...)
     integer, dimension(:), intent(in)                           :: Icomponents
 
@@ -1230,38 +1230,38 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
     integer, intent(in)                                          :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
     real(DP), intent(in)                                        :: dwhere
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     real(DP), dimension(:), intent(out)                         :: Dvalues
     !</output>
@@ -1294,8 +1294,8 @@ contains
 
     !<description>
     ! This subroutine is called during the discretisation of boundary
-    ! conditions on fictitious boundary components. It calculates a special quantity 
-    ! on the boundary, which is then used by the discretisation routines to 
+    ! conditions on fictitious boundary components. It calculates a special quantity
+    ! on the boundary, which is then used by the discretisation routines to
     ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
     !
     ! The routine must calculate the values on all elements of the element
@@ -1307,10 +1307,10 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
-    !   the value should be calculated for 
-    !   (e.g. 1=1st solution component, e.g. X-velocity, 
+    !   the value should be calculated for
+    !   (e.g. 1=1st solution component, e.g. X-velocity,
     !         2=2nd solution component, e.g. Y-velocity,...,
     !         3=3rd solution component, e.g. pressure)
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
@@ -1322,14 +1322,14 @@ contains
     ! analytic boundary boundary description etc.
     type(t_blockDiscretisation), intent(in)                     :: rdiscretisation
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<inputoutput>
-    ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+    ! A t_discreteFBCevaluation structure array that defines what to evaluate,
     ! where to evaluate and which accepts the return values.
     ! This callback routine must check out the cinfoNeeded-entry in this structure
     ! to find out what to evaluate.
@@ -1342,9 +1342,9 @@ contains
     ! For Dirichlet boundary:
     !   revaluation contains as many entries as Icomponents; every entry in
     !   Icomponent corresponds to one entry in revaluation
-    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the
     !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
-    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values
     !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
     !
     type(t_discreteFBCevaluation), dimension(:), intent(inout) :: Revaluation
@@ -1452,9 +1452,9 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the solution component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...,
     !   3=3rd solution component, e.g. pressure)
     ! For pressure drop boundary / normal stress:
@@ -1478,16 +1478,16 @@ contains
     ! calculated.
     real(DP), dimension(:), intent(in)                          :: Dcoords
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     !
     ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -1537,7 +1537,7 @@ contains
     !</input>
 
     !</inputoutput>
-    ! An indicator vector. Entry i in the vector rindicatir that tells the 
+    ! An indicator vector. Entry i in the vector rindicatir that tells the
     ! mesh adaption routines whether to refine element i or to do coarsening
     ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
     ! in coarsening -- as specified during the initialisation of the
@@ -1749,7 +1749,7 @@ contains
     ! Get values on the one side of the edge
     call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
          rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
-    ! Get values on the other side of the edge                               
+    ! Get values on the other side of the edge
     call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
          rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
 
@@ -1800,7 +1800,7 @@ contains
 
           dr = abs( sqrt((dx-1.00_dp)*(dx-1.00_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
           !dr = abs( sqrt((dx-1.00_dp-1.0_dp/64.0_dp)*(dx-1.00_dp-1.0_dp/64.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
-          ! if ((dy.le.0.0_dp)) 
+          ! if ((dy.le.0.0_dp))
           if (IelementList(iel)==0) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
 
 
@@ -1828,9 +1828,9 @@ contains
           !      ! BC for circular sinus convection
           !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
           !        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
-          !        
+          !
           !          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin(dr)
-          !        
+          !
           !        end if
 
 
@@ -1921,8 +1921,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -1996,7 +1996,7 @@ contains
 
              !       dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
              !!       dr = abs( sqrt((dx-1.0_dp-dy)*(dx-1.0_dp-dy)) -0.5_dp)
-             !       
+             !
              !       Dcoefficients (1,ipoint,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
 
 
@@ -2064,7 +2064,7 @@ contains
 
              !            ! Source 2
              !            Dcoefficients (1,ipoint,iel) = 1.0_dp + 1.00_dp*&
-             !                     ( (Dpoints(1,ipoint,iel))**4.0_dp+(Dpoints(2,ipoint,iel))**4.0_dp) 
+             !                     ( (Dpoints(1,ipoint,iel))**4.0_dp+(Dpoints(2,ipoint,iel))**4.0_dp)
 
              !            ! Water hill Poly
              !            r = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
@@ -2092,7 +2092,7 @@ contains
              !            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
              !                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.25_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.25_dp)**2.0_dp))
 
-             !           ! x^2+y^2 
+             !           ! x^2+y^2
              !           Dcoefficients (1,ipoint,iel) = (Dpoints(1,ipoint,iel)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**2.0_dp
 
              !           ! x^3+y^3
@@ -2135,14 +2135,14 @@ contains
              !          end if
 
              !            ! Water reservoir
-             !            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
+             !            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then
              !              Dcoefficients (1,ipoint,iel)=1.5_dp
              !            else
              !              Dcoefficients (1,ipoint,iel)=1.0_dp
              !            end if
 
              !            ! Circular Dambreak
-             !            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+             !            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then
              !              Dcoefficients (1,ipoint,iel)=2.5_dp
              !            else
              !              Dcoefficients (1,ipoint,iel)=0.5_dp
@@ -2156,14 +2156,14 @@ contains
              !            end if
 
              !            ! Circular Dambreak small
-             !            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+             !            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then
              !              Dcoefficients (1,ipoint,iel)=1.5_dp
              !            else
              !              Dcoefficients (1,ipoint,iel)=1.0_dp
              !            end if
 
              !            ! Test for symmetry
-             !            if (( abs(Dpoints(1,ipoint,iel)-0.5_dp)<0.25_dp).and.(abs(Dpoints(2,ipoint,iel)-0.5_dp)<0.25_dp )) then  
+             !            if (( abs(Dpoints(1,ipoint,iel)-0.5_dp)<0.25_dp).and.(abs(Dpoints(2,ipoint,iel)-0.5_dp)<0.25_dp )) then
              !              Dcoefficients (1,ipoint,iel)=1.5_dp
              !            else
              !              Dcoefficients (1,ipoint,iel)=1.0_dp
@@ -2249,8 +2249,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -2309,7 +2309,7 @@ contains
        do iel = 1, size(Dcoefficients,3)
           do ipoint = 1, size(Dcoefficients,2)
 
-             ! Get coordinates          
+             ! Get coordinates
              dx = Dpoints(1,ipoint,iel)
              dy = Dpoints(2,ipoint,iel)
 
@@ -2336,7 +2336,7 @@ contains
 !                         Dcoefficients (1,ipoint,iel) = 1.0_dp
 !                       else
 !                         Dcoefficients (1,ipoint,iel) = 0.125_dp
-!                       end if 
+!                       end if
 
 
              ! Constant
@@ -2391,7 +2391,7 @@ contains
        do iel = 1, size(Dcoefficients,3)
           do ipoint = 1, size(Dcoefficients,2)
 
-             ! Get coordinates          
+             ! Get coordinates
              dx = Dpoints(1,ipoint,iel)
              dy = Dpoints(2,ipoint,iel)
 
@@ -2420,7 +2420,7 @@ contains
        do iel = 1, size(Dcoefficients,3)
           do ipoint = 1, size(Dcoefficients,2)
 
-             ! Get coordinates          
+             ! Get coordinates
              dx = Dpoints(1,ipoint,iel)
              dy = Dpoints(2,ipoint,iel)
 
@@ -2442,7 +2442,7 @@ contains
        do iel = 1, size(Dcoefficients,3)
           do ipoint = 1, size(Dcoefficients,2)
 
-             ! Get coordinates          
+             ! Get coordinates
              dx = Dpoints(1,ipoint,iel)
              dy = Dpoints(2,ipoint,iel)
 
@@ -2557,8 +2557,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -2607,13 +2607,13 @@ contains
   !                  nelements,npointsPerElement,Dpoints, &
   !                  IdofsTest,rdomainIntSubset,&
   !                  Dcoefficients,rcollection)
-  !    
+  !
   !    use basicgeometry
   !    use triangulation
   !    use collection
   !    use scalarpde
   !    use domainintegration
-  !    
+  !
   !  !<description>
   !    ! This subroutine is called during the vector assembly. It has to compute
   !    ! the coefficients in front of the terms of the linear form.
@@ -2624,22 +2624,22 @@ contains
   !    ! simultaneously for all these points and all the terms in the linear form
   !    ! the corresponding coefficients in front of the terms.
   !  !</description>
-  !    
+  !
   !  !<input>
   !    ! The discretisation structure that defines the basic shape of the
   !    ! triangulation with references to the underlying triangulation,
   !    ! analytic boundary boundary description etc.
   !    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-  !    
+  !
   !    ! The linear form which is currently to be evaluated:
   !    type(t_linearForm), intent(in)                              :: rform
-  !    
+  !
   !    ! Number of elements, where the coefficients must be computed.
   !    integer, intent(in)                                         :: nelements
-  !    
+  !
   !    ! Number of points per element, where the coefficients must be computed
   !    integer, intent(in)                                         :: npointsPerElement
-  !    
+  !
   !    ! This is an array of all points on all the elements where coefficients
   !    ! are needed.
   !    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -2655,12 +2655,12 @@ contains
   !    ! It is usually used in more complex situations (e.g. nonlinear matrices).
   !    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
   !
-  !    ! Optional: A collection structure to provide additional 
-  !    ! information to the coefficient routine. 
+  !    ! Optional: A collection structure to provide additional
+  !    ! information to the coefficient routine.
   !    type(t_collection), intent(inout), optional      :: rcollection
-  !    
+  !
   !  !</input>
-  !  
+  !
   !  !<output>
   !    ! A list of all coefficients in front of all terms in the linear form -
   !    ! for all given points on all given elements.
@@ -2668,41 +2668,41 @@ contains
   !    ! with itermCount the number of terms in the linear form.
   !    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
   !  !</output>
-  !    
+  !
   !  !</subroutine>
   !
   !    integer :: iel, ipoint
   !    real(DP) :: dvx, dvy, dx, dy
-  !    
+  !
   !    rdomainIntSubset%ielementDistribution = 1
-  !    
+  !
   !    call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
   !                                 rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-  !    
-  !    
+  !
+  !
   !!    do iel = 1, size(Dcoefficients,3)
   !!      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
   !!                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
   !!    end do
-  !    
+  !
   !    do iel = 1, size(Dcoefficients,3)
   !      do ipoint = 1, size(Dcoefficients,2)
-  !      
+  !
   !        dx = Dpoints(1,ipoint,iel)
   !        dy = Dpoints(2,ipoint,iel)
-  !      
+  !
   !        ! Zalesak
   !        dvx=0.5_DP-dy
   !        dvy=dx-0.5_DP
-  !        
+  !
   !        ! Circular convection
   !        dvx = dy
   !        dvy = 1.0_dp - dx
-  !        
+  !
   !        Dcoefficients (1,ipoint,iel) = Dcoefficients (1,ipoint,iel) * dvx
   !      end do
   !    end do
-  !    
+  !
   !  end subroutine
   !
   !
@@ -2717,13 +2717,13 @@ contains
   !                  nelements,npointsPerElement,Dpoints, &
   !                  IdofsTest,rdomainIntSubset,&
   !                  Dcoefficients,rcollection)
-  !    
+  !
   !    use basicgeometry
   !    use triangulation
   !    use collection
   !    use scalarpde
   !    use domainintegration
-  !    
+  !
   !  !<description>
   !    ! This subroutine is called during the vector assembly. It has to compute
   !    ! the coefficients in front of the terms of the linear form.
@@ -2734,22 +2734,22 @@ contains
   !    ! simultaneously for all these points and all the terms in the linear form
   !    ! the corresponding coefficients in front of the terms.
   !  !</description>
-  !    
+  !
   !  !<input>
   !    ! The discretisation structure that defines the basic shape of the
   !    ! triangulation with references to the underlying triangulation,
   !    ! analytic boundary boundary description etc.
   !    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
-  !    
+  !
   !    ! The linear form which is currently to be evaluated:
   !    type(t_linearForm), intent(in)                              :: rform
-  !    
+  !
   !    ! Number of elements, where the coefficients must be computed.
   !    integer, intent(in)                                         :: nelements
-  !    
+  !
   !    ! Number of points per element, where the coefficients must be computed
   !    integer, intent(in)                                         :: npointsPerElement
-  !    
+  !
   !    ! This is an array of all points on all the elements where coefficients
   !    ! are needed.
   !    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -2765,12 +2765,12 @@ contains
   !    ! It is usually used in more complex situations (e.g. nonlinear matrices).
   !    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
   !
-  !    ! Optional: A collection structure to provide additional 
-  !    ! information to the coefficient routine. 
+  !    ! Optional: A collection structure to provide additional
+  !    ! information to the coefficient routine.
   !    type(t_collection), intent(inout), optional      :: rcollection
-  !    
+  !
   !  !</input>
-  !  
+  !
   !  !<output>
   !    ! A list of all coefficients in front of all terms in the linear form -
   !    ! for all given points on all given elements.
@@ -2778,40 +2778,40 @@ contains
   !    ! with itermCount the number of terms in the linear form.
   !    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
   !  !</output>
-  !    
+  !
   !  !</subroutine>
   !
   !    integer :: iel, ipoint
   !    real(DP) :: dvx, dvy, dx, dy
-  !    
+  !
   !    rdomainIntSubset%ielementDistribution = 1
-  !    
+  !
   !    call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
   !                                 rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
-  !    
+  !
   !!    do iel = 1, size(Dcoefficients,3)
   !!      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
   !!                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
   !!    end do
-  !    
+  !
   !    do iel = 1, size(Dcoefficients,3)
   !      do ipoint = 1, size(Dcoefficients,2)
-  !      
+  !
   !        dx = Dpoints(1,ipoint,iel)
   !        dy = Dpoints(2,ipoint,iel)
-  !        
+  !
   !        ! Zalesak
   !        dvx=0.5_DP-dy
   !        dvy=dx-0.5_DP
-  !        
+  !
   !        ! Circular convection
   !        dvx = dy
   !        dvy = 1.0_dp - dx
-  !        
+  !
   !        Dcoefficients (1,ipoint,iel) = Dcoefficients (1,ipoint,iel) * dvy
   !      end do
   !    end do
-  !    
+  !
   !  end subroutine
 
 
@@ -2873,8 +2873,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -3028,7 +3028,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -3074,29 +3074,29 @@ contains
              !        dh = Dsolutionvalues(1,ipoint,iel,1)
              !        du = Dsolutionvalues(1,ipoint,iel,2)/dh
              !        dv = Dsolutionvalues(1,ipoint,iel,3)/dh
-             !        
+             !
              !        ! Calculate normal and tangential part
              !        dnormalPart     = du*normal(1,iel) + dv*normal(2,iel)
              !        dtangentialPart = du*normal(2,iel) - dv*normal(1,iel)
-             !        
+             !
              !        ! Invert the normal part
              !        dnormalPart     = -dnormalPart
              !        dtangentialPart = +dtangentialPart
-             !        
-             !        
+             !
+             !
              !!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
              !!          write(*,*) du,dv
              !!        end if
-             !        
+             !
              !        ! Calculate new velocity
              !        du = dnormalPart*normal(1,iel) + dtangentialPart*normal(2,iel)
              !        dv = dnormalPart*normal(2,iel) - dtangentialPart*normal(1,iel)
-             !        
+             !
              !!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
              !!          write(*,*) du,dv
              !!          write(*,*) ''
              !!        end if
-             !        
+             !
              !        ! Set new momentum
              !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = dh
              !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = dh * du
@@ -3106,38 +3106,38 @@ contains
 
 
           !      ! *** Upwind flux ***
-          !      
+          !
           !      ! Get solution values on the in and outside
           !      DQi = Dsolutionvalues(1,ipoint,iel,:)
           !      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
-          !      
+          !
           !      ! Get fluxes on the in and outside in x- and y-direction
           !      DF1i = buildFlux(DQi,1)
           !      DF1a = buildFlux(DQa,1)
           !      DF2i = buildFlux(DQi,2)
           !      DF2a = buildFlux(DQa,2)
-          !            
+          !
           !      ! Calculate Roevalues
           !      DQroe = calculateQroe(DQi,DQa)
-          !      
+          !
           !      ! First calculate flux in x-direction
           !      DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
           !                   normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
           !                   !sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
           !
-          !                   
+          !
           !      !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
-          !      
+          !
           !      ! First calculate flux in y-direction
           !      DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
           !                   normal(2,iel)*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
           !                   !sign(1.0_dp,normal(2,iel))*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
-          !      
+          !
           !      !DFy= 0.5_dp*(DF2i+DF2a - sign(1.0_dp,normal(2,iel))* maxval(abs(buildEigenvalues(DQroe,2)))*(dQa-dQi))
-          !                   
+          !
           !      ! Add the fluxes of the two dimensional directions to get Flux * normal
           !      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
-          !      
+          !
           !      ! Save the calculated flux
           !      DfluxValues(:,1,ipoint,iel) = DFlux
 
@@ -3145,19 +3145,19 @@ contains
           !      ! Get solution values on the in and outside
           !      DQi = Dsolutionvalues(1,ipoint,iel,:)
           !      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
-          !      
+          !
           !      ! Get fluxes on the in and outside in x- and y-direction
           !      DF1i = buildFlux(DQi,1)
           !      DF1a = buildFlux(DQa,1)
           !      DF2i = buildFlux(DQi,2)
           !      DF2a = buildFlux(DQa,2)
-          !            
+          !
           !      DFx= 0.5_dp*(DF1i+DF1a)
           !      DFy= 0.5_dp*(DF2i+DF2a)
-          !      
+          !
           !      ! Add the fluxes of the two dimensional directions to get Flux * normal
           !      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
-          !      
+          !
           !      ! Save the calculated flux
           !      DfluxValues(:,1,ipoint,iel) = DFlux
 
@@ -3170,63 +3170,63 @@ contains
           !      ! *** Local Lax-Friedrichs flux ***
           !      DQi = Dsolutionvalues(1,ipoint,iel,:)
           !      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
-          !      
+          !
           !      ! Get fluxes on the in and outside in x- and y-direction
           !      DF1i = buildFlux(DQi,1)
           !      DF1a = buildFlux(DQa,1)
           !      DF2i = buildFlux(DQi,2)
           !      DF2a = buildFlux(DQa,2)
-          !            
+          !
           !      ! Calculate Roevalues
           !      DQroe = calculateQroe(DQi,DQa)
-          !      
+          !
           !      ! First calculate flux in x-direction
           !      DFx= 0.5_dp*(DF1i+DF1a)
-          !      
+          !
           !      ! First calculate flux in y-direction
           !      DFy= 0.5_dp*(DF2i+DF2a)
-          !                   
+          !
           !      ! Add the fluxes of the two dimensional directions to get Flux * normal
           !      DFlux = 0.5_dp*(DFx*normal(1,iel) + DFy*normal(2,iel))
-          !      
+          !
           !      ! Get estimate for biggest eigenvalue
           !      dmaxEV = maxval(buildEigenvalues2(DQRoe,normal(1,iel),normal(2,iel)))
           !      DFlux = DFlux - dmaxEV*(DQa - DQi)
-          !      
+          !
           !      ! Save the calculated flux
           !      DfluxValues(:,1,ipoint,iel) = DFlux
 
           !      ! *** Upwind flux without dimensional splitting (Roe-Flux) ***
-          !      
+          !
           !      ! Get solution values on the in and outside
           !      DQi = Dsolutionvalues(1,ipoint,iel,:)
           !      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
-          !      
+          !
           !      ! Get fluxes on the in and outside in x- and y-direction
           !      DF1i = buildFlux(DQi,1)
           !      DF1a = buildFlux(DQa,1)
           !      DF2i = buildFlux(DQi,2)
           !      DF2a = buildFlux(DQa,2)
-          !            
+          !
           !      ! Calculate Roevalues
           !      DQroe = calculateQroe(DQi,DQa)
-          !      
+          !
           !      ! First calculate flux in x-direction
           !      DFx= 0.5_dp*(DF1i+DF1a)
           !!      DFx = buildFlux(DQRoe,1)
-          !      
+          !
           !      ! First calculate flux in y-direction
           !      DFy= 0.5_dp*(DF2i+DF2a)
           !!      DFy = buildFlux(DQRoe,2)
-          !      
+          !
           !      ! Add the fluxes of the two dimensional directions to get Flux * normal
           !      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
-          !      
+          !
           !      ! Add artificial diffusion
           !      DL       = buildMixedL2       (DQRoe,normal(1,iel),normal(2,iel))
           !      DaLambda = buildMixedaLambda2 (DQRoe,normal(1,iel),normal(2,iel))
           !      DR       = buildMixedR2       (DQRoe,normal(1,iel),normal(2,iel))
-          !      
+          !
           !      ! Save the calculated flux
           !      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
 
@@ -3269,29 +3269,29 @@ contains
 
 
           !      ! *** Upwind flux for quarter circular convection ***
-          !    
+          !
           !      ! BC for steady circular convection
           !      drad = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
           !      if (IelementList(iel)==0) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = 0.3_DP*exp(-25.0_dp*drad*drad)
-          !      
+          !
           !      ! Get solution values on the in and outside
           !      DQi(1) = Dsolutionvalues(1,ipoint,iel,1)
           !      DQa(1) = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1)
-          !      
+          !
           !!      ! Zalesak
           !!      Dvel(1)=0.5_DP-dy
           !!      Dvel(2)=dx-0.5_DP
-          !      
+          !
           !!      ! Constant velocity
           !!      Dvel(1)=1.0_dp
           !!      Dvel(2)=1.0_dp
-          !      
+          !
           !      ! Steady circular convection
           !      Dvel(1)=dy
           !      Dvel(2)=1.0_DP-dx
-          !    
+          !
           !      dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
-          !      
+          !
           !      ! Upwind flux
           !      if (dvn.ge.0) then
           !        DfluxValues(1,1,ipoint,iel) = dvn *DQi(1)
@@ -3310,7 +3310,7 @@ contains
 
 
 
-    deallocate(Dsolutionvalues)  
+    deallocate(Dsolutionvalues)
 
 
   end subroutine flux_dg_buildVectorBlEdge2D_sim
@@ -3387,8 +3387,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -3443,7 +3443,7 @@ contains
           dy = Dpoints(2,ipoint,iel)
 
 
-          ! Shallow water        
+          ! Shallow water
           dQ = DsolutionValues(1,ipoint,iel,:)
           !write(*,*) dQ
 
@@ -3462,14 +3462,14 @@ contains
           !!        ! Constant velocity
           !!        dvx=1.0_dp
           !!        dvy=1.0_dp
-          !        
+          !
           !        ! Circular convection
           !        dvx = dy
           !        dvy = 1.0_dp - dx
           !
-          !        
+          !
           !        dQ(1) = DsolutionValues(1,ipoint,iel,1)
-          !        
+          !
           !        Dcoefficients (1,ipoint,iel) = dQ(1) * dvx
           !        Dcoefficients (2,ipoint,iel) = dQ(1) * dvy
 
@@ -3539,8 +3539,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -3589,7 +3589,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Shallow Water        
+          ! Shallow Water
           dQ = DsolutionValues(1,ipoint,iel,:)
           !write(*,*) dQ
 
@@ -3605,9 +3605,9 @@ contains
           !        dvx = dy
           !        dvy = 1.0_dp - dx
           !
-          !        
+          !
           !        dQ(1) = DsolutionValues(1,ipoint,iel,1)
-          !        
+          !
           !        Dcoefficients (1,1,ipoint,iel) = dQ(1) * dvx
           !        Dcoefficients (1,2,ipoint,iel) = dQ(1) * dvy
 
@@ -3678,8 +3678,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -3829,7 +3829,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -3890,7 +3890,7 @@ contains
               dW1o = dvn - 2.0_dp*dc/(gamma-1)
               dW2o = dpr/(drho**gamma)
               dW3o = dvt
-              dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+              dW4o = dvn + 2.0_dp*dc/(gamma-1)
               
               ! Calculate Riemann invariants from inner values
               drho = Dsolutionvalues(1,ipoint,iedge,1)
@@ -3938,7 +3938,7 @@ contains
 !        du = 3.0_dp*sqrt(1.4_dp)
 !        dv = 0.0_dp
 !        dE = 2.5_dp+4.5_dp*1.4_dp
-!        
+!
 !        Dsolutionvalues(2,ipoint,iedge,1) = drho
 !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
 !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -3984,51 +3984,51 @@ contains
              Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
              Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
              
-            end if 
+            end if
 
 
              !        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        dt = rcollection%Dquickaccess(1)
              !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-             !        
+             !
              !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
              !        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
              !        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
              !        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -4037,7 +4037,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -4045,7 +4045,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -4065,26 +4065,26 @@ contains
           !      DFxa = Euler_buildFlux(DQa,1)
           !      DFyi = Euler_buildFlux(DQi,2)
           !      DFya = Euler_buildFlux(DQa,2)
-          !            
+          !
           !      ! Calculate Roevalues
           !      DQroec = Euler_calculateQroec(DQi,DQa)
-          !      
+          !
           !      ! First calculate flux in x-direction
           !      DFx = 0.5_dp*(DFxi+DFxa)
           !      !DFx = Euler_buildFlux(DQRoe,1)
-          !      
+          !
           !      ! First calculate flux in y-direction
           !      DFy = 0.5_dp*(DFyi+DFya)
           !      !DFy = Euler_buildFlux(DQRoe,2)
-          !      
+          !
           !      ! Add the fluxes of the two dimensional directions to get Flux * normal
           !      DFlux = DFx*normal(1,iedge) + DFy*normal(2,iedge)
-          !      
+          !
           !      ! Add artificial diffusion
           !      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
           !      DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
           !      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
-          !      
+          !
           !      ! Save the calculated flux (Roe)
           !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
 
@@ -4132,7 +4132,7 @@ contains
 
 
 
-    deallocate(Dsolutionvalues)  
+    deallocate(Dsolutionvalues)
 
 
   end subroutine Euler_flux_dg_buildVectorBlEdge2D_sim
@@ -4228,7 +4228,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -4290,7 +4290,7 @@ contains
               dW1o = dvn - 2.0_dp*dc/(gamma-1)
               dW2o = dpr/(drho**gamma)
               dW3o = dvt
-              dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+              dW4o = dvn + 2.0_dp*dc/(gamma-1)
               
               ! Calculate Riemann invariants from inner values
               drho = Dsolutionvalues(1,ipoint,iedge,1)
@@ -4338,7 +4338,7 @@ contains
 !        du = 3.0_dp*sqrt(1.4_dp)
 !        dv = 0.0_dp
 !        dE = 2.5_dp+4.5_dp*1.4_dp
-!        
+!
 !        Dsolutionvalues(2,ipoint,iedge,1) = drho
 !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
 !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -4384,51 +4384,51 @@ contains
              Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
              Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
              
-            end if 
+            end if
 
 
              !        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        dt = rcollection%Dquickaccess(1)
              !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-             !        
+             !
              !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
              !        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
              !        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
              !        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -4437,7 +4437,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -4445,7 +4445,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -4465,26 +4465,26 @@ contains
           !      DFxa = Euler_buildFlux(DQa,1)
           !      DFyi = Euler_buildFlux(DQi,2)
           !      DFya = Euler_buildFlux(DQa,2)
-          !            
+          !
           ! Calculate Roevalues
           DQroec = Euler_calculateQroec(DQi,DQa)
-          !      
+          !
           !      ! First calculate flux in x-direction
           !      DFx = 0.5_dp*(DFxi+DFxa)
           !      !DFx = Euler_buildFlux(DQRoe,1)
-          !      
+          !
           !      ! First calculate flux in y-direction
           !      DFy = 0.5_dp*(DFyi+DFya)
           !      !DFy = Euler_buildFlux(DQRoe,2)
-          !      
+          !
           !      ! Add the fluxes of the two dimensional directions to get Flux * normal
           !      DFlux = DFx*normal(1,iedge) + DFy*normal(2,iedge)
-          !      
+          !
           !      ! Add artificial diffusion
           !      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
                 DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
           !      DR       = Euler_buildMixedRcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
-          !      
+          !
           !      ! Save the calculated flux (Roe)
           !      DfluxValues(:,1,ipoint,iedge) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
 
@@ -4534,7 +4534,7 @@ contains
 
 
 
-    deallocate(Dsolutionvalues)  
+    deallocate(Dsolutionvalues)
 
 
   end subroutine Euler_flux_dg_buildVectorBlEdge2D_sim_Newton
@@ -4606,8 +4606,8 @@ contains
   !</input>
     
   !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
   
@@ -4650,7 +4650,7 @@ contains
             rdIS, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
     end do
 
-    ! Loop over all elements and all points   
+    ! Loop over all elements and all points
     do iel = 1, size(Dpoints,3)
        do ipoint = 1, size(Dpoints,2)
 
@@ -4658,7 +4658,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Get solution      
+          ! Get solution
           dQ = DsolutionValues(1,ipoint,iel,:)
 
           ! Build fluxes in coordinate directions
@@ -4672,7 +4672,7 @@ contains
        end do
     end do
 
-    ! Deallocate the solutionvalues    
+    ! Deallocate the solutionvalues
     deallocate(DsolutionValues)
 
   end subroutine Euler_flux_sys_block
@@ -4735,8 +4735,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -4791,7 +4791,7 @@ contains
           dy = Dpoints(2,ipoint,iel)
 
 
-          ! Shallow water        
+          ! Shallow water
           dQ = DsolutionValues(1,ipoint,iel,:)
           !write(*,*) dQ
 
@@ -4899,7 +4899,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -4963,7 +4963,7 @@ contains
        end do ! ipoint
     end do ! iedge
 
-    deallocate(Dsolutionvalues)  
+    deallocate(Dsolutionvalues)
 
 
   end subroutine Scalar_flux_dg_buildVectorBlEdge2D_sim
@@ -5029,8 +5029,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -5070,7 +5070,7 @@ contains
             rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
     end do
 
-    ! Loop over all elements and all points   
+    ! Loop over all elements and all points
     do iel = 1, size(Dpoints,3)
        do ipoint = 1, size(Dpoints,2)
 
@@ -5078,7 +5078,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Get solution      
+          ! Get solution
           dQ(1) = DsolutionValues(1,ipoint,iel,1)
 
 
@@ -5089,7 +5089,7 @@ contains
        end do
     end do
 
-    ! Deallocate the solutionvalues    
+    ! Deallocate the solutionvalues
     deallocate(DsolutionValues)
 
   end subroutine Scalar_flux_sys_block
@@ -5154,8 +5154,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -5214,7 +5214,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Get solution      
+          ! Get solution
           dQ(1) = DsolutionValues(1,ipoint,iel,1)
 
 
@@ -5289,8 +5289,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -5437,8 +5437,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -5463,7 +5463,7 @@ contains
           ! Get coordinates
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
-          !        
+          !
           !        dx = 1.0_dp
           !        dy = 1.0_dp
 
@@ -5639,7 +5639,7 @@ contains
     ! Get x-deriv on the one side of the edge
     call fevl_evaluate_sim4 (rvectorSol, &
          rIntSubset(1), DER_FUNC, DsolutionValues, 1)
-    ! Get x-deriv on the other side of the edge                               
+    ! Get x-deriv on the other side of the edge
     call fevl_evaluate_sim4 (rvectorSol, &
          rIntSubset(2), DER_FUNC, DsolutionValues, 2)
 
@@ -5650,14 +5650,14 @@ contains
     !    ! Get x-deriv on the one side of the edge
     !    call fevl_evaluate_sim4 (rvectorSol, &
     !                             rIntSubset(1), DER_DERIV_X, DsolutionDerivx, 1)
-    !    ! Get x-deriv on the other side of the edge                               
+    !    ! Get x-deriv on the other side of the edge
     !    call fevl_evaluate_sim4 (rvectorSol, &
     !                             rIntSubset(2), DER_DERIV_X, DsolutionDerivx, 2)
-    !    
+    !
     !    ! Get y-deriv on the one side of the edge
     !    call fevl_evaluate_sim4 (rvectorSol, &
     !                             rIntSubset(1), DER_DERIV_Y, DsolutionDerivy(:,:,:), 1)
-    !    ! Get y-deriv on the other side of the edge                               
+    !    ! Get y-deriv on the other side of the edge
     !    call fevl_evaluate_sim4 (rvectorSol, &
     !                             rIntSubset(2), DER_DERIV_Y, DsolutionDerivy(:,:,:), 2)
 
@@ -5870,8 +5870,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -5942,9 +5942,9 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the boundary component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...)
     integer, dimension(:), intent(in)                           :: Icomponents
 
@@ -5965,38 +5965,38 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
     integer, intent(in)                                          :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
     real(DP), intent(in)                                        :: dwhere
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     real(DP), dimension(:), intent(out)                         :: Dvalues
     !</output>
@@ -6036,9 +6036,9 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the boundary component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...)
     integer, dimension(:), intent(in)                           :: Icomponents
 
@@ -6059,38 +6059,38 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
     integer, intent(in)                                          :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
     real(DP), intent(in)                                        :: dwhere
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     real(DP), dimension(:), intent(out)                         :: Dvalues
     !</output>
@@ -6135,9 +6135,9 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the boundary component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...)
     integer, dimension(:), intent(in)                           :: Icomponents
 
@@ -6158,38 +6158,38 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
     integer, intent(in)                                          :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
     real(DP), intent(in)                                        :: dwhere
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     real(DP), dimension(:), intent(out)                         :: Dvalues
     !</output>
@@ -6232,9 +6232,9 @@ contains
 
     !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the boundary component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...)
     integer, dimension(:), intent(in)                           :: Icomponents
 
@@ -6255,38 +6255,38 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
     integer, intent(in)                                          :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
     real(DP), intent(in)                                        :: dwhere
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional                 :: rcollection
 
     !</input>
 
     !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     real(DP), dimension(:), intent(out)                         :: Dvalues
     !</output>
@@ -6385,8 +6385,8 @@ contains
     !</input>
 
     !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
     !</inputoutput>
 
@@ -6508,15 +6508,15 @@ contains
              !        !elseif (normal(1,ielement)*1.0_dp .eq. 0) then
              !        else
              !          Dside(1,:,1,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
-             !          Dside(1,:,2,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)    
+             !          Dside(1,:,2,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)
              !        end if
-             !        
+             !
              !        if ( normal(2,ielement)*1.0_dp > 0) then
              !          Dside(2,:,1,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)
              !          Dside(2,:,2,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
              !        else
              !          Dside(2,:,1,ipoint,ielement) = (/ 0.0_dp, 0.0_dp /)
-             !          Dside(2,:,2,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)        
+             !          Dside(2,:,2,ipoint,ielement) = (/ 1.0_dp, 1.0_dp /)
              !        end if
 
              do i = 1, size(Dside,1)
@@ -6642,8 +6642,8 @@ contains
     !</input>
 
     !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
     !</inputoutput>
 
@@ -6661,7 +6661,7 @@ contains
     real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
     real(dp), dimension(4,4) :: DL, DR, DaLambda
     real(dp), dimension(4) :: dQ
-    real(dp), dimension(5) :: dQRoec  
+    real(dp), dimension(5) :: dQRoec
     real(dp) :: dx, dy
 
 
@@ -6803,7 +6803,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSol%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSol%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -6827,44 +6827,44 @@ contains
 
 
              !        !!! Boundary conditions by Riemann invariants !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        drho = 1.0_dp
              !        du = 0.0_dp
              !        dv = 0.0_dp
              !        dE = 0.0_dp
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -6873,7 +6873,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -6881,7 +6881,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -6894,19 +6894,19 @@ contains
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
-             !        
+             !
              !        ! Calculate normal and tangential part
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        ! Invert the normal part
              !        dvn = -dvn
              !        dvt =  dvt
-             !        
+             !
              !        ! Calculate new velocity
              !        du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
              !        dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
-             !        
+             !
              !        ! Set new momentum
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho * du
@@ -6915,51 +6915,51 @@ contains
 
 
              !        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        dt = rcollection%Dquickaccess(1)
              !        dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
              !        dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
              !        gamma = 1.4_dp
-             !        
+             !
              !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-             !        
+             !
              !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
              !        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
              !        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
              !        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -6968,7 +6968,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -6976,7 +6976,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -7142,7 +7142,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSol%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSol%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -7166,44 +7166,44 @@ contains
 
 
              !        !!! Boundary conditions by Riemann invariants !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        drho = 1.0_dp
              !        du = 0.0_dp
              !        dv = 0.0_dp
              !        dE = 0.0_dp
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -7212,7 +7212,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -7220,7 +7220,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -7233,19 +7233,19 @@ contains
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
-             !        
+             !
              !        ! Calculate normal and tangential part
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        ! Invert the normal part
              !        dvn = -dvn
              !        dvt =  dvt
-             !        
+             !
              !        ! Calculate new velocity
              !        du = dvn*normal(1,iedge) - dvt*normal(2,iedge)
              !        dv = dvn*normal(2,iedge) + dvt*normal(1,iedge)
-             !        
+             !
              !        ! Set new momentum
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho * du
@@ -7254,51 +7254,51 @@ contains
 
 
              !        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        dt = rcollection%Dquickaccess(1)
              !        dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iedge)
              !        dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iedge)
              !        gamma = 1.4_dp
-             !        
+             !
              !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-             !        
+             !
              !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
              !        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
              !        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
              !        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -7307,7 +7307,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -7315,7 +7315,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -7382,7 +7382,7 @@ contains
                 
                 do i = 1, size(DfluxValues,1)
                   DfluxValues(i,i,iterm,ipoint,iedge) = DfluxValues(i,i,iterm,ipoint,iedge) - 0.5_dp*dlambda
-                end do 
+                end do
               
             end select
 
@@ -7504,7 +7504,7 @@ contains
        ! Get values on the one side of the edge
        call fevl_evaluate_sim4 (rvectorSol%RvectorBlock(ivar), &
             rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
-       ! Get values on the other side of the edge                               
+       ! Get values on the other side of the edge
        call fevl_evaluate_sim4 (rvectorSol%RvectorBlock(ivar), &
             rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
     end do
@@ -7569,7 +7569,7 @@ contains
               dW1o = dvn - 2.0_dp*dc/(gamma-1)
               dW2o = dpr/(drho**gamma)
               dW3o = dvt
-              dW4o = dvn + 2.0_dp*dc/(gamma-1)        
+              dW4o = dvn + 2.0_dp*dc/(gamma-1)
               
               ! Calculate Riemann invariants from inner values
               drho = Dsolutionvalues(1,ipoint,iedge,1)
@@ -7617,7 +7617,7 @@ contains
 !        du = 3.0_dp*sqrt(1.4_dp)
 !        dv = 0.0_dp
 !        dE = 2.5_dp+4.5_dp*1.4_dp
-!        
+!
 !        Dsolutionvalues(2,ipoint,iedge,1) = drho
 !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
 !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -7663,51 +7663,51 @@ contains
              Dsolutionvalues(2,ipoint,iedge,3) = drho * dv
              Dsolutionvalues(2,ipoint,iedge,4) = Dsolutionvalues(1,ipoint,iedge,4)
              
-            end if 
+            end if
 
 
              !        !!! Boundary conditions by Riemann invariants for isentropic vortex !!!
-             !        
+             !
              !        ! Calculate Riemann invariants from outer (freestream) state
              !        ! Here you can set the desired freestream state
              !        dt = rcollection%Dquickaccess(1)
              !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
-             !        
+             !
              !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
              !        du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
              !        dv = 5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi)
              !        dE = (drho**gamma)/(0.4_dp*drho)+0.5_dp*(du*du+dv*dv)
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1o = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2o = dpr/(drho**gamma)
              !        dW3o = dvt
-             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)        
-             !        
+             !        dW4o = dvn + 2.0_dp*dc/(gamma-1)
+             !
              !        ! Calculate Riemann invariants from inner values
              !        drho = Dsolutionvalues(1,ipoint,iedge,1)
              !        du = Dsolutionvalues(1,ipoint,iedge,2)/drho
              !        dv = Dsolutionvalues(1,ipoint,iedge,3)/drho
              !        dE = Dsolutionvalues(1,ipoint,iedge,4)/drho
-             !        
+             !
              !        dpr = (gamma-1)*drho*(dE-0.5_dp*( du*du + dv*dv ) )
              !        dH = dE + dpr/drho
              !        dc = sqrt((gamma-1)*(dH-0.5_dp*( du*du + dv*dv ) ))
-             !        
+             !
              !        dvn =  du*normal(1,iedge) + dv*normal(2,iedge)
              !        dvt = -du*normal(2,iedge) + dv*normal(1,iedge)
-             !        
+             !
              !        dW1 = dvn - 2.0_dp*dc/(gamma-1)
              !        dW2 = dpr/(drho**gamma)
              !        dW3 = dvt
              !        dW4 = dvn + 2.0_dp*dc/(gamma-1)
-             !        
+             !
              !        ! Choose inner/outer state depending on the sign of the
              !        ! eigenvalues
              !        if ((dvn-dc)<0.0_dp) dW1 = dW1o
@@ -7716,7 +7716,7 @@ contains
              !          dW3 = dW3o
              !        end if
              !        if ((dvn+dc)<0.0_dp) dW4 = dW4o
-             !        
+             !
              !        ! Transform back to conservative variables and set value
              !        ! in the ghost node
              !        dc = 0.25_dp*(gamma-1.0_dp)*(dW4-dW1)
@@ -7724,7 +7724,7 @@ contains
              !        dpr = dc*dc*drho/gamma
              !        du = 0.5_dp*(dW1+dW4)*normal(1,iedge) - dW3*normal(2,iedge)
              !        dv = 0.5_dp*(dW1+dW4)*normal(2,iedge) + dW3*normal(1,iedge)
-             !        
+             !
              !        Dsolutionvalues(2,ipoint,iedge,1) = drho
              !        Dsolutionvalues(2,ipoint,iedge,2) = drho*du
              !        Dsolutionvalues(2,ipoint,iedge,3) = drho*dv
@@ -7797,7 +7797,7 @@ contains
                 ! Lax Friedrichs
                 do i = 1, size(DfluxValues,1)
                   DfluxValues(i,i,iterm,ipoint,iedge) = DfluxValues(i,i,iterm,ipoint,iedge) - 0.5_dp*dlambda
-                end do 
+                end do
                 
 !                ! Roe
 !                DfluxValues(:,:,iterm,ipoint,iedge) = DDRoe(1:4,5:8)
@@ -7878,8 +7878,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -7930,7 +7930,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Get solution      
+          ! Get solution
           dQ(1) = DsolutionValues(1,ipoint,iel,1)
 
           ! Set the coefficients
@@ -8010,7 +8010,7 @@ contains
     ! Get values on the one side of the edge
     call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
          rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
-    ! Get values on the other side of the edge                               
+    ! Get values on the other side of the edge
     call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
          rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
 
@@ -8151,7 +8151,7 @@ contains
     ! Get values on the one side of the edge
     call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(1), &
          rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
-    ! Get values on the other side of the edge                               
+    ! Get values on the other side of the edge
     call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(1), &
          rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
 
@@ -8280,8 +8280,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -8336,7 +8336,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Get solution      
+          ! Get solution
           dQ(1) = DsolutionValues(1,ipoint,iel,1)
 
           ! Set the coefficients
@@ -8424,8 +8424,8 @@ contains
     !</input>
 
     !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
     !</inputoutput>
 
@@ -8641,8 +8641,8 @@ contains
   !</input>
 
   !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
   
@@ -8818,7 +8818,7 @@ contains
     ! Get values on the one side of the edge
     call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
          rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
-    ! Get values on the other side of the edge                               
+    ! Get values on the other side of the edge
     call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
          rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
 
@@ -8848,7 +8848,7 @@ contains
           ! Boundary conditions
           if (ielementList(iedge)==0) then
             if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iedge) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
-            if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iedge) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp          
+            if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iedge) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
           end if
 
           ! Upwind flux
@@ -8922,8 +8922,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
     !</input>
@@ -8973,7 +8973,7 @@ contains
           dx = Dpoints(1,ipoint,iel)
           dy = Dpoints(2,ipoint,iel)
 
-          ! Get solution      
+          ! Get solution
           dQ(1) = DsolutionValues(1,ipoint,iel,1)
 
           ! Set the coefficients

@@ -67,33 +67,33 @@ module basicstructures
     ! Precalculated Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
-    ! Precalculated B1-matrix for that specific level. 
+    ! Precalculated B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! Precalculated B2-matrix for that specific level. 
+    ! Precalculated B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
     
-    ! Precalculated D1-matrix for that specific level. 
+    ! Precalculated D1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD1
 
-    ! Precalculated D2-matrix for that specific level. 
+    ! Precalculated D2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD2
 
-    ! Precalculated D1^T-matrix for that specific level. 
+    ! Precalculated D1^T-matrix for that specific level.
     ! This matrix either coincides with rmatrixB1 (in case D1=B1^T)
     ! or describes an independent D1 matrix.
     type(t_matrixScalar) :: rmatrixD1T
 
-    ! Precalculated D2-matrix for that specific level. 
+    ! Precalculated D2-matrix for that specific level.
     ! This matrix either coincides with rmatrixB1 (in case D2=B2^T)
     ! or describes an independent D2 matrix.
     type(t_matrixScalar) :: rmatrixD2T
 
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the velocity FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMass
 
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the pressure FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMassPressure
 
@@ -104,7 +104,7 @@ module basicstructures
     type(t_matrixScalar) :: rmatrixMassPressure
 
     ! An object specifying the discretisation in the velocity space
-    ! to be used for (edge) stabilisation. Only used if edge stabilisation 
+    ! to be used for (edge) stabilisation. Only used if edge stabilisation
     ! is activated, otherwise this coincides with the default discretisation
     ! of the velocity space.
     type(t_spatialDiscretisation) :: rdiscretisationStabil
@@ -142,7 +142,7 @@ module basicstructures
 !    type(t_vectorBlock) :: rtempVector1
 !    type(t_vectorBlock) :: rtempVector2
 !    type(t_vectorBlock) :: rtempVector3
-!    
+!
 !    ! Reference ro rtempVector(1:3), which corresponds to the primal solution.
 !    type(t_vectorBlock) :: rtempVectorPrimal
 !
@@ -172,7 +172,7 @@ module basicstructures
     integer :: niterations         = 0
     
     ! Absolute start time of the simulation
-    real(DP) :: dtimeInit          = 0.0_DP     
+    real(DP) :: dtimeInit          = 0.0_DP
     
     ! Maximum time of the simulation
     real(DP) :: dtimeMax           = 0.0_DP
@@ -215,7 +215,7 @@ module basicstructures
     integer :: itypeTargetFlow = 0
     
     ! Analytical expression that defines the target flow for the X/Y coordinate
-    ! in case itypeTargetFlow = 5. 
+    ! in case itypeTargetFlow = 5.
     character(SYS_STRLEN) :: stargetFlowExpressionX = ''
     character(SYS_STRLEN) :: stargetFlowExpressionY = ''
     
@@ -276,10 +276,10 @@ module basicstructures
   
     ! Type of constraints to apply to the control u.
     ! =0: No constraints.
-    ! =1: Constant constraints on u active: 
+    ! =1: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
     !     Implemented by cubature point.
-    ! =2: Constant constraints on u active: 
+    ! =2: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
     !     Implementation by DOF.
     integer :: ccontrolConstraints = 0
@@ -385,7 +385,7 @@ module basicstructures
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
     
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer           :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -395,7 +395,7 @@ module basicstructures
     
     ! Type of simulation.
     ! =0: stationary simulation.
-    ! =1: time-dependent simulation with explicit time stepping configured 
+    ! =1: time-dependent simulation with explicit time stepping configured
     !     by rtimedependence
     integer                               :: itimedependence
     
@@ -407,8 +407,8 @@ module basicstructures
     ! problem.
     type(t_problem_optcontrol)            :: roptcontrol
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection)                    :: rcollection
     
@@ -482,7 +482,7 @@ module basicstructures
 !
 ! On every level between NLMIN and NLMAX:
 !
-! Expressions for boundary conditions are saved in special 
+! Expressions for boundary conditions are saved in special
 ! sections in the collection:
 !
 ! Section [BDEXPRESSIONS]:
@@ -492,7 +492,7 @@ module basicstructures
 ! During the assembly of RHS vectors and boundary conditions, the following
 ! additional information is valid in the collection:
 !
-!   collection%IquickAccess(1)   = 0: stationary, 
+!   collection%IquickAccess(1)   = 0: stationary,
 !                                  1: nonstationary with explicit time stepping
 !   collection%DquickAccess(1)   = current simulation time
 !   collection%DquickAccess(2)   = minimum simulation time

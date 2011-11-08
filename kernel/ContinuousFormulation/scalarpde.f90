@@ -47,13 +47,13 @@ module scalarpde
   ! of derivatives in different directions. The form itself is encoded
   ! with the structure t_bilinearForm as follows:
   !
-  ! 1.) itermCount = 2                     -> 2 additive terms     
+  ! 1.) itermCount = 2                     -> 2 additive terms
   ! 2.) BconstantCoeff = true              -> constant coefficients
-  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient      
-  ! 4.) Idescriptors(1,1) = DER_DERIV_X    -> u_x in the 1st term  
-  ! 5.) Idescriptors(2,1) = DER_DERIV_X    -> v_x in the 1st term  
-  ! 6.) Dcoefficients(2)  = 1.0            -> 2nd coefficient      
-  ! 7.) Idescriptors(1,2) = DER_DERIV_Y    -> u_y in the 2nd term  
+  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient
+  ! 4.) Idescriptors(1,1) = DER_DERIV_X    -> u_x in the 1st term
+  ! 5.) Idescriptors(2,1) = DER_DERIV_X    -> v_x in the 1st term
+  ! 6.) Dcoefficients(2)  = 1.0            -> 2nd coefficient
+  ! 7.) Idescriptors(1,2) = DER_DERIV_Y    -> u_y in the 2nd term
   ! 8.) Idescriptors(2,2) = DER_DERIV_Y    -> v_y in the 2nd term
   
   type t_bilinearForm
@@ -111,20 +111,20 @@ module scalarpde
   ! a finite element function f(.) given that specifies variable coefficients.
   ! The form itself is encoded with the structure t_trilinearForm as follows:
   !
-  !  1.) itermCount = 2                     -> 2 additive terms     
+  !  1.) itermCount = 2                     -> 2 additive terms
   !  2.) BconstantCoeff = true              -> constant coefficients
-  !  3.) Dcoefficients(1)  = 1.0            -> 1st coefficient      
-  !  5.) Idescriptors(1,1) = DER_FUNC       -> w(x,y) in the 1st term  
-  !  6.) Idescriptors(2,1) = DER_DERIV_X    -> u_x in the 1st term  
-  !  7.) Idescriptors(3,1) = DER_DERIV_X    -> v_x in the 1st term  
-  !  8.) Dcoefficients(2)  = 1.0            -> 2nd coefficient      
-  !  9.) Idescriptors(1,2) = DER_FUNC       -> w(x,y) in the 2nd term  
-  ! 10.) Idescriptors(2,2) = DER_DERIV_Y    -> u_y in the 2nd term  
+  !  3.) Dcoefficients(1)  = 1.0            -> 1st coefficient
+  !  5.) Idescriptors(1,1) = DER_FUNC       -> w(x,y) in the 1st term
+  !  6.) Idescriptors(2,1) = DER_DERIV_X    -> u_x in the 1st term
+  !  7.) Idescriptors(3,1) = DER_DERIV_X    -> v_x in the 1st term
+  !  8.) Dcoefficients(2)  = 1.0            -> 2nd coefficient
+  !  9.) Idescriptors(1,2) = DER_FUNC       -> w(x,y) in the 2nd term
+  ! 10.) Idescriptors(2,2) = DER_DERIV_Y    -> u_y in the 2nd term
   ! 11.) Idescriptors(3,2) = DER_DERIV_Y    -> v_y in the 2nd term
   !
   ! One diffence to the usual meaning of the descriptors: A value of
   !   Idescriptors(1,i) = 0
-  ! instead of DER_xxxx means that the function f is the constant 
+  ! instead of DER_xxxx means that the function f is the constant
   ! mapping f_i(u):=1. So this disables the contribution of u for that term.
   
   type t_trilinearForm
@@ -174,14 +174,14 @@ module scalarpde
   !
   ! This bilinear form consists of one additive term. The term has
   ! a constant coefficient '1' in front and consist of a combination
-  ! of derivatives. The form itself is encoded with the structure 
+  ! of derivatives. The form itself is encoded with the structure
   ! t_linearForm as follows:
   !
-  ! 1.) itermCount = 1                     -> 2 additive terms     
+  ! 1.) itermCount = 1                     -> 2 additive terms
   ! 2.) BconstantCoeff = true              -> constant coefficients
-  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)     
-  ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term    
-  ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term    
+  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)
+  ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term
+  ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term
   
   type t_linearForm
   

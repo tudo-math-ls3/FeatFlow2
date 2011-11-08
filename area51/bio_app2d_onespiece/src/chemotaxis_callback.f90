@@ -67,10 +67,10 @@ contains
 
 
  
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! subroutines for initial prescription of chemo !!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  initial_c_callback  !!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  initial_c_callback  !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine initial_c_callback (cderivative,rdiscretisation, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
@@ -127,8 +127,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -147,22 +147,22 @@ contains
     integer :: icub, iel
 
     DO iel = 1, nelements
-        DO icub = 1, npointsPerElement             
+        DO icub = 1, npointsPerElement
             Dvalues( icub, iel ) = userPresc_chemoattrInitCond( Dpoints(1,icub,iel), &
                                                                 Dpoints(2,icub,iel) )
         END DO
     END DO
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! end subroutines for initial prescription of chemo !!!!
-  !!!!!!!!!!!!!!!!!!!!!  initial_c_callback  !!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  initial_c_callback  !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! subroutines for initial prescription of cell !!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  initial_u_callback  !!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  initial_u_callback  !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine initial_u_callback (cderivative,rdiscretisation, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
@@ -219,8 +219,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -241,21 +241,21 @@ contains
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
             !2D Dvalues( icub, iel ) =  1.0_DP + ic_pattern  ( Dpoints ( 1, icub, iel ), Dpoints ( 2, icub, iel ) )
-            Dvalues( icub, iel ) = userPresc_cellsInitCond( Dpoints(1,icub,iel), & 
+            Dvalues( icub, iel ) = userPresc_cellsInitCond( Dpoints(1,icub,iel), &
                                                             Dpoints(2,icub,iel) )
         END DO
     END DO
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! end subroutines for initial prescription of cell !!!!!
-  !!!!!!!!!!!!!!!!!!!!!  initial_u_callback  !!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  initial_u_callback  !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! subroutines for chemo boundary conditions !!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!! getBoundaryValues_c_callback !!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine getBoundaryValues_c_callback (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
@@ -272,9 +272,9 @@ contains
   
   !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -295,35 +295,35 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
   !</input>
 
   !<output>
-  ! This array receives the calculated information. 
+  ! This array receives the calculated information.
   real(DP), dimension(:), intent(OUT) :: Dvalues
   
   ! coordinates
@@ -348,20 +348,20 @@ contains
    !    Dvalues(1) = dx*dy
    !end if
    
-   !Dvalues(1) = sin(PI*dx) + sin(PI*dy) 
+   !Dvalues(1) = sin(PI*dx) + sin(PI*dy)
    Dvalues(1) = dx + dy
    
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! end subroutines for chemo boundary conditions !!!!!!!
   !!!!!!!!!!!!!!!!!!!!! getBoundaryValues_c_callback !!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! subroutines for cell boundary conditions !!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!! getBoundaryValues_u_callback !!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine getBoundaryValues_u_callback (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
@@ -378,9 +378,9 @@ contains
   
   !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -401,35 +401,35 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
   !</input>
 
   !<output>
-  ! This array receives the calculated information. 
+  ! This array receives the calculated information.
   real(DP), dimension(:), intent(OUT) :: Dvalues
   
   ! coordinates
@@ -457,16 +457,16 @@ contains
    Dvalues(1) = dx*(1_DP - dx)*dy*(1_DP - dy)
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! end subroutines for cell boundary conditions !!!!!!!
   !!!!!!!!!!!!!!!!!!!!! getBoundaryValues_u_callback !!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! callback subroutine: rhs for chemoattractant !!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfc  !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfc  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_chemo_rfc (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
@@ -476,7 +476,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -525,8 +525,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -543,12 +543,12 @@ contains
 
     ! local variables
 
-    ! constants of the PDE    
+    ! constants of the PDE
     integer :: icub, iel
     real(DP) :: x, y
     
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl1, DvaluesFevl2
 
     ! This is the vector which is of interest
@@ -590,16 +590,16 @@ contains
     deallocate(DvaluesFevl2)
  
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! end callback subroutine: rhs for chemoattractant !!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfc  !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfc  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
  
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! callback subroutine: rhs for cell density !!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_chemo_rfu (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
@@ -609,7 +609,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -658,8 +658,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -672,7 +672,7 @@ contains
     real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
-    real(DP) :: convecRelaxation    
+    real(DP) :: convecRelaxation
 !</subroutine>
 
     ! local variables
@@ -683,7 +683,7 @@ contains
     real(DP) :: x, y
     
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -709,19 +709,19 @@ contains
 				)
             
         END DO
-    END DO    
+    END DO
     
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! end callback subroutine: rhs for cell density !!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  callback_chemo_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!! callback subroutine: boundary integral for cell !!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_boundaryIntegral !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  callback_boundaryIntegral !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_boundaryIntegral (rdiscretisation, rform, &
                   nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
                   IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -785,8 +785,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
@@ -804,17 +804,17 @@ contains
   
   
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! end callback subroutine: boundary integral for cell !!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_boundaryIntegral !!!!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  callback_boundaryIntegral !!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-  !!!!!!!!!!!!!!!! subroutine for convective term !!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!  callback_K !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!! subroutine for convective term !!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!  callback_K !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_K(rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial, IdofsTest,rdomainIntSubset,&
@@ -824,7 +824,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -874,8 +874,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -893,7 +893,7 @@ contains
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -901,7 +901,7 @@ contains
     type(t_vectorScalar) :: rvector_x, rvector_y
 
     ! Some params passed by the collection structure
-    real(DP) :: dtstep, CHI, GAMMA, ALPHA, convecRelaxation 
+    real(DP) :: dtstep, CHI, GAMMA, ALPHA, convecRelaxation
 
     integer :: icub, iel
 
@@ -943,27 +943,27 @@ contains
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
-            Dcoefficients(1,icub,iel) = convecRelaxation*CHI*DvaluesFevl(1,icub,iel) 
+            Dcoefficients(1,icub,iel) = convecRelaxation*CHI*DvaluesFevl(1,icub,iel)
             ! second term
-            Dcoefficients(2,icub,iel) = convecRelaxation*CHI*DvaluesFevl(2,icub,iel) 
+            Dcoefficients(2,icub,iel) = convecRelaxation*CHI*DvaluesFevl(2,icub,iel)
             ! third term
-            ! Dcoefficients(3,icub,iel) = convecRelaxation*CHI*DvaluesFevl(3,icub,iel)             
+            ! Dcoefficients(3,icub,iel) = convecRelaxation*CHI*DvaluesFevl(3,icub,iel)
         END DO
     END DO
 
     deallocate(DvaluesFevl)
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! end subroutine for convective term !!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  callback_K !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  callback_K !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! subroutines for construction laplace in the defcorr !
   !!!!!!!!!!!!!!!!!!!!!  callback_defcorr_laplace  !!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_defcorr_laplace(rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial, IdofsTest,rdomainIntSubset,&
@@ -973,7 +973,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1023,8 +1023,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1042,7 +1042,7 @@ contains
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -1065,12 +1065,12 @@ contains
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
     call fevl_evaluate_sim4(rvector_u, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
@@ -1085,16 +1085,16 @@ contains
     deallocate(DvaluesFevl)
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!! end subroutines for construction laplace in the defcorr !!
   !!!!!!!!!!!!!!!!!!!!!  callback_defcorr_laplace  !!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!! blow-up restrictive term for the defcorr loop !!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!  coeff_pattern_growthterm  !!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine coeff_pattern_growthterm(rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial, IdofsTest,rdomainIntSubset,&
@@ -1104,7 +1104,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1154,8 +1154,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1173,7 +1173,7 @@ contains
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -1193,12 +1193,12 @@ contains
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
     call fevl_evaluate_sim4(rvector_u, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
     DO iel = 1,nelements
@@ -1210,13 +1210,13 @@ contains
     deallocate(DvaluesFevl)
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!! end blow-up restrictive term for the defcorr loop !!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!  coeff_pattern_growthterm  !!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!! Subroutine to prescribe the analitycal value of chemo !!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!! analyt_c_pattern !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1276,8 +1276,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -1296,24 +1296,24 @@ contains
     integer :: icub, iel
 
     DO iel = 1, nelements
-        DO icub = 1, npointsPerElement             
+        DO icub = 1, npointsPerElement
                 !RS: c^2 test-case
 !             Dvalues(icub, iel) = Dpoints(1,icub,iel)**2+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
                 !RS: andriy and linear test-case
-            !Dvalues(icub, iel) = sin(PI*Dpoints(1,icub,iel)) + sin(PI*Dpoints(2,icub,iel)) 
+            !Dvalues(icub, iel) = sin(PI*Dpoints(1,icub,iel)) + sin(PI*Dpoints(2,icub,iel))
             Dvalues( icub, iel ) = Dpoints(1,icub,iel) +  Dpoints(2,icub,iel)
 
             
         END DO
     END DO
   end subroutine
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!! End of subroutine to prescribe the analitycal value of chemo !!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!! analyt_c_pattern !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! Subroutine to prescribe the analitycal value of cells !!!!!
     !!!!!!!!!!!!!!!!!!!!!!! analyt_u_pattern !!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1373,8 +1373,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -1393,14 +1393,14 @@ contains
     integer :: icub, iel
 
     DO iel = 1, nelements
-        DO icub = 1, npointsPerElement             
+        DO icub = 1, npointsPerElement
 
-            Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 1_DP - Dpoints(1,icub,iel)) & 
-				                 * Dpoints(2,icub,iel)*( 1_DP - Dpoints(2,icub,iel)) 	
+            Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 1_DP - Dpoints(1,icub,iel)) &
+				                 * Dpoints(2,icub,iel)*( 1_DP - Dpoints(2,icub,iel))
         END DO
     END DO
   end subroutine
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! End of subroutine to prescribe the analitycal value of cells !!!!!
     !!!!!!!!!!!!!!!!!!!!!!! analyt_u_pattern !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1409,7 +1409,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! User prescribed function for setting initial conditions for cells !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	function userPresc_cellsInitCond(x,y) result (func_result)		
+	function userPresc_cellsInitCond(x,y) result (func_result)
 	    !
 	    ! coordinates
 	    real(DP) :: x, y
@@ -1418,7 +1418,7 @@ contains
 		real(DP) :: func_result
 
         ! setting initial solution
-        func_result = x*(1_DP-x)*y*(1_DP-y) 
+        func_result = x*(1_DP-x)*y*(1_DP-y)
         
 	end function userPresc_cellsInitCond
 
@@ -1426,7 +1426,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! User prescribed function for setting initial conditions for cells !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	function userPresc_chemoattrInitCond(x,y) result (func_result)		
+	function userPresc_chemoattrInitCond(x,y) result (func_result)
 	    !
 	    ! coordinates
 	    real(DP) :: x, y
@@ -1435,15 +1435,15 @@ contains
 		real(DP) :: func_result
 
         ! setting initial solution
-        func_result = x + y 
+        func_result = x + y
                 
-	end function userPresc_chemoattrInitCond 
+	end function userPresc_chemoattrInitCond
     
     
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-  !!!!!!!!!! end subroutines for analytical evalution of chemo !!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Chemo  !!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!! end subroutines for analytical evalution of chemo !!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Chemo  !!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine ffunction_Target_Chemo (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
@@ -1492,8 +1492,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1524,19 +1524,19 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    !Dvalues(:,:) = sin(PI*Dpoints(1,:,:)) + sin(PI*Dpoints(2,:,:)) 
+    !Dvalues(:,:) = sin(PI*Dpoints(1,:,:)) + sin(PI*Dpoints(2,:,:))
     Dvalues(:,:) = Dpoints(1,:,:) + Dpoints(2,:,:)
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-  !!!!!!!!!! end subroutines for analytical evalution of chemo !!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Chemo  !!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!! end subroutines for analytical evalution of chemo !!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Chemo  !!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! subroutines for analytical evalution of cell !!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Cells  !!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Cells  !!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine ffunction_Target_Cells (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
@@ -1585,8 +1585,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1617,20 +1617,20 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
-		         * Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:)) 
+    Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) &
+		         * Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:))
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! subroutines for analytical evalution of cell !!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Cells  !!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Cells  !!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! subroutines for analytical evalution of chemo !!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_ChemoH1  !!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_ChemoH1  !!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine ffunction_Target_ChemoH1 (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
@@ -1679,8 +1679,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1716,19 +1716,19 @@ contains
    ELSE IF (cderivative .EQ. DER_DERIV_X) THEN
      Dvalues(:,:) = 1_DP
    ELSE IF (cderivative .EQ. DER_DERIV_Y) THEN
-     Dvalues(:,:) = 1_DP 
-   END IF     
+     Dvalues(:,:) = 1_DP
+   END IF
      
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! subroutines for analytical evalution of chemo !!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_ChemoH1  !!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_ChemoH1  !!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!! subroutines for analytical evalution of cell !!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_CellsH1  !!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_CellsH1  !!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine ffunction_Target_CellsH1 (cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
@@ -1777,8 +1777,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1810,19 +1810,19 @@ contains
     end if
 
    IF (cderivative .EQ. DER_FUNC) THEN
-     Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
-		  * Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:))  
+     Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) &
+		  * Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:))
    ELSE IF (cderivative .EQ. DER_DERIV_X) THEN
      Dvalues(:,:) = (1_DP - 2*Dpoints(1,:,:))* Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:))
    ELSE IF (cderivative .EQ. DER_DERIV_Y) THEN
      Dvalues(:,:) = (1_DP - 2*Dpoints(2,:,:))* Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:))
-   END IF     
+   END IF
 
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! end subroutines for analytical evalution of cell !!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_CellsH1  !!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_CellsH1  !!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
 
   ! ***************************************************************************
@@ -1837,7 +1837,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -1886,8 +1886,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -1909,7 +1909,7 @@ contains
     integer :: icub, iel
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -1919,7 +1919,7 @@ contains
     dtstep = rcollection%DquickAccess(1)
     PHI = rcollection%DquickAccess(2)
 
-    ! Fetching the vector    
+    ! Fetching the vector
     rvector = collct_getvalue_vecsca (rcollection, "cbvector",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
@@ -1933,7 +1933,7 @@ contains
     
    DO iel = 1, nelements
         DO icub = 1, npointsPerElement
-            Dcoefficients(1,icub,iel) = dtstep*PHI*DvaluesFevl(1,icub,iel) 
+            Dcoefficients(1,icub,iel) = dtstep*PHI*DvaluesFevl(1,icub,iel)
         END DO
     END DO
 
@@ -1956,7 +1956,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -2006,8 +2006,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -2025,7 +2025,7 @@ contains
     ! local variables
 
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:), allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -2040,8 +2040,8 @@ contains
     ! allocate some memory for the calls of Fevl
     allocate (DvaluesFevl(4,npointsPerElement,nelements))
     ! Fetching the vector
-!     rvector_c => rcollection%p_rvectorQuickAccess1 
-!     rvector_u => rcollection%p_rvectorQuickAccess2 
+!     rvector_c => rcollection%p_rvectorQuickAccess1
+!     rvector_u => rcollection%p_rvectorQuickAccess2
     rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
@@ -2049,7 +2049,7 @@ contains
 
     ! If CHI =CHI (u,c) then we should call fevl also for certain functional descriptors
     ! to get the needed evaluations of u and c for computing CHI
-    ! For the sake of simplicity, we' re now only considering a const CHI 
+    ! For the sake of simplicity, we' re now only considering a const CHI
 
 
     ! Fetching the values of rvector_c in the cubature pts.
@@ -2064,17 +2064,17 @@ contains
     call fevl_evaluate_sim4(rvector_c, &
                                  rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
 
-    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
+    ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the
     ! LHS of u_n+1 of the third chertock kurganov example
 
 !    DO iel = 1,nelements
 !        DO icub = 1,npointsPerElement
 !            ! first term
 !            Dcoefficients(1,icub,iel) =   f_CHI ( DvaluesFevl(3,icub,iel) ,&
-!                                                  DvaluesFevl(4,icub,iel) , CHI ) *  DvaluesFevl(1,icub,iel) 
+!                                                  DvaluesFevl(4,icub,iel) , CHI ) *  DvaluesFevl(1,icub,iel)
 !            ! second term
 !            Dcoefficients(2,icub,iel) =   f_CHI ( DvaluesFevl(3,icub,iel) ,&
-!                                                  DvaluesFevl(4,icub,iel) , CHI )* DvaluesFevl(2,icub,iel) 
+!                                                  DvaluesFevl(4,icub,iel) , CHI )* DvaluesFevl(2,icub,iel)
 !        END DO
 !    END DO
 
@@ -2091,9 +2091,9 @@ contains
     ! ***************************************************************************
     function ic_pattern (x,y) result(f_result)
         implicit none
-        intrinsic RANDOM_NUMBER 
+        intrinsic RANDOM_NUMBER
         real(DP) :: x, y, f_result, random_num
-        if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then 
+        if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then
             CALL RANDOM_NUMBER (random_num)
             !f_result = random_num
             f_result = 0.2_DP
@@ -2107,14 +2107,14 @@ contains
     ! ***************************************************************************
 
 
-  !*****************************************************************************  
+  !*****************************************************************************
   !***** Below are all subroutines for weak Dirichlet boundary conditions *****!
   !*****************************************************************************
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! callback subroutine for mass matrix generation of !!!!!!!
   !!!!!!!!!!!!!!!!!!!! weak boundary conditions for c !!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!  callback_massmatrixWeakD_c !!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!  callback_massmatrixWeakD_c !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine    callback_massmatrixWeakD_c (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
@@ -2164,8 +2164,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -2184,28 +2184,28 @@ contains
     ! loop over all elements and calculate the
     ! values in the cubature points
     do iel=1,nelements
-        do icub=1,npointsPerElement 
-            ! check if it is inside      
-            if( onDirichletBoundary_chemo( Dpoints(1,icub,iel), Dpoints(2,icub,iel)) )then 
+        do icub=1,npointsPerElement
+            ! check if it is inside
+            if( onDirichletBoundary_chemo( Dpoints(1,icub,iel), Dpoints(2,icub,iel)) )then
                 Dcoefficients(1,icub,iel) = 1.0_DP
             else
                 Dcoefficients(1,icub,iel) = 0.0_DP
             end if
         end do
-    end do    
-  !   
+    end do
+  !
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! callback subroutine for mass matrix generation of !!!!!!!
   !!!!!!!!!!!!!!!!!!!! weak boundary conditions for c !!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!! callback_massmatrixWeakD_c !!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! callback subroutine for mass matrix generation of !!!!!!!
   !!!!!!!!!!!!!!!!!!!! weak boundary conditions for u !!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!  callback_massmatrixWeakD_u !!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!  callback_massmatrixWeakD_u !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_massmatrixWeakD_u (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
@@ -2255,8 +2255,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -2275,28 +2275,28 @@ contains
     ! loop over all elements and calculate the
     ! values in the cubature points
     do iel=1,nelements
-        do icub=1,npointsPerElement 
-            ! check if it is inside      
-            if( onDirichletBoundary_cell( Dpoints(1,icub,iel), Dpoints(2,icub,iel)) )then 
+        do icub=1,npointsPerElement
+            ! check if it is inside
+            if( onDirichletBoundary_cell( Dpoints(1,icub,iel), Dpoints(2,icub,iel)) )then
                 Dcoefficients(1,icub,iel) = 1.0_DP
             else
                 Dcoefficients(1,icub,iel) = 0.0_DP
             end if
         end do
-    end do    
-  !   
+    end do
+  !
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! callback subroutine for mass matrix generation of !!!!!!!
   !!!!!!!!!!!!!!!!!!!! weak boundary conditions for u !!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!! callback_massmatrixWeakD_u !!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! function, which returns 1 (if ppoints lies on the Dirichlet boundary) !!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! and otherwise 0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! onDirichletBoundary_chemo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   logical function onDirichletBoundary_chemo( x, y ) result(loutput)
 
     !<input>
@@ -2307,33 +2307,33 @@ contains
     ! we prescribe the Dirichlet boundaries of the unit cube
     ! edge 1 (x=0, y)
     dist = 0.05_DP
-    if ( ( x > -dist ).and.( x < dist ) ) then 
+    if ( ( x > -dist ).and.( x < dist ) ) then
         loutput = .true.
-    ! edge 2 (x, y=0)    
-    else if(  ( y > -dist ).and.( y < dist ) ) then 
+    ! edge 2 (x, y=0)
+    else if(  ( y > -dist ).and.( y < dist ) ) then
         loutput = .true.
-    ! edge 3 (x=1, y)    
-    else if(  ( x > 1-dist ).and.( x < 1+dist ) ) then 
+    ! edge 3 (x=1, y)
+    else if(  ( x > 1-dist ).and.( x < 1+dist ) ) then
         loutput = .true.
-    ! edge 4 (x, y=1)    
-    else if(  ( y > 1-dist ).and.( y < 1+dist ) ) then 
+    ! edge 4 (x, y=1)
+    else if(  ( y > 1-dist ).and.( y < 1+dist ) ) then
         loutput = .true.
-    else 
-        loutput = .false.            
+    else
+        loutput = .false.
     end if
     
   end function
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! end function, which returns 1 (if ppoints lies on the Dirichlet boundary) !!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! and otherwise 0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! onDirichletBoundary_chemo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! function, which returns 1 (if ppoints lies on the Dirichlet boundary) !!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! and otherwise 0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! onDirichletBoundary_cell !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   logical function onDirichletBoundary_cell( x, y ) result(loutput)
 
     !<input>
@@ -2344,33 +2344,33 @@ contains
     ! we prescribe the Dirichlet boundaries of the unit cube
     ! edge 1 (x=0, y)
     dist = 0.05_DP
-    if ( ( x > -dist ).and.( x < dist ) ) then 
+    if ( ( x > -dist ).and.( x < dist ) ) then
         loutput = .true.
-    ! edge 2 (x, y=0)    
-    else if(  ( y > -dist ).and.( y < dist ) ) then 
+    ! edge 2 (x, y=0)
+    else if(  ( y > -dist ).and.( y < dist ) ) then
         loutput = .true.
-    ! edge 3 (x=1, y)    
-    else if(  ( x > 1-dist ).and.( x < 1+dist ) ) then 
+    ! edge 3 (x=1, y)
+    else if(  ( x > 1-dist ).and.( x < 1+dist ) ) then
         loutput = .true.
-    ! edge 4 (x, y=1)    
-    else if(  ( y > 1-dist ).and.( y < 1+dist ) ) then 
+    ! edge 4 (x, y=1)
+    else if(  ( y > 1-dist ).and.( y < 1+dist ) ) then
         loutput = .true.
-    else 
-        loutput = .false.            
+    else
+        loutput = .false.
     end if
     
   end function
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!! end function, which returns 1 (if ppoints lies on the Dirichlet boundary) !!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! and otherwise 0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! onDirichletBoundary_cell !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! callback subroutine: weak Dirichlet boundaries for chemo !!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfc !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfc !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_weakDirichlet_rfc (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
@@ -2380,7 +2380,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -2429,8 +2429,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -2443,7 +2443,7 @@ contains
     real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
-    real(DP) :: convecRelaxation    
+    real(DP) :: convecRelaxation
 !</subroutine>
 
     ! local variables
@@ -2454,7 +2454,7 @@ contains
     real(DP) :: x, y
     
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -2472,31 +2472,31 @@ contains
             x=Dpoints(1,icub,iel)
             y=Dpoints(2,icub,iel)
 
-            if( onDirichletBoundary_chemo( x, y ) ) then 
+            if( onDirichletBoundary_chemo( x, y ) ) then
                 Dcoefficients(1,icub,iel) =  dtstep*lambda_c*( x + y ) ! here to make changes!!!!!!!!!                                               )
             else
                 Dcoefficients(1,icub,iel) = 0.0_DP
-            end if            
+            end if
             
         END DO
-    END DO    
+    END DO
     
     !print *,dtstep
     !print *,lambda_u
     !print *,''
     
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! callback subroutine: weak Dirichlet boundaries for chemo !!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfc !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfc !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! callback subroutine: weak Dirichlet boundaries for cell !!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   subroutine callback_weakDirichlet_rfu (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
@@ -2506,7 +2506,7 @@ contains
     use triangulation
     use collection
     use scalarpde
-    use domainintegration  
+    use domainintegration
     use feevaluation
     
   !<description>
@@ -2555,8 +2555,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT)     :: rcollection
     
   !</input>
@@ -2569,7 +2569,7 @@ contains
     real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
-    real(DP) :: convecRelaxation    
+    real(DP) :: convecRelaxation
 !</subroutine>
 
     ! local variables
@@ -2580,7 +2580,7 @@ contains
     real(DP) :: x, y
     
     ! This array contains the output of the FE evaluations, e.g. the values which
-    ! we ' ll deriving the Dvalues with 
+    ! we ' ll deriving the Dvalues with
     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
 
     ! This is the vector which is of interest
@@ -2598,23 +2598,23 @@ contains
             x=Dpoints(1,icub,iel)
             y=Dpoints(2,icub,iel)
 
-            if( onDirichletBoundary_cell( x, y ) ) then 
+            if( onDirichletBoundary_cell( x, y ) ) then
                 Dcoefficients(1,icub,iel) =  dtstep*lambda_u*( x*(1_DP - x) * y*(1_DP - y) ) ! here to make changes!!!!!!!!!                                               )
             else
                 Dcoefficients(1,icub,iel) = 0.0_DP
-            end if            
+            end if
             
         END DO
-    END DO    
+    END DO
     
     !print *,dtstep
     !print *,lambda_u
     !print *,''
     
   end subroutine
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!! callback subroutine: weak Dirichlet boundaries for cell !!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!!!!!!!!!!  callback_weakDirichlet_rfu !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 end module

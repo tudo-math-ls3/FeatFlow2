@@ -54,7 +54,7 @@ contains
   real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(in) :: dnu 
+  real(DP), intent(in) :: dnu
   
   ! Weighting factor for the mass matrix.
   real(DP), intent(in) :: dalpha
@@ -62,10 +62,10 @@ contains
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
   real(DP), intent(in) :: dbeta
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: $\theta * u*grad(u)$.
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(in) :: dtheta 
+  real(DP), intent(in) :: dtheta
   
   ! Weighting factor for the nonlinear term
   real(DP), intent(in) :: ddelta
@@ -125,13 +125,13 @@ contains
   ! An element evaluation set for evaluating elements.
   type(t_evalElementSet) :: revalElementSet
 
-  ! Arrays for saving Jacobian determinants 
+  ! Arrays for saving Jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
   ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: Idofs
   
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: Dbas
 
@@ -149,7 +149,7 @@ contains
   ! An array with local DELTA`s, each DELTA for one element
   real(DP), dimension(:), allocatable :: DlocalDelta
 
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -198,8 +198,8 @@ contains
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
     
-    ! For cdef containing CONV_MODDEFECT, we build the defect vector                     
-    !     D = RHS - A*U                                         
+    ! For cdef containing CONV_MODDEFECT, we build the defect vector
+    !     D = RHS - A*U
     ! In this case, the defect(rhs vectors must be present
     
     
@@ -228,7 +228,7 @@ contains
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
@@ -277,7 +277,7 @@ contains
     end if
     
     ! Calculate the maximum norm of the actual velocity field
-    ! U = A1*U1 + A2*U2 into DUMAX. 
+    ! U = A1*U1 + A2*U2 into DUMAX.
     ! Round up the norm to 1D-8 if it is too small...
 
     dumax=0.0_DP
@@ -322,7 +322,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element IEL, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -358,19 +358,19 @@ contains
       !
       ! We have indofTrial trial DOF`s per element and
       ! indofTest test DOF`s per element. Therefore there are
-      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-      ! "active" (i.e. have common support) on our current element, each 
+      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+      ! "active" (i.e. have common support) on our current element, each
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! Kentry(1..indofTrial,1..indofTest) receives the position 
-      !   in the global system matrix, where the corresponding value 
+      ! Kentry(1..indofTrial,1..indofTest) receives the position
+      !   in the global system matrix, where the corresponding value
       !   has to be added to.
-      ! (The corresponding contrbutions can be saved separately, 
-      !  but we directly add them to the global matrix in this 
+      ! (The corresponding contrbutions can be saved separately,
+      !  but we directly add them to the global matrix in this
       !  approach.)
       !
-      ! We build local matrices for all our elements 
+      ! We build local matrices for all our elements
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
@@ -381,7 +381,7 @@ contains
         ! define the rows in the matrix.
         do IDOFE=1,indof
         
-          ! Row IDOFE of the local matrix corresponds 
+          ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
@@ -397,7 +397,7 @@ contains
           
           do JDOFE=1,indof
             
-            ! Get the global DOF of the "X" which interacts with 
+            ! Get the global DOF of the "X" which interacts with
             ! our "O".
             
             JDFG=Idofs(JDOFE,IEL)
@@ -411,7 +411,7 @@ contains
               if (p_KCOL(JCOL) .eq. JDFG) exit
             end do
 
-            ! Because columns in the global matrix are sorted 
+            ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
             
@@ -440,7 +440,7 @@ contains
       !
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       ! In the first loop, calculate the coordinates on the reference element.
@@ -465,20 +465,20 @@ contains
 
       ! We want to set up the nonlinear part of the matrix
       !
-      !   n~_h (u_h, u_h, v_h) 
+      !   n~_h (u_h, u_h, v_h)
       !
       ! = n_h (u_h, u_h, v_h) + sum_T ( delta_T ( u_h*grad u_h, u_h*grad v_h)_T )
       !   ^^^^^^^^^^^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
       !  standard nonlin. part                  stabilization
       !
-      ! More precisely, as we want to assemble the matrix which is 
+      ! More precisely, as we want to assemble the matrix which is
       ! later multiplied with coefficient vectors, we have to insert
       ! basis functions in the above terms instead of u_h and v_h.
-      ! Assuming the representation u_h=sum_j(u_j*Phi_j) and 
+      ! Assuming the representation u_h=sum_j(u_j*Phi_j) and
       ! v_h=sum_i(u_i,Phi_i), the above term is evaluated in the
       ! DOF`s as:
-      ! 
-      !   n_h (u_h, Phi_j, Phi_i) 
+      !
+      !   n_h (u_h, Phi_j, Phi_i)
       ! + sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i )_T )
       !
       ! In nonstationary simulations, the system matrix typically
@@ -506,7 +506,7 @@ contains
             ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
-              ! Get the value of the (test) basis function 
+              ! Get the value of the (test) basis function
               ! phi_i (our "O") in the cubature point:
               db = Dbas(JDOFE,1,ICUBP,IEL)
               
@@ -542,7 +542,7 @@ contains
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
           !
-          ! Normally, we have to take the absolut value of the determinant 
+          ! Normally, we have to take the absolut value of the determinant
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that is normal!
@@ -560,16 +560,16 @@ contains
           !
           ! The vector u_h=(DU1,DU2) contains both velocity components,
           ! for the X as well as for the Y velocity. On the other hand
-          ! the system matrix we want to build here will be designed for 
+          ! the system matrix we want to build here will be designed for
           ! one velocity component only! Therefore, Phi_i and Phi_j
           ! are scalar functions, so grad(Phi_i), grad(Phi_j) are vectors
-          ! with two components. Therefore, the last scalar product is more 
+          ! with two components. Therefore, the last scalar product is more
           ! in detail:
           !
           !     ( u_h*grad Phi_j, u_h*grad Phi_i )_T
           !
           ! =   ( < (DU1) , (grad(Phi_j)_1) > , < (DU1) , (grad(Phi_i)_1) > )_T
-          !         (DU2) , (grad(Phi_j)_2)       (DU2) , (grad(Phi_i)_2)  
+          !         (DU2) , (grad(Phi_j)_2)       (DU2) , (grad(Phi_i)_2)
           !
           ! =   < (DU1) , (grad(Phi_j)_1) >  *  < (DU1) , (grad(Phi_j)_1) >
           !       (DU2) , (grad(Phi_j)_2)         (DU2) , (grad(Phi_j)_2)
@@ -580,20 +580,20 @@ contains
           !
           ! Summing up over all pairs of multiindices.
           !
-          ! Outer loop over the DOF`s i=1..indof on our current element, 
+          ! Outer loop over the DOF`s i=1..indof on our current element,
           ! which corresponds to the basis functions Phi_i:
 
           do IDOFE=1,indof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
-            ! (our "O")  for function value and first derivatives for the 
+            ! (our "O")  for function value and first derivatives for the
             ! current DOF into HBASIy:
           
             HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
             HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
             HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
            
-            ! Calculate 
+            ! Calculate
             !
             !     U * grad(Phi_i)  =  < grad(Phi_i), U >
             !
@@ -602,7 +602,7 @@ contains
             !
             ! Remember: DU1MV=DU2MV=0 in this case.
             !
-            ! If ALE is active, use v=mesh velocity and calculate 
+            ! If ALE is active, use v=mesh velocity and calculate
             !
             !     (U-v) * grad(Phi_i)  =  < grad(Phi_i), U-v >
             !
@@ -618,14 +618,14 @@ contains
               
              
                 ! Fetch the contributions of the (trial) basis function Phi_j
-                ! (out "X") for function value and first derivatives for the 
+                ! (out "X") for function value and first derivatives for the
                 ! current DOF into HBASJy:
               
                 HBASJ1 = Dbas(JDOFE,1,ICUBP,IEL)
                 HBASJ2 = Dbas(JDOFE,2,ICUBP,IEL)
                 HBASJ3 = Dbas(JDOFE,3,ICUBP,IEL)
 
-                ! Calculate 
+                ! Calculate
                 !
                 !     U * grad(Phi_j)  =  < grad(Phi_j), U >
                 !
@@ -634,7 +634,7 @@ contains
                 !
                 ! Remember: DU1MV=DU2MV=0 in this case.
                 !
-                ! If ALE is active, use v=mesh velocity and calculate 
+                ! If ALE is active, use v=mesh velocity and calculate
                 !
                 !     (U-v) * grad(Phi_j)  =  < grad(Phi_j), U-v >
                 !
@@ -689,18 +689,18 @@ contains
             
           end do ! JDOFE
 
-        end do ! ICUBP 
+        end do ! ICUBP
         
-        ! Now we have set up a "local" system matrix. We can either    
-        ! include it into the real matrix or we can use it to simply   
-        ! modify the RHS vector to create a defect vector (throwing    
+        ! Now we have set up a "local" system matrix. We can either
+        ! include it into the real matrix or we can use it to simply
+        ! modify the RHS vector to create a defect vector (throwing
         ! away the information about the matrix afterwards, which would
-        ! result in a matrix free modification of the RHS vector).     
+        ! result in a matrix free modification of the RHS vector).
         !
         ! For cdef= containing CONV_MODMATRIX, incorporate our "local" system matrix
-        ! into the global matrix. The position of each entry DENTRY(X,Y)    
+        ! into the global matrix. The position of each entry DENTRY(X,Y)
         ! in the global matrix array A was saved in element Kentry(X,Y)
-        ! before.                                                      
+        ! before.
         ! Kentry gives the position of the additive contributions in Dentry.
         ! The entry is weighted by the current dtheta, which is usually
         ! the weighting parameter of the corresponding THETA-scheme of a
@@ -738,8 +738,8 @@ contains
                       Du1x,Du1y,Ielements,&
                       duMaxR,Ddelta,rtriangulation,Idofs,dupsam,dnurec)
 
-  ! This routine calculates a local ddelta=DELTA_T for a set of finite 
-  ! elements Ielements. This can be used by the streamline diffusion 
+  ! This routine calculates a local ddelta=DELTA_T for a set of finite
+  ! elements Ielements. This can be used by the streamline diffusion
   ! stabilisation technique as a multiplier of the (local) bilinear form.
   !
   ! The effective velocity that is used for calculating the ddelta
@@ -753,7 +753,7 @@ contains
   ! =0: Use the root of the area of the element as local H
   ! =1: Use the length of the way that a particle travels through
   !     the element in direction of the flow
-  integer, intent(in) :: clocalH 
+  integer, intent(in) :: clocalH
   
   ! Main velocity field.
   real(DP), dimension(*), intent(in) :: du1x,du1y
@@ -768,7 +768,7 @@ contains
   real(DP), intent(in) :: dnuRec
   
   ! user defined parameter for configuring the streamline diffusion.
-  ! < 0: Simple calculation of ddelta, using 
+  ! < 0: Simple calculation of ddelta, using
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
@@ -808,7 +808,7 @@ contains
         ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
         ! through element IEL.
 
-        ! For elements whose DOF`s represent directly the velocity, U1/U2 
+        ! For elements whose DOF`s represent directly the velocity, U1/U2
         ! represent the mean velocity
         ! along an egde/on the midpoint of each edge, so U1/U2 is
         ! clearly an approximation to the velocity in element T.
@@ -832,7 +832,7 @@ contains
         ! matrix assembling:
 
 !        if (dunorm .le. 1E-8_DP) then
-!        
+!
 !          Ddelta(ielidx) = 0.0_DP
 !
 !        else
@@ -844,10 +844,10 @@ contains
 
 !          if (dupsam .lt. 0.0_DP) then
 !
-!            ! For UPSAM<0, we use simple calculation of ddelta:        
-!          
+!            ! For UPSAM<0, we use simple calculation of ddelta:
+!
 !            Ddelta(ielidx) = abs(dupsam)*dlocalH
-!            
+!
 !          else
           
             ! For UPSAM >= 0, we use standard Samarskji-like calculation
@@ -864,7 +864,7 @@ contains
           
 !        end if ! (dunorm.LE.1D-8)
 
-      end do      
+      end do
       
     else
     
@@ -881,7 +881,7 @@ contains
         ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
         ! through element IEL.
 
-        ! For elements whose DOF`s represent directly the velocity, U1/U2 
+        ! For elements whose DOF`s represent directly the velocity, U1/U2
         ! represent the mean velocity
         ! along an egde/on the midpoint of each edge, so U1/U2 is
         ! clearly an approximation to the velocity in element T.
@@ -921,7 +921,7 @@ contains
 
           if (dupsam .lt. 0.0_DP) then
 
-            ! For UPSAM<0, we use simple calculation of ddelta:        
+            ! For UPSAM<0, we use simple calculation of ddelta:
           
             Ddelta(ielidx) = abs(dupsam)*dlocalH
             
@@ -952,7 +952,7 @@ contains
   pure subroutine getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
                       XBETA2, JEL,Kvert,Dcorvg)
   
-  ! Determine the local mesh width for an element JEL of a 
+  ! Determine the local mesh width for an element JEL of a
   ! triangulation.
   
   ! Element where the local h should be calculated
@@ -1131,10 +1131,10 @@ contains
       ! beta and the vector are parallel
       dalpha=0.0_DP
       
-    else  
+    else
 
       ! Scalar product of (beta1,beta2) with the (inner) normal vector n2
-      ! of the line (xo,yo)->(xa,ya). 
+      ! of the line (xo,yo)->(xa,ya).
       dlambda=(BETA1*(YA-YO)-BETA2*(XA-XO))/dsp
 
       !                    (xb,yb)
@@ -1148,7 +1148,7 @@ contains
       !   !   /  ^__ n1     |   /
       !   !  /      \__     |  /
       !   ! /          \__  | /
-      !   !/              \_|/ 
+      !   !/              \_|/
       !   +-----------------+
       ! (xo,yo)            (xa,ya)
       !

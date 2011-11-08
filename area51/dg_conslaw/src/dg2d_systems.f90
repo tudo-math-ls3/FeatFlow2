@@ -74,7 +74,7 @@ contains
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! Number of Variables 
+    ! Number of Variables
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
@@ -106,11 +106,11 @@ contains
     type(t_vectorBlock), target :: rk0, rk1, rk2, rk3, rdefBlock, rimf1, rimf2
 
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -231,7 +231,7 @@ contains
 
 
     ! We want to solve our problem on level... Default=1
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)    
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)
 
     ! And with timestepsize
     call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'dt', dt)
@@ -308,17 +308,17 @@ contains
     !    dt = 0.01_DP
     !    ttfinal = 0.0_dp
     !    !ttfinal = 5*SYS_PI
-    !    
+    !
     !    ielementType = EL_DG_T1_2D
-    !    
-    !    
+    !
+    !
     !    ilimiting = 1
-    !    
-    !        
+    !
+    !
     !    vel(1)=1.0_DP
     !    vel(2)=1.0_DP
     !
-    !    ! Ok, let us start. 
+    !    ! Ok, let us start.
     !    !
     !    ! We want to solve our problem on level...
     !    NLMAX = 4
@@ -331,7 +331,7 @@ contains
     ! Now read in the basic triangulation.
     call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
          'triname', sstring)
-    call tria_readTriFile2D (rtriangulation, sstring, rboundary, .true.)    
+    call tria_readTriFile2D (rtriangulation, sstring, rboundary, .true.)
 
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -386,8 +386,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -401,7 +401,7 @@ contains
     ! First create an empty block matrix structur with nvar2d x nvar2d blocks
     call lsysbl_createEmptyMatrix (rmatrixBlock, nvar2d)
 
-    ! Next create the diagonal blocks of P as empty matrices, using the 
+    ! Next create the diagonal blocks of P as empty matrices, using the
     ! matrix structur of the matrix MC
     ! We will only need the diagonal blocks, as we employ a block jacobi
     ! method here
@@ -420,7 +420,7 @@ contains
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
     call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
     if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D))&
-    call dg_invertMassMatrix(rmatrixiMC)  
+    call dg_invertMassMatrix(rmatrixiMC)
 
     !    ! Output MC and iMC
     !    call matio_writeMatrixHR (rmatrixiMC, 'iMC',&
@@ -429,7 +429,7 @@ contains
     !                                  .true., 0, './gmv/MC.txt', '(E20.10)')
 
 
-    !    ! Calculate the condition number of MC    
+    !    ! Calculate the condition number of MC
     !    call lsyssc_getbase_double (rmatrixMC, p_DMCdata)
     !    call lsyssc_getbase_double (rmatrixiMC, p_DiMCdata)
     !    write(*,*) p_DMCdata
@@ -442,7 +442,7 @@ contains
     ! First create an empty block matrix structur with nvar2d x nvar2d blocks
     call lsysbl_createEmptyMatrix (rmatrixiBlock, nvar2d)
 
-    ! Next create the diagonal blocks of P as empty matrices, using the 
+    ! Next create the diagonal blocks of P as empty matrices, using the
     ! matrix structur of the matrix MC
     ! We will only need the diagonal blocks, as we employ a block jacobi
     ! method here
@@ -482,7 +482,7 @@ contains
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rTempBlock,.true.,&
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rk0,.true.,&
-         ST_DOUBLE)     
+         ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rk1,.true.,&
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rk2,.true.,&
@@ -523,7 +523,7 @@ contains
 
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -580,7 +580,7 @@ contains
 
        end do
 
-       call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)    
+       call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
 
 
        !    ! Kill all quadratic parts (can be needed, if unsteady initial condition is applied with dg_t2)
@@ -662,7 +662,7 @@ contains
                 call profiler_measure(rprofiler,1)
 
                 !       call lsyssc_getbase_double (rsol,p_Ddata)
-                !       p_Ddata(1)=0.0_DP       
+                !       p_Ddata(1)=0.0_DP
 
                 call lsysbl_copyVector(rsolBlock,rsoltempBlock)
                 call lsysbl_copyVector(rsolBlock,rsolOldBlock)
@@ -687,11 +687,11 @@ contains
                      rcollection)
 
 
-                write(*,*) lsyssc_vectornorm(rrhsBlock%Rvectorblock(1),1)                                     
+                write(*,*) lsyssc_vectornorm(rrhsBlock%Rvectorblock(1),1)
 
 
-                !       !!!!!!!!!!!!!!!!!!!!!!                                       
-                !       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)                                       
+                !       !!!!!!!!!!!!!!!!!!!!!!
+                !       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
                 !       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
                 !       rcollection%SquickAccess(1) = sinlet
                 !       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .false.,&
@@ -700,16 +700,16 @@ contains
                 !                                              flux_dg_buildVectorScEdge2D_sim,&
                 !                                              rcollection)
                 !       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-                !       write(*,*) 'Difference1:', derror  
-                !       
+                !       write(*,*) 'Difference1:', derror
+                !
                 !       ! If we want to make a video
                 !        if ((ttime>dvideotime-0.001_DP*dt)) then
                 !
                 !          write(*,*) ''
                 !          write(*,*) 'Writing videofile'
-                !          
+                !
                 !          ifilenumber = ifilenumber + 1
-                !          
+                !
                 !          select case (ioutputtype)
                 !            case (1)
                 !              ! Output solution to gmv file
@@ -718,24 +718,24 @@ contains
                 !              ! Output solution to vtk file
                 !              call dg2vtk(rrhsBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
                 !          end select
-                !          
+                !
                 !          dvideotime = dvideotime + dvideotimestep
                 !        end if
                 !
-                !                                              
-                !                                              
+                !
+                !
                 !         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
                 !         call linf_buildVectorBlock2 (rlinformconv, .true., rrhsBlock,&
                 !                                       flux_sys_block,rcollection)
-                !         
+                !
                 !         call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
-                !         
+                !
                 !         rcollection%IquickAccess(1) = 1
                 !         call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(1),&
                 !                                       flux_sys,rcollection)
                 !                call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
                 !       write(*,*) 'Difference2:', derror
-                !                                               
+                !
                 !
                 !       call profiler_measure(rprofiler,2)
                 !       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
@@ -744,7 +744,7 @@ contains
                 !                                              flux_dg_buildVectorBlEdge2D_sim,&
                 !                                              rcollection)
                 !
-                !      !!!!!!!!!!!!!!!!!!!!!!!                                        
+                !      !!!!!!!!!!!!!!!!!!!!!!!
 
 
 
@@ -759,7 +759,7 @@ contains
                       call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
                            Euler_flux_sys_block,rcollection)
                       write(*,*) lsyssc_vectornorm(rrhsBlock%Rvectorblock(1),1)
-                   case(2)                             
+                   case(2)
                       do ivar = 1, nvar2d
 
                          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -935,7 +935,7 @@ contains
                 ! Solve for solution update
                 call profiler_measure(rprofiler,4)
                 !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-                !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)      
+                !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
                 if ((ielementType == EL_DG_T2_2D).or.(ielementType == EL_DG_T1_2D).or.(ielementType == EL_DG_T0_2D)) then
                 do ivar = 1, nvar2d
                    call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
@@ -944,22 +944,22 @@ contains
                    call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
                 end if
 
-                !       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
+                !       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1)
                 !       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
                 !       write(*,*) 'SolUp:', derror
-                !       
-                !       
+                !
+                !
                 call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
                 call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
                 call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
                 !       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-                !       write(*,*) 'Res  :', derror 
+                !       write(*,*) 'Res  :', derror
 
 
                 ! Get new temp solution
                 call profiler_measure(rprofiler,1)
                 call lsysbl_vectorLinearComb (rsoltempBlock,rsolUpBlock,1.0_DP,dt)
-                call lsysbl_vectorLinearComb (rsolUpBlock,rsolBlock,2.0_DP/3.0_DP,1.0_DP/3.0_DP)   
+                call lsysbl_vectorLinearComb (rsolUpBlock,rsolBlock,2.0_DP/3.0_DP,1.0_DP/3.0_DP)
 
                 !       ! Limit the solution vector
                 call profiler_measure(rprofiler,5)
@@ -1024,7 +1024,7 @@ contains
 
 
 
-       case(2)  
+       case(2)
 
 
           ! Initialise the profiler with 5 timers
@@ -1064,7 +1064,7 @@ contains
 
 
 
-                ! Calculate K1 and K2 
+                ! Calculate K1 and K2
                 call lsysbl_vectorLinearComb (rsolBlock,rimf2,0.5_dp,dt/8.0_dp,rk1)
                 call lsysbl_vectorLinearComb (rsolBlock,rimf2,1.0_dp,dt/6.0_dp,rk2)
 
@@ -1074,7 +1074,7 @@ contains
                    call lsysbl_vectorLinearComb (rsolBlock,rk1,0.5_dp,1.0_dp,rsolTempBlock)
                    call lsysbl_vectorLinearComb (rimf2,rsolTempBlock,-dt/8.0_dp,1.0_dp)
 
-                   ! calculate rimf1 
+                   ! calculate rimf1
                    call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                         rrhsBlock,rsolTempBlock,&
                         raddTriaData,&
@@ -1169,7 +1169,7 @@ contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-       case(3)  
+       case(3)
 
 
           ! Initialise the profiler with 5 timers
@@ -1329,7 +1329,7 @@ contains
                 if(ielementType .ne. EL_DG_T0_2D) then
                    rcollection%p_rvectorQuickAccess1 => rsolTempBlock
                    call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
-                        flux_sys_block,rcollection)                       
+                        flux_sys_block,rcollection)
                 end if
 
                 call profiler_measure(rprofiler,4)
@@ -1618,7 +1618,7 @@ contains
           ! boundary there. The following call does the following:
           ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
           !   We specify icomponent='1' to indicate that we set up the
-          !   Dirichlet BC`s for the first (here: one and only) component in the 
+          !   Dirichlet BC`s for the first (here: one and only) component in the
           !   solution vector.
           ! - Discretise the boundary condition so that the BC`s can be applied
           !   to matrices and vectors
@@ -1638,7 +1638,7 @@ contains
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !    
+          !
           !    ! Edge 4 of boundary component 1. That is it.
           !    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
@@ -1652,7 +1652,7 @@ contains
           rrhsBlock%p_rdiscreteBC => rdiscreteBC
           rsolBlock%p_rdiscreteBC => rdiscreteBC
           rtempBlock%p_rdiscreteBC => rdiscreteBC
-          !                             
+          !
           !    ! Now we have block vectors for the RHS and the matrix. What we
           !    ! need additionally is a block vector for the solution and
           !    ! temporary data. Create them using the RHS as template.
@@ -1717,7 +1717,7 @@ contains
 
           ! Attach the system matrix to the solver.
           ! First create an array with the matrix data (on all levels, but we
-          ! only have one level here), then call the initialisation 
+          ! only have one level here), then call the initialisation
           ! routine to attach all these matrices.
           ! Remark: Do not make a call like
           !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -1830,7 +1830,7 @@ contains
           ! boundary there. The following call does the following:
           ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
           !   We specify icomponent='1' to indicate that we set up the
-          !   Dirichlet BC`s for the first (here: one and only) component in the 
+          !   Dirichlet BC`s for the first (here: one and only) component in the
           !   solution vector.
           ! - Discretise the boundary condition so that the BC`s can be applied
           !   to matrices and vectors
@@ -1948,14 +1948,14 @@ contains
 
                 !        call lsyssc_clearMatrix (rmatrixA)
 
-                ! Calculate the preconditioner matrix                                         
+                ! Calculate the preconditioner matrix
                 call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,dt,&
                      .true.,.true.,.true.,.false.,&
                      rmatrixBlock%Rmatrixblock(1,1))
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
                 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
                 !        pause
 
                 ! Calculate the defect vector
@@ -1963,17 +1963,17 @@ contains
                 call lsyssc_scalarMatVec(rmatrixBlock%Rmatrixblock(1,1),rsolBlock%RvectorBlock(1),&
                      rdefBlock%RvectorBlock(1),-1.0_dp,1.0_dp)
 
-                !       ! * If different Preconditioners should be used *        
-                !       ! Use MC as preconditioner                                     
+                !       ! * If different Preconditioners should be used *
+                !       ! Use MC as preconditioner
                 !        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
                 !                                       .true.,.true.,.true.,.false.,&
-                !                                       rmatrixBlock%Rmatrixblock(1,1)) 
+                !                                       rmatrixBlock%Rmatrixblock(1,1))
 
                 !       ! Use MC+edge as preconditioner
                 !        call bilf_dg_buildMatrixScEdge2D (rform, CUB_G5_1D, .true., rmatrixA,&
                 !                                                 rsolBlock%Rvectorblock(1), raddTriaData,&
                 !                                                 flux_dg_implicitBurgers_sim)!,&
-                !                                                 !rcollection, cconstrType)                                     
+                !                                                 !rcollection, cconstrType)
                 !        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
                 !                                       .true.,.true.,.true.,.false.,&
                 !                                       rmatrixBlock%Rmatrixblock(1,1))
@@ -1987,7 +1987,7 @@ contains
                 !        rform%ballCoeffConstant = .false.
                 !        rform%BconstantCoeff = .false.
                 !        rcollection%p_rvectorQuickAccess1 => rsolBlock
-                !        call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)                                    
+                !        call bilf_buildMatrixScalar (rform,.true.,rmatrixA,coeff_implicitDGBurgers,rcollection)
                 !        call lsyssc_matrixLinearComb (rmatrixMC,rmatrixA,1.0_dp,0.0_dp,&
                 !                                       .true.,.true.,.true.,.false.,&
                 !                                       rmatrixBlock%Rmatrixblock(1,1))
@@ -2025,7 +2025,7 @@ contains
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
                 ! Remark: Do not make a call like
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -2153,12 +2153,12 @@ contains
           !    ! A boundary region roughly contains the type, the min/max parameter value
           !    ! and whether the endpoints are inside the region or not.
           !    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-          !    
+          !
           !    ! We use this boundary region and specify that we want to have Dirichlet
           !    ! boundary there. The following call does the following:
           !    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
           !    !   We specify icomponent='1' to indicate that we set up the
-          !    !   Dirichlet BC`s for the first (here: one and only) component in the 
+          !    !   Dirichlet BC`s for the first (here: one and only) component in the
           !    !   solution vector.
           !    ! - Discretise the boundary condition so that the BC`s can be applied
           !    !   to matrices and vectors
@@ -2166,25 +2166,25 @@ contains
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Now to the edge 2 of boundary component 1 the domain.
           !    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Edge 3 of boundary component 1.
           !    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !    
+          !
           !    ! Edge 4 of boundary component 1. That is it.
           !    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Hang the pointer into the vector and matrix. That way, these
           !    ! boundary conditions are always connected to that matrix and that
           !    ! vector.
@@ -2257,7 +2257,7 @@ contains
                 rform%Idescriptors(2,1) = DER_FUNC
                 rform%ballCoeffConstant = .false.
                 rform%BconstantCoeff = .false.
-                rcollection%p_rvectorQuickAccess1 => rsolBlock   
+                rcollection%p_rvectorQuickAccess1 => rsolBlock
                 call bilf_dg_buildMatrixBlEdge2D (rform, CUB_G5_1D, .false., rmatrixABlock,&
                      rsolBlock, raddTriaData,&
                      flux_dg_buildMatrixBlEdge2D_sim_iSystem)!,&
@@ -2277,7 +2277,7 @@ contains
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
                 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
                 !        pause
 
 
@@ -2289,9 +2289,9 @@ contains
 
                 !        do i = 1, nvar2d
                 !        do j = 1, nvar2d
-                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')                       
+                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')
                 !          pause
-                !        end do 
+                !        end do
                 !        end do
 
 
@@ -2325,7 +2325,7 @@ contains
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
                 ! Remark: Do not make a call like
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -2470,12 +2470,12 @@ contains
           !    ! A boundary region roughly contains the type, the min/max parameter value
           !    ! and whether the endpoints are inside the region or not.
           !    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-          !    
+          !
           !    ! We use this boundary region and specify that we want to have Dirichlet
           !    ! boundary there. The following call does the following:
           !    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
           !    !   We specify icomponent='1' to indicate that we set up the
-          !    !   Dirichlet BC`s for the first (here: one and only) component in the 
+          !    !   Dirichlet BC`s for the first (here: one and only) component in the
           !    !   solution vector.
           !    ! - Discretise the boundary condition so that the BC`s can be applied
           !    !   to matrices and vectors
@@ -2483,25 +2483,25 @@ contains
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Now to the edge 2 of boundary component 1 the domain.
           !    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Edge 3 of boundary component 1.
           !    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !    
+          !
           !    ! Edge 4 of boundary component 1. That is it.
           !    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Hang the pointer into the vector and matrix. That way, these
           !    ! boundary conditions are always connected to that matrix and that
           !    ! vector.
@@ -2563,7 +2563,7 @@ contains
                 rform%Idescriptors(2,1) = DER_FUNC
                 rform%ballCoeffConstant = .false.
                 rform%BconstantCoeff = .false.
-                rcollection%p_rvectorQuickAccess1 => rsolBlock   
+                rcollection%p_rvectorQuickAccess1 => rsolBlock
                 rcollection%Dquickaccess(1) = dt
                 call bilf_dg_buildMatrixBlEdge2D (rform, CUB_G5_1D, .false., rmatrixABlock,&
                      rsolBlock, raddTriaData,&
@@ -2583,8 +2583,8 @@ contains
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
                 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
                 !        pause
 
 
@@ -2596,9 +2596,9 @@ contains
 
                 !        do i = 1, nvar2d
                 !        do j = 1, nvar2d
-                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')                       
+                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')
                 !          pause
-                !        end do 
+                !        end do
                 !        end do
 
 
@@ -2609,8 +2609,8 @@ contains
                 !    ! So, set up a filter chain that filters the defect vector
                 !    ! during the solution process to implement discrete boundary conditions.
                 !    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-                !    
-                !    
+                !
+                !
                 !    ! Fill in the boundary conditions
                 !        call vecfil_discreteBCrhs (rrhsBlock)
                 !        call vecfil_discreteBCsol (rsolBlock)
@@ -2632,7 +2632,7 @@ contains
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
                 ! Remark: Do not make a call like
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -2833,7 +2833,7 @@ contains
                 rform%Idescriptors(2,2) = DER_FUNC
                 rform%ballCoeffConstant = .false.
                 rform%BconstantCoeff = .false.
-                rcollection%p_rvectorQuickAccess1 => rsolBlock   
+                rcollection%p_rvectorQuickAccess1 => rsolBlock
                 rcollection%Dquickaccess(1) = dt
                 call bilf_dg_buildMatrixBlEdge2D_ss (rform, CUB_G5_1D, .false., rmatrixABlock,&
                      rsolBlock, raddTriaData,&
@@ -2853,8 +2853,8 @@ contains
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
                 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
                 !        pause
 
 
@@ -2866,9 +2866,9 @@ contains
 
                 !        do i = 1, nvar2d
                 !        do j = 1, nvar2d
-                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')                       
+                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')
                 !          pause
-                !        end do 
+                !        end do
                 !        end do
 
 
@@ -2879,8 +2879,8 @@ contains
                 !    ! So, set up a filter chain that filters the defect vector
                 !    ! during the solution process to implement discrete boundary conditions.
                 !    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-                !    
-                !    
+                !
+                !
                 !    ! Fill in the boundary conditions
                 !        call vecfil_discreteBCrhs (rrhsBlock)
                 !        call vecfil_discreteBCsol (rsolBlock)
@@ -2910,7 +2910,7 @@ contains
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
                 ! Remark: Do not make a call like
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -3092,12 +3092,12 @@ contains
           !    ! A boundary region roughly contains the type, the min/max parameter value
           !    ! and whether the endpoints are inside the region or not.
           !    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-          !    
+          !
           !    ! We use this boundary region and specify that we want to have Dirichlet
           !    ! boundary there. The following call does the following:
           !    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
           !    !   We specify icomponent='1' to indicate that we set up the
-          !    !   Dirichlet BC`s for the first (here: one and only) component in the 
+          !    !   Dirichlet BC`s for the first (here: one and only) component in the
           !    !   solution vector.
           !    ! - Discretise the boundary condition so that the BC`s can be applied
           !    !   to matrices and vectors
@@ -3105,25 +3105,25 @@ contains
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Now to the edge 2 of boundary component 1 the domain.
           !    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Edge 3 of boundary component 1.
           !    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !    
+          !
           !    ! Edge 4 of boundary component 1. That is it.
           !    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
           !    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
           !                                       rboundaryRegion,rdiscreteBC,&
           !                                       getBoundaryValues_2D_zeros)
-          !                             
+          !
           !    ! Hang the pointer into the vector and matrix. That way, these
           !    ! boundary conditions are always connected to that matrix and that
           !    ! vector.
@@ -3211,7 +3211,7 @@ contains
                 rform%Idescriptors(2,2) = DER_FUNC
                 rform%ballCoeffConstant = .false.
                 rform%BconstantCoeff = .false.
-                rcollection%p_rvectorQuickAccess1 => rsolBlock   
+                rcollection%p_rvectorQuickAccess1 => rsolBlock
                 rcollection%Dquickaccess(1) = dt
                 call bilf_dg_buildMatrixBlEdge2D_ss (rform, CUB_G5_1D, .false., rmatrixABlock,&
                      rsolBlock, raddTriaData,&
@@ -3235,8 +3235,8 @@ contains
 
                 !        call matio_writeMatrixHR(rmatrixMC,'./gmv/MC.txt',.true.,0,'./gmv/MC.txt','(E20.10)')
                 !        call matio_writeMatrixHR(rmatrixA,'./gmv/A.txt',.true.,0,'./gmv/A.txt','(E20.10)')
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
-                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')                       
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,1),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
+                !        call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(1,3),'./gmv/P.txt',.true.,0,'./gmv/P.txt','(E20.10)')
                 !        pause
 
 
@@ -3248,9 +3248,9 @@ contains
 
                 !        do i = 1, nvar2d
                 !        do j = 1, nvar2d
-                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')                       
+                !          call matio_writeMatrixHR(rmatrixBlock%Rmatrixblock(i,j),'./gmv/Pblock.txt',.true.,0,'./gmv/Pblock.txt','(E20.10)')
                 !          pause
-                !        end do 
+                !        end do
                 !        end do
 
 
@@ -3261,8 +3261,8 @@ contains
                 !    ! So, set up a filter chain that filters the defect vector
                 !    ! during the solution process to implement discrete boundary conditions.
                 !    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-                !    
-                !    
+                !
+                !
                 !    ! Fill in the boundary conditions
                 !        call vecfil_discreteBCrhs (rrhsBlock)
                 !        call vecfil_discreteBCsol (rsolBlock)
@@ -3294,7 +3294,7 @@ contains
                 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
                 ! Remark: Do not make a call like
                 !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -3436,24 +3436,24 @@ contains
 
 
 
-    !    
-    !    
-    !    
-    !    
+    !
+    !
+    !
+    !
     !    call lsyssc_copyVector(rsol,rsoltemp)
     !    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
     !                                              rrhs,rsolTemp,&
     !                                              flux_dg_buildVectorScEdge2D_sim)
-    !       
+    !
 
     !       ! Solve for solution update
     !       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-    !       
+    !
     !       ! Get new temp solution
     !       call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
     !    call lsyssc_copyVector(rsoltemp,rsol)
-    !    
-    !    
+    !
+    !
 
 
     write(*,*) ''
@@ -3463,7 +3463,7 @@ contains
 
     !    sofile = 'l6'
     !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
-    !    sofile = './gmv/u2d' 
+    !    sofile = './gmv/u2d'
 
     !    !select case (ioutputtype)
     !    !  case (1)
@@ -3512,17 +3512,17 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
          getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )   
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
     
     
     
 !    call pperr_scalarDefault (PPERR_L1ERROR, derror, rsolBlock%Rvectorblock(1),&
-!                           getReferenceFunction_2D, ffunctionWeight = getWeightFunction) 
+!                           getReferenceFunction_2D, ffunctionWeight = getWeightFunction)
 
 !    call dg_pperr_scalar2d_conf (PPERR_L1ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
 !                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
 !    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!    
+!
 !    call dg_pperr_scalar2d_conf (PPERR_L2ERROR, derror, rsolBlock%rvectorBlock(1)%p_rspatialDiscr,&
 !                                  rsolBlock%Rvectorblock(1), getReferenceFunction_2D)
 !    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
@@ -3543,14 +3543,14 @@ contains
     !    ! Calculate the error to the reference function.
     !    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
     !                       getCompareFunction_2D,rcollection)
-    !    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    !    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
 
     !
     !    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
     !                       getReferenceFunction_2D)
     !    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
-    !    
+    !
     !    ! We are finished - but not completely!
     !    ! Now, clean up so that all the memory is available again.
     !    !
@@ -3610,7 +3610,7 @@ contains
     !    ! only 'copies' of the scalar ones, sharing the same handles!
     !    call lsyssc_releaseVector (rrhs)
     !    call lsyssc_releaseMatrix (rmatrix)
-    !    
+    !
     !    ! Release our discrete version of the boundary conditions
     !    call bcasm_releaseDiscreteBC (rdiscreteBC)
 
@@ -3618,7 +3618,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
 
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
 
     ! Release additional triangulation data, as the normal vectors and local edge numbers

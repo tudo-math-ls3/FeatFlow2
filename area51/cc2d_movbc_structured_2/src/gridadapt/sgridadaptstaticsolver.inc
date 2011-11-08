@@ -1,6 +1,6 @@
 ************************************************************************
 * This file describes the internal variable representation block
-* used in the solver of the static grid adaption. This block is 
+* used in the solver of the static grid adaption. This block is
 * passed to the solver, and from the solver to the different
 * user-defined subroutines. It contains the information about the
 * matrix handles,... which allowes all routines to work without
@@ -12,7 +12,7 @@
 * solving the arising system is a pair of TM020IParams/TM020DParams
 * structure, extended by a couple of variables for storing
 * information about the iteration, and a set of callback routines
-* for the M020. 
+* for the M020.
 *
 * There are two structures defined here: TM020IExtParams and
 * TM020DExtParams for integer and double-precision variables.
@@ -20,9 +20,9 @@
 * structure, i.e. they are direct extensions to it. This means
 * both structures contain the original TM020IParams and
 * TM020DParams structures at the beginning and add additional
-* variables to the end. 
+* variables to the end.
 *
-* The access to the content can be done using the offset constants in 
+* The access to the content can be done using the offset constants in
 * this file, e.g.:
 *
 *   ISRT = IPARAM(OISRT)
@@ -32,33 +32,33 @@
 * the offset variable.
 *
 * The structures are realized as arrays:
-*   IPARAM = array [1..SZGSSI] of integer 
+*   IPARAM = array [1..SZGSSI] of integer
 *          = TIGridAdaptionCommon
 *   DPARAM = array [1..SZGSSD] of double
 *          = TDGridAdaptionCommon
-* The mapping of the structure to the array can generally be seen 
+* The mapping of the structure to the array can generally be seen
 * as follows:
 *
-* TM020IExtParams 
+* TM020IExtParams
 *   Array-Position   Function
 *   =========================
 *    1         --
 *    ...        |--- General solver structure, input/output variables
 *    SZSLVI    --    defining the general behaviour; see SSOLVERS.INC
 *
-*    SZSLVI+1  --    
+*    SZSLVI+1  --
 *    ...        |--- Extended solver structure, input/output variables
 *    SZ020I    --    defining the behaviour of the M020 solver; M020.INC
 *
 *    SZ020I+1  --    Specializes solver structure with information for
-*    ...        |--- the callback-routines of M020; this is defined 
+*    ...        |--- the callback-routines of M020; this is defined
 *    SZGSSI    --    here; handles and parameters; only input-variables
-*                    
+*
 *
 * The same structure holds for TM020DExtParams.
 *
-* For a proper definition of the constants here, the include files 
-* SSOLVERS.INC and M020.inc have to be included prior to this file, 
+* For a proper definition of the constants here, the include files
+* SSOLVERS.INC and M020.inc have to be included prior to this file,
 * as well as the file CBASICMG.INC, which is the basis for M020.INC,
 * and SZTRIA, as triangulation structures are saved in the multigrid
 * structure.
@@ -82,7 +82,7 @@
 *   // before calling the solver and released when the solver
 *   // is finished. Are used in the callback-routines
 *   // for correct operation.
-*  
+*
 *   // Handle-Block: Contains handles of matrices for the system.
 *
 *   LA      : array [1..NNLEV] of integer
@@ -119,7 +119,7 @@
 *             each level
 *   KILU0   : array [1..NNLEV] of integer
 *             Handle to entries of ILU0-matrices on all levels
-*   KU4SYM  : Handle to UMFPACK4 symbolical factorization on 
+*   KU4SYM  : Handle to UMFPACK4 symbolical factorization on
 *             coarse grid
 *   KU4NUM  : Handle to UMFPACK4 numerical factorization on coarse grid
 *   SMSI    : TSolverIParams
@@ -129,7 +129,7 @@
 *
 *   // Triangulation block: contains the triangulation structures
 *   // of all levels. Necessary for prolongation/restruction
-* 
+*
 *   TRIAS   : array [1..NNLEV] of STRIA
 *             = array [1..SZTRIA,1..NNLEV] of integer
 *             Triangulation structures on all levels
@@ -147,7 +147,7 @@
 *   PRECD  : array [1..16] of integer
 *   ...
 *   TMCGC  : time for coarse-grid corrections
-*   
+*
 *   // Additional input-parameters, have to be initialized
 *   // before calling the solver and released when the solver
 *   // is finished.  Are used in the callback-routines
@@ -175,11 +175,11 @@
 *
 ************************************************************************
 
-******************                                      
+******************
 * TM020IExtParams
 ******************
 
-      INTEGER OLA    ,OLCOL  ,OLLD   ,OLSOL  ,OLRHS  ,OLAUXD,OLAUX2,OKNA   
+      INTEGER OLA    ,OLCOL  ,OLLD   ,OLSOL  ,OLRHS  ,OLAUXD,OLAUX2,OKNA
       INTEGER OISRT  ,OLTR1  ,OLTR2  ,OLILU0 ,OKU4SYM,OKU4NUM
       INTEGER OCGSI, OSMSI, OTRIAS
 
@@ -205,9 +205,9 @@
 
 C OCGSI + SZSLVI .. SZGSSI: reserved
 
-      PARAMETER (SZGSSI  = OTRIAS + NNLEV*SZTRIA) 
+      PARAMETER (SZGSSI  = OTRIAS + NNLEV*SZTRIA)
   
-******************                                      
+******************
 * TM020DExtParams
 ******************
 

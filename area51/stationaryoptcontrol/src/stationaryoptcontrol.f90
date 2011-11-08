@@ -12,8 +12,8 @@
 !#
 !# There are a couple of examples provided how to solve this problem.
 !# Each example has its own characteristics how to solve the problem.
-!# 
-!# There are examples for 1D, 2D and 3D triangulations. The 
+!#
+!# There are examples for 1D, 2D and 3D triangulations. The
 !# poissonXd_method0_simple modules show the very basic steps how to solve the
 !# Poisson problem. On top of that, the poissonXd_method1_XXXX modules
 !# extend the poissonXd_method0_simple to more general situations (mmultigrid,
@@ -34,7 +34,7 @@ program poisson
   
   implicit none
   
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   
   call system_init()
@@ -43,8 +43,8 @@ program poisson
   ! well as to the file 'log/output.txt'.
   call output_init ('./log/output.txt')
 
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
  
   ! Call the problem to solve. Poisson 2D method 1 - simple:

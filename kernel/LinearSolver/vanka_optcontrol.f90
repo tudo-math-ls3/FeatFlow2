@@ -56,7 +56,7 @@ module vanka_optcontrol
 
 !<typeblock>
 
-  ! Element distribution information for the 2D Navier-Stokes 
+  ! Element distribution information for the 2D Navier-Stokes
   ! optimal control Vanka driver. COntains some preallocated
   ! data arrays. Private type.
   type t_vanka_NavStOptC2D_eldist
@@ -84,7 +84,7 @@ module vanka_optcontrol
 
 !<typeblock>
   
-  ! A structure that saves matrix pointers for the 2D Navier-Stokes 
+  ! A structure that saves matrix pointers for the 2D Navier-Stokes
   ! optimal control Vanka driver.
   type t_vanka_NavStOptC2D
   
@@ -249,7 +249,7 @@ contains
   type(t_matrixBlock), intent(in), target :: rmatrix
 
   ! Desired subtype. One of the VANKATP_NAVST2D_XXXX constants.
-  integer, intent(in) :: csubtype  
+  integer, intent(in) :: csubtype
 !</input>
 
 !<output>
@@ -616,7 +616,7 @@ contains
       case default
         call output_line ('Unknown Vanka subtype!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanka_solve_NavStOptC2D')
-        call sys_halt()  
+        call sys_halt()
       
       end select
       
@@ -726,42 +726,42 @@ contains
     bhaveA51 = rvanka%bhaveA51
     
     ! Get the pointers from the Vanka structure for faster access
-    p_KldA11   => rvanka%p_KldA11   
-    p_KcolA11  => rvanka%p_KcolA11 
+    p_KldA11   => rvanka%p_KldA11
+    p_KcolA11  => rvanka%p_KcolA11
     p_KdiagA11 => rvanka%p_KdiagA11
-    p_Da11     => rvanka%p_Da11    
-    p_Da22     => rvanka%p_Da22    
-    p_KldA12   => rvanka%p_KldA12  
-    p_KcolA12  => rvanka%p_KcolA12 
-    p_Da12     => rvanka%p_Da12    
-    p_Da21     => rvanka%p_Da21    
-    p_KldB     => rvanka%p_KldB    
-    p_KcolB    => rvanka%p_KcolB   
-    p_KldD     => rvanka%p_KldD    
-    p_KcolD    => rvanka%p_KcolD   
-    p_Db1      => rvanka%p_Db1     
-    p_Db2      => rvanka%p_Db2     
-    p_Dd1      => rvanka%p_Dd1     
-    p_Dd2      => rvanka%p_Dd2     
-    p_Da44     => rvanka%p_Da44    
-    p_Da55     => rvanka%p_Da55    
-    p_Da45     => rvanka%p_Da45    
-    p_Da54     => rvanka%p_Da54    
-    p_Db4      => rvanka%p_Db4     
-    p_Db5      => rvanka%p_Db5     
-    p_Dd4      => rvanka%p_Dd4     
-    p_Dd5      => rvanka%p_Dd5     
-    p_KldC     => rvanka%p_KldC    
-    p_KcolC    => rvanka%p_KcolC   
-    p_DC1      => rvanka%p_DC1     
-    p_DC2      => rvanka%p_DC2     
-    p_Da14     => rvanka%p_Da14    
-    p_Da25     => rvanka%p_Da25    
-    p_Da15     => rvanka%p_Da15    
-    p_Da24     => rvanka%p_Da24    
-    p_Da41     => rvanka%p_Da41    
-    p_Da52     => rvanka%p_Da52    
-    p_Da51     => rvanka%p_Da51    
+    p_Da11     => rvanka%p_Da11
+    p_Da22     => rvanka%p_Da22
+    p_KldA12   => rvanka%p_KldA12
+    p_KcolA12  => rvanka%p_KcolA12
+    p_Da12     => rvanka%p_Da12
+    p_Da21     => rvanka%p_Da21
+    p_KldB     => rvanka%p_KldB
+    p_KcolB    => rvanka%p_KcolB
+    p_KldD     => rvanka%p_KldD
+    p_KcolD    => rvanka%p_KcolD
+    p_Db1      => rvanka%p_Db1
+    p_Db2      => rvanka%p_Db2
+    p_Dd1      => rvanka%p_Dd1
+    p_Dd2      => rvanka%p_Dd2
+    p_Da44     => rvanka%p_Da44
+    p_Da55     => rvanka%p_Da55
+    p_Da45     => rvanka%p_Da45
+    p_Da54     => rvanka%p_Da54
+    p_Db4      => rvanka%p_Db4
+    p_Db5      => rvanka%p_Db5
+    p_Dd4      => rvanka%p_Dd4
+    p_Dd5      => rvanka%p_Dd5
+    p_KldC     => rvanka%p_KldC
+    p_KcolC    => rvanka%p_KcolC
+    p_DC1      => rvanka%p_DC1
+    p_DC2      => rvanka%p_DC2
+    p_Da14     => rvanka%p_Da14
+    p_Da25     => rvanka%p_Da25
+    p_Da15     => rvanka%p_Da15
+    p_Da24     => rvanka%p_Da24
+    p_Da41     => rvanka%p_Da41
+    p_Da52     => rvanka%p_Da52
+    p_Da51     => rvanka%p_Da51
     p_Da42     => rvanka%p_Da42
     
     ! Get the multiplication factors
@@ -783,7 +783,7 @@ contains
     ! Perform niterations iterations
     do iter = 1,niterations
 
-      ! Loop through all elements 
+      ! Loop through all elements
       do ielidx = 1,size(IelementList)
       
         ! On the element, get the local DOF's in the pressure space
@@ -921,7 +921,7 @@ contains
             daux1 = daux1 + p_Dd1(id1)*p_DvecU1(j)
             daux2 = daux2 + p_Dd2(id1)*p_DvecV1(j)
             daux4 = daux4 + p_Dd4(id1)*p_DvecU2(j)
-            daux5 = daux5 + p_Dd5(id1)*p_DvecV2(j) 
+            daux5 = daux5 + p_Dd5(id1)*p_DvecV2(j)
           end do
           DdefectP(idxp,1) = DdefectP(idxp,1) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
           DdefectP(idxp,2) = DdefectP(idxp,2) - Dmult(6,4)*daux4 - Dmult(6,5)*daux5
@@ -1054,11 +1054,11 @@ contains
 
         end if
 
-        ! Now we have the defect "d = f-Bp-Au". 
+        ! Now we have the defect "d = f-Bp-Au".
         !
         ! In the next step, we apply a local preconditioner P^-1 to get an element update:
         !
-        !   x  =  x + omega * P^-1 d  
+        !   x  =  x + omega * P^-1 d
         !      =  x + omega * P^-1 (f_u-Bp-Au , f_p - Du - Cp)^T
         !
         ! For the preconditioner, we choose
@@ -1118,7 +1118,7 @@ contains
               id2 = KentryLocalB(idxu,idxp2)
               Ds1(idxp,idxp2) = Ds1(idxp,idxp2) &
                                 -p_Dd1(id1)*p_Db1(id2)*DaInv(1,idxu)&
-                                -p_Dd2(id1)*p_Db2(id2)*DaInv(2,idxu) 
+                                -p_Dd2(id1)*p_Db2(id2)*DaInv(2,idxu)
               Ds2(idxp,idxp2) = Ds2(idxp,idxp2) &
                                 -p_Dd4(id1)*p_Db4(id2)*DaInv(3,idxu)&
                                 -p_Dd5(id1)*p_Db5(id2)*DaInv(4,idxu)
@@ -1298,42 +1298,42 @@ contains
     bhaveA51 = rvanka%bhaveA51
     
     ! Get the pointers from the Vanka structure for faster access
-    p_KldA11   => rvanka%p_KldA11   
-    p_KcolA11  => rvanka%p_KcolA11 
+    p_KldA11   => rvanka%p_KldA11
+    p_KcolA11  => rvanka%p_KcolA11
     p_KdiagA11 => rvanka%p_KdiagA11
-    p_Da11     => rvanka%p_Da11    
-    p_Da22     => rvanka%p_Da22    
-    p_KldA12   => rvanka%p_KldA12  
-    p_KcolA12  => rvanka%p_KcolA12 
-    p_Da12     => rvanka%p_Da12    
-    p_Da21     => rvanka%p_Da21    
-    p_KldB     => rvanka%p_KldB    
-    p_KcolB    => rvanka%p_KcolB   
-    p_KldD     => rvanka%p_KldD    
-    p_KcolD    => rvanka%p_KcolD   
-    p_Db1      => rvanka%p_Db1     
-    p_Db2      => rvanka%p_Db2     
-    p_Dd1      => rvanka%p_Dd1     
-    p_Dd2      => rvanka%p_Dd2     
-    p_Da44     => rvanka%p_Da44    
-    p_Da55     => rvanka%p_Da55    
-    p_Da45     => rvanka%p_Da45    
-    p_Da54     => rvanka%p_Da54    
-    p_Db4      => rvanka%p_Db4     
-    p_Db5      => rvanka%p_Db5     
-    p_Dd4      => rvanka%p_Dd4     
-    p_Dd5      => rvanka%p_Dd5     
-    p_KldC     => rvanka%p_KldC    
-    p_KcolC    => rvanka%p_KcolC   
-    p_DC1      => rvanka%p_DC1     
-    p_DC2      => rvanka%p_DC2     
-    p_Da14     => rvanka%p_Da14    
-    p_Da25     => rvanka%p_Da25    
-    p_Da15     => rvanka%p_Da15    
-    p_Da24     => rvanka%p_Da24    
-    p_Da41     => rvanka%p_Da41    
-    p_Da52     => rvanka%p_Da52    
-    p_Da51     => rvanka%p_Da51    
+    p_Da11     => rvanka%p_Da11
+    p_Da22     => rvanka%p_Da22
+    p_KldA12   => rvanka%p_KldA12
+    p_KcolA12  => rvanka%p_KcolA12
+    p_Da12     => rvanka%p_Da12
+    p_Da21     => rvanka%p_Da21
+    p_KldB     => rvanka%p_KldB
+    p_KcolB    => rvanka%p_KcolB
+    p_KldD     => rvanka%p_KldD
+    p_KcolD    => rvanka%p_KcolD
+    p_Db1      => rvanka%p_Db1
+    p_Db2      => rvanka%p_Db2
+    p_Dd1      => rvanka%p_Dd1
+    p_Dd2      => rvanka%p_Dd2
+    p_Da44     => rvanka%p_Da44
+    p_Da55     => rvanka%p_Da55
+    p_Da45     => rvanka%p_Da45
+    p_Da54     => rvanka%p_Da54
+    p_Db4      => rvanka%p_Db4
+    p_Db5      => rvanka%p_Db5
+    p_Dd4      => rvanka%p_Dd4
+    p_Dd5      => rvanka%p_Dd5
+    p_KldC     => rvanka%p_KldC
+    p_KcolC    => rvanka%p_KcolC
+    p_DC1      => rvanka%p_DC1
+    p_DC2      => rvanka%p_DC2
+    p_Da14     => rvanka%p_Da14
+    p_Da25     => rvanka%p_Da25
+    p_Da15     => rvanka%p_Da15
+    p_Da24     => rvanka%p_Da24
+    p_Da41     => rvanka%p_Da41
+    p_Da52     => rvanka%p_Da52
+    p_Da51     => rvanka%p_Da51
     p_Da42     => rvanka%p_Da42
     
     ! Get the multiplication factors
@@ -1368,7 +1368,7 @@ contains
     ! Perform niterations iterations
     do iter = 1,niterations
 
-      ! Loop through all elements 
+      ! Loop through all elements
       do ielidx = 1,size(IelementList)
       
         ! On the element, get the local DOF's in the pressure space
@@ -1457,11 +1457,11 @@ contains
               idxu1,idxv2,idxv1,idxu2)
         end if
 
-        ! C1/C2        
+        ! C1/C2
         if(bHaveC) then
           call fetchsubmatrices (DaFull,KentryLocalA12,p_DC1,p_DC2,p_KcolC, p_KldC,ndofp,ndofp,&
               idxp1,idxp1,idxp2,idxp2)
-        end if        
+        end if
 
         ! Clear the local defect, fetch the local RHS.
         idofP = IdofsP(1,1)
@@ -1566,18 +1566,18 @@ contains
                              p_KcolA12, p_KldA12, IdofsU, ndofu)
         end if
 
-        ! Now we have the defect "d = f-Bp-Au". 
+        ! Now we have the defect "d = f-Bp-Au".
         !
         ! In the next step, we apply a local preconditioner P^-1 to get an element update:
         !
-        !   x  =  x + omega * P^-1 d  
+        !   x  =  x + omega * P^-1 d
         !      =  x + omega * P^-1 (f_u-Bp-Au , f_p - Du - Cp)^T
         !
         ! For the preconditioner, we choose
         !   P = ( A B )
         !       ( D C )
         !
-        ! The vector 
+        ! The vector
         !
         !  P^-1 d  = ( A B ) ^-1  ( d1 )
         !            ( D C )      ( d2 )

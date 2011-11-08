@@ -60,7 +60,7 @@ module CahnHilliard
 !   ! use NS modules ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    use ccbasic
    use cccallback
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  
   IMPLICIT NONE
   
@@ -73,8 +73,8 @@ CONTAINS
   subroutine CH_timestep (rCHproblem,rCHvector,rCHrhs, rtimestepping, &
             rCHnonlinearIteration,rnlSolver, rNSproblem, rNSvector, rNSrhs)
 !<description>
-  ! Performs one time step: $t^n -> t^n+1$. 
-  ! Assembles system matrix and RHS vector. 
+  ! Performs one time step: $t^n -> t^n+1$.
+  ! Assembles system matrix and RHS vector.
   ! Solves the corresponding time-step equation and returns the solution vector
   ! at the end of the time step.
   ! Solves the given problem by applying a linear solver.
@@ -91,7 +91,7 @@ CONTAINS
   ! The RHS vector at time $t^n$. Is replaced by the RHS at time $t^{n+1}$.
   type(t_vectorBlock), intent(INOUT) :: rCHrhs
 
-! MCai, for dealing with nonlinear iteration. 
+! MCai, for dealing with nonlinear iteration.
 ! Structure for the nonlinear iteration for solving the core equation.
   type(t_CHnonlinearIteration), intent(INOUT) :: rCHnonlinearIteration
 
@@ -114,11 +114,11 @@ CONTAINS
     type(t_filterChain), dimension(1), TARGET :: RfilterChain
     type(t_filterChain), dimension(:), POINTER :: p_RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), POINTER :: p_rmatrix
 
- ! A solver node that accepts parameters for the linear solver    
+ ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), POINTER :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), POINTER :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -130,7 +130,7 @@ CONTAINS
     type(t_interlevelProjectionBlock) :: rprojection
 
     ! One level of multigrid
-    type(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo    
+    type(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
 
  
     type(t_CHnonlinearIteration) :: rnonlinearIterationTmp
@@ -156,7 +156,7 @@ CONTAINS
     !
     ! Which is discretised in time with a Theta scheme, leading to
     !
-    !   $$ u_{n+1} + w_1*N(u_n+1) 
+    !   $$ u_{n+1} + w_1*N(u_n+1)
     !      =   u_n + w_2*N(u_n)  +  w_3*f_{n+1}  +  w_4*f_n $$
     !
     ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
@@ -174,7 +174,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
-    ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds 
+    ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
     ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
 	! w2=-(1-theta) delta_t
 
@@ -237,20 +237,20 @@ CONTAINS
 !        stop
 
 !   print *, 'finishing assemble nonlinear RHS, no problem'
-    ! -------------------------------------------    
+    ! -------------------------------------------
     ! Switch to the next point in time.
     rCHproblem%rtimedependence%dtime = rCHproblem%rtimedependence%rtimestepping%dcurrenttime&
                             + rCHproblem%rtimedependence%rtimestepping%dtstep
 
 !~~MCai, Need to take care~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-!    ! Discretise the boundary conditions at the new point in time -- 
+!    ! Discretise the boundary conditions at the new point in time --
 !    ! if the boundary conditions are nonconstant in time!
 !    if (rproblem%iboundary .ne. 0) then
 !      call cc_updateDiscreteBC (rproblem)
-! Instead, we may need 
-!      call CH_updateDiscreteBC (rCHproblem) 
+! Instead, we may need
+!      call CH_updateDiscreteBC (rCHproblem)
 !    end if
-! Suggestion, read the cc code to make sure whether we need it. 
+! Suggestion, read the cc code to make sure whether we need it.
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !    print *, 'there is no collection'
     ! Generate f_n+1 into the rCHrhs overwriting the previous RHS.
@@ -274,7 +274,7 @@ CONTAINS
     ! "M + w_1 N(.)" for the next linear system to solve. Set up that system
     ! on every level of the discretisation.
 
-!~~~~~~~~~~~~~Shall we implement BC in solver core equation?~~~~~~~~~~~~~~~~~~~              
+!~~~~~~~~~~~~~Shall we implement BC in solver core equation?~~~~~~~~~~~~~~~~~~~
 !    ! Implement boundary conditions into the RHS vector, the solution vector
 !    ! and the current system matrices.
      call CH_implementBC (rCHproblem,rCHvector,rtempVectorRhs,1.0_DP)
@@ -283,14 +283,14 @@ CONTAINS
     rnonlinearIterationTmp%dalpha = 1.0_DP
 	! A = \alpha M + \gamma Conv
     rnonlinearIterationTmp%dgamma = rCHproblem%rtimedependence%rtimestepping%dweightMatrixLHS
-    rnonlinearIterationTmp%deta   = rCHproblem%rtimedependence%rtimestepping%dweightMatrixLHS 
+    rnonlinearIterationTmp%deta   = rCHproblem%rtimedependence%rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dbeta  = -1.0_DP
 	! D = \tau N(.) + \theta Lap
     rnonlinearIterationTmp%dtau   = 1.0_DP
     rnonlinearIterationTmp%dtheta = 1.0_DP
     
     ! Update the preconditioner for the case, something changed (e.g.
-    ! the boundary conditions). 
+    ! the boundary conditions).
     ! Note: The bstructuralChange-parameter is set to FALSE here.
     ! In case the template matrices changed (e.g. during a mesh adaption),
     ! the routine must be called with bstructuralChange=true!
@@ -298,10 +298,10 @@ CONTAINS
 
 !MCai, double check how to update preconditioner? Because preconditioner may need
 ! rCHvector in previous step. How to update preconditioner? Or preconditioner is fixed?
-! MCai, in cc2d, the preconditioner does not change with time, but here we need 
+! MCai, in cc2d, the preconditioner does not change with time, but here we need
 ! the preconditioner changes with time: we also need rCHvector to assemble global sys.
 
-! We need nonlinear solver here. 
+! We need nonlinear solver here.
 !MCai, we need to generate system matrix each time step, (it is different from heat eqn)
 ! we use updatePreconditioner to do this, CH_assembleMatrix need velocity vector...
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -472,7 +472,7 @@ CONTAINS
       rCHvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
                        'gmv/phi5.gmv.'//TRIM(sys_si0L(iiteration,5)))

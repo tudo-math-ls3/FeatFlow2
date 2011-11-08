@@ -382,13 +382,13 @@ module afcstabbase
   integer(I32), parameter, public :: AFCSTAB_DUP_EDGELIST         = AFCSTAB_HAS_EDGELIST
 
   ! Duplicate edge-based values: DcoefficientsAtEdge
-  integer(I32), parameter, public :: AFCSTAB_DUP_EDGEVALUES       = AFCSTAB_HAS_EDGEVALUES 
+  integer(I32), parameter, public :: AFCSTAB_DUP_EDGEVALUES       = AFCSTAB_HAS_EDGEVALUES
 
   ! Duplicate subdiagonal edge-based
   integer(I32), parameter, public :: AFCSTAB_DUP_OFFDIAGONALEDGES = AFCSTAB_HAS_OFFDIAGONALEDGES
   
   ! Duplicate antidiffusive fluxes
-  integer(I32), parameter, public :: AFCSTAB_DUP_ADFLUXES         = AFCSTAB_HAS_ADFLUXES 
+  integer(I32), parameter, public :: AFCSTAB_DUP_ADFLUXES         = AFCSTAB_HAS_ADFLUXES
   
   ! Duplicate nodal sums of antidiffusive increments: PP, PM
   integer(I32), parameter, public :: AFCSTAB_DUP_ADINCREMENTS     = AFCSTAB_HAS_ADINCREMENTS
@@ -642,7 +642,7 @@ module afcstabbase
   ! Absolute tolerance for stabilisation
 #ifndef AFCSTAB_EPSABS
   real(DP), parameter, public :: AFCSTAB_EPSABS = 1e-8
-#endif 
+#endif
 
   ! Relative tolerance for stabilisation
 #ifndef AFCSTAB_EPSREL
@@ -713,7 +713,7 @@ module afcstabbase
     ! may require some sort of synchronisation which may be performed
     ! in terms of, e.g., primitive variables whereas the system
     ! matrices and the residual vector/right-hand side are assembled
-    ! in terms of conservative variables. 
+    ! in terms of conservative variables.
     integer :: NVARtransformed = 1
 
     ! Number of different coefficients stored in CoefficientsAtEdge
@@ -887,7 +887,7 @@ contains
 
 
     ! First, we retrieve all information of the stabilisation
-    ! structure specified in the parameter file. 
+    ! structure specified in the parameter file.
 
     ! Get type of stabilisation from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -1149,7 +1149,7 @@ contains
     integer, intent(in) :: NEQ
 
     ! number of edges
-    integer, intent(in) :: NEDGE   
+    integer, intent(in) :: NEDGE
 !</input>
 
 !<inputoutput>
@@ -1175,7 +1175,7 @@ contains
       ! Set new number of nodes
       rafcstab%NEQ = NEQ
       
-      ! Resize edge index vector and clear specification 
+      ! Resize edge index vector and clear specification
       !-------------------------------------------------------------------------
       if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE) then
         if (check(rafcstab%iduplicationFlag, AFCSTAB_SHARE_OFFDIAGONALEDGES)) then
@@ -2291,8 +2291,8 @@ contains
   subroutine afcstab_isMatrixCompatibleSc(rafcstab, rmatrix, bcompatible)
 
 !<description>
-    ! This subroutine checks if a scalar matrix and a discrete 
-    ! stabilisation structure are compatible to each other, 
+    ! This subroutine checks if a scalar matrix and a discrete
+    ! stabilisation structure are compatible to each other,
     ! i.e. if they share the same structure, size and so on.
 !</description>
 
@@ -2818,7 +2818,7 @@ contains
   subroutine afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
 
 !<description>
-    ! Returns a pointer to the index pointer for 
+    ! Returns a pointer to the index pointer for
     ! subdiagonal edge numbers
 !</description>
 
@@ -3031,7 +3031,7 @@ contains
 !<description>
     ! This subroutine generates the list of edges which are
     ! characterized by their two endpoints (i,j) and the absolute
-    ! position of matrix entries ij and ji. 
+    ! position of matrix entries ij and ji.
 !</description>
 
 !<input>
@@ -3228,7 +3228,7 @@ contains
       do iedge = p_IsuperdiagEdgesIdx(ieq),&
                  p_IsuperdiagEdgesIdx(ieq+1)-1
         
-        ! Determine the end-point of the edge, i.e. 
+        ! Determine the end-point of the edge, i.e.
         ! the node which is not equal to IEQ
         jeq = p_IedgeList(1,iedge) + p_IedgeList(2,iedge) - ieq
         
@@ -3313,7 +3313,7 @@ contains
     ! This routine doe not generate auxiliary data structures such as
     ! the edge-based structure. Depending on the specified type of
     ! stabilisation auxiliary arrays such as the antidiffusive fluxes
-    ! or the upper and lower bounds are allocated.  
+    ! or the upper and lower bounds are allocated.
 !</description>
 
 !<input>
@@ -4023,7 +4023,7 @@ contains
       call sys_halt()
     end if
     
-    ! Check if scaling matrix rmatrixM is diagonal and 
+    ! Check if scaling matrix rmatrixM is diagonal and
     ! has the same data type as the source matrix
     if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
         (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
@@ -4034,7 +4034,7 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)   
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
 
     ! What type of matrix are we?
     select case(rmatrixCx%cmatrixFormat)
@@ -4446,7 +4446,7 @@ contains
     ! Check if coefficient matrices are compatible
     call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCy)
 
-    ! Check if scaling matrix rmatrixM is diagonal and 
+    ! Check if scaling matrix rmatrixM is diagonal and
     ! has the same data type as the source matrix
     if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
         (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
@@ -4457,7 +4457,7 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)   
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
 
     ! What type of matrix are we?
     select case(rmatrixCx%cmatrixFormat)
@@ -4894,7 +4894,7 @@ contains
     call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCy)
     call lsyssc_isMatrixCompatible(rmatrixCx, rmatrixCz)
 
-    ! Check if scaling matrix rmatrixM is diagonal and 
+    ! Check if scaling matrix rmatrixM is diagonal and
     ! has the same data type as the source matrix
     if ((rmatrixM%cmatrixFormat .ne. LSYSSC_MATRIXD)    .or.&
         (rmatrixM%cdataType .ne. rmatrixCx%cdataType) .or.&
@@ -4905,7 +4905,7 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)   
+    call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
 
     ! What type of matrix are we?
     select case(rmatrixCx%cmatrixFormat)
@@ -5682,7 +5682,7 @@ contains
     real(DP), dimension(:), intent(in), optional :: Dalpha
 
     ! Global scaling factor for all entries of flux1
-    real(DP), intent(in) :: dscale    
+    real(DP), intent(in) :: dscale
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -5957,7 +5957,7 @@ contains
 
     ! List of edges
     ! DIMENSION(1:N3,1:NEDGE)
-    integer, dimension(:,:), intent(inout) :: IedgeList   
+    integer, dimension(:,:), intent(inout) :: IedgeList
 !</inputoutput>
 !</subroutine
 
@@ -6086,7 +6086,7 @@ contains
 
     ! List of edges
     ! DIMENSION(1:N3,1:NEDGE)
-    integer, dimension(:,:), intent(inout) :: IedgeList   
+    integer, dimension(:,:), intent(inout) :: IedgeList
 !</inputoutput>
 !</subroutine
 

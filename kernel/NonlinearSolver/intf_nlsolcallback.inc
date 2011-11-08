@@ -3,9 +3,9 @@
   ! This file describes the interfaces of the callback routines of the nonlinear
   ! defect-correction loop solver.
 
-  ! ***************************************************************************  
+  ! ***************************************************************************
   
-  interface 
+  interface
   
     subroutine fcb_getDefect (ite,rx,rb,rd,p_rcollection)
   
@@ -14,9 +14,9 @@
     use collection
     
   !<description>
-    ! Defect vector calculation callback routine. Based on the current iteration 
-    ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
+    ! Defect vector calculation callback routine. Based on the current iteration
+    ! vector rx and the right hand side vector rb, this routine has to compute the
+    ! defect vector rd. The routine accepts a pointer to a collection structure
     ! p_rcollection, which allows the routine to access information from the
     ! main application (e.g. system matrices).
   !</description>
@@ -48,7 +48,7 @@
   
   ! ***************************************************************************
 
-  interface 
+  interface
   
     subroutine fcb_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
@@ -57,15 +57,15 @@
     use collection
     
   !<description>
-    ! Defect vector calculation callback routine. Based on the current iteration 
-    ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
+    ! Defect vector calculation callback routine. Based on the current iteration
+    ! vector rx and the right hand side vector rb, this routine has to compute the
+    ! defect vector rd. The routine accepts a pointer to a collection structure
     ! p_rcollection, which allows the routine to access information from the
     ! main application (e.g. system matrices).
   !</description>
 
   !<inputoutput>
-    ! Number of current iteration. 
+    ! Number of current iteration.
     integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
@@ -105,7 +105,7 @@
   
   ! ***************************************************************************
   
-  interface 
+  interface
   
     subroutine fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
   
@@ -120,7 +120,7 @@
   !</description>
 
   !<inputoutput>
-    ! Number of current iteration. 
+    ! Number of current iteration.
     integer, intent(in)                           :: ite
   
     ! Current iteration vector

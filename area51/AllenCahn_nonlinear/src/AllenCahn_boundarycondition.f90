@@ -43,7 +43,7 @@ MODULE AllenCahn_boundarycondition
   use collection
   use paramlist
     
-  use AllenCahn_callback  
+  use AllenCahn_callback
   use AllenCahn_basic
   
   IMPLICIT NONE
@@ -71,7 +71,7 @@ CONTAINS
     ! local variables
     INTEGER :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), POINTER :: p_rmatrix
     type(t_vectorBlock), POINTER :: p_rrhs
@@ -80,7 +80,7 @@ CONTAINS
     ! Pointer to structure for saving discrete BC's:
     type(t_discreteBC), POINTER :: p_rdiscreteBC
     
-    ! A set of variables describing the analytic boundary conditions.    
+    ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! A pointer to the domain
@@ -92,7 +92,7 @@ CONTAINS
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
-    rACproblem%rcollection%Dquickaccess (1) = rACproblem%rtimedependence%dtime 
+    rACproblem%rcollection%Dquickaccess (1) = rACproblem%rtimedependence%dtime
     call collct_setvalue_real(rACproblem%rcollection,'TIME',&
          rACproblem%rtimedependence%dtime,.TRUE.)
     
@@ -165,7 +165,7 @@ CONTAINS
     ! to the matrix on the finest level.
     p_rdiscreteBC => rACproblem%RlevelInfo(rACproblem%NLMAX)%p_rdiscreteBC
     
-    p_rrhs    => rACproblem%rrhs   
+    p_rrhs    => rACproblem%rrhs
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
                 
   end SUBROUTINE
@@ -202,7 +202,7 @@ CONTAINS
   ! local variables
   INTEGER :: i,NLMAX
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), POINTER :: p_rmatrix
     
@@ -225,7 +225,7 @@ CONTAINS
     call vecfil_discreteBCsol (rvector, p_rdiscreteBC)
 
 
-    ! Implement discrete boundary conditions into the matrices on all 
+    ! Implement discrete boundary conditions into the matrices on all
     ! levels, too. call the appropriate matrix filter to modify
     ! all matrices according to the attached discrete boundary conditions.
     DO i=rACproblem%NLMIN,rACproblem%NLMAX

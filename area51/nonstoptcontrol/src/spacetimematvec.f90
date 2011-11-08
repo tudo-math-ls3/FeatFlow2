@@ -93,7 +93,7 @@ contains
     ! Loop over all timesteps
     do istep=1,rx%NEQtime
     
-      ! Load the RHS into the temp vector. Scale it by cy; we cannot 
+      ! Load the RHS into the temp vector. Scale it by cy; we cannot
       ! include cy in the space-time MV below since tghe weights would
       ! be wrong for subsequent MV's otherwise.
       call sptivec_getTimestepData(ry,istep,rtempVecY)

@@ -22,7 +22,7 @@
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
-!# 
+!#
 !# 2') coeff_RHS_w
 !#
 !# 3.) getBoundaryValues
@@ -30,14 +30,14 @@
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
-!# 
+!#
 !# 4.) CH_iniconPhi
 !# 5.) CH_iniconChemP
 !#
 !# 6.) coeff_NonlinearMass
 !# 7.) coeff_VarMass
 !# 8.) coeff_VarLaplace
-!# 
+!#
 !#
 !# </purpose>
 !##############################################################################
@@ -90,11 +90,11 @@ CONTAINS
     delta=(x-0.5_DP)**2/0.01_DP+(y-0.5_DP)**2/0.0225_DP-1.0_DP
 	f_val=tanh(delta)
 
-!     f_val=1.0_DP	
+!     f_val=1.0_DP
 
 !    if ((x .ge. 0.35) .and. (x .le. 0.65) .and. (y .ge. 0.35) .and. (y .le. 0.65)) then
 !       f_val=1.0_DP
-!    else 
+!    else
 !       f_val=-1.0_DP
 !    end if
 
@@ -132,14 +132,14 @@ CONTAINS
 !    delta=(x-0.5_DP)**2+(y-0.5_DP)**2+1.0_DP
 !    f_val=delta
  
- ! The chemical potential is 
+ ! The chemical potential is
   ! w = (phi^3 - phi)/eps - eps * Laplace \phi
 
 !  f_val=(phi**3-phi)/ep-ep*(-80000*phi*(1-phi**2)*(x-0.5_DP)**2+&
 !          2600/9-2600/9*phi**2-1280000/81*phi*(1-phi**2)*(y-0.5_DP)**2)
   ! The following one is based on matlab, the above one is based on Chain rule.
 !Feng's setting
-!  phi= tanh(100*(x-0.5_DP)**2+400.0_DP/9.0_DP*(y-0.5_DP)**2-1.0_DP)       
+!  phi= tanh(100*(x-0.5_DP)**2+400.0_DP/9.0_DP*(y-0.5_DP)**2-1.0_DP)
 !  f_val=2.0_DP*phi*(1.0_DP-phi**2)*(200.0_DP*x-100.0_DP)**2-2600.0_DP/9.0_DP+&
 !    2600.0_DP/9.0_DP*phi**2+2.0_DP*phi*(1.0_DP-phi**2)*(800.0_DP/9.0_DP*y-400.0_DP/9.0_DP)**2+&
 !	(phi**3-phi)/eps**2
@@ -152,11 +152,11 @@ CONTAINS
  
  
 
-!     f_val=1.0_DP	
+!     f_val=1.0_DP
 
 !    if ((x .ge. 0.35) .and. (x .le. 0.65) .and. (y .ge. 0.35) .and. (y .le. 0.65)) then
 !       f_val=1.0_DP
-!    else 
+!    else
 !       f_val=-1.0_DP
 !    end if
 
@@ -224,8 +224,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), OPTIONAL      :: rcollection
 
   !</input>
@@ -246,10 +246,10 @@ CONTAINS
 
 	! rInnervector is to save rACvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
 
-    !  rOutervector is to save rNSvector 
-!    type(t_vectorblock) :: rOutvector 
+    !  rOutervector is to save rNSvector
+!    type(t_vectorblock) :: rOutvector
   !</output>
 
 !</subroutine>
@@ -279,7 +279,7 @@ CONTAINS
       end do
 
       deallocate(Dvalues)
-  end if 
+  end if
 
   end subroutine
 
@@ -288,7 +288,7 @@ CONTAINS
   real(DP), intent(INOUT) :: f_val
 
      f_val=(phi**2-1.0_DP)*phi
-  end subroutine 
+  end subroutine
 
 ! ***************************************************************************
 
@@ -305,8 +305,8 @@ CONTAINS
     use domainintegration
     
   !<description>
-    ! This subroutine is called during the matrix assembly: CH_assemblyMatrix. 
-	! It is used to construct preconditioner for nonlinear system, see 
+    ! This subroutine is called during the matrix assembly: CH_assemblyMatrix.
+	! It is used to construct preconditioner for nonlinear system, see
 	! CH_generateNonlinearMat
     !
   !</description>
@@ -350,8 +350,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -374,7 +374,7 @@ CONTAINS
 
 	! rInnervector is to save rvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
 	real(DP) :: eps=0.02_DP
   !</output>
 
@@ -405,7 +405,7 @@ CONTAINS
       end do
 
       deallocate(Dvalues)
-    end if 
+    end if
 
   end subroutine
 
@@ -414,10 +414,10 @@ CONTAINS
   ! f_val is the mobility
   real(DP), intent(INOUT) :: f_val
   ! local variable
-  ! We should use derivative, Newton like nonlinear solver: Jacobian. 
+  ! We should use derivative, Newton like nonlinear solver: Jacobian.
      f_val=3.0_DP*c**2-1.0_DP
     
-  end subroutine 
+  end subroutine
 
 !**********************************************************************************
  subroutine coeff_Conv (rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -435,7 +435,7 @@ CONTAINS
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
     !
-    ! In this example, we compute the poisson example with a nonconstant 
+    ! In this example, we compute the poisson example with a nonconstant
     ! coefficient depending on a finite element function. The FE function is
     ! passed to this routine via the collection structure rcollection.
   !</description>
@@ -479,8 +479,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -535,7 +535,7 @@ CONTAINS
 
       deallocate(Dvalues_X)
       deallocate(Dvalues_Y)
-    end if 
+    end if
   
   end subroutine
 
@@ -600,8 +600,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional ,target     :: rcollection
     
   !</input>
@@ -651,7 +651,7 @@ CONTAINS
       end do
 
       deallocate(Dvalues_X)
-    end if 
+    end if
 
   end subroutine
 
@@ -716,8 +716,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional ,target     :: rcollection
     
   !</input>
@@ -762,12 +762,12 @@ CONTAINS
         do j = 1, npointsPerElement
           ! MCai: {\bf u} \cdot \grad \phi
           ! Dcoefficients have 2 items?
-          Dcoefficients(1,j,i)=Dvalues_Y(1,j,i) 
+          Dcoefficients(1,j,i)=Dvalues_Y(1,j,i)
         end do
       end do
 		
       deallocate(Dvalues_Y)
-    end if 
+    end if
 
   end subroutine
 
@@ -789,7 +789,7 @@ CONTAINS
     
   !<description>
     ! This subroutine is called during the matrix assembly. It gives the coeff
-	! for variable dependent mass matrix: the coefficient depends on c. 
+	! for variable dependent mass matrix: the coefficient depends on c.
     !
   !</description>
     
@@ -832,8 +832,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -856,7 +856,7 @@ CONTAINS
 
 	! rInnervector is to save rvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
   !</output>
 
   !</subroutine>
@@ -886,7 +886,7 @@ CONTAINS
 
       deallocate(Dvalues)
         
-    end if 
+    end if
 
   end subroutine
 
@@ -901,7 +901,7 @@ CONTAINS
 
     f_val=rho_1*(1.0_DP+c)/2.0_DP+rho_2*(1.0_DP-c)/2.0_DP
     
-  end subroutine 
+  end subroutine
 
 ! ***************************************************************************
   !<subroutine>
@@ -961,8 +961,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -985,7 +985,7 @@ CONTAINS
 
 	! rInnervector is to save rvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
   !</output>
 
   !</subroutine>
@@ -1015,12 +1015,12 @@ CONTAINS
         end do
       end do
       deallocate(Dvalues)
-    end if 
+    end if
 
   end subroutine
 
 ! MCai, we need to rewrite Laplace term for CH model, because it is \grad (w/\rho(c))
-! we need to use chain role to calculate it. 
+! we need to use chain role to calculate it.
 
   subroutine Mobility_fun(c, f_val)
   real(DP), intent(IN) :: c
@@ -1038,7 +1038,7 @@ CONTAINS
     rho=1.0_DP + (c-1.0_DP)*(rho_1-rho_2)/(2.0_DP*rho_1)
     f_val=b/(rho**2)
 
-  end subroutine 
+  end subroutine
 
 !************************************************************************************
   subroutine CH_initCollectForAssembly (rCHproblem,rcollection)
@@ -1146,8 +1146,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), OPTIONAL      :: rcollection
     
   !</input>
@@ -1227,8 +1227,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), OPTIONAL      :: rcollection
     
   !</input>
@@ -1267,9 +1267,9 @@ CONTAINS
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, DIMENSION(:), intent(IN)                           :: Icomponents
 
@@ -1290,30 +1290,30 @@ CONTAINS
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer(I32), intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
 !  type(t_collection), intent(IN), OPTIONAL      :: rcollection
 !=======
   type(t_collection), intent(INOUT), optional                 :: rcollection
@@ -1322,8 +1322,8 @@ CONTAINS
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), DIMENSION(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -1410,8 +1410,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), OPTIONAL      :: rcollection
     
   !</input>

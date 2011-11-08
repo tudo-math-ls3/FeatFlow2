@@ -1,5 +1,5 @@
 ***********************************************************************
-* This header file declares all functions that are used 
+* This header file declares all functions that are used
 * in the dynamic string handling implementation.
 ***********************************************************************
 

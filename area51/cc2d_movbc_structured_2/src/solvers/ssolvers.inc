@@ -1,5 +1,5 @@
 ************************************************************************
-* This file describes the structures of the standard parameter block 
+* This file describes the structures of the standard parameter block
 * for solvers, extended smoothers and extended preconditioners.
 * This structures has to be extended to a specialized
 * structure, which contains the solver specific parameters. There are
@@ -19,12 +19,12 @@
 * results (like in former solver calls, where the ITE-parameter
 * was on call the minimum number of iterations and returned the
 * actual performed iteration count) when calling the routine
-* more than once. This allows to call the solver more 
+* more than once. This allows to call the solver more
 * than one time with the same structure, getting the same results.
 *
 * The structures themselves are realized as integer/double precision
 * arrays:
-*   IPARAM = array [1..SZSLVI] of integer 
+*   IPARAM = array [1..SZSLVI] of integer
 *          = TSolverIParams
 *   DPARAM = array [1..SZSLVD] of double
 *          = TSolverIDParams
@@ -40,8 +40,8 @@
 *   specific structure by adding further solver-specific variables
 *   to it for input/output/status
 * - Initialise the specialised solver structure by a solver-specific
-*   initialisation routine (INxxxx). Initialise the general solver 
-*   structure (e.g. by INGSLV) - this is normally done by the 
+*   initialisation routine (INxxxx). Initialise the general solver
+*   structure (e.g. by INGSLV) - this is normally done by the
 *   specialized initialization routine, too.
 * - Call the solver with the structures as parameters
 * - When the solver is finished, extract the results of the solver
@@ -63,12 +63,12 @@
 * elements. This allowes solvers with a limited set of additional
 * parameters to include these directly in the array without
 * defining a new SZxxxx-constant for that solver. The additional
-* data can be stored directly at position 100..128 in the array. 
+* data can be stored directly at position 100..128 in the array.
 * Solvers with more parameters need to attach complete blocks
 * and have tro define a new SZxxxx-constant for that block.
 *
-* To provide direct support for standard matrix-vector multiplication 
-* routines or standard preconditioning routines are used, the caller 
+* To provide direct support for standard matrix-vector multiplication
+* routines or standard preconditioning routines are used, the caller
 * can provide the appropriate information in the MATRx and PRECx
 * subarrays of the structure. The standard matrix-vector multiplication
 * and preconditioning routines are designed to access these blocks
@@ -102,15 +102,15 @@
 * parameters for the multigrid solver itself. Attached to that there
 * is a second general/specific block that contains the parameters
 * for the coarse grid solver:
-* As the coarse grid solver is itself derived from a standard solver, 
+* As the coarse grid solver is itself derived from a standard solver,
 * it needs to be configured by such a block. This block is now embedded
-* into the multigrid structure. This allows the coarse-grid solver 
+* into the multigrid structure. This allows the coarse-grid solver
 * callback-routine inside of the multigrid solver to directly
 * call the solver component with the appropriate block without building
 * it every time, which is the typical usage.
 * It's even possible to attach more of such solver-blocks to the
-* multigrid block in case that this is necessary (e.g. more than one 
-* coarse grid solver, and the callback-routine switches dynamically 
+* multigrid block in case that this is necessary (e.g. more than one
+* coarse grid solver, and the callback-routine switches dynamically
 * between them), or to attach blocks of information about computational
 * grids to it. To access the different structure blocks,
 * the SZxxxx-size constants have to be used to calculate the
@@ -123,7 +123,7 @@
 * solver might ignore some of the variables if necessary. In this
 * case these variables have to be set to 0 by the initialization
 * routine and haven't to be tackled by the solver (except where
-* mentioned). 
+* mentioned).
 *
 * TSolverIParams = record
 *
@@ -146,8 +146,8 @@
 *            This us a user-defineable tag which can be used
 *            to identify the solver/smoother/preconditioner, the structure
 *            is set up to. Should be set by the initialization routine
-*            of this structure to a unique identifier to allow callback 
-*            routines to decide, for which specific component this structure 
+*            of this structure to a unique identifier to allow callback
+*            routines to decide, for which specific component this structure
 *            is prepared for.
 *            Can be set to 0 if not used.
 *            The following identifiers are reserved:
@@ -208,10 +208,10 @@
 *            >= 0.
 *   IFILT  : Filtering tag.
 *            This (user-defined) tag can be used to inform the
-*            callback-routine for the filtering about the type of 
+*            callback-routine for the filtering about the type of
 *            the actual filter that should be used.
 *            Also informs the solver about whether the callback-routine
-*            of the filter should be called at all (if the solver 
+*            of the filter should be called at all (if the solver
 *            supports filtering).
 *            Must be set to 0 if not used. If <> 0, the callback-routine
 *            for the filter is called to perform the filtering.
@@ -222,7 +222,7 @@
 *            the syntax of the filtering routine for that solver.
 *   OPCTAG : Preconditioner tag.
 *            This (user-defined) tag can be used to inform the
-*            callback-routine of the preconditioner about the type of 
+*            callback-routine of the preconditioner about the type of
 *            the actual preconditioner that should be used.
 *            Also informs the solver about whether the callback-routine
 *            of the preconditioner should be called at all
@@ -257,8 +257,8 @@
 *            out how to react. In this case there is typically a
 *            preconditioner-structure (i.e. a solver structure with
 *            solver-tag identifying a preconditioner) or another type
-*            of information array appended to this solver structure. 
-*            The callback-routine can then use this information it 
+*            of information array appended to this solver structure.
+*            The callback-routine can then use this information it
 *            correctly perform the preconditioning.
 *   INRM   : Type of norm to use for convergence criteria.
 *            =0: use weighted l2-norm = standard
@@ -276,7 +276,7 @@
 *
 *   // Output-Tags for messages on the screen. MSGTRM is the output
 *   // level for the solver itself. The other output levels are ignored
-*   // normally by the algorithm itself, but should be used by the 
+*   // normally by the algorithm itself, but should be used by the
 *   // callback routines to determine their level of output.
 *
 *   MSGTRM : Level of output of the solver of algorithm.
@@ -286,7 +286,7 @@
 *   MFLTRM : Level of output to terminal for filter
 *            =0: no output = standard
 *            =1: basic output
-*            =2: extended output 
+*            =2: extended output
 *   MTRMRS : Restriction of output to specific iterations.
 *            Only valid for iteration-based solver algorithms.
 *            Restricts the output that way, that only in each
@@ -307,14 +307,14 @@
 *            callback routines are used in the solver, which access this
 *            information. Otherwise filled with 0.
 *            Can be used arbitrary by user-defined matrix-vector
-*            multiplication routines. 
+*            multiplication routines.
 *            Not used in any black-box solver internally.
 *   PRECI  : array [1..16] of integer
 *            Saves general information for the preconditioner.
-*            Only used, if standard preconditioner callback 
+*            Only used, if standard preconditioner callback
 *            routines are used in the solver, which access this
 *            information. Otherwise filled with 0.
-*            Can be used arbitrary by user-defined preconditioning 
+*            Can be used arbitrary by user-defined preconditioning
 *            routines. Not used in any black-box solver internally.
 *
 *   // Status variables, only valid during the solution process.
@@ -338,11 +338,11 @@
 *   DEFINI : initial defect
 *   DEFFIN : final defect after last iteration
 *   RHO    : convergence rate
-*   RHOASM : asymptotic convergence rate, calculated from the last 
+*   RHOASM : asymptotic convergence rate, calculated from the last
 *            IASRLN multigrid steps (if supported by the solver)
 *
 *   // Timing output parameters; only set if IMTIM > 0:
-*   
+*
 *   TMTOT  : total time for solver
 *   TMFILT : time for filtering (if timing is supported by the solver)
 *
@@ -368,10 +368,10 @@
 *            diverged if
 *            !!defect!! >= DIVABS
 *            standard = 1E99 = infinity
-*   VECZER : RHS-vector is treated as zero im 
+*   VECZER : RHS-vector is treated as zero im
 *            max(defect) < VECZER
 *            standard = 1E-12
-*  
+*
 *   // Standard blocks for matrix-vector multiplication and
 *   // preconditioning. These blocks are reserved for standard
 *   // callback-routines that need only a limited set of
@@ -387,7 +387,7 @@
 *            information. Otherwise filled with 0.
 *   PRECD  : array [1..16] of integer
 *            Saves general information for the preconditioner.
-*            Only used, if standard preconditioner callback 
+*            Only used, if standard preconditioner callback
 *            routines are used in the solver, that access this
 *            information. Otherwise filled with 0.
 *            This can be used to store more detailed information,
@@ -407,14 +407,14 @@
 * The standard settings of the parameters can be initialised with
 * INGSLV.
 *
-* This solver structure is generally also used for extended 
+* This solver structure is generally also used for extended
 * preconditioners and smoothers in a multigrid algorithm. In this
 * case most variables are simply unused. Which variables of these
 * blocks are used is documented at the smoother routine.
 *
 * EXAMPLES
 * --------
-* There are multiple ways to use this structure for solvers, 
+* There are multiple ways to use this structure for solvers,
 * preconditioners and smoothers. Here we give some examples and
 * guidelines about the usage, i.e. when to use which combination
 * of structure and how to set the parameters for configuring
@@ -422,10 +422,10 @@
 *
 * 1.) Standard SSOR-solver, standard structure-7 matrix,
 *     no preconditioning
-* 
+*
 * a) Initialize a standard solver structure
 * b) Initialize the solver tag to "SSOR-solver"
-* c) Initialise IMAT according to the standard matrix-vector 
+* c) Initialise IMAT according to the standard matrix-vector
 *    multiplication callback routines
 * c) Start the SSOR-solver with this structure as parameter,
 *    Standard structure-7 callback routine for MV-mult.
@@ -433,25 +433,25 @@
 *
 * 2.) Standard CG-solver, standard structure-7 matrix,
 *     standard Jacobi preconditioning
-* 
+*
 * a) Initialize a standard solver structure
 * b) Initialize the solver tag to "CG-solver"
-* c) Initialise IMAT according to the standard matrix-vector 
+* c) Initialise IMAT according to the standard matrix-vector
 *    multiplication callback routines
 * d) Initialise PCTAG to "Jacobi preconditioning"
 * e) Initialise PRECI/PRECD according to the standard Jacobi
 *    preconditioning callback routines
 * f) Start the CG-solver with this structure as parameter
 * g) Release the solver structure
-* 
+*
 * 3.) Standard BiCGStab-solver, standard structure-7 matrix,
 *     preconditioning dependent on variable in a DAT-file
-* 
+*
 * a) Initialize an extended solver structure consisting of:
 *    - one standard solver block for the BiCGStab solver
 *    - one solver block for the preconditioner
 * b) Initialize the solver tag to "BiCGStab-solver"
-* c) Initialise IMAT according to the standard matrix-vector 
+* c) Initialise IMAT according to the standard matrix-vector
 *    multiplication callback routines
 * d) Set PCTAG=51 to indicate user-defined preconditioning
 * e) Initialise the SLTAG-variable in the solver block for the
@@ -465,7 +465,7 @@
 * g) Release the solver structure
 *
 * 4.) Standard BiCGStab-Solver, standard structure-7 matrix,
-*     multigrid preconditioner, 
+*     multigrid preconditioner,
 *     BiCGStab-smoother in multigrid with ILU-0 preconditioner,
 *     CG coarse-grid solver with SSOR-preconditioner
 *
@@ -488,7 +488,7 @@
 *     User-defined callback-routines have to be provided to call
 *     the BiCGStab-smoother / CG-solver with the correct parameters.
 *     The BiCGStab solver / CG-smoother expects a BiCGStab solver
-*     structure - that's the reason why there are two BiCGStab 
+*     structure - that's the reason why there are two BiCGStab
 *     structures appearent: the callback-routine calls the smoother
 *     with the appropriate BiCGStab-smoother structure, and the
 *     CG-solver with the appropriate CG-solver structure, respectively.
@@ -525,7 +525,7 @@ C 26..31: reserved
       PARAMETER (OMATI   = 32)
       PARAMETER (OPRECI  = 48)
 
-C 64..79: reserved      
+C 64..79: reserved
 
       PARAMETER (OCRITE  = 80)
       PARAMETER (ONEQ    = 81)
@@ -547,7 +547,7 @@ C SZSLVI+1..*   : user defineable, but outside of standard-block
       INTEGER ODEFINI,ODEFFIN,ORHO   ,ORHOASM,OTMTOT ,OOMEGA,OOMGPC
       INTEGER OTMFILT,OEPSREL,OEPSABS,ODIVREL,ODIVABS,OVECZER
       INTEGER OMATD,OPRECD,ODUDSLA
-      INTEGER SZSLVD 
+      INTEGER SZSLVD
                  
       PARAMETER (ODEFINI =  1)
       PARAMETER (ODEFFIN =  2)
@@ -564,7 +564,7 @@ C 18..31: reserved
       PARAMETER (OMATD   = 32)
       PARAMETER (OPRECD  = 48)
 
-C 64..79: reserved      
+C 64..79: reserved
       
       PARAMETER (OOMEGA  = 80)
       PARAMETER (OOMGPC  = 81)

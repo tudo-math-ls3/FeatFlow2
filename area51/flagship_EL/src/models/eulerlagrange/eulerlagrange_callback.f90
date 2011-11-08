@@ -3080,7 +3080,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3154,7 +3154,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3316,7 +3316,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3390,7 +3390,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3487,7 +3487,7 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
     !
-    ! The following data must be passed to this routine in the collection in order 
+    ! The following data must be passed to this routine in the collection in order
     ! to work correctly:
     !
     ! IquickAccess(1) = systemFormat
@@ -3525,8 +3525,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   
@@ -3616,7 +3616,7 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
     !
-    ! The following data must be passed to this routine in the collection in order 
+    ! The following data must be passed to this routine in the collection in order
     ! to work correctly:
     !
     ! DquickAccess(1)          = dtime % simulation time
@@ -3654,8 +3654,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   

@@ -487,7 +487,7 @@ contains
     !
     !    This is the classical algorithm which makes use of Zalesak`s
     !    flux limiter and recomputes and auxiliary positivity-
-    !    preserving solution in each iteration step. 
+    !    preserving solution in each iteration step.
     !    The details of this method can be found in:
     !
     !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
@@ -705,7 +705,7 @@ contains
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_ADINCREMENTS) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! 3) Compute sums of antidiffusive increments 
+      ! 3) Compute sums of antidiffusive increments
       !-------------------------------------------------------------------------
       
       ! Check if stabilisation provides raw antidiffusive fluxes
@@ -1544,7 +1544,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! destination vector
-    type(t_vectorBlock), intent(inout) :: ry    
+    type(t_vectorBlock), intent(inout) :: ry
 
     ! OPTIONAL collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -1587,7 +1587,7 @@ contains
     ! A detailed description of the FEM-TVD limiter in general is given in:
     !
     !     D. Kuzmin and S. Turek, Multidimensional FEM-TVD paradigm
-    !     for convection-dominated flows In:  Proceedings of the 
+    !     for convection-dominated flows In:  Proceedings of the
     !     IV European Congress on Computational Methods in Applied Sciences
     !     and Engineering (ECCOMAS 2004). Vol. II, ISBN 951-39-1869-6.
     !
@@ -2074,7 +2074,7 @@ contains
       call lalg_clearVectorDble(Dqp)
       !$omp section
       call lalg_clearVectorDble(Dqm)
-      !$omp end sections     
+      !$omp end sections
       
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2214,7 +2214,7 @@ contains
       call lalg_clearVectorDble(Dpp)
       !$omp section
       call lalg_clearVectorDble(Dpm)
-      !$omp end sections     
+      !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2272,7 +2272,7 @@ contains
       call lalg_clearVectorDble(Dqp)
       !$omp section
       call lalg_clearVectorDble(Dqm)
-      !$omp end sections     
+      !$omp end sections
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronize memory access
@@ -2515,7 +2515,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! destination vector
-    type(t_vectorBlock), intent(inout) :: ry   
+    type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
 
@@ -2550,7 +2550,7 @@ contains
     !
     ! A detailed description of the FEM-GP limiter in general is given in:
     !
-    !     D. Kuzmin, On the design of general-purpose flux 
+    !     D. Kuzmin, On the design of general-purpose flux
     !     limiters for implicit FEM with a consistent mass matrix.
     !     I. Scalar convection.
     !     J. Comput. Phys. 219  (2006) 513-531.
@@ -3115,7 +3115,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! destination vector
-    type(t_vectorBlock), intent(inout) :: ry    
+    type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
 
@@ -3192,7 +3192,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! destination vector
-    type(t_vectorScalar), intent(inout) :: ry    
+    type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
 
@@ -3265,7 +3265,7 @@ contains
 
     if (iand(ioperationSpec, AFCSTAB_LPTALGO_ADINCREMENTS) .ne. 0) then
       !-------------------------------------------------------------------------
-      ! 2) Compute sums of antidiffusive increments 
+      ! 2) Compute sums of antidiffusive increments
       !-------------------------------------------------------------------------
 
       ! Check if stabilisation provides raw antidiffusive fluxes
@@ -3634,7 +3634,7 @@ contains
         end do
         !$omp end do
 
-      end do ! igroup     
+      end do ! igroup
       !$omp end parallel
 
     end subroutine doBoundsDble
@@ -3938,7 +3938,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Switch for flux assembly
-    ! TRUE  : fluxes are not modified externally so that 
+    ! TRUE  : fluxes are not modified externally so that
     !         quicker assembly procedures may be feasible
     ! FALSE : fluxes are truely assembled even if this
     !         leads to an expensive addition of zeros
@@ -4064,7 +4064,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Switch for flux assembly
-    ! TRUE  : fluxes are not modified externally so that 
+    ! TRUE  : fluxes are not modified externally so that
     !         quicker assembly procedures may be feasible
     ! FALSE : fluxes are truely assembled even if this
     !         leads to an expensive addition of zeros
@@ -4187,7 +4187,7 @@ contains
         end if
         
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
-        buseCallback = .false.      
+        buseCallback = .false.
       end if
 
       !-------------------------------------------------------------------------
@@ -4363,7 +4363,7 @@ contains
             else
               ! The implicit part of the raw-antidiffusive fluxes does
               ! not exists; the fluxes should be cleared so just
-              ! overwrite them by the explicit part 
+              ! overwrite them by the explicit part
               call lalg_copyVector(p_Dflux0, p_Dflux)
             end if
             ! if theta = 1 then the explicit part does not exist
@@ -4801,7 +4801,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4847,7 +4847,7 @@ contains
           
           ! We always handle  edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most  edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4878,7 +4878,7 @@ contains
             ! Get actual edge number
             iedge = idx+IEDGEset-1
 
-            ! Add antidiffusive fluxes            
+            ! Add antidiffusive fluxes
             Dflux(iedge) = Dflux(iedge) + DfluxAtEdge(idx)
           end do
         end do
@@ -4940,7 +4940,7 @@ contains
     ! are determined from the off-diagonal entries of the matrix. Note
     ! that this routine serves as a wrapper for block vectors. If
     ! there is only one block, then the corresponding scalar routine
-    ! is called. Otherwise, an error is thrown. 
+    ! is called. Otherwise, an error is thrown.
 !</description>
 
 !<input>
@@ -6095,7 +6095,7 @@ contains
         diff_i = diff+hstep
         diff_j = diff-hstep
         
-        ! Compute limited antidiffusive flux f(Dx_ij+h*e_i) 
+        ! Compute limited antidiffusive flux f(Dx_ij+h*e_i)
         f_i = a_ij*diff_i+Dflux0(iedge)
         if (f_i > 0.0_DP) then
           f_i = min(f_i, max(Dflux(iedge), 0.0_DP))
@@ -6430,7 +6430,7 @@ contains
     
     ! Here, the working routine follow
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -6459,7 +6459,7 @@ contains
     end subroutine adjustKsepMat7
     
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -6522,7 +6522,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
 
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -6636,7 +6636,7 @@ contains
       
       
       ! Determine indices. Obviously, either i or j must be equal to k.
-      ! Otherwise, the edge ij would not be present in the list of 
+      ! Otherwise, the edge ij would not be present in the list of
       ! incident edges for node k.
       i = IedgeList(1,iedge)
       j = IedgeList(2,iedge)
@@ -6656,7 +6656,7 @@ contains
       !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values Dx_i and Dx_j.
       !
-      ! (2) perturbed values: The local Ps and Qs require the 
+      ! (2) perturbed values: The local Ps and Qs require the
       !     contribution of the perturbed solution values u +/- h*e_k,
       !     whereby e_k denotes the k-th unit vector and h stands
       !     for the  perturbation step length.
@@ -6752,7 +6752,7 @@ contains
       integer :: ik,jk,i,j,m,iperturb
       
       
-      ! Get global node number for edge IJ and the 
+      ! Get global node number for edge IJ and the
       ! number of the node m which is not l
       i = IedgeList(1,iedge)
       j = IedgeList(2,iedge)
@@ -6765,7 +6765,7 @@ contains
         ! 1. Case: primary edge
         !-----------------------------------------------------------------------
         ! The current edge connects the perturbed node k with its direct
-        ! neighbor l. Hence, all required information can be extracted from 
+        ! neighbor l. Hence, all required information can be extracted from
         ! the local arrays and no global data retrieval has to be performed.
 
         ! Initilaize flux difference
@@ -6779,7 +6779,7 @@ contains
             ! Retrieve precomputed flux
             f_ij = Dfluxloc(iperturb,iloc)
 
-            ! Limit flux 
+            ! Limit flux
             if (f_ij > 0.0_DP) then
               f_ij = Drploc(iperturb,0)*f_ij
             else
@@ -6976,7 +6976,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -7102,7 +7102,7 @@ contains
     
     ! Here, the working routine follow
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -7131,7 +7131,7 @@ contains
     end subroutine adjustKsepMat7
 
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -7194,7 +7194,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -7333,7 +7333,7 @@ contains
       ! Determine total solution difference
       diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
-      ! Compute antidiffusive flux 
+      ! Compute antidiffusive flux
       if (abs(diff) < AFCSTAB_EPSABS) then
         p_ij = 0.0_DP
         f_ij = 0.0_DP
@@ -7354,7 +7354,7 @@ contains
       !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values Dx_i and Dx_j.
       !
-      ! (2) perturbed values: The local Ps and Qs require the 
+      ! (2) perturbed values: The local Ps and Qs require the
       !     contribution of the perturbed solution values u +/- h*e_k,
       !     whereby e_k denotes the k-th unit vector and h stands
       !     for the  perturbation step length.
@@ -7492,7 +7492,7 @@ contains
       integer :: ik,jk,i,j,m,iperturb
       
       
-      ! Get global node number for edge IJ and the 
+      ! Get global node number for edge IJ and the
       ! number of the node m which is not l
       i=IedgeList(1,iedge)
       j=IedgeList(2,iedge)
@@ -7505,7 +7505,7 @@ contains
         ! 1. Case: primary edge
         !-----------------------------------------------------------------------
         ! The current edge connects the perturbed node k with its direct
-        ! neighbor l. Hence, all required information can be extracted from 
+        ! neighbor l. Hence, all required information can be extracted from
         ! the local arrays and no global data retrieval has to be performed.
                 
         do iperturb = 1, 2
@@ -7555,7 +7555,7 @@ contains
             
           end if
           
-          ! Combine both contributions and 
+          ! Combine both contributions and
           ! adopt sign for perturbation direction
           f_ij = -(iperturb-1.5_DP)*(pf_ij+df_ij)/hstep
 
@@ -7691,7 +7691,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -7764,7 +7764,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -8187,7 +8187,7 @@ contains
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = MC(ij)/tstep+theta*d_ij
         
-        ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j) 
+        ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
         if (f_i > 0.0_DP) then
           f_i = min(f_i, max(Dflux(iedge), 0.0_DP))
@@ -8467,7 +8467,7 @@ contains
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = MC(ij)/tstep+theta*d_ij
         
-        ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j) 
+        ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
         if (f_i > 0.0_DP) then
           f_i = min(f_i, max(Dflux(iedge), 0.0_DP))
@@ -8750,7 +8750,7 @@ contains
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = MC(ij)/tstep+theta*d_ij
         
-        ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j) 
+        ! Compute and limit raw antidiffusive flux f(Dx_ij+h*e_j)
         f_i = a_ij*diff_j+Dflux0(iedge)
         if (f_i > 0.0_DP) then
           f_i = min(f_i, max(Dflux(iedge), 0.0_DP))
@@ -8837,7 +8837,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -8871,7 +8871,7 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
     ! part of the discrete transport operator for a scalar convection equation.
-    ! The velocity is assumed to be nonlinear/arbitrary. 
+    ! The velocity is assumed to be nonlinear/arbitrary.
     ! This routine will also work for linear velocities but then it is inefficient
     ! since the solution perturbation does not affect the velocity.
 !</description>
@@ -8908,7 +8908,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -9095,7 +9095,7 @@ contains
 
     ! Here, the working routine follow
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -9124,7 +9124,7 @@ contains
     end subroutine adjustKsepMat7
 
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -9188,7 +9188,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -9331,13 +9331,13 @@ contains
       real(DP), dimension(2,0:NNVEDGE) :: Dpploc,Dpmloc,Dqploc,Dqmloc,Drploc,Drmloc,Dfluxloc
       real(DP), dimension(NDIM2D) :: c_ij, c_ji
       integer, dimension(5,NNVEDGE) :: Kloc
-      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc      
+      integer :: ij,ji,ild,iedge,i,j,k,l,iloc,nloc
       
       
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -9482,7 +9482,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -9594,7 +9594,7 @@ contains
 
     !**************************************************************
     ! Update the local coefficients for FEM-TVD,
-    ! whereby the matrix can be stored in format 7 or 9.   
+    ! whereby the matrix can be stored in format 7 or 9.
     subroutine updateJacobianMat79_TVD(DcoefficientsAtEdge, Dx,&
         Dpp, Dpm, Dqp, Dqm, c_ij, c_ji, tstep, hstep, iedge, i, j, ij, ji,&
         iloc, k, Dpploc, Dpmloc, Dqploc, Dqmloc, Dfluxloc, Kloc)
@@ -9779,7 +9779,7 @@ contains
       integer :: ik,jk,i,j,m,iperturb
       
       
-      ! Get global node number for edge IJ and the 
+      ! Get global node number for edge IJ and the
       ! number of the node m which is not l
       i = IedgeList(1,iedge)
       j = IedgeList(2,iedge)
@@ -9814,7 +9814,7 @@ contains
             ! Get corresponding matrix indices
             ik = Kdiagonal(i); jk = Ksep(j)
             
-            ! Limit flux 
+            ! Limit flux
             if (f_ij > 0.0_DP) then
               f_ij = Drploc(iperturb,0)*f_ij
             else
@@ -9939,7 +9939,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -9974,7 +9974,7 @@ contains
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
     ! part of the discrete transport operator for a scalar convection equation.
-    ! The velocity is assumed to be nonlinear/arbitrary. 
+    ! The velocity is assumed to be nonlinear/arbitrary.
     ! This routine will also work for linear velocities but then it is inefficient
     ! since the solution perturbation does not affect the velocity.
 !</description>
@@ -10020,7 +10020,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -10217,7 +10217,7 @@ contains
 
     ! Here, the working routine follow
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -10246,7 +10246,7 @@ contains
     end subroutine adjustKsepMat7
 
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -10291,7 +10291,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep  
+      real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -10315,7 +10315,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -10448,7 +10448,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep  
+      real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -10472,7 +10472,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -10605,7 +10605,7 @@ contains
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
-      real(DP), intent(in) :: theta,tstep,hstep  
+      real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
       integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
@@ -10629,7 +10629,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -10796,7 +10796,7 @@ contains
       ! Determine total solution difference
       diff = tstep*(theta*diff1+(1.0_DP-theta)*diff0)
 
-      ! Compute antidiffusive flux 
+      ! Compute antidiffusive flux
       if (abs(diff) < AFCSTAB_EPSABS) then
         p_ij = 0
         f_ij = 0
@@ -11010,7 +11010,7 @@ contains
       integer :: ik,jk,i,j,m,iperturb
       
       
-      ! Get global node number for edge IJ and the 
+      ! Get global node number for edge IJ and the
       ! number of the node m which is not l
       i = IedgeList(1,iedge)
       j = IedgeList(2,iedge)
@@ -11081,7 +11081,7 @@ contains
             
           end if
           
-          ! Combine both contributions and 
+          ! Combine both contributions and
           ! adopt sign for perturbation direction
           f_ij = -(iperturb-1.5_DP)*(pf_ij+df_ij)/hstep
 
@@ -11209,7 +11209,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -11265,7 +11265,7 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian   
+    type(t_matrixScalar), intent(inout) :: rjacobian
 !</inputoutput>
 !</subroutine>
 
@@ -11389,7 +11389,7 @@ contains
     
     ! Here, the working routine follow
     
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -11418,7 +11418,7 @@ contains
     end subroutine adjustKsepMat7
 
 
-    !**************************************************************    
+    !**************************************************************
     ! Adjust the diagonal separator.
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
@@ -11480,7 +11480,7 @@ contains
       ! Loop over all columns of the Jacobian matrix
       do k = 1, NEQ
         
-        ! Assemble nodal coefficients P and Q for node k and all vertices 
+        ! Assemble nodal coefficients P and Q for node k and all vertices
         ! surrounding node k. Note that it suffices to initialize only
         ! those quantities which belong to node k. All other quantities
         ! will be overwritten in the update procedure below
@@ -11671,7 +11671,7 @@ contains
       do iperturb = 1, 2
         
         ! Compute correct sign of perturbation
-        dsign = -2*iperturb+3  
+        dsign = -2*iperturb+3
         
         ! Save local node numbers
         Kloc(2*iperturb:2*iperturb+1,iloc) = (/i,j/)
@@ -11743,7 +11743,7 @@ contains
       real(DP) :: f_ij
       integer :: ik,jk,i,j,m,iperturb
       
-      ! Get global node number for edge IJ and the 
+      ! Get global node number for edge IJ and the
       ! number of the node m which is not l
       i = IedgeList(1,iedge)
       j = IedgeList(2,iedge)
@@ -11778,7 +11778,7 @@ contains
             ! Get corresponding matrix indices
             ik = Kdiagonal(i); jk = Ksep(j)
             
-            ! Limit Dflux 
+            ! Limit Dflux
             if (f_ij > 0.0_DP) then
               f_ij = dscale*min(Drploc(iperturb,0), Drmloc(iperturb,iloc))*f_ij
             else

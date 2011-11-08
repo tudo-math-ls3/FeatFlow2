@@ -24,7 +24,7 @@ module weakDirichlet
   type(t_matrixScalar) :: rmassmatrixWeakD_c
   
   ! lambdas
-  real(DP) :: lambda_c  
-  real(DP) :: lambda_u  
+  real(DP) :: lambda_c
+  real(DP) :: lambda_u
     
-end module 
+end module

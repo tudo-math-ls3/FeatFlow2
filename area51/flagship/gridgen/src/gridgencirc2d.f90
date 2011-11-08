@@ -381,7 +381,7 @@ program gridgencirc2d
 
       ! Write line segment from origin to first point on circle segment
       x = dinnerRadius * cos(dazimuth0)
-      y = dinnerRadius * sin(dazimuth0)     
+      y = dinnerRadius * sin(dazimuth0)
 
       ! Write vertex coordinates
       do isegment = 1, nlineSegments-1
@@ -493,7 +493,7 @@ program gridgencirc2d
       ! Each edge produces a new vertex
       nvt = nvt + nmt
       
-      ! Each edge is subdivided into two new edges and 
+      ! Each edge is subdivided into two new edges and
       ! each element produces three new edges
       nmt = 2*nmt + 3*nel
       
@@ -782,7 +782,7 @@ program gridgencirc2d
           ivt = iaux*isegment+(i-1)*j+i+1
           jvt = (iaux-j)*isegment+(i-1)*(j-1)+i+1
         else
-          ivt = iaux*isegment+i*(j+1)+1 
+          ivt = iaux*isegment+i*(j+1)+1
           jvt = (iaux-j)*isegment+i*j+1
         end if
         

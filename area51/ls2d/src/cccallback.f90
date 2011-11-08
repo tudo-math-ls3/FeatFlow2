@@ -70,17 +70,17 @@
 !#
 !# 10.) cc_doneCollectForAssembly
 !#      -> Is called after the assembly process.
-!#      -> Releases information stored in the collection by 
+!#      -> Releases information stored in the collection by
 !#         cc_initCollectForAssembly.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
-!# framework calls cc_initCollectForAssembly to stores the current point 
+!# framework calls cc_initCollectForAssembly to stores the current point
 !# in time (and probably other necessary information) to the quickaccess-array
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
 !#
-!# -> rcollection%IquickAccess(1)   = 0: stationary, 
+!# -> rcollection%IquickAccess(1)   = 0: stationary,
 !#                                    1: nonstationary with explicit time stepping
 !# -> rcollection%DquickAccess(1)   = current simulation time
 !# -> rcollection%DquickAccess(2)   = minimum simulation time
@@ -177,7 +177,7 @@ contains
   ! and has usually not to be changed by the user.
   !
   ! After the assembly process, this subroutine is called to release temporary
-  ! information from the collection which was stored there by 
+  ! information from the collection which was stored there by
   ! cc_initCollectForAssembly.
 !</description>
   
@@ -195,7 +195,7 @@ contains
 
     ! Currently, this subroutine is empty as all information stored in
     ! the collection in cc_initCollectForAssembly is put to the quick-access
-    ! arrays -- which do not have to be cleaned up. 
+    ! arrays -- which do not have to be cleaned up.
     ! This might change in future...
 
   end subroutine
@@ -264,8 +264,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional ,target     :: rcollection
     
   !</input>
@@ -298,14 +298,14 @@ contains
        do j = 1, npointsPerElement
          if (dwhere(1,j,i).ge.0.0_dp) then
          Dcoefficients ( :,j,i) =rcollection%Dquickaccess(4)
-         else 
+         else
          Dcoefficients ( :,j,i) =rcollection%Dquickaccess(5)
          end if
        end do
-    end do     
+    end do
     
     deallocate(dwhere)
-    end if 
+    end if
 
   end subroutine
 
@@ -373,8 +373,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -451,8 +451,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -471,7 +471,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvector
     integer :: i, j
     real(DP), dimension(:,:,:), allocatable :: dwhere
-    real(DP) :: rho1, rho2, gravity 
+    real(DP) :: rho1, rho2, gravity
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -493,14 +493,14 @@ contains
        do j = 1, npointsPerElement
          if (dwhere(1,j,i).ge.0.0_DP) then
           Dcoefficients ( :,j,i) =rho1*gravity
-         else 
+         else
           Dcoefficients ( :,j,i) =rho2*gravity
-         end if 
+         end if
        end do
-    end do     
+    end do
     
     deallocate(dwhere)
-    end if 
+    end if
     
     
  
@@ -564,8 +564,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional,target      :: rcollection
     
   !</input>
@@ -641,8 +641,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -742,8 +742,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -843,8 +843,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -903,7 +903,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
@@ -944,8 +944,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -1000,7 +1000,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the Y-velocity.
@@ -1041,8 +1041,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -1097,7 +1097,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the pressure
@@ -1138,8 +1138,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -1209,7 +1209,7 @@ contains
   ! DAT file for the boundary conditions.
   character(LEN=*), intent(IN) :: sexpressionName
   
-  ! Solution component that is currently being processed. 
+  ! Solution component that is currently being processed.
   ! 1 = X-velocity, 2 = y-velocity,...
   integer, intent(IN) :: icomponent
   
@@ -1225,8 +1225,8 @@ contains
   ! 0-1-parametrisation.
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 !</input>
 
@@ -1269,8 +1269,8 @@ contains
     
   !<description>
     ! This subroutine is called during the discretisation of boundary
-    ! conditions on fictitious boundary components. It calculates a special quantity 
-    ! on the boundary, which is then used by the discretisation routines to 
+    ! conditions on fictitious boundary components. It calculates a special quantity
+    ! on the boundary, which is then used by the discretisation routines to
     ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
     !
     ! The routine must calculate the values on all elements of the element
@@ -1282,10 +1282,10 @@ contains
     
   !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
-    !   the value should be calculated for 
-    !   (e.g. 1=1st solution component, e.g. X-velocity, 
+    !   the value should be calculated for
+    !   (e.g. 1=1st solution component, e.g. X-velocity,
     !         2=2nd solution component, e.g. Y-velocity,...,
     !         3=3rd solution component, e.g. pressure)
     !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
@@ -1297,14 +1297,14 @@ contains
     ! analytic boundary boundary description etc.
     type(t_blockDiscretisation), intent(IN)                     :: rdiscretisation
     
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), optional                                :: rcollection
 
   !</input>
   
   !<inputoutput>
-    ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+    ! A t_discreteFBCevaluation structure array that defines what to evaluate,
     ! where to evaluate and which accepts the return values.
     ! This callback routine must check out the cinfoNeeded-entry in this structure
     ! to find out what to evaluate.
@@ -1317,9 +1317,9 @@ contains
     ! For Dirichlet boudary:
     !   revaluation contains as many entries as Icomponents; every entry in
     !   Icomponent corresponds to one entry in revaluation
-    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+    !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the
     !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
-    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+    !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values
     !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
     !
     type(t_discreteFBCevaluation), dimension(:), intent(INOUT) :: Revaluation
@@ -1327,7 +1327,7 @@ contains
     
   !</subroutine>
 
-    ! Note: the definition of (analytic) fictitious boundary components 
+    ! Note: the definition of (analytic) fictitious boundary components
     ! is performed in 'cc_parseFBDconditions'.
     !
     ! By default, fictitious boundary handling is switched off!
@@ -1392,37 +1392,37 @@ contains
 !    dxcenter = 1.1
 !    dycenter = 0.31
 !    dradius  = 0.05
-!    
+!
 !    ! Loop through the points where to evaluate:
 !    DO idx = 1,Revaluation(1)%nvalues
-!    
+!
 !      ! Get the number of the point to process; may also be number of an
 !      ! edge or element...
 !      ipoint = Revaluation(1)%p_Iwhere(idx)
-!      
+!
 !      ! Get x- and y-coordinate
 !      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
 !                       p_DvertexCoordinates,&
 !                       p_IverticesAtElement,p_IverticesAtEdge,&
 !                       p_rtriangulation%NVT,&
 !                       dx,dy)
-!      
+!
 !      ! Get the distance to the center
 !      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!      
+!
 !      ! Point inside?
 !      IF (ddistance .LE. dradius) THEN
-!      
+!
 !        ! Denote in the p_Iinside array that we prescribe a value here:
 !        Revaluation(1)%p_Iinside (idx) = 1
 !        Revaluation(2)%p_Iinside (idx) = 1
-!        
+!
 !        ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
 !        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
 !        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!      
+!
 !      END IF
-!      
+!
 !    END DO
     
   contains
@@ -1575,8 +1575,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional ,target     :: rcollection
     
   !</input>
@@ -1611,10 +1611,10 @@ contains
          Dcoefficients (:,j,i) = rcollection%DquickAccess(5)
          end if
        end do
-    end do     
+    end do
     
     deallocate(dwhere)
-    end if 
+    end if
 
   end subroutine
 
@@ -1683,8 +1683,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional ,target     :: rcollection
     
   !</input>
@@ -1721,7 +1721,7 @@ contains
          Dcoefficients (1,j,i) =dwhere(j,i)*rcollection%DquickAccess(4)
         
        end do
-    end do    
+    end do
     
     call PositionTracking (rdiscretisationTrial,p_rvector%rvectorBlock(2),rdomainIntSubset,nelements,&
          npointsPerElement,dwhere)
@@ -1730,11 +1730,11 @@ contains
        do j = 1, npointsPerElement
        !  Dcoefficients (2,j,i) =dwhere(j,i)*rcollection%DquickAccess(4)
        end do
-    end do     
+    end do
     
     
     deallocate(dwhere)
-    end if 
+    end if
   
 
   end subroutine
@@ -1801,8 +1801,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional ,target     :: rcollection
     
   !</input>
@@ -1831,18 +1831,18 @@ contains
        do j = 1, npointsPerElement
          if (dwhere(1,j,i).ge.0.0_DP) then
          Dcoefficients (:,j,i) =rcollection%Dquickaccess(4)
-         else 
+         else
          Dcoefficients (:,j,i) =rcollection%Dquickaccess(5)
          end if
        end do
-    end do     
+    end do
  
     deallocate(dwhere)
-    end if 
+    end if
 
     
     end subroutine
- ! **********************************************************************  
+ ! **********************************************************************
 
 ! <subroutine>
   subroutine PositionTracking (rdiscretisation,rvector,rdomainIntSubset,nelements,&
@@ -1851,14 +1851,14 @@ contains
    use dofmapping
    use spatialdiscretisation
    use collection
-   use domainintegration 
+   use domainintegration
    use scalarpde
-   use derivatives 
+   use derivatives
    use element
        
   type(t_spatialDiscretisation), intent(in),target :: rdiscretisation
-  type(t_vectorScalar), intent(IN),target   :: rvector  
-  type(t_domainIntSubset), intent(IN),target   :: rdomainIntSubset 
+  type(t_vectorScalar), intent(IN),target   :: rvector
+  type(t_domainIntSubset), intent(IN),target   :: rdomainIntSubset
   integer, intent(IN)   :: npointsPerElement ,nelements
   type(t_collection), intent(IN), optional      :: rcollection
   
@@ -1866,7 +1866,7 @@ contains
   
   ! local variables
   type(t_spatialDiscretisation), pointer:: p_rdiscretisation,p_rdiscretisationTrial
-! type(t_triangulation), pointer   :: p_rtriangulation   
+! type(t_triangulation), pointer   :: p_rtriangulation
   type(t_elementDistribution), pointer :: p_elementDistribution
   type(t_elementDistribution), pointer :: p_elementDistributionTrial
   integer, dimension(:,:), allocatable,target :: IdofsTrial
@@ -1906,16 +1906,16 @@ contains
              npointsPerElement,nelements))
              
   allocate(IdofsTrial(indofTrial,nelements))
-  call lsyssc_getbase_double (rvector,p_Ddata)     
+  call lsyssc_getbase_double (rvector,p_Ddata)
   p_Ielements =>rdomainIntSubset%p_Ielements
   
   !print *, rdomainIntSubset%p_Ielements(1)
   !print *, rdomainIntSubset%p_Ielements(nelements)
   call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, p_Ielements(1:nelements), &
-                                  IdofsTrial)    
-   !rvector%p_rspatialDiscr                             
+                                  IdofsTrial)
+   !rvector%p_rspatialDiscr
   call elem_generic_sim2 (p_elementDistributionTrial%celement, &
-            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial) 
+            rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
            
    p_DbasTrial=>DbasTrial
    p_IdofsTrial => IdofsTrial
@@ -1925,7 +1925,7 @@ contains
          DB = 0.0_DP
          do  k = 1, indoftrial
            DB = DB +   &
-             p_Ddata(p_IdofsTrial(k,i)) * p_DbasTrial(k,DER_FUNC,j,i)    
+             p_Ddata(p_IdofsTrial(k,i)) * p_DbasTrial(k,DER_FUNC,j,i)
          end do
        if (present(rcollection)) then
          if (DB.GE.0.0_DP) THEN
@@ -1940,13 +1940,13 @@ contains
        end if
          
       end do
-   end do  
+   end do
    
   
-   deallocate(IdofsTrial) 
-   deallocate(DbasTrial) 
-  end subroutine 
-! ********************************************************************************  
+   deallocate(IdofsTrial)
+   deallocate(DbasTrial)
+  end subroutine
+! ********************************************************************************
   subroutine getBoundaryValues_trace (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
@@ -1963,9 +1963,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -1986,38 +1986,38 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer, intent(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(IN), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -2042,7 +2042,7 @@ contains
          rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
       
     YY = sqrt((dx-0.1_DP)**2+(dy-0.205_DP)**2)
-    !DIST = 0.55_DP*dx + YY*0.125_DP*1.2_DP    
+    !DIST = 0.55_DP*dx + YY*0.125_DP*1.2_DP
     dvalues(1) = 0.05_DP-YY
     !Dvalues(1) = (10.0_DP*(dy-Y1)/(Y2-Y1)-dx)*SIN_theta
     !dvalue = 0.0_DP

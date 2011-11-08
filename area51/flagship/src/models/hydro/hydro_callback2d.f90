@@ -184,7 +184,7 @@
 !#
 !# 45.) hydro_trafoDiffDenPreVel2d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 46.) hydro_trafoNodalDenPreVel2d_sim
@@ -1330,7 +1330,7 @@ contains
         l3 = abs(vel_ij+c_ij)
         l4 = abs(vel_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -1738,7 +1738,7 @@ contains
         l3 = abs(u_ij+c_ij)
         l4 = abs(u_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -1814,7 +1814,7 @@ contains
         l3 = abs(v_ij+c_ij)
         l4 = abs(v_ij)
         
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -2515,7 +2515,7 @@ contains
                                    IDX3(DcoeffsAtEdge,2,1,idx,0,0,0))*vi)+&
                   abs(RCONST(0.5)*(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)-&
                                    IDX3(DcoeffsAtEdge,2,1,idx,0,0,0)))*ci )
-#else      
+#else
       ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
@@ -2815,7 +2815,7 @@ contains
       vi = YVELOCITY2(DdataAtNode,IDX2,inode,0,0)
       Ei = SPECIFICTOTALENERGY2(DdataAtNode,IDX2,inode,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),
@@ -2975,7 +2975,7 @@ contains
       uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,1,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -3370,7 +3370,7 @@ contains
       uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -3874,7 +3874,7 @@ contains
       uj = XVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
       vj = YVELOCITY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -3978,7 +3978,7 @@ contains
         l3 = abs(vel_ij+c_ij)
         l4 = abs(vel_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -4417,7 +4417,7 @@ contains
         l3 = abs(vel_ij+c_ij)
         l4 = abs(vel_ij)
         
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -4583,7 +4583,7 @@ contains
       Ei = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,1,idx,0,0,0)
       Ej = SPECIFICTOTALENERGY3(DdataAtEdge,IDX3,2,idx,0,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       IDX3(DmatrixAtEdge,1,2,idx,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX3(DcoeffsAtEdge,1,2,idx,0,0,0),
@@ -7675,7 +7675,7 @@ contains
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = RCONST(0.5)*(RCONST(1.0)-DcubPtsRef(1,icubp))
@@ -8208,7 +8208,7 @@ contains
 !!$        ! Get mirrored boundary region from collection structure
 !!$        p_rboundaryRegionMirror => collct_getvalue_bdreg(rcollection,&
 !!$            'rboundaryRegionMirror')
-!!$        
+!!$
 !!$        ! Get minimum/maximum parameter values from collection structure
 !!$        dminParam = rcollection%DquickAccess(3)
 !!$        dmaxParam = rcollection%DquickAccess(4)
@@ -8237,7 +8237,7 @@ contains
 !!$
 !!$        do iel = 1, nelements
 !!$          do ipoint = 1, npointsPerElement
-!!$        
+!!$
 !!$            ! Compute auxiliary quantities based on the internal state
 !!$            ! vector evaluated on the boundary
 !!$            pI = ((HYDRO_GAMMA)-RCONST(1.0))*(Daux1((ipoint-1)*NVAR2D+4,iel)-&
@@ -8293,7 +8293,7 @@ contains
 !!$            else
 !!$              DstateM(4) = dvnI+RCONST(2.0)*cI/((HYDRO_GAMMA)-RCONST(1.0))
 !!$            end if
-!!$            
+!!$
 !!$            ! Convert Riemann invariants into conservative state variables
 !!$            cM = RCONST(0.25)*((HYDRO_GAMMA)-RCONST(1.0))*(DstateM(4)-DstateM(1))
 !!$            rM = (cM*cM/(HYDRO_GAMMA)/DstateM(2))**(RCONST(1.0)/((HYDRO_GAMMA)-RCONST(1.0)))
@@ -8306,17 +8306,17 @@ contains
 !!$            DstateM(2) = rM*(Dnx(ipoint,iel)*dvnM-Dny(ipoint,iel)*dvtM)
 !!$            DstateM(3) = rM*(Dny(ipoint,iel)*dvnM+Dnx(ipoint,iel)*dvtM)
 !!$            DstateM(4) = pM/((HYDRO_GAMMA)-RCONST(1.0)) + RCONST(0.5)*rM*(dvnM**2+dvtM**2)
-!!$            
+!!$
 !!$            ! Setup the computed internal state vector
 !!$            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
 !!$            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
 !!$            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
 !!$            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
-!!$            
+!!$
 !!$            ! Invoke Riemann solver
 !!$            call doRiemannSolver(DstateI, DstateM,&
 !!$                Dnx(ipoint,iel), Dny(ipoint,iel), Dflux, Ddiff)
-!!$            
+!!$
 !!$            ! Store flux in the cubature points
 !!$            Dcoefficients(:,1,ipoint,iel) = dscale*RCONST(0.5)*(Dflux-Ddiff)
 !!$          end do

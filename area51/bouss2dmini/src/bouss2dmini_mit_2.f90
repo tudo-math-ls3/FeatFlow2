@@ -81,10 +81,10 @@ module bouss2dmini_mit_2
     ! Laplace-matrix of the primary system for that specific level.
     type(t_matrixScalar) :: rmatrixA
 
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
     
     ! M1- / M2-matrix for that specific level.
@@ -160,10 +160,10 @@ contains
         rvecTmpPrimary,rvecTmpSecondary,rvecDefPrimary,rvecDefSecondary
     
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverPrimary,p_rsolverSecondary,&
         p_rcoarseGridSolver,p_rsmoother,p_rpreconditioner
 
@@ -221,7 +221,7 @@ contains
     ! A timer object for time measuring
     type(t_timer) :: rtimer
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! We want to solve our Stokes problem on level...
     NLMIN = 3
@@ -281,19 +281,19 @@ contains
       call spdiscr_initBlockDiscr (Rlevels(i)%rdiscrPrimary, 3, &
                                    Rlevels(i)%rtriangulation, rboundary)
       
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple (Rlevels(i)%rdiscrPrimary%RspatialDiscr(1),&
           EL_EM30, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards.
       call spdiscr_duplicateDiscrSc (&
           Rlevels(i)%rdiscrPrimary%RspatialDiscr(1),&
           Rlevels(i)%rdiscrPrimary%RspatialDiscr(2))
 
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (Rlevels(i)%rdiscrPrimary%RspatialDiscr(1), &
@@ -316,7 +316,7 @@ contains
     
       ! Initialise a block matrix based on the primary discretisation.
       call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscrPrimary,&
-                                         Rlevels(i)%rmatrixPrimary)    
+                                         Rlevels(i)%rmatrixPrimary)
       
       ! Inform the matrix that we build a saddle-point problem.
       Rlevels(i)%rmatrixPrimary%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
@@ -843,7 +843,7 @@ contains
     call stat_stopTimer(rtimer)
     call output_line('Total time for non-linear loop: ' // stat_sgetTime_byTimer(rtimer))
 
-    ! We can now start the postprocessing. 
+    ! We can now start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
         Rlevels(NLMAX)%rtriangulation,'gmv/u_mit_2.gmv')
@@ -926,7 +926,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscrPrimary)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = NLMAX, NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do

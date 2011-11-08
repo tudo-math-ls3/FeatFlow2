@@ -10,7 +10,7 @@
 !#
 !# R. Lohner, Applied CFD Techniques. An Introduction based on
 !#            Finite Element Methods, Wiley, 2008
-!# 
+!#
 !# The following routines are available:
 !#
 !# 1.) qtree_createQuadtree
@@ -65,7 +65,7 @@
 !#      -> Restore a quadtree from a previous backup
 !#
 !# 18.) qtree_rebuildQuadtree
-!#      -> Rebuilds the structure of a quadtree 
+!#      -> Rebuilds the structure of a quadtree
 !#
 !# 19.) qtree_moveInQuadtree
 !#      -> Reposition item in quadtree
@@ -145,7 +145,7 @@ module quadtree
   ! Identifier: Quad is deleted
   integer, parameter :: QTREE_DEL    = -2
   
-!</constantblock> 
+!</constantblock>
 
 !<constantblock description="Constants for quadtree bounding-box">
 
@@ -161,7 +161,7 @@ module quadtree
   ! Position of the y-maximal value
   integer, parameter :: QTREE_YMAX   =  4
 
-!</constantblock>   
+!</constantblock>
   
 !<constantblock description="Constants for quadtree operations">
 
@@ -221,9 +221,9 @@ module quadtree
     integer :: h_Knode = ST_NOHANDLE
 
     ! Data vectors
-    ! NOTE: This array is introduced to increase performance. It should not be touched 
+    ! NOTE: This array is introduced to increase performance. It should not be touched
     ! by the user. To this end, all quantities of this derived type are PRIVATE.
-    ! If the handle h_Ddata would be dereferences for each operation such as search, 
+    ! If the handle h_Ddata would be dereferences for each operation such as search,
     ! delete, performance would be very poor.
     real(DP), dimension(:,:), pointer :: p_Ddata
 
@@ -412,7 +412,7 @@ contains
 !<description>
     ! This subroutine copies the content of the quadtree to a handle.
     ! If the handle is not associated, then a new handle with correct
-    ! size is allocated. Otherwise, the handle is reallocated if 
+    ! size is allocated. Otherwise, the handle is reallocated if
     ! it does not provide enough memory.
 !</description>
 
@@ -729,7 +729,7 @@ contains
         rquadtree%p_Dbbox(:,nnode+QTREE_NE)            = (/xmid,ymid,xmax,ymax/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_NE) = 0
         
-        ! Add the data values from INODE to the four new quads 
+        ! Add the data values from INODE to the four new quads
         do i = 1, rquadtree%ndata
           jvt = rquadtree%p_Knode(i, inode)
           jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Ddata(:,jvt), inode)
@@ -742,7 +742,7 @@ contains
           end if
         end do
         
-        ! Mark the current quad as subdivided and set pointers to its four children 
+        ! Mark the current quad as subdivided and set pointers to its four children
         rquadtree%p_Knode(QTREE_STATUS, inode) =     QTREE_SUBDIV
         rquadtree%p_Knode(1:QTREE_MAX, inode)  = - (/nnode+QTREE_NW, nnode+QTREE_SW,&
                                                     nnode+QTREE_SE, nnode+QTREE_NE/)
@@ -1044,7 +1044,7 @@ contains
 
 !<result>
     ! Result of the searching:
-    !   QTREE_NOT_FOUND 
+    !   QTREE_NOT_FOUND
     !   QTREE_FOUND
     integer :: iresult
 !</result>
@@ -1578,7 +1578,7 @@ contains
         nnode = rquadtree%NNODE
         rquadtree%NNODE = nnode+QTREE_MAX
 
-        ! Mark the current quad as subdivided and set pointers to its four children 
+        ! Mark the current quad as subdivided and set pointers to its four children
         rquadtree%p_Knode(QTREE_STATUS,inode) =     QTREE_SUBDIV
         rquadtree%p_Knode(1:QTREE_MAX,inode)  = - (/nnode+QTREE_NW, nnode+QTREE_SW,&
                                                     nnode+QTREE_SE, nnode+QTREE_NE/)
@@ -1767,7 +1767,7 @@ contains
 
 !<description>
     ! This function modifies the coordinates of an item in the quadtree.
-    ! First, the item with coordinates DDATA is searched. If the new 
+    ! First, the item with coordinates DDATA is searched. If the new
     ! coordinates belong to the same node (e.g. they are comprised in the
     ! nodes bounding box), then the coordinates are simply updated.
     ! Otherwise, the vertex is deleted from the quadtree and re-inserted
@@ -2037,7 +2037,7 @@ contains
         rquadtree%p_Dbbox(:,nnode+QTREE_NE)            = (/xmid,ymid,xmax,ymax/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_NE) = 0
         
-        ! Add the data values from INODE to the four new quads 
+        ! Add the data values from INODE to the four new quads
         do i = 1, rquadtree%ndata
           jvt = rquadtree%p_Knode(i, inode)
           jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Ddata(:,jvt), inode)
@@ -2050,7 +2050,7 @@ contains
           end if
         end do
         
-        ! Mark the current quad as subdivided and set pointers to its four children 
+        ! Mark the current quad as subdivided and set pointers to its four children
         rquadtree%p_Knode(QTREE_STATUS, inode) =     QTREE_SUBDIV
         rquadtree%p_Knode(1:QTREE_MAX, inode)  = - (/nnode+QTREE_NW, nnode+QTREE_SW,&
                                                     nnode+QTREE_SE, nnode+QTREE_NE/)

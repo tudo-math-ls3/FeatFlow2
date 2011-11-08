@@ -141,7 +141,7 @@
 !#
 !# 35.) hydro_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 36.) hydro_calcBoundaryvalues1d
@@ -319,7 +319,7 @@ contains
                  
       ! Assemble fluxes
       DfluxesAtEdge(:,1,idx) =  dscale * DmatrixCoeffsAtEdge(1,1,idx)*F_ij
-      DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*F_ij      
+      DfluxesAtEdge(:,2,idx) = -dscale * DmatrixCoeffsAtEdge(1,2,idx)*F_ij
 #endif
     end do
 
@@ -699,7 +699,7 @@ contains
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*Fj-&
                                            DmatrixCoeffsAtEdge(1,1,idx)*Fi + Diff)
         DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
-#else        
+#else
         DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*F_ij + Diff)
         DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*F_ij + Diff)
 #endif
@@ -829,7 +829,7 @@ contains
                               DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
                  0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
                               DmatrixCoeffsAtEdge(1,1,idx))**2)*ci )
-#else   
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
@@ -907,7 +907,7 @@ contains
       ! Compute velocity
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
       
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
       MATRIXDIAG_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
         dscale,DmatrixCoeffsAtNode(1,inode),ui)
@@ -973,7 +973,7 @@ contains
       ui = X_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
       Ei = SPECIFIC_TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR1D,inode)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       MATRIX_HYDRO_2T_1D(DcoefficientsAtNode,1,inode,\
         dscale,DmatrixCoeffsAtNode(1,inode),ui,Ei)
@@ -2504,7 +2504,7 @@ contains
                               DmatrixCoeffsAtEdge(1,1,idx))*ui)+&
                  0.5_DP*sqrt((DmatrixCoeffsAtEdge(1,2,idx)-&
                               DmatrixCoeffsAtEdge(1,1,idx))**2)*ci )
-#else  
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
                   abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
@@ -3966,7 +3966,7 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic fields based on 
+        ! the Riemman invariant for each characteristic fields based on
         ! the sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
@@ -4327,7 +4327,7 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic fields based on 
+        ! the Riemman invariant for each characteristic fields based on
         ! the sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
@@ -4750,7 +4750,7 @@ contains
                                        b2*Diff(3) )
             
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-      Diff(1) = w1 + w2 + w3 
+      Diff(1) = w1 + w2 + w3
       Diff(2) = (u_IM-c_IM*dnx)*w1 + u_IM*w2 +&
                 (u_IM+c_IM*dnx)*w3
       Diff(3) = (H_IM-c_IM*dveln)*w1 + q_IM*w2 +&

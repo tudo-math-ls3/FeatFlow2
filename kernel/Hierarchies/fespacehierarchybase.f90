@@ -15,7 +15,7 @@
 !# possible:
 !#  - If a FE space is created by a trangulation, the triangulation is reused
 !#    and only refined if necessary. A new discretisation is created.
-!#  - If a FE space is created by an existing discretisation, the 
+!#  - If a FE space is created by an existing discretisation, the
 !#    discretisation is reused and only refined if necessary.
 !#  - If a FE space is created based on a set of existing discretisations/
 !#    triangulations, the routines try to reuse the existing structures and
@@ -85,7 +85,7 @@ module fespacehierarchybase
     
     ! Reference to the underlying discretisation.
     ! This is either a direct reference or refers to allocated memory
-    ! on the heap if the discretisation had been created by 
+    ! on the heap if the discretisation had been created by
     ! the create routines.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
     
@@ -107,7 +107,7 @@ module fespacehierarchybase
     type(t_boundary), pointer :: p_rboundary => null()
 
     ! An underlying mesh hierarchy.
-    type(t_meshHierarchy) :: rmeshHierarchy 
+    type(t_meshHierarchy) :: rmeshHierarchy
     
     ! Number of levels available in this structure.
     integer :: nlevels = 0

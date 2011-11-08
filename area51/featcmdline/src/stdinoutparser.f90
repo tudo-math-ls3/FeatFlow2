@@ -55,7 +55,7 @@ contains
     inextvar = 1
     soutput = ""
     istrlen = len_trim(sstring)
-    do 
+    do
       if (iin .gt. istrlen) exit
       
       if (bescape) then
@@ -158,7 +158,7 @@ contains
   subroutine formatVariable (rvariable,sstring,sformat,ilen,berror)
 
   !<description>
-    ! Local routine. Formats a variable according to the format string. 
+    ! Local routine. Formats a variable according to the format string.
   !</description>
 
   !<input>

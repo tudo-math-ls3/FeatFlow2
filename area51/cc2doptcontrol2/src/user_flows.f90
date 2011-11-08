@@ -19,12 +19,12 @@ contains
   ! ***************************************************************************
   ! ***************************************************************************
   ! Heat equation, function set 1.
-  !   y = t^2   x1 
+  !   y = t^2   x1
   ! ***************************************************************************
 
   elemental real(DP) function fct_heatY1 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatY1 = dtime**2 * dx 
+    fct_heatY1 = dtime**2 * dx
   end function
 
   elemental real(DP) function fct_heatLambda1 (dx,dy,dtime,dalpha)
@@ -44,19 +44,19 @@ contains
 
   ! ***************************************************************************
   ! Heat equation, function set 2
-  !   y = t^2 (1-t)^2   x1 
+  !   y = t^2 (1-t)^2   x1
   !   l = a t (1-t) x1
   ! No factor 4 due to inconsistent terminal condition.
   ! ***************************************************************************
   
   elemental real(DP) function fct_heatY2 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatY2 = dtime**2 * (1.0_DP-dtime)**2 * dx 
+    fct_heatY2 = dtime**2 * (1.0_DP-dtime)**2 * dx
   end function
 
   elemental real(DP) function fct_heatLambda2 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatLambda2 = dalpha * dtime * (1.0_DP-dtime) * dx 
+    fct_heatLambda2 = dalpha * dtime * (1.0_DP-dtime) * dx
   end function
 
   elemental real(DP) function fct_heatF2 (dx,dy,dtime,dalpha)
@@ -66,24 +66,24 @@ contains
 
   elemental real(DP) function fct_heatZ2 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatZ2 = (1.0_DP-dtime)*dx-dtime*dx+dtime**2*(1.0_DP-dtime)**2*dx 
+    fct_heatZ2 = (1.0_DP-dtime)*dx-dtime*dx+dtime**2*(1.0_DP-dtime)**2*dx
   end function
 
   ! ***************************************************************************
   ! Heat equation, function set 3
-  !   y = t^2 (1-t)^2   x1 
+  !   y = t^2 (1-t)^2   x1
   !   l = a t (1-t)^2   x1
   ! Gives factor 4 with CN due to proper terminal condition.
   ! ***************************************************************************
 
   elemental real(DP) function fct_heatY3 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatY3 = dtime**2 * (1.0_DP-dtime)**2 * dx 
+    fct_heatY3 = dtime**2 * (1.0_DP-dtime)**2 * dx
   end function
 
   elemental real(DP) function fct_heatLambda3 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatLambda3 = dalpha * dtime * (1.0_DP-dtime)**2 * dx 
+    fct_heatLambda3 = dalpha * dtime * (1.0_DP-dtime)**2 * dx
   end function
 
   elemental real(DP) function fct_heatF3 (dx,dy,dtime,dalpha)
@@ -96,17 +96,17 @@ contains
   real(DP), intent(in) :: dx,dy,dtime,dalpha
     fct_heatZ3 = &
          (1.0_DP-dtime)**2*dx-2.0_DP*dtime*(1.0_DP-dtime)*dx+&
-          dtime**2*(1.0_DP-dtime)**2*dx 
+          dtime**2*(1.0_DP-dtime)**2*dx
   end function
           
   ! ***************************************************************************
   ! Heat equation, function set 4
-  !   y = t^2 (1-t)^2   x1 
+  !   y = t^2 (1-t)^2   x1
   ! ***************************************************************************
     
   elemental real(DP) function fct_heatY4 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatY4 = dtime**2 * (1.0_DP-dtime)**2 * dx 
+    fct_heatY4 = dtime**2 * (1.0_DP-dtime)**2 * dx
   end function
 
   elemental real(DP) function fct_heatLambda4 (dx,dy,dtime,dalpha)
@@ -128,14 +128,14 @@ contains
 
   ! ***************************************************************************
   ! Heat equation, function set 5.
-  !   y = t   x1 
+  !   y = t   x1
   !   l = (1-t) x1
   ! Does not produce error=0, only at the beginning.
   ! ***************************************************************************
 
   elemental real(DP) function fct_heatY5 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_heatY5 = dtime * dx 
+    fct_heatY5 = dtime * dx
   end function
 
   elemental real(DP) function fct_heatLambda5 (dx,dy,dtime,dalpha)
@@ -155,7 +155,7 @@ contains
 
   ! ***************************************************************************
   ! Heat equation, function set 6.
-  !   y = t^2   x1 
+  !   y = t^2   x1
   !   l = (1-t)^2 x1
   ! ***************************************************************************
 

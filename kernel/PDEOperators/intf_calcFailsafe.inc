@@ -46,7 +46,7 @@
     integer, dimension(:), intent(in) :: IedgeListIdx
 
     ! Edge data structure
-    integer, dimension(:,:), intent(in) :: IedgeList   
+    integer, dimension(:,:), intent(in) :: IedgeList
 !</input>
 
 !<inputoutput>

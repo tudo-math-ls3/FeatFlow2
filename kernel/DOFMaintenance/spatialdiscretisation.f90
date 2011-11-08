@@ -50,14 +50,14 @@
 !#
 !# 11.) spdiscr_duplicateDiscrSc
 !#      -> Copies a spatial discretisation structure to another
-!# 
+!#
 !# 12.) spdiscr_duplicateBlockDiscr
 !#      -> Copies a block discretisation structure to another
 !#
 !# 13.) spdiscr_getLumpCubature
 !#      -> Try to get a cubature formula for an element type that leads to
 !#         diagonal lumping when setting up a mass matrix with that element
-!# 
+!#
 !# 14.) spdiscr_getStdCubature
 !#      -> Try to get the typical cubature formula for an element
 !#
@@ -184,7 +184,7 @@ module spatialdiscretisation
   
   type t_elementDistribution
   
-    ! Element identifier for Finite Element functions to use in this 
+    ! Element identifier for Finite Element functions to use in this
     ! element list.
     integer(I32) :: celement        = EL_UNDEFINED
     
@@ -205,7 +205,7 @@ module spatialdiscretisation
     integer(I32) :: ccubTypeEval         = 0
     
     ! Type of transformation to use from the reference element to
-    ! the real element. One of the TRAFO_IDxxxx constants of the module 
+    ! the real element. One of the TRAFO_IDxxxx constants of the module
     ! 'transformation' identifying the type of transformation.
     ! The same transformation is used for both, the trial and the test
     ! space, during the evaluation of linear as well as bilinear forms
@@ -216,7 +216,7 @@ module spatialdiscretisation
     ! May vary from the actual length of p_IelementList!
     integer :: NEL = 0
     
-    ! Handle to list of element numbers that are discretised with this 
+    ! Handle to list of element numbers that are discretised with this
     ! combination of trial/test functions.
     ! If NEL=0, the element list is empty, i.e. h_IelementList = ST_NOHANDLE!
     integer :: h_IelementList       = ST_NOHANDLE
@@ -241,7 +241,7 @@ module spatialdiscretisation
   
   type t_spatialDiscretisation
   
-    ! Dimension of the discretisation. 0=not initialised, 
+    ! Dimension of the discretisation. 0=not initialised,
     ! 1=1D discretisation, 2=2D discretisation, 3=3D discretisation
     integer                          :: ndimension             = 0
     
@@ -335,7 +335,7 @@ module spatialdiscretisation
   
   type t_blockDiscretisation
   
-    ! Dimension of the discretisation. 0=not initialised, 
+    ! Dimension of the discretisation. 0=not initialised,
     ! 1=1D discretisation, 2=2D discretisation, 3=3D discretisation
     integer                          :: ndimension             = 0
 
@@ -343,10 +343,10 @@ module spatialdiscretisation
     ! SPDISC_UNIFORM = all elements in each discretisation
     !   substructure RspatialDiscr(:) are the same.
     ! SPDISC_CONFORMAL = Elements of different FE spaces are mixed,
-    !   but the DOF`s 'fit together'. Each discretisation substructure 
+    !   but the DOF`s 'fit together'. Each discretisation substructure
     !   RspatialDiscr(:) has exactly the same number of element
-    !   distributions, and each element distribution 
-    !     RspatialDiscr(1)%Relementistributions(i), 
+    !   distributions, and each element distribution
+    !     RspatialDiscr(1)%Relementistributions(i),
     !     RspatialDiscr(2)%Relementistributions(i),
     !     RspatialDiscr(3)%Relementistributions(i),...
     !   describe exactly the same set of elements (Same size, same type,
@@ -483,12 +483,12 @@ contains
 !  ! the number of vertices, the element expects.
 !  NVE = elem_igetNVE(celement)
 !  idim = elem_igetDimension(celement)
-!  
+!
 !  bcompatible = .true.
-!  
+!
 !  ! Now we directly access the cubature constants in cubature.f90!
 !  ! This is the only point in the kernel where this is necessary.
-!  
+!
 !  ! 1D: Line?
 !  if (ccubType .le. 99) then
 !    if ((NVE .ne. 2) .or. (idim .ne. NDIM1D)) bcompatible = .false.
@@ -499,18 +499,18 @@ contains
 !    ! Tri?
 !    if ((NVE .ne. 4) .or. (idim .ne. NDIM2D)) bcompatible = .false.
 !  end if
-!  
+!
 !  ! 2D: Tri?
 !  if ((ccubType .ge. 250) .and. (ccubType .le. 299)) then
 !    ! Quad?
 !    if ((NVE .ne. 3) .or. (idim .ne. NDIM2D)) bcompatible = .false.
 !  end if
-!  
+!
 !  ! 3D: Hexa?
 !  if ((ccubType .ge. 300) .and. (ccubType .le. 349)) then
 !    if ((NVE .ne. 8) .or. (idim .ne. NDIM3D)) bcompatible = .false.
 !  end if
-!  
+!
 !  ! 3D: Tetra?
 !  if ((ccubType .ge. 350) .and. (ccubType .le. 499)) then
 !    if ((NVE .ne. 4) .or. (idim .ne. NDIM3D)) bcompatible = .false.
@@ -525,11 +525,11 @@ contains
 
   if (.not. bcompatible) then
     call output_line ('Element and cubature formula not compatible!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_checkCubature')  
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_checkCubature')
     call sys_halt()
   end if
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -640,7 +640,7 @@ contains
         
       case DEFAULT
         ccubType = 0
-      end select        
+      end select
       
     case DEFAULT
       ccubType = 0
@@ -664,8 +664,8 @@ contains
   ! An element type identifier
   integer(I32), intent(in) :: celement
   
-  ! OPTIONAL: Type of operator which should be assembled using this cubature 
-  ! formula. One of the SPDISC_OPTP_xxxx constants. If not specified, 
+  ! OPTIONAL: Type of operator which should be assembled using this cubature
+  ! formula. One of the SPDISC_OPTP_xxxx constants. If not specified,
   ! SPDISC_OPTP_MASS is the default.
   integer, intent(in), optional :: iopertype
 !</input>
@@ -900,7 +900,7 @@ contains
   ! conditions are saved in the structure.
   !
   ! The routine performs only basic initialisation. The caller must
-  ! separately initialise the the specific scalar discretisation structures 
+  ! separately initialise the the specific scalar discretisation structures
   ! of each solution component (as collected in the RspatialDiscr
   ! array of the rblockDiscr structure).
   
@@ -941,9 +941,9 @@ contains
   rblockDiscr%ncomponents      = ncomponents
   allocate(rblockDiscr%RspatialDiscr(ncomponents))
 
-  ! That is it.  
+  ! That is it.
   
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -986,7 +986,7 @@ contains
     call spdiscr_duplicateDiscrSc (rspatialDiscr,&
         rblockDiscr%RspatialDiscr(1), .true.)
   
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -998,7 +998,7 @@ contains
 !<description>
   ! This routine derives a block discretisation structure from another one.
   !
-  ! rsourceDiscr is a given block discretisation structure. 
+  ! rsourceDiscr is a given block discretisation structure.
   ! ifirstBlock is the number of the block in rsourceDiscr that should be
   ! used as first block in rdestDiscr.
   ! ilastBlock is the number of the block in rsourceDiscr that should be
@@ -1019,7 +1019,7 @@ contains
   integer, intent(in), optional :: ifirstBlock
 
   ! OPTIONAL: Number of the last block in rsourceDiscr that should be
-  ! used as last block in rdestDiscr. Default value is the 
+  ! used as last block in rdestDiscr. Default value is the
   ! number of components in rsourceDiscr.
   integer, intent(in), optional :: ilastBlock
 
@@ -1046,7 +1046,7 @@ contains
     ! Check that the source discretisation structure is valid.
     if (rsourceDiscr%ndimension .le. 0) then
       call output_line ('Source structure invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveBlockDiscr')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveBlockDiscr')
       call sys_halt()
     end if
 
@@ -1069,18 +1069,18 @@ contains
     
     ! Copy all information from the source discretisation structure
 
-    rdestDiscr%ndimension       =  rsourceDiscr%ndimension           
-    rdestDiscr%ccomplexity      =  rsourceDiscr%ccomplexity          
-    rdestDiscr%p_rboundary      => rsourceDiscr%p_rboundary          
-    rdestDiscr%p_rtriangulation => rsourceDiscr%p_rtriangulation     
+    rdestDiscr%ndimension       =  rsourceDiscr%ndimension
+    rdestDiscr%ccomplexity      =  rsourceDiscr%ccomplexity
+    rdestDiscr%p_rboundary      => rsourceDiscr%p_rboundary
+    rdestDiscr%p_rtriangulation => rsourceDiscr%p_rtriangulation
     if (present(rboundary)) rdestDiscr%p_rboundary => rsourceDiscr%p_rboundary
     if (present(rtriangulation)) rdestDiscr%p_rtriangulation => rsourceDiscr%p_rtriangulation
-    rdestDiscr%ncomponents      =  ncount       
+    rdestDiscr%ncomponents      =  ncount
     
     ! Copy all substructures -- from ifirstBlock to ilastBlock.
     ! Use spdiscr_duplicateDiscrSc which savely copies the scalar discretisation
     ! structures. We set bshare=.TRUE. here, so the information is shared
-    ! between the source and destination structure; the dynamic information 
+    ! between the source and destination structure; the dynamic information
     ! 'belongs' to rdiscrSource and not to the newly created rdiscrDest!
     allocate(rdestDiscr%RspatialDiscr(ncount))
     do i = 1, ncount
@@ -1088,7 +1088,7 @@ contains
                                      rdestDiscr%RspatialDiscr(i), .true.)
     end do
       
-    end subroutine  
+    end subroutine
   
   ! ***************************************************************************
   
@@ -1143,7 +1143,7 @@ contains
     rblockDiscr%ndimension = 0
   end if
   
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -1154,7 +1154,7 @@ contains
   
 !<description>
   ! This routine initialises a discretisation structure for a uniform
-  ! discretisation with one element for all geometric element primitives, 
+  ! discretisation with one element for all geometric element primitives,
   ! for trial as well as for test functions.
   !
   ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
@@ -1166,7 +1166,7 @@ contains
   integer(I32), intent(in) :: celement
   
   ! Cubature formula CUB_xxxx to use for calculating integrals.
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubType
   
@@ -1190,7 +1190,7 @@ contains
   type(t_elementDistribution), pointer :: p_relementDistr
   integer(I32) :: ccub
 
-  ! Automatically determine cubature formula if necessary  
+  ! Automatically determine cubature formula if necessary
   ccub = ccubType
   if (ccub .eq. SPDISC_CUB_AUTOMATIC) &
       ccub = spdiscr_getStdCubature(celement)
@@ -1257,7 +1257,7 @@ contains
   ! This is a complete new structure, everything 'belongs' to this.
   rspatialDiscr%bisCopy = .false.
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -1270,7 +1270,7 @@ contains
 !<description>
   ! This routine initialises a discretisation structure for a conformal
   ! discretisation, mixed triangular/quad mesh with one element type for all
-  ! triangles and one element type for all quads -- for trial as well as 
+  ! triangles and one element type for all quads -- for trial as well as
   ! for test functions.
   !
   ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
@@ -1284,15 +1284,15 @@ contains
   ! The element type identifier that is to be used for all quadrilateral elements.
   integer(I32), intent(in) :: ieltypQuad
   
-  ! Cubature formula CUB_xxxx to use for calculating integrals 
+  ! Cubature formula CUB_xxxx to use for calculating integrals
   ! on triangular elements
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeTri
 
-  ! Cubature formula CUB_xxxx to use for calculating integrals on 
+  ! Cubature formula CUB_xxxx to use for calculating integrals on
   ! quadrilateral elements
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeQuad
   
@@ -1318,7 +1318,7 @@ contains
   integer, dimension(:,:), pointer :: p_IverticesAtElement
   integer(I32) :: ccubTri,ccubQuad
   
-  ! Automatically determine cubature formula if necessary  
+  ! Automatically determine cubature formula if necessary
   ccubTri = ccubTypeTri
   if (ccubTri .eq. SPDISC_CUB_AUTOMATIC) &
       ccubTri = spdiscr_getStdCubature(ieltypTri)
@@ -1425,7 +1425,7 @@ contains
   
   ! We have to collect all triangles to the first and all quads to the second
   ! element distribution. j counts how many elements we found
-  !  
+  !
   ! Collect all triangles
   j = 0
   if (rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) then
@@ -1477,7 +1477,7 @@ contains
   
   rspatialDiscr%bisCopy = .false.
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -1509,7 +1509,7 @@ contains
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
   ! automatically determine cubature formula.
   ! A value SPDISC_CUB_NOCHANGE means:
   ! take the cubature formula from the source discretisation.
@@ -1530,7 +1530,7 @@ contains
   ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
   integer(I32) :: ccub
 
-  ! Automatically determine cubature formula if necessary  
+  ! Automatically determine cubature formula if necessary
   ccub = ccubType
   if (ccub .eq. SPDISC_CUB_AUTOMATIC) &
       ccub = spdiscr_getStdCubature(celement)
@@ -1538,7 +1538,7 @@ contains
   ! Check that the source discretisation structure is valid.
   if (rsourceDiscr%ndimension .le. 0) then
     call output_line ('Source structure invalid!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')
     call sys_halt()
   end if
   
@@ -1546,14 +1546,14 @@ contains
   ! More complex situations are not supported by this routine.
   if (rsourceDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
     call output_line ('Only uniform discretisations supported!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')
     call sys_halt()
   end if
   
   if (elem_igetDimension(rsourceDiscr%RelementDistr(1)%celement) .ne. &
       elem_igetDimension(celement)) then
     call output_line ('Element dimension different!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')
     call sys_halt()
   end if
   
@@ -1582,12 +1582,12 @@ contains
   if (ccub .eq. SPDISC_CUB_NOCHANGE) then
     ! Copy the old cubature formula
     rdestDiscr%RelementDistr(1)%ccubTypeBilForm = &
-        rsourceDiscr%RelementDistr(1)%ccubTypeBilForm 
+        rsourceDiscr%RelementDistr(1)%ccubTypeBilForm
     rdestDiscr%RelementDistr(1)%ccubTypeLinForm = &
-        rsourceDiscr%RelementDistr(1)%ccubTypeLinForm 
+        rsourceDiscr%RelementDistr(1)%ccubTypeLinForm
     rdestDiscr%RelementDistr(1)%ccubTypeEval    = &
-        rsourceDiscr%RelementDistr(1)%ccubTypeEval    
-  else 
+        rsourceDiscr%RelementDistr(1)%ccubTypeEval
+  else
     rdestDiscr%RelementDistr(1)%ccubTypeBilForm = ccub
     rdestDiscr%RelementDistr(1)%ccubTypeLinForm = ccub
     rdestDiscr%RelementDistr(1)%ccubTypeEval = ccub
@@ -1602,7 +1602,7 @@ contains
   ! newly created rdiscrDest!
   rdestDiscr%bisCopy = .true.
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -1638,13 +1638,13 @@ contains
   
   ! Cubature formula to use for calculating integrals on triangular
   ! elements in the new discretisation structure.
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeTri
 
   ! Cubature formula to use for calculating integrals on quad
   ! elements in the new discretisation structure.
-  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means:
   ! automatically determine cubature formula.
   integer(I32), intent(in) :: ccubTypeQuad
 !</input>
@@ -1664,7 +1664,7 @@ contains
     integer(I32) :: ccubTri,ccubQuad
     integer :: idistr,nve
 
-    ! Automatically determine cubature formula if necessary  
+    ! Automatically determine cubature formula if necessary
     ccubTri = ccubTypeTri
     if (ccubTri .eq. SPDISC_CUB_AUTOMATIC) &
         ccubTri = spdiscr_getStdCubature(ieltypTri)
@@ -1676,7 +1676,7 @@ contains
     if (rsourceDiscr%ndimension .ne. NDIM2D) then
       call output_line ('Source structure invalid!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdiscr_deriveSimpleDiscr_triquad')  
+                        'spdiscr_deriveSimpleDiscr_triquad')
       call sys_halt()
     end if
     
@@ -1686,7 +1686,7 @@ contains
         (rsourceDiscr%ccomplexity .ne. SPDISC_CONFORMAL)) then
       call output_line ('Only uniform discretisations supported!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
-                        'spdiscr_deriveSimpleDiscr_triquad')  
+                        'spdiscr_deriveSimpleDiscr_triquad')
       call sys_halt()
     end if
     
@@ -1748,7 +1748,7 @@ contains
     ! newly created rdiscrDest!
     rdestDiscr%bisCopy = .true.
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -1815,7 +1815,7 @@ contains
     if (.not. rspatialDiscr%bisCopy) then
       if (rspatialDiscr%h_IelementCounter .ne. ST_NOHANDLE) &
         call storage_free (rspatialDiscr%h_IelementCounter)
-    else    
+    else
       rspatialDiscr%h_IelementCounter = ST_NOHANDLE
     end if
     
@@ -1830,7 +1830,7 @@ contains
     rspatialDiscr%ndimension = 0
   end if
   
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -1895,11 +1895,11 @@ contains
       
     else
       call output_line ('bshare=FALSE currently not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateDiscrSc')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateDiscrSc')
       call sys_halt()
     end if
   
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -1914,7 +1914,7 @@ contains
   ! with rsourceDiscr) or a separate copy (which costs memory for all the
   ! element information in all the blocks!).
   !
-  ! The routine does a similar job as  
+  ! The routine does a similar job as
   ! spdiscr_deriveBlockDiscr(rsourceDiscr,rdestDiscr), but in contrast,
   ! discretisation specific information like boundary conditions are copied, too.
 !</description>
@@ -1954,7 +1954,7 @@ contains
     ! Check that the source discretisation structure is valid.
     if (rsourceDiscr%ndimension .le. 0) then
       call output_line ('Source structure invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateBlockDiscr')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateBlockDiscr')
       call sys_halt()
     end if
     
@@ -1973,7 +1973,7 @@ contains
       end do
     end if
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -2090,7 +2090,7 @@ contains
   ! Releases precomputed DOF-mapping arrays.
 !</description>
 
-!<input>    
+!<input>
   ! The discretisation structure that specifies the (scalar) discretisation.
   type(t_spatialDiscretisation), intent(inout) :: rdiscretisation
 !</input>
@@ -2153,7 +2153,7 @@ contains
   !</input>
 
   !<output>
-    ! Edge blocking structure that defines the blocking of the edges.  
+    ! Edge blocking structure that defines the blocking of the edges.
     type(t_edgeBlocking), intent(out) :: redgeBlocking
   !<output>
 !</subroutine>
@@ -2289,7 +2289,7 @@ contains
       return
     end if
 
-    ! Get some arrays    
+    ! Get some arrays
     call storage_getbase_int(rdiscretisation%h_IelementDistr,p_IelementDistr)
     call storage_getbase_int2d(p_rtria%h_IelementsAtEdge,p_IelementsAtEdge)
     
@@ -2319,7 +2319,7 @@ contains
         else
           IsortArray(2,i) = k
           IsortArray(3,i) = j
-        end if      
+        end if
       end if
 
     end do
@@ -2332,7 +2332,7 @@ contains
     IdistPositions(1) = 1
     k = 1
     i = 1
-    blockloop: do 
+    blockloop: do
       do j=i+1,p_rtria%NMT
         if ((IsortArray(2,i) .ne. IsortArray(2,j)) .or. &
             (IsortArray(3,i) .ne. IsortArray(3,j))) then
@@ -2416,28 +2416,28 @@ contains
     if ((rsourceDiscr1%ndimension .le. 0) .or. (rsourceDiscr2%ndimension .le. 0) .or.&
         (rsourceDiscr1%ndimension .ne. rsourceDiscr2%ndimension)) then
       call output_line ('Source structures invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_concatBlockDiscr')  
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_concatBlockDiscr')
       call sys_halt()
     end if
 
     ! Copy all information from the source discretisation structures
 
-    rdestDiscr%ndimension       =  rsourceDiscr1%ndimension           
+    rdestDiscr%ndimension       =  rsourceDiscr1%ndimension
     rdestDiscr%ccomplexity      =  SPDISC_UNIFORM
     if ((rsourceDiscr1%ccomplexity .eq. SPDISC_CONFORMAL) .or. &
         (rsourceDiscr2%ccomplexity .eq. SPDISC_CONFORMAL)) then
       rdestDiscr%ccomplexity      =  SPDISC_CONFORMAL
     end if
     rdestDiscr%p_rboundary      => rsourceDiscr1%p_rboundary
-    rdestDiscr%p_rtriangulation => rsourceDiscr1%p_rtriangulation     
+    rdestDiscr%p_rtriangulation => rsourceDiscr1%p_rtriangulation
     if (present(rboundary)) rdestDiscr%p_rboundary => rsourceDiscr1%p_rboundary
     if (present(rtriangulation)) rdestDiscr%p_rtriangulation => rsourceDiscr1%p_rtriangulation
-    rdestDiscr%ncomponents      =  rsourceDiscr1%ncomponents + rsourceDiscr2%ncomponents  
+    rdestDiscr%ncomponents      =  rsourceDiscr1%ncomponents + rsourceDiscr2%ncomponents
     
     ! Copy all substructures -- from ifirstBlock to ilastBlock.
     ! Use spdiscr_duplicateDiscrSc which savely copies the scalar discretisation
     ! structures. We set bshare=.TRUE. here, so the information is shared
-    ! between the source and destination structure; the dynamic information 
+    ! between the source and destination structure; the dynamic information
     ! 'belongs' to rdiscrSource and not to the newly created rdiscrDest!
     allocate(rdestDiscr%RspatialDiscr(rdestDiscr%ncomponents))
     do i = 1, rsourceDiscr1%ncomponents

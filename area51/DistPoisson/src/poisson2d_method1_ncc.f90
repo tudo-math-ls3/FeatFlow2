@@ -70,7 +70,7 @@ contains
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
     !
-    ! In this example, we compute the poisson example with a nonconstant 
+    ! In this example, we compute the poisson example with a nonconstant
     ! coefficient depending on a finite element function. The FE function is
     ! passed to this routine via the collection structure rcollection.
   !</description>
@@ -114,8 +114,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -154,7 +154,7 @@ contains
     !     Dpoints, rdomainIntSubset%p_Ielements, &
     !     rdomainIntSubset%p_revalElementSet%p_DpointsRef)
       
-    ! Fast method: Figure out the element type, then call the 
+    ! Fast method: Figure out the element type, then call the
     ! evaluation routine for a prepared element set.
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector T we evaluate!
@@ -234,11 +234,11 @@ contains
     type(t_matrixBlock) :: rmatrixBlock
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -254,7 +254,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -270,12 +270,12 @@ contains
     integer :: ivt
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 7
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -306,7 +306,7 @@ contains
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_G2X2,rtriangulation, rboundary)
                                    
-    ! Prepare a solution vector T. 
+    ! Prepare a solution vector T.
     call lsysbl_createVectorBlock(rdiscretisation,rsolutionT,.true.)
     call lsyssc_getbase_double (rsolutionT%RvectorBlock(1),p_Ddata)
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
@@ -339,8 +339,8 @@ contains
     ! In this case, we have nonconstant coefficients.
     rform%ballCoeffConstant = .false.
     rform%BconstantCoeff(:) = .false.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Prepare a collection structure to be passed to the callback
     ! routine. We attach the vector T in the quick-access variables
@@ -407,7 +407,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -479,7 +479,7 @@ contains
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -504,7 +504,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -554,7 +554,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that is it.

@@ -40,10 +40,10 @@ module structuresoptc
   
     ! Type of constraints to apply to the control u.
     ! =0: No constraints.
-    ! =1: Constant constraints on u active: 
+    ! =1: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
     !     Implemented by cubature point.
-    ! =2: Constant constraints on u active: 
+    ! =2: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
     !     Implementation by DOF.
     integer :: ccontrolConstraints = 0
@@ -90,10 +90,10 @@ module structuresoptc
   
     ! Type of constraints to apply to the control u.
     ! =0: No constraints.
-    ! =1: Constant constraints on u active: 
+    ! =1: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
     !     Implemented by cubature point.
-    ! =2: Constant constraints on u active: 
+    ! =2: Constant constraints on u active:
     !     dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2
     !     Implementation by DOF.
     integer :: ccontrolConstraints = 0
@@ -302,7 +302,7 @@ module structuresoptc
     ! Difference can only be seen for higher order time-discretisation.
     integer :: ipressureFullyImplicit = 1
   
-    ! Tell the space-time UMFPACK (if present in the lienar solver) to write 
+    ! Tell the space-time UMFPACK (if present in the lienar solver) to write
     ! out the global matrix.
     integer :: cumfpackWriteMatrix = 0
 
@@ -330,13 +330,13 @@ module structuresoptc
     ! Modification to the discrete RHS.
     ! =0: No modification (standard).
     ! =1: Disturb the primal velocity RHS in all DOF's with a random value.
-    ! =2: Disturb the primal velocity RHS in all DOF's except for the boundary DOF's 
+    ! =2: Disturb the primal velocity RHS in all DOF's except for the boundary DOF's
     !     with a random value.
     ! =3: Disturb the dual velocity RHS in all DOF's with a random value.
-    ! =4: Disturb the dual velocity RHS in all DOF's except for the boundary DOF's 
+    ! =4: Disturb the dual velocity RHS in all DOF's except for the boundary DOF's
     !     with a random value.
     ! =5: Disturb the velocity RHS in all DOF's with a random value.
-    ! =6: Disturb the velocity RHS in all DOF's except for the boundary DOF's 
+    ! =6: Disturb the velocity RHS in all DOF's except for the boundary DOF's
     !     with a random value.
     integer :: crhsmodification = 0
 
@@ -403,28 +403,28 @@ module structuresoptc
 !
 !  ! Application-specific type block for the Nav.St. problem
 !  type t_problem
-!  
+!
 !    ! Output level during the initialisation phase.
 !    integer :: MSHOW_Initialisation
-!  
+!
 !    ! Output level of the application.
 !    integer :: MT_OutputLevel
-!  
+!
 !    ! Physics of the problem
 !    type(t_settings_physics) :: rphysicsPrimal
-!    
+!
 !    ! A parameter block for everything that controls the optimal control
 !    ! problem.
 !    type(t_settings_optcontrol) :: roptcontrol
-!    
+!
 !    ! An object for saving the domain:
 !    type(t_boundary) :: rboundary
-!    
-!    ! A collection object that saves structural data and some 
-!    ! problem-dependent information which is e.g. passed to 
+!
+!    ! A collection object that saves structural data and some
+!    ! problem-dependent information which is e.g. passed to
 !    ! callback routines.
 !    type(t_collection)                    :: rcollection
-!    
+!
 !    ! A param list that saves all parameters from the DAT/INI file(s).
 !    type(t_parlist)                       :: rparamList
 !

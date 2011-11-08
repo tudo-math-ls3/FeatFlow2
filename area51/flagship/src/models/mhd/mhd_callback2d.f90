@@ -185,7 +185,7 @@
 !#
 !# 45.) mhd_trafoDiffDenPreVel2d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 46.) mhd_trafoNodalDenPreVel2d_sim
@@ -1941,7 +1941,7 @@ contains
                                    IDX3(DcoeffsAtEdge,2,1,idx,0,0,0))*vi)+&
               RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,2,2,idx,0,0,0)-
                                    IDX3(DcoeffsAtEdge,2,1,idx,0,0,0),2))*cf2i)
-#else   
+#else
       ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cf1j,&
@@ -3890,7 +3890,7 @@ contains
 
 !<description>
     ! This subroutine computes the transformation of the given
-    ! conservative variables to fluxes for the density, pressure 
+    ! conservative variables to fluxes for the density, pressure
     ! and velocity in 2D
 !</description>
 
@@ -4215,7 +4215,7 @@ contains
 
 !<description>
     ! This subroutine computes the transformation of the given
-    ! conservative convervative to differences for the magnetic 
+    ! conservative convervative to differences for the magnetic
     ! field in 2D
 !</description>
 

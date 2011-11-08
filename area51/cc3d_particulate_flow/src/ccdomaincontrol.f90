@@ -31,12 +31,12 @@
 !#
 !# 6.) ccdc_calcParProfile
 !#     -> Calculates the parabolic profile for a given domain region.
-!#        
+!#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# = How to add a new domain =
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# - To Do -
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -55,7 +55,7 @@ module ccdomaincontrol
   use dom3d_c3d0
   use dom3d_c3d1
   use dom3d_c3d2
-  use dom3d_c3d3  
+  use dom3d_c3d3
   use dom3d_c3d4
   
   implicit none
@@ -77,10 +77,10 @@ module ccdomaincontrol
   integer, parameter :: CCDC_ID_DOM3D_C3D2 = 4
   
   ! Domain Identifier for C3D3-domain
-  integer, parameter :: CCDC_ID_DOM3D_C3D3 = 5  
+  integer, parameter :: CCDC_ID_DOM3D_C3D3 = 5
   
   ! Domain Identifier for C3D4-domain
-  integer, parameter :: CCDC_ID_DOM3D_C3D4 = 6  
+  integer, parameter :: CCDC_ID_DOM3D_C3D4 = 6
   
 
 !</constantblock>
@@ -193,10 +193,10 @@ contains
       inumRegions = 6
       
     case (CCDC_ID_DOM3D_C3D3)
-      inumRegions = 6      
+      inumRegions = 6
 
     case (CCDC_ID_DOM3D_C3D4)
-      inumRegions = 6      
+      inumRegions = 6
     
     case DEFAULT
       print *, 'ERROR: ccdc_getNumRegions: Unknown Domain identifier'
@@ -254,10 +254,10 @@ contains
       call dom3d_c3d2_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
       
     case (CCDC_ID_DOM3D_C3D3)
-      call dom3d_c3d3_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)      
+      call dom3d_c3d3_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
       
     case (CCDC_ID_DOM3D_C3D4)
-      call dom3d_c3d4_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)      
+      call dom3d_c3d4_calcMeshRegion(rmeshRegion,rtriangulation,Iregions)
 
     case DEFAULT
       print *, 'ERROR: ccdc_calcBoundaryMeshRegion: Unknown Domain identifier'
@@ -351,13 +351,13 @@ contains
       call dom3d_c3d1_calcParProfile(dvalue, iregion, dx, dy, dz)
       
     case (CCDC_ID_DOM3D_C3D2)
-      call dom3d_c3d2_calcParProfile(dvalue, iregion, dx, dy, dz)      
+      call dom3d_c3d2_calcParProfile(dvalue, iregion, dx, dy, dz)
     
     case (CCDC_ID_DOM3D_C3D3)
-      call dom3d_c3d3_calcParProfile(dvalue, iregion, dx, dy, dz)      
+      call dom3d_c3d3_calcParProfile(dvalue, iregion, dx, dy, dz)
     
     case (CCDC_ID_DOM3D_C3D4)
-      call dom3d_c3d4_calcParProfile(dvalue, iregion, dx, dy, dz)      
+      call dom3d_c3d4_calcParProfile(dvalue, iregion, dx, dy, dz)
     
     case DEFAULT
       print *, 'ERROR: ccdc_calcParProfile: Unknown Domain identifier'

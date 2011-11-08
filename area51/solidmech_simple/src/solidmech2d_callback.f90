@@ -148,9 +148,9 @@ module solidmech2d_callback
     !   tolerance
     real(DP) :: dtolerance = 1E-10_DP
 
-    ! INPUT PARAMETER: Cycle identifier. 
-    !  0=F-cycle, 
-    !  1=V-cycle, 
+    ! INPUT PARAMETER: Cycle identifier.
+    !  0=F-cycle,
+    !  1=V-cycle,
     !  2=W-cycle.
     integer :: ccycle = 2
 
@@ -265,8 +265,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -342,8 +342,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -446,8 +446,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -610,10 +610,10 @@ contains
    do iel = 1, nelements
      do ipoint = 1, npointsPerElement
   
-       dt = DpointPar(ipoint,iel) 
+       dt = DpointPar(ipoint,iel)
 
 
-       if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then 
+       if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
       
          call getStressTensor (rdiscretisation, &
                       nelements,npointsPerElement,Dpoints, &
@@ -783,7 +783,7 @@ deallocate(DstressTensor)
   
       dt = DpointPar(ipoint,iel)
 
-      if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then 
+      if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
 
         call getStressTensor (rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
@@ -886,8 +886,8 @@ subroutine getStressTensor (rdiscretisation, &
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -994,8 +994,8 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
 
   
@@ -1076,8 +1076,8 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
 
   
@@ -1092,7 +1092,7 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
 !</output>
   
 !</subroutine>
-! 
+!
     Dvalues(:,:) = aux_danalyticFunction(Dpoints,nelements,npointsPerElement, cderivative, rproblem%cfuncID_u2)
 
   end subroutine getReferenceFunction_u2_2D
@@ -1118,9 +1118,9 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -1141,38 +1141,38 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer, intent(IN)                                          :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional                 :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -1920,7 +1920,7 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
                                 -0.5_DP*Dpoints(2,:,:)**2)) + 4*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
       case (DER_DERIV_XY); Dvalues(:,:) =   (daux**2*Dpoints(1,:,:)**2 - 2*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)**2)*cos(daux*(Dpoints(1,:,:) &
                                 -0.5_DP*Dpoints(2,:,:)**2)) + (2*daux*Dpoints(1,:,:) + daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:)**2)*sin(daux*(Dpoints(1,:,:)&
-                                -0.5_DP*Dpoints(2,:,:)**2)) 
+                                -0.5_DP*Dpoints(2,:,:)**2))
       case (DER_DERIV_YY); Dvalues(:,:) =  -daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:)**3*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
                                 - 3*daux**2*Dpoints(1,:,:)**2*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
       end select
@@ -1931,12 +1931,12 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
       case (DER_FUNC);     Dvalues(:,:) =   -2*Dpoints(1,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
                                 + daux*Dpoints(1,:,:)**2*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
       case (DER_DERIV_X);  Dvalues(:,:) =   (daux**2*Dpoints(1,:,:)**2 - 2)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                + 4*daux*Dpoints(1,:,:)*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) 
+                                + 4*daux*Dpoints(1,:,:)*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
       case (DER_DERIV_Y);  Dvalues(:,:) =  -2*daux*Dpoints(1,:,:)*Dpoints(2,:,:)*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
                                 - daux**2*Dpoints(1,:,:)**2*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
       case (DER_DERIV_XX); Dvalues(:,:) =   (6*daux - daux**3*Dpoints(1,:,:)**2) * sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
                                 + 6*daux**2*Dpoints(1,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_XY); Dvalues(:,:) =   (daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:) - 2*daux*Dpoints(2,:,:))*sin(daux*(Dpoints(1,:,:)& 
+      case (DER_DERIV_XY); Dvalues(:,:) =   (daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:) - 2*daux*Dpoints(2,:,:))*sin(daux*(Dpoints(1,:,:)&
                                 -0.5_DP*Dpoints(2,:,:)**2)) - 4*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
       case (DER_DERIV_YY); Dvalues(:,:) =   (2*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)**2  - daux**2*Dpoints(1,:,:)**2)*cos(daux*(Dpoints(1,:,:)&
                                 -0.5_DP*Dpoints(2,:,:)**2)) - (daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:)**2 &

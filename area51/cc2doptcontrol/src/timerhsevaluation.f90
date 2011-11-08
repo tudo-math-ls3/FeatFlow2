@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains routines to evaluate/create the coupled space-time
-!# RHS-vector. 
+!# RHS-vector.
 !#
 !# The central routines in this module are:
 !#
@@ -81,7 +81,7 @@ contains
   subroutine trhsevl_assembleRHS (rproblem, rspaceTimeDiscr, rb, bimplementBC)
 
 !<description>
-  ! Assembles the space-time RHS vector rb. 
+  ! Assembles the space-time RHS vector rb.
   !
   ! Note: rproblem%rtimedependence%dtime will be undefined at the end of
   ! this routine!
@@ -137,7 +137,7 @@ contains
   subroutine trhsevl_assembleThetaRHS (rproblem, rspaceTimeDiscr, rb, bimplementBC)
 
 !<description>
-  ! Assembles the space-time RHS vector rb for a Theta-Scheme. 
+  ! Assembles the space-time RHS vector rb for a Theta-Scheme.
   !
   ! Note: rproblem%rtimedependence%dtime will be undefined at the end of
   ! this routine!
@@ -241,12 +241,12 @@ contains
             rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
             dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(4))
-        call lsyssc_vectorLinearComb (&                                                   
+        call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
             dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(5))
         ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
+        call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
             dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(6))
@@ -273,13 +273,13 @@ contains
         call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
             (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(1))                                        
-        call lsyssc_vectorLinearComb (&                                                   
+            rtempVectorRHS%RvectorBlock(1))
+        call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
             (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(2))                                        
+            rtempVectorRHS%RvectorBlock(2))
         ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
+        call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
             (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(3))
@@ -288,12 +288,12 @@ contains
             rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
             dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(4))
-        call lsyssc_vectorLinearComb (&                                                   
+        call lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
             dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(5))
         ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
+        call lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
             dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(6))
@@ -321,13 +321,13 @@ contains
         call lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
             (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(1))                                        
-        call lsyssc_vectorLinearComb (&                                                   
+            rtempVectorRHS%RvectorBlock(1))
+        call lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
             (1.0_DP-dtheta),dtheta,&
-            rtempVectorRHS%RvectorBlock(2))                                        
+            rtempVectorRHS%RvectorBlock(2))
         ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
+        call lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
             (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(3))
@@ -346,7 +346,7 @@ contains
 
       end if
 
-      ! Implement the boundary conditions into the RHS vector        
+      ! Implement the boundary conditions into the RHS vector
       if (bimplementBC) then
         call tbc_implementSpatialBCtoRHS (rproblem,&
             isubstep*dtstep, rtempVectorRHS)
@@ -459,9 +459,9 @@ contains
     
   ! Number of the substep where to generate the RHS vector.
   integer, intent(IN) :: isubstep
-!</input>  
+!</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Problem structure.
   type(t_problem), intent(INOUT) :: rproblem
   
@@ -492,10 +492,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     !
@@ -538,7 +538,7 @@ contains
               rproblem%rcollection)
       
     ! Depending on the formulation, to get a reference dual velocity,
-    ! it might be necessary to switch the sign of the target velocity field 
+    ! it might be necessary to switch the sign of the target velocity field
     ! because the RHS of the dual equation is '-z'!
     ! Remember that it this case the signs of the mass matrices that couple
     ! primal and dual velocity must be changed, too!

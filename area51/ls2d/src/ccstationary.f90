@@ -59,7 +59,7 @@ contains
   ! On call to this routine, rproblem%rrhs configures the right hand side of
   ! the nonlinear iteration, while rproblem%rvector specifies the initial iteration
   ! vector.
-  ! With $u$:=rvector, $f$:=rrhs and the (nonlinear) matrix $A(u)$ configured 
+  ! With $u$:=rvector, $f$:=rrhs and the (nonlinear) matrix $A(u)$ configured
   ! in rproblem, the routine calls the nonlinear solver to solve $A(u)u = f$.
   ! During the nonlinear iteration, the nonlinear matrix (matrices on all levels),
   ! and the vector rvector in rproblem will be changed.
@@ -114,7 +114,7 @@ contains
     
     ! Implementation not complete, currently deactivated!!!
     !call cc_solveCoreEquation (rproblem,rnonlinearIteration,rnlSol,&
-    !    rvector,rrhs)             
+    !    rvector,rrhs)
     call sys_halt()
              
     ! Release the preconditioner

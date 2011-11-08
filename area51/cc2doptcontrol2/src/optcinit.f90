@@ -76,7 +76,7 @@ contains
   subroutine cc_doneOptControl (rproblem)
   
 !<description>
-  ! Cleans up the structure for the optimal control problem. 
+  ! Cleans up the structure for the optimal control problem.
 !</description>
 
 !<inputoutput>
@@ -129,7 +129,7 @@ contains
     integer :: ilevelTargetFlow,ielementTypeTargetFlow,itargetFlowDelta
     integer :: itargetFlowTimesteps
     
-    ! Type of the target flow?    
+    ! Type of the target flow?
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itypeTargetFlow',itypeTargetFlow,0)
 
@@ -230,7 +230,7 @@ contains
   subroutine cc_doneTargetFlow (roptcontrol)
   
 !<description>
-  ! Cleans up the structure for the optimal control problem. 
+  ! Cleans up the structure for the optimal control problem.
 !</description>
 
 !<inputoutput>
@@ -338,7 +338,7 @@ contains
     character(len=SYS_STRLEN) :: smeshInitCond,sfileInitialCond
     integer :: ilevelInitCond,ielementTypeInitCond
     
-    ! Type of the initial condition?    
+    ! Type of the initial condition?
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ctypeInitCond',ctypeInitCond,0)
 
@@ -452,8 +452,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
@@ -512,7 +512,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_simSolver) :: rsimsolver 
+    type(t_simSolver) :: rsimsolver
     type(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
     type(t_ccoptSpaceTimeDiscretisation), target :: rspaceTimeDiscr
     type(t_spacetimeVector), target :: rb,rx
@@ -670,7 +670,7 @@ contains
     ! local variables
     integer :: ctypeStartVector
 
-    ! How should the start vector be created?    
+    ! How should the start vector be created?
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
         'ctypeStartVector',ctypeStartVector,0)
     

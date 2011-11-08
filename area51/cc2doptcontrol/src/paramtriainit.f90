@@ -167,7 +167,7 @@ contains
                                  'srhsExpressionY',sstring,'''''')
     read(sstring,*) rproblem%srhsExpressionY
     
-    ! If the RHS is given as expression, create a parser object for the 
+    ! If the RHS is given as expression, create a parser object for the
     ! expression.
     if (rproblem%irhs .eq. -1) then
       
@@ -256,7 +256,7 @@ contains
   ! local variables
   integer :: i,imeshType,ncellsX
   
-    ! Variable for a filename:  
+    ! Variable for a filename:
     character(LEN=256) :: sString
     character(LEN=60) :: sPRMFile, sTRIFile
 
@@ -428,7 +428,7 @@ contains
       p_Idata2D(4,iel+1) = 2*iel+2
     end do
     
-    ! Allocate memory for InodalProperty 
+    ! Allocate memory for InodalProperty
     call storage_new ('tria_read_tri2D', 'KNPR', &
         int(rtriangulation%NVT,I32), ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)

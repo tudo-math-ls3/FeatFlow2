@@ -7,7 +7,7 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# This module is based on poisson2d_method0_simple, but using a multi-grid 
+!# This module is based on poisson2d_method0_simple, but using a multi-grid
 !# solver.
 !# </purpose>
 !##############################################################################
@@ -55,11 +55,11 @@ module poisson2d_method1_mg
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -117,7 +117,7 @@ contains
     ! A variable that is used to specify a region on the boundary.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -139,7 +139,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror, Alpha
@@ -156,11 +156,11 @@ contains
        
 !*****************************************************************************
 ! Clear and start the computation time of the subroutine.
-!----------------------------------------------------------------------------   
+!----------------------------------------------------------------------------
      	CALL stat_clearTimer(rtimer)
      	CALL stat_startTimer(rtimer)
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = 2
@@ -170,7 +170,7 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -237,7 +237,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (&
-          Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
+          Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -254,7 +254,7 @@ contains
            LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(2,1))
      call bilf_createMatrixStructure ( &
            Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-           LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(2,2))      
+           LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(2,2))
 ! -------------------------------------------------------------------------------------
 ! Set up Laplace matrix and put it into block (1,1) & (2,2)
 
@@ -271,8 +271,8 @@ contains
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
       rform%BconstantCoeff = .true.
-      rform%Dcoefficients(1)  = 1.0 
-      rform%Dcoefficients(2)  = 1.0 
+      rform%Dcoefficients(1)  = 1.0
+      rform%Dcoefficients(2)  = 1.0
 
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_Laplace for the coefficients.
@@ -283,9 +283,9 @@ contains
       call bilf_buildMatrixScalar (rform,.true.,&
            Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
      CALL lsyssc_copyMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,1), Rlevels(i)%rmatrix%RmatrixBlock(2,2))
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Set up matrixMass
-      ! And now to the entries of the mass matrix. 
+      ! And now to the entries of the mass matrix.
       ! For assembling of the entries,
       ! we need a bilinear form, which first has to be set up manually.
       ! We specify the bilinear form (Psi_j, Phi_i) for the
@@ -296,9 +296,9 @@ contains
       
       rform%ballCoeffConstant = .true.
       rform%BconstantCoeff = .true.
-      rform%Dcoefficients(1)  = 1.0 
+      rform%Dcoefficients(1)  = 1.0
 
-   call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrix%RmatrixBlock(2,1)) 
+   call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrix%RmatrixBlock(2,1))
    CALL lsyssc_copyMatrix(Rlevels(i)%rmatrix%RmatrixBlock(2,1),Rlevels(i)%rmatrix%RmatrixBlock(1,2))
    Rlevels(i)%rmatrix%RmatrixBlock(2,1)%dScaleFactor=-1.0_DP
    Rlevels(i)%rmatrix%RmatrixBlock(1,2)%dScaleFactor=1.0_DP/Alpha
@@ -317,11 +317,11 @@ contains
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvectorBlock, .false.)
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rtempBlock, .false.)
-! ---------------------------------------------------------------------- 
+! ----------------------------------------------------------------------
 
     !  Set up RHS_1
   
-    ! The vector structure is ready but the entries are missing. 
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -337,7 +337,7 @@ contains
         Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
         rlinform,.true.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D1)
 
-! ---------------------------------------------------------------------- 
+! ----------------------------------------------------------------------
 !  Set up RHS_2
 
     ! The same has to be done for the right hand side of the problem.
@@ -355,11 +355,11 @@ contains
                                  rlinform,.true.,rrhsBlock%RvectorBlock(2),coeff_RHS_2D2)
      CALL lsyssc_scaleVector(rrhsBlock%RvectorBlock(2),-1.0_DP)
 
-!  ---------------------------------------------------------------------- 
+!  ----------------------------------------------------------------------
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rvectorBlock)
     call lsysbl_clearVector(rtempBlock)
-!  ---------------------------------------------------------------------- 
+!  ----------------------------------------------------------------------
  !     Create BC-Y
    
     do i = NLMIN, NLMAX
@@ -367,13 +367,13 @@ contains
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.
       call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Now to the edge 2 of boundary component 1 the domain. 
+      ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -390,19 +390,19 @@ contains
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
- !  ---------------------------------------------------------------------- 
+ !  ----------------------------------------------------------------------
  !     Create BC-P
    
 !       ! Initialise the discrete BC structure
 !       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+      ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.
       call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D_P)
                                
-      ! Now to the edge 2 of boundary component 1 the domain. 
+      ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -419,7 +419,7 @@ contains
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D_P)
-!  ---------------------------------------------------------------------- 
+!  ----------------------------------------------------------------------
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
       Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
@@ -428,7 +428,7 @@ contains
       call matfil_discreteBC (Rlevels(i)%rmatrix)
       
     end do
-!  ---------------------------------------------------------------------- 
+!  ----------------------------------------------------------------------
     ! Our right-hand-side also needs to know the boundary conditions.
     rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
     
@@ -530,7 +530,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -592,7 +592,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = NLMAX, NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do
@@ -603,9 +603,9 @@ contains
     call boundary_release (rboundary)
 ! *********************************************************************************
 ! Stop and print the computation time.
-!---------------------------------------------------------------------------------      
+!---------------------------------------------------------------------------------
      	CALL stat_stopTimer(rtimer)
-!--------------------------------------------------------------------------------- 
+!---------------------------------------------------------------------------------
        WRITE(*,*)"Time for Computation :=",rtimer%delapsedReal
 
   end subroutine

@@ -154,8 +154,8 @@ contains
   !
   ! Is the matrix sorted?
   if (rmatrix%isortStrategy .le. 0) then
-    ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the 
-    ! corresponding rows in the matrix by unit vectors. 
+    ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the
+    ! corresponding rows in the matrix by unit vectors.
     ! For more complicated FE spaces, this might have
     ! to be modified in the future...
     !
@@ -225,9 +225,9 @@ contains
   ! =false: Slip-nodes are handled as Dirichlet. Rows in the
   !         matrix are replaced by unit vectors.
   ! =true : Standard. Prepare matrix for preconditioning.
-  !         Only the off-diagonals of rows corresponding to 
+  !         Only the off-diagonals of rows corresponding to
   !         the slip-nodes are cleared.
-  !         The matrix therefore is prepared to act as 
+  !         The matrix therefore is prepared to act as
   !         Jacobi-preconditioner for all slip-nodes.
   logical, intent(in) :: bforprec
   
@@ -414,8 +414,8 @@ contains
   !
   ! Is the matrix sorted?
   if (rmatrix%isortStrategy .le. 0) then
-    ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the 
-    ! corresponding rows in the matrix by unit vectors. 
+    ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the
+    ! corresponding rows in the matrix by unit vectors.
     ! For more complicated FE spaces, this might have
     ! to be modified in the future...
     !
@@ -613,11 +613,11 @@ contains
   ! condition which is used for domain decomposition.
   ! One assumes that there is an additional 'virtual' layer of cells added to
   ! a boundary edge. This leads to a slight matrix modification for all
-  ! DOF`s on that boundary edge. 
+  ! DOF`s on that boundary edge.
   ! Example: For a 5-point stencil with <tex>$Q_1$</tex>, boundary DOF`s get matrix
-  ! weights "2, 1, -1/2, -1/2" (center, left, top, bottom), while inner 
+  ! weights "2, 1, -1/2, -1/2" (center, left, top, bottom), while inner
   ! points get matrix weights "4, -1, -1, -1, -1" (center and all surroundings).
-  ! To make bondary DOF`s behave like inner DOF`s, the entries in 
+  ! To make bondary DOF`s behave like inner DOF`s, the entries in
   ! the matrices belonging to such an edge have to be doubled,
   ! leading to "4, -1, -1".
   ! So this filter loops through the matrix and doubles all matrix entries
@@ -792,10 +792,10 @@ contains
   subroutine matfil_discreteBC (rmatrix,rdiscreteBC)
 
 !<description>
-  ! This routine realises the `impose discrete boundary conditions to 
+  ! This routine realises the `impose discrete boundary conditions to
   ! block matrix` filter.
   ! The matrix is modified either to rdiscreteBC (if specified) or
-  ! to the default boundary conditions associated to the matrix 
+  ! to the default boundary conditions associated to the matrix
   ! (if rdiscreteBC is not specified).
 !</description>
 
@@ -829,7 +829,7 @@ contains
         ! There are no BC`s available, so we cannot do anything!
         return
       end if
-      p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
+      p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList
       inumEntries = rmatrix%p_rdiscreteBC%inumEntriesUsed
     end if
     
@@ -869,16 +869,16 @@ contains
           end if
         end do
         
-      case (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)
         ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
 
-      case (DISCBC_TPSLIP)  
+      case (DISCBC_TPSLIP)
         ! Slip boundary conditions are treated like Dirichlet for all
         ! velocity components.
         ! This is a separate filter must be called manually.
         ! Therefore, there is nothing to do here.
         
-      case (DISCBC_TPFEASTMIRROR)  
+      case (DISCBC_TPFEASTMIRROR)
         ! FEAST mirror boundary conditions.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
@@ -920,7 +920,7 @@ contains
 !<description>
   ! Imposes nonlinear slip boundary conditions into a given matrix.
   ! The matrix is modified either to rdiscreteBC (if specified) or
-  ! to the default boundary conditions associated to the matrix 
+  ! to the default boundary conditions associated to the matrix
   ! (if rdiscreteBC is not specified).
   !
   ! Note that slip boundary conditions are implemented by so called
@@ -935,9 +935,9 @@ contains
   ! =false: Slip-nodes are handled as Dirichlet. Rows in the
   !         matrix are replaced by unit vectors.
   ! =true : Standard. Prepare matrix for preconditioning.
-  !         Only the off-diagonals of rows corresponding to 
+  !         Only the off-diagonals of rows corresponding to
   !         the slip-nodes are cleared.
-  !         The matrix therefore is prepared to act as 
+  !         The matrix therefore is prepared to act as
   !         Jacobi-preconditioner for all slip-nodes.
   logical, intent(in) :: bforprec
 
@@ -961,7 +961,7 @@ contains
     ! Imposing boundary conditions normally changes the whole matrix!
     ! Grab the boundary condition entry list from the matrix. This
     ! is a list of all discretised boundary conditions in the system.
-    p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
+    p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList
     
     if (.not. associated(p_RdiscreteBC)) return
     
@@ -998,7 +998,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  ! Implementation of discrete fictitious boundary conditions into 
+  ! Implementation of discrete fictitious boundary conditions into
   ! block matrices
   ! ***************************************************************************
 
@@ -1007,10 +1007,10 @@ contains
   subroutine matfil_discreteFBC (rmatrix,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the `impose discrete fictitious boundary 
+  ! This routine realises the `impose discrete fictitious boundary
   ! conditions to block matrix` filter.
   ! The matrix is modified either to rdiscreteFBC (if specified) or
-  ! to the default boundary conditions associated to the matrix 
+  ! to the default boundary conditions associated to the matrix
   ! (if rdiscreteFBC is not specified).
 !</description>
 
@@ -1037,7 +1037,7 @@ contains
     ! is a list of all discretised boundary conditions in the system.
     if (.not. associated(rmatrix%p_rdiscreteBCfict)) return
 
-    p_RdiscreteFBC => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList  
+    p_RdiscreteFBC => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList
     
     if (.not. associated(p_RdiscreteFBC)) return
     
@@ -1054,7 +1054,7 @@ contains
         
       case (DISCFBC_TPDIRICHLET)
         ! Dirichlet boundary conditions.
-        ! 
+        !
         ! Loop through all blocks where to impose the BC`s:
         do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
         

@@ -68,7 +68,7 @@ contains
   ! local variables
   integer :: i,ilvmin,ilvmax
   
-    ! Variable for a filename:  
+    ! Variable for a filename:
     character(LEN=SYS_STRLEN) :: sString
     character(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
     type(t_timer) :: rtimer

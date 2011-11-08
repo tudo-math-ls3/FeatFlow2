@@ -74,7 +74,7 @@ module geneticalgorithm
     ! changed. If it is 100%, then the whole chromosome is mutated.
     real(DP) :: dmutationrate = 0.01_DP
 
-    ! Elitism probability: 
+    ! Elitism probability:
     !
     ! This rate determines how many of the best chromosomes from the
     ! old population will be saved for the new population.
@@ -376,7 +376,7 @@ contains
 !!$      call ga_copyChromosome(rpopulationTmp%p_Rchromosomes(ichromosome),&
 !!$                             rpopulation%p_Rchromosomes(ichromosome))
 !!$    end do
-!!$    
+!!$
 !!$    ! Step 2: Generate new chromosomes by crossover and mutation
 !!$    do ichromosome = nbestchromosomes+1, min(rpopulationTmp%nchromosomes,&
 !!$                                             ceiling(rpopulationTmp%nchromosomes*&
@@ -661,7 +661,7 @@ contains
     ! Chromosome
     type(t_chromosome), intent(inout) :: rchromosome
 !</inputoutput>
-!</subroutine>    
+!</subroutine>
 
     real(DP) :: drandom
     integer :: idna,ndnaLength,imutation,nmutations

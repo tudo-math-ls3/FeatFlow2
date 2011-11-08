@@ -127,7 +127,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(INOUT), target :: rproblem
 
-  ! Postprocessing structure. 
+  ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
@@ -376,7 +376,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
-        ! Create a temporary vector 
+        ! Create a temporary vector
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscretisation,&
             rtempVector,.true.)
 
@@ -402,7 +402,7 @@ contains
       
       end if
       
-    end if    
+    end if
     
   end subroutine
 
@@ -433,7 +433,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -487,7 +487,7 @@ contains
       
     end if
 
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -540,7 +540,7 @@ contains
     ! simulation is nonstationary.
     call c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
 
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     nullify(p_rdiscreteBC)
     call bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
@@ -560,7 +560,7 @@ contains
     ! Filter the solution vector to implement discrete BC's.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC's for fictitious 
+    ! Filter the solution vector to implement discrete BC's for fictitious
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -682,7 +682,7 @@ contains
   subroutine c2d2_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! Writes Film output (raw data vectors) to a file as configured in the
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -704,7 +704,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -718,10 +718,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer(PREC_VECIDX) :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -835,7 +835,7 @@ contains
   type(t_problem), intent(IN),target :: rproblem
 !</input>
 
-!<output>  
+!<output>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(OUT) :: rpostprocessing
 !</output>
@@ -905,7 +905,7 @@ contains
   type(t_c2d2postprocessing), intent(IN) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination Postprocessing structure.
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessingDst
 !</inputoutput>
@@ -940,7 +940,7 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
@@ -976,7 +976,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
 !</inputoutput>
 
@@ -1006,7 +1006,7 @@ contains
 !  !  rvector%rvectorBlock(1) = X-velocity,
 !  !  rvector%rvectorBlock(2) = Y-velocity,
 !  !  rvector%rvectorBlock(3) = pressure,
-!  ! and that X- and Y-velocity is discretised with the same 
+!  ! and that X- and Y-velocity is discretised with the same
 !  ! finite element.
 !  ! rregion specifies a boundary region where to calculate
 !  ! the force integral. Dforces(1:NDIM2D) receives the forces in the
@@ -1018,17 +1018,17 @@ contains
 !!<input>
 !  ! The FE solution vector.
 !  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
-!  
+!
 !  ! Boundary region where to calculate the boundary forces.
 !  ! Can be created e.g. by boundary_createRegion.
 !  TYPE(t_boundaryRegion), INTENT(OUT) :: rregion
-!  
+!
 !  ! Type identifier that specifies the formulation of the Navier Stokes
 !  ! equation that should be used for performing the integration.
 !  ! ... = gradient formulation,
 !  ! ... = deformation formulation
 !  INTEGER, INTENT(IN) :: cformulation
-!  
+!
 !  ! OPTIONAL: Array with cubature formula identifiers when integrating
 !  ! the velocity. If specified, there must be a cubature formula identifier
 !  ! for each of the element distributions specified in the discretisation
@@ -1056,14 +1056,14 @@ contains
 !
 !  ! Array to tell the element which derivatives to calculate.
 !  LOGICAL, DIMENSION(EL_MAXNDER) :: BderU, BderP
-!  
+!
 !  ! Cubature point coordinates on the reference element.
 !  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: DxiU, DxiP
 !
 !  ! For every cubature point on the reference element,
 !  ! the corresponding cubature weight
 !  REAL(DP), DIMENSION(CUB_MAXCUBP) :: DomegaU, DomegaP
-!  
+!
 !  ! number of cubature points on the reference element
 !  INTEGER :: ncubpU, ncubpP
 !
@@ -1072,10 +1072,10 @@ contains
 !
 !  ! An allocateable array accepting the DOF's of a set of elements.
 !  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrialU, IdofsTrialP
-!  
+!
 !  ! Allocateable arrays for the values of the basis functions.
 !  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTrialU,DbasTrialP
-!  
+!
 !  ! Number of entries in the vector - for quicker access
 !  INTEGER(I32) :: neqU, neqP
 !
@@ -1085,17 +1085,17 @@ contains
 !
 !  ! Pointer to KVERT of the triangulation
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-!  
+!
 !  ! Pointer to DCORVG of the triangulation
 !  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-!  
+!
 !  ! Current element distribution
 !  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,
 !  ! except if there are less elements in the discretisation.
 !  INTEGER :: nelementsPerBlock
-!  
+!
 !
 !  BderU = .FALSE.
 !  BderP = .FALSE.
@@ -1103,7 +1103,7 @@ contains
 !  ! Get the vector data
 !  neqU = rvector%RvectorBlock(1)%NEQ
 !  neqP = rvector%RvectorBlock(3)%NEQ
-!  
+!
 !  IF (rvector%cdataType .NE. ST_DOUBLE) THEN
 !    PRINT *,'ppns2D_fbdforces: Unsupported vector precision.'
 !    STOP
@@ -1120,7 +1120,7 @@ contains
 !    PRINT *,'ppns2D_fbdforces: Discretisation too complex!'
 !    STOP
 !  END IF
-!  
+!
 !  ! Get pointers to the subvectors from the block vector
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
@@ -1135,9 +1135,9 @@ contains
 !
 !
 !  !END DO ! icurrentElementDistr
-!  
+!
 !  Dforces = 0.0_DP
-!  
+!
 !  END SUBROUTINE
 !
 !
@@ -1154,7 +1154,7 @@ contains
 !  !  rvector%rvectorBlock(1) = X-velocity,
 !  !  rvector%rvectorBlock(2) = Y-velocity,
 !  !  rvector%rvectorBlock(3) = pressure,
-!  ! and that X- and Y-velocity is discretised with the same 
+!  ! and that X- and Y-velocity is discretised with the same
 !  ! finite element.
 !  ! rregion specifies a boundary region where to calculate
 !  ! the force integral. Dforces(1:NDIM2D) receives the forces in the
@@ -1166,17 +1166,17 @@ contains
 !!<input>
 !  ! The FE solution vector.
 !  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
-!  
+!
 !  ! Boundary region where to calculate the boundary forces.
 !  ! Can be created e.g. by boundary_createRegion.
 !  TYPE(t_boundaryRegion), INTENT(OUT) :: rregion
-!  
+!
 !  ! Type identifier that specifies the formulation of the Navier Stokes
 !  ! equation that should be used for performing the integration.
 !  ! ... = gradient formulation,
 !  ! ... = deformation formulation
 !  INTEGER, INTENT(IN) :: cformulation
-!  
+!
 !  ! 1D Cubature formula identifier to use for the line integration.
 !  ! One of the CUB_xxxx_1D constants in the cubature.f90.
 !  INTEGER, DIMENSION(:), INTENT(IN) :: CcubU
@@ -1192,21 +1192,21 @@ contains
 !
 !  ! Spatial discretisation structure of velocity and pressure
 !  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrU, p_rdiscrP
-!  
+!
 !  ! Element distribution of velocity and pressure
 !  TYPE(t_elementDistribution), POINTER :: p_elemDistrU,p_elemDistrP
 !
 !
 !  ! Array to tell the element which derivatives to calculate.
 !  LOGICAL, DIMENSION(EL_MAXNDER) :: BderU, BderP
-!  
+!
 !  ! Cubature point coordinates on the reference element.
 !  REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi1D, DXi2D
 !
 !  ! For every cubature point on the reference element,
 !  ! the corresponding cubature weight
 !  REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
-!  
+!
 !  ! number of cubature points on the reference element
 !  INTEGER :: ncubp
 !
@@ -1215,10 +1215,10 @@ contains
 !
 !  ! An allocateable array accepting the DOF's of a set of elements.
 !  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrialU, IdofsTrialP
-!  
+!
 !  ! Allocateable arrays for the values of the basis functions.
 !  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: DbasTrialU,DbasTrialP
-!  
+!
 !  ! Number of entries in the vector - for quicker access
 !  INTEGER(I32) :: neqU, neqP
 !
@@ -1228,22 +1228,22 @@ contains
 !
 !  ! Pointer to KVERT of the triangulation
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-!  
+!
 !  ! Pointer to DCORVG of the triangulation
 !  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-!  
+!
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,
 !  ! except if there are less elements in the discretisation.
 !  INTEGER :: nelementsPerBlock
-!  
+!
 !  BderU = .FALSE.
 !  BderP = .FALSE.
 !
 !  ! Get the vector data
 !  neqU = rvector%RvectorBlock(1)%NEQ
 !  neqP = rvector%RvectorBlock(3)%NEQ
-!  
+!
 !  IF (rvector%cdataType .NE. ST_DOUBLE) THEN
 !    PRINT *,'ppns2D_bdforces: Unsupported vector precision.'
 !    STOP
@@ -1260,12 +1260,12 @@ contains
 !    PRINT *,'ppns2D_bdforces: Discretisation too complex!'
 !    STOP
 !  END IF
-!  
+!
 !  ! Get pointers to the subvectors from the block vector
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataUX)
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataP)
-!  
+!
 !  ! Get pointers to the spatial discretisation structures of the
 !  ! velocity and pressure
 !  p_rdiscrU => rvector%RvectorBlock(1)%p_spatialDiscretisation
@@ -1285,17 +1285,17 @@ contains
 !    ! Get the element distribution structure of that FE-space comination
 !    p_relemDistrU => p_rdiscrU%RelementDistr(RelementDistr)
 !    p_relemDistrP => p_rdiscrP%RelementDistr(RelementDistr)
-!    
+!
 !    ! By that we know
 !    ! - what's the element
 !    ! - which transformation from the reference element to use
-!    
-!    
-!    
-!    
+!
+!
+!
+!
 !
 !  END DO ! icurrentElementDistr
-!  
+!
 !  END SUBROUTINE
 
 end module

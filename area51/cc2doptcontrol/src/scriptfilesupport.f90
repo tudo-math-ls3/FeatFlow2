@@ -5,11 +5,11 @@
 !#
 !# <purpose>
 !# This module contains a simple parser for text commands from a script file
-!# or from the terminal. Once invoked, the scr_readScript and/or 
+!# or from the terminal. Once invoked, the scr_readScript and/or
 !# scr_readTerminal routines will parse commands entered by a script file
 !# or from the terminal. This allows on-line modification during the
 !# execution of the program.
-!# 
+!#
 !# The following routines can be found here:
 !#
 !# 1.) scr_readScript
@@ -48,7 +48,7 @@ contains
 
 !<description>
   ! Reads a text file sfilename line by line and calls scr_parseLine
-  ! for each of the lines. 
+  ! for each of the lines.
 !</description>
 
 !<input>
@@ -144,7 +144,7 @@ contains
 
 !<description>
   ! Reads from the terminal line by line and calls scr_parseLine
-  ! for each of the lines. 
+  ! for each of the lines.
 !</description>
 
 !<inputoutput>

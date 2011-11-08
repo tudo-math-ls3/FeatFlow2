@@ -21,7 +21,7 @@
 !# [Section1]
 !# parameter3 = 'This is a string of ''multiple'' words'
 !# parameter4 = data3
-!# 
+!#
 !# [section2]
 !# parameter5 = data4    # This is a comment
 !#
@@ -35,11 +35,11 @@
 !# </verb>
 !# the .INI file is build up by different sections.
 !# Each section starts with the section name enclosed by
-!# brackets ('[...]'), followed by a list of parameters 
+!# brackets ('[...]'), followed by a list of parameters
 !# if the form "name=parameter". There is one unnamed parameter
 !# block at the beginning of the file.
 !#
-!# There is at most one parameter per line. The parameter names 
+!# There is at most one parameter per line. The parameter names
 !# are case-insensitive. Allowed characters for parameter names
 !# are: 'A'..'Z', '0'..'9', '-', '_', '(', ')'.
 !#
@@ -47,11 +47,11 @@
 !# - one word without spaces or
 !# - multiple words, enclosed by apostrophes.
 !# Spaces in the parameter data are ignored except when they
-!# are enclosed by apostrophes. 
+!# are enclosed by apostrophes.
 !# A parameter name followed by "(n)" is assumed to be an array.
 !# The following n nonempty lines define string values for all
 !# n entries in the array.
-!# 
+!#
 !# Empty lines are ignored. When there is a '#' character in
 !# a line not enclosed by apostrophes, the rest of the line is
 !# ignored as a comment.
@@ -60,16 +60,16 @@
 !# ======================== \\
 !# The parameter list also allows to specify variables as subvariables
 !# of other variables. Take a look at the following example:
-!# 
+!#
 !# <verb>
 !# -------------------------snip------------------------------
 !# NLMIN=1
 !# ACOMPLEXSTRING=! %{NLMIN} ! %{imainelement} ! %{SECTION1.ilist:3}
 !# imainelement=%{SECTION1.ielement}
-!# 
+!#
 !# [SECTION1]
 !# ielement=5
-!# 
+!#
 !# ilist(4)=
 !#   abc
 !#   def
@@ -84,10 +84,10 @@
 !#
 !# <verb>
 !#  %{NAME}               - A variable from the unnamed section
-!#  %{NAME:idx}           - Value number idx of variable NAME 
+!#  %{NAME:idx}           - Value number idx of variable NAME
 !#                          from the unnamed section
 !#  %{SECTION.NAME}       - Variable NAME from section SECTION
-!#  %{SECTION.NAME:idx}   - Value number idx of variable NAME 
+!#  %{SECTION.NAME:idx}   - Value number idx of variable NAME
 !#                          from section SECTION
 !# </verb>
 !#
@@ -108,7 +108,7 @@
 !# The subfile feature \\
 !# =================== \\
 !# An INI file may contain references to subfiles. Subfiles must
-!# be specified at the beginning of an INI file with the following 
+!# be specified at the beginning of an INI file with the following
 !# syntax:
 !# <verb>
 !# -------------------------snip------------------------------
@@ -144,7 +144,7 @@
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
-!#  1.) parlst_init 
+!#  1.) parlst_init
 !#       -> Initialises an empty parameter list
 !#
 !#  2.) parlst_readfromfile
@@ -184,7 +184,7 @@
 !# 12.) parlst_getStringRepresentation
 !#      -> Creates a string representation of the parameter list.
 !#
-!# 13.) parlst_info 
+!# 13.) parlst_info
 !#      -> Print the parameter list to the terminal
 !#
 !# Auxiliary routines
@@ -277,7 +277,7 @@ module paramlist
   
   ! This structure realises a parameter section. It contains an
   ! array with parameter names and an array with parameter values
-  ! to these names. The arrays are dynamically allocated. 
+  ! to these names. The arrays are dynamically allocated.
   
   type t_parlstSection
   
@@ -374,7 +374,7 @@ module paramlist
     module procedure parlst_getvalue_double_direct
   end interface
 
-  public :: parlst_init 
+  public :: parlst_init
   public :: parlst_readfromfile
   public :: parlst_clear
   public :: parlst_done
@@ -389,7 +389,7 @@ module paramlist
   public :: parlst_addvalue
   public :: parlst_setvalue
   public :: parlst_getStringRepresentation
-  public :: parlst_info 
+  public :: parlst_info
   public :: parlst_readfromsinglefile
   public :: parlst_expandEnvVariables
   public :: parlst_expandSubvars
@@ -435,7 +435,7 @@ contains
   integer :: sz,oldsize
 
   ! Pointers to new lists for replacing the old.
-  character(LEN=PARLST_MLNAME), dimension(:), pointer :: p_Sparameters 
+  character(LEN=PARLST_MLNAME), dimension(:), pointer :: p_Sparameters
   type(t_parlstValue), dimension(:), pointer :: p_Rvalues
   
   oldsize = size(rparlstSection%p_Sparameters)
@@ -571,7 +571,7 @@ contains
   ! Internal subroutine: Search in a section for a parameter
   ! and return the index - or 0 if the parameter does not exist.
 
-  subroutine parlst_fetchparameter(rsection, sname, iparamnum) 
+  subroutine parlst_fetchparameter(rsection, sname, iparamnum)
 
   ! The section.
   type(t_parlstSection), intent(in) :: rsection
@@ -702,7 +702,7 @@ contains
   
 !<subroutine>
 
-  subroutine parlst_querysection(rparlist, sname, p_rsection) 
+  subroutine parlst_querysection(rparlist, sname, p_rsection)
 
 !<description>
 
@@ -716,7 +716,7 @@ contains
   ! The parameter list to scan for the section.
   type(t_parlist), intent(in) :: rparlist
   
-  ! The section name to look for. 
+  ! The section name to look for.
   character(LEN=*), intent(in) :: sname
   
 !</input>
@@ -907,7 +907,7 @@ contains
   end if
   
   ! Get the section
-  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  call parlst_querysection(rparlist, ssectionName, p_rsection)
   if (.not. associated(p_rsection)) then
     call output_line ('Section not found: '//trim(ssectionName), &
         OU_CLASS_ERROR,OU_MODE_STD,'parlst_queryvalue_direct')
@@ -1016,7 +1016,7 @@ contains
   end if
   
   ! Get the section
-  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  call parlst_querysection(rparlist, ssectionName, p_rsection)
   if (.not. associated(p_rsection)) then
     call output_line ('Section not found: '//trim(ssectionName), &
         OU_CLASS_ERROR,OU_MODE_STD,'parlst_querysubstrings_direct')
@@ -1047,7 +1047,7 @@ contains
   ! If sdefault is not given, an error will be thrown.
   !
   ! If the value is an array of strings, the optional parameter isubstring>=0
-  ! allows to specify the number of the substring to be returned; 
+  ! allows to specify the number of the substring to be returned;
   ! isubstring=0 returns the value directly
   ! behind the '=' sign in the line of the parameter, isubstring>0 returns
   ! the array-entry in the lines below the parameter.
@@ -1152,9 +1152,9 @@ contains
   !
   ! If bexists is given, it will be set to TRUE if the parameter number
   ! iparameter exists, otherwise it will be set to FALSE and svalue=''.
-  !  
+  !
   ! If the value is an array of strings, the optional parameter isubstring>=0
-  ! allows to specify the number of the substring to be returned; 
+  ! allows to specify the number of the substring to be returned;
   ! isubstring=0 returns the value directly
   ! behind the '=' sign in the line of the parameter, isubstring>0 returns
   ! the array-entry in the lines below the parameter.
@@ -1207,7 +1207,7 @@ contains
   
   if ((iparameter .lt. 0) .or. (iparameter .gt. rsection%iparamCount)) then
   
-    if (.not. present(bexists)) then 
+    if (.not. present(bexists)) then
       call output_line ('Error. Parameter '//trim(sys_siL(iparameter,10))//&
           ' does not exist!', &
           OU_CLASS_ERROR,OU_MODE_STD,'parlst_getvalue_string_fetch')
@@ -1256,7 +1256,7 @@ contains
   ! If sdefault is not given, an error will be thrown.
   !
   ! If the value is an array of strings, the optional parameter isubstring>=0
-  ! allows to specify the number of the substring to be returned; 
+  ! allows to specify the number of the substring to be returned;
   ! isubstring=0 returns the value directly
   ! behind the '=' sign in the line of the parameter, isubstring>0 returns
   ! the array-entry in the lines below the parameter.
@@ -1316,7 +1316,7 @@ contains
   end if
   
   ! Get the section
-  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  call parlst_querysection(rparlist, ssectionName, p_rsection)
   if (.not. associated(p_rsection)) then
     if (present(sdefault)) then
       svalue = sdefault
@@ -1632,7 +1632,7 @@ contains
   ! array-entry in the lines below the parameter.
   !
   ! When omitting iarrayindex, the value directly behind the '=' sign
-  ! is returned.  
+  ! is returned.
   
 !</description>
   
@@ -1964,7 +1964,7 @@ contains
   ! If the parameter exists, it is overwritten.
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
     
   ! The section where to arr the parameter
   type(t_parlstSection), intent(inout) :: rsection
@@ -2009,7 +2009,7 @@ contains
       end if
 
       ! Add the parameter - without any adjustment of the 'value' string
-      rsection%iparamCount = rsection%iparamCount + 1  
+      rsection%iparamCount = rsection%iparamCount + 1
       
       ! Set i to the index of the parameter
       i = rsection%iparamCount
@@ -2066,7 +2066,7 @@ contains
   
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
     
   ! The parameter list.
   type(t_parlist), intent(inout) :: rparlist
@@ -2104,14 +2104,14 @@ contains
   end if
   
   ! Get the section
-  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  call parlst_querysection(rparlist, ssectionName, p_rsection)
   if (.not. associated(p_rsection)) then
     call output_line ('Section not found: '//trim(ssectionName), &
         OU_CLASS_ERROR,OU_MODE_STD,'parlst_addvalue_direct')
     return
   end if
 
-  ! Add the parameter 
+  ! Add the parameter
   
   call parlst_addvalue_indir (p_rsection, sparameter, svalue, nsubstrings)
 
@@ -2140,7 +2140,7 @@ contains
   
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
     
   ! The section where to arr the parameter
   type(t_parlstSection), intent(inout) :: rsection
@@ -2180,7 +2180,7 @@ contains
   
   if ((iparameter .lt. 0) .or. (iparameter .gt. rsection%iparamCount)) then
   
-    if (.not. present(iexists)) then 
+    if (.not. present(iexists)) then
       call output_line ('Error. Parameter '//trim(sys_siL(iparameter,10))//&
           ' does not exist!', &
           OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_fetch')
@@ -2235,7 +2235,7 @@ contains
   
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
     
   ! The section where to arr the parameter
   type(t_parlstSection), intent(inout) :: rsection
@@ -2276,7 +2276,7 @@ contains
         ' does not exist, cannot be modified!', &
         OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_indir')
     call sys_halt()
-  else 
+  else
   
     ! Depending on isubstring, change either the 'headline' or one
     ! of the substrings.
@@ -2320,7 +2320,7 @@ contains
   
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
     
   ! The parameter list.
   type(t_parlist), intent(inout) :: rparlist
@@ -2359,14 +2359,14 @@ contains
   end if
   
   ! Get the section
-  call parlst_querysection(rparlist, ssectionName, p_rsection) 
+  call parlst_querysection(rparlist, ssectionName, p_rsection)
   if (.not. associated(p_rsection)) then
     call output_line ('Section not found: '//trim(ssectionName), &
         OU_CLASS_ERROR,OU_MODE_STD,'parlst_setvalue_direct')
     return
   end if
 
-  ! Set the parameter 
+  ! Set the parameter
   
   call parlst_setvalue_indir (p_rsection, sparameter, svalue, isubstring)
 
@@ -2418,7 +2418,7 @@ contains
     ! Proceed to next character
     cycle
     
-    ! End of file. 
+    ! End of file.
 10  ios = -1
     exit
     
@@ -2456,7 +2456,7 @@ contains
 
   ! input: =0: parse line as parameter. isubstring is changed to a value > 0
   !            is the parameter has multiple values attached.
-  !        >0: parse line as substring of a multi-valued parameter, not 
+  !        >0: parse line as substring of a multi-valued parameter, not
   !            containing a leading 'name='.
   ! output: If the 'headline' of a multi-valued parameter is read, isubstring is
   !         changed to the number of substrings (the k in 'name(k)=...').
@@ -2496,7 +2496,7 @@ contains
     if (isubstring .eq. 0) then
     
       ! Standard parameter or section header.
-      !    
+      !
       ! Do we start with '[' and end with ']'?
       if (sbuf(1:1) .eq. "[") then
       
@@ -2569,7 +2569,7 @@ contains
           
         else
         
-          ! Probably multi-valued parameter with substrings in the 
+          ! Probably multi-valued parameter with substrings in the
           ! following lines.
 
           ! Get the name of the parameter
@@ -2657,7 +2657,7 @@ contains
         exit
       end if
       
-      ! An apostroph? 
+      ! An apostroph?
       if (sdata(l:l) .eq. "'") then
       
         ! Switch the apostroph mode.
@@ -2707,7 +2707,7 @@ contains
   
 !</description>
 
-!<inputoutput> 
+!<inputoutput>
     
   ! The parameter list which is filled with data from the file
   type(t_parlist), intent(inout) :: rparlist
@@ -2774,7 +2774,7 @@ contains
       ! Read the unnamed section from the next file.
       icurrentsubfile = icurrentsubfile + 1
 
-      ! Get the filename including the path. 
+      ! Get the filename including the path.
       bexists = .false.
       
       call io_pathExtract (trim(p_Ssubfiles(icurrentsubfile)), sfilepath, sfilename, babsolute)
@@ -2859,7 +2859,7 @@ contains
             ! Expand subvariables and environment variables here.
             ! This point is independent of a parameter bexpandVars
             ! as subfiles may otherwise not be found!
-            call parlst_expandEnvVariable(sstring) 
+            call parlst_expandEnvVariable(sstring)
             call parlst_expandSubvariable(rparlist,sstring)
 
             p_Ssubfiles(nsubfiles+1) = sstring
@@ -2880,7 +2880,7 @@ contains
             ! Expand subvariables and environment variables here.
             ! This point is independent of a parameter bexpandVars
             ! as subfiles may otherwise not be found!
-            call parlst_expandEnvVariable(p_Ssubfiles(nsubfiles+j)) 
+            call parlst_expandEnvVariable(p_Ssubfiles(nsubfiles+j))
             call parlst_expandSubvariable(rparlist,p_Ssubfiles(nsubfiles+j))
           end do
           
@@ -2970,7 +2970,7 @@ contains
   
 !</description>
 
-!<inputoutput> 
+!<inputoutput>
     
   ! The parameter list which is filled with data from the file
   type(t_parlist), intent(inout) :: rparlist
@@ -3021,7 +3021,7 @@ contains
     ilinenum = 0
     isubstring = 0
     nsubstrings = 0
-    do while (ios .eq. 0) 
+    do while (ios .eq. 0)
       
       ! Read a line from the file into sbuf
       call parlst_readlinefromfile (iunit, sdata, isbuflen, ios)
@@ -3031,7 +3031,7 @@ contains
       
         ! Parse the line
         call parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
-                              sparname, svalue,sfilename)  
+                              sparname, svalue,sfilename)
         
         select case (ityp)
         case (1)
@@ -3040,7 +3040,7 @@ contains
           if (.not. bimportSections) exit
         
           ! Check if the section exists; if not, create a new one.
-          call parlst_querysection(rparlist, ssectionname, p_currentsection) 
+          call parlst_querysection(rparlist, ssectionname, p_currentsection)
           
           if (.not. associated(p_currentsection)) then
             ! A new section name. Add a section, set the current section
@@ -3109,12 +3109,12 @@ contains
 !<description>
   ! Creates a string representation of the given parameter list rparlist.
   ! p_sconfiguration will be created as "array[1..*] of char" on
-  ! the heap containing this representation. The memory must be manually 
+  ! the heap containing this representation. The memory must be manually
   ! released by the caller using DEALLOCATE when finished using the string
   ! representation.
 !</description>
   
-!<input> 
+!<input>
   ! The parameter list which is filled with data from the file
   type(t_parlist), intent(in) :: rparlist
 !</input>
@@ -3123,7 +3123,7 @@ contains
   ! A pointer to a character array containing all lines of the parameter list.
   ! Points to NULL() if there is no data in the parameter list.
   ! Each line is terminated by NEWLINE.
-  ! If there is data, a new pointer is allocated for this on the heap. 
+  ! If there is data, a new pointer is allocated for this on the heap.
   ! The user must manually release the memory when finished using it.
   character, dimension(:), pointer :: p_sconfiguration
 !</output>
@@ -3272,7 +3272,7 @@ contains
   ! Prints the parameter list rparlist to the terminal.
 !</description>
   
-!<input> 
+!<input>
   ! The parameter list which is to be printed to the terminal.
   type(t_parlist), intent(in) :: rparlist
 !</input>
@@ -3350,7 +3350,7 @@ contains
   ! references. Note that recursive definitions are not allowed!
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
   ! The parameter list which is filled with data from the file
   type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
@@ -3414,7 +3414,7 @@ contains
 
 !<subroutine>
 
-  subroutine parlst_expandEnvVariable(sbuffer) 
+  subroutine parlst_expandEnvVariable(sbuffer)
 
   !<description>
     ! This subroutine recursively expands all environment variables in the given
@@ -3502,7 +3502,7 @@ contains
   ! references. Note that recursive definitions are not allowed!
 !</description>
   
-!<inputoutput> 
+!<inputoutput>
   ! The parameter list which is filled with data from the file
   type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
@@ -3580,7 +3580,7 @@ contains
 !<input>
   ! The string where a subvariable is searched.
   character(len=*), intent(in) :: sstring
-!</input>  
+!</input>
 
 !<output>
   ! Returns the start of the variable in the string or 0 if no subvariable
@@ -3664,7 +3664,7 @@ contains
             end if
             
             if (sstring(j:j) .eq. "}") then
-              ! Here, the token ends. 
+              ! Here, the token ends.
               iend = j
               
               ! Extract name and probably the section

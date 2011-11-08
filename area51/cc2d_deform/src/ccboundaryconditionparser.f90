@@ -73,10 +73,10 @@ module ccboundaryconditionparser
   ! Text expression, evaluated by parsing
   integer, parameter :: BDC_EXPRESSION = -1
   
-  ! Fixed double precision value 
+  ! Fixed double precision value
   integer, parameter :: BDC_VALDOUBLE = 0
 
-  ! Fixed integer value 
+  ! Fixed integer value
   integer, parameter :: BDC_VALINT    = 1
 
   ! Parabolic profile with prescribed maximum value
@@ -88,10 +88,10 @@ module ccboundaryconditionparser
   ! Basic variables that are allowed in expressions.
   ! Variables that are not defined in the actual situation are set to 0.
   !
-  ! X,Y,Z - coordinate of a point (z=0 in 2D case), 
+  ! X,Y,Z - coordinate of a point (z=0 in 2D case),
   ! L     - local parameter value in the range [0..1],
-  ! R     - parameter value of a boundary point, 0-1 parametrisation, 
-  ! S     - parameter value of a boundary point, arc length parametrisation, 
+  ! R     - parameter value of a boundary point, 0-1 parametrisation,
+  ! S     - parameter value of a boundary point, arc length parametrisation,
   ! TIME  - current simulation time (=0 in stationary simulation)
   !
   ! Depending on the situation, this list may be extended by situation
@@ -128,7 +128,7 @@ contains
   ! level.
   type(t_blockDiscretisation), intent(IN) :: rdiscretisation
   
-  ! OPTIONAL: If this flag ist set to TRUE, the boundary conditions are 
+  ! OPTIONAL: If this flag ist set to TRUE, the boundary conditions are
   ! assembled for postprocessing of a solution vector. When being set to FALSE
   ! or not present, the boundary condition are assembled for computation.
   logical, intent(IN), optional :: bforPostprocessing
@@ -168,7 +168,7 @@ contains
     ! Triangulation on currently highest level.
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! A set of variables describing the analytic boundary conditions.    
+    ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     
     ! A pointer to the domain
@@ -206,8 +206,8 @@ contains
     ! of the Y-velocity.
     !
     ! Get the expression/bc sections from the bondary condition block
-    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
-    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
+    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection)
+    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond)
     
     ! For intermediate storing of expression types, we use a local collection
     call collct_init (rcoll)
@@ -255,7 +255,7 @@ contains
         ! Real-value
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS) 
+                                   0, SEC_SBDEXPRESSIONS)
       case (BDC_VALINT)
         ! Integer-value
         read(cstr,*) cname,ityp,ivalue
@@ -266,7 +266,7 @@ contains
         ! Parabolic profile with specified maximum velocity
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS) 
+                                   0, SEC_SBDEXPRESSIONS)
                                    
       case DEFAULT
         call output_line ('Expressions not implemented!', &
@@ -276,14 +276,14 @@ contains
       end select
       
       ! Put the type of the expression to the temporary collection section
-      call collct_setvalue_int (rcoll, cname, ityp, .true.) 
+      call collct_setvalue_int (rcoll, cname, ityp, .true.)
       
     end do
     
     bNeumann = .false.
     
     ! Now to the actual boundary conditions.
-    !    
+    !
     ! Put some information to the quick access arrays for access
     ! in the callback routine.
     rcoll%Iquickaccess(1) = rproblem%itimedependence
@@ -300,7 +300,7 @@ contains
     end select
     
     ! DquickAccess(4:) is reserved for BC specific information.
-    !    
+    !
     ! Put a link to the previous collection into that local collection.
     ! That allows us to access it or to pass it to user defined callback
     ! functions.
@@ -339,7 +339,7 @@ contains
             select case (ibctyp)
             
             case (0)
-              ! Usually there's Neumann boundary in this region, but we can't be 
+              ! Usually there's Neumann boundary in this region, but we can't be
               ! sure. Check if, on the highest level, there's at least one edge
               ! of the triangulation belonging to the boundary. If yes, we
               ! have found Neumann boundary. If no, the segment is just too
@@ -487,7 +487,7 @@ contains
                 IvelEqns = (/1,2/)
                 call bcasm_newPdropBConRealBd (&
                     rdiscretisation,IvelEqns,rboundaryRegion,rdiscreteBC,&
-                    cc_getBDconditions,rcoll,casmComplexity)     
+                    cc_getBDconditions,rcoll,casmComplexity)
               end if
               
               
@@ -513,7 +513,7 @@ contains
         end do
       
       else
-        ! There is no parameter configuring the boundary condition on that 
+        ! There is no parameter configuring the boundary condition on that
         ! component - so we have Neumann boundary there.
         bNeumann = .true.
       end if
@@ -553,7 +553,7 @@ contains
     rproblem%RlevelInfo(rproblem%NLMIN:rproblem%NLMAX)%bhasNeumannBoundary = &
         bNeumann
         
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
 
@@ -575,9 +575,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the solution component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...,
   !   3=3rd solution component, e.g. pressure)
   ! For pressure drop boundary / normal stress:
@@ -603,46 +603,46 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+  ! cinfoNeeded=DISCBC_NEEDFUNCMID :
   !   iwhere = number of the edge in which midpoint the value
   !            should be computed
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+  ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
   !   iwhere = Number of the edge where the normal stress should be computed.
   integer, intent(IN)                                         :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
-  ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+  ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
   !   dwhere = parameter value of the point on edge iwhere where the normal
   !            stress should be computed.
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -691,7 +691,7 @@ contains
       !  IquickAccess(3) = expression type
       !  IquickAccess(4) = expression identifier
       !
-      ! Get the type of the expression to evaluate from the 
+      ! Get the type of the expression to evaluate from the
       ! integer tag of the BC-region - if there is an expression to evaluate
       ! at all.
       iexprtyp = rcollection%IquickAccess(3)
@@ -763,8 +763,8 @@ contains
     ! A compiled expression for evaluation at runtime
     type(t_fparser), pointer :: p_rparser
     
-    ! A pointer to a collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! A pointer to a collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), optional                  :: rcollection
 
       ! local variables
@@ -815,9 +815,9 @@ contains
         ! Get the local parameter value 0 <= d <= 1 in the boundary region.
         ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
         ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par 
+        ! although 0 <= dminpar <= max.par
         !      and 0 <= dmaxpar <= max.par!
-        d = dpar 
+        d = dpar
         if (d .lt. rboundaryRegion%dminParam) &
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
@@ -834,7 +834,7 @@ contains
         Rval(5) = dpar
         Rval(6) = boundary_convertParameter(rdiscretisation%p_rboundary, &
                                             rboundaryRegion%iboundCompIdx, dpar, &
-                                            BDR_PAR_01, BDR_PAR_LENGTH) 
+                                            BDR_PAR_01, BDR_PAR_LENGTH)
         Rval(7) = dtime
         
         ! Evaluate the expression. ivalue is the number of
@@ -843,14 +843,14 @@ contains
         
       case (BDC_VALPARPROFILE)
         ! A parabolic profile. dvalue expresses the
-        ! maximum value of the profile. 
+        ! maximum value of the profile.
         !
         ! Get the local parameter value 0 <= d <= 1.
         ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
         ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par 
+        ! although 0 <= dminpar <= max.par
         !      and 0 <= dmaxpar <= max.par!
-        d = dpar 
+        d = dpar
         if (d .lt. rboundaryRegion%dminParam) &
           d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
@@ -860,7 +860,7 @@ contains
         ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
         d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
     
-        evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
+        evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue)
       end select
     
     end function
@@ -911,6 +911,6 @@ contains
     ! CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
     !     getBoundaryValuesFBC,rcollection)
 
-  end subroutine  
+  end subroutine
 
 end module

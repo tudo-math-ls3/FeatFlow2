@@ -31,7 +31,7 @@
 !# Routines in this module:
 !#
 !# 1.) easminfo_createDefInfoStructure
-!#     -> Create a default assembly information structure based on a 
+!#     -> Create a default assembly information structure based on a
 !#        discretisation structure.
 !#
 !# 2.) easminfo_releaseInfoStructure
@@ -86,7 +86,7 @@ module extstdassemblyinfo
     integer :: h_IelementList = ST_NOHANDLE
     
     ! Ownership flag. This flag is set to .true. by the routines in this module
-    ! if h_IelementList is internally created. Assures that 
+    ! if h_IelementList is internally created. Assures that
     ! easminfo_releaseInfoStructure does not accidentally release memory
     ! that was not allocated here.
     logical :: blocalElementList = .false.
@@ -137,7 +137,7 @@ contains
   type(t_spatialDiscretisation), intent(in) :: rdiscretisation
   
   ! OPTIONAL: Compatibility flag. If present, this identifier allows to transfer
-  ! a specific cubature formula from the (deprecated) discretisation structure 
+  ! a specific cubature formula from the (deprecated) discretisation structure
   ! to the assembly structure.
   ! =0: Transfer ccubTypeBilForm.
   ! =1: Transfer ccubTypeLinForm.

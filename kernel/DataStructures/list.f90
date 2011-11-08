@@ -38,7 +38,7 @@
 !#
 !#  8.) list_getLastInList
 !#      -> Get the position of the last item in list
-!# 
+!#
 !#  9.) list_getNextInList
 !#      -> Get the position of the next item in list
 !#
@@ -74,7 +74,7 @@
 !#      -> Remove all content from list
 !#
 !# 17.) list_getByPosition = list_getByPositionDble /
-!#                           list_getByPositionSngl / 
+!#                           list_getByPositionSngl /
 !#                           list_getByPositionInt
 !#
 !# </purpose>
@@ -122,7 +122,7 @@ module list
   ! Identifier for decreasingly ordered list
   integer, parameter, public :: LIST_DECREASING = 2
 
-  ! Identifier for ordered list 
+  ! Identifier for ordered list
   integer, parameter, public :: LIST_CSR7       = 3
 
 !</constantblock>
@@ -355,7 +355,7 @@ contains
     ! Dimension of the auxiliary Single values to be stored
     integer, intent(in) :: isizeSngl
 
-    ! OPTIONAL: Format-tag. Type of list ordering 
+    ! OPTIONAL: Format-tag. Type of list ordering
     integer, intent(in), optional :: cordering
 
     ! OPTIONAL: Factor by which the list should be enlarged if memory
@@ -407,7 +407,7 @@ contains
         rlist%h_Knext,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rlist%h_Knext,rlist%Knext)
     
-    ! Double-linked list?    
+    ! Double-linked list?
     if (rlist%clinkType .eq. LIST_DOUBLELINKED) then
       call storage_new('list_createList','Kprev',nna,ST_INT,&
           rlist%h_Kprev,ST_NEWBLOCK_NOINIT)
@@ -2444,7 +2444,7 @@ contains
       
     case (LIST_DECREASING)
       do while(ipred.ne.rlist%Knext(LTAIL))
-        inext = rlist%Knext(ipred)  
+        inext = rlist%Knext(ipred)
         if (rlist%SKey(inext) .eq. skey) then
           f=LIST_FOUND; exit
         end if

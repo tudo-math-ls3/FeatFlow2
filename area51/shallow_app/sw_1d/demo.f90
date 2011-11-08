@@ -67,7 +67,7 @@ program demo
 !!$  deallocate(myptr)
 !!$  print *, associated(myptr)
 !!$
-!!$  
+!!$
 !!$  myptr => myalloc
 !!$  print *, associated(myptr)
 

@@ -33,12 +33,12 @@ program errest
   real(DP), dimension(:), pointer :: p_Ddensity, p_Dpressure, p_Dvelocity_x, p_Dvelocity_y, p_Dvelocity, p_Dadvect, p_Dindicator
   integer :: nlength
 
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   call system_init()
   
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
 
 
@@ -175,7 +175,7 @@ contains
      
 !!$    ! Add protection layers
 !!$    allocate(p_BisActiveElement(rtriangulation%NEL))
-!!$    
+!!$
 !!$    do iprotectLayer = 1, 2
 !!$
 !!$      p_BisActiveElement = .false.

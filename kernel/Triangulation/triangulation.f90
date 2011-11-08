@@ -26,19 +26,19 @@
 !#      -> Cleans up a triangulation structure, releases memory from the heap.
 !#
 !#  4.) tria_createRawTria1D
-!#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals 
+!#      -> Creates a 'raw' 1D triangulation $[a,b]$ with $n$ sub-intervals
 !#         of the same length
 !#
 !#  5.) tria_readTriFile1D
-!#      -> Reads a .TRI file and creates a 'raw' 1D mesh with only basic 
+!#      -> Reads a .TRI file and creates a 'raw' 1D mesh with only basic
 !#         information.
 !#
 !#  6.) tria_readTriFile2D
-!#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic 
+!#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic
 !#         information.
 !#
 !#  7.) tria_readTriFile3D
-!#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic 
+!#      -> Reads a .TRI file and creates a 'raw' 3D mesh with only basic
 !#         information.
 !#
 !#  8.) tria_resetToRaw
@@ -64,8 +64,8 @@
 !#         and coarse mesh.
 !#
 !# 14.) tria_quickRefine2LevelOrdering
-!#      -> Refines a mesh multiple times according to the 2-level ordering 
-!#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
+!#      -> Refines a mesh multiple times according to the 2-level ordering
+!#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard'
 !#         coarse mesh.
 !#
 !# 15.) tria_rawGridToTri
@@ -92,23 +92,23 @@
 !#      -> Attaches a set of cells to an existing triangulation
 !#
 !# 22.) tria_cellGroupGreedy
-!#      -> Combines the cells of a mesh into simply connected sets of 
+!#      -> Combines the cells of a mesh into simply connected sets of
 !#         similar size by a greedy algorithm
 !#
 !# 23.) tria_getNAE = tria_getNAE_direct /
 !#                    tria_getNAE_indirect
 !#      -> Get the number of faces on an element
 !#
-!# 24.) tria_getNVE = tria_getNVE_direct / 
+!# 24.) tria_getNVE = tria_getNVE_direct /
 !#                    tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
 !# 25.) tria_getPointsOnEdge
-!#      -> For all edges in a triangulation, calculate the coordinates 
+!#      -> For all edges in a triangulation, calculate the coordinates
 !#         of a number of points on each edge
 !#
 !# 26.) tria_getNeighbourVertex
-!#      -> Calculates the vertex number of the neighbour vertex of a 
+!#      -> Calculates the vertex number of the neighbour vertex of a
 !#         vertex on an edge.
 !#
 !# 27.) tria_getSubmeshNeighbourhood
@@ -238,7 +238,7 @@
 !#
 !#  3.) tria_sortElements3DInt
 !#      -> Calculates the sorted numbering for the connector list
-!#  
+!#
 !#  4.) tria_mergesort
 !#      -> Sorts a connector list
 !#
@@ -261,7 +261,7 @@
 !#     allows to convert a quad mesh in a triangular mesh, which would
 !#     be much harder if all adjacency information is already computed.
 !#     Another possibile thing what can be done with such a 'raw' mesh is to
-!#     do quicker pre-refinement with routines like 
+!#     do quicker pre-refinement with routines like
 !#     tria_quickRefine2LevelOrdering. This routine refines the mesh without
 !#     computing everything and is therefore a little bit faster than a
 !#     subsequent application of tria_refine2LevelOrdering onto a 'standard'
@@ -301,7 +301,7 @@
 !#       call tria_quickRefine2LevelOrdering(4,rtriangulation,rboundary)
 !#       call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 !# </code>
-!# 
+!#
 !#     If you want to generate level 1..4 for a multiple-grid structure, use
 !#
 !# <code>
@@ -351,7 +351,7 @@
 !#    One should note that afterwards, each change of vertex coordinates on the
 !#    fine grid directly affects the vertex coordinates on all coarse grid
 !#    and vice versa. But that is not a bug, it is a feature :-)
-!# 
+!#
 !# 5.) What are twist indices?
 !#
 !#     !!! DEPRECATED !!!
@@ -378,7 +378,7 @@
 !#   When 'looking' from element 10 to the edge, the edge becomes twist
 !#   index 1, while when looking from element 20 to it, the edge receives
 !#   twist index 0. That way, the twist index defines whether the 'global' edge
-!#   is oriented counterclockwise (twist index = 1) or clockwise 
+!#   is oriented counterclockwise (twist index = 1) or clockwise
 !#   (twist index = 0) relative to the current element.
 !#
 !#   Each cell in 2D has 4 edges. The entry ItwistIndexEdges(iel) defines a
@@ -413,7 +413,7 @@
 !#   shared by the elements:)
 !#
 !# <verb>
-!#                         
+!#
 !#         ----------3              2-------
 !#                  /|             /|
 !#                 / |            / |
@@ -422,10 +422,10 @@
 !#      --------4    |         3--------
 !#              | I  |         |  J |
 !#        10    |    2 <-------|--  1------
-!#              |   /     =-2  |   / 
-!#              |  /           |  /  
-!#              | /            | /   
-!#              |/             |/    
+!#              |   /     =-2  |   /
+!#              |  /           |  /
+!#              | /            | /
+!#              |/             |/
 !#      --------1  --------->  4-------
 !#                   =4
 !#
@@ -454,13 +454,13 @@
 !#   A subdomain is just a normal triangulation with the difference, that it
 !#   has up to NBCT+1 boundary components. It can be generated by extracting
 !#   cells from an existing triangulation using tria_generateSubdomain.
-!# 
-!#   The first NBCT bondary components refer to the original BC`s in the 
-!#   source triangulation. The 'last' BC receives information about which 
-!#   parts of the domain in rtriangulation became the boundary in the 
-!#   subdomain. This last boundary component is a 'blind' boundary 
-!#   component: The arrays (like IboundaryCpIdx) contain information 
-!#   about one boundary component which is not counted in NBCT. This last 
+!#
+!#   The first NBCT bondary components refer to the original BC`s in the
+!#   source triangulation. The 'last' BC receives information about which
+!#   parts of the domain in rtriangulation became the boundary in the
+!#   subdomain. This last boundary component is a 'blind' boundary
+!#   component: The arrays (like IboundaryCpIdx) contain information
+!#   about one boundary component which is not counted in NBCT. This last
 !#   boundary component can even be empty! The variable NblindBCT is <> 0
 !#   if there may be elements in a blind boundary component in a mesh.
 !#
@@ -468,7 +468,7 @@
 !#   a nodal property indicating them to be located on this blind boundary
 !#   component although their position in the IedgesAtBoundary array
 !#   would indicate them to not be in the blind boundary component.
-!#   That is because in 2D, an edge follows every vertex. Edges in 
+!#   That is because in 2D, an edge follows every vertex. Edges in
 !#   IedgesAtBoundary on the blind boundary component can be identified
 !#   either by their nodal property InodalProperty or by there parameter
 !#   value, as DedgeParameterValue(iedge)=-1 for such an edge.
@@ -485,7 +485,7 @@
 !#   As soon as a mesh is marked as coarse mesh by tria_initMacroNodalProperty,
 !#   all derived fine meshes (standard as well as extended raw meshes)
 !#   will automatically have their own macro nodal property array attached
-!#   when they are created by refinement. 
+!#   when they are created by refinement.
 !#
 !#   Example: The following command sequence reads a tri file,
 !#   attaches a macro nodal property array to the triangulation and
@@ -501,7 +501,7 @@
 !#
 !#   Note that the macro nodal property array is part of the extended raw
 !#   mesh as soon as tria_initMacroNodalProperty is called. It is not necessary
-!#   to call tria_initStandardMeshFromRaw in order to have this array 
+!#   to call tria_initStandardMeshFromRaw in order to have this array
 !#   available!
 !#
 !# </purpose>
@@ -636,7 +636,7 @@ module triangulation
   
 !<constantblock description="Flags to be specified as cflags in the refinement routines.">
   
-  ! After refinement, those points of quad elements on the fine mesh which 
+  ! After refinement, those points of quad elements on the fine mesh which
   ! were formally element midpoints on the coarse mesh were recalculated
   ! by taking the mean of the corners.
   ! This helps avoiding tangled elements when there is a 'hole' in the domain.
@@ -659,31 +659,31 @@ module triangulation
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between triangulation structures">
 
-  integer(I32), parameter, public :: TR_SHARE_DVERTEXCOORDS          = 2** 0  ! DCORVG 
+  integer(I32), parameter, public :: TR_SHARE_DVERTEXCOORDS          = 2** 0  ! DCORVG
   integer(I32), parameter, public :: TR_SHARE_DFREEVERTEXCOORDINATES = 2** 1  ! DCORMG
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATELEMENT     = 2** 2  ! KVERT 
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATELEMENT        = 2** 3  ! KMID  
-  integer(I32), parameter, public :: TR_SHARE_INEIGHBOURSATELEMENT   = 2** 4  ! KADJ  
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATVERTEX      = 2** 5  ! KVEL  
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATEDGE        = 2** 6  ! KMEL  
-  integer(I32), parameter, public :: TR_SHARE_INODALPROPERTY         = 2** 7  ! KNPR  
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATBOUNDARY    = 2** 8  ! KVBD  
-  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATBOUNDARY    = 2** 9  ! KEBD  
-  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYCPIDX         = 2**10  ! KBCT  
-  integer(I32), parameter, public :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**11  ! DVBDP 
-  integer(I32), parameter, public :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**12  ! DMBDP 
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATBOUNDARY       = 2**13  ! KMBD  
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATEDGE        = 2**14  ! KEAN  
-  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**15  ! KVBDI 
-  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**16  ! KMBDI 
-  integer(I32), parameter, public :: TR_SHARE_DELEMENTAREA           = 2**17  ! DAREA 
-  integer(I32), parameter, public :: TR_SHARE_IREFINEMENTPATCH       = 2**18   
-  integer(I32), parameter, public :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**19  
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATELEMENT     = 2** 2  ! KVERT
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATELEMENT        = 2** 3  ! KMID
+  integer(I32), parameter, public :: TR_SHARE_INEIGHBOURSATELEMENT   = 2** 4  ! KADJ
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATVERTEX      = 2** 5  ! KVEL
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATEDGE        = 2** 6  ! KMEL
+  integer(I32), parameter, public :: TR_SHARE_INODALPROPERTY         = 2** 7  ! KNPR
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATBOUNDARY    = 2** 8  ! KVBD
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATBOUNDARY    = 2** 9  ! KEBD
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYCPIDX         = 2**10  ! KBCT
+  integer(I32), parameter, public :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**11  ! DVBDP
+  integer(I32), parameter, public :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**12  ! DMBDP
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATBOUNDARY       = 2**13  ! KMBD
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATEDGE        = 2**14  ! KEAN
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**15  ! KVBDI
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**16  ! KMBDI
+  integer(I32), parameter, public :: TR_SHARE_DELEMENTAREA           = 2**17  ! DAREA
+  integer(I32), parameter, public :: TR_SHARE_IREFINEMENTPATCH       = 2**18
+  integer(I32), parameter, public :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**19
   
-  integer(I32), parameter, public :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR 
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR
   integer(I32), parameter, public :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
   integer(I32), parameter, public :: TR_SHARE_IELEMENTSATFACE        = 2**22
-  integer(I32), parameter, public :: TR_SHARE_IEDGESATFACE           = 2**23 
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATFACE           = 2**23
   integer(I32), parameter, public :: TR_SHARE_IFACESATEDGE           = 2**24
   integer(I32), parameter, public :: TR_SHARE_IFACESATVERTEX         = 2**25
   integer(I32), parameter, public :: TR_SHARE_IFACESATBOUNDARY       = 2**26
@@ -691,7 +691,7 @@ module triangulation
   integer(I32), parameter, public :: TR_SHARE_IEDGESATVERTEX         = 2**27
   integer(I32), parameter, public :: TR_SHARE_ITWISTINDEX            = 2**28
   
-  integer(I32), parameter, public :: TR_SHARE_IMACRONODALPROPERTY    = 2**29  
+  integer(I32), parameter, public :: TR_SHARE_IMACRONODALPROPERTY    = 2**29
   
   ! Share information for an extended raw mesh.
   integer(I32), parameter, public :: TR_SHARE_EXTENDEDRAW            = &
@@ -756,7 +756,7 @@ module triangulation
   ! replaced by parameter values.
   integer(I32), parameter, public :: TRI_FMT_STANDARD          = 0
   
-  ! Standard TRI file format, but the vertex coordinates are 
+  ! Standard TRI file format, but the vertex coordinates are
   ! exported 'as they are', not as parameter values.
   integer(I32), parameter, public :: TRI_FMT_NOPARAMETRISATION = 2**0
   
@@ -836,8 +836,8 @@ module triangulation
   ! The basic triangulation structure for a triangulation.
   type t_triangulation
   
-    ! Duplication flag. Bitfield. Used by TRIDUP/TRIRST/TRIDEL to 
-    ! mark which information of a triangulation structure 
+    ! Duplication flag. Bitfield. Used by TRIDUP/TRIRST/TRIDEL to
+    ! mark which information of a triangulation structure
     ! coincides with those of another triangulation structure and
     ! must not be released from memory when deleting a copy of a
     ! triangulation structure.
@@ -904,7 +904,7 @@ module triangulation
     integer                  :: NAT = 0
     
     
-    ! Number of elements in the domain; 
+    ! Number of elements in the domain;
     ! corresponding to SIZE(RverticesOnElement)
     integer                  :: NEL = 0
     
@@ -913,13 +913,13 @@ module triangulation
     
     ! Number of 'blind' boundary components. 'Blind' boundary components
     ! belong to the boundary of subdomains but do not count to the real boundary.
-    ! In arrays like IverticesAtBoundary, IedgesAtBoundary etc., blind 
+    ! In arrays like IverticesAtBoundary, IedgesAtBoundary etc., blind
     ! boundary components are always attached to the information about the
     ! real boundary.
     integer                  :: NblindBCT = 0
     
     ! Number of vertices on the boundary.
-    ! For 2D domains, this coincides with the number of edges on 
+    ! For 2D domains, this coincides with the number of edges on
     ! the boundary: Every vertex on the boundary has an edge following
     ! the vertex in mathematical positive sense.
     integer                  :: NVBD = 0
@@ -949,7 +949,7 @@ module triangulation
     ! Maximum number of elements adjacent to a vertex.
     integer                  :: NNelAtVertex = 0
     
-    ! Maximum number of elements adjacent to an edge. 
+    ! Maximum number of elements adjacent to an edge.
     ! =0 in 1D, =2 in 2D, arbitrary in 3D.
     integer                  :: NNelAtEdge = 0
     
@@ -972,25 +972,25 @@ module triangulation
     integer                  :: nverticesPerEdge = 0
     
     ! Total number of vertices on edges; normally = 0.
-    ! Total number of vertices on all edges, realized in p_DfreeVertexCoordinates. 
+    ! Total number of vertices on all edges, realized in p_DfreeVertexCoordinates.
     ! E.g. if midpoints on edges exist, there is NVEDT=NMT.
     integer                  :: nVerticesOnAllEdges = 0
     
     ! Number of inner-element vertices; normally = 0.
-    ! If a regular distribution of vertices in the inner of 
-    ! each element is given, NIELV saves the number of vertices 
-    ! in the inner of each element; e.g. 1 if element-midpoints 
+    ! If a regular distribution of vertices in the inner of
+    ! each element is given, NIELV saves the number of vertices
+    ! in the inner of each element; e.g. 1 if element-midpoints
     ! exist in p_DfreeVertexCoordinates.
     integer                  :: nverticesInEachElement = 0
 
     ! Total number of vertices in elements; normally = 0.
-    ! Total number of vertices on all elements, realized in p_DfreeVertexCoordinates. 
+    ! Total number of vertices on all elements, realized in p_DfreeVertexCoordinates.
     ! E.g. if element-midpoints exist in DCORMG, there is NIEVT=NEL.
     integer                  :: nverticesInAllElements = 0
     
     ! Number of additional vertices; normally = 0.
-    ! Can be set <> 0 if there are any additional vertices 
-    ! realized in p_DfreeVertexCoordinates, that do not belong to a regular 
+    ! Can be set <> 0 if there are any additional vertices
+    ! realized in p_DfreeVertexCoordinates, that do not belong to a regular
     ! distribution of vertices in corners, on edges or on elements.
     integer                  :: nadditionalVertices = 0
   
@@ -1003,7 +1003,7 @@ module triangulation
     real(DP), dimension(NDIM3D) :: DboundingBoxMax = (/0.0_DP,0.0_DP,0.0_DP/)
     
     ! A list of all corner(!)-vertices of the elements in the triangulation.
-    ! Handle to 
+    ! Handle to
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
@@ -1030,13 +1030,13 @@ module triangulation
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer        :: h_IverticesAtElement = ST_NOHANDLE
 
     ! Edges Adjacent to an Element.
-    ! Handle to 
+    ! Handle to
     !       p_IedgesAtElement = array [1..NVE,1..NEL] of integer
     ! For each element the node numbers of the edges following the
     ! corner vertices in mathematically positive sense.
@@ -1044,16 +1044,16 @@ module triangulation
     ! the old KMID of FEAT1 as KMID started the edge numbers at NVT+1
     ! while IedgesAtElement starts the edge numbering with 1).
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
+    ! meshes, there is NVE=4. In this case, there is
     ! IedgesAtElement(4,.)=0 for a triangle in a quad mesh.
     integer        :: h_IedgesAtElement = ST_NOHANDLE
     
     ! Neighbour Elements Adjacent to an Element.
-    ! Handle to 
+    ! Handle to
     !       p_IneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
     ! For each element, the numbers of adjacent elements
     ! in mathematically positive sense, meeting the element in an edge.
-    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent 
+    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent
     ! to IEL along the edges (p_RedgesOnElement(IEL)\%Iedges(.)-NVT).
     ! This is the old KADJ array.
     !
@@ -1068,26 +1068,26 @@ module triangulation
     integer        :: h_IneighboursAtElement = ST_NOHANDLE
     
     ! Elements Adjacent to an Edge. Only 2D.
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtEdge = array [1..2,1..NMT] of integer.
-    ! The numbers of the two elements adjacent to an edge IMT in 2D. 
+    ! The numbers of the two elements adjacent to an edge IMT in 2D.
     ! For boundary edges, p_IelementsOnEdge(2,IMT) is set to 0.
     ! This is the old KMEL array.
     integer        :: h_IelementsAtEdge = ST_NOHANDLE
 
-    ! Vertices Adjacent to an Edge. 
-    ! Handle to 
+    ! Vertices Adjacent to an Edge.
+    ! Handle to
     !       p_IverticesAtEdge = array [1..2,1..NMT]
-    ! The numbers of the two vertices adjacent to an edge IMT. 
+    ! The numbers of the two vertices adjacent to an edge IMT.
     integer        :: h_IverticesAtEdge = ST_NOHANDLE
     
-    ! Nodal property array. 
-    ! Handle to 
+    ! Nodal property array.
+    ! Handle to
     !       p_InodalProperty=array [1..NVT+NMT+NAT] of integer.
     ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
     ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
     ! its function inside of the geometry.
-    ! Generally said, the range of the p_InodalProperty-array 
+    ! Generally said, the range of the p_InodalProperty-array
     ! characterizes the type of the node (=vertex/edge):
     ! = 0    : The vertex/edge is an inner vertex/edge
     ! > 0    : The vertex/edge is a boundary vertex/edge on the real
@@ -1099,16 +1099,16 @@ module triangulation
     ! In case there are hanging nodes in the mesh, this array
     ! has a special meaning for all hanging vertices and all edges
     ! containing hanging vertices.  Values < 0 indicate hanging
-    ! vertices at an edge. 
+    ! vertices at an edge.
     ! Let iedgeC (NVT+1..NVT+NMT) be the number of
-    ! a a 'full' edge containing the hanging vertex jvertex. 
+    ! a a 'full' edge containing the hanging vertex jvertex.
     ! Let iedge be one of the sub-edges inside of edge iedgeC.
     ! Then there is:
     !   p_InodalProperty(jvertex) = -iedgeC
     !   p_InodalProperty(iedge)   = -iedgeC
     !   p_InodalProperty(iedgeC)  = -jvertex
     ! Let kfaceC (NVT+NMT+1..NVT+NMT+NAT) be the number of a 'full' face
-    ! containing the hanging vertex jvertex. 
+    ! containing the hanging vertex jvertex.
     ! Let kface be the number of a one of the subfaces inside
     ! the face kfaceC. Let iedge be the number of one of the sub-edges
     ! inside face kfaceC.
@@ -1124,7 +1124,7 @@ module triangulation
     integer         :: h_InodalProperty = ST_NOHANDLE
     
     ! Macro nodal property array.
-    ! Handle to 
+    ! Handle to
     !       p_ImacroNodalProperty=array [1..NVT+NMT+NAT+NEL] of integer.
     ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
     ! each edge i=(NVT+1..NVT+NMT), face i=(NVT+NMT+1..NVT+NMT+NAT)
@@ -1134,31 +1134,31 @@ module triangulation
     ! faces, resp., on the coarse mesh. Then, the value of ImacroNodalProperty
     ! is as follows:
     ! 1..nvtC: The number of a coarse grid vertex, a fine grid vertex stems from.
-    ! nvtC+1..nvtC+nmtC: The number of a coarse grid edge, a fine grid 
+    ! nvtC+1..nvtC+nmtC: The number of a coarse grid edge, a fine grid
     !                    vertex/edge stems from.
     ! nvtC+nmtC+1..nvtC+nmtC+natC : The number of a coarse grid face, a fine grid
     !                    vertex/edge/face stems from.
-    ! nvtC+nmtC+natC+1..nvtC+nmtC+natC+nelC : The number of a coarse grid element, a 
+    ! nvtC+nmtC+natC+1..nvtC+nmtC+natC+nelC : The number of a coarse grid element, a
     !                    fine grid element stems from.
     ! The macro nodal property array can be created based on for an extended
     ! raw coarse mesh by tria_initMacroNodalProperty. Once created, this information
-    ! belongs to the set of information of a raw mesh and is automatically 
+    ! belongs to the set of information of a raw mesh and is automatically
     ! propagated to every finer mesh upon refinement.
     integer         :: h_ImacroNodalProperty = ST_NOHANDLE
     
     ! 2D triangulation: Array with area of each element.
     ! 3D triangulation: Array with volume of each element.
-    ! Handle to 
+    ! Handle to
     !       p_DelementArea = array [1..NEL+1] of double.
     ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
     integer         :: h_DelementVolume = ST_NOHANDLE
     
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtVertexIdx=array [1..NVT+1] of integer.
     ! Index array for p_IelementsAtVertex of length NVT+1 for describing the
     ! elements adjacent to a corner vertex. for vertex IVT, the array
     ! p_IelementsAtVertex contains the numbers of the elements around this
-    ! vertex at indices 
+    ! vertex at indices
     !     p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1.
     ! By subtracting
     !     p_IelementsAtVertexIdx(IVT+1)-p_IelementsAtVertexIdx(IVT)
@@ -1166,7 +1166,7 @@ module triangulation
     integer        :: h_IelementsAtVertexIdx = ST_NOHANDLE
     
     ! Array containing the Elements Adjacent to a Vertex.
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtVertex = array(1..*) of integer
     ! p_IelementsAtVertex ( p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1 )
     ! contains the number of the adjacent element in a vertex.
@@ -1186,9 +1186,9 @@ module triangulation
     ! Using p_IrefinementPatchIdx in combination with p_IrefinementPatch
     ! allows to get the element numbers of the fine grid elements
     ! that were created from a coarse grid element.
-    ! Handle to 
+    ! Handle to
     !       p_IrefinementPatchIdx=array [1..NELcoarse+1] of integer.
-    ! So if IEL is the number of a coarse grid element, the fine grid 
+    ! So if IEL is the number of a coarse grid element, the fine grid
     ! elements are to be found in
     ! p_IrefinementPatch ( p_IrefinementPatchIdx(IEL)..p_IrefinementPatchIdx(IEL+1)-1 )
     ! By subtracting
@@ -1215,13 +1215,13 @@ module triangulation
     ! number on the coarse mesh where the fine grid element comes from.
     ! Handle to
     !       p_IcoarseGridElement = array(1..NEL) of integer
-    ! For a mesh that does not come from a refinement, this handle is 
+    ! For a mesh that does not come from a refinement, this handle is
     ! undefined.
     integer        :: h_IcoarseGridElement = ST_NOHANDLE
     
-    ! Boundary component index vector of length NBCT+NblindBCT+1 for 
+    ! Boundary component index vector of length NBCT+NblindBCT+1 for
     ! p_IverticesAtBoundary / p_IedgesAtBoundary / ... arrays.
-    ! For standard meshes, this is a handle to 
+    ! For standard meshes, this is a handle to
     !      p_IboundaryCpIdx = array [1..NBCT+1] of integer.
     ! For subdomains, this is a handle to
     !      p_IboundaryCpIdx = array [1..NBCT+2] of integer.
@@ -1229,18 +1229,18 @@ module triangulation
     ! of the 'blind' boundary component, which does not belong to the
     ! physical boundary of the domain.
     !
-    ! For a (real) boundary component i all corner nodes 
-    ! for that boundary component are saved in 
+    ! For a (real) boundary component i all corner nodes
+    ! for that boundary component are saved in
     !   p_IverticesAtBoundary ( p_IboundaryCpIdx(i)..p_IboundaryCpIdx(i+1)-1 ).
-    ! All boundary edges of this boundary component are saved in 
+    ! All boundary edges of this boundary component are saved in
     !   p_IedgesAtBoundary ( p_IboundaryCpIdx(i)..p_IboundaryCpIdx(i+1)-1 ).
     ! p_IboundaryCpIdx(NBCT+1 / +2) points to NVBD+1 for easier access to the last
     ! boundary component.
     ! This is the old KBCT array.
     integer          :: h_IboundaryCpIdx = ST_NOHANDLE
     
-    ! Vertices on boundary. 
-    ! Handle to 
+    ! Vertices on boundary.
+    ! Handle to
     !       p_IverticesAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all vertices on the (real) boundary
     ! in mathematically positive sense.
@@ -1256,11 +1256,11 @@ module triangulation
     ! works like the p_IboundaryCpIdx for the vertices... see above.
     integer          :: h_IboundaryCpEdgesIdx = ST_NOHANDLE
     
-    ! Edges adjacent to the boundary. 
-    ! Handle to 
+    ! Edges adjacent to the boundary.
+    ! Handle to
     !       p_IedgesAtBoundary = array [1..NMBD] of integer.
     ! This array contains a list of all edges on the (real) boundary.
-    ! 2D: in mathematically positive sense. 
+    ! 2D: in mathematically positive sense.
     ! 3D: with increasing number.
     ! The boundary edges of boundary component i are saved at
     !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1.
@@ -1274,7 +1274,7 @@ module triangulation
     integer          :: h_IboundaryCpFacesIdx = ST_NOHANDLE
 
     ! Faces adjacent to the boundary. Only 3D, undefined in 2D.
-    ! Handle to 
+    ! Handle to
     !       p_IfacesAtBoundary = array [1..NMBD] of integer.
     ! This array contains a list of all edges on the (real) boundary
     ! with increasing number.
@@ -1282,8 +1282,8 @@ module triangulation
     !        p_IboundaryCpFacesIdx(i)..p_IboundaryCpFacesIdx(i+1)-1.
     integer          :: h_IfacesAtBoundary = ST_NOHANDLE
 
-    ! Elements Adjacent to the boundary. 
-    ! Handle to 
+    ! Elements Adjacent to the boundary.
+    ! Handle to
     !       p_IelementsAtBoundary = array [1..NVBD] of integer.
     ! This array contains a list of all elements on the (real) boundary
     ! in mathematically positive sense.
@@ -1296,10 +1296,10 @@ module triangulation
     integer          :: h_IelementsAtBoundary = ST_NOHANDLE
     
     ! Parameter values of vertices on the boundary.
-    ! Handle to 
+    ! Handle to
     !       p_DvertexParameterValue = array [1..NVBD] of real
-    ! p_DvertexParameterValue(i) contains the parameter value of 
-    ! boundary vertex i, which corresponds to the corner vertex 
+    ! p_DvertexParameterValue(i) contains the parameter value of
+    ! boundary vertex i, which corresponds to the corner vertex
     ! p_IverticesAtBoundary(I).
     ! There may be vertices on the boundary of the triangulation which
     ! are not part of the physical boundary of the domain (-> subdomains).
@@ -1308,10 +1308,10 @@ module triangulation
     integer          :: h_DvertexParameterValue = ST_NOHANDLE
 
     ! Parameter values of edge midpoints on the boundary.
-    ! Handle to 
+    ! Handle to
     !       p_DedgeParameterValue = array [1..NMBD] of real
     ! p_DedgeParameterValue(i) contains the parameter value of the midpoint
-    ! of boundary edge i in 0-1 parametrisation, which corresponds to the 
+    ! of boundary edge i in 0-1 parametrisation, which corresponds to the
     ! edge p_IedgesAtBoundary(I).
     ! There may be edges on the boundary of the triangulation which
     ! are not part of the physical boundary of the domain (-> subdomains).
@@ -1320,25 +1320,25 @@ module triangulation
     ! component NBCT+1, but can be anywhere in the IedgesAtBoundary array.
     integer          :: h_DedgeParameterValue = ST_NOHANDLE
     
-    ! Inverse index array to p_IverticesAtBoundary. 
-    ! Handle to 
+    ! Inverse index array to p_IverticesAtBoundary.
+    ! Handle to
     !       p_IboundaryVertexPos = array [1..2,1..NVBD] of integer.
-    ! p_IboundaryVertexPos(1,.) contains a vertex number on the 
+    ! p_IboundaryVertexPos(1,.) contains a vertex number on the
     ! boundary and p_IboundaryVertexPos(2,.) the appropriate index
-    ! of this vertex inside of the p_IverticesAtBoundary-array. 
+    ! of this vertex inside of the p_IverticesAtBoundary-array.
     ! The array is first sorted for the boundary component and therefore
     ! has a layout as defined by IboundaryCpIdx.
     ! Inside of each boundary component, the entries are sorted for
-    ! the vertex number, thus allowing quick access to the index of a 
+    ! the vertex number, thus allowing quick access to the index of a
     ! vertex in p_IverticesAtBoundary.
     integer          :: h_IboundaryVertexPos = ST_NOHANDLE
 
-    ! Inverse index array to p_IedgesAtBoundary. 
-    ! Handle to 
+    ! Inverse index array to p_IedgesAtBoundary.
+    ! Handle to
     !       p_IboundaryEdgePos = array [1..2,1..NMBD] of integer.
-    ! p_IboundaryEdgePos(1,.) contains a vertex number on the 
+    ! p_IboundaryEdgePos(1,.) contains a vertex number on the
     ! boundary and p_IboundaryEdgePos(2,.) the appropriate index
-    ! of this vertex inside of the p_IedgesAtBoundary-array. 
+    ! of this vertex inside of the p_IedgesAtBoundary-array.
     ! The array is first sorted for the boundary component and therefore
     ! has a layout as defined by IboundaryCpIdx.
     ! Inside of each boundary component, the entries are sorted for
@@ -1346,31 +1346,31 @@ module triangulation
     ! edge in p_IedgesAtBoundary.
     integer          :: h_IboundaryEdgePos = ST_NOHANDLE
     
-    ! Handle to 
+    ! Handle to
     !       p_DfreeVertexCoordinates = array [1..NDIM2D,1..NVT] of double
     ! Array containing the coordinates of all vertices on edges,
     ! inner element vertices and additional nodes in the geometry.
     !
-    ! p_DfreeVertexCoordinates(1..nVerticesOnAllEdges) contains the coordinates 
-    ! of the regular distributed vertices on edges. 
+    ! p_DfreeVertexCoordinates(1..nVerticesOnAllEdges) contains the coordinates
+    ! of the regular distributed vertices on edges.
     !
     ! p_DfreeVertexCoordinates(nVerticesOnAllEdges + 1 ..
-    !                          nVerticesOnAllEdges + nVerticesOnAllElements) 
-    ! contains the coordinates of the regular distributed 
-    ! inner-element vertices. 
+    !                          nVerticesOnAllEdges + nVerticesOnAllElements)
+    ! contains the coordinates of the regular distributed
+    ! inner-element vertices.
     !
     ! p_DfreeVertexCoordinates(nVerticesOnAllEdges + nVerticesOnAllElements + 1 ..
     !                          nVerticesOnAllEdges + nVerticesOnAllElements + nadditionalVertices)
-    ! contains the coordinates of any additional vertices that do not 
+    ! contains the coordinates of any additional vertices that do not
     ! belong to regular distributed vertices on edges or on elements.
     !
     ! This is an extended version of the old DCORMG array.
-    ! The DCORMG-array is originally designed to collect the midpoints 
-    ! that are associated to the edges. In the new style, this behaviour 
+    ! The DCORMG-array is originally designed to collect the midpoints
+    ! that are associated to the edges. In the new style, this behaviour
     ! is only a special case that happens if NVEDT=NMT is set.
-    ! The new style allowS p_DfreeVertexCoordinates to save all vertex 
+    ! The new style allowS p_DfreeVertexCoordinates to save all vertex
     ! coordinates that are not corner vertices. This includes regular distributed
-    ! vertices on edges (either midpoints or points at 1/3 and 2/3 of the edge, 
+    ! vertices on edges (either midpoints or points at 1/3 and 2/3 of the edge,
     ! or...), on elements (either midpoints or the 4 Gauss-points, or...)
     ! as well as additional vertices the user wants to be realized, that
     ! do not belong to any of the previous two groups.
@@ -1378,7 +1378,7 @@ module triangulation
     ! The numbers of regularly distributed vertices on edges/elements can
     ! be calculated directly with an appropriate formula. E.g. let us assume,
     ! we have n regularly distributed vertices on each edge (excluding the
-    ! starting/ending point). Then the corresponding vertices on 
+    ! starting/ending point). Then the corresponding vertices on
     ! egde E (=1..NMT) have the numbers:
     !       (NVT-1)+(NMT-1) + (E-1)*n + 1
     !    .. (NVT-1)+(NMT-1) + (E-1)*n + n
@@ -1398,18 +1398,18 @@ module triangulation
     
     ! Elements Adjacent to an Edge. Only 3D.
     ! Array containing the Elements Adjacent to an edge.
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtEdge3D = array(1..*) of integer
     ! p_IelementsAtEdge3D ( p_IelementsAtEdgeIdx3D(IVT)..p_IelementsAtEdgeIdx3D(IVT+1)-1 )
     ! contains the number of the adjacent element in an edge.
     integer        :: h_IelementsAtEdge3D = ST_NOHANDLE
     
-    ! Handle to 
+    ! Handle to
     !       p_IfacesAtEdgeIdx=array [1..NMT+1] of integer.
     ! Index array for p_IfacesAtEdge of length NMT+1 for describing the
     ! faces adjacent to an edge. For edge IMT, the array
     ! p_IfacesAtEdge contains the numbers of the faces around this
-    ! edge at indices 
+    ! edge at indices
     !     p_IfacesAtEdgeIdx(IMT)..p_IfacesAtEdgeIdx(IMT+1)-1.
     ! By subtracting
     !     p_IfacesAtEdgeIdx(IMT+1)-p_IfacesAtEdgeIdx(IMT)
@@ -1417,18 +1417,18 @@ module triangulation
     integer        :: h_IfacesAtEdgeIdx = ST_NOHANDLE
 
     ! Array containing the Faces Adjacent to an Edge.
-    ! Handle to 
+    ! Handle to
     !       p_IfacesAtEdge = array(1..*) of integer
     ! p_IfacesAtEdge ( p_IfacesAtEdgeIdx(IVT)..p_IfacesAtEdgeIdx(IVT+1)-1 )
     ! contains the number of the adjacent faces in an edge.
     integer        :: h_IfacesAtEdge    = ST_NOHANDLE
     
-    ! Handle to 
+    ! Handle to
     !       p_IfacesAtVertexIdx=array [1..NVT+1] of integer.
     ! Index array for p_IfacesAtVertex of length NVT+1 for describing the
     ! faces adjacent to an edge. For vertex IVT, the array
     ! p_IfacesAtVertex contains the numbers of the faces around this
-    ! vertex at indices 
+    ! vertex at indices
     !     p_IfacesAtVertexIdx(IVT)..p_IfacesAtVertexIdx(IVT+1)-1.
     ! By subtracting
     !     p_IfacesAtVertexIdx(IVT+1)-p_IfacesAtVertexIdx(IVT)
@@ -1436,49 +1436,49 @@ module triangulation
     integer        :: h_IfacesAtVertexIdx = ST_NOHANDLE
 
     ! Array containing the Faces Adjacent to a Vertex. Only 3D.
-    ! Handle to 
+    ! Handle to
     !       p_IfacesAtVertex = array(1..*) of integer
     ! p_IfacesAtVertex ( p_IfacesAtVertexIdx(IVT)..p_IfacesAtVertexIdx(IVT+1)-1 )
     ! contains the number of the adjacent faces in a vertex.
     integer        :: h_IfacesAtVertex    = ST_NOHANDLE
      
     ! Faces adjacent to an element. Only 3D.
-    ! Handle to 
+    ! Handle to
     !       p_IfacesAtElement = array [1..NNAE,1..NEL] of integer
     ! For each element the node numbers of the edges following the
     ! corner vertices in mathematically positive sense.
     ! This is the old KMID array.
-    ! On pure tethrahedral meshes, there is NNAE=4. 
+    ! On pure tethrahedral meshes, there is NNAE=4.
     ! On mixed or pure hexahedral meshes, there is NNAE=6. In this case,
     ! there is IedgesAtElement(5:6,.)=0 for a tethrahedral in a hexahedral mesh.
-    ! To be able to distinguish a number of an edge from a vertex number, 
+    ! To be able to distinguish a number of an edge from a vertex number,
     ! edges are numbered in the range NVT+NMT+1..NVT+NMT+NAT.
     integer        :: h_IfacesAtElement = ST_NOHANDLE
     
     ! Vertices Adjacent to a face.
-    ! Handle to 
+    ! Handle to
     !       p_IverticesAtFace = array [1..NVA,1..NAT] of integer
     ! For each face, the numbers of the vertices adjacent to that
     ! face. Ordered in mathematically positive sense when looking
     ! from the midpoint of the adjacent element with the smaller
     ! element number.
-    ! On pure tetrahedral meshes, there is NVA=3. On mixed or pure 
-    ! hexahedral meshes, there is NVA=4. In this case, there is 
+    ! On pure tetrahedral meshes, there is NVA=3. On mixed or pure
+    ! hexahedral meshes, there is NVA=4. In this case, there is
     ! IverticesAtFace(4,.)=0 for a tetrahedral in a hexahedral mesh.
-    integer        :: h_IverticesAtFace = ST_NOHANDLE 
+    integer        :: h_IverticesAtFace = ST_NOHANDLE
     
     ! Elements Adjacent to a Face. Only 3D.
-    ! Handle to 
+    ! Handle to
     !       p_IelementsAtEdge = array [1..2,1..NAT] of integer.
-    ! The numbers of the two elements adjacent to an edge IMT in 2D. 
+    ! The numbers of the two elements adjacent to an edge IMT in 2D.
     ! For boundary edges, p_IelementsOnEdge(2,IMT) is set to 0.
     ! This is the old KMEL array.
     integer        :: h_IelementsAtFace = ST_NOHANDLE
 
     ! Edges Adjacent to a Face. Only 3D.
-    ! Handle to 
+    ! Handle to
     !       p_IedgesAtFace = array [1..NNVA,1..NAT] of integer.
-    ! The numbers of the edges adjacent to a face in 3D. 
+    ! The numbers of the edges adjacent to a face in 3D.
     integer        :: h_IedgesAtFace = ST_NOHANDLE
     
     ! handle to an index array that is used to
@@ -1603,34 +1603,34 @@ module triangulation
   public :: tria_getElementsAtMacroEdge
   public :: tria_getElementsAtMacroVertex
   public :: tria_getVerticesAtFaceDirect
-  public :: tria_readRawTriangulation1D 
-  public :: tria_readRawTriangulation2D 
+  public :: tria_readRawTriangulation1D
+  public :: tria_readRawTriangulation2D
   public :: tria_readRawTriangulation3D
-  public :: tria_genRawBoundary1D 
+  public :: tria_genRawBoundary1D
   public :: tria_genRawBoundary2D
   public :: tria_genRawBoundary3D
-  public :: tria_genElementsAtVertex1D2D 
+  public :: tria_genElementsAtVertex1D2D
   public :: tria_genElementsAtVertex3D
-  public :: tria_genNeighboursAtElement1D 
-  public :: tria_genNeighboursAtElement2D 
+  public :: tria_genNeighboursAtElement1D
+  public :: tria_genNeighboursAtElement2D
   public :: tria_genNeighboursAtElement3D
-  public :: tria_genEdgesAtElement2D 
+  public :: tria_genEdgesAtElement2D
   public :: tria_genEdgesAtElement3D
   public :: tria_genFacesAtElement3D
-  public :: tria_genElementVolume1D 
+  public :: tria_genElementVolume1D
   public :: tria_genElementVolume2D
   public :: tria_genElementVolume3D
   public :: tria_sortBoundaryVertices1D2D
   public :: tria_genElementsAtBoundary1D2D
   public :: tria_genBoundaryVertexPos1D2D
-  public :: tria_genElementsAtEdge2D 
+  public :: tria_genElementsAtEdge2D
   public :: tria_genElementsAtEdge3D
-  public :: tria_genVerticesAtEdge2D 
+  public :: tria_genVerticesAtEdge2D
   public :: tria_genVerticesAtEdge3D
-  public :: tria_genEdgeNodalProperty2D 
+  public :: tria_genEdgeNodalProperty2D
   public :: tria_genEdgeNodalProperty3D
   public :: tria_genFaceNodalProperty3D
-  public :: tria_genEdgesAtBoundary2D 
+  public :: tria_genEdgesAtBoundary2D
   public :: tria_genEdgesAtBoundary3D
   public :: tria_genEdgeParameterValue2D
   public :: tria_genBoundaryEdgePos2D
@@ -1664,7 +1664,7 @@ contains
   ! This routine makes a copy of a triangulation structure in memory.
   ! The variable iduplicationFlag decides on which arrays are copied in memory
   ! and which not.
-  ! 
+  !
   ! By setting the corresponding bit in iduplicationFlag to 0, the array is
   ! duplicated in memory, and any change to the new array will not harm
   ! the original one.
@@ -1680,7 +1680,7 @@ contains
   
   ! Bitfield that decides which handles are a copy of another
   ! structure, thus which arrays are shared between the new
-  ! and the old structure. 
+  ! and the old structure.
   ! The bitfield contains a combination of TR_SHARE_xxxx canstants.
   ! Every triangulation information whose flag is set in iduplicationFlag
   ! is shared between rtriangulation and rbackupTriangulation.
@@ -1693,11 +1693,11 @@ contains
   ! OPTIONAL. Defines how to create the backup.
   ! = .FALSE.: Treat rbackupTriangulation as empty destination structure.
   !    If necessary, information in rbackupTriangulation is released.
-  !    rbackupTriangulation is rebuild according to rtriangulation 
-  !    and iduplicationFlag. 
+  !    rbackupTriangulation is rebuild according to rtriangulation
+  !    and iduplicationFlag.
   !    This is the standard setting if bupdate is not specified.
   ! = .TRUE. : Treat rbackupTriangulation as existing copy of rtriangulation
-  !    which has to be updated. Recover all vectors of rbackupTriangulation 
+  !    which has to be updated. Recover all vectors of rbackupTriangulation
   !    by those of rtriangulation.
   !    (I.e. those arrays which were duplicated by a previous
   !    call to iduplicationFlag with IUPD=0.)
@@ -1758,8 +1758,8 @@ contains
       rbackupTriangulation%nVerticesOnAllEdges    = rtriangulation%nVerticesOnAllEdges
       rbackupTriangulation%nverticesInEachElement = rtriangulation%nverticesInEachElement
       rbackupTriangulation%nverticesInAllElements = rtriangulation%nverticesInAllElements
-      rbackupTriangulation%nadditionalVertices    = rtriangulation%nadditionalVertices   
-      rbackupTriangulation%DboundingBoxMin        = rtriangulation%DboundingBoxMin   
+      rbackupTriangulation%nadditionalVertices    = rtriangulation%nadditionalVertices
+      rbackupTriangulation%DboundingBoxMin        = rtriangulation%DboundingBoxMin
       rbackupTriangulation%DboundingBoxMax        = rtriangulation%DboundingBoxMax
       
       ! Decide on IDPFLG which arrays to copy
@@ -1784,27 +1784,27 @@ contains
           rtriangulation%h_DvertexCoords, &
           rbackupTriangulation%h_DvertexCoords)
 
-    ! Bit  1: DCORMG 
+    ! Bit  1: DCORMG
     call checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
           rtriangulation%h_DfreeVertexCoordinates, &
           rbackupTriangulation%h_DfreeVertexCoordinates)
 
-    ! Bit  2: KVERT  
+    ! Bit  2: KVERT
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
           rtriangulation%h_IverticesAtElement, &
           rbackupTriangulation%h_IverticesAtElement)
 
-    ! Bit  3: KMID   
+    ! Bit  3: KMID
     call checkAndCopy(idupflag, TR_SHARE_IEDGESATELEMENT,&
           rtriangulation%h_IedgesAtElement, &
           rbackupTriangulation%h_IedgesAtElement)
     
-    ! Bit  4: KADJ   
+    ! Bit  4: KADJ
     call checkAndCopy(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
           rtriangulation%h_IneighboursAtElement, &
           rbackupTriangulation%h_IneighboursAtElement)
 
-    ! Bit  5: KVEL   
+    ! Bit  5: KVEL
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
           rtriangulation%h_IelementsAtVertexIdx, &
           rbackupTriangulation%h_IelementsAtVertexIdx)
@@ -1812,7 +1812,7 @@ contains
           rtriangulation%h_IelementsAtVertex, &
           rbackupTriangulation%h_IelementsAtVertex)
 
-    ! Bit  6: KMEL   
+    ! Bit  6: KMEL
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
           rtriangulation%h_IelementsAtEdge, &
           rbackupTriangulation%h_IelementsAtEdge)
@@ -1823,37 +1823,37 @@ contains
           rtriangulation%h_IelementsAtEdgeIdx3D, &
           rbackupTriangulation%h_IelementsAtEdgeIdx3D)
 
-    ! Bit  7: KNPR   
+    ! Bit  7: KNPR
     call checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
           rtriangulation%h_InodalProperty, &
           rbackupTriangulation%h_InodalProperty)
 
-    ! Bit  8: KVBD   
+    ! Bit  8: KVBD
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
           rtriangulation%h_IverticesAtBoundary, &
           rbackupTriangulation%h_IverticesAtBoundary)
 
-    ! Bit  9: KEBD   
+    ! Bit  9: KEBD
     call checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
           rtriangulation%h_IelementsAtBoundary, &
           rbackupTriangulation%h_IelementsAtBoundary)
 
-    ! Bit 10: KBCT   
+    ! Bit 10: KBCT
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
           rtriangulation%h_IboundaryCpIdx, &
           rbackupTriangulation%h_IboundaryCpIdx)
 
-    ! Bit 11: DVBDP  
+    ! Bit 11: DVBDP
     call checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
           rtriangulation%h_DvertexParameterValue, &
           rbackupTriangulation%h_DvertexParameterValue)
 
-    ! Bit 12: DMBDP  
+    ! Bit 12: DMBDP
     call checkAndCopy(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
           rtriangulation%h_DedgeParameterValue, &
           rbackupTriangulation%h_DedgeParameterValue)
 
-    ! Bit 13: KMBD   
+    ! Bit 13: KMBD
     call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
           rtriangulation%h_IedgesAtBoundary, &
           rbackupTriangulation%h_IedgesAtBoundary)
@@ -1861,22 +1861,22 @@ contains
           rtriangulation%h_IboundaryCpEdgesIdx, &
           rbackupTriangulation%h_IboundaryCpEdgesIdx)
 
-    ! Bit 14: KEAN   
+    ! Bit 14: KEAN
     call checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
           rtriangulation%h_IverticesAtEdge, &
           rbackupTriangulation%h_IverticesAtEdge)
 
-    ! Bit 15: KVBDI  
+    ! Bit 15: KVBDI
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
           rtriangulation%h_IboundaryVertexPos, &
           rbackupTriangulation%h_IboundaryVertexPos)
 
-    ! Bit 16: KMBDI  
+    ! Bit 16: KMBDI
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
           rtriangulation%h_IboundaryEdgePos, &
           rbackupTriangulation%h_IboundaryEdgePos)
 
-    ! Bit 17: DAREA  
+    ! Bit 17: DAREA
     call checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
           rtriangulation%h_DelementVolume, &
           rbackupTriangulation%h_DelementVolume)
@@ -1990,7 +1990,7 @@ contains
   
 !<description>
   ! This routine restores data of a triangulation structure. All
-  ! information arrays not shared between rbackupTriangulation and another 
+  ! information arrays not shared between rbackupTriangulation and another
   ! triangulation structure is copied (back) into the rtriangulation.
 !</description>
 
@@ -2016,32 +2016,32 @@ contains
     ! Call checkAndCopy for all the arrays. this will either copy the handle
     ! or copy the content of the array.
     
-    ! Bit  0: DCORVG 
+    ! Bit  0: DCORVG
     call checkAndCopy(idupflag, TR_SHARE_DVERTEXCOORDS,&
           rtriangulation%h_DvertexCoords, &
           rbackupTriangulation%h_DvertexCoords)
 
-    ! Bit  1: DCORMG 
+    ! Bit  1: DCORMG
     call checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
           rtriangulation%h_DfreeVertexCoordinates, &
           rbackupTriangulation%h_DfreeVertexCoordinates)
 
-    ! Bit  2: KVERT  
+    ! Bit  2: KVERT
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
           rtriangulation%h_IverticesAtElement, &
           rbackupTriangulation%h_IverticesAtElement)
 
-    ! Bit  3: KMID   
+    ! Bit  3: KMID
     call checkAndCopy(idupflag, TR_SHARE_IEDGESATELEMENT,&
           rtriangulation%h_IedgesAtElement, &
           rbackupTriangulation%h_IedgesAtElement)
     
-    ! Bit  4: KADJ   
+    ! Bit  4: KADJ
     call checkAndCopy(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
           rtriangulation%h_IneighboursAtElement, &
           rbackupTriangulation%h_IneighboursAtElement)
 
-    ! Bit  5: KVEL   
+    ! Bit  5: KVEL
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
           rtriangulation%h_IelementsAtVertexIdx, &
           rbackupTriangulation%h_IelementsAtVertexIdx)
@@ -2049,7 +2049,7 @@ contains
           rtriangulation%h_IelementsAtVertex, &
           rbackupTriangulation%h_IelementsAtVertex)
 
-    ! Bit  6: KMEL   
+    ! Bit  6: KMEL
     call checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
           rtriangulation%h_IelementsAtEdge, &
           rbackupTriangulation%h_IelementsAtEdge)
@@ -2060,17 +2060,17 @@ contains
           rtriangulation%h_IelementsAtEdgeIdx3D, &
           rbackupTriangulation%h_IelementsAtEdgeIdx3D)
 
-    ! Bit  7: KNPR   
+    ! Bit  7: KNPR
     call checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
           rtriangulation%h_InodalProperty, &
           rbackupTriangulation%h_InodalProperty)
 
-    ! Bit  8: KVBD   
+    ! Bit  8: KVBD
     call checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
           rtriangulation%h_IverticesAtBoundary, &
           rbackupTriangulation%h_IverticesAtBoundary)
 
-    ! Bit  9: KEBD   
+    ! Bit  9: KEBD
     call checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
           rtriangulation%h_IelementsAtBoundary, &
           rbackupTriangulation%h_IelementsAtBoundary)
@@ -2080,17 +2080,17 @@ contains
           rtriangulation%h_IboundaryCpIdx, &
           rbackupTriangulation%h_IboundaryCpIdx)
 
-    ! Bit 11: DVBDP  
+    ! Bit 11: DVBDP
     call checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
           rtriangulation%h_DvertexParameterValue, &
           rbackupTriangulation%h_DvertexParameterValue)
 
-    ! Bit 12: DMBDP  
+    ! Bit 12: DMBDP
     call checkAndCopy(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
           rtriangulation%h_DedgeParameterValue, &
           rbackupTriangulation%h_DedgeParameterValue)
 
-    ! Bit 13: KMBD   
+    ! Bit 13: KMBD
     call checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
           rtriangulation%h_IedgesAtBoundary, &
           rbackupTriangulation%h_IedgesAtBoundary)
@@ -2098,22 +2098,22 @@ contains
           rtriangulation%h_IboundaryCpEdgesIdx, &
           rbackupTriangulation%h_IboundaryCpEdgesIdx)
     
-    ! Bit 14: KEAN   
+    ! Bit 14: KEAN
     call checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
           rtriangulation%h_IverticesAtEdge, &
           rbackupTriangulation%h_IverticesAtEdge)
 
-    ! Bit 15: KVBDI  
+    ! Bit 15: KVBDI
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
           rtriangulation%h_IboundaryVertexPos, &
           rbackupTriangulation%h_IboundaryVertexPos)
 
-    ! Bit 16: KMBDI  
+    ! Bit 16: KMBDI
     call checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
           rtriangulation%h_IboundaryEdgePos, &
           rbackupTriangulation%h_IboundaryEdgePos)
 
-    ! Bit 17: DAREA  
+    ! Bit 17: DAREA
     call checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
           rtriangulation%h_DelementVolume, &
           rbackupTriangulation%h_DelementVolume)
@@ -2243,7 +2243,7 @@ contains
     idupflag = rtriangulation%iduplicationFlag
     
     ! Just release all allocated handles.
-    ! Take care of which handles are duplicates from other structures - 
+    ! Take care of which handles are duplicates from other structures -
     ! these must not be released, as we are not the owner of them!
     
     ! Bit  0: DCORVG is a copy of another structure
@@ -2417,7 +2417,7 @@ contains
   
     ! **********************************************************
     ! Release handle ihandle if bitfield ibitfield in idubFlag is not set.
-    ! Otherwise, ihandle is set to ST_NOHANDLE.    
+    ! Otherwise, ihandle is set to ST_NOHANDLE.
     subroutine checkAndRelease (idupFlag,ibitfield,ihandle)
     
     integer(I32), intent(in) :: ibitfield
@@ -2468,7 +2468,7 @@ contains
     idupflag = rtriangulation%iduplicationFlag
     
     ! Just release all allocated handles.
-    ! Take care of which handles are duplicates from other structures - 
+    ! Take care of which handles are duplicates from other structures -
     ! these must not be released, as we are not the owner of them!
     
     ! Bit  3: KMID   is a copy of another structure
@@ -2529,7 +2529,7 @@ contains
     call checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
           rtriangulation%h_DelementVolume)
 
-    ! Bit 18: IrefinementPatch  is a copy of another structure      
+    ! Bit 18: IrefinementPatch  is a copy of another structure
     call checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
            rtriangulation%h_IrefinementPatch)
     call checkAndRelease(idupflag, TR_SHARE_IREFINEMENTPATCH, &
@@ -2543,7 +2543,7 @@ contains
     call checkAndRelease(idupflag, TR_SHARE_IVERTICESATFACE, &
            rtriangulation%h_IverticesAtFace)
 
-    if (.not. bext) then           
+    if (.not. bext) then
       ! Bit 21: KAREA  is a copy of another structure
       call checkAndRelease(idupflag, TR_SHARE_IFACESATELEMENT, &
             rtriangulation%h_IFacesAtElement)
@@ -2585,7 +2585,7 @@ contains
     call checkAndRelease(idupflag,TR_SHARE_ITWISTINDEX,&
           rtriangulation%h_ItwistIndex)
            
-    if (.not. bext) then           
+    if (.not. bext) then
       ! Bit 29: ImacroNodalProperty  is a copy of another structure
       call checkAndRelease(idupflag, TR_SHARE_IMACRONODALPROPERTY,&
           rtriangulation%h_ImacroNodalProperty)
@@ -2595,7 +2595,7 @@ contains
 
     rtriangulation%DboundingBoxMin(:) = 0.0_DP
     rtriangulation%DboundingBoxMax(:) = 0.0_DP
-    if (.not. bext) then  
+    if (.not. bext) then
       rtriangulation%NMT = 0
       rtriangulation%NAT = 0
       rtriangulation%NNelAtVertex = 0
@@ -2615,7 +2615,7 @@ contains
   
     ! **********************************************************
     ! Release handle ihandle if bitfield ibitfield in idubFlag is not set.
-    ! Otherwise, ihandle is set to ST_NOHANDLE.    
+    ! Otherwise, ihandle is set to ST_NOHANDLE.
     subroutine checkAndRelease (idupFlag,ibitfield,ihandle)
     
     integer(I32), intent(in) :: ibitfield
@@ -2699,7 +2699,7 @@ contains
 
 !<input>
   ! OPTIONAL: Boundary structure that defines the domain.
-  ! If not specified, information about boundary vertices (e.g. 
+  ! If not specified, information about boundary vertices (e.g.
   ! parameter values of edge midpoints in 2D) are not initialised.
   type(t_boundary), intent(in), optional :: rboundary
 
@@ -2897,7 +2897,7 @@ contains
 !<description>
   ! Calculates and attaches a macro nodal property array to the
   ! triangulation rtriangulation. This information is propagated
-  ! upon refinement as part of an extended raw mesh to all finer 
+  ! upon refinement as part of an extended raw mesh to all finer
   ! meshes. It allows to determine the origin of vertices, edges and
   ! faces in relation to a 'coarse' mesh.
 !</description>
@@ -2952,13 +2952,13 @@ contains
 
 !<description>
   ! This routine refines the given mesh rsourceTriangulation according to
-  ! the 2-level ordering algorithm. The refined mesh is saved in 
+  ! the 2-level ordering algorithm. The refined mesh is saved in
   ! rdestTriangulation.
   !
   ! rsourceTriangulation must be a 'standard' mesh. The resulting refined
-  ! mesh in rdestTriangulation will be an 'extended raw' mesh (like as being read 
+  ! mesh in rdestTriangulation will be an 'extended raw' mesh (like as being read
   ! from a .TRI file, except if this generation is prevented by the
-  ! appropriate cflags setting), i.e. the caller must add further information 
+  ! appropriate cflags setting), i.e. the caller must add further information
   ! to it with routines like tria_initStandardMeshFromRaw!
 !</description>
 
@@ -3057,14 +3057,14 @@ contains
     subroutine tria_refineMesh2lv1D(rsourceTriangulation, rdestTriangulation)
 
     ! This routine refines the given 1D mesh rsourceTriangulation according to
-    ! the 2-level ordering algorithm. The refined mesh is saved in 
+    ! the 2-level ordering algorithm. The refined mesh is saved in
     ! rdestTriangulation. There will be no correction of boundary
     ! vertices. Boundary parameter values are not handled here!
 
     ! The source triangulation to be refined
     type(t_triangulation), intent(in) :: rsourceTriangulation
 
-    ! Destination triangulation structure that receives the refined mesh. 
+    ! Destination triangulation structure that receives the refined mesh.
     type(t_triangulation), intent(out) :: rdestTriangulation
     
       ! local variables
@@ -3090,7 +3090,7 @@ contains
       
       ! The 2-level ordering has the following properties:
       !
-      ! - Vertices in the coarse mesh are vertices in the fine mesh 
+      ! - Vertices in the coarse mesh are vertices in the fine mesh
       !   with the same number. Coordinates of coarse mesh vertices
       !   stay unchanged in the fine mesh.
       ! - Line midpoints in the coarse mesh become vertices in the
@@ -3272,7 +3272,7 @@ contains
     subroutine tria_refineMesh2lv2D(rsourceTriangulation, rdestTriangulation)
 
     ! This routine refines the given 2D mesh rsourceTriangulation according to
-    ! the 2-level ordering algorithm. The refined mesh is saved in 
+    ! the 2-level ordering algorithm. The refined mesh is saved in
     ! rdestTriangulation. There will be no correction of boundary
     ! vertices. Boundary parameter values are not handled here!
 
@@ -3315,7 +3315,7 @@ contains
       
       ! The 2-level ordering has the following properties:
       !
-      ! - Vertices in the coarse mesh are vertices in the fine mesh 
+      ! - Vertices in the coarse mesh are vertices in the fine mesh
       !   with the same number. Coordinates of coarse mesh vertices
       !   stay unchanged in the fine mesh.
       ! - Edges in the coarse mesh produce vertices in the fine mesh
@@ -3467,7 +3467,7 @@ contains
       
       end if
       
-      ! Ok, that was easy up to here. Now the interesting part: 
+      ! Ok, that was easy up to here. Now the interesting part:
       ! the two-level ordering.
       !
       ! Look at the following triangular and quad element with local
@@ -3624,7 +3624,7 @@ contains
       
         do iel = 1, rsourceTriangulation%NEL
       
-          ! Is that a triangle or a quad?  
+          ! Is that a triangle or a quad?
           if (p_IvertAtElementSource(TRIA_NVEQUAD2D,iel) .eq. 0) then
           
             ! Triangular element.
@@ -3727,10 +3727,10 @@ contains
                                     brecalcBoundaryCoords, rboundary)
 
     ! This routine refines the boundary definition of rsourceTriangulation
-    ! according to the 2-level ordering algorithm to generate a new 
-    ! IverticesAtBoundary. 
-    ! If rboundary is specified, the parameter values of the boundary vertices are 
-    ! updated and the coordinates of the boundary points are corrected according 
+    ! according to the 2-level ordering algorithm to generate a new
+    ! IverticesAtBoundary.
+    ! If rboundary is specified, the parameter values of the boundary vertices are
+    ! updated and the coordinates of the boundary points are corrected according
     ! to the analytic boundarty. the boundary vertices are not sorted for their
     ! parameter value!
 
@@ -3772,8 +3772,8 @@ contains
 
       ! The number of boundary vertices is doubled.
       rdestTriangulation%NVBD = 2*rsourceTriangulation%NVBD
-      rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
-      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT 
+      rdestTriangulation%NBCT = rsourceTriangulation%NBCT
+      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT
           
       ! Create new arrays in the fine grid for the vertices and indices.
       call storage_new('tria_refineBdry2lv2D', 'KVBD',&
@@ -3888,7 +3888,7 @@ contains
         
         ! The last entry in p_IboundaryCpIdx does not have to be changed since
         ! it counts the total number of vertices on the boundary -- which
-        ! has not changed.        
+        ! has not changed.
         
         ! If the analytic boundary is given, compute the coordinates of the
         ! boundary vertices from that.
@@ -3903,7 +3903,7 @@ contains
           ! Loop through the boundary points and calculate the correct
           ! coordinates. Points that are not on the physical bondary but
           ! only on the boundary of a subdomain (identified by parameter value -1)
-          ! must stay where they are. 
+          ! must stay where they are.
           do ibct = 1, rdestTriangulation%NBCT
             do ivbd = p_IboundaryCpIdxDest(ibct), p_IboundaryCpIdxDest(ibct+1)-1
               if (p_DvertParamsDest(ivbd) .ge. 0.0_DP) then
@@ -3925,7 +3925,7 @@ contains
     subroutine tria_averageMidpoints2D(rsourceTriangulation,rdestTriangulation)
 
     ! The follwing function corrects the grid on domains where non-linear/
-    ! curved boundary segments are used. 
+    ! curved boundary segments are used.
     ! When a boundary segment of the domain is a line, new boundary nodes
     ! are automatically positioned on the boundary. But when the boundary
     ! is a curve, a new boundary vertex is not automatically on the
@@ -3934,9 +3934,9 @@ contains
     ! procedure can lead to very anisotropic elements near the boundary,
     ! depending on how sharp the curved boundary is.
     !
-    ! tria_averageMidpoints2D now tries to reduce these effects of anisotropy. 
-    ! The element midpoint of the coarser element (which is at the same time 
-    ! the vertex where all the four finer elements meet) is taken as the 
+    ! tria_averageMidpoints2D now tries to reduce these effects of anisotropy.
+    ! The element midpoint of the coarser element (which is at the same time
+    ! the vertex where all the four finer elements meet) is taken as the
     ! average of the four edge midpoints that arise from natural refinement.
 
     ! The source triangulation specifying the coarse mesh
@@ -3958,12 +3958,12 @@ contains
       integer :: ipt
 
       ! The approach is simple:
-      !    
+      !
       ! o----------o----------o
       ! \          \          |
-      ! |\         \          | 
+      ! |\         \          |
       ! | \      -> \         |
-      ! |  o---------o--------o   Averaging of the element midpoint by 
+      ! |  o---------o--------o   Averaging of the element midpoint by
       ! | /      -> /         |   interpolation
       ! |/         /          |
       ! /          /          |
@@ -4010,7 +4010,7 @@ contains
           ! Ok, that is a quad. The midpoint must be recalculated.
           ! We do this based on the 'edge midpoints' which are now
           ! vertices in the fine mesh. The coordinates of these points
-          ! may differ from the coordinates calculated by linear 
+          ! may differ from the coordinates calculated by linear
           ! interpolation due to boundary adjustment!
           dx = 0.0_DP
           dy = 0.0_DP
@@ -4020,7 +4020,7 @@ contains
             dy = dy + p_DvertexCoordsFine(2,ipt)
           end do
           
-          ! Save the vertex coordinates. 
+          ! Save the vertex coordinates.
           p_DvertexCoordsFine(1,ivtoffset) = 0.25_DP*dx
           p_DvertexCoordsFine(2,ivtoffset) = 0.25_DP*dy
         
@@ -4097,7 +4097,7 @@ contains
 
       ! The 2-level ordering has the following properties:
       !
-      ! - Vertices in the coarse mesh are vertices in the fine mesh 
+      ! - Vertices in the coarse mesh are vertices in the fine mesh
       !   with the same number. Coordinates of coarse mesh vertices
       !   stay unchanged in the fine mesh.
       ! - Edges in the coarse mesh produce vertices in the fine mesh
@@ -4165,7 +4165,7 @@ contains
       ! Tetrahedra, hexahedra and prisms are refined into 8 elements of
       ! the same type so that no distinction is required in this phase
       ! of the refinement process. Pyramids are refined into 6 pyramids
-      ! and 4 tetrahedral elements so that we have to consider this 
+      ! and 4 tetrahedral elements so that we have to consider this
       ! special case separately and compute all data step-by-step.
       if (npyrs .eq. 0) then
         
@@ -4184,7 +4184,7 @@ contains
         end do
         
         ! assign the other element numbers
-        ! the number for an element is iel1 = rsourceTriangulation%NEL+7*(iel-1)+1  
+        ! the number for an element is iel1 = rsourceTriangulation%NEL+7*(iel-1)+1
         do iel = NELsrc+1, rdestTriangulation%NEL
           p_IcoarseGridElement(iel) = (iel-NELsrc-1)/7 + 1
         end do
@@ -4211,7 +4211,7 @@ contains
           
           p_IrefinementPatchIdx(1+iel) = idxoffset
 
-          ! The coarse grid element number of element 
+          ! The coarse grid element number of element
           ! 1..NEL(coarse) stays the same.
           p_IcoarseGridElement(iel) = iel
 
@@ -4295,7 +4295,7 @@ contains
         p_DcoordDest(2,NVTsrc+imt) = &
             0.5_DP * ( p_DcoordSource (2,ivt1) + p_DcoordSource (2,ivt2) )
         p_DcoordDest(3,NVTsrc+imt) = &
-            0.5_DP * ( p_DcoordSource (3,ivt1) + p_DcoordSource (3,ivt2) )     
+            0.5_DP * ( p_DcoordSource (3,ivt1) + p_DcoordSource (3,ivt2) )
       end do
       
       ! Initialise the offset for vertex numbers
@@ -4306,7 +4306,7 @@ contains
       ! the single quadrilateral bottom face of pyramidal elements
       do iae = 1, rsourceTriangulation%NAT
 
-        ! Check if the current face is quadrilateral, 
+        ! Check if the current face is quadrilateral,
         ! that is, it features four corner vertices
         if (p_IverticesAtFace(4,iae) .eq. 0) cycle
 
@@ -4319,7 +4319,7 @@ contains
         ! Initialize vertex coordinates
         p_DcoordDest(:,ivtoffset) = 0.0_DP
         
-        ! Loop over all four corner vertices and 
+        ! Loop over all four corner vertices and
         ! sum up the x-, y-, and z-coordinates
         do ive = 1, 4
           ! Get global vertex number
@@ -4396,7 +4396,7 @@ contains
         select case(nve)
 
         case (TRIA_NVEHEXA3D)
-          !========================================================= 
+          !=========================================================
           ! Increase number of hexahedral elements
           ihex = ihex+1
           
@@ -4442,12 +4442,12 @@ contains
           p_IvertAtElementDest(1,iel) = p_IvertAtElementSource(1,iel)
           ! the index of the 1st edge is the index of the 2nd vertex
           p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource(1,iel)+NVTsrc
-          ! the midpoint of face A is the index of the 3rd vertex 
+          ! the midpoint of face A is the index of the 3rd vertex
           p_IvertAtElementDest(3,iel) = midpointFaceA
           ! the index of the 4th edge is the index of the 4th vertex
           p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource(4,iel)+NVTsrc
           
-          ! the index of the 5th edge is the index of the 5th vertex     
+          ! the index of the 5th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel) = p_IedgesAtElementSource(5,iel)+NVTsrc
           ! the index of the midpoint of face B is the index of the 6th vertex
           p_IvertAtElementDest(6,iel) = midpointFaceB
@@ -4468,7 +4468,7 @@ contains
           ! the index of the 1st edge is the index of the 4th vertex
           p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource(1,iel)+NVTsrc
           
-          ! the index of the 6th edge is the index of the 5th vertex     
+          ! the index of the 6th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel1) = p_IedgesAtElementSource(6,iel)+NVTsrc
           ! the index of the midpoint of face C is the index of the 6th vertex
           p_IvertAtElementDest(6,iel1) = midpointFaceC
@@ -4489,7 +4489,7 @@ contains
           ! the index of the 2nd edge is the index of the 4th vertex
           p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource(2,iel)+NVTsrc
           
-          ! the index of the 7th edge is the index of the 5th vertex     
+          ! the index of the 7th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel2) = p_IedgesAtElementSource(7,iel)+NVTsrc
           ! the index of the midpoint of face D is the index of the 6th vertex
           p_IvertAtElementDest(6,iel2) = midpointFaceD
@@ -4510,7 +4510,7 @@ contains
           ! the index of the 3rd edge is the index of the 4th vertex
           p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource(3,iel)+NVTsrc
           
-          ! the index of the 8th edge is the index of the 5th vertex  
+          ! the index of the 8th edge is the index of the 5th vertex
           p_IvertAtElementDest(5,iel3) = p_IedgesAtElementSource(8,iel)+NVTsrc
           ! the index of the midpoint of face E is the index of the 6th vertex
           p_IvertAtElementDest(6,iel3) = midpointFaceE
@@ -4621,7 +4621,7 @@ contains
           
 
         case (TRIA_NVEPRIS3D)
-          !========================================================= 
+          !=========================================================
           ! Determine elements numbers of subelements ...
           iel1 = ieloffset+1
           iel2 = ieloffset+2
@@ -4788,7 +4788,7 @@ contains
 
 
         case (TRIA_NVEPYR3D)
-          !========================================================= 
+          !=========================================================
           ! Determine elements numbers of subelements ...
           iel1 = ieloffset+1
           iel2 = ieloffset+2
@@ -4814,7 +4814,7 @@ contains
           p_IrefinementPatch(idx+8) = iel8
           p_IrefinementPatch(idx+9) = iel9
 
-          ! The vertex number of midpoints located on the 
+          ! The vertex number of midpoints located on the
           ! element faces is the old face number +NVT+NMT
           midpointFaceA = p_ImidpointAtFace(p_IfacesAtElement(1,iel))
 
@@ -4827,7 +4827,7 @@ contains
           p_IvertAtElementDest(1,iel) = p_IvertAtElementSource(1,iel)
           ! the index of the 1st edge is the index of the 2nd vertex
           p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource(1,iel)+NVTsrc
-          ! the midpoint of face A is the index of the 3rd vertex 
+          ! the midpoint of face A is the index of the 3rd vertex
           p_IvertAtElementDest(3,iel) = midpointFaceA
           ! the index of the 4th edge is the index of the 4th vertex
           p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource(4,iel)+NVTsrc
@@ -4954,7 +4954,7 @@ contains
           
           
         case (TRIA_NVETET3D)
-          !========================================================= 
+          !=========================================================
           ! Determine elements numbers of subelements ...
           iel1 = ieloffset+1
           iel2 = ieloffset+2
@@ -5123,8 +5123,8 @@ p_InodalPropertyDest = -4711
       rdestTriangulation%NNAE = rsourceTriangulation%NNAE
       rdestTriangulation%NNVA = rsourceTriangulation%NNVA
       
-      ! In principle, this subroutine does not refine the boundary. 
-      ! However, the number of quadrilaterals at the boundary has 
+      ! In principle, this subroutine does not refine the boundary.
+      ! However, the number of quadrilaterals at the boundary has
       ! already been compute so that is it expedient to set NVBD here.
       rdestTriangulation%NVBD =  rsourceTriangulation%NVBD + &
                                  rsourceTriangulation%NMBD + nquads
@@ -5139,8 +5139,8 @@ p_InodalPropertyDest = -4711
     subroutine tria_refineBdry2lv3D(rsourceTriangulation, rdestTriangulation, rboundary)
       
       ! This routine refines the boundary definition of rsourceTriangulation
-      ! according to the 2-level ordering algorithm to generate a new 
-      ! IverticesAtBoundary. 
+      ! according to the 2-level ordering algorithm to generate a new
+      ! IverticesAtBoundary.
       
       ! The source triangulation to be refined
       type(t_triangulation), intent(in) :: rsourceTriangulation
@@ -5187,15 +5187,15 @@ p_InodalPropertyDest = -4711
           rsourceTriangulation%h_IverticesAtFace, p_IverticesAtFace)
       
       ! Set number of boundary components
-      rdestTriangulation%NBCT      = rsourceTriangulation%NBCT 
-      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT 
+      rdestTriangulation%NBCT      = rsourceTriangulation%NBCT
+      rdestTriangulation%NblindBCT = rsourceTriangulation%NblindBCT
           
       ! Create new arrays in the fine grid for the vertices and indices.
       call storage_new ('tria_refineBdry2lv3D', 'KVBD', rdestTriangulation%NVBD, &
           ST_INT, rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
       
       call storage_getbase_int(&
-          rdestTriangulation%h_IverticesAtBoundary, p_IvertAtBoundartyDest) 
+          rdestTriangulation%h_IverticesAtBoundary, p_IvertAtBoundartyDest)
       
       call storage_getbase_int(&
           rdestTriangulation%h_InodalProperty, p_InodalPropertyDest)
@@ -5223,7 +5223,7 @@ p_InodalPropertyDest = -4711
       p_IboundaryCpIdxDest(1) = 1
       
       ! Assign the indices of the boundary vertices:
-      ! Step 1: save the number of vertices in each boundary 
+      ! Step 1: save the number of vertices in each boundary
       !         component in p_IboundaryCpIdx(2:NBCT+1)
       do ivt = 1, rdestTriangulation%NVT
         if(p_InodalPropertyDest(ivt) .ne. 0) then
@@ -5258,18 +5258,18 @@ p_InodalPropertyDest = -4711
   ! 1.) Release the DvertexCoords array in rtriangulationCoarse.
   ! 2.) Shares the DvertexCoords array in rtriangulationCoarse with that one
   !     in rtriangulationFine
-  ! This technique is possible since the vertex coordinates of the 
-  ! (rtriangulationCoarse%) NVT vertices are the same in the coarse as well 
+  ! This technique is possible since the vertex coordinates of the
+  ! (rtriangulationCoarse%) NVT vertices are the same in the coarse as well
   ! as in the fine mesh by definition of the 2-level ordering!
   !
   ! The effect is the following: 1.) It saves memory (as the
   ! vertex coordinates exist only once) and 2.) every change of the coordinates
-  ! in the fine mesh b the application will also affect the coordinates 
+  ! in the fine mesh b the application will also affect the coordinates
   ! on the coarse mesh and vice versa!
   !
-  ! Example: 
+  ! Example:
   !
-  !   do I=NLMAX-1,NLMIN,-1             
+  !   do I=NLMAX-1,NLMIN,-1
   !     call tria_compress2LevelOrdHierarchy (rtria(i+1),rtria(i))
   !   end do
   !
@@ -5296,7 +5296,7 @@ p_InodalPropertyDest = -4711
     ! as it is not a copy of someone else...
     if (iand(rtriangulationCoarse%iduplicationFlag,TR_SHARE_DVERTEXCOORDS) .eq. 0) then
       call storage_free (rtriangulationCoarse%h_DvertexCoords)
-    end if 
+    end if
     
     ! Share the same handle.
     rtriangulationCoarse%h_DvertexCoords = rtriangulationFine%h_DvertexCoords
@@ -5317,13 +5317,13 @@ p_InodalPropertyDest = -4711
 
 !<description>
   ! This routine refines the given mesh rsourceTriangulation according to
-  ! the 2-level ordering algorithm nfine times. The refined mesh is saved in 
+  ! the 2-level ordering algorithm nfine times. The refined mesh is saved in
   ! rdestTriangulation.
   !
   ! rtriangulation can be either a 'raw' mesh (as read from a .TRI
   ! file) or a 'standard' mesh. The mesh is overwritten by the refined
-  ! one. The resulting mesh will be a 'raw' mesh, i.e. the caller must 
-  ! add further information to it with routines like 
+  ! one. The resulting mesh will be a 'raw' mesh, i.e. the caller must
+  ! add further information to it with routines like
   ! tria_initStandardMeshFromRaw!
 !</description>
 
@@ -5433,7 +5433,7 @@ p_InodalPropertyDest = -4711
       end do
       
     case (NDIM3D)
-      do ifine = 1, nfine     
+      do ifine = 1, nfine
         
         if (rtriangulation%h_IelementsAtVertex .eq. ST_NOHANDLE) &
             call tria_genElementsAtVertex3D (rtriangulation)
@@ -5454,19 +5454,19 @@ p_InodalPropertyDest = -4711
             call tria_genFacesAtElement3D (rtriangulation)
         
         if (rtriangulation%h_IverticesAtFace .eq. ST_NOHANDLE) &
-            call tria_genVerticesAtFace3D (rtriangulation)          
+            call tria_genVerticesAtFace3D (rtriangulation)
         
         if (rtriangulation%h_IelementsAtFace .eq. ST_NOHANDLE) &
-            call tria_genElementsAtFace3D (rtriangulation)             
+            call tria_genElementsAtFace3D (rtriangulation)
         
         if (rtriangulation%h_IfacesAtBoundary .eq. ST_NOHANDLE) &
-            call tria_genFacesAtBoundary3D (rtriangulation)             
+            call tria_genFacesAtBoundary3D (rtriangulation)
         
         if (rtriangulation%h_IedgesAtFace .eq. ST_NOHANDLE) &
-            call tria_genEdgesAtFace3D (rtriangulation)             
+            call tria_genEdgesAtFace3D (rtriangulation)
         
         if (rtriangulation%h_IfacesAtEdge .eq. ST_NOHANDLE) &
-            call tria_genFacesAtEdge3D (rtriangulation)             
+            call tria_genFacesAtEdge3D (rtriangulation)
         
         if (rtriangulation%h_IedgesAtBoundary .eq. ST_NOHANDLE) &
             call tria_genEdgesAtBoundary3D (rtriangulation)
@@ -5497,14 +5497,14 @@ p_InodalPropertyDest = -4711
       integer, dimension(:), pointer :: p_InodalProperty
       
       ! Calculate the number of nodes in the mesh.
-      ! This is: #vertices 
+      ! This is: #vertices
       !         +#edges (as every edge generates a new vertex)
       !         +#quads (as every quad generates a midpoint)
       nnodes = rtriangulation%NVT + rtriangulation%NMT + &
           rtriangulation%InelOfType(TRIA_NVEQUAD2D)
           
       ! Reallocate the memory if necessary.
-      ! Copy the old content as we must not destroy the old nodal 
+      ! Copy the old content as we must not destroy the old nodal
       ! property tags of the vertices.
       ! New elements are filled with zero = specify inner vertices.
       call storage_getsize (rtriangulation%h_InodalProperty, isize)
@@ -5661,7 +5661,7 @@ p_InodalPropertyDest = -4711
     ! TRI_FMT_STANDARD: Standard TRI file format, compatible to FEAT1.
     !    Vertex coordinates of boundary vertices are in 2D replaced
     !    by parameter values.
-    ! TRI_FMT_NOPARAMETRISATION: Standard TRI file format, but the 
+    ! TRI_FMT_NOPARAMETRISATION: Standard TRI file format, but the
     !    vertex coordinates are exported 'as they are', not as parameter
     !    values.
     ! If not specified, TRI_FMT_STANDARD is assumed.
@@ -5709,7 +5709,7 @@ p_InodalPropertyDest = -4711
       ! TRI_FMT_STANDARD: Standard TRI file format, compatible to FEAT1.
       !    Vertex coordinates of boundary vertices are in 2D replaced
       !    by parameter values.
-      ! TRI_FMT_NOPARAMETRISATION: Standard TRI file format, but the 
+      ! TRI_FMT_NOPARAMETRISATION: Standard TRI file format, but the
       !    vertex coordinates are exported 'as they are', not as parameter
       !    values.
       ! If not specified, TRI_FMT_STANDARD is assumed.
@@ -6101,8 +6101,8 @@ p_InodalPropertyDest = -4711
   subroutine tria_searchBoundaryNode(inode, rtriangulation, iindex)
 
 !<description>
-  ! This routine accepts as inode a vertex or an edge number of a boundary 
-  ! vertex/edge (1..NVT=vertex, NVT+1..NVT+NMT=edge) and determines the 
+  ! This routine accepts as inode a vertex or an edge number of a boundary
+  ! vertex/edge (1..NVT=vertex, NVT+1..NVT+NMT=edge) and determines the
   ! appropriate index of that vertex in the IverticesAtBoundary/
   ! IedgesAtBoundary-array.
 !</description>
@@ -6294,7 +6294,7 @@ p_InodalPropertyDest = -4711
     ! Afterwards, the array may have this form:
     !   0 0 0 0 0 1 1 1 1 1 2 3 3 3 3 4 ...
     ! The number changes in that moment, where a vertex is 'new'.
-    ! This is then a mapping from the 'global' vertices to the 
+    ! This is then a mapping from the 'global' vertices to the
     ! subdomain vertices. We will later access only a very small
     ! part of that array, namely the part ' 1 2 3 4 ...', forgetting
     ! the intermediate 'repetition' of the numbers. Nevertheless,
@@ -6334,7 +6334,7 @@ p_InodalPropertyDest = -4711
     call storage_getbase_double2D(&
         rtriaDest%h_DvertexCoords,p_DvertexCoordsDest)
 
-    ! Allocate memory for InodalProperty 
+    ! Allocate memory for InodalProperty
     call storage_new ('tria_generateSubdomain', 'KNPR', &
         rtriaDest%NVT, ST_INT, &
         rtriaDest%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -6369,7 +6369,7 @@ p_InodalPropertyDest = -4711
     end do
 
     ! Initialise InelOfType.
-    !    
+    !
     ! Loop through the elements and determine how many elements
     ! of each element type we have.
     rtriaDest%InelOfType(:) = 0
@@ -6408,7 +6408,7 @@ p_InodalPropertyDest = -4711
       call storage_getbase_int(rtriaDest%h_IedgesAtVertexIdx, &
           p_IedgesAtVertexIdx)
       call storage_getbase_int(rtriaDest%h_IedgesAtVertex, &
-          p_IedgesAtVertex)  
+          p_IedgesAtVertex)
       
       vertexloop: do ivt=1,rtriaDest%NVT
       
@@ -6437,7 +6437,7 @@ p_InodalPropertyDest = -4711
       call genRawBoundary2D (rtriaDest)
 
       ! If we have boundary information, we can extract the parameter values
-      ! of the vertices on the physical boundary.    
+      ! of the vertices on the physical boundary.
       if (present(rboundary)) then
 
         ! Allocate memory for DvertexParameterValue
@@ -6491,7 +6491,7 @@ p_InodalPropertyDest = -4711
         ! and that way assign them to the 'blind' boundary component.
         
         call storage_getbase_int(rtriaDest%h_IboundaryCpIdx, &
-            p_IboundaryCpIdx)  
+            p_IboundaryCpIdx)
         
         allocate(IverticesAtBoundaryTmp(size(p_IverticesAtBoundary)))
         ivtdest = 1
@@ -6580,7 +6580,7 @@ p_InodalPropertyDest = -4711
           do ive = 1,ubound(p_IverticesAtElementSrc,1)
             if (p_IverticesAtElementSrc(ive,iel) .ne. 0) then
               p_ImacroNodalPropertyDest(p_IverticesAtElementSrc(ive,iel)) = &
-                  p_ImacroNodalPropertySrc(p_IverticesAtElementDest(ive,Ielements(iel))) 
+                  p_ImacroNodalPropertySrc(p_IverticesAtElementDest(ive,Ielements(iel)))
             end if
           end do
           
@@ -6601,17 +6601,17 @@ p_InodalPropertyDest = -4711
             if (p_IverticesAtElementSrc(ive,iel) .ne. 0) then
               ! Vertices
               p_ImacroNodalPropertyDest(p_IverticesAtElementDest(ive,iel)) = &
-                  p_ImacroNodalPropertySrc(p_IverticesAtElementSrc(ive,Ielements(iel))) 
+                  p_ImacroNodalPropertySrc(p_IverticesAtElementSrc(ive,Ielements(iel)))
                   
               ! Edges
               p_ImacroNodalPropertyDest(p_IedgesAtElementDest(ive,iel)+rtriaDest%NVT) = &
-                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))+rtriangulation%NVT) 
+                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))+rtriangulation%NVT)
             end if
           end do
           
           ! Elements
           p_ImacroNodalPropertyDest(rtriaDest%NVT+rtriaDest%NMT+iel) = &
-              p_ImacroNodalPropertySrc(rtriangulation%NVT+rtriangulation%NMT+Ielements(iel)) 
+              p_ImacroNodalPropertySrc(rtriangulation%NVT+rtriangulation%NMT+Ielements(iel))
               
         end do
           
@@ -6631,11 +6631,11 @@ p_InodalPropertyDest = -4711
         ! entry to the new mesh.
         do iel=1,rtriaDest%NEL
 
-          ! Vertices          
+          ! Vertices
           do ive = 1,ubound(p_IverticesAtElementSrc,1)
             if (p_IverticesAtElementSrc(ive,iel) .ne. 0) then
               p_ImacroNodalPropertyDest(p_IverticesAtElementDest(ive,iel)) = &
-                  p_ImacroNodalPropertySrc(p_IverticesAtElementSrc(ive,Ielements(iel))) 
+                  p_ImacroNodalPropertySrc(p_IverticesAtElementSrc(ive,Ielements(iel)))
             end if
           end do
 
@@ -6643,7 +6643,7 @@ p_InodalPropertyDest = -4711
           do ive = 1,ubound(p_IedgesAtElementSrc,1)
             if (p_IedgesAtElementSrc(ive,iel) .ne. 0) then
               p_ImacroNodalPropertyDest(p_IedgesAtElementDest(ive,iel)+rtriaDest%NVT) = &
-                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))+rtriangulation%NVT) 
+                  p_ImacroNodalPropertySrc(p_IedgesAtElementSrc(ive,Ielements(iel))+rtriangulation%NVT)
             end if
           end do
 
@@ -6652,14 +6652,14 @@ p_InodalPropertyDest = -4711
             if (p_IfacesAtElementSrc(ive,iel) .ne. 0) then
               p_ImacroNodalPropertyDest(p_IfacesAtElementDest(ive,iel)+rtriaDest%NVT+rtriaDest%NMT) = &
                   p_ImacroNodalPropertySrc(p_IfacesAtElementSrc(ive,Ielements(iel))&
-                    +rtriangulation%NVT+rtriangulation%NMT) 
+                    +rtriangulation%NVT+rtriangulation%NMT)
             end if
           end do
           
           ! Elements
           p_ImacroNodalPropertyDest(rtriaDest%NVT+rtriaDest%NMT+rtriaDest%NAT+iel) = &
               p_ImacroNodalPropertySrc(&
-                  rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NAT+Ielements(iel)) 
+                  rtriangulation%NVT+rtriangulation%NMT+rtriangulation%NAT+Ielements(iel))
               
         end do
         
@@ -6674,7 +6674,7 @@ p_InodalPropertyDest = -4711
     subroutine genRawBoundary2D (rtriangulation)
 
     ! Auxiliary routine.
-    ! This routine initialises basic boundary arrays and cleans up 
+    ! This routine initialises basic boundary arrays and cleans up
     ! a basic triangulation. That means:
     ! -> NVBD is calculated
     ! -> IboundaryCpIdx is created and generated
@@ -6738,7 +6738,7 @@ p_InodalPropertyDest = -4711
       ! Perform a first loop over all vertices to check which are on the
       ! boundary. Count them. This way, we at first set up the boundary
       ! component index vector p_IboundaryCpIdx.
-      ! In this first step, we save the number of vertices on each 
+      ! In this first step, we save the number of vertices on each
       ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
@@ -6763,7 +6763,7 @@ p_InodalPropertyDest = -4711
       
       ! Shift the p_IboundaryCpIdx array by one position. That is a little trick in
       ! the use of p_IboundaryCpIdx!
-      ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+      ! Imagine, we have 3 boundary components with 8,6 and 4 edges.
       ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
       !
       !         i            1   2   3   4
@@ -6793,7 +6793,7 @@ p_InodalPropertyDest = -4711
       ! p_IboundaryCpIdx(i)  1   9  15  19
       !
       ! Ok, let us catch the actual vertices.
-      !      
+      !
       ! Check all vertices to find out, which vertices are on the boundary.
       do ivt = 1, rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
@@ -6909,7 +6909,7 @@ p_InodalPropertyDest = -4711
     call storage_getbase_int2D(&
         rtriangulation%h_IverticesAtElement,p_IverticesAtElementSrc)
 
-    ! Copy the first part of IverticesAtElement to the destination array; 
+    ! Copy the first part of IverticesAtElement to the destination array;
     ! old cells are new cells.
     do j=1,rtriangulation%NEL
       do i=1,ubound(p_IverticesAtElementSrc,1)
@@ -6970,7 +6970,7 @@ p_InodalPropertyDest = -4711
     call storage_getbase_double2D(&
         rtriaDest%h_DvertexCoords,p_DvertexCoordsDest)
     
-    ! Copy the first part of DvertexCoords to the destination array; 
+    ! Copy the first part of DvertexCoords to the destination array;
     ! old vertices are new vertices.
     do j=1,rtriangulation%NVT
       do i=1,ubound(p_DvertexCoordsSrc,1)
@@ -6990,7 +6990,7 @@ p_InodalPropertyDest = -4711
       
     end if
     
-    ! Allocate memory for InodalProperty 
+    ! Allocate memory for InodalProperty
     call storage_new ('tria_generateSubdomain', 'KNPR', &
         rtriaDest%NVT, ST_INT, &
         rtriaDest%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -7016,7 +7016,7 @@ p_InodalPropertyDest = -4711
     end if
     
     ! Initialise InelOfType.
-    !    
+    !
     ! Loop through the elements and determine how many elements
     ! of each element type we have.
     rtriaDest%InelOfType(:) = 0
@@ -7034,7 +7034,7 @@ p_InodalPropertyDest = -4711
     call genRawBoundary2D (rtriaDest)
   
     ! If we have boundary information, we can extract the parameter values
-    ! of the vertices on the physical boundary.    
+    ! of the vertices on the physical boundary.
     if (rtriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE) then
 
       ! Allocate memory for DvertexParameterValue
@@ -7060,7 +7060,7 @@ p_InodalPropertyDest = -4711
       NVT = rtriangulation%NVT
 
       ! Create temp array that holds the parameter values for all new
-      ! vertices on the boundary and is undefined for all other new vertices.      
+      ! vertices on the boundary and is undefined for all other new vertices.
       call storage_new ('tria_attachCells', 'DvertParamTmp', ipoint-NVT, &
           ST_DOUBLE, h_DvertParamTmp, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double (h_DvertParamTmp,p_DvertParamTmp)
@@ -7136,7 +7136,7 @@ p_InodalPropertyDest = -4711
     subroutine genRawBoundary2D (rtriangulation)
 
     ! Auxiliary routine.
-    ! This routine initialises basic boundary arrays and cleans up 
+    ! This routine initialises basic boundary arrays and cleans up
     ! a basic triangulation. That means:
     ! -> NVBD is calculated
     ! -> IboundaryCpIdx is created and generated
@@ -7200,7 +7200,7 @@ p_InodalPropertyDest = -4711
       ! Perform a first loop over all vertices to check which are on the
       ! boundary. Count them. This way, we at first set up the boundary
       ! component index vector p_IboundaryCpIdx.
-      ! In this first step, we save the number of vertices on each 
+      ! In this first step, we save the number of vertices on each
       ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
@@ -7224,7 +7224,7 @@ p_InodalPropertyDest = -4711
       
       ! Shift the p_IboundaryCpIdx array by one position. That is a little trick in
       ! the use of p_IboundaryCpIdx!
-      ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+      ! Imagine, we have 3 boundary components with 8,6 and 4 edges.
       ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
       !
       !         i            1   2   3   4
@@ -7254,7 +7254,7 @@ p_InodalPropertyDest = -4711
       ! p_IboundaryCpIdx(i)  1   9  15  19
       !
       ! Ok, let us catch the actual vertices.
-      !      
+      !
       ! Check all vertices to find out, which vertices are on the boundary.
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
@@ -7407,7 +7407,7 @@ p_InodalPropertyDest = -4711
       ! queue, so we can continue with marking these.
       !
       ! In IcellIndex(2:), we count how many elements we assigned to each group.
-      ! The index is shifted by one to allow easier assignment later in the 
+      ! The index is shifted by one to allow easier assignment later in the
       ! collection phase.
       do
       
@@ -7425,7 +7425,7 @@ p_InodalPropertyDest = -4711
         iel = IelementQueue(iqptrRead)
         iqptrRead = iqptrRead + 1
         
-        ! Assign a new group 
+        ! Assign a new group
         IelementGroup (iel) = igroup
         
         ! Remember this group as the last one we found elements in.
@@ -7444,7 +7444,7 @@ p_InodalPropertyDest = -4711
 !                (IelementGroup(p_IneighboursAtElement(ineigh,iel)) .le. 0)) then
 !              IelementQueue(iqptrWrite) = p_IneighboursAtElement(ineigh,iel)
 !              iqptrWrite = iqptrWrite + 1
-!              
+!
 !              ! Mark the element as to be processed in the current group.
 !              ! We assign the negative group ID to the element.
 !              ! The above IF statement ensures that the element is only once
@@ -7491,7 +7491,7 @@ p_InodalPropertyDest = -4711
         if (iqptrRead .ge. iqptrWrite) exit
       end do
       
-      ! The loop is left 
+      ! The loop is left
       ! a) if there are too many elements in the group or
       ! b) if no more elements are found.
       ! Continue to form a new group
@@ -7540,7 +7540,7 @@ p_InodalPropertyDest = -4711
             if (IelementGroup(ielneigh) .lt. IelementGroup(iel)) then
             
               ! Neighbour group with a smaller number. (Probably no group associated
-              ! up to now.) Does that group have less elements than the 
+              ! up to now.) Does that group have less elements than the
               ! previous neighbour?
               if (IgroupInc(IelementGroup(iel)) .eq. 0) then
                 IgroupInc(IelementGroup(iel)) = IelementGroup(ielneigh)
@@ -7833,7 +7833,7 @@ p_InodalPropertyDest = -4711
   ! (0.25, 0.5, 0.75) of the edge. If the caller wants to specify a different
   ! position of the points manually, the DparValue array can be specified.
   !
-  ! Another example: By calling this routine with npointsPerEdge=1, the 
+  ! Another example: By calling this routine with npointsPerEdge=1, the
   ! routine will calculate the midpoints of all edges.
 !</description>
 
@@ -7846,11 +7846,11 @@ p_InodalPropertyDest = -4711
   
   ! OPTIONAL: Array with parameter values of the points on the edge.
   ! dimension(npointsPerEdge). DparValue is a value in the range [0,1]
-  ! and specifies the 'relative position' or 'parameter value' of each 
+  ! and specifies the 'relative position' or 'parameter value' of each
   ! point on the edge. If not specified, tria_getPointsOnEdge assumes a regular
   ! distribution of points, defined by the number of points on the edge.
-  ! E.g. if npointsPerEdge=2 and DparValue is not specified, 
-  ! the routine assumes 3 inner points on the edge corresponding to 
+  ! E.g. if npointsPerEdge=2 and DparValue is not specified,
+  ! the routine assumes 3 inner points on the edge corresponding to
   ! DparValue=/(0.333333,0.666666)/.
   ! If specified, the caller can specify the exact parameter values of
   ! the three points on the edge, e.g. DparValue=/(0.25,0.75)/.
@@ -7867,7 +7867,7 @@ p_InodalPropertyDest = -4711
   ! Coordinates of the regularly distributed points on all the edges
   ! of the triangulation.
   !   dimension(space-dimension, npointsPerEdge * #edges)
-  ! Here, Dcoords(:,1..npointsPerEdge) receives the coordinates of the 
+  ! Here, Dcoords(:,1..npointsPerEdge) receives the coordinates of the
   ! points on the first edge, Dcoords(:,npointsPerEdge+1:2*npointsPerEdge)
   ! the coordinates on edge number 2 etc.
   real(DP), dimension(:,:), intent(out) :: Dcoords
@@ -7875,7 +7875,7 @@ p_InodalPropertyDest = -4711
 
 !</subroutine>
 
-    ! local variables      
+    ! local variables
     real(DP), dimension(npointsPerEdge) :: Dparameters
     real(DP), dimension(:,:), pointer :: p_Dcoords
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
@@ -8059,7 +8059,7 @@ p_InodalPropertyDest = -4711
 
 !<description>
   ! Creates a list of all elements which are directly adjacent to a set
-  ! of elements. The routine returns all elements in one cell layer 
+  ! of elements. The routine returns all elements in one cell layer
   ! around a given cell set.
 !</description>
 
@@ -8153,7 +8153,7 @@ p_InodalPropertyDest = -4711
             if (p_IneighboursAtElement(ive,IsubmeshElements(iel)) .ne. 0) then
               if (IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) .eq. 0) then
                 IelementFlag(p_IneighboursAtElement(ive,IsubmeshElements(iel))) = &
-                  p_IedgesAtElement(ive,IsubmeshElements(iel)) 
+                  p_IedgesAtElement(ive,IsubmeshElements(iel))
                 nel = nel+1
               end if
             end if
@@ -8248,7 +8248,7 @@ p_InodalPropertyDest = -4711
 !</input>
 
 !<output>
-  ! List of all elements adjacent to edge imtcoarse in element 
+  ! List of all elements adjacent to edge imtcoarse in element
   ! ielcoarse on the macro mesh.
   ! This is a pointer and will be allocated in this routine.
   integer, dimension(:), pointer :: p_Ineighbourhood
@@ -8312,7 +8312,7 @@ p_InodalPropertyDest = -4711
                   IelementTag(p_IelementsAtVertex(ielidx)) = 1
                   nel = nel + 1
                 end if
-              end if            
+              end if
             end do
           end do
         
@@ -8374,7 +8374,7 @@ p_InodalPropertyDest = -4711
 !</input>
 
 !<output>
-  ! List of all elements adjacent to vertex ivtcoarse in element 
+  ! List of all elements adjacent to vertex ivtcoarse in element
   ! ielcoarse on the macro mesh.
   ! The buffer must be large enough; a safe size is the maximum number
   ! of elements adjacent to a vertex (NNelAtVertex).
@@ -8413,14 +8413,14 @@ p_InodalPropertyDest = -4711
           irelcoarse+ielcoarse) then
         nelements = nelements + 1
         Ineighbourhood(nelements) = p_IelementsAtVertex(ielidx)
-      end if            
+      end if
     end do
     
   end subroutine tria_getElementsAtMacroVertex
 
   ! ***************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   subroutine tria_genTwistIndex(rtriangulation)
 
@@ -8747,12 +8747,12 @@ p_InodalPropertyDest = -4711
 
 !    ! 'Old implementation'
 !    subroutine genTwistIndexEdges2D(rtriangulation)
-!    
+!
 !    ! Generate the twist index for 2D meshes
-!    
+!
 !    ! The triangulation where the twist index should be generated.
 !    type(t_triangulation), intent(inout) :: rtriangulation
-!    
+!
 !      ! local variables
 !      integer(I32), dimension(:,:), pointer :: p_IneighboursAtElement
 !      integer :: iel,ielneighbour
@@ -8760,24 +8760,24 @@ p_InodalPropertyDest = -4711
 !      integer :: iedge
 !      integer :: imt
 !      integer(I32) :: itwistindex
-!    
+!
 !      if (rtriangulation%h_IverticesAtEdge .eq. ST_NOHANDLE) then
 !        call output_line ('IverticesAtEdge not available!', &
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexEdges2D')
 !        call sys_halt()
 !      end if
-!    
+!
 !      if (rtriangulation%h_IedgesAtElement .eq. ST_NOHANDLE) then
 !        call output_line ('IedgesAtElement not available!', &
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexEdges2D')
 !        call sys_halt()
 !      end if
-!      
+!
 !      call storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
 !          p_IneighboursAtElement)
 !      call storage_getbase_int (rtriangulation%h_ItwistIndexEdges,&
 !          p_ItwistIndex)
-!          
+!
 !      ! Chech the edge on each each element.
 !      ! If the first vertex has the higher number, the twist index is
 !      ! one. In that case, set the appropriate bit in the twist index field.
@@ -8791,22 +8791,22 @@ p_InodalPropertyDest = -4711
 !        end do
 !        p_ItwistIndex(iel) = itwistindex
 !      end do
-!          
+!
 !    end subroutine
     
 !    ! ---------------------------------------------------------------
 !
 !    subroutine genTwistIndexFaces3D(rtriangulation)
-!    
+!
 !    ! Generate the twist index for 3D meshes
 !
 !    ! The triangulation where the twist index should be generated.
 !    type(t_triangulation), intent(inout) :: rtriangulation
-!    
+!
 !    ! Implementation must be done again.
 !    ! The calculation works, but the target array is not properly installed
 !    ! in the triangulation structure!
-!    
+!
 !      ! local variables
 !      integer(I32), dimension(:,:), pointer :: p_IverticesAtEdge
 !      integer(I32), dimension(:,:), pointer :: p_IfacesAtElement
@@ -8820,7 +8820,7 @@ p_InodalPropertyDest = -4711
 !      integer :: iel,ielneighbour
 !      integer, dimension(TRIA_MAXNVE2D) :: IverticesAtFace1
 !      integer, dimension(TRIA_MAXNVE2D) :: IverticesAtFace2
-!    
+!
 !      if (rtriangulation%h_IverticesAtEdge .eq. ST_NOHANDLE) then
 !        call output_line ('IverticesAtEdge not available!', &
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexFaces3D')
@@ -8832,13 +8832,13 @@ p_InodalPropertyDest = -4711
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexFaces3D')
 !        call sys_halt()
 !      end if
-!    
+!
 !      if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
 !        call output_line ('IneighboursAtElement not available!', &
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexFaces3D')
 !        call sys_halt()
 !      end if
-!    
+!
 !      if (rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) then
 !        call output_line ('IfacesAtElement not available!', &
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexFaces3D')
@@ -8850,7 +8850,7 @@ p_InodalPropertyDest = -4711
 !                          OU_CLASS_ERROR,OU_MODE_STD,'genTwistIndexFaces3D')
 !        call sys_halt()
 !      end if
-!      
+!
 !      call storage_getbase_int2d (rtriangulation%h_IverticesAtEdge,&
 !          p_IverticesAtEdge)
 !      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
@@ -8863,25 +8863,25 @@ p_InodalPropertyDest = -4711
 !          p_IneighboursAtElement)
 !      call storage_getbase_int2d (rtriangulation%h_ItwistIndexFaces,&
 !          p_ItwistIndex)
-!          
+!
 !      nva = rtriangulation%NNVA
-!          
+!
 !      ! Generate the twist index for all elements.
 !      do iel=1,rtriangulation%NEL
-!      
+!
 !        ! Loop over the faces
 !        do imyface = 1,ubound(p_IfacesAtElement,1)
-!      
+!
 !          ! Get the neighbour, face, vertex with local vertex number 1
 !          ielneighbour = p_IneighboursAtElement(imyface,iel)
-!          
+!
 !          ! Figure out which vertex on the face of the neighbour element
 !          ! corresponds to vertex 1 of the current face.
 !          ! If there is no neighbour, we set the index to 1, that is it.
 !          if (ielneighbour .eq. 0) then
-!            
+!
 !            p_ItwistIndex(imyface,iel) = 1
-!            
+!
 !          else
 !
 !            ! We only have to do something if there is no neighbour with
@@ -8892,9 +8892,9 @@ p_InodalPropertyDest = -4711
 !
 !              ! There is a neighbour. which face is the current one?
 !              nsearch: do ineighbourface = 1,ubound(p_IfacesAtElement,1)
-!                
+!
 !                if (p_IfacesAtElement(ineighbourface,ielneighbour) .eq. iface) then
-!                
+!
 !                  ! Get the vertex numbers on the current face...
 !                  ! From the one element as well as from the other.
 !                  call tria_getVerticesAtFaceDirect(&
@@ -8906,39 +8906,39 @@ p_InodalPropertyDest = -4711
 !
 !                  ! First vertex on the face
 !                  ivt = IverticesAtFace1 (1)
-!                
+!
 !                  ! Which vertex on the neighbour corresponds to vertex 1
 !                  ! of the current element?
 !                  do iidx = 1,ubound(p_IverticesAtFace,1)
-!                  
+!
 !                    if (IverticesAtFace2(iidx) .eq. ivt) then
-!                    
-!                      ! This value is the twist index. Save it for our 
+!
+!                      ! This value is the twist index. Save it for our
 !                      ! element as well as for the neighbour (with inverse sign
 !                      ! since the orientation is changed on the other
 !                      ! element, although the number is the same).
 !                      p_ItwistIndex(imyface,iel) = iidx
 !                      p_ItwistIndex(ineighbourface,ielneighbour) = -iidx
-!                      
+!
 !                      ! Next face
 !                      exit nsearch
-!                      
+!
 !                    end if
-!                  
+!
 !                  end do
-!                
+!
 !                end if
-!                
+!
 !              end do nsearch
-!            
+!
 !            end if
-!            
+!
 !          end if
-!          
+!
 !        end do
-!        
+!
 !      end do
-!    
+!
 !    end subroutine genTwistIndexFaces3D
 
   end subroutine tria_genTwistIndex
@@ -9016,18 +9016,18 @@ p_InodalPropertyDest = -4711
   ! Calculates refinement tags for a mesh that was constructed by
   ! 2-level ordering.
   !
-  ! Refinement tags represent a user-defined possibility to automaticall 
+  ! Refinement tags represent a user-defined possibility to automaticall
   ! classify elements, faces, edges and vertices during the refinement
   ! process. Using this technique allows to transfer coarse grid information
   ! to finegrid information.
   !
-  ! Before the refinement starts, the caller may assign each a user defined 
+  ! Before the refinement starts, the caller may assign each a user defined
   ! number to each vertex, edge, face and element; this number is called
   ! 'refinement tag'. Upon refinement, the refinement tag is inherited by
   ! new geometric elements in the following sense:
-  ! -> Vertices, edges, faces and elements that appear in the inner of a 
+  ! -> Vertices, edges, faces and elements that appear in the inner of a
   !    coarse grid cell receive the refinement tag of the coarse grid cell.
-  ! -> Vertices, edges and faces that appear in the inner of a coarse grid 
+  ! -> Vertices, edges and faces that appear in the inner of a coarse grid
   !    face receive the refinement tag of the coarse grid face.
   ! -> Vertices and edges that appear in the inner of a coarse grid edge
   !    receive the refinement tag of the coarse grid edge.
@@ -9045,7 +9045,7 @@ p_InodalPropertyDest = -4711
   type(t_triangulation), intent(in) :: rtriaFine
   
   ! Refinement tags for the coarse mesh that should be propagated to
-  ! the fine mesh. The size and shape of the array is depending 
+  ! the fine mesh. The size and shape of the array is depending
   ! on the dimension.
   ! 1D: dimension(1:NVT+NEL).
   !     IrefTagsCoarse(1:NVT) = ref. tags for vertices.
@@ -9063,8 +9063,8 @@ p_InodalPropertyDest = -4711
 !</input>
 
 !</output>
-  ! Refinement tags for the fine mesh calculated from coarse mesh 
-  ! information. The size and shape of the array is depending 
+  ! Refinement tags for the fine mesh calculated from coarse mesh
+  ! information. The size and shape of the array is depending
   ! on the dimension.
   ! 1D: dimension(1:NVT+NEL).
   !     IrefTagsFine(1:NVT) = ref. tags for vertices.
@@ -9134,16 +9134,16 @@ p_InodalPropertyDest = -4711
       
       ! Keep the following picture in mind:
       !
-      !    4---7---3      2          
-      !    |   |   |      |`.        
-      !    |   |   |      |  `.      
-      !    8---9---6      5----4.    
-      !    |   |   |      |`.  | `.  
+      !    4---7---3      2
+      !    |   |   |      |`.
+      !    |   |   |      |  `.
+      !    8---9---6      5----4.
+      !    |   |   |      |`.  | `.
       !    |   |   |      |  `.|   `.
       !    1---5---2      3----6-----1
       !
       ! We have vertices 1..4 (1..3) coming from old vertices, vertices 5..8 (4..6)
-      ! coming from edges and vertex 9 coming from the element on quad-, resp. tri-, 
+      ! coming from edges and vertex 9 coming from the element on quad-, resp. tri-,
       ! meshes. This is exactly the order of the tags on the coarse grid.
       !
       ! Copy the refinement tags of the coarse grid vertices to the
@@ -9155,18 +9155,18 @@ p_InodalPropertyDest = -4711
           NVT+NMT+rtriaCoarse%InelOfType(TRIA_NVEQUAD2D))
     
       ! Now to the refinement tags for the edges, this is more complicated.
-      ! 
-      !          3           
-      !    +-12--+--8--+          +               
-      !    |     |     |          |`.             
-      !   11  4  9  3 10          6  7.           
-      !    |     |     |          | 3  `.  2      
-      !  4 +--3--+--6--+ 2      3 +--1---+.       
-      !    |     |     |          |`.  1 | `.     
-      !    4  1  2  2  5          9  2.  3   4.   
-      !    |     |     |          | 4  `.| 2   `. 
+      !
+      !          3
+      !    +-12--+--8--+          +
+      !    |     |     |          |`.
+      !   11  4  9  3 10          6  7.
+      !    |     |     |          | 3  `.  2
+      !  4 +--3--+--6--+ 2      3 +--1---+.
+      !    |     |     |          |`.  1 | `.
+      !    4  1  2  2  5          9  2.  3   4.
+      !    |     |     |          | 4  `.| 2   `.
       !    +--1--+--7--+          +--8---+---5---+
-      !          1                       1        
+      !          1                       1
       !
       ! For every coarse grid element, we have to look at the fine grid elements
       ! inside and transfer the refinement tags of the coarse grid edges to the
@@ -9264,7 +9264,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_hangingNodeRefinement (rtriaSource,Ielements,rtriaDest)
   
 !<description>
-  ! Performs a local hanging-node refinement of the elements Ielements in the 
+  ! Performs a local hanging-node refinement of the elements Ielements in the
   ! triangulation rtriaSource.
   !
   ! Note: The implementation is still rudimentary. Currently, there are
@@ -9284,7 +9284,7 @@ p_InodalPropertyDest = -4711
   integer, dimension(:), intent(in) :: Ielements
   
   ! OPTIONAL: Boundary structure that defines the domain.
-  ! If not specified, information about boundary vertices (e.g. 
+  ! If not specified, information about boundary vertices (e.g.
   ! parameter values of edge midpoints in 2D) are not initialised.
   !type(t_boundary), INTENT(in), OPTIONAL :: rboundary
 !</input>
@@ -9365,7 +9365,7 @@ p_InodalPropertyDest = -4711
           imt = p_IedgesAtElementSrc(ive,Ielements(iel))
 
           ! Increase IedgeHang. Inner vertices get a 2 (as they are touched twice
-          ! or when they have already a hanging vertex), 
+          ! or when they have already a hanging vertex),
           ! edges with hanging nodes get a 1.
           IedgeHang(imt) = IedgeHang(imt) + 1
           if (p_IneighboursAtElementSrc(ive,Ielements(iel)) .le. 0) then
@@ -9461,11 +9461,11 @@ p_InodalPropertyDest = -4711
     
     ! Vertex numbering:
     ! 1..rtriaCoarse%NVT : old vertices
-    ! rtriaCoarse%NVT+1 .. rtriaCoarse%NVT + nvtnew : 
+    ! rtriaCoarse%NVT+1 .. rtriaCoarse%NVT + nvtnew :
     !                      new vertices from edges
     ! rtriaCoarse%NVT+nvtnew+1 .. rtriaCoarse%NVT+nvtnew+nelnew :
     !                      new vertices from elements
-    !    
+    !
     ! To understand the numbering, keep the following pictures in mind:
     !
     ! Coarse mesh:
@@ -9486,18 +9486,18 @@ p_InodalPropertyDest = -4711
     !   |                |                |
     !   |                |                |
     !   |                |                |
-    !   1------10--------5-------16-------2    
+    !   1------10--------5-------16-------2
     !
-    ! Mesh with cell 1+4 refined. Edges / element midpoints are renumbered to a 
-    ! consecutive order: 10,11,12,13,18,... -> E1,E2,... are the vertices 
-    ! that stem from edges, 1,4 -> M1,M2 the vertices stemming from element 
+    ! Mesh with cell 1+4 refined. Edges / element midpoints are renumbered to a
+    ! consecutive order: 10,11,12,13,18,... -> E1,E2,... are the vertices
+    ! that stem from edges, 1,4 -> M1,M2 the vertices stemming from element
     ! midpoints.
     !
     !   4------E6--------7----------------3
     !   |       |        |                |
     !   |   4   |   10   |                |
     !   |       |        |                |
-    !  E7------M2-------E5        3       | 
+    !  E7------M2-------E5        3       |
     !   |       |        |                |
     !   |   8   |   9    |                |
     !   |       |        |                |
@@ -9505,7 +9505,7 @@ p_InodalPropertyDest = -4711
     !   |       |        |                |
     !   |   7   |   6    |                |
     !   |       |        |                |
-    !  E4------M1-------E2        2       | 
+    !  E4------M1-------E2        2       |
     !   |       |        |                |
     !   |   1   |   5    |                |
     !   |       |        |                |
@@ -9517,7 +9517,7 @@ p_InodalPropertyDest = -4711
     !   |       |        |                |
     !   |   4   |   10   |                |
     !   |       |        |                |
-    !  16------18-------14        3       | 
+    !  16------18-------14        3       |
     !   |       |        |                |
     !   |   8   |   9    |                |
     !   |       |        |                |
@@ -9525,7 +9525,7 @@ p_InodalPropertyDest = -4711
     !   |       |        |                |
     !   |   7   |   6    |                |
     !   |       |        |                |
-    !  13------17-------11        2       | 
+    !  13------17-------11        2       |
     !   |       |        |                |
     !   |   1   |   5    |                |
     !   |       |        |                |
@@ -9573,31 +9573,31 @@ p_InodalPropertyDest = -4711
 
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)+NVT) .lt. 0) then
           iedge1 = -p_InodalPropertySrc(p_IedgesAtElementSrc(1,iel)+NVT)
-        else        
+        else
           iedge1 = IedgeLocalId(p_IedgesAtElementSrc (1,iel)+NVT)
         end if
         
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)+NVT) .lt. 0) then
           iedge2 = -p_InodalPropertySrc(p_IedgesAtElementSrc(2,iel)+NVT)
-        else        
+        else
           iedge2 = IedgeLocalId(p_IedgesAtElementSrc (2,iel))
         end if
         
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)+NVT) .lt. 0) then
           iedge3 = -p_InodalPropertySrc(p_IedgesAtElementSrc(3,iel)+NVT)
-        else        
+        else
           iedge3 = IedgeLocalId(p_IedgesAtElementSrc (3,iel))
         end if
         
         if (p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)+NVT) .lt. 0) then
           iedge4 = -p_InodalPropertySrc(p_IedgesAtElementSrc(4,iel)+NVT)
-        else        
+        else
           iedge4 = IedgeLocalId(p_IedgesAtElementSrc (4,iel))
         end if
         
         
         ! To convert edges vertex numbers, we have to convert:
-        !  old edge number 
+        !  old edge number
         !  -> local id of the refined edge
         !  -> new vertex number (=nvt + local id of the refined edge)
         
@@ -9702,7 +9702,7 @@ p_InodalPropertyDest = -4711
     end do
     
     ! Old elements -> new vertices.
-    ! they are in the domain, so they receive nodal property 0 -- what they 
+    ! they are in the domain, so they receive nodal property 0 -- what they
     ! already have by initialisation.
     !
     ! Generate basic information about boundary vertices.
@@ -9805,7 +9805,7 @@ p_InodalPropertyDest = -4711
               end if
             end do
             
-          end if      
+          end if
         end do
         
       end if
@@ -9814,7 +9814,7 @@ p_InodalPropertyDest = -4711
     
     ! The last thing: We have to correct the neighbourhood of the elements
     ! at hanging vertices. Up to now, the elements sharing an edge with
-    ! a hanging vertex are not connected to a neighbourhood -- this we have 
+    ! a hanging vertex are not connected to a neighbourhood -- this we have
     ! to change.
     call storage_getbase_int2d(&
       rtriaDest%h_IneighboursAtElement,p_IneighboursAtElementDest)
@@ -9879,11 +9879,11 @@ p_InodalPropertyDest = -4711
   !====================================================================
   !
   !        ++       ++++
-  !       + +       +   +  
+  !       + +       +   +
   !         +       +    +
   !         +       +    +
-  !         +       +    + 
-  !         +       +   +  
+  !         +       +    +
+  !         +       +   +
   !       +++++     ++++
   ! tag@1D
   !====================================================================
@@ -9978,7 +9978,7 @@ p_InodalPropertyDest = -4711
       p_Iverts(2,i) = i+1
     end do
     
-    ! There are two boundary components 
+    ! There are two boundary components
     ! - the interval start and end point
     rtriangulation%NBCT = 2
     
@@ -10025,10 +10025,10 @@ p_InodalPropertyDest = -4711
 !<description>
   ! This routine reads a .TRI file of a 1D triangulation into memory
   ! and creates a 'raw' triangulation (i.e. a triangulation that contains
-  ! only basic information, see below). 
+  ! only basic information, see below).
   !
-  ! The triangulation structure rtriangulation is initialised with the data 
-  ! from the file. The parameter sfilename gives the name of the .tri 
+  ! The triangulation structure rtriangulation is initialised with the data
+  ! from the file. The parameter sfilename gives the name of the .tri
   ! file to read.
   !
   ! This reads only the very basic information that is needed to create
@@ -10037,12 +10037,12 @@ p_InodalPropertyDest = -4711
   ! The following arrays / information tags will be initialised:
   !
   ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
-  ! DvertexCoords, IverticesAtElement, InodalProperty, 
+  ! DvertexCoords, IverticesAtElement, InodalProperty,
   ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
   ! The nodal property array InodalProperty contains only the data for the
   ! vertices of the triangulation.
   ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
-  ! for the boundary component (according to IboundaryCpIdx) but not 
+  ! for the boundary component (according to IboundaryCpIdx) but not
   ! for the parameter value.
   !
   ! If bnoExtendedRaw is not specified or set to .FALSE., an extended
@@ -10110,7 +10110,7 @@ p_InodalPropertyDest = -4711
 
   subroutine tria_readRawTriangulation1D (iunit, rtriangulation)
 
-!<description>  
+!<description>
   ! Auxiliary routine of tria_readTriFile1D.
   ! Reads basic information from a triangulation file into rtriangulation.
   ! That means, the following information arrays / tags are initialised:
@@ -10124,7 +10124,7 @@ p_InodalPropertyDest = -4711
   integer, intent(in) :: iunit
 !</input>
   
-!<inputoutput> 
+!<inputoutput>
   ! Triangulation to be initialised with basic data.
   type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
@@ -10198,7 +10198,7 @@ p_InodalPropertyDest = -4711
     ! Comment: 'KNPR'
     read (iunit,*)
 
-    ! Allocate memory for InodalProperty 
+    ! Allocate memory for InodalProperty
     call storage_new ('tria_readRawTriangulation1D', 'KNPR', &
         rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -10217,9 +10217,9 @@ p_InodalPropertyDest = -4711
 
   subroutine tria_genRawBoundary1D (rtriangulation)
 
-!<description>  
+!<description>
   ! Auxiliary routine of tria_readTriFile1D.
-  ! This routine initialises basic boundary arrays and cleans up 
+  ! This routine initialises basic boundary arrays and cleans up
   ! a basic triangulation. That means:
   ! -> NVBD is calculated
   ! -> IboundaryCpIdx is created and generated
@@ -10277,7 +10277,7 @@ p_InodalPropertyDest = -4711
     ! Perform a first loop over all vertices to check which are on the
     ! boundary. Count them. This way, we at first set up the boundary
     ! component index vector p_IboundaryCpIdx.
-    ! In this first step, we save the number of vertices on each 
+    ! In this first step, we save the number of vertices on each
     ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
     do ivt=1,rtriangulation%NVT
       if (p_InodalProperty(ivt) .gt. 0) then
@@ -10300,7 +10300,7 @@ p_InodalPropertyDest = -4711
     
     ! Shift the p_IboundaryCpIdx array by one position. That is a little trick in
     ! the use of p_IboundaryCpIdx!
-    ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+    ! Imagine, we have 3 boundary components with 8,6 and 4 edges.
     ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
     !
     !         i            1   2   3   4
@@ -10359,7 +10359,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_genNeighboursAtElement1D(rtriangulation)
 
 !<description>
-  ! This routine generates the array IneighboursAtElement (KADJ). 
+  ! This routine generates the array IneighboursAtElement (KADJ).
   ! For this purpose, the following arrays are used:
   !    IverticesAtElement, IelementsAtVertexIdx.
   ! If necessary, new memory is allocated.
@@ -10377,7 +10377,7 @@ p_InodalPropertyDest = -4711
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx
     integer, dimension(:), pointer :: p_IelementsAtVertex
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(2) :: Isize  
+    integer, dimension(2) :: Isize
     integer :: iel1, iel2, ivi1, ivi2, ivt, ive
     
     ! Do we have (enough) memory for that array?
@@ -10460,7 +10460,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_genElementVolume1D(rtriangulation)
 
 !<description>
-  ! This routine generates the element volume array DelementVolume (DAREA). 
+  ! This routine generates the element volume array DelementVolume (DAREA).
   ! For this purpose, the following arrays are used:
   !    DvertexCoordinates, IverticesAtElement.
   ! If necessary, new memory is allocated.
@@ -10541,13 +10541,13 @@ p_InodalPropertyDest = -4711
   !====================================================================
   !
   !       ++++      ++++
-  !           +     +   +  
+  !           +     +   +
   !          +      +    +
   !         +       +    +
-  !        +        +    + 
-  !       +         +   +  
+  !        +        +    +
+  !       +         +   +
   !       ++++      ++++
-  ! tag@2D    
+  ! tag@2D
   !====================================================================
   
 !<subroutine>
@@ -10558,10 +10558,10 @@ p_InodalPropertyDest = -4711
 !<description>
   ! This routine reads a .TRI file of a 2D triangulation into memory
   ! and creates a 'raw' triangulation (i.e. a triangulation that contains
-  ! only basic information, see below). 
+  ! only basic information, see below).
   !
-  ! The triangulation structure rtriangulation is initialised with the data 
-  ! from the file. The parameter sfilename gives the name of the .tri 
+  ! The triangulation structure rtriangulation is initialised with the data
+  ! from the file. The parameter sfilename gives the name of the .tri
   ! file to read.
   !
   ! This reads only the very basic information that is needed to create
@@ -10570,12 +10570,12 @@ p_InodalPropertyDest = -4711
   ! The following arrays / information tags will be initialised:
   !
   ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
-  ! DvertexCoords, IverticesAtElement, InodalProperty, 
+  ! DvertexCoords, IverticesAtElement, InodalProperty,
   ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
   ! The nodal property array InodalProperty contains only the data for the
   ! vertices of the triangulation.
   ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
-  ! for the boundary component (according to IboundaryCpIdx) but not 
+  ! for the boundary component (according to IboundaryCpIdx) but not
   ! for the parameter value.
   !
   ! If bnoExtendedRaw is not specified or set to .FALSE., an extended
@@ -10650,7 +10650,7 @@ p_InodalPropertyDest = -4711
 
   subroutine tria_readRawTriangulation2D (iunit, rtriangulation)
 
-!<description>  
+!<description>
   ! Auxiliary routine of tria_readTriFile2D.
   ! Reads basic information from a triangulation file into rtriangulation.
   ! That means, the following information arrays / tags are initialised:
@@ -10664,7 +10664,7 @@ p_InodalPropertyDest = -4711
   integer, intent(in) :: iunit
 !</input>
   
-!<inputoutput> 
+!<inputoutput>
   ! Triangulation to be initialised with basic data.
   type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
@@ -10745,7 +10745,7 @@ p_InodalPropertyDest = -4711
     ! Comment: 'KNPR'
     read (iunit,*)
 
-    ! Allocate memory for InodalProperty 
+    ! Allocate memory for InodalProperty
     call storage_new ('tria_readRawTriangulation2D', 'KNPR', &
         rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -10764,9 +10764,9 @@ p_InodalPropertyDest = -4711
 
   subroutine tria_genRawBoundary2D (rtriangulation, rboundary)
 
-!<description>  
+!<description>
   ! Auxiliary routine of tria_readTriFile2D.
-  ! This routine initialises basic boundary arrays and cleans up 
+  ! This routine initialises basic boundary arrays and cleans up
   ! a basic triangulation. That means:
   ! -> NVBD is calculated
   ! -> IboundaryCpIdx is created and generated
@@ -10775,22 +10775,22 @@ p_InodalPropertyDest = -4711
   !    to IboundaryCpIdx but not ordered for their parameter value.
   ! -> If rboundary is specified,
   !    DvertexParameterValue is created and generated.
-  !    The parameter values are ordered for the boundary component 
+  !    The parameter values are ordered for the boundary component
   !    according to IboundaryCpIdx but not ordered for the parameter value.
   ! -> If rboundary is specified,
   !    the parameter values of the boundary vertices are extracted
   !    from the first coordinate in DvertexCoords and put into
   !    the DvertexParameterValue array.
   ! -> If rboundary is specified,
-  !    based on the parameter value of each boundary vertex, the 
-  !    DvertexCoords array receives the actual coordinates of 
+  !    based on the parameter value of each boundary vertex, the
+  !    DvertexCoords array receives the actual coordinates of
   !    the boundary vertices.
   !    If not specified, the routine assumes that DvertexCoords
   !    already contains the real point coordinates.
 !</description>
   
 !<input>
-  ! OPTIONAL: The parametrisation that specifies the coordinates of the 
+  ! OPTIONAL: The parametrisation that specifies the coordinates of the
   ! boundary points.
   ! If specified, DvertexParameterValue is generated from DvertexCoords
   ! and the coordinates of boundary vertices are (re-)generated
@@ -10855,7 +10855,7 @@ p_InodalPropertyDest = -4711
     ! Perform a first loop over all vertices to check which are on the
     ! boundary. Count them. This way, we at first set up the boundary
     ! component index vector p_IboundaryCpIdx.
-    ! In this first step, we save the number of vertices on each 
+    ! In this first step, we save the number of vertices on each
     ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
     do ivt=1,rtriangulation%NVT
       if (p_InodalProperty(ivt) .gt. 0) then
@@ -10878,7 +10878,7 @@ p_InodalPropertyDest = -4711
     
     ! Shift the p_IboundaryCpIdx array by one position. That is a little trick in
     ! the use of p_IboundaryCpIdx!
-    ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+    ! Imagine, we have 3 boundary components with 8,6 and 4 edges.
     ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
     !
     !         i            1   2   3   4
@@ -10926,7 +10926,7 @@ p_InodalPropertyDest = -4711
         if (p_InodalProperty(ivt) .gt. 0) then
           ibct = p_InodalProperty(ivt)
           
-          ! Create a new point on that boundary component 
+          ! Create a new point on that boundary component
           ! and get the number, the point will have.
           ! Note that the array was initialised with zero during the creation
           ! process!
@@ -10949,7 +10949,7 @@ p_InodalPropertyDest = -4711
       
     else
     
-      ! No parametrisation available, the array with boundary parameter values 
+      ! No parametrisation available, the array with boundary parameter values
       ! is not generaterd.
       !
       ! Check all vertices to find out, which vertices are on the boundary.
@@ -10979,16 +10979,16 @@ p_InodalPropertyDest = -4711
 
   ! ***************************************************************************
 
-!<subroutine>    
+!<subroutine>
 
   subroutine tria_rawGridToTri (rtriangulation)
   
 !<description>
   ! This routine converts a 2D 'raw' mesh into a triangular 2D mesh.
   ! All elements are converted to triangles.
-  ! Warning: This routine can only applied to a 'raw' mesh, e.g. a mesh which 
+  ! Warning: This routine can only applied to a 'raw' mesh, e.g. a mesh which
   !  comes directly from a .TRI file. It is not advisable to apply this routine to
-  !  a 'standard' mesh that contains already further mesh information 
+  !  a 'standard' mesh that contains already further mesh information
   !  (adjacencies,...), as any information about possible two-level ordering
   !  is lost!
   !  However, when applied to a 'standard' mesh, the mesh information can be
@@ -11011,7 +11011,7 @@ p_InodalPropertyDest = -4711
     integer, dimension(2) :: Isize
    
     ! For this routine we currently assume that there are only triangles
-    ! and quads in the triangulation. Might be a matter of change in 
+    ! and quads in the triangulation. Might be a matter of change in
     ! the future...
    
     ! Get the points-at-element array
@@ -11052,7 +11052,7 @@ p_InodalPropertyDest = -4711
     if (rtriangulation%h_IelementsAtVertexIdx .ne. ST_NOHANDLE) then
       ! Remove the old extended raw mesh arrays. Recreate everything.
       call tria_resetToRaw(rtriangulation,.false.)
-      call tria_initExtendedRawMesh (rtriangulation)    
+      call tria_initExtendedRawMesh (rtriangulation)
     end if
     
     ! That is it.
@@ -11066,7 +11066,7 @@ p_InodalPropertyDest = -4711
   !<description>
     ! Purpose: Convert mixed quad/tri mesh to triangular mesh
     !
-    ! This routine creates a triangular KVERT structure from a 
+    ! This routine creates a triangular KVERT structure from a
     ! quadrilateral KVERT structure.
   !</description>
 
@@ -11241,7 +11241,7 @@ p_InodalPropertyDest = -4711
     call storage_getbase_int (haux1,p_Iaux1)
 
     ! Now, we perform a second loop over the elements and the vertices.
-    ! This time, we fetch the element number and write it to the    
+    ! This time, we fetch the element number and write it to the
     ! p_IelementsAtVertex array.
     ! p_Iaux1 counts how many positions in p_IelementsAtVertex are occupied.
     do iel = 1,rtriangulation%NEL
@@ -11271,7 +11271,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_genNeighboursAtElement2D(rtriangulation)
 
 !<description>
-  ! This routine generates the array IneighboursAtElement (KADJ). 
+  ! This routine generates the array IneighboursAtElement (KADJ).
   ! For this purpose, the following arrays are used:
   !    IverticesAtElement, IelementsAtVertexIdx.
   ! If necessary, new memory is allocated.
@@ -11329,8 +11329,8 @@ p_InodalPropertyDest = -4711
         p_IverticesAtElement)
         
     ! In the following, we create an array IedgeAtVertex that saves
-    ! information about the edges adjacent to each element in 
-    ! counterclockwise sense. The array has the same length as IelementsAtVertex 
+    ! information about the edges adjacent to each element in
+    ! counterclockwise sense. The array has the same length as IelementsAtVertex
     ! and saves information about which edges are adjacent to a vertex:
     !  IedgeAtVertex(1) = vertex
     !  IedgeAtVertex(2) = next neighbour of the vertex in counterclockwise sense
@@ -11412,9 +11412,9 @@ p_InodalPropertyDest = -4711
     do iedge = 1,ubound(p_IedgeAtVertex,2)
     
       ! Get the edge information
-      ivt          = p_IedgeAtVertex(1,iedge) 
-      ivtneighbour = p_IedgeAtVertex(2,iedge) 
-      iel          = p_IedgeAtVertex(3,iedge) 
+      ivt          = p_IedgeAtVertex(1,iedge)
+      ivtneighbour = p_IedgeAtVertex(2,iedge)
+      iel          = p_IedgeAtVertex(3,iedge)
     
       ! Now, loop through all edges adjacent to the neighbour vertex
       ! ivtneighbour to find possible adjacent elements at the current
@@ -11586,7 +11586,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_genElementVolume2D(rtriangulation)
 
 !<description>
-  ! This routine generates the element volume array DelementVolume (DAREA). 
+  ! This routine generates the element volume array DelementVolume (DAREA).
   ! For this purpose, the following arrays are used:
   !    DvertexCoordinates, IverticesAtElement.
   ! If necessary, new memory is allocated.
@@ -11699,8 +11699,8 @@ p_InodalPropertyDest = -4711
 
   subroutine tria_sortBoundaryVertices1D2D (rtriangulation)
 
-!<description>  
-  ! This routine sorts the arrays IverticesAtBoundary and 
+!<description>
+  ! This routine sorts the arrays IverticesAtBoundary and
   ! DvertexParameterValue such that they are ordered for increasing
   ! parameter values of the vertices.
 !</description>
@@ -11737,7 +11737,7 @@ p_InodalPropertyDest = -4711
         rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
     
     ! Sort the p_DvertexCoords (sub)-arrays for increasing
-    ! parameter value. 
+    ! parameter value.
     call storage_new ('tria_sortBoundaryVertices1D2D', &
         'resort', rtriangulation%NVBD, &
         ST_INT, hresort, ST_NEWBLOCK_NOINIT)
@@ -11748,7 +11748,7 @@ p_InodalPropertyDest = -4711
       p_Iresort(ivbd) = ivbd
     end do
     
-    ! For each boundary component on the physical boundary, call the sorting routine 
+    ! For each boundary component on the physical boundary, call the sorting routine
     ! and calculate the mapping how the entries are sorted.
     do ibct = 1,rtriangulation%NBCT
       istart = p_IboundaryCpIdx(ibct)
@@ -11784,7 +11784,7 @@ p_InodalPropertyDest = -4711
 
 !<description>
   ! This routine generates information about the elements at the boundary
-  ! IelementsAtBoundary (KEBD). 
+  ! IelementsAtBoundary (KEBD).
   ! For this purpose, the following arrays are used:
   !    IverticesAtElement, IneighboursAtElement, IverticesAtBoundary,
   !    IboundaryCpIdx, IelementsAtVertexIdx, IelementsAtVertex.
@@ -11925,7 +11925,7 @@ p_InodalPropertyDest = -4711
             ! Yes, that is the boundary edge we are searching for!
             ! It starts with ivt and is present in the boundary component
             ! we are currently processing.
-            ! So we can save the boundary element number and proceed with the next 
+            ! So we can save the boundary element number and proceed with the next
             ! boundary vertex.
             
             p_IelementsAtBoundary (ivbd) = p_IelementsAtVertex(iadjElement)
@@ -12035,8 +12035,8 @@ p_InodalPropertyDest = -4711
   subroutine tria_genElementsAtEdge2D(rtriangulation)
 
 !<description>
-  ! This routine generates information about the elements adjacent to each 
-  ! edge IelementsAtEdge (KMID) and NNelAtEdge. 
+  ! This routine generates information about the elements adjacent to each
+  ! edge IelementsAtEdge (KMID) and NNelAtEdge.
   ! For this purpose, the following arrays are used:
   !    IverticesAtElement, IneighboursAtElement.
   ! NMT must be set up correctly.
@@ -12162,7 +12162,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_genVerticesAtEdge2D(rtriangulation)
 
 !<description>
-  ! This routine generates information about the vertices adjacent to 
+  ! This routine generates information about the vertices adjacent to
   ! each edge IverticesAtEdge.
   ! For this purpose, the following arrays are used:
   !    IverticesAtElement, IneighboursAtElement.
@@ -12277,10 +12277,10 @@ p_InodalPropertyDest = -4711
   subroutine tria_genEdgeNodalProperty2D(rtriangulation)
 
 !<description>
-  ! This routine generates the nodal property tags for all edges 
-  ! InodalProperty(NVT+1:NVT+NMT) (KNPR). 
+  ! This routine generates the nodal property tags for all edges
+  ! InodalProperty(NVT+1:NVT+NMT) (KNPR).
   ! For this purpose, the following arrays are used:
-  !    InodalProperty(1:NVT), IverticesAtElement, 
+  !    InodalProperty(1:NVT), IverticesAtElement,
   !    IedgesAtElement, IneighboursAtElement.
   ! If necessary, new memory is allocated.
 !</description>
@@ -12363,8 +12363,8 @@ p_InodalPropertyDest = -4711
         if (p_IedgesAtElement(ive,iel) .eq. 0) exit
         
         ! The edge nodal property is initialised with 0 by default -- inner edge.
-        ! Is there a neighbour? If yes, we have an inner edge. If not, this is 
-        ! a boundary edge. 
+        ! Is there a neighbour? If yes, we have an inner edge. If not, this is
+        ! a boundary edge.
         if (p_IneighboursAtElement(ive,iel) .eq. 0) then
         
           ! Check the two vertices adjacent to that edge. If both are on the
@@ -12377,14 +12377,14 @@ p_InodalPropertyDest = -4711
           ivt2 = p_IverticesAtElement(mod(ive,ubound(p_IedgesAtElement,1))+1,iel)
           
           ! In case, ivt2=0, there is e.g. a triangle in a quad mesh and we hit a
-          ! non-assigned position in IverticesAtElement. So take the next 
+          ! non-assigned position in IverticesAtElement. So take the next
           ! assigned position -- which is of course the first position in the array
           ! corresponding to the first vertex of the cell.
           if (ivt2 .eq. 0) ivt2 = p_IverticesAtElement(1,iel)
           
           if (p_InodalProperty(ivt1) .eq. p_InodalProperty(ivt2)) then
             ! Get the number of the boundary component from the vertex preceeding
-            ! the edge and store it as information for the edge. 
+            ! the edge and store it as information for the edge.
             p_InodalProperty(p_IedgesAtElement(ive,iel)+NVT) = &
                 p_InodalProperty(ivt1)
           else
@@ -12410,7 +12410,7 @@ p_InodalPropertyDest = -4711
   ! This routine generates information about the edges at the boundary
   ! IedgesAtBoundary (KMBD). Initialises NMBD.
   ! For this purpose, the following arrays are used:
-  !    IverticesAtElement, IelementsAtBoundary, IverticesAtBoundary, 
+  !    IverticesAtElement, IelementsAtBoundary, IverticesAtBoundary,
   !    IedgesAtElement, IboundaryCpIdx.
   ! If necessary, new memory is allocated.
 !</description>
@@ -12598,7 +12598,7 @@ p_InodalPropertyDest = -4711
     call storage_getbase_int (rtriangulation%h_InodalProperty,&
         p_InodalProperty)
     
-    ! Allocate an auxiliary array containing a copy of the parameter values 
+    ! Allocate an auxiliary array containing a copy of the parameter values
     ! of the vertices.
     hvertAtBd = ST_NOHANDLE
     call storage_copy (rtriangulation%h_DvertexParameterValue,hvertAtBd)
@@ -12660,7 +12660,7 @@ p_InodalPropertyDest = -4711
           ! its parameter value by taking the mean of the parameter values
           ! of the two endpoints. If the edge belongs to the 'blind'
           ! boundary (happens on subdomains, where the domain boundary os not
-          ! the physical boundary), 
+          ! the physical boundary),
           if (p_InodalProperty(p_IedgesAtBoundary(ivbd)+NVT) .le. &
               rtriangulation%NBCT) then
         
@@ -12708,8 +12708,8 @@ p_InodalPropertyDest = -4711
         ! On the real boundary...
         if (ibct .le. rtriangulation%NBCT) then
           ! Convert the parameter values of the edge midpoints back from
-          ! length parametrisation to 0-1 parametrisation. 
-          ! This automatically 'rounds down' parameter values that are > dmaxPar!   
+          ! length parametrisation to 0-1 parametrisation.
+          ! This automatically 'rounds down' parameter values that are > dmaxPar!
           call boundary_convertParameterList (rboundary,ibct,&
             p_DedgeParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
             p_DedgeParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
@@ -12809,9 +12809,9 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_genBoundaryEdgePos2D
 
-  !************************************************************************  
+  !************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   subroutine tria_genEdgesAtVertex2D (rtriangulation)
 
@@ -12886,12 +12886,12 @@ p_InodalPropertyDest = -4711
     ! loop over all edges
     do iee=1,rtriangulation%NMT
       
-      ! get the global vertex index 
+      ! get the global vertex index
       iGlobal=p_IverticesAtEdge(1,iee)
       ! increase the edge count for this vertex
       p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
       
-      ! get the global vertex index 
+      ! get the global vertex index
       iGlobal=p_IverticesAtEdge(2,iee)
       ! increase the edge count for this vertex
       p_IedgesAtVertexIdx(iGlobal+1) = p_IedgesAtVertexIdx(iGlobal+1) + 1
@@ -12900,7 +12900,7 @@ p_InodalPropertyDest = -4711
     
     ! sum up the entries to get the index array
     do iee=2,rtriangulation%NVT+1
-      p_IedgesAtVertexIdx(iee) = p_IedgesAtVertexIdx(iee) + & 
+      p_IedgesAtVertexIdx(iee) = p_IedgesAtVertexIdx(iee) + &
           p_IedgesAtVertexIdx(iee-1)
     end do
     
@@ -12921,7 +12921,7 @@ p_InodalPropertyDest = -4711
     end if
     
     call storage_getbase_int(rtriangulation%h_IedgesAtVertex, &
-        p_IedgesAtVertex)  
+        p_IedgesAtVertex)
     
     ! Shift the array positions.
     !
@@ -12929,7 +12929,7 @@ p_InodalPropertyDest = -4711
     ! (stupid Intel compiler!)
     !
     ! p_IedgesAtVertexIdx(2:rtriangulation%NVT+1) = &
-    !     p_IedgesAtVertexIdx(1:rtriangulation%NVT)    
+    !     p_IedgesAtVertexIdx(1:rtriangulation%NVT)
     do ivt = rtriangulation%NVT,1,-1
       p_IedgesAtVertexIdx(ivt+1) = p_IedgesAtVertexIdx(ivt)
     end do
@@ -12968,11 +12968,11 @@ p_InodalPropertyDest = -4711
   !====================================================================
   !
   !       ++++      ++++
-  !           +     +   +  
+  !           +     +   +
   !           +     +    +
   !        +++      +    +
-  !           +     +    + 
-  !           +     +   +  
+  !           +     +    +
+  !           +     +   +
   !       ++++      ++++
   ! tag@3D
   !====================================================================
@@ -12986,10 +12986,10 @@ p_InodalPropertyDest = -4711
 !<description>
   ! This routine reads a .TRI file of a 3D triangulation into memory
   ! and creates a 'raw' triangulation (i.e. a triangulation that contains
-  ! only basic information, see below). 
+  ! only basic information, see below).
   !
-  ! The triangulation structure rtriangulation is initialised with the data 
-  ! from the file. The parameter sfilename gives the name of the .tri 
+  ! The triangulation structure rtriangulation is initialised with the data
+  ! from the file. The parameter sfilename gives the name of the .tri
   ! file to read.
   !
   ! This reads only the very basic information that is needed to create
@@ -12998,12 +12998,12 @@ p_InodalPropertyDest = -4711
   ! The following arrays / information tags will be initialised:
   !
   ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
-  ! DvertexCoords, IverticesAtElement, InodalProperty, 
+  ! DvertexCoords, IverticesAtElement, InodalProperty,
   ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
   ! The nodal property array InodalProperty contains only the data for the
   ! vertices of the triangulation.
   ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
-  ! for the boundary component (according to IboundaryCpIdx) but not 
+  ! for the boundary component (according to IboundaryCpIdx) but not
   ! for the parameter value.
   !
   ! If bnoExtendedRaw is not specified or set to .FALSE., an extended
@@ -13030,7 +13030,7 @@ p_InodalPropertyDest = -4711
 
   ! OPTIONAL: Prevent creation of an extended raw mesh. If set to .false.,
   ! an 'extended raw' mesh will be created that provides a proper numbering
-  ! for edges and faces (standard). If set to '.true', the result will be a 
+  ! for edges and faces (standard). If set to '.true', the result will be a
   ! 'really raw' raw mesh with minimum information and no numbering for edges
   ! and faces.
   logical, intent(in), optional :: bnoExtendedRaw
@@ -13073,13 +13073,13 @@ p_InodalPropertyDest = -4711
   
   end subroutine tria_readTriFile3D
 
-  !************************************************************************  
+  !************************************************************************
 
-!<subroutine>  
+!<subroutine>
   
   subroutine tria_readRawTriangulation3D(iunit, rtriangulation)
   
-!<description>  
+!<description>
   ! Auxiliary routine of tria_readTriFile3D.
   ! Reads basic information from a triangulation file into rtriangulation.
   ! That means, the following information arrays / tags are initialised:
@@ -13104,7 +13104,7 @@ p_InodalPropertyDest = -4711
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata2D
     integer, dimension(:,:), pointer :: p_Idata2D
-    integer, dimension(:), pointer :: p_Idata    
+    integer, dimension(:), pointer :: p_Idata
     integer, dimension(2) :: Isize
     integer :: idim,ivt,ive,iel
     
@@ -13120,7 +13120,7 @@ p_InodalPropertyDest = -4711
                   rtriangulation%NNEE, rtriangulation%NNAE
     
     ! Vertices per face. That is simple: Only tetrahedral elements
-    ! have exactly three vertices per face. All other elements 
+    ! have exactly three vertices per face. All other elements
     ! have three and four vertices per face.
     if (rtriangulation%NNAE .eq. 4) then
       rtriangulation%NNVA = 3
@@ -13129,11 +13129,11 @@ p_InodalPropertyDest = -4711
     end if
     
     ! skip Comment: 'DCORVG'
-    read (iunit,*) 
+    read (iunit,*)
     
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM3D, NVT)
-    Isize = (/NDIM3D, rtriangulation%NVT/)   
+    Isize = (/NDIM3D, rtriangulation%NVT/)
     call storage_new('tria_readRawTriangulation3D', 'DCORVG',&
         Isize, ST_DOUBLE,&
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
@@ -13162,7 +13162,7 @@ p_InodalPropertyDest = -4711
     ! Get the pointer to the IverticesAtElement array and read the array
     call storage_getbase_int2D(rtriangulation%h_IverticesAtElement, p_Idata2D)
     
-    ! read ive=1 indices to nve into p_Idata2D(ive,iel) where iel=1 to NEL     
+    ! read ive=1 indices to nve into p_Idata2D(ive,iel) where iel=1 to NEL
     read (iunit,*) ((p_Idata2D(ive,iel),ive=1,rtriangulation%NNVE),&
                                         iel=1,rtriangulation%NEL)
     
@@ -13180,30 +13180,30 @@ p_InodalPropertyDest = -4711
     end do
 
     ! skip Comment: 'KNPR'
-    read (iunit,*)    
+    read (iunit,*)
     
     ! Allocate memory for InodalProperty
     call storage_new('tria_readRawTriangulation3D', 'KNPR',&
         rtriangulation%NVT, ST_INT, &
-        rtriangulation%h_InodalProperty,  ST_NEWBLOCK_ZERO)  
+        rtriangulation%h_InodalProperty,  ST_NEWBLOCK_ZERO)
     
     ! get a pointer to the memory
     call storage_getbase_int(rtriangulation%h_InodalProperty, p_Idata)
     
-    ! Read the data   
-    read (iunit,*) (p_idata(ivt),ivt=1,rtriangulation%NVT)   
+    ! Read the data
+    read (iunit,*) (p_idata(ivt),ivt=1,rtriangulation%NVT)
         
   end subroutine tria_readRawTriangulation3D
 
-  !************************************************************************  
+  !************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine tria_genRawBoundary3D(rtriangulation, rboundary)
   
-!<description>  
+!<description>
   ! Auxiliary routine of tria_readTriFile3D.
-  ! This routine initialises basic boundary arrays and cleans up 
+  ! This routine initialises basic boundary arrays and cleans up
   ! a basic triangulation. That means:
   ! -> NVBD is calculated
   ! -> IboundaryCpIdx is created and generated
@@ -13212,15 +13212,15 @@ p_InodalPropertyDest = -4711
   !    to IboundaryCpIdx but not ordered for their parameter value.
   ! -> If rboundary is specified,
   !    DvertexParameterValue is created and generated.
-  !    The parameter values are ordered for the boundary component 
+  !    The parameter values are ordered for the boundary component
   !    according to IboundaryCpIdx but not ordered for the parameter value.
   ! -> If rboundary is specified,
   !    the parameter values of the boundary vertices are extracted
   !    from the first coordinate in DvertexCoords and put into
   !    the DvertexParameterValue array.
   ! -> If rboundary is specified,
-  !    based on the parameter value of each boundary vertex, the 
-  !    DvertexCoords array receives the actual coordinates of 
+  !    based on the parameter value of each boundary vertex, the
+  !    DvertexCoords array receives the actual coordinates of
   !    the boundary vertices.
   !    If not specified, the routine assumes that DvertexCoords
   !    already contains the real point coordinates.
@@ -13228,7 +13228,7 @@ p_InodalPropertyDest = -4711
 
   
 !<input>
-  ! OPTIONAL: The parametrisation that specifies the coordinates of the 
+  ! OPTIONAL: The parametrisation that specifies the coordinates of the
   ! boundary points.
   ! If specified, DvertexParameterValue is generated from DvertexCoords
   ! and the coordinates of boundary vertices are (re-)generated
@@ -13315,7 +13315,7 @@ p_InodalPropertyDest = -4711
     p_IboundaryCpIdx(2:rtriangulation%NBCT+1) = p_IboundaryCpIdx(1:rtriangulation%NBCT)
     
     ! assign the vertices at boundary and the component index array
-    do ivt=1, rtriangulation%NVT   
+    do ivt=1, rtriangulation%NVT
       ! if the vertex is not an inner vertex
       if(p_InodalProperty(ivt) .ne. 0) then
         ! get the id of the boundary component
@@ -13342,7 +13342,7 @@ p_InodalPropertyDest = -4711
 
 !<subroutine>
 
-    subroutine tria_genElementsAtVertex3D(rtriangulation)    
+    subroutine tria_genElementsAtVertex3D(rtriangulation)
     
 !<description>
   ! This routine generates NnelAtElements and the array IelementsAtVertex.
@@ -13472,7 +13472,7 @@ p_InodalPropertyDest = -4711
         ! check if ivt is 'empty'
         if( ivt .eq. 0) exit
         
-        ! store the adjacency information at position p_Iaux1(ivt)        
+        ! store the adjacency information at position p_Iaux1(ivt)
         p_IelementsAtVertex( p_Iaux(ivt) ) = iel
 
         ! increase the position of the next element in p_Iaux1(ivt)
@@ -13485,9 +13485,9 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_genElementsAtVertex3D
 
-  !************************************************************************   
+  !************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine tria_genNeighboursAtElement3D(rtriangulation)
 
@@ -13505,7 +13505,7 @@ p_InodalPropertyDest = -4711
 !</subroutine>
     
     ! local variables
-    integer :: j,iel,iElements  
+    integer :: j,iel,iElements
     integer, dimension(2) :: Isize
     
     ! a pointer to the array this routine is supposed to build
@@ -13535,7 +13535,7 @@ p_InodalPropertyDest = -4711
         rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
     
     ! fill vector with zeros
-    call lalg_clearVectorInt2D(p_IneighboursAtElement)   
+    call lalg_clearVectorInt2D(p_IneighboursAtElement)
     
     ! compute number of items for mixed triangulations
     iElements = rtriangulation%InelOfType(TRIA_NVETET3D)  * TRIA_NAETET3D  +&
@@ -13563,7 +13563,7 @@ p_InodalPropertyDest = -4711
       do while(p_IConnectList(iel-1)%I_conData(j+1) .eq. &
                p_IConnectList(iel)%I_conData(j+1) )
         ! increment counter
-        j = j+1 
+        j = j+1
       end do
       
       ! assign information
@@ -13587,16 +13587,16 @@ p_InodalPropertyDest = -4711
 
   end subroutine tria_genNeighboursAtElement3D
 
-  !************************************************************************   
+  !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
-  subroutine tria_genEdgesAtElement3D(rtriangulation)    
+  subroutine tria_genEdgesAtElement3D(rtriangulation)
 
 !<description>
-  ! This routine creates the information which edges belong to an 
-  ! element and stores them in IedgesAtElement. Furthermore the 
-  ! edge numbering is calculated. That means, information about 
+  ! This routine creates the information which edges belong to an
+  ! element and stores them in IedgesAtElement. Furthermore the
+  ! edge numbering is calculated. That means, information about
   ! the edges adjacent to each element IedgesAtElement (KMID) is
   ! generated and the correct value of NMT is calculated.
   ! For this purpose, the following arrays are used:
@@ -13637,7 +13637,7 @@ p_InodalPropertyDest = -4711
                        3,7, 4,8, 5,6, 6,7, 7,8, 8,5/),&
                      (/2,TRIA_NNEHEXA3D/))
     
-    ! check if the arrays are present      
+    ! check if the arrays are present
     if (rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
       call output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement3D')
@@ -13667,7 +13667,7 @@ p_InodalPropertyDest = -4711
         rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
     
     call storage_getbase_int2D(&
-        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)   
+        rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
     
     call storage_getbase_int(&
         rtriangulation%h_IelementsAtVertex, p_IelementsAtVertex)
@@ -13704,7 +13704,7 @@ p_InodalPropertyDest = -4711
       ! What type of element are we?
       select case(tria_getNVE(p_IverticesAtElement, iel))
       case (TRIA_NVETET3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all edges of the tetrahedron
         do ied = 1, TRIA_NNETET3D
           
@@ -13716,14 +13716,14 @@ p_InodalPropertyDest = -4711
           ivt1 = p_IverticesAtElement(iloc1,iel)
           ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number that contains 
+          ! get the element with the lowest element number that contains
           ! the edge consisting of the vertices ivt1 and ivt2
           iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
                                                  p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal
           ! to the current iel the edge does not yet have an index
-          ! so assign an index to the edge                   
+          ! so assign an index to the edge
           if(iSCElement .ge. iel) then
             
             ! increment edge number
@@ -13734,7 +13734,7 @@ p_InodalPropertyDest = -4711
             
           else
             ! the smallest common element index is less than the current
-            ! iel the edge already has a number, so search for edge 
+            ! iel the edge already has a number, so search for edge
             ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
@@ -13744,7 +13744,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPYR3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all edges of the pyramid
         do ied = 1, TRIA_NNEPYR3D
           
@@ -13756,14 +13756,14 @@ p_InodalPropertyDest = -4711
           ivt1 = p_IverticesAtElement(iloc1,iel)
           ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number that contains 
+          ! get the element with the lowest element number that contains
           ! the edge consisting of the vertices ivt1 and ivt2
           iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
                                                  p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal to
           ! the current iel the edge does not yet have an index
-          ! so assign an index to the edge                   
+          ! so assign an index to the edge
           if(iSCElement .ge. iel) then
             
             ! increment edge number
@@ -13774,7 +13774,7 @@ p_InodalPropertyDest = -4711
             
           else
             ! the smallest common element index is less than the current
-            ! iel the edge already has a number, so search for edge 
+            ! iel the edge already has a number, so search for edge
             ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
@@ -13784,7 +13784,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPRIS3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all edges of the prism
         do ied = 1, TRIA_NNEPRIS3D
           
@@ -13796,14 +13796,14 @@ p_InodalPropertyDest = -4711
           ivt1 = p_IverticesAtElement(iloc1,iel)
           ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number that contains 
+          ! get the element with the lowest element number that contains
           ! the edge consisting of the vertices ivt1 and ivt2
           iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
                                                  p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal to
           ! the current iel the edge does not yet have an index
-          ! so assign an index to the edge                   
+          ! so assign an index to the edge
           if(iSCElement .ge. iel) then
             
             ! increment edge number
@@ -13814,7 +13814,7 @@ p_InodalPropertyDest = -4711
             
           else
             ! the smallest common element index is less than the current
-            ! iel the edge already has a number, so search for edge 
+            ! iel the edge already has a number, so search for edge
             ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
@@ -13824,7 +13824,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEHEXA3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all edges of the hexahedron
         do ied = 1, TRIA_NNEHEXA3D
           
@@ -13836,14 +13836,14 @@ p_InodalPropertyDest = -4711
           ivt1 = p_IverticesAtElement(iloc1,iel)
           ivt2 = p_IverticesAtElement(iloc2,iel)
           
-          ! get the element with the lowest element number that contains 
+          ! get the element with the lowest element number that contains
           ! the edge consisting of the vertices ivt1 and ivt2
           iSCElement = findSmallestCommonElement(p_IelementsAtVertexIdx,&
                                                  p_IelementsAtVertex, ivt1, ivt2, iel)
           
           ! if the smallest common element index greater or equal to
           ! the current iel the edge does not yet have an index
-          ! so assign an index to the edge                   
+          ! so assign an index to the edge
           if(iSCElement .ge. iel) then
             
             ! increment edge number
@@ -13854,7 +13854,7 @@ p_InodalPropertyDest = -4711
             
           else
             ! the smallest common element index is less than the current
-            ! iel the edge already has a number, so search for edge 
+            ! iel the edge already has a number, so search for edge
             ! (iloc1,iloc2) in the smallest common element
             p_IedgesAtElement(ied,iel) = findEdgeInSmallestCommonElement(&
                                             p_IverticesAtElement, p_IedgesAtElement,&
@@ -13901,16 +13901,16 @@ p_InodalPropertyDest = -4711
         do j = IelementsAtVertexIdx(ivt2), IelementsAtVertexIdx(ivt2+1)-1
           
           ! get the current element at vertex iVGlobal2
-          iel2 = IelementsAtVertex(j) 
+          iel2 = IelementsAtVertex(j)
           
           ! check the vertices share element iel1
           if( (iel2 .eq. iel1) .and.&
               (iel2 .lt. iSCElement) ) then
-            iSCElement = iel2      
+            iSCElement = iel2
           end if
 
         end do ! end j
-      end do ! end i     
+      end do ! end i
 
     end function findSmallestCommonElement
 
@@ -13938,7 +13938,7 @@ p_InodalPropertyDest = -4711
           iVertexAtEdge1 = IVerticesAtElement(IedgesTet(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesTet(2,i), iel)
           
-          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+          if( (ivt1 .eq. iVertexAtEdge1) .and. &
               (ivt2 .eq. iVertexAtEdge2) .or. &
               (ivt1 .eq. iVertexAtEdge2) .and. &
               (ivt2 .eq. iVertexAtEdge1)) then
@@ -13957,7 +13957,7 @@ p_InodalPropertyDest = -4711
           iVertexAtEdge1 = IVerticesAtElement(IedgesPyr(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesPyr(2,i), iel)
           
-          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+          if( (ivt1 .eq. iVertexAtEdge1) .and. &
               (ivt2 .eq. iVertexAtEdge2) .or. &
               (ivt1 .eq. iVertexAtEdge2) .and. &
               (ivt2 .eq. iVertexAtEdge1)) then
@@ -13976,7 +13976,7 @@ p_InodalPropertyDest = -4711
           iVertexAtEdge1 = IVerticesAtElement(IedgesPri(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesPri(2,i), iel)
           
-          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+          if( (ivt1 .eq. iVertexAtEdge1) .and. &
               (ivt2 .eq. iVertexAtEdge2) .or. &
               (ivt1 .eq. iVertexAtEdge2) .and. &
               (ivt2 .eq. iVertexAtEdge1)) then
@@ -13995,7 +13995,7 @@ p_InodalPropertyDest = -4711
           iVertexAtEdge1 = IVerticesAtElement(IedgesHex(1,i), iel)
           iVertexAtEdge2 = IVerticesAtElement(IedgesHex(2,i), iel)
           
-          if( (ivt1 .eq. iVertexAtEdge1) .and. & 
+          if( (ivt1 .eq. iVertexAtEdge1) .and. &
               (ivt2 .eq. iVertexAtEdge2) .or. &
               (ivt1 .eq. iVertexAtEdge2) .and. &
               (ivt2 .eq. iVertexAtEdge1)) then
@@ -14016,9 +14016,9 @@ p_InodalPropertyDest = -4711
       
   end subroutine tria_genEdgesAtElement3D
 
-  !************************************************************************   
+  !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
   subroutine tria_genFacesAtElement3D(rtriangulation)
 
@@ -14030,17 +14030,17 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
   
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
-!</subroutine>  
+!</subroutine>
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     integer, dimension(:,:), pointer :: p_IfacesAtElement
-    integer, dimension(2) :: Isize    
+    integer, dimension(2) :: Isize
     integer :: iel,jel,iface,jface,ifaceGlobal
 
     ! Is everything here we need?
@@ -14130,15 +14130,15 @@ p_InodalPropertyDest = -4711
 
   end subroutine tria_genFacesAtElement3D
 
-  !************************************************************************   
+  !************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   subroutine tria_genElementsAtEdge3D(rtriangulation)
   
 !<description>
   ! This routine generates information about the elements adjacent
-  ! to each edge IelementsAtEdge (KMID) and NNelAtEdge. 
+  ! to each edge IelementsAtEdge (KMID) and NNelAtEdge.
   ! For this purpose, the following arrays are used:
   !    IverticesAtElement, IneighboursAtElement,
   !    IedgesAtElement.
@@ -14146,11 +14146,11 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
 
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
     
-!</subroutine>  
+!</subroutine>
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
@@ -14229,7 +14229,7 @@ p_InodalPropertyDest = -4711
             p_IelementsAtEdgeIdx3D(iglobalEdge+1) =&
             p_IelementsAtEdgeIdx3D(iglobalEdge+1) + 1
         
-      end do ! end iedge      
+      end do ! end iedge
     end do ! end iel
     
     ! set the first index to 1
@@ -14267,15 +14267,15 @@ p_InodalPropertyDest = -4711
       end if
     end if
     
-    ! get the array pointer  
+    ! get the array pointer
     call storage_getbase_int(rtriangulation%h_IelementsAtEdge3D,&
         p_IelementsAtEdge3D)
     
-    ! Duplicate the p_IelementsAtVertexIdx array. We use that as 
+    ! Duplicate the p_IelementsAtVertexIdx array. We use that as
     ! pointer and index when new elements at a vertex are found.
     haux1 = ST_NOHANDLE
     call storage_copy (rtriangulation%h_IelementsAtEdgeIdx3D, haux1)
-    call storage_getbase_int (haux1, p_Iaux1)  
+    call storage_getbase_int (haux1, p_Iaux1)
     
     do iel = 1, rtriangulation%NEL
       ! loop over all local edges
@@ -14285,7 +14285,7 @@ p_InodalPropertyDest = -4711
         iglobalEdge = p_IedgesAtElement(iedge,iel)
         
         if (iglobalEdge > 0) then
-          ! store the adjacency information at position p_Iaux1(ivt)        
+          ! store the adjacency information at position p_Iaux1(ivt)
           p_IelementsAtEdge3D( p_Iaux1(iglobalEdge) ) = iel
           ! increase the position of the next element in p_Iaux1(ivt)
           p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1
@@ -14298,11 +14298,11 @@ p_InodalPropertyDest = -4711
 
   end subroutine tria_genElementsAtEdge3D
 
-  !************************************************************************   
+  !************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
-  subroutine tria_genVerticesAtEdge3D(rtriangulation)  
+  subroutine tria_genVerticesAtEdge3D(rtriangulation)
 
 !<description>
   ! This routine assigns the Vertices at Edge array.
@@ -14312,11 +14312,11 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
 
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
     
-!</subroutine>  
+!</subroutine>
   
     ! local variables
     integer, dimension(:,:), pointer :: p_IedgesAtElement
@@ -14404,7 +14404,7 @@ p_InodalPropertyDest = -4711
       
       select case(tria_getNVE(p_IverticesAtElement, iel))
       case (TRIA_NVETET3D)
-        !========================================================= 
+        !=========================================================
         ! loop over all local edges of the tetrahedron
         do ilocEdge = 1, TRIA_NNETET3D
           ! get the global edge number
@@ -14424,7 +14424,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPYR3D)
-        !========================================================= 
+        !=========================================================
         ! loop over all local edges of the pyramid
         do ilocEdge = 1, TRIA_NNEPYR3D
           ! get the global edge number
@@ -14444,7 +14444,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPRIS3D)
-        !========================================================= 
+        !=========================================================
         ! loop over all local edges of the prism
         do ilocEdge = 1, TRIA_NNEPRIS3D
           ! get the global edge number
@@ -14464,7 +14464,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEHEXA3D)
-        !========================================================= 
+        !=========================================================
         ! loop over all local edges of the hexahedron
         do ilocEdge = 1, TRIA_NNEHEXA3D
           ! get the global edge number
@@ -14488,18 +14488,18 @@ p_InodalPropertyDest = -4711
                          OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge3D')
         call sys_halt()
       end select
-    end do ! end iedge  
+    end do ! end iedge
   
   end subroutine tria_genVerticesAtEdge3D
 
-  !************************************************************************  
+  !************************************************************************
 
 !<subroutine>
 
   subroutine tria_genEdgeNodalProperty3D(rtriangulation)
 
 !<description>
-  ! This routine generates the nodalproperty for the nodes 
+  ! This routine generates the nodalproperty for the nodes
   ! that will be formed by the current set of edges.
   ! For this purpose, the following arrays are used:
   !    InodalProperty(1:NMT), IverticesAtEdge,
@@ -14594,7 +14594,7 @@ p_InodalPropertyDest = -4711
         if (tria_BinSearch(p_IedgesAtBoundary,&
             imt, IcpIdx1, IcpIdx2) .eq. 1) then
           
-          ! the edge is located on the boundary; thus, 
+          ! the edge is located on the boundary; thus,
           ! write that number to the p_InodalProperty array
           p_InodalProperty(rtriangulation%NVT+imt) = ibct
 
@@ -14610,14 +14610,14 @@ p_InodalPropertyDest = -4711
            
   end subroutine tria_genEdgeNodalProperty3D
 
-  !************************************************************************  
+  !************************************************************************
 
 !<subroutine>
 
   subroutine tria_genFaceNodalProperty3D(rtriangulation)
 
 !<description>
-  ! This routine generates the nodalproperty for the nodes 
+  ! This routine generates the nodalproperty for the nodes
   ! that will be formed by the current set of faces.
   ! For this purpose, the following arrays are used:
   
@@ -14633,7 +14633,7 @@ p_InodalPropertyDest = -4711
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtFace
     integer, dimension(:), pointer :: p_InodalProperty
-    integer, dimension(:), pointer :: p_IboundaryCpFacesIdx    
+    integer, dimension(:), pointer :: p_IboundaryCpFacesIdx
     integer, dimension(:), pointer :: p_IfacesAtBoundary
     integer :: isize,ibct,iface,IcpIdx1,IcpIdx2
 
@@ -14727,9 +14727,9 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_genFaceNodalProperty3D
 
-   !************************************************************************  
+   !************************************************************************
 
-!<subroutine>  
+!<subroutine>
    
   subroutine tria_genEdgesAtBoundary3D(rtriangulation)
 
@@ -14738,7 +14738,7 @@ p_InodalPropertyDest = -4711
   ! For this purpose, the following arrays are used:
   !    IverticesAtEdge, InodalProperty, IfacesAtEdge,
   !    IfacesAtEdgeIdx, IfacesAtBoundary,
-  !    
+  !
   ! If necessary, new memory is allocated.
 !</description>
 
@@ -14870,7 +14870,7 @@ p_InodalPropertyDest = -4711
         ! check if face iface a boundary face
         ibdyFace = p_IbdyComponents(ibct)
 
-        ! if we are at or beyond the end of that 
+        ! if we are at or beyond the end of that
         ! boundary component then skip it
         if(ibdyFace .ge. p_IboundaryCpFacesIdx(ibct+1)) cycle
         
@@ -14884,7 +14884,7 @@ p_InodalPropertyDest = -4711
 
           ! increase the pointer to the boundary comp index
           p_IbdyComponents(ibct) = p_IbdyComponents(ibct) + 1
-          exit ! break out of the ibct loop 
+          exit ! break out of the ibct loop
 
         else
 
@@ -14972,18 +14972,18 @@ p_InodalPropertyDest = -4711
           ! get the corresponding boundary component for the boundary edge
           iBdyComp = p_InodalProperty(p_IverticesAtEdge(1,imt))
           
-          ! store the edge number 
+          ! store the edge number
           p_IedgesAtBoundary(p_IboundaryCpEdgesIdx(iBdyComp+1)) = imt
           
           ! increase the pointer in the edgesAtBoundary array
           p_IboundaryCpEdgesIdx(iBdyComp+1) = p_IboundaryCpEdgesIdx(iBdyComp+1) + 1
 
           ! break out of this loop
-          exit  
+          exit
 
         end if
 
-      end do ! end iface    
+      end do ! end iface
     end do ! end iface
     
     ! free memory
@@ -14992,9 +14992,9 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_genEdgesAtBoundary3D
 
-  !************************************************************************  
+  !************************************************************************
 
-!<subroutine> 
+!<subroutine>
 
   subroutine tria_genFacesAtBoundary3D(rtriangulation)
 
@@ -15017,7 +15017,7 @@ p_InodalPropertyDest = -4711
     integer, dimension(:,:), pointer :: p_IverticesAtFace
     integer, dimension(:), pointer :: p_InodalProperty
     integer, dimension(:), pointer :: p_IfacesAtBoundary
-    integer, dimension(:), pointer :: p_IboundaryCpFacesIdx    
+    integer, dimension(:), pointer :: p_IboundaryCpFacesIdx
     integer :: iface, ibct, ifbd, isize
     
     ! Is everything here we need?
@@ -15070,7 +15070,7 @@ p_InodalPropertyDest = -4711
     p_IboundaryCpFacesIdx(1) = 1
     
     ! loop over all faces to count the
-    ! number of faces on the boundary 
+    ! number of faces on the boundary
     do iface = 1, rtriangulation%NAT
     
       ! Check if we are a boundary face, that is, the second
@@ -15080,7 +15080,7 @@ p_InodalPropertyDest = -4711
         ! Get the number of the boundary component
         ibct = p_InodalProperty(p_IverticesAtFace(1,iface))
         
-        ! increase the number of entries for the corresponding 
+        ! increase the number of entries for the corresponding
         ! boundary component. Note that the array was initialised
         ! with zero during the creation process!
         p_IboundaryCpFacesIdx(ibct+1) = p_IboundaryCpFacesIdx(ibct+1) + 1
@@ -15142,9 +15142,9 @@ p_InodalPropertyDest = -4711
 
   end subroutine tria_genFacesAtBoundary3D
 
-  !************************************************************************  
+  !************************************************************************
 
-!<subroutine>    
+!<subroutine>
 
   subroutine tria_genFacesAtVertex3D(rtriangulation)
 
@@ -15155,8 +15155,8 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
 
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -15217,7 +15217,7 @@ p_InodalPropertyDest = -4711
     end do ! end iface
     
     
-    ! create the actual index array  
+    ! create the actual index array
     do iface = 2, rtriangulation%NVT+1
       p_IfacesAtVertexIdx(iface) = p_IfacesAtVertexIdx(iface) + &
                                    p_IfacesAtVertexIdx(iface-1);
@@ -15239,14 +15239,14 @@ p_InodalPropertyDest = -4711
       end if
     end if
     
-    ! get the pointer  
+    ! get the pointer
     call storage_getbase_int(&
         rtriangulation%h_IfacesAtVertex, p_IfacesAtVertex)
     
-    ! build the auxilliary array  
+    ! build the auxilliary array
     haux1 = ST_NOHANDLE
     call storage_copy (rtriangulation%h_IfacesAtVertexIdx, haux1)
-    call storage_getbase_int (haux1, p_Iaux1) 
+    call storage_getbase_int (haux1, p_Iaux1)
     
     ! assign the connectivity info
     do iface = 1, rtriangulation%NAT
@@ -15256,25 +15256,25 @@ p_InodalPropertyDest = -4711
         ivt = p_IverticesAtFace(ive,iface)
         
         if (ivt > 0) then
-          ! store the adjacency information at position p_Iaux1(ivt)        
+          ! store the adjacency information at position p_Iaux1(ivt)
           p_IfacesAtVertex( p_Iaux1(ivt) ) = iface
           
           ! increase the position of the next element in p_Iaux1(ivt)
-          p_Iaux1(ivt) = p_Iaux1(ivt) + 1    
+          p_Iaux1(ivt) = p_Iaux1(ivt) + 1
         end if
         
       end do ! end ive
     end do ! end iface
     
-    call storage_free(haux1)   
+    call storage_free(haux1)
     
   end subroutine tria_genFacesAtVertex3D
 
-  !************************************************************************  
+  !************************************************************************
 
 !<subroutine>
 
-  subroutine tria_genFacesAtEdge3D (rtriangulation) 
+  subroutine tria_genFacesAtEdge3D (rtriangulation)
   
 !<description>
   ! This routine builds the FacesAtEdge array.
@@ -15283,8 +15283,8 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
 
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -15341,7 +15341,7 @@ p_InodalPropertyDest = -4711
         ! increase the number of faces at these edges by one
         if (iglobalEdge > 0)&
             p_IfacesAtEdgeIdx(iglobalEdge+1) = &
-            p_IfacesAtEdgeIdx(iglobalEdge+1) + 1 
+            p_IfacesAtEdgeIdx(iglobalEdge+1) + 1
         
       end do ! end iedge
     end do ! end iface
@@ -15374,7 +15374,7 @@ p_InodalPropertyDest = -4711
     
     haux1 = ST_NOHANDLE
     call storage_copy (rtriangulation%h_IfacesAtEdgeIdx, haux1)
-    call storage_getbase_int (haux1, p_Iaux1) 
+    call storage_getbase_int (haux1, p_Iaux1)
     
     ! Loop over all faces and assign the connectivity info
     do iface = 1, rtriangulation%NAT
@@ -15386,24 +15386,24 @@ p_InodalPropertyDest = -4711
         iglobalEdge = p_IedgesAtFace(iedge,iface)
         
         if (iglobalEdge > 0) then
-          ! store the adjacency information at position p_Iaux1(ivt)        
+          ! store the adjacency information at position p_Iaux1(ivt)
           p_IfacesAtEdge( p_Iaux1(iglobalEdge) ) = iface
           ! increase the position of the next element in p_Iaux1(ivt)
-          p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1    
+          p_Iaux1(iglobalEdge) = p_Iaux1(iglobalEdge) + 1
         end if
         
       end do ! end iedge
     end do ! end iface
     
-    call storage_free(haux1)   
+    call storage_free(haux1)
     
   end subroutine tria_genFacesAtEdge3D
 
-  !************************************************************************  
+  !************************************************************************
 
 !<subroutine>
   
-  subroutine tria_genEdgesAtFace3D(rtriangulation)  
+  subroutine tria_genEdgesAtFace3D(rtriangulation)
 
 !<description>
   ! This routine builds the EdgesAtFace array.
@@ -15413,8 +15413,8 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
   
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -15489,7 +15489,7 @@ p_InodalPropertyDest = -4711
       ! get the first face this element is conncected to
       iel = p_IelementsAtFace(1,iface)
       
-      ! determine which local face is iface 
+      ! determine which local face is iface
       do ilocalFace = 1, rtriangulation%NNAE
         iglobalFace = p_IfacesAtElement(ilocalFace,iel)
         if(iglobalFace .eq. iface) exit
@@ -15498,7 +15498,7 @@ p_InodalPropertyDest = -4711
       ! What type of element are we?
       select case(tria_getNVE(p_IverticesAtElement, iel))
       case (TRIA_NVETET3D)
-        !=========================================================  
+        !=========================================================
         select case (ilocalFace)
         case (1)
           ! assign the edges
@@ -15536,7 +15536,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPYR3D)
-        !=========================================================  
+        !=========================================================
         select case (ilocalFace)
         case (1)
           ! assign the edges
@@ -15581,7 +15581,7 @@ p_InodalPropertyDest = -4711
 
         
       case (TRIA_NVEPRIS3D)
-        !=========================================================  
+        !=========================================================
         select case (ilocalFace)
         case (1)
           ! assign the edges
@@ -15626,7 +15626,7 @@ p_InodalPropertyDest = -4711
           
 
       case (TRIA_NVEHEXA3D)
-        !=========================================================  
+        !=========================================================
         select case (ilocalFace)
         case (1)
           ! assign the edges
@@ -15635,35 +15635,35 @@ p_InodalPropertyDest = -4711
           p_IedgesAtFace(3,iface)=p_IedgesAtElement(3,iel)
           p_IedgesAtFace(4,iface)=p_IedgesAtElement(4,iel)
 
-        case (2)    
+        case (2)
           ! assign the edges
           p_IedgesAtFace(1,iface)=p_IedgesAtElement(1,iel)
           p_IedgesAtFace(2,iface)=p_IedgesAtElement(5,iel)
           p_IedgesAtFace(3,iface)=p_IedgesAtElement(6,iel)
           p_IedgesAtFace(4,iface)=p_IedgesAtElement(9,iel)
           
-        case (3)    
+        case (3)
           ! assign the edges
           p_IedgesAtFace(1,iface)=p_IedgesAtElement(2,iel)
           p_IedgesAtFace(2,iface)=p_IedgesAtElement(6,iel)
           p_IedgesAtFace(3,iface)=p_IedgesAtElement(7,iel)
           p_IedgesAtFace(4,iface)=p_IedgesAtElement(10,iel)
           
-        case (4)    
+        case (4)
           ! assign the edges
           p_IedgesAtFace(1,iface)=p_IedgesAtElement(3,iel)
           p_IedgesAtFace(2,iface)=p_IedgesAtElement(7,iel)
           p_IedgesAtFace(3,iface)=p_IedgesAtElement(8,iel)
           p_IedgesAtFace(4,iface)=p_IedgesAtElement(11,iel)
           
-        case (5)    
+        case (5)
           ! assign the edges
           p_IedgesAtFace(1,iface)=p_IedgesAtElement(4,iel)
           p_IedgesAtFace(2,iface)=p_IedgesAtElement(8,iel)
           p_IedgesAtFace(3,iface)=p_IedgesAtElement(5,iel)
           p_IedgesAtFace(4,iface)=p_IedgesAtElement(12,iel)
           
-        case (6)    
+        case (6)
           ! assign the edges
           p_IedgesAtFace(1,iface)=p_IedgesAtElement(9,iel)
           p_IedgesAtFace(2,iface)=p_IedgesAtElement(10,iel)
@@ -15686,11 +15686,11 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_genEdgesAtFace3D
 
-  !************************************************************************  
+  !************************************************************************
   
-!<subroutine>  
+!<subroutine>
 
-  subroutine tria_genElementsAtFace3D(rtriangulation) 
+  subroutine tria_genElementsAtFace3D(rtriangulation)
 
 !<description>
   ! This routine builds the ElementsAtFace array.
@@ -15700,8 +15700,8 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
   
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -15797,9 +15797,9 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_genElementsAtFace3D
 
-  !************************************************************************  
+  !************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   subroutine tria_genVerticesAtFace3D(rtriangulation)
 
@@ -15811,11 +15811,11 @@ p_InodalPropertyDest = -4711
   ! If necessary, new memory is allocated.
 !</description>
   
-!<inputoutput>  
-  type(t_triangulation), intent(inout) :: rtriangulation  
+!<inputoutput>
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
-!</subroutine>    
+!</subroutine>
 
     ! local variables
     integer, dimension(:,:), pointer  :: p_IverticesAtElement
@@ -15895,7 +15895,7 @@ p_InodalPropertyDest = -4711
       ! What kind of element shape are we?
       select case(tria_getNVE(p_IverticesAtElement, iel))
       case (TRIA_NVETET3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all local faces of the tetrahedron
         do iface = 1, TRIA_NAETET3D
         
@@ -15944,7 +15944,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPYR3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all local faces of the pyramid
         do iface = 1, TRIA_NAEPYR3D
         
@@ -16001,7 +16001,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEPRIS3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all local faces of the prism
         do iface = 1, TRIA_NAEPRIS3D
         
@@ -16058,7 +16058,7 @@ p_InodalPropertyDest = -4711
 
 
       case (TRIA_NVEHEXA3D)
-        !=========================================================  
+        !=========================================================
         ! loop over all local faces of the hexahedron
         do iface = 1, TRIA_NAEHEXA3D
         
@@ -16121,7 +16121,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_genElementVolume3D(rtriangulation)
 
 !<description>
-  ! This routine generates the element volume array DelementVolume (DAREA). 
+  ! This routine generates the element volume array DelementVolume (DAREA).
   ! For this purpose, the following arrays are used:
   !    DvertexCoordinates, IverticesAtElement.
   ! If necessary, new memory is allocated.
@@ -16202,14 +16202,14 @@ p_InodalPropertyDest = -4711
   
   !************************************************************************
 
-!<subroutine>  
+!<subroutine>
 
   pure subroutine tria_getVerticesAtFaceDirect(iface, nva, IverticesAtElement,&
                                                bpositive, IverticesAtFace)
 
 !<description>
   ! This routine calculates the vertices on face iface of element iel.
-  ! The vertex numbers are returned in mathematically positive or negative 
+  ! The vertex numbers are returned in mathematically positive or negative
   ! sense when 'looking' at the vertices from the center of the element.
 !</description>
 
@@ -16218,7 +16218,7 @@ p_InodalPropertyDest = -4711
   integer, intent(in) :: iface
   
   ! Maximum number of vertices per face. 3 for 3D tetraheral meshes,
-  ! 4 for 3D hexahedral meshes. 
+  ! 4 for 3D hexahedral meshes.
   integer, intent(in) :: nva
 
   ! Array containing the vertices on the current element
@@ -16239,8 +16239,8 @@ p_InodalPropertyDest = -4711
     ! local variables
     integer :: i
 
-    ! List of vertices on each of the faces -- for hexahedral meshes. 
-    ! This array defines the ordering of the vertices. 
+    ! List of vertices on each of the faces -- for hexahedral meshes.
+    ! This array defines the ordering of the vertices.
     ! We have the following local vertex vertices:
     !
     !           8----------------7
@@ -16251,43 +16251,43 @@ p_InodalPropertyDest = -4711
     !      5----------------6    |
     !      |    |           |    |
     !      |    4-----------|----3
-    !      |   /            |   / 
-    !      |  /             |  /  
-    !      | /              | /   
-    !      |/               |/ 
-    !      1----------------2  
-    ! 
+    !      |   /            |   /
+    !      |  /             |  /
+    !      | /              | /
+    !      |/               |/
+    !      1----------------2
+    !
     ! The faces are ordered as follows; the smallest local vertex number is
     ! always vertex 1 of the face. The ordering of the vertices is always
     ! in mathematically positive sense when looking 'from the center'
     ! of the element to the face:
-    !                 
-    !                                                                    -7 
-    !                                                                    /| 
-    !                                                                   / | 
-    !                                                                  /  | 
-    !                            /                /                   /   | 
-    !                           5----------------6                  -6    | 
-    !       |                |  |                |                   | 3  | 
-    !       4----------------3  |                |                   |   -3 
-    !      /                /   |                |                   |   /  
-    !     /       1        /    |       2        |                   |  /   
-    !    /                /     |                |                   | /    
-    !  |/               |/      |/               |/                  |/     
-    !  1----------------2       1----------------2                  -2      
+    !
+    !                                                                    -7
+    !                                                                    /|
+    !                                                                   / |
+    !                                                                  /  |
+    !                            /                /                   /   |
+    !                           5----------------6                  -6    |
+    !       |                |  |                |                   | 3  |
+    !       4----------------3  |                |                   |   -3
+    !      /                /   |                |                   |   /
+    !     /       1        /    |       2        |                   |  /
+    !    /                /     |                |                   | /
+    !  |/               |/      |/               |/                  |/
+    !  1----------------2       1----------------2                  -2
     !
     !   8----------------7         8-                    8----------------7
     !  /|               /|        /|                    /|               /|
-    !   |                |       / |                   /      6         /  
-    !   |       4        |      /  |                  /                /   
-    !   |                |     /   |                 /                /    
-    !   |                |    5-   |                5----------------6     
-    !   |                |    |  5 |                |                |     
-    !   4----------------3    |    4-                                         
-    !  /                /     |   /                                           
-    !                         |  /                                            
-    !                         | /                                             
-    !                         |/                                              
+    !   |                |       / |                   /      6         /
+    !   |       4        |      /  |                  /                /
+    !   |                |     /   |                 /                /
+    !   |                |    5-   |                5----------------6
+    !   |                |    |  5 |                |                |
+    !   4----------------3    |    4-
+    !  /                /     |   /
+    !                         |  /
+    !                         | /
+    !                         |/
     !                         1-
     !
     ! Note that the real element may be inverted (face 6 below face 1). In that
@@ -16313,7 +16313,7 @@ p_InodalPropertyDest = -4711
     ! What type of element are we
     select case(ubound(IverticesAtElement,1))
     case(TRIA_NVETET3D)
-      !=========================================================  
+      !=========================================================
       ! Tetrahedron element: Get the vertices on the face
       if (bpositive) then
         do i=1,nva
@@ -16326,7 +16326,7 @@ p_InodalPropertyDest = -4711
       end if
 
     case(TRIA_NVEHEXA3D)
-      !=========================================================  
+      !=========================================================
       ! Hexahedron element: Get the vertices on the face
       if (bpositive) then
         do i=1,nva
@@ -16349,12 +16349,12 @@ p_InodalPropertyDest = -4711
   ! tag@aux
   !====================================================================
   
-!<subroutine>      
+!<subroutine>
 
   subroutine tria_buildConnectorList(IConnectList, rtriangulation)
 
 !<description>
-  ! This routine builds the connector list used 
+  ! This routine builds the connector list used
   ! in the neighbours at elements routine
 !</description>
 
@@ -16362,12 +16362,12 @@ p_InodalPropertyDest = -4711
   type(t_triangulation), intent(in) :: rtriangulation
 !</input>
     
-!<output>    
+!<output>
   ! the list of connectors this routine is supposed to build
-  type(t_connector3D), dimension(:), intent(out) :: IConnectList    
-!</output>  
+  type(t_connector3D), dimension(:), intent(out) :: IConnectList
+!</output>
   
-!</subroutine>    
+!</subroutine>
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -16388,7 +16388,7 @@ p_InodalPropertyDest = -4711
       case (TRIA_NVETET3D)
         ! build connectors for each tetrahedron
 
-        !=========================================================  
+        !=========================================================
         ! first face
         nfaces = nfaces+1
         
@@ -16418,7 +16418,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 2
         
-        !=========================================================  
+        !=========================================================
         ! third face
         nfaces = nfaces+1
         
@@ -16433,7 +16433,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 3
         
-        !=========================================================  
+        !=========================================================
         ! fourth face
         nfaces = nfaces+1
         
@@ -16448,13 +16448,13 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 4
         
-        !========================================================= 
+        !=========================================================
 
 
       case (TRIA_NVEPYR3D)
         ! build connectors for each pyramid
 
-        !=========================================================  
+        !=========================================================
         ! first face
         nfaces = nfaces+1
 
@@ -16482,7 +16482,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 2
         
-        !=========================================================  
+        !=========================================================
         ! third face
         nfaces = nfaces+1
         
@@ -16497,7 +16497,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 3
         
-        !=========================================================  
+        !=========================================================
         ! fourth face
         nfaces = nfaces+1
         
@@ -16512,7 +16512,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 4
 
-        !=========================================================  
+        !=========================================================
         ! fifth face
         nfaces = nfaces+1
         
@@ -16527,13 +16527,13 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 5
 
-        !=========================================================  
+        !=========================================================
 
 
       case (TRIA_NVEPRIS3D)
         ! build connectors for each prism
 
-        !=========================================================  
+        !=========================================================
         ! first face
         nfaces = nfaces+1
         
@@ -16548,7 +16548,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 1
 
-        !=========================================================  
+        !=========================================================
         ! fifth face
         nfaces = nfaces+1
         
@@ -16608,13 +16608,13 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 4
 
-        !=========================================================  
+        !=========================================================
 
 
       case (TRIA_NVEHEXA3D)
         ! build connectors for each hexahedron
         
-        !=========================================================  
+        !=========================================================
         ! first face
         nfaces = nfaces+1
         
@@ -16656,7 +16656,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 2
         
-        !=========================================================  
+        !=========================================================
         ! fourth face
         nfaces = nfaces+1
         
@@ -16671,7 +16671,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 4
         
-        !=========================================================  
+        !=========================================================
         ! third face
         nfaces = nfaces+1
         
@@ -16686,7 +16686,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 3
         
-        !=========================================================  
+        !=========================================================
         ! fifth face
         nfaces = nfaces+1
         
@@ -16701,7 +16701,7 @@ p_InodalPropertyDest = -4711
         ! assign the local face number
         IConnectList(nfaces)%I_conData(6) = 5
         
-        !=========================================================  
+        !=========================================================
 
       case default
         call output_line('Unsupported type of element shape',&
@@ -16713,7 +16713,7 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_buildConnectorList
 
-  !************************************************************************   
+  !************************************************************************
 
 !<subroutine>
 
@@ -16724,11 +16724,11 @@ p_InodalPropertyDest = -4711
   ! ordering on the list of connectors in 3D
 !</description>
 
-!<input>    
+!<input>
   integer, intent(in) :: iElements
-!</input>  
+!</input>
 
-!<inputoutput>        
+!<inputoutput>
   type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>
 
@@ -16743,33 +16743,33 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_sortElements3D
 
-  !************************************************************************   
+  !************************************************************************
   
 !<subroutine>
 
   subroutine tria_sortElements3DInt(IConnectList, iElements)
 
 !<description>
-  ! This subroutine establishes the sorted numbering 
+  ! This subroutine establishes the sorted numbering
   ! on the list of connectors in 3D
 !</description>
     
   ! parameter values
 
-!<input>    
+!<input>
   integer, intent(in) :: iElements
 !</input>
 
-!<inputoutput>        
+!<inputoutput>
   type(t_connector3D), dimension(:), intent(inout) :: IConnectList
-!</inputoutput>          
+!</inputoutput>
         
 !</subroutine>
     
   ! local variables
     integer :: i
 
-    ! create a sorted numbering in all connectors    
+    ! create a sorted numbering in all connectors
     do i = 1, iElements
       call sort(IConnectList(i)%I_conData(1:4))
     end do
@@ -16804,14 +16804,14 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_sortElements3DInt
 
-  !************************************************************************   
+  !************************************************************************
 
-!<subroutine>      
+!<subroutine>
 
   recursive subroutine tria_mergesort(IConnectList, l, r, pos)
     
 !<description>
-  ! This routine sorts a connector list it is used as an 
+  ! This routine sorts a connector list it is used as an
   ! auxilliary routine during the Neighbours at elements routine
 !</description>
     
@@ -16822,11 +16822,11 @@ p_InodalPropertyDest = -4711
 !</input>
   
 !<inputoutput>
-  ! the list of connectors    
+  ! the list of connectors
   type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>
 
-!</subroutine>      
+!</subroutine>
     
     ! local variables
     integer :: m
@@ -16843,30 +16843,30 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_mergesort
 
-  !************************************************************************      
+  !************************************************************************
 
-!<subroutine> 
+!<subroutine>
 
   subroutine tria_merge(IConnectList, l, m, r, pos)
     
 !<description>
-  ! 
+  !
   ! standard auxilliary routine in the mergesort algorithm
-  ! 
+  !
 !</description>
     
-!<input> 
+!<input>
   ! the array positions l...r will be sorted
   ! the sorting key is element 'pos' of the connector
   integer, intent(in) :: l,r,m,pos
 !</input>
 
 !<inputoutput>
-  ! the list of connectors     
+  ! the list of connectors
   type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>
 
-!</subroutine>     
+!</subroutine>
 
     ! local variables
     integer :: i,j,n1,n2,k
@@ -16878,9 +16878,9 @@ p_InodalPropertyDest = -4711
     ! init counters
     n1 = m - l + 1
     
-    n2 = r - m 
+    n2 = r - m
     
-    k = l    
+    k = l
     
     ! allocate memory for merging
     allocate(p_L(n1))
@@ -16899,7 +16899,7 @@ p_InodalPropertyDest = -4711
     i = 1
     j = 1
     
-    ! merge 
+    ! merge
     do
       if( (i > n1 ) .or. (j > n2) ) exit
       
@@ -16912,7 +16912,7 @@ p_InodalPropertyDest = -4711
         i = i + 1
         k = k + 1
       else
-        IConnectList(k) = p_R(j)                 
+        IConnectList(k) = p_R(j)
         j = j + 1
         k = k + 1
       end if
@@ -16949,7 +16949,7 @@ p_InodalPropertyDest = -4711
     
   end subroutine tria_merge
 
-  !************************************************************************     
+  !************************************************************************
 
 !<function>
 
@@ -17002,9 +17002,9 @@ p_InodalPropertyDest = -4711
   
   end function tria_BinSearch
   
-  !************************************************************************      
+  !************************************************************************
 
-!<subroutine> 
+!<subroutine>
 
   subroutine tria_calcBoundingBox(rtriangulation,DboundingBoxMin,DboundingBoxMax)
     
@@ -17012,7 +17012,7 @@ p_InodalPropertyDest = -4711
   ! Calculates the X/Y/Z coordinates of a bounding box surrounding the mesh.
 !</description>
     
-!<input> 
+!<input>
   ! Underlying triangulation
   type(t_triangulation), intent(in) :: rtriangulation
 !</input>
@@ -17025,7 +17025,7 @@ p_InodalPropertyDest = -4711
   real(DP), dimension(:), intent(out) :: DboundingBoxMax
 !</output>
 
-!</subroutine>     
+!</subroutine>
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DvertexCoords

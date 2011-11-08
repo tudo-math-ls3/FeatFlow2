@@ -155,9 +155,9 @@ module octree
   integer, parameter :: OTREE_SUBDIV = -1
 
   ! Identifier: Node is deleted
-  integer, parameter :: OTREE_DEL    = -2  
+  integer, parameter :: OTREE_DEL    = -2
 
-!</constantblock> 
+!</constantblock>
 
 !<constantblock description="Constants for octree bounding-box">
 
@@ -179,7 +179,7 @@ module octree
   ! Position of the z-maximal value
   integer, parameter :: OTREE_ZMAX   =  6
 
-!</constantblock>   
+!</constantblock>
   
 !<constantblock description="Constants for octree operations">
 
@@ -236,9 +236,9 @@ module octree
     integer :: h_Knode = ST_NOHANDLE
 
     ! Data vectors
-    ! NOTE: This array is introduced to increase performance. It should not be touched 
+    ! NOTE: This array is introduced to increase performance. It should not be touched
     ! by the user. To this end, all quantities of this derived type are PRIVATE.
-    ! If the handle h_Ddata would be dereferences for each operation such as search, 
+    ! If the handle h_Ddata would be dereferences for each operation such as search,
     ! delete, performance would be very poor.
     real(DP), dimension(:,:), pointer :: p_Ddata
 
@@ -429,7 +429,7 @@ contains
 !<description>
     ! This subroutine copies the content of the octree to a handle.
     ! If the handle is not associated, then a new handle with correct
-    ! size is allocated. Otherwise, the handle is reallocated if 
+    ! size is allocated. Otherwise, the handle is reallocated if
     ! it does not provide enough memory.
 !</description>
 
@@ -577,7 +577,7 @@ contains
     call DCOPY(3*roctree%NVT, p_Ddata, 1, roctree%p_Ddata, 1)
 
     ! Rebuild structure
-    call otree_rebuildOctree(roctree) 
+    call otree_rebuildOctree(roctree)
 
   end subroutine otree_copyToOctree_array
 
@@ -661,7 +661,7 @@ contains
       ivt = 0
     end if
     
-  contains  
+  contains
     
     !**************************************************************
     ! Here, the recursive insertion routine follows
@@ -782,7 +782,7 @@ contains
           end if
         end do
         
-        ! Mark the current nodes as subdivided and set pointers to its eight children 
+        ! Mark the current nodes as subdivided and set pointers to its eight children
         roctree%p_Knode(OTREE_STATUS,inode) =     OTREE_SUBDIV
         roctree%p_Knode(1:OTREE_MAX, inode) = - (/nnode+OTREE_NWF, nnode+OTREE_SWF,&
                                                   nnode+OTREE_SEF, nnode+OTREE_NEF,&
@@ -1086,7 +1086,7 @@ contains
 
 !<result>
     ! Result of the searching:
-    !   QTREE_NOT_FOUND 
+    !   QTREE_NOT_FOUND
     !   QTREE_FOUND
     integer :: iresult
 !</result>
@@ -1685,7 +1685,7 @@ contains
         nnode = roctree%NNODE
         roctree%NNODE = nnode+OTREE_MAX
 
-        ! Mark the current node as subdivided and set pointers to its eight children 
+        ! Mark the current node as subdivided and set pointers to its eight children
         roctree%p_Knode(OTREE_STATUS,inode) =    OTREE_SUBDIV
         roctree%p_Knode(1:OTREE_MAX,inode)  = -(/nnode+OTREE_NWF, nnode+OTREE_SWF,&
                                                  nnode+OTREE_SEF, nnode+OTREE_NEF,&

@@ -19,11 +19,11 @@
 !#      -> starts the timer object
 !#
 !#  3.) stat_sampleTimer
-!#      -> calculates the time that has elapsed since it was started without 
+!#      -> calculates the time that has elapsed since it was started without
 !#         stopping the timer
 !#
 !#  4.) stat_stopTimer
-!#      -> stops the timer object and calculates the time that has elapsed 
+!#      -> stops the timer object and calculates the time that has elapsed
 !#         since it was started
 !#
 !#  5.) stat_sgetTime_byTimer
@@ -33,7 +33,7 @@
 !#      -> Computes the sum of the elapsed times the given timers hold
 !#
 !#  7.) stat_subTimers
-!#      -> Computes the difference of the elapsed times (rtimer2 - rtimer1) 
+!#      -> Computes the difference of the elapsed times (rtimer2 - rtimer1)
 !#         the given timers hold.
 !#
 !#  8.) stat_rcloneTimer
@@ -70,7 +70,7 @@
 !#   WRITE(*,*) "Time for computation: ",rtimer%delapsedReal
 !# </code>
 !#
-!# Note that there may be some confusion in case, OpenMP is used! Use 
+!# Note that there may be some confusion in case, OpenMP is used! Use
 !# rtimer%delapsedReal to get the real computation time of the program and
 !# assure that you are the only one computing on the machine!
 !#
@@ -92,7 +92,7 @@
 !#
 !#    These timers are much faster to handle than standard timers as they
 !#    calculate processor cycles (at least in most cases, depending on the
-!#    underlying processor architecture). Note that these timers are not 
+!#    underlying processor architecture). Note that these timers are not
 !#    designed for long-term time measurements as (depending on the underlying
 !#    architecture) a timer may get an overflow!
 !#
@@ -114,22 +114,22 @@
 !# <code>
 !#      CALL stat_startTimer(rtimer).
 !# </code>
-!# 
+!#
 !#    A long-term timer calculates the time with a granularity of milliseconds.
 !#    A standard timer automatically chooses the most accurate time measurement
 !#    available -- i.e. for short time spans it uses a short-term timer and
 !#    for longer time intervals a long-term timer. A pure long-term timer will
 !#    calculate only the wall clock rtimer%delapsedReal, while a standard timer
-!#    calculates both, wall clock (rtimer%delapsedReal) and CPU clock 
+!#    calculates both, wall clock (rtimer%delapsedReal) and CPU clock
 !#    (rtimer%delapsedCPU).
 !#
-!#    Note that both, standard and long-term timers, are much more cost 
-!#    intensive in terms of processor cycles than short-term timers! They 
-!#    should be used to stop the time of larger algorithms or if the costs 
-!#    for an algorithm  cannot be guessed a-priori. A too intensive use of 
-!#    this type of timer may have an impact on the performance of the whole 
+!#    Note that both, standard and long-term timers, are much more cost
+!#    intensive in terms of processor cycles than short-term timers! They
+!#    should be used to stop the time of larger algorithms or if the costs
+!#    for an algorithm  cannot be guessed a-priori. A too intensive use of
+!#    this type of timer may have an impact on the performance of the whole
 !#    program!
-!#    
+!#
 !# </purpose>
 !##############################################################################
 
@@ -207,7 +207,7 @@ module statistics
   public :: t_timer
 !</typeblock>
 
-!</types> 
+!</types>
 
   public :: stat_clearTimer
   public :: stat_startTimer
@@ -260,7 +260,7 @@ contains
 
 !<description>
   ! Converts a standard date into a Julian date.
-!</description>  
+!</description>
 
 !<input>
     ! Year
@@ -321,8 +321,8 @@ contains
 !<description>
   ! Starts the given timer object. ctype specifies the type of the timer.
   ! Short-term timer are computationally more efficient than long-term
-  ! timer (they are just faster when being used), but they do not allow 
-  ! to compute the total time for long-term time measurements on some 
+  ! timer (they are just faster when being used), but they do not allow
+  ! to compute the total time for long-term time measurements on some
   ! computer systems.
 !</description>
 
@@ -387,9 +387,9 @@ contains
   subroutine stat_stopTimer(rtimer)
   
 !<description>
-  ! Stops the given timer object and accumulates the time since it was started 
-  ! with the elapsed time this object already holds. In other words: 
-  ! A sequence of start/stopTimer() calls results in the total accumulated elapsed 
+  ! Stops the given timer object and accumulates the time since it was started
+  ! with the elapsed time this object already holds. In other words:
+  ! A sequence of start/stopTimer() calls results in the total accumulated elapsed
   ! time of each timed block of code, not in that of the last one.
 !</description>
 
@@ -438,7 +438,7 @@ contains
       rtimer%delapsedCPU = rtimer%delapsedCPU + (dcurrentCPU - rtimer%dstartCPU)
     end if
     
-    ! Is that a long-term timer?  
+    ! Is that a long-term timer?
     if (iand(rtimer%ctype,STAT_TIMERLONG) .ne. 0) then
     
       call date_and_time(values=itimeLong)
@@ -476,7 +476,7 @@ contains
       
     end if
     
-    ! Sum up the wall clock time    
+    ! Sum up the wall clock time
     rtimer%delapsedReal = rtimer%delapsedReal + delapsed
     
     ! Switch off the timer.
@@ -544,7 +544,7 @@ contains
       delapsedTime = max(dtmp, 0.0_DP)
     end if
     
-    ! Is that a long-term timer?  
+    ! Is that a long-term timer?
     if (iand(rtimer%ctype,STAT_TIMERLONG) .ne. 0) then
     
       call date_and_time(values=itimeLong)
@@ -591,7 +591,7 @@ contains
 
 !<description>
   ! Returns a string containing both CPU and real elapsed time.
-  ! If the timer is running, the output will be nonsense. Without 
+  ! If the timer is running, the output will be nonsense. Without
   ! ENABLE_PARAMETER_CHECK, this is not even reported to improve performance.
 !</description>
 
@@ -616,11 +616,11 @@ contains
 ! ***************************************************************************
 
 !<subroutine>
-  subroutine stat_addTimers(rtimer1,rtimer2) 
+  subroutine stat_addTimers(rtimer1,rtimer2)
 
 !<description>
-  ! Computes the sum of the elapsed times the given timers hold and stores it in rtimer2. 
-  ! Both timers must be stopped, otherwise the result is nonsense. Without 
+  ! Computes the sum of the elapsed times the given timers hold and stores it in rtimer2.
+  ! Both timers must be stopped, otherwise the result is nonsense. Without
   ! ENABLE_PARAMETER_CHECK, this is not even reported to improve performance.
 !</description>
 
@@ -650,8 +650,8 @@ contains
   subroutine stat_subTimers(rtimer1,rtimer2)
 
 !<description>
-  ! Computes the difference of the elapsed times (rtimer2 = rtimer2 - rtimer1) the given 
-  ! timers represent.  Both timers must be stopped, otherwise the result is nonsense. 
+  ! Computes the difference of the elapsed times (rtimer2 = rtimer2 - rtimer1) the given
+  ! timers represent.  Both timers must be stopped, otherwise the result is nonsense.
   ! Without ENABLE_PARAMETER_CHECK, this is not even reported to improve performance.
 !</description>
 
@@ -681,8 +681,8 @@ contains
   function stat_rcloneTimer(rtimer) result (rtimerResult)
 
 !<description>
-  ! Clones the given timer, which must be stopped. 
-  ! If the input timer is not stopped, otherwise the result is nonsense. Without 
+  ! Clones the given timer, which must be stopped.
+  ! If the input timer is not stopped, otherwise the result is nonsense. Without
   ! ENABLE_PARAMETER_CHECK, this is not even reported to improve performance.
 !</description>
 

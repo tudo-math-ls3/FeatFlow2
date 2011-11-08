@@ -38,7 +38,7 @@ program preproctest
   !          length of 132 characters per line is exceeded. There exist the
   !          following remedies to this violation of the Fortran standard:
   !
-  !          (a) lines are truncated manually and continued in the next 
+  !          (a) lines are truncated manually and continued in the next
   !              line using the keyword 'mynewline' (written in upper case).
   !              This keyword is recognized by f90cpp and converted into '&\n'
   !              after the file has been preprocessed by the preprocessor.
@@ -88,7 +88,7 @@ program preproctest
   write(*,*)
 
 
-  ! Test #4: The preprocessor should not manipulate comments which include 
+  ! Test #4: The preprocessor should not manipulate comments which include
   !          characters such as backslashes which would normally be interpreted
   !          as line continuation symbols by the C preprocessor. This special
   !          case is handled by perl command (4) in script f90cpp.
@@ -124,7 +124,7 @@ program preproctest
   write(*,*)
 
 
-  ! Test #5: The preprocessor must not interpred Fortran 90 string 
+  ! Test #5: The preprocessor must not interpred Fortran 90 string
   !          concatination operators ('//'). This special case is
   !          handled by perl command (2) in script f90cpp.
 
@@ -147,7 +147,7 @@ program preproctest
 !!$  write(*,*)
 
   
-  ! Test #7: Concatenation of two arguments. This feature is supported by 
+  ! Test #7: Concatenation of two arguments. This feature is supported by
   !          GNU cpp if NOT envoked in traditional mode as well as the
   !          Intel Fortran preprocessor. It is not supported by the SUN
   !          Fortran preprocessor and the GNU cpp envoked in traditional

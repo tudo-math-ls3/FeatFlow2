@@ -503,7 +503,7 @@ contains
         call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
+        ! Discretise the boundary conditions at the new point in time --
         ! if the boundary conditions are nonconstant in time!
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
@@ -752,7 +752,7 @@ contains
 
     real(DP), dimension(:),pointer :: p_Db
     
-    ! DEBUG!!!    
+    ! DEBUG!!!
     call lsysbl_getbase_double (rtempVectorD,p_Db)
 
     ! Overwrite the primal defect with 0 -- as the solution must not be changed.
@@ -788,7 +788,7 @@ contains
 
     real(DP), dimension(:),pointer :: p_Db
     
-    ! DEBUG!!!    
+    ! DEBUG!!!
     call lsysbl_getbase_double (rd,p_Db)
     
 !    CALL lsyssc_clearVector(rd%RvectorBlock(1))
@@ -824,8 +824,8 @@ contains
 !    imposed weakly, therefore for following lines of code are not used!
 !
 !    REAL(DP), DIMENSION(:),POINTER :: p_Db
-!    
-!    ! DEBUG!!!    
+!
+!    ! DEBUG!!!
 !    CALL lsysbl_getbase_double (rd,p_Db)
 !
 !    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
@@ -846,13 +846,13 @@ contains
 !      !     -gamma*M*y + (M+dt*nu*L)*lambda = -gamma*z
 !      !
 !      ! which adds a mass matrix to a 'smoothing' Laplace part.
-!      
+!
 !      IF (rspaceTimeDiscr%itypeTerminalCondition .EQ. 0) THEN
 !        CALL lsyssc_clearVector(rd%RvectorBlock(4))
 !        CALL lsyssc_clearVector(rd%RvectorBlock(5))
 !        CALL lsyssc_clearVector(rd%RvectorBlock(6))
 !      END IF
-!      
+!
 !    END IF
 
   end subroutine
@@ -872,9 +872,9 @@ contains
   ! Time where the BC's should be implemented.
   ! Must not necessarily coincide with the start/end time of the timestep.
   real(DP), intent(IN) :: dtime
-!</input>  
+!</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Problem structure.
   type(t_problem), intent(INOUT) :: rproblem
   

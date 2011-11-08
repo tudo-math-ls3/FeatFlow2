@@ -6,19 +6,19 @@
 !# <purpose>
 !# This module implements discrete boundary conditions for fictitious boundary
 !# components. Discrete boundary conditions for fictitious boundary components
-!# are an element-dependent way to represent analytical 'boundary conditions' 
+!# are an element-dependent way to represent analytical 'boundary conditions'
 !# in a general sense. After 'discretising', the boundary condition can quickly
 !# be implemented into a vector. Therefore, one can see discrete boundary
-!# conditions also as a kind of `precalculated boundary conditions of 
+!# conditions also as a kind of `precalculated boundary conditions of
 !# fictitious boundary objects`. This is exploited e.g. in the filter approach,
-!# where a filter routine 'applies' a discrete FBC to a vector. 
+!# where a filter routine 'applies' a discrete FBC to a vector.
 !#
 !# Usually, one fictitious boundary object may consist of multiple subobjects
 !# like balls or general shapes) which all share the same boundary condition.
 !# 'Discretising' this means collecting all the DOF`s that are affected by
 !# such an object as well as specifying a strategy how to modify matrix,
 !# solution and/or RHS vector.
-!# 
+!#
 !# The basic implementation realises the implementation of objects that
 !# specify a Dirichlet value in a subdomain of the global domain (e.g. a
 !# ball with a specified velocity in a fluid). But this is not
@@ -91,7 +91,7 @@ module discretefbc
 !<typeblock>
   
   ! This structure describes the typical way, Dirichlet boundary conditions
-  ! for fictitious boundary components can be discretised. 
+  ! for fictitious boundary components can be discretised.
   ! This is done by two arrays: one array is a list of all
   ! DOF`s that refer do Dirichlet nodes. The second array refers to the value
   ! that must be imposed in this DOF.
@@ -104,7 +104,7 @@ module discretefbc
     ! E.g. =2 for X- and Y-velocity.
     integer :: ncomponents = 0
     
-    ! A list of 1..ncomponents components of the equation, this discrete BC 
+    ! A list of 1..ncomponents components of the equation, this discrete BC
     ! is specified for (e.g. [1 2] = X-velocity(1) + Y-velocity(2))
     integer, dimension(:), pointer :: Icomponents => null()
     
@@ -114,7 +114,7 @@ module discretefbc
     ! Handle to array with all DOF`s that refer to Dirichlet nodes
     !   array [1..*] of integer
     ! p_IdirichletDOFs(i) is the number of the i-th DOF that is to be overwritten
-    ! by the 'Dirichlet replacement' filter. 
+    ! by the 'Dirichlet replacement' filter.
     integer :: h_IdirichletDOFs   = ST_NOHANDLE
     
     ! Handle to array with the Dirichlet value that should be imposed in these nodes
@@ -191,17 +191,17 @@ module discretefbc
     integer :: cinfoNeeded = 0
 
     ! Number of values to calculate. What to calculate is depending on cinfoNeeded:
-    ! cinfoNeeded = DISCFBC_NEEDFUNC,DISCFBC_NEEDFUNCGENERAL: 
-    !               nvalues = number of vertices (=length of p_Iwhere) 
-    !  
+    ! cinfoNeeded = DISCFBC_NEEDFUNC,DISCFBC_NEEDFUNCGENERAL:
+    !               nvalues = number of vertices (=length of p_Iwhere)
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID:
-    !               nvalues = number of edges (=length of p_Iwhere) 
-    !  
+    !               nvalues = number of edges (=length of p_Iwhere)
+    !
     ! cinfoNeeded = DISCFBC_NEEDINTMEAN:
-    !               nvalues = number of edges (=length of p_Iwhere) 
-    !  
+    !               nvalues = number of edges (=length of p_Iwhere)
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID:
-    !               nvalues = number of elements (=length of p_Iwhere) 
+    !               nvalues = number of elements (=length of p_Iwhere)
     integer :: nvalues = 0
 
     ! An integer array specifying the location of points/edges/elements where
@@ -215,15 +215,15 @@ module discretefbc
     ! cinfoNeeded = DISCFBC_NEEDFUNC: \\
     !   p_Iwhere(.) = 1..NVT -> Number of the corner vertex in the triangulation
     !                           where to evaluate.\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID: \\
     !   p_Iwhere(.) = 1..NMT -> Number of the edge in the triangulation in whose
     !                           midpoint to evaluate.\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDINTMEAN: \\
     !   p_Iwhere(.) = 1..NMT -> Number of the edge in the triangulation where to
     !                           evaluate the integral mean value.\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID: \\
     !   p_Iwhere(.) = 1..NEL -> Number of the element in the triangulation in which
     !                           midpoint to evaluate.\\
@@ -243,7 +243,7 @@ module discretefbc
     !               DISCFBC_NEEDFUNCELMID,
     !               DISCFBC_NEEDFUNCFACEMID :
     !   p_Dwhere(1:ndim,.) = x/y/z-coordinate of the point where to evaluate
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDINTMEAN,
     !               DISCFBC_NEEDFACEINTMEAN :
     !   p_Dwhere(1:ndim,.) = x/y/z-coordinate of the midpoint of the edge/face
@@ -256,15 +256,15 @@ module discretefbc
     !
     ! cinfoNeeded = DISCFBC_NEEDFUNC: \\
     !   p_Dvalues(1..nvalues,1) -> Point values in the vertices defined in p_Iwhere \\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID: \\
     !   p_Dvalues(1..nvalues,1) -> Point values in the edge midpoints defined
     !                              in p_Iwhere\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDINTMEAN: \\
-    !   p_Dvalues(1..nvalues,1) -> Integral mean values in the edges defined 
+    !   p_Dvalues(1..nvalues,1) -> Integral mean values in the edges defined
     !                              in p_Iwhere\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCELMID: \\
     !   p_Dvalues(1..nvalues,1) -> Point values in the midpoints of the elements
     !                              defined in p_Iwhere.\\
@@ -279,31 +279,31 @@ module discretefbc
     real(DP), dimension(:,:), pointer :: p_Dvalues => null()
     
     ! A pointer to an array of integer values for each value to calculate.
-    ! Must be set to 1 by the callback routine for those values that are 
+    ! Must be set to 1 by the callback routine for those values that are
     ! calculated. The meaning is again depending on cinfoNeeded:
     !
     ! cinfoNeeded = DISCFBC_NEEDFUNC: \\
     !   Set "p_Iinside(i) = 1" if vertex i is inside of the FBC object and
-    !   p_Dvalues(i,1) is calculated. 
+    !   p_Dvalues(i,1) is calculated.
     !   Set "p_Iinside(i) = 0" if vertex i is outside of the FBC object;
     !   p_Dvalues(i,1) need not to be calculated.\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID: \\
-    !   Set "p_Iinside(i) = 1" if midpoint of edge i is inside of the FBC object 
-    !   and p_Dvalues(i,1) is calculated. 
+    !   Set "p_Iinside(i) = 1" if midpoint of edge i is inside of the FBC object
+    !   and p_Dvalues(i,1) is calculated.
     !   Set "p_Iinside(i) = 0" if midpoint of edge i is outside of the FBC object;
     !   p_Dvalues(i,1) need not to be calculated.\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDINTMEAN: \\
-    !   Set "p_Iinside(i) = 1" if the integral mean value of edge i is inside 
-    !   of the FBC object and p_Dvalues(i,1) is calculated. 
-    !   Set "p_Iinside(i) = 0" if the integral mean value of edge i is outside 
+    !   Set "p_Iinside(i) = 1" if the integral mean value of edge i is inside
+    !   of the FBC object and p_Dvalues(i,1) is calculated.
+    !   Set "p_Iinside(i) = 0" if the integral mean value of edge i is outside
     !   of the FBC object; p_Dvalues(i,1) need not to be calculated.\\
-    !  
+    !
     ! cinfoNeeded = DISCFBC_NEEDFUNCELMID: \\
-    !   Set "p_Iinside(i) = 1" if the midpoint of element i is inside of the FBC 
-    !   object and p_Dvalues(i,1) is calculated. 
-    !   Set "p_Iinside(i) = 0" if the midpoint of element i is outside of the FBC 
+    !   Set "p_Iinside(i) = 1" if the midpoint of element i is inside of the FBC
+    !   object and p_Dvalues(i,1) is calculated.
+    !   Set "p_Iinside(i) = 0" if the midpoint of element i is outside of the FBC
     !   object; p_Dvalues(i,1) need not to be calculated.
     integer, dimension(:), pointer :: p_Iinside
   

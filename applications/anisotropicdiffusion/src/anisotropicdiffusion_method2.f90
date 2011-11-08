@@ -10,13 +10,13 @@
 !#
 !# on a 2D domain for a scalar function u and a matrix
 !#
-!#   A =  ( cos(t) -sin(t) )  ( a11 a12 )  (  cos(t) sin(t) ) 
-!#        ( sin(t)  cos(t) )  ( a21 a22 )  ( -sin(t) cos(t) ) 
+!#   A =  ( cos(t) -sin(t) )  ( a11 a12 )  (  cos(t) sin(t) )
+!#        ( sin(t)  cos(t) )  ( a21 a22 )  ( -sin(t) cos(t) )
 !#
 !# All parameters (e.g. a11,...,a22) are read from a .DAT file.
 !#
-!# The example  discretises and solves this equation in a direct way, 
-!# just listing all commands necessary  for initialisation, discretisation, 
+!# The example  discretises and solves this equation in a direct way,
+!# just listing all commands necessary  for initialisation, discretisation,
 !# solving (with Gauss elimination = UMFPACK) and cleanup.
 !#
 !# The module uses h-adaptivity to adapt the mesh. The parameters in the
@@ -116,10 +116,10 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -156,13 +156,13 @@ contains
     integer :: iconvertToTriangleMesh
     
     ! Final diffusion matrix after rotation
-    real(DP), dimension(2,2) :: DdiffusionMatrix 
+    real(DP), dimension(2,2) :: DdiffusionMatrix
     
     ! PRM/TRI file
     character(LEN=SYS_STRLEN) :: sstring,sfilePRM,sfileTRI
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror   
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: dmin, dmax
@@ -195,7 +195,7 @@ contains
     ! Set halt mode for debugging
     sys_haltmode = SYS_HALT_THROWFPE
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! +------------------------------------------------------------------------
     ! | READ DAT FILE PARAMETERS
@@ -347,7 +347,7 @@ contains
     
     ! Repeat the procedure until the maximum number of refinement
     ! steps has been reached. This will be checked below.
-    do 
+    do
 
       ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
       ! structures for every component of the solution vector.
@@ -381,7 +381,7 @@ contains
         call output_line('Unsupproted element type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'anisotropicdiffusion_method2')
         call sys_halt()
-      end select     
+      end select
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -443,7 +443,7 @@ contains
         call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
         call jstab_calcUEOJumpStabilisation (&
             rmatrix,dgamma,dgamma,2.0_DP,1.0_DP,CUB_G3_1D,1.0_DP)
-      case DEFAULT    
+      case DEFAULT
         ! No stabilisation. Create the Laplace matrix directly.
         call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
       end select
@@ -532,7 +532,7 @@ contains
       
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
-      ! only have one level here), then call the initialisation 
+      ! only have one level here), then call the initialisation
       ! routine to attach all these matrices.
       ! Remark: Do not make a call like
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -562,7 +562,7 @@ contains
       
       ! +----------------------------------------------------------------------
       ! | COMPUTE INDICATOR FOR H-ADAPTIVITY
-      ! +----------------------------------------------------------------------     
+      ! +----------------------------------------------------------------------
 
       ! Perform a posteriori error estimation
       call lsyssc_createVector(rindicator,rtriangulation%NEL,.true.)
@@ -630,7 +630,7 @@ contains
     ! +------------------------------------------------------------------------
     !
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
 
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     dmin = p_Ddata(1)
@@ -750,7 +750,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that is it.
@@ -817,7 +817,7 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC`s for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
@@ -826,7 +826,7 @@ contains
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
                                
-      ! Now to the edge 2 of boundary component 1 the domain. 
+      ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
@@ -863,7 +863,7 @@ contains
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
-      ! Edge 4 of boundary component 1. 
+      ! Edge 4 of boundary component 1.
       call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
@@ -887,7 +887,7 @@ contains
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
-      ! Edge 4 of boundary component 2. 
+      ! Edge 4 of boundary component 2.
       call boundary_createRegion(p_rboundary,2,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&

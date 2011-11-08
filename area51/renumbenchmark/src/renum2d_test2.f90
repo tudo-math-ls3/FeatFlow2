@@ -54,11 +54,11 @@ module renum2d_test2
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
     
     ! Resorting strategy
@@ -103,7 +103,7 @@ contains
   
 !<description>
   ! Reads a solver configuration from a parameter list.
-!</description>  
+!</description>
 
   type(t_parlist), intent(in) :: rparList
   character(len=*), intent(in) :: ssection
@@ -147,7 +147,7 @@ contains
     call parlst_getvalue_int (rparlist,ssection,'iresNorm',&
         rsolverConfig%iresNorm,rsolverConfig%iresNorm)
   
-    call parlst_getvalue_double (rparlist, 'PERFORMANCETESTS', 'depsRel', & 
+    call parlst_getvalue_double (rparlist, 'PERFORMANCETESTS', 'depsRel', &
         rsolverConfig%depsRel, 1E-8_DP)
     call parlst_getvalue_double (rparlist,ssection,'iresNorm',&
         rsolverConfig%depsRel,rsolverConfig%depsRel)
@@ -221,7 +221,7 @@ contains
     ! A variable that is used to specify a region on the boundary.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -241,7 +241,7 @@ contains
     type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -374,7 +374,7 @@ contains
             ! Initialise the block matrix with default values based on
             ! the discretisation.
             call lsysbl_createMatBlockByDiscr (&
-                Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
+                Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
 
             ! Now as the discretisation is set up, we can start to generate
             ! the structure of the system matrix which is to solve.
@@ -401,8 +401,8 @@ contains
             ! In the standard case, we have constant coefficients:
             rform%ballCoeffConstant = .true.
             rform%BconstantCoeff = .true.
-            rform%Dcoefficients(1)  = 1.0 
-            rform%Dcoefficients(2)  = 1.0 
+            rform%Dcoefficients(1)  = 1.0
+            rform%Dcoefficients(2)  = 1.0
 
             ! Now we can build the matrix entries.
             ! We specify the callback function coeff_Laplace for the coefficients.
@@ -423,7 +423,7 @@ contains
           ! to create it by using our matrix as template:
           call lsysbl_createVecBlockIndMat (Rlevels(ilevel)%rmatrix,rrhsBlock, .false.)
 
-          ! The vector structure is ready but the entries are missing. 
+          ! The vector structure is ready but the entries are missing.
           ! So the next thing is to calculate the content of that vector.
           !
           ! At first set up the corresponding linear form (f,Phi_j):
@@ -444,13 +444,13 @@ contains
             ! Initialise the discrete BC structure
             call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-            ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
+            ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.
             call boundary_createRegion(rboundary,1,1,rboundaryRegion)
             call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                               rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                               getBoundaryValues_2D)
                                       
-            ! Now to the edge 2 of boundary component 1 the domain. 
+            ! Now to the edge 2 of boundary component 1 the domain.
             call boundary_createRegion(rboundary,1,2,rboundaryRegion)
             call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                               rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -726,7 +726,7 @@ contains
           call stat_stopTimer(rtimerSolver)
           
           ! That's it, rvectorBlock now contains our solution. We can now
-          ! start the postprocessing. 
+          ! start the postprocessing.
           ! Start UCD export to GMV file:
           if (rsolverConfig%iwriteGMV .ne. 0) then
             call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
@@ -750,7 +750,7 @@ contains
     !        CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
     !                          getReferenceFunction_2D)
     !        CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
-    !        
+    !
 
           write (*,'(A,A,A,I3,A,E18.10,E18.10,A,I5,A,E18.10,A,E18.10,A,E18.10,A,E18.10)') &
             'Solver: ',trim(sys_lowcase(sconfig)),&
@@ -796,7 +796,7 @@ contains
             call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
           end do
           
-          ! Release the triangulation. 
+          ! Release the triangulation.
           do i = ilevel, rsolverConfig%NLCOARSE, -1
             if (ilevel .eq. rsolverconfig%NLMAX) then
               call tria_infoStatistics (&

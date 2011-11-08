@@ -1,14 +1,14 @@
 ************************************************************************
 * This file describes a structure block that sets up the
 * adaptive time stepping strategy.
-* 
+*
 * There are integer and double precision variables that configure
 * the time stepping. Corresponding to that, there is an integer
 * and a double precision structure that contains this configuration.
 *
 * The structures themselves are realized as integer/double precision
 * arrays:
-*   IPARAM = array [1..SZADTI] of integer 
+*   IPARAM = array [1..SZADTI] of integer
 *          = TAdaptiveTimeStepIParams
 *   DPARAM = array [1..SZADTD] of double
 *          = TAdaptiveTimeStepDParams
@@ -16,7 +16,7 @@
 * The whole structure can be initializes with the INIADT subroutine
 * in NONSTEAD2.F.
 *
-* TAdaptiveTimeStepIParams = record 
+* TAdaptiveTimeStepIParams = record
 *   IADTIM : Identifier for adaptive time stepping
 *            =0: no adaptive time stepping
 *            =1: adaptive time stepping with prediction,
@@ -59,7 +59,7 @@
 * TAdaptiveTimeStepDParams = record
 *   DTMIN  : Minimum time step length
 *   DTMAX  : Maximum time step length
-*   DTFACT : Factor for modifying time step size. 
+*   DTFACT : Factor for modifying time step size.
 *            Only if IADTIM<>0.
 *            Time step size is reduced by sqrt(DTFACT) upon broke down
 *            of nonlinear solver, and by DTFACT upon broke down of
@@ -70,12 +70,12 @@
 *            This is essential as Navier Stokes might otherwise
 *            stagnate and reduce the time step to 0 at the beginning
 *            of the simulation!
-*   EPSADI : Parameter for time error limit in the start phase; 
+*   EPSADI : Parameter for time error limit in the start phase;
 *            only respected if IADTIM=3
-*   EPSADL : Parameter for time error limit after the start phase; 
+*   EPSADL : Parameter for time error limit after the start phase;
 *            only respected if IADTIM=3
 *   EPSADU : Upper limit for relation of calculated step sizes to accept
-*            a time step; if the relation 
+*            a time step; if the relation
 *                     (new step size)/(old step size)
 *            is too large, repeat the step;
 *            only respected if IADTIM=3

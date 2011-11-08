@@ -98,7 +98,7 @@ module spacetimevanca
   
   end type
   
-  ! A structure that collects the pointers to all subvectors 
+  ! A structure that collects the pointers to all subvectors
   ! of a solution chunk. Circumvents the problem
   ! that Fortran cannot set up an array of pointers...
   type t_chunkVector
@@ -200,36 +200,36 @@ contains
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
-    !                                                                 
+    !
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
     !   R R R R  R R R R     A A A A  A A A A  B                       M M M M  M M M M
-    !                       
+    !
     !                        B B B B  B B B B  C
     !
-    !   M M M M  M M M M                          A A A A  A A A A  B  M M M M   
     !   M M M M  M M M M                          A A A A  A A A A  B  M M M M
     !   M M M M  M M M M                          A A A A  A A A A  B  M M M M
     !   M M M M  M M M M                          A A A A  A A A A  B  M M M M
-    !                                            
+    !   M M M M  M M M M                          A A A A  A A A A  B  M M M M
+    !
     !   M M M M  M M M M                          A A A A  A A A A  B           M M M M
     !   M M M M  M M M M                          A A A A  A A A A  B           M M M M
     !   M M M M  M M M M                          A A A A  A A A A  B           M M M M
     !   M M M M  M M M M                          A A A A  A A A A  B           M M M M
-    !                                            
+    !
     !                                             B B B B  B B B B  C
-    !                                            
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                                                 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                             R R R R  R R R R     A A A A  A A A A  B 
-    !                                                                 
+    !
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !                                             R R R R  R R R R     A A A A  A A A A  B
+    !
     !                                                                  B B B B  B B B B  C
     !
     ! Allocate a ndofGlobal*ndofGlobal-matrix in structure D, set up the above
@@ -316,39 +316,39 @@ contains
       end if
 
       ! 'Middle' matrix
-      p_Iindex(iYoffset+1,6+1) = ndofVelocity 
-      p_Iindex(iYoffset+1,6+2) = ndofVelocity 
-      p_Iindex(iYoffset+1,6+3) = ndofPressure 
-      p_Iindex(iYoffset+1,6+4) = ndofVelocity 
-      !p_Iindex(iYoffset+1,6+5) = ndofVelocity 
+      p_Iindex(iYoffset+1,6+1) = ndofVelocity
+      p_Iindex(iYoffset+1,6+2) = ndofVelocity
+      p_Iindex(iYoffset+1,6+3) = ndofPressure
+      p_Iindex(iYoffset+1,6+4) = ndofVelocity
+      !p_Iindex(iYoffset+1,6+5) = ndofVelocity
                                     
-      p_Iindex(iYoffset+2,6+1) = ndofVelocity 
-      p_Iindex(iYoffset+2,6+2) = ndofVelocity 
-      p_Iindex(iYoffset+2,6+3) = ndofPressure 
-      !p_Iindex(iYoffset+2,6+4) = ndofVelocity 
-      p_Iindex(iYoffset+2,6+5) = ndofVelocity 
+      p_Iindex(iYoffset+2,6+1) = ndofVelocity
+      p_Iindex(iYoffset+2,6+2) = ndofVelocity
+      p_Iindex(iYoffset+2,6+3) = ndofPressure
+      !p_Iindex(iYoffset+2,6+4) = ndofVelocity
+      p_Iindex(iYoffset+2,6+5) = ndofVelocity
                                     
-      p_Iindex(iYoffset+3,6+1) = ndofVelocity 
-      p_Iindex(iYoffset+3,6+2) = ndofVelocity 
+      p_Iindex(iYoffset+3,6+1) = ndofVelocity
+      p_Iindex(iYoffset+3,6+2) = ndofVelocity
       p_Iindex(iYoffset+3,6+3) = ndofPressure
                                     
-      p_Iindex(iYoffset+4,6+1) = ndofVelocity 
-      p_Iindex(iYoffset+4,6+2) = ndofVelocity 
+      p_Iindex(iYoffset+4,6+1) = ndofVelocity
+      p_Iindex(iYoffset+4,6+2) = ndofVelocity
                                     
-      p_Iindex(iYoffset+4,6+4) = ndofVelocity 
-      p_Iindex(iYoffset+4,6+5) = ndofVelocity 
-      p_Iindex(iYoffset+4,6+6) = ndofPressure 
+      p_Iindex(iYoffset+4,6+4) = ndofVelocity
+      p_Iindex(iYoffset+4,6+5) = ndofVelocity
+      p_Iindex(iYoffset+4,6+6) = ndofPressure
                                     
-      p_Iindex(iYoffset+5,6+1) = ndofVelocity 
-      p_Iindex(iYoffset+5,6+2) = ndofVelocity 
+      p_Iindex(iYoffset+5,6+1) = ndofVelocity
+      p_Iindex(iYoffset+5,6+2) = ndofVelocity
                                     
-      p_Iindex(iYoffset+5,6+4) = ndofVelocity 
-      p_Iindex(iYoffset+5,6+5) = ndofVelocity 
-      p_Iindex(iYoffset+5,6+6) = ndofPressure 
+      p_Iindex(iYoffset+5,6+4) = ndofVelocity
+      p_Iindex(iYoffset+5,6+5) = ndofVelocity
+      p_Iindex(iYoffset+5,6+6) = ndofPressure
                                     
-      p_Iindex(iYoffset+6,6+4) = ndofVelocity 
-      p_Iindex(iYoffset+6,6+5) = ndofVelocity 
-      p_Iindex(iYoffset+6,6+6) = ndofPressure 
+      p_Iindex(iYoffset+6,6+4) = ndofVelocity
+      p_Iindex(iYoffset+6,6+5) = ndofVelocity
+      p_Iindex(iYoffset+6,6+6) = ndofPressure
                 
       if (itimestep .lt. ntimesteps) then
         ! 'Right' matrix, above the diagonal
@@ -424,7 +424,7 @@ contains
 
   subroutine calcMatrixIndices (Kcol,Kld,IdofsTrial,IdofsTest,Iidx)
   
-  ! Calculates the indices inside of those entries in a matrix that 
+  ! Calculates the indices inside of those entries in a matrix that
   ! belong to the local matrix. The matrix must be given in
   ! matrix structure 9.
   
@@ -445,7 +445,7 @@ contains
   ! A 2D array containing the positions in the global matrix that
   ! belong to the local matrix. The index array is set up transposed
   ! to get quicker memory access!
-  ! Iidx must be a square matrix with 
+  ! Iidx must be a square matrix with
   ! DIMENSION(size(IdofsTest),size(IdofsTrial))
   integer, dimension(:,:), intent(OUT) :: Iidx
   
@@ -459,7 +459,7 @@ contains
       
       idofLocal = IdofsTrial(i)
       
-      ! In the row loop over the columns to find those that belong to 
+      ! In the row loop over the columns to find those that belong to
       ! local DOF's.
       do j=Kld(idofLocal),Kld(idofLocal+1)-1
       
@@ -504,7 +504,7 @@ contains
   ! Damping parameter
   real(DP), intent(IN) :: domega
   
-  ! Chunk size. >= 0. A chunk size >= #timesteps will apply VANKA 
+  ! Chunk size. >= 0. A chunk size >= #timesteps will apply VANKA
   ! to all timesteps simultaneously, which is VERY memory and hard disc
   ! intensive! A chunk size of 0 will apply the standard VANKA for
   ! optimal control problems that does not combine multiple time steps.
@@ -541,7 +541,7 @@ contains
     integer :: iposGlobalPrimalVelocityX,iposGlobalPrimalVelocityY
     integer :: iposGlobalPrimalPressure
     integer :: iposGlobalDualVelocityX,iposGlobalDualVelocityY
-    integer :: iposGlobalDualPressure 
+    integer :: iposGlobalDualPressure
     integer :: iel,NEL
     integer :: NVT
     integer :: NEQ
@@ -559,7 +559,7 @@ contains
     
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! Array of system matrices for the timesteps. 
+    ! Array of system matrices for the timesteps.
     type(t_matrixBlock), dimension(:,:), allocatable :: RsystemMatrix
     
     ! Arrays with pointers to the matrix data of the matrices in RsystemMatrix
@@ -726,7 +726,7 @@ contains
     ! Perforn niterations iterations
     do iiteration = 1,niterations
 
-      ! Loop through all chunks. Every chunk consists of nchunkSize timesteps -- 
+      ! Loop through all chunks. Every chunk consists of nchunkSize timesteps --
       ! rounded up; or more precisely, every chunk consists of nblocks vectors.
       do ichunk = 1,(NEQtime+nblockSize-1)/nblockSize
       
@@ -739,7 +739,7 @@ contains
           ichunkPos = NEQtime-nblockSize
         ichunkPos = ichunkPos + 1
         
-        ! For all items in the current chunk, get the global solution and 
+        ! For all items in the current chunk, get the global solution and
         ! RHS vectors.
         do ipos = 1,nblockSize
           call sptivec_getTimestepData (rx, ichunkPos+ipos-1, RsolutionGlobal(ipos))
@@ -845,28 +845,28 @@ contains
 !        ! Now our chunk is a global problem that looks as follows (here an example
 !        ! for chunk size 3, timestep 1):
 !        !
-!        !   A B M  |       |                   
+!        !   A B M  |       |
 !        !   B C    |       |          x1       f1-Mx0
-!        !   M   A B|       |                 
-!        !       B C|    M  |                 
-!        !   -------+-------+-------          
-!        !   M      |A B M  |                 
+!        !   M   A B|       |
+!        !       B C|    M  |
+!        !   -------+-------+-------
+!        !   M      |A B M  |
 !        !          |B C    |          x2   =   f2
-!        !          |M   A B|    M            
-!        !          |    B C|                 
-!        !   -------+-------+-------          
-!        !          |M      |A B M            
+!        !          |M   A B|    M
+!        !          |    B C|
+!        !   -------+-------+-------
+!        !          |M      |A B M
 !        !          |       |B C       x3       f3-Mx4
-!        !          |       |M   A B          
-!        !          |       |    B C            
+!        !          |       |M   A B
+!        !          |       |    B C
 !        !
-!        !          
-!        
+!        !
+!
 !        ! What we have to do now is a loop over all spatial elements.
 !        ! For every spatial element, we'll simultaneously handle all
 !        ! timesteps in the chunk.
 !        DO iel = 1,NEL
-!        
+!
 !          ! Determine the spatial DOF's on our current element that we have
 !          ! to extract from the matrices.
 !          ! This is more or less a replacement for the DOFMAPPING to get some
@@ -875,15 +875,15 @@ contains
 !          !
 !          ! Get the pressure-DOF -- which is the number of the element.
 !          IpressureDofs(1) = iel
-!          
+!
 !          ! Get the velocity-DOF's. These are the numbers of the edges.
-!          ! The local DOF's on the current element are 1,2,3,4. The 
+!          ! The local DOF's on the current element are 1,2,3,4. The
 !          ! corresponding global DOF's are...
 !          IvelocityDofs(1) = p_IedgesAtElement(1,iel)-NVT
 !          IvelocityDofs(2) = p_IedgesAtElement(2,iel)-NVT
 !          IvelocityDofs(3) = p_IedgesAtElement(3,iel)-NVT
 !          IvelocityDofs(4) = p_IedgesAtElement(4,iel)-NVT
-!          
+!
 !          ! Figure out the numbers of the global DOF's in the current chunk.
 !          ! IchunkDofs therefore defines a mapping of the 'local' DOF's 1..18
 !          ! of one block in the chunk to the 'global' DOF's in each row of the chunk.
@@ -891,41 +891,41 @@ contains
 !          IchunkDofs(2) = iposGlobalPrimalVelocityX - 1 + IvelocityDofs(2)
 !          IchunkDofs(3) = iposGlobalPrimalVelocityX - 1 + IvelocityDofs(3)
 !          IchunkDofs(4) = iposGlobalPrimalVelocityX - 1 + IvelocityDofs(4)
-!          
+!
 !          IchunkDofs(5) = iposGlobalPrimalVelocityY - 1 + IvelocityDofs(1)
 !          IchunkDofs(6) = iposGlobalPrimalVelocityY - 1 + IvelocityDofs(2)
 !          IchunkDofs(7) = iposGlobalPrimalVelocityY - 1 + IvelocityDofs(3)
 !          IchunkDofs(8) = iposGlobalPrimalVelocityY - 1 + IvelocityDofs(4)
-!          
+!
 !          IchunkDofs(9) = iposGlobalPrimalPressure  - 1 + IpressureDofs(1)
-!          
+!
 !          IchunkDofs(10) = iposGlobalDualVelocityX - 1 + IvelocityDofs(1)
 !          IchunkDofs(11) = iposGlobalDualVelocityX - 1 + IvelocityDofs(2)
 !          IchunkDofs(12) = iposGlobalDualVelocityX - 1 + IvelocityDofs(3)
 !          IchunkDofs(13) = iposGlobalDualVelocityX - 1 + IvelocityDofs(4)
-!          
+!
 !          IchunkDofs(14) = iposGlobalDualVelocityY - 1 + IvelocityDofs(1)
 !          IchunkDofs(15) = iposGlobalDualVelocityY - 1 + IvelocityDofs(2)
 !          IchunkDofs(16) = iposGlobalDualVelocityY - 1 + IvelocityDofs(3)
 !          IchunkDofs(17) = iposGlobalDualVelocityY - 1 + IvelocityDofs(4)
-!          
+!
 !          IchunkDofs(18) = iposGlobalDualPressure  - 1 + IpressureDofs(1)
-!          
+!
 !          ! Figure out the matrix positions that belong to these DOF's; in
 !          ! the mass/velocity matrices as well as in the B-matrices.
 !          CALL getMatrixPositions (IvelocityDofs,IpressureDofs,rmatPositions,&
 !              p_KcolA,p_KldA,p_KcolB,p_KldB,p_KcolC,p_KldC)
 !          !CALL calcMatrixIndices (p_KcolA,p_KldA,IvelocityDofs,IvelocityDofs,ImatPosVel)
 !          !CALL calcMatrixIndices (p_KcolB,p_KldB,IvelocityDofs,IpressureDofs,ImatPosPres)
-!          
+!
 !          ! Set up the local matrix. This is used for preconditioning later.
 !          CALL getLocalMatrices (Rmatrixrows,IvelocityDofs,IpressureDofs,&
 !              p_ImatrixMapping,rmatPositions,p_DaLocal,p_KcolLocal,p_KldLocal,&
 !              p_KcolA,p_KldA,p_KcolB,p_KldB,p_KcolC,p_KldC)
-!              
+!
 !          CALL matio_writeMatrixHR (rmatrixLocal, 'localmat',&
 !                                    .TRUE., 0, 'lmatrix.txt', '(E10.2)')
-!                                    
+!
 !          ! On the current element, treat all timesteps of the current chunk.
 !          ! Each timestep corresponds to one 'row' in the local matrix.
 !          DO istep = 1,nblockSize
@@ -936,26 +936,26 @@ contains
 !                rmatPositions,istep .EQ. 1,istep .EQ. nblockSize,&
 !                p_KcolA,p_KldA,p_KcolB,p_KldB,p_KcolC,p_KldC)
 !          END DO
-!        
+!
 !          ! Initialise the solver with that matrix
 !          CALL linsol_initData (p_rsolver,ierror)
 !          IF (ierror .NE. 0) THEN
 !            PRINT *,'UMFPACK for local system cannot be initialised!'
 !            CALL sys_halt()
 !          END IF
-!          
+!
 !          ! Solve; more precisely, precondition our local defect
 !          CALL linsol_precondDefect (p_rsolver,rrhsBlock)
-!          
+!
 !          ! Release solver data
 !          CALL linsol_doneData (p_rsolver)
-!          
+!
 !          ! Add the local correction vector to our solution
 !          DO istep = 1,nblockSize
 !            CALL addLocalCorrection (p_DrhsLocal((istep-1)*SIZE(IchunkDofs)+1:(istep-1+1)*SIZE(IchunkDofs)),&
 !                Rvectors(istep),IchunkDofs,domega)
 !          END DO
-!        
+!
 !        END DO
       
         ! Save the new solution vectors.
@@ -1002,7 +1002,7 @@ contains
   contains
   
     subroutine buildMatrices (rproblem,rspaceTimeMatrix,&
-      ichunkPos,nblockSize,RsystemMatrix,RmatrixRows)  
+      ichunkPos,nblockSize,RsystemMatrix,RmatrixRows)
     
     ! Builds the matrices in timestep ichunkPos..ichunkPos+nblockSize-1 into
     ! the RsystemMatrix and RmatrixRows arrays.
@@ -1034,7 +1034,7 @@ contains
       type(t_vectorBlock), dimension(3) :: rtimeVector
       type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
 
-      ! Create temp vectors for evaluating the nonlinearity      
+      ! Create temp vectors for evaluating the nonlinearity
       call lsysbl_createVecBlockIndMat(RsystemMatrix(0,1),rtimeVector(1))
       call lsysbl_createVecBlockIndMat(RsystemMatrix(0,1),rtimeVector(2))
       call lsysbl_createVecBlockIndMat(RsystemMatrix(0,1),rtimeVector(3))
@@ -1067,7 +1067,7 @@ contains
             rproblem%rtimedependence%dtimeInit + (ichunk-1)*p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
+        ! Discretise the boundary conditions at the new point in time --
         ! if the boundary conditions are nonconstant in time!
 !        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
 !          call cc_updateDiscreteBC (rproblem,dtime)
@@ -1084,14 +1084,14 @@ contains
         ! Build 'left' matrix (if it exists):
         if (ichunk .gt. 1) then
         
-          ! Set up the matrix weights 
+          ! Set up the matrix weights
           call stlin_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
             ichunk-1,-1,rnonlinearSpatialMatrix)
           
           ! Set up the matrix
           call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
               RsystemMatrix(-1,ichunkrel),rnonlinearSpatialMatrix,&
-              rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
+              rtimeVector(1),rtimeVector(2),rtimeVector(3))
         
           ! Include the boundary conditions into that matrix.
           RsystemMatrix(-1,ichunkrel)%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
@@ -1120,14 +1120,14 @@ contains
         
         ! Build the 'diagonal' matrix
         !
-        ! Set up the matrix weights 
+        ! Set up the matrix weights
         call stlin_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ichunk-1,0,rnonlinearSpatialMatrix)
         
         ! Set up the matrix
         call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             RsystemMatrix(0,ichunkrel),rnonlinearSpatialMatrix,&
-            rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
+            rtimeVector(1),rtimeVector(2),rtimeVector(3))
         
         ! Include the boundary conditions into that matrix.
 ! not yet finished
@@ -1247,14 +1247,14 @@ contains
         ! Build 'right' matrix (if it exists):
         if (ichunk .lt. NEQtime) then
         
-          ! Set up the matrix weights 
+          ! Set up the matrix weights
           call stlin_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
             ichunk-1,1,rnonlinearSpatialMatrix)
           
           ! Set up the matrix
           call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
               RsystemMatrix(1,ichunkrel),rnonlinearSpatialMatrix,&
-              rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
+              rtimeVector(1),rtimeVector(2),rtimeVector(3))
         
           ! Include the boundary conditions into that matrix.
           RsystemMatrix(1,ichunkrel)%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
@@ -1672,7 +1672,7 @@ contains
             Db(irowPosB+j-1) = dscale*p_Da(k)
           end do
         end do
-      else    
+      else
         ! Transposed B-matrix.
         ! Loop over the DOF's to extract
         do j=1,ubound(ImatrixPositions,2)
@@ -1752,7 +1752,7 @@ contains
       real(DP), dimension(:), pointer :: p_Dd5
       real(DP), dimension(:), pointer :: p_Dd6
 
-      ! Get the local RHS 
+      ! Get the local RHS
       do k=1,size(Dd)
         Dd(k) = Rvectors(2)%p_Db(IchunkDofs(k))
       end do
@@ -1782,7 +1782,7 @@ contains
           
       call localMatrixVectorBT (IvelocityDofs,IpressureDofs,&
           rmatrixrow%DscaleFactor(3,1,0),rmatrixrow%p_Da31,&
-          KcolB,rmatrixPositions%p_IposB,p_Dd3,Rvectors(2)%p_Dx1)          
+          KcolB,rmatrixPositions%p_IposB,p_Dd3,Rvectors(2)%p_Dx1)
 
 
 
@@ -1802,7 +1802,7 @@ contains
 
       call localMatrixVectorBT (IvelocityDofs,IpressureDofs,&
           rmatrixrow%DscaleFactor(3,2,0),rmatrixrow%p_Da32,&
-          KcolB,rmatrixPositions%p_IposB,p_Dd3,Rvectors(2)%p_Dx2)          
+          KcolB,rmatrixPositions%p_IposB,p_Dd3,Rvectors(2)%p_Dx2)
 
 
       call localMatrixVector(IvelocityDofs,rmatrixrow%DscaleFactor(4,2,0),&
@@ -1839,7 +1839,7 @@ contains
 
       call localMatrixVectorBT (IvelocityDofs,IpressureDofs,&
           rmatrixrow%DscaleFactor(6,4,0),&
-          rmatrixrow%p_Da64,KcolB,rmatrixPositions%p_IposB,p_Dd6,Rvectors(2)%p_Dx4)          
+          rmatrixrow%p_Da64,KcolB,rmatrixPositions%p_IposB,p_Dd6,Rvectors(2)%p_Dx4)
 
 
       call localMatrixVector(IvelocityDofs,rmatrixrow%DscaleFactor(1,5,0),&
@@ -1858,7 +1858,7 @@ contains
 
       call localMatrixVectorBT (IvelocityDofs,IpressureDofs,&
           rmatrixrow%DscaleFactor(6,5,0),&
-          rmatrixrow%p_Da65,KcolB,rmatrixPositions%p_IposB,p_Dd6,Rvectors(2)%p_Dx5)          
+          rmatrixrow%p_Da65,KcolB,rmatrixPositions%p_IposB,p_Dd6,Rvectors(2)%p_Dx5)
 
 
       call localMatrixVector(IpressureDofs,rmatrixrow%DscaleFactor(4,6,0),&
@@ -1924,7 +1924,7 @@ contains
       ! local variables
       integer :: k
 
-      ! Get the local RHS 
+      ! Get the local RHS
       do k=1,size(Dd)
         rvectors%p_Dx(IchunkDofs(k)) = rvectors%p_Dx(IchunkDofs(k)) + domega*Dd(k)
       end do
@@ -2039,9 +2039,9 @@ contains
       ! and ImatrixPpos specifies only the entries of the local matrix!
       ! Whoever tolds one that the local matrix contains all elements in B^T?!?
       !
-      ! Well the FE theory does -- at least for Q0 or PQ1! Every row in B 
+      ! Well the FE theory does -- at least for Q0 or PQ1! Every row in B
       ! tells a velocity DOF how to couple to all the surrounding pressure DOF's.
-      ! the pressure DOF's now exists only on one cell, so coupling only to the 
+      ! the pressure DOF's now exists only on one cell, so coupling only to the
       ! DOF's on that cell and not to those on the neighbour cells!
       ! Therefore, the B matrix contains only the couplings to the velocity DOF's
       ! on the current cell, and thus the B^T matrix does as well.

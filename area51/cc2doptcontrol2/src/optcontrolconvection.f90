@@ -203,7 +203,7 @@ module optcontrolconvection
     ! An allocateable array accepting the DOF's of a set of elements.
     integer, dimension(:,:), pointer :: Idofs
     
-    ! Allocateable arrays for the values of the basis functions - 
+    ! Allocateable arrays for the values of the basis functions -
     ! for test and trial spaces.
     real(DP), dimension(:,:,:,:), pointer :: Dbas
 
@@ -215,7 +215,7 @@ module optcontrolconvection
     ! the corresponding cubature weight
     real(DP), dimension(CUB_MAXCUBP) :: Domega
 
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
 
     ! An element evaluation set for evaluating elements.
@@ -281,114 +281,114 @@ contains
 !      Dvelocity,DvelocityXderiv,DvelocityYderiv,DlocalDelta,&
 !      DentryA11,DentryA22,DentryA44,DentryA55,&
 !      computeForm,dweight,dnu)
-!      
+!
 !  !<description>
 !    ! Computes a local matrix to be incorporated into the global matrix.
 !    ! Variant for handling the diagonal matrices.
 !  !</description>
-!      
+!
 !  !<input>
-!      
+!
 !    ! Basis functions in all cubature points
 !    real(DP), dimension(:,:,:,:), intent(in)  :: Dbas
-!    
+!
 !    ! Cubature weights
 !    real(DP), dimension(:), intent(in)        :: Domega
-!    
+!
 !    ! Jacobian determinants in all cubature points
 !    real(DP), dimension(:,:), intent(in)      :: Ddetj
-!    
+!
 !    ! Number of local DOF's in each element
 !    integer, intent(in)                       :: ndof
-!    
+!
 !    ! Number of cubature points on each element
 !    integer, intent(in)                       :: ncubp
-!    
+!
 !    ! Number of elements
 !    integer, intent(in)                       :: NEL
-!    
+!
 !    ! Velocity vector and its derivatives in the cubature points
 !    real(DP), dimension(:,:,:), intent(in)    :: Dvelocity
 !    real(DP), dimension(:,:,:), intent(in)    :: DvelocityXderiv
 !    real(DP), dimension(:,:,:), intent(in)    :: DvelocityYderiv
-!    
+!
 !    ! Local delta of the SD method
 !    real(DP), dimension(:), intent(in)        :: DlocalDelta
-!    
+!
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
 !
 !    interface
 !      subroutine computeForm (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !          du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,da11,da22,da44,da55)
-!          
+!
 !      use fsystem
-!          
-!      !<description>  
+!
+!      !<description>
 !        ! Compute the form in a cubature point.
 !      !</description>
-!        
+!
 !      !<input>
 !        ! Basis function phi_i and its derivatives.
 !        real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!        
+!
 !        ! Basis function phi_j and its derivatives.
 !        real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!        
+!
 !        ! X-velocity of the given solution vector and its derivatives.
 !        real(DP), intent(in) :: du1,du1x,du1y
-!        
+!
 !        ! Y-velocity of the given solution vector and its derivatives.
 !        real(DP), intent(in) :: du2,du2x,du2y
-!        
+!
 !        ! Viscosity parameter
 !        real(DP), intent(in) :: dnu
-!        
-!        ! Local delta 
+!
+!        ! Local delta
 !        real(DP), intent(in) :: dlocalDelta
-!        
+!
 !        ! Weight for A11-22, A44-55, A41-52, A14-25
 !        real(DP), dimension(2,2), intent(in) :: Dweight
 !      !</input>
-!        
+!
 !      !<output>
 !        ! Values of the form
 !        real(DP), intent(out) :: da11,da22,da44,da55
 !      !</output>
-!      
+!
 !      end subroutine
-!    end interface   
-!    
+!    end interface
+!
 !    external :: computeForm
-!    
+!
 !  !</input>
-!  
+!
 !  !<output>
-!    
+!
 !    ! Entries in the matrix
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA11
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA22
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA44
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA55
-!  
+!
 !  !</output>
-!    
+!
 !  !</subroutine>
-!    
+!
 !    ! local variables
 !    integer :: iel, icubp, idofe, jdofe
 !    real(DP) :: OM,du1,du2,du1locx,du1locy,du2locx,du2locY
 !    real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3
 !    real(DP) :: AH11,AH22,AH44,AH55
-!    
+!
 !    AH11 = 0.0_DP
 !    AH22 = 0.0_DP
 !    AH44 = 0.0_DP
 !    AH55 = 0.0_DP
-!    
+!
 !    ! Loop over the elements in the current set.
 !    do iel=1,NEL
 !
@@ -398,7 +398,7 @@ contains
 !        ! Calculate the current weighting factor in the cubature formula
 !        ! in that cubature point.
 !        !
-!        ! Normally, we have to take the absolut value of the determinant 
+!        ! Normally, we have to take the absolut value of the determinant
 !        ! of the mapping here!
 !        ! In 2D, the determinant is always positive, whereas in 3D,
 !        ! the determinant might be negative -- that's normal!
@@ -414,29 +414,29 @@ contains
 !        du1locy = DvelocityXderiv (2,icubp,iel)
 !        du2locx = DvelocityYderiv (1,icubp,iel)
 !        du2locy = DvelocityYderiv (2,icubp,iel)
-!        
-!        ! Outer loop over the DOF's i=1..indof on our current element, 
+!
+!        ! Outer loop over the DOF's i=1..indof on our current element,
 !        ! which corresponds to the basis functions Phi_i:
 !
 !        do idofe=1,ndof
-!        
+!
 !          ! Fetch the contributions of the (test) basis functions Phi_i
-!          ! (our "O")  for function value and first derivatives for the 
+!          ! (our "O")  for function value and first derivatives for the
 !          ! current DOF into HBASIy:
-!        
+!
 !          HBASI1 = Dbas(idofe,1,icubp,iel)
 !          HBASI2 = Dbas(idofe,2,icubp,iel)
 !          HBASI3 = Dbas(idofe,3,icubp,iel)
-!          
+!
 !          ! Inner loop over the DOF's j=1..indof, which corresponds to
 !          ! the basis function Phi_j:
 !
 !          do jdofe=1,ndof
-!            
+!
 !            ! Fetch the contributions of the (trial) basis function Phi_j
-!            ! (out "X") for function value and first derivatives for the 
+!            ! (out "X") for function value and first derivatives for the
 !            ! current DOF into HBASJy:
-!          
+!
 !            HBASJ1 = Dbas(jdofe,1,icubp,iel)
 !            HBASJ2 = Dbas(jdofe,2,icubp,iel)
 !            HBASJ3 = Dbas(jdofe,3,icubp,iel)
@@ -446,7 +446,7 @@ contains
 !            call computeForm (HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,&
 !                du1,du2,du1locx,du1locy,du2locx,du2locy,dnu,DlocalDelta(iel),&
 !                Dweight,AH11,AH22,AH44,AH55)
-!                
+!
 !            ! Weighten the calculated value AHxy by the cubature
 !            ! weight OM and add it to the local matrices. After the
 !            ! loop over all DOF's is finished, each entry contains
@@ -456,15 +456,15 @@ contains
 !            DentryA22(jdofe,idofe,iel) = DentryA22(jdofe,idofe,iel)+OM*AH22
 !            DentryA44(jdofe,idofe,iel) = DentryA44(jdofe,idofe,iel)+OM*AH44
 !            DentryA55(jdofe,idofe,iel) = DentryA55(jdofe,idofe,iel)+OM*AH55
-!            
+!
 !          end do ! idofe
-!          
+!
 !        end do ! jdofe
 !
-!      end do ! icubp 
-!    
+!      end do ! icubp
+!
 !    end do ! iel
-!    
+!
 !  end subroutine
 !
 !  ! ***************************************************************************
@@ -476,43 +476,43 @@ contains
 !      DentryA11,DentryA22,DentryA44,DentryA55,&
 !      DentryA12,DentryA21,DentryA45,DentryA54,&
 !      computeForm,dweight,dnu)
-!      
+!
 !  !<description>
 !    ! Computes a local matrix to be incorporated into the global matrix.
 !    ! Variant for handling the diagonal matrix blocks.
 !  !</description>
-!      
+!
 !  !<input>
-!      
+!
 !    ! Basis functions in all cubature points
 !    real(DP), dimension(:,:,:,:), intent(in)  :: Dbas
-!    
+!
 !    ! Cubature weights
 !    real(DP), dimension(:), intent(in)        :: Domega
-!    
+!
 !    ! Jacobian determinants in all cubature points
 !    real(DP), dimension(:,:), intent(in)      :: Ddetj
-!    
+!
 !    ! Number of local DOF's in each element
 !    integer, intent(in)                       :: ndof
-!    
+!
 !    ! Number of cubature points on each element
 !    integer, intent(in)                       :: ncubp
-!    
+!
 !    ! Number of elements
 !    integer, intent(in)                       :: NEL
-!    
+!
 !    ! Velocity vector and its derivatives in the cubature points
 !    real(DP), dimension(:,:,:), intent(in)    :: Dvelocity
 !    real(DP), dimension(:,:,:), intent(in)    :: DvelocityXderiv
 !    real(DP), dimension(:,:,:), intent(in)    :: DvelocityYderiv
-!    
+!
 !    ! Local delta of the SD method
 !    real(DP), dimension(:), intent(in)        :: DlocalDelta
 !
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
 !
@@ -520,50 +520,50 @@ contains
 !      subroutine computeForm (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !          du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,&
 !          da11,da22,da44,da55,da12,da21,da45,da54)
-!          
+!
 !      use fsystem
-!          
-!      !<description>  
+!
+!      !<description>
 !        ! Compute the form in a cubature point.
 !      !</description>
-!        
+!
 !      !<input>
 !        ! Basis function phi_i and its derivatives.
 !        real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!        
+!
 !        ! Basis function phi_j and its derivatives.
 !        real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!        
+!
 !        ! X-velocity of the given solution vector and its derivatives.
 !        real(DP), intent(in) :: du1,du1x,du1y
-!        
+!
 !        ! Y-velocity of the given solution vector and its derivatives.
 !        real(DP), intent(in) :: du2,du2x,du2y
-!        
+!
 !        ! Viscosity parameter
 !        real(DP), intent(in) :: dnu
-!        
-!        ! Local delta 
+!
+!        ! Local delta
 !        real(DP), intent(in) :: dlocalDelta
 !
 !        ! Weight for A11-22, A44-55, A41-52, A14-25
 !        real(DP), dimension(2,2), intent(in) :: Dweight
 !      !</input>
-!        
+!
 !      !<output>
 !        ! Values of the form
 !        real(DP), intent(out) :: da11,da22,da44,da55,da12,da21,da45,da54
 !      !</output>
-!      
+!
 !      end subroutine
-!    end interface   
-!    
+!    end interface
+!
 !    external :: computeForm
 !
-!  !</input>    
-!    
+!  !</input>
+!
 !  !<output>
-!    
+!
 !    ! Entries in the matrix
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA11
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA22
@@ -573,17 +573,17 @@ contains
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA21
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA45
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA54
-!    
+!
 !  !</output>
-!    
+!
 !  !</subroutine>
-!    
+!
 !    ! local variables
 !    integer :: iel, icubp, idofe, jdofe
 !    real(DP) :: OM,du1,du2,du1locx,du1locy,du2locx,du2locY
 !    real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3
 !    real(DP) :: AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54
-!    
+!
 !    AH11 = 0.0_DP
 !    AH22 = 0.0_DP
 !    AH44 = 0.0_DP
@@ -592,7 +592,7 @@ contains
 !    AH21 = 0.0_DP
 !    AH45 = 0.0_DP
 !    AH54 = 0.0_DP
-!    
+!
 !    ! Loop over the elements in the current set.
 !    do iel=1,NEL
 !
@@ -602,7 +602,7 @@ contains
 !        ! Calculate the current weighting factor in the cubature formula
 !        ! in that cubature point.
 !        !
-!        ! Normally, we have to take the absolut value of the determinant 
+!        ! Normally, we have to take the absolut value of the determinant
 !        ! of the mapping here!
 !        ! In 2D, the determinant is always positive, whereas in 3D,
 !        ! the determinant might be negative -- that's normal!
@@ -618,29 +618,29 @@ contains
 !        du1locy = DvelocityXderiv (2,icubp,iel)
 !        du2locx = DvelocityYderiv (1,icubp,iel)
 !        du2locy = DvelocityYderiv (2,icubp,iel)
-!        
-!        ! Outer loop over the DOF's i=1..indof on our current element, 
+!
+!        ! Outer loop over the DOF's i=1..indof on our current element,
 !        ! which corresponds to the basis functions Phi_i:
 !
 !        do idofe=1,ndof
-!        
+!
 !          ! Fetch the contributions of the (test) basis functions Phi_i
-!          ! (our "O")  for function value and first derivatives for the 
+!          ! (our "O")  for function value and first derivatives for the
 !          ! current DOF into HBASIy:
-!        
+!
 !          HBASI1 = Dbas(idofe,1,icubp,iel)
 !          HBASI2 = Dbas(idofe,2,icubp,iel)
 !          HBASI3 = Dbas(idofe,3,icubp,iel)
-!          
+!
 !          ! Inner loop over the DOF's j=1..indof, which corresponds to
 !          ! the basis function Phi_j:
 !
 !          do jdofe=1,ndof
-!            
+!
 !            ! Fetch the contributions of the (trial) basis function Phi_j
-!            ! (out "X") for function value and first derivatives for the 
+!            ! (out "X") for function value and first derivatives for the
 !            ! current DOF into HBASJy:
-!          
+!
 !            HBASJ1 = Dbas(jdofe,1,icubp,iel)
 !            HBASJ2 = Dbas(jdofe,2,icubp,iel)
 !            HBASJ3 = Dbas(jdofe,3,icubp,iel)
@@ -649,7 +649,7 @@ contains
 !            call computeForm (HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3,&
 !                du1,du2,du1locx,du1locy,du2locx,du2locy,dnu,DlocalDelta(iel),&
 !                Dweight,AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54)
-!                
+!
 !            ! Weighten the calculated value AHxy by the cubature
 !            ! weight OM and add it to the local matrices. After the
 !            ! loop over all DOF's is finished, each entry contains
@@ -659,20 +659,20 @@ contains
 !            DentryA22(jdofe,idofe,iel) = DentryA22(jdofe,idofe,iel)+OM*AH22
 !            DentryA44(jdofe,idofe,iel) = DentryA44(jdofe,idofe,iel)+OM*AH44
 !            DentryA55(jdofe,idofe,iel) = DentryA55(jdofe,idofe,iel)+OM*AH55
-!            
+!
 !            DentryA12(jdofe,idofe,iel) = DentryA12(jdofe,idofe,iel)+OM*AH12
 !            DentryA21(jdofe,idofe,iel) = DentryA21(jdofe,idofe,iel)+OM*AH21
 !            DentryA45(jdofe,idofe,iel) = DentryA45(jdofe,idofe,iel)+OM*AH45
 !            DentryA54(jdofe,idofe,iel) = DentryA54(jdofe,idofe,iel)+OM*AH54
-!            
+!
 !          end do ! idofe
-!          
+!
 !        end do ! jdofe
 !
-!      end do ! icubp 
-!    
+!      end do ! icubp
+!
 !    end do ! iel
-!    
+!
 !  end subroutine
 !
 !  ! ***************************************************************************
@@ -686,43 +686,43 @@ contains
 !      DentryA41,DentryA52,DentryA42,DentryA51,&
 !      DentryA14,DentryA25,DentryA24,DentryA15,&
 !      computeForm,dweight,dnu)
-!      
+!
 !  !<description>
 !    ! Computes a local matrix to be incorporated into the global matrix.
 !    ! Variant for handling the full matrix.
 !  !</description>
-!      
-!  !<input>      
-!  
+!
+!  !<input>
+!
 !    ! Basis functions in all cubature points
 !    real(DP), dimension(:,:,:,:), intent(in)  :: Dbas
-!    
+!
 !    ! Cubature weights
 !    real(DP), dimension(:), intent(in)        :: Domega
-!    
+!
 !    ! Jacobian determinants in all cubature points
 !    real(DP), dimension(:,:), intent(in)      :: Ddetj
-!    
+!
 !    ! Number of local DOF's in each element
 !    integer, intent(in)                       :: ndof
-!    
+!
 !    ! Number of cubature points on each element
 !    integer, intent(in)                       :: ncubp
-!    
+!
 !    ! Number of elements
 !    integer, intent(in)                       :: NEL
-!    
+!
 !    ! Velocity vector and its derivatives in the cubature points
 !    real(DP), dimension(:,:,:), intent(in)    :: Dvelocity
 !    real(DP), dimension(:,:,:), intent(in)    :: DvelocityXderiv
 !    real(DP), dimension(:,:,:), intent(in)    :: DvelocityYderiv
-!    
+!
 !    ! Local delta of the SD method
 !    real(DP), dimension(:), intent(in)        :: DlocalDelta
-!    
+!
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
 !
@@ -731,52 +731,52 @@ contains
 !          du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,&
 !          da11,da22,da44,da55,da12,da21,da45,da54,&
 !          da41,da52,da42,da51,da14,da25,da24,da15)
-!          
+!
 !      use fsystem
-!          
-!      !<description>  
+!
+!      !<description>
 !        ! Compute the form in a cubature point.
 !        ! Variant for handling the full matrix.
 !      !</description>
-!        
+!
 !      !<input>
 !        ! Basis function phi_i and its derivatives.
 !        real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!        
+!
 !        ! Basis function phi_j and its derivatives.
 !        real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!        
+!
 !        ! X-velocity of the given solution vector and its derivatives.
 !        real(DP), intent(in) :: du1,du1x,du1y
-!        
+!
 !        ! Y-velocity of the given solution vector and its derivatives.
 !        real(DP), intent(in) :: du2,du2x,du2y
-!        
+!
 !        ! Viscosity parameter
 !        real(DP), intent(in) :: dnu
-!        
-!        ! Local delta 
+!
+!        ! Local delta
 !        real(DP), intent(in) :: dlocalDelta
 !
 !        ! Weight for A11-22, A44-55, A41-52, A14-25
 !        real(DP), dimension(2,2), intent(in) :: Dweight
 !      !</input>
-!        
+!
 !      !<output>
 !        ! Values of the form
 !        real(DP), intent(out) :: da11,da22,da44,da55,da12,da21,da45,da54
 !        real(DP), intent(out) :: da41,da52,da42,da51,da14,da25,da24,da15
 !      !</output>
-!      
+!
 !      end subroutine
-!    end interface   
-!    
+!    end interface
+!
 !    external :: computeForm
-!    
+!
 !  !</input>
-!    
+!
 !  !<output>
-!    
+!
 !    ! Entries in the matrix
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA11
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA22
@@ -786,7 +786,7 @@ contains
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA21
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA45
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA54
-!    
+!
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA41
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA52
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA42
@@ -795,18 +795,18 @@ contains
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA25
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA24
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA15
-! 
-!  !</output>   
-!  
+!
+!  !</output>
+!
 !  !<subroutine>
-!    
+!
 !    ! local variables
 !    integer :: iel, icubp, idofe, jdofe
 !    real(DP) :: OM,du1,du2,du1locx,du1locy,du2locx,du2locY
 !    real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3
 !    real(DP) :: AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54
 !    real(DP) :: AH41,AH52,AH42,AH51,AH14,AH25,AH24,AH15
-!    
+!
 !    AH11 = 0.0_DP
 !    AH22 = 0.0_DP
 !    AH44 = 0.0_DP
@@ -815,7 +815,7 @@ contains
 !    AH21 = 0.0_DP
 !    AH45 = 0.0_DP
 !    AH54 = 0.0_DP
-!    
+!
 !    AH41 = 0.0_DP
 !    AH52 = 0.0_DP
 !    AH42 = 0.0_DP
@@ -824,7 +824,7 @@ contains
 !    AH25 = 0.0_DP
 !    AH24 = 0.0_DP
 !    AH15 = 0.0_DP
-!    
+!
 !    ! Loop over the elements in the current set.
 !    do iel=1,NEL
 !
@@ -834,7 +834,7 @@ contains
 !        ! Calculate the current weighting factor in the cubature formula
 !        ! in that cubature point.
 !        !
-!        ! Normally, we have to take the absolut value of the determinant 
+!        ! Normally, we have to take the absolut value of the determinant
 !        ! of the mapping here!
 !        ! In 2D, the determinant is always positive, whereas in 3D,
 !        ! the determinant might be negative -- that's normal!
@@ -850,29 +850,29 @@ contains
 !        du1locy = DvelocityXderiv (2,icubp,iel)
 !        du2locx = DvelocityYderiv (1,icubp,iel)
 !        du2locy = DvelocityYderiv (2,icubp,iel)
-!        
-!        ! Outer loop over the DOF's i=1..indof on our current element, 
+!
+!        ! Outer loop over the DOF's i=1..indof on our current element,
 !        ! which corresponds to the basis functions Phi_i:
 !
 !        do idofe=1,ndof
-!        
+!
 !          ! Fetch the contributions of the (test) basis functions Phi_i
-!          ! (our "O")  for function value and first derivatives for the 
+!          ! (our "O")  for function value and first derivatives for the
 !          ! current DOF into HBASIy:
-!        
+!
 !          HBASI1 = Dbas(idofe,1,icubp,iel)
 !          HBASI2 = Dbas(idofe,2,icubp,iel)
 !          HBASI3 = Dbas(idofe,3,icubp,iel)
-!          
+!
 !          ! Inner loop over the DOF's j=1..indof, which corresponds to
 !          ! the basis function Phi_j:
 !
 !          do jdofe=1,ndof
-!            
+!
 !            ! Fetch the contributions of the (trial) basis function Phi_j
-!            ! (out "X") for function value and first derivatives for the 
+!            ! (out "X") for function value and first derivatives for the
 !            ! current DOF into HBASJy:
-!          
+!
 !            HBASJ1 = Dbas(jdofe,1,icubp,iel)
 !            HBASJ2 = Dbas(jdofe,2,icubp,iel)
 !            HBASJ3 = Dbas(jdofe,3,icubp,iel)
@@ -882,7 +882,7 @@ contains
 !                du1,du2,du1locx,du1locy,du2locx,du2locy,dnu,DlocalDelta(iel),&
 !                Dweight,AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54,&
 !                AH41,AH52,AH42,AH51,AH14,AH25,AH24,AH15)
-!                
+!
 !            ! Weighten the calculated value AHxy by the cubature
 !            ! weight OM and add it to the local matrices. After the
 !            ! loop over all DOF's is finished, each entry contains
@@ -892,7 +892,7 @@ contains
 !            DentryA22(jdofe,idofe,iel) = DentryA22(jdofe,idofe,iel)+OM*AH22
 !            DentryA44(jdofe,idofe,iel) = DentryA44(jdofe,idofe,iel)+OM*AH44
 !            DentryA55(jdofe,idofe,iel) = DentryA55(jdofe,idofe,iel)+OM*AH55
-!            
+!
 !            DentryA12(jdofe,idofe,iel) = DentryA12(jdofe,idofe,iel)+OM*AH12
 !            DentryA21(jdofe,idofe,iel) = DentryA21(jdofe,idofe,iel)+OM*AH21
 !            DentryA45(jdofe,idofe,iel) = DentryA45(jdofe,idofe,iel)+OM*AH45
@@ -902,208 +902,208 @@ contains
 !            DentryA25(jdofe,idofe,iel) = DentryA25(jdofe,idofe,iel)+OM*AH25
 !            DentryA24(jdofe,idofe,iel) = DentryA24(jdofe,idofe,iel)+OM*AH24
 !            DentryA15(jdofe,idofe,iel) = DentryA15(jdofe,idofe,iel)+OM*AH15
-!                                                                           
+!
 !            DentryA41(jdofe,idofe,iel) = DentryA41(jdofe,idofe,iel)+OM*AH41
 !            DentryA52(jdofe,idofe,iel) = DentryA52(jdofe,idofe,iel)+OM*AH52
 !            DentryA51(jdofe,idofe,iel) = DentryA51(jdofe,idofe,iel)+OM*AH51
 !            DentryA42(jdofe,idofe,iel) = DentryA42(jdofe,idofe,iel)+OM*AH42
-!            
+!
 !          end do ! idofe
-!          
+!
 !        end do ! jdofe
 !
-!      end do ! icubp 
-!    
+!      end do ! icubp
+!
 !    end do ! iel
-!    
+!
 !  end subroutine
 !
 !  subroutine computeFormMass (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,da11,da22,da44,da55)
-!      
-!  !<description>  
+!
+!  !<description>
 !    ! Compute the form of the mass matrix.
 !  !</description>
-!    
+!
 !  !<input>
 !    ! Basis function phi_i and its derivatives.
 !    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!    
+!
 !    ! Basis function phi_j and its derivatives.
 !    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!    
+!
 !    ! X-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du1,du1x,du1y
-!    
+!
 !    ! Y-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du2,du2x,du2y
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
-!    
-!    ! Local delta 
+!
+!    ! Local delta
 !    real(DP), intent(in) :: dlocalDelta
-!    
+!
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
 !  !</input>
-!    
+!
 !  !<output>
 !    ! Values of the form
 !    real(DP), intent(out) :: da11,da22,da44,da55
 !  !</output>
-!  
+!
 !    real(dp) :: dtemp
-!    
+!
 !    ! dalpha*HBASI1*HBASJ1
 !    dtemp = dbasI*dbasJ
-!  
+!
 !    da11 = Dweight(1,1)*dtemp
 !    da22 = Dweight(1,1)*dtemp
 !    da44 = Dweight(2,2)*dtemp
 !    da55 = Dweight(2,2)*dtemp
-!  
+!
 !  end subroutine
 !
 !  subroutine computeFormStokes (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,da11,da22,da44,da55)
-!      
-!  !<description>  
+!
+!  !<description>
 !    ! Compute the form of the Stokes matrix.
 !  !</description>
-!    
+!
 !  !<input>
 !    ! Basis function phi_i and its derivatives.
 !    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!    
+!
 !    ! Basis function phi_j and its derivatives.
 !    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!    
+!
 !    ! X-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du1,du1x,du1y
-!    
+!
 !    ! Y-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du2,du2x,du2y
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
-!    
-!    ! Local delta 
+!
+!    ! Local delta
 !    real(DP), intent(in) :: dlocalDelta
-!    
+!
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
 !  !</input>
-!    
+!
 !  !<output>
 !    ! Values of the form
 !    real(DP), intent(out) :: da11,da22,da44,da55
 !  !</output>
-!  
+!
 !    real(dp) :: dtemp
-!    
+!
 !    ! dny*(grad(phi_j,grad(phi_i))
 !    dtemp = dnu*(dbasIX*dbasIX+dbasIY*dbasIY)
-!  
+!
 !    da11 = Dweight(1,1)*dtemp
 !    da22 = Dweight(1,1)*dtemp
 !    da44 = Dweight(2,2)*dtemp
 !    da55 = Dweight(2,2)*dtemp
-!  
+!
 !  end subroutine
 !
 !  subroutine computeFormConvection (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,da11,da22,da44,da55)
-!      
-!  !<description>  
+!
+!  !<description>
 !    ! Compute the form of the Convection matrix.
 !  !</description>
-!    
+!
 !  !<input>
 !    ! Basis function phi_i and its derivatives.
 !    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!    
+!
 !    ! Basis function phi_j and its derivatives.
 !    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!    
+!
 !    ! X-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du1,du1x,du1y
-!    
+!
 !    ! Y-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du2,du2x,du2y
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
-!    
-!    ! Local delta 
-!    real(DP), intent(in) :: dlocalDelta
-!    
-!    ! Weight for A11-22, A44-55, A41-52, A14-25
-!    real(DP), dimension(2,2), intent(in) :: Dweight
-!  !</input>
-!    
-!  !<output>
-!    ! Values of the form
-!    real(DP), intent(out) :: da11,da22,da44,da55
-!  !</output>
-!  
-!    real(dp) :: HSUMI,HSUMJ,dtemp
-!    
-!    ! Delta*(U*grad(Phi_j), U*grad(Phi_i)) + (U*grad(Phi_j),Phi_i)
-!    
-!    HSUMI = dbasIX*du1 + dbasIY*du2
-!    HSUMJ = dbasJX*du1 + dbasJY*du2
-!    
-!    dtemp = HSUMJ*(dlocalDelta*HSUMI+dbasI)
-!  
-!    da11 = Dweight(1,1)*dtemp
-!    da22 = Dweight(1,1)*dtemp
-!    da44 = Dweight(2,2)*dtemp
-!    da55 = Dweight(2,2)*dtemp
-!  
-!  end subroutine
-!     
-!  subroutine computeFormNewton (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
-!      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,&
-!      da11,da22,da44,da55,da12,da21,da45,da54)
-!      
-!  !<description>  
-!    ! Compute the form in a cubature point.
-!  !</description>
-!    
-!  !<input>
-!    ! Basis function phi_i and its derivatives.
-!    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!    
-!    ! Basis function phi_j and its derivatives.
-!    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!    
-!    ! X-velocity of the given solution vector and its derivatives.
-!    real(DP), intent(in) :: du1,du1x,du1y
-!    
-!    ! Y-velocity of the given solution vector and its derivatives.
-!    real(DP), intent(in) :: du2,du2x,du2y
-!    
-!    ! Viscosity parameter
-!    real(DP), intent(in) :: dnu
-!    
-!    ! Local delta 
+!
+!    ! Local delta
 !    real(DP), intent(in) :: dlocalDelta
 !
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
 !  !</input>
-!    
+!
+!  !<output>
+!    ! Values of the form
+!    real(DP), intent(out) :: da11,da22,da44,da55
+!  !</output>
+!
+!    real(dp) :: HSUMI,HSUMJ,dtemp
+!
+!    ! Delta*(U*grad(Phi_j), U*grad(Phi_i)) + (U*grad(Phi_j),Phi_i)
+!
+!    HSUMI = dbasIX*du1 + dbasIY*du2
+!    HSUMJ = dbasJX*du1 + dbasJY*du2
+!
+!    dtemp = HSUMJ*(dlocalDelta*HSUMI+dbasI)
+!
+!    da11 = Dweight(1,1)*dtemp
+!    da22 = Dweight(1,1)*dtemp
+!    da44 = Dweight(2,2)*dtemp
+!    da55 = Dweight(2,2)*dtemp
+!
+!  end subroutine
+!
+!  subroutine computeFormNewton (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
+!      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,&
+!      da11,da22,da44,da55,da12,da21,da45,da54)
+!
+!  !<description>
+!    ! Compute the form in a cubature point.
+!  !</description>
+!
+!  !<input>
+!    ! Basis function phi_i and its derivatives.
+!    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
+!
+!    ! Basis function phi_j and its derivatives.
+!    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
+!
+!    ! X-velocity of the given solution vector and its derivatives.
+!    real(DP), intent(in) :: du1,du1x,du1y
+!
+!    ! Y-velocity of the given solution vector and its derivatives.
+!    real(DP), intent(in) :: du2,du2x,du2y
+!
+!    ! Viscosity parameter
+!    real(DP), intent(in) :: dnu
+!
+!    ! Local delta
+!    real(DP), intent(in) :: dlocalDelta
+!
+!    ! Weight for A11-22, A44-55, A41-52, A14-25
+!    real(DP), dimension(2,2), intent(in) :: Dweight
+!  !</input>
+!
 !  !<output>
 !    ! Values of the form
 !    real(DP), intent(out) :: da11,da22,da44,da55,da12,da21,da45,da54
 !  !</output>
 !
-!  
+!
 !    real(dp) :: dtemp
-!    
+!
 !    dtemp = dbasI*dbasJ
-!  
+!
 !    da11 = Dweight(1,1) * du1x * dtemp
 !    da12 = Dweight(1,1) * du1y * dtemp
 !    da21 = Dweight(1,1) * du2x * dtemp
@@ -1113,51 +1113,51 @@ contains
 !    da45 = Dweight(2,2) * du1y * dtemp
 !    da54 = Dweight(2,2) * du2x * dtemp
 !    da55 = Dweight(2,2) * du2y * dtemp
-!  
+!
 !  end subroutine
 !
 !  subroutine computeFormConvectionTransposed (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,&
 !      da11,da22,da44,da55,da12,da21,da45,da54)
-!      
-!  !<description>  
+!
+!  !<description>
 !    ! Compute the form in a cubature point.
 !  !</description>
-!    
+!
 !  !<input>
 !    ! Basis function phi_i and its derivatives.
 !    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!    
+!
 !    ! Basis function phi_j and its derivatives.
 !    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!    
+!
 !    ! X-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du1,du1x,du1y
-!    
+!
 !    ! Y-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du2,du2x,du2y
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
-!    
-!    ! Local delta 
+!
+!    ! Local delta
 !    real(DP), intent(in) :: dlocalDelta
 !
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
 !  !</input>
-!    
+!
 !  !<output>
 !    ! Values of the form
 !    real(DP), intent(out) :: da11,da22,da44,da55,da12,da21,da45,da54
 !  !</output>
 !
-!  
+!
 !    real(dp) :: dtemp1,dtemp2
-!    
+!
 !    dtemp1 = dbasJX*dbasI
 !    dtemp2 = dbasJY*dbasI
-!  
+!
 !    da11 = Dweight(1,1) * du1 * dtemp1
 !    da12 = Dweight(1,1) * du2 * dtemp1
 !    da21 = Dweight(1,1) * du1 * dtemp2
@@ -1167,50 +1167,50 @@ contains
 !    da45 = Dweight(2,2) * du2 * dtemp1
 !    da54 = Dweight(2,2) * du1 * dtemp2
 !    da55 = Dweight(2,2) * du2 * dtemp2
-!  
+!
 !  end subroutine
-!     
+!
 !  subroutine computeFormNewtonTransposed (dbasI,dbasIX,dbasIY,dbasJ,dbasJX,dbasJY,&
 !      du1,du1x,du1y,du2,du2x,du2y,dnu,dlocalDelta,Dweight,&
 !      da11,da22,da44,da55,da12,da21,da45,da54)
-!      
-!  !<description>  
+!
+!  !<description>
 !    ! Compute the form of the transposed Newton operator.
 !  !</description>
-!    
+!
 !  !<input>
 !    ! Basis function phi_i and its derivatives.
 !    real(DP), intent(in) :: dbasI,dbasIX,dbasIY
-!    
+!
 !    ! Basis function phi_j and its derivatives.
 !    real(DP), intent(in) :: dbasJ,dbasJX,dbasJY
-!    
+!
 !    ! X-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du1,du1x,du1y
-!    
+!
 !    ! Y-velocity of the given solution vector and its derivatives.
 !    real(DP), intent(in) :: du2,du2x,du2y
-!    
+!
 !    ! Viscosity parameter
 !    real(DP), intent(in) :: dnu
-!    
-!    ! Local delta 
+!
+!    ! Local delta
 !    real(DP), intent(in) :: dlocalDelta
 !
 !    ! Weight for A11-22, A44-55, A41-52, A14-25
 !    real(DP), dimension(2,2), intent(in) :: Dweight
 !  !</input>
-!    
+!
 !  !<output>
 !    ! Values of the form
 !    real(DP), intent(out) :: da11,da22,da44,da55,da12,da21,da45,da54
 !  !</output>
 !
-!  
+!
 !    real(dp) :: dtemp
-!    
+!
 !    dtemp = dbasJ*dbasI
-!  
+!
 !    da11 = Dweight(1,1) * du1x * dtemp
 !    da12 = Dweight(1,1) * du2x * dtemp
 !    da21 = Dweight(1,1) * du1y * dtemp
@@ -1220,12 +1220,12 @@ contains
 !    da45 = Dweight(2,2) * du2x * dtemp
 !    da54 = Dweight(2,2) * du1y * dtemp
 !    da55 = Dweight(2,2) * du2y * dtemp
-!  
+!
 !  end subroutine
 !
-!!  es fehlt: 
+!!  es fehlt:
 !!  * Umsetzung des diskreten Newtons
-!  
+!
 !  ! ***************************************************************************
 !
 !  !<subroutine>
@@ -1237,32 +1237,32 @@ contains
 !      DentryA41,DentryA52,DentryA42,DentryA51,&
 !      DentryA14,DentryA25,DentryA24,DentryA15,&
 !      DlocalDelta,roptcoperator)
-!      
+!
 !  !<description>
 !    ! Computes a local matrix to be incorporated into the global matrix.
 !    ! Variant for handling the full matrix.
 !  !</description>
-!      
-!  !<input>      
-!  
+!
+!  !<input>
+!
 !    ! Basis functions in all cubature points
 !    real(DP), dimension(:,:,:,:), intent(in)  :: Dbas
-!    
+!
 !    ! Cubature weights
 !    real(DP), dimension(:), intent(in)        :: Domega
-!    
+!
 !    ! Jacobian determinants in all cubature points
 !    real(DP), dimension(:,:), intent(in)      :: Ddetj
-!    
+!
 !    ! Number of local DOF's in each element
 !    integer, intent(in)                       :: ndof
-!    
+!
 !    ! Number of cubature points on each element
 !    integer, intent(in)                       :: ncubp
-!    
+!
 !    ! Number of elements
 !    integer, intent(in)                       :: NEL
-!    
+!
 !    ! Primal velocity vector and its derivatives in the cubature points
 !    real(DP), dimension(:,:,:), intent(in)    :: Dpvel
 !    real(DP), dimension(:,:,:), intent(in)    :: DpvelXderiv
@@ -1271,17 +1271,17 @@ contains
 !    real(DP), dimension(:,:,:), intent(in)    :: Ddvel
 !    real(DP), dimension(:,:,:), intent(in)    :: DdvelXderiv
 !    real(DP), dimension(:,:,:), intent(in)    :: DdvelYderiv
-!    
+!
 !    ! Local delta of the SD method
 !    real(DP), dimension(:), intent(in)        :: DlocalDelta
-!    
+!
 !    ! Configuration of the operator
 !    type(t_optcoperator), intent(in)          :: roptcoperator
-!    
+!
 !  !</input>
-!    
+!
 !  !<output>
-!    
+!
 !    ! Entries in the matrix
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA11
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA22
@@ -1291,7 +1291,7 @@ contains
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA21
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA45
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA54
-!    
+!
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA41
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA52
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA42
@@ -1300,11 +1300,11 @@ contains
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA25
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA24
 !    real(DP), dimension(:,:,:), intent(inout) :: DentryA15
-! 
-!  !</output>   
-!  
+!
+!  !</output>
+!
 !  !<subroutine>
-!    
+!
 !    ! local variables
 !    integer :: iel, icubp, idofe, jdofe
 !    real(DP) :: OM
@@ -1313,7 +1313,7 @@ contains
 !    real(DP) :: HBASI1,HBASI2,HBASI3,HBASJ1,HBASJ2,HBASJ3
 !    real(DP) :: AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54
 !    real(DP) :: AH41,AH52,AH42,AH51,AH14,AH25,AH24,AH15
-!    
+!
 !    AH11 = 0.0_DP
 !    AH22 = 0.0_DP
 !    AH44 = 0.0_DP
@@ -1322,7 +1322,7 @@ contains
 !    AH21 = 0.0_DP
 !    AH45 = 0.0_DP
 !    AH54 = 0.0_DP
-!    
+!
 !    AH41 = 0.0_DP
 !    AH52 = 0.0_DP
 !    AH42 = 0.0_DP
@@ -1331,7 +1331,7 @@ contains
 !    AH25 = 0.0_DP
 !    AH24 = 0.0_DP
 !    AH15 = 0.0_DP
-!    
+!
 !    ! Loop over the elements in the current set.
 !    do iel=1,NEL
 !
@@ -1341,7 +1341,7 @@ contains
 !        ! Calculate the current weighting factor in the cubature formula
 !        ! in that cubature point.
 !        !
-!        ! Normally, we have to take the absolut value of the determinant 
+!        ! Normally, we have to take the absolut value of the determinant
 !        ! of the mapping here!
 !        ! In 2D, the determinant is always positive, whereas in 3D,
 !        ! the determinant might be negative -- that's normal!
@@ -1357,36 +1357,36 @@ contains
 !        du1locyp = DpvelXderiv (2,icubp,iel)
 !        du2locxp = DpvelYderiv (1,icubp,iel)
 !        du2locyp = DpvelYderiv (2,icubp,iel)
-!        
+!
 !        du1d = Ddvel (1,icubp,iel)
 !        du2d = Ddvel (2,icubp,iel)
 !        du1locxd = DdvelXderiv (1,icubp,iel)
 !        du1locyd = DdvelXderiv (2,icubp,iel)
 !        du2locxd = DdvelYderiv (1,icubp,iel)
 !        du2locyd = DdvelYderiv (2,icubp,iel)
-!        
-!        ! Outer loop over the DOF's i=1..indof on our current element, 
+!
+!        ! Outer loop over the DOF's i=1..indof on our current element,
 !        ! which corresponds to the basis functions Phi_i:
 !
 !        do idofe=1,ndof
-!        
+!
 !          ! Fetch the contributions of the (test) basis functions Phi_i
-!          ! (our "O")  for function value and first derivatives for the 
+!          ! (our "O")  for function value and first derivatives for the
 !          ! current DOF into HBASIy:
-!        
+!
 !          HBASI1 = Dbas(idofe,1,icubp,iel)
 !          HBASI2 = Dbas(idofe,2,icubp,iel)
 !          HBASI3 = Dbas(idofe,3,icubp,iel)
-!          
+!
 !          ! Inner loop over the DOF's j=1..indof, which corresponds to
 !          ! the basis function Phi_j:
 !
 !          do jdofe=1,ndof
-!            
+!
 !            ! Fetch the contributions of the (trial) basis function Phi_j
-!            ! (out "X") for function value and first derivatives for the 
+!            ! (out "X") for function value and first derivatives for the
 !            ! current DOF into HBASJy:
-!          
+!
 !            HBASJ1 = Dbas(jdofe,1,icubp,iel)
 !            HBASJ2 = Dbas(jdofe,2,icubp,iel)
 !            HBASJ3 = Dbas(jdofe,3,icubp,iel)
@@ -1396,7 +1396,7 @@ contains
 !            !    du1,du2,du1locx,du1locy,du2locx,du2locy,dnu,DlocalDelta(iel),&
 !            !    Dweight,AH11,AH22,AH44,AH55,AH12,AH21,AH45,AH54,&
 !            !    AH41,AH52,AH42,AH51,AH14,AH25,AH24,AH15)
-!                
+!
 !            ! Weighten the calculated value AHxy by the cubature
 !            ! weight OM and add it to the local matrices. After the
 !            ! loop over all DOF's is finished, each entry contains
@@ -1406,7 +1406,7 @@ contains
 !            DentryA22(jdofe,idofe,iel) = DentryA22(jdofe,idofe,iel)+OM*AH22
 !            DentryA44(jdofe,idofe,iel) = DentryA44(jdofe,idofe,iel)+OM*AH44
 !            DentryA55(jdofe,idofe,iel) = DentryA55(jdofe,idofe,iel)+OM*AH55
-!            
+!
 !            DentryA12(jdofe,idofe,iel) = DentryA12(jdofe,idofe,iel)+OM*AH12
 !            DentryA21(jdofe,idofe,iel) = DentryA21(jdofe,idofe,iel)+OM*AH21
 !            DentryA45(jdofe,idofe,iel) = DentryA45(jdofe,idofe,iel)+OM*AH45
@@ -1416,20 +1416,20 @@ contains
 !            DentryA25(jdofe,idofe,iel) = DentryA25(jdofe,idofe,iel)+OM*AH25
 !            DentryA24(jdofe,idofe,iel) = DentryA24(jdofe,idofe,iel)+OM*AH24
 !            DentryA15(jdofe,idofe,iel) = DentryA15(jdofe,idofe,iel)+OM*AH15
-!                                                                           
+!
 !            DentryA41(jdofe,idofe,iel) = DentryA41(jdofe,idofe,iel)+OM*AH41
 !            DentryA52(jdofe,idofe,iel) = DentryA52(jdofe,idofe,iel)+OM*AH52
 !            DentryA51(jdofe,idofe,iel) = DentryA51(jdofe,idofe,iel)+OM*AH51
 !            DentryA42(jdofe,idofe,iel) = DentryA42(jdofe,idofe,iel)+OM*AH42
-!            
+!
 !          end do ! idofe
-!          
+!
 !        end do ! jdofe
 !
-!      end do ! icubp 
-!    
+!      end do ! icubp
+!
 !    end do ! iel
-!    
+!
 !  end subroutine
 
   ! ***************************************************************************
@@ -1450,7 +1450,7 @@ contains
     ! which is to be incorporated into the global matrix.
   !</description>
       
-  !<input>      
+  !<input>
   
     ! Basis functions in all cubature points
     real(DP), dimension(:,:,:,:), intent(in)  :: Dbas
@@ -1525,7 +1525,7 @@ contains
     real(DP), dimension(:,:,:), intent(inout) :: DentryA24
     real(DP), dimension(:,:,:), intent(inout) :: DentryA15
  
-  !</output>   
+  !</output>
   
   !<subroutine>
     
@@ -1596,7 +1596,7 @@ contains
         ! Perform a loop through the trial DOF's.
         do jdofe=1,ndof
 
-          ! Get the value of the (test) basis function 
+          ! Get the value of the (test) basis function
           ! phi_i (our "O") in the cubature point:
           
           db =  Dbas(jdofe,1,icubp,iel)
@@ -1685,7 +1685,7 @@ contains
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
           !
-          ! Normally, we have to take the absolut value of the determinant 
+          ! Normally, we have to take the absolut value of the determinant
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that's normal!
@@ -1694,13 +1694,13 @@ contains
 
           OM = Domega(icubp)*Ddetj(icubp,iel)
 
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF's i=1..indof on our current element,
           ! which corresponds to the basis functions Phi_i:
 
           do idofe=1,ndof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
-            ! (our "O")  for function value and first derivatives for the 
+            ! (our "O")  for function value and first derivatives for the
             ! current DOF into HBASIy:
           
             dbasI = Dbas(idofe,1,icubp,iel)
@@ -1711,7 +1711,7 @@ contains
             do jdofe=1,ndof
               
               ! Fetch the contributions of the (trial) basis function Phi_j
-              ! (out "X") for function value and first derivatives for the 
+              ! (out "X") for function value and first derivatives for the
               ! current DOF into HBASJy:
             
               dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -1746,7 +1746,7 @@ contains
             
           end do ! jdofe
 
-        end do ! icubp 
+        end do ! icubp
       
       end do ! iel
     end if
@@ -1764,7 +1764,7 @@ contains
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
           !
-          ! Normally, we have to take the absolut value of the determinant 
+          ! Normally, we have to take the absolut value of the determinant
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that's normal!
@@ -1773,13 +1773,13 @@ contains
 
           OM = Domega(icubp)*Ddetj(icubp,iel)
 
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF's i=1..indof on our current element,
           ! which corresponds to the basis functions Phi_i:
 
           do idofe=1,ndof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
-            ! (our "O")  for function value and first derivatives for the 
+            ! (our "O")  for function value and first derivatives for the
             ! current DOF into HBASIy:
           
             dbasIX = Dbas(idofe,2,icubp,iel)
@@ -1791,7 +1791,7 @@ contains
             do jdofe=1,ndof
               
               ! Fetch the contributions of the (trial) basis function Phi_j
-              ! (out "X") for function value and first derivatives for the 
+              ! (out "X") for function value and first derivatives for the
               ! current DOF into HBASJy:
             
               dbasJX = Dbas(jdofe,2,icubp,iel)
@@ -1821,10 +1821,10 @@ contains
             
           end do ! jdofe
 
-        end do ! icubp 
+        end do ! icubp
       
       end do ! iel
-    end if    
+    end if
 
     ! Convection operator grad(.)*y.
     ! This operator implies the transposed Newton \grad(y)^t*(.) in the
@@ -1841,7 +1841,7 @@ contains
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
           !
-          ! Normally, we have to take the absolut value of the determinant 
+          ! Normally, we have to take the absolut value of the determinant
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that's normal!
@@ -1857,13 +1857,13 @@ contains
           du2locxp = DpvelYderiv(1,icubp,iel)
           du2locyp = DpvelYderiv(2,icubp,iel)
 
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF's i=1..indof on our current element,
           ! which corresponds to the basis functions Phi_i:
 
           do idofe=1,ndof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
-            ! (our "O")  for function value and first derivatives for the 
+            ! (our "O")  for function value and first derivatives for the
             ! current DOF into HBASIy:
           
             dbasI = Dbas(idofe,1,icubp,iel)
@@ -1878,7 +1878,7 @@ contains
             do jdofe=1,ndof
               
               ! Fetch the contributions of the (trial) basis function Phi_j
-              ! (out "X") for function value and first derivatives for the 
+              ! (out "X") for function value and first derivatives for the
               ! current DOF into HBASJy:
             
               dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -1887,7 +1887,7 @@ contains
 
               dsumJ = dbasJX*du1p + dbasJY*du2p
 
-              ! Transposed Newton in the dual equation.            
+              ! Transposed Newton in the dual equation.
               dtemp = dbasJ*dbasI
             
               ! Delta*(U*grad(Phi_j), U*grad(Phi_i)) + (U*grad(Phi_j),Phi_i)
@@ -1940,10 +1940,10 @@ contains
             
           end do ! jdofe
 
-        end do ! icubp 
+        end do ! icubp
       
       end do ! iel
-    end if    
+    end if
     
     ! Newton operator grad(y)*(.).
     ! This operator implies the reactive operator (.)*grad(\lambda)+(\grad(.)^t)\lambda
@@ -1959,7 +1959,7 @@ contains
           ! Calculate the current weighting factor in the cubature formula
           ! in that cubature point.
           !
-          ! Normally, we have to take the absolut value of the determinant 
+          ! Normally, we have to take the absolut value of the determinant
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
           ! the determinant might be negative -- that's normal!
@@ -1981,13 +1981,13 @@ contains
           du1d = Ddvel(1,icubp,iel)
           du2d = Ddvel(2,icubp,iel)
 
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF's i=1..indof on our current element,
           ! which corresponds to the basis functions Phi_i:
 
           do idofe=1,ndof
           
             ! Fetch the contributions of the (test) basis functions Phi_i
-            ! (our "O")  for function value and first derivatives for the 
+            ! (our "O")  for function value and first derivatives for the
             ! current DOF into HBASIy:
           
             dbasI = Dbas(idofe,1,icubp,iel)
@@ -2000,7 +2000,7 @@ contains
             do jdofe=1,ndof
               
               ! Fetch the contributions of the (trial) basis function Phi_j
-              ! (out "X") for function value and first derivatives for the 
+              ! (out "X") for function value and first derivatives for the
               ! current DOF into HBASJy:
             
               dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -2064,10 +2064,10 @@ contains
             
           end do ! jdofe
 
-        end do ! icubp 
+        end do ! icubp
       
       end do ! iel
-    end if    
+    end if
     
     ! Compute the control mass matrix part?
     if (roptcoperator%dcontrolWeight .ne. 0.0_DP) then
@@ -2087,7 +2087,7 @@ contains
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
             !
-            ! Normally, we have to take the absolut value of the determinant 
+            ! Normally, we have to take the absolut value of the determinant
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
             ! the determinant might be negative -- that's normal!
@@ -2096,13 +2096,13 @@ contains
 
             OM = Domega(icubp)*Ddetj(icubp,iel)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF's i=1..indof on our current element,
             ! which corresponds to the basis functions Phi_i:
 
             do idofe=1,ndof
             
               ! Fetch the contributions of the (test) basis functions Phi_i
-              ! (our "O")  for function value and first derivatives for the 
+              ! (our "O")  for function value and first derivatives for the
               ! current DOF into HBASIy:
             
               dbasI = Dbas(idofe,1,icubp,iel)
@@ -2113,7 +2113,7 @@ contains
               do jdofe=1,ndof
                 
                 ! Fetch the contributions of the (trial) basis function Phi_j
-                ! (out "X") for function value and first derivatives for the 
+                ! (out "X") for function value and first derivatives for the
                 ! current DOF into HBASJy:
               
                 dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -2136,7 +2136,7 @@ contains
               
             end do ! jdofe
 
-          end do ! icubp 
+          end do ! icubp
         
         end do ! iel
       
@@ -2158,7 +2158,7 @@ contains
               ! Calculate the current weighting factor in the cubature formula
               ! in that cubature point.
               !
-              ! Normally, we have to take the absolut value of the determinant 
+              ! Normally, we have to take the absolut value of the determinant
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
               ! the determinant might be negative -- that's normal!
@@ -2167,13 +2167,13 @@ contains
 
               OM = Domega(icubp)*Ddetj(icubp,iel)
 
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF's i=1..indof on our current element,
               ! which corresponds to the basis functions Phi_i:
 
               do idofe=1,ndof
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
-                ! (our "O")  for function value and first derivatives for the 
+                ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
               
                 dbasI = Dbas(idofe,1,icubp,iel)
@@ -2184,7 +2184,7 @@ contains
                 do jdofe=1,ndof
                   
                   ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! (out "X") for function value and first derivatives for the 
+                  ! (out "X") for function value and first derivatives for the
                   ! current DOF into HBASJy:
                 
                   dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -2205,7 +2205,7 @@ contains
                 
               end do ! jdofe
 
-            end do ! icubp 
+            end do ! icubp
           
           end do ! iel
          
@@ -2221,7 +2221,7 @@ contains
               ! Calculate the current weighting factor in the cubature formula
               ! in that cubature point.
               !
-              ! Normally, we have to take the absolut value of the determinant 
+              ! Normally, we have to take the absolut value of the determinant
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
               ! the determinant might be negative -- that's normal!
@@ -2230,13 +2230,13 @@ contains
 
               OM = Domega(icubp)*Ddetj(icubp,iel)
 
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF's i=1..indof on our current element,
               ! which corresponds to the basis functions Phi_i:
 
               do idofe=1,ndof
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
-                ! (our "O")  for function value and first derivatives for the 
+                ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
               
                 dbasI = Dbas(idofe,1,icubp,iel)
@@ -2253,7 +2253,7 @@ contains
                   do jdofe=1,ndof
                     
                     ! Fetch the contributions of the (trial) basis function Phi_j
-                    ! (out "X") for function value and first derivatives for the 
+                    ! (out "X") for function value and first derivatives for the
                     ! current DOF into HBASJy:
                   
                     dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -2277,7 +2277,7 @@ contains
                   do jdofe=1,ndof
                     
                     ! Fetch the contributions of the (trial) basis function Phi_j
-                    ! (out "X") for function value and first derivatives for the 
+                    ! (out "X") for function value and first derivatives for the
                     ! current DOF into HBASJy:
                   
                     dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -2298,7 +2298,7 @@ contains
                 
               end do ! jdofe
 
-            end do ! icubp 
+            end do ! icubp
           
           end do ! iel
           
@@ -2314,7 +2314,7 @@ contains
               ! Calculate the current weighting factor in the cubature formula
               ! in that cubature point.
               !
-              ! Normally, we have to take the absolut value of the determinant 
+              ! Normally, we have to take the absolut value of the determinant
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
               ! the determinant might be negative -- that's normal!
@@ -2326,13 +2326,13 @@ contains
               du1d = roptcoperator%dcontrolMultiplier * Ddvel(1,icubp,iel)
               du2d = roptcoperator%dcontrolMultiplier * Ddvel(2,icubp,iel)
 
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF's i=1..indof on our current element,
               ! which corresponds to the basis functions Phi_i:
 
               do idofe=1,ndof
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
-                ! (our "O")  for function value and first derivatives for the 
+                ! (our "O")  for function value and first derivatives for the
                 ! current DOF into HBASIy:
               
                 dbasI = Dbas(idofe,1,icubp,iel)
@@ -2343,7 +2343,7 @@ contains
                 do jdofe=1,ndof
                   
                   ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! (out "X") for function value and first derivatives for the 
+                  ! (out "X") for function value and first derivatives for the
                   ! current DOF into HBASJy:
                 
                   dbasJ = Dbas(jdofe,1,icubp,iel)
@@ -2378,7 +2378,7 @@ contains
                 
               end do ! jdofe
 
-            end do ! icubp 
+            end do ! icubp
           
           end do ! iel
          
@@ -2470,7 +2470,7 @@ contains
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     
     allocate(roptcassemblyinfo%Dbas(&
@@ -2565,7 +2565,7 @@ contains
 !<description>
   ! Initialise the roptcassemblyinfo structure for the assembly of
   ! local matrices for the elements istartElement..istartElement+ielCountMax-1 (of the
-  ! current element set). 
+  ! current element set).
 !</description>
 
 !<input>
@@ -2645,7 +2645,7 @@ contains
     !        #-----#-----#. . .#
     !
     ! --> On element iel, the basis function at "X" only interacts
-    !     with the basis functions in "O". Elements in the 
+    !     with the basis functions in "O". Elements in the
     !     neighbourhood ("*") have no support, therefore we only have
     !     to collect all "O" DOF's.
     !
@@ -2664,19 +2664,19 @@ contains
     !
     ! We have indofTrial trial DOF's per element and
     ! indofTest test DOF's per element. Therefore there are
-    ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-    ! "active" (i.e. have common support) on our current element, each 
+    ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+    ! "active" (i.e. have common support) on our current element, each
     ! giving an additive contribution to the system matrix.
     !
     ! We build a quadratic indofTrial*indofTest local matrix:
-    ! Kentry(1..indofTrial,1..indofTest) receives the position 
-    !   in the global system matrix, where the corresponding value 
+    ! Kentry(1..indofTrial,1..indofTest) receives the position
+    !   in the global system matrix, where the corresponding value
     !   has to be added to.
-    ! (The corresponding contrbutions can be saved separately, 
-    !  but we directly add them to the global matrix in this 
+    ! (The corresponding contrbutions can be saved separately,
+    !  but we directly add them to the global matrix in this
     !  approach.)
     !
-    ! We build local matrices for all our elements 
+    ! We build local matrices for all our elements
     ! in the set simultaneously.
     ! Loop through elements in the set and for each element,
     ! loop through the local matrices to initialise them:
@@ -2687,7 +2687,7 @@ contains
       ! define the rows in the matrix.
       do idofe=1,roptcassemblyinfo%indof
       
-        ! Row idofe of the local matrix corresponds 
+        ! Row idofe of the local matrix corresponds
         ! to row=global DOF KDFG(idofe) in the global matrix.
         ! This is one of the the "O"'s in the above picture.
         ! Get the starting position of the corresponding row
@@ -2703,7 +2703,7 @@ contains
         
         do jdofe=1,roptcassemblyinfo%indof
           
-          ! Get the global DOF of the "X" which interacts with 
+          ! Get the global DOF of the "X" which interacts with
           ! our "O".
           
           jdfg=roptcassemblyinfo%Idofs(jdofe,iel)
@@ -2717,7 +2717,7 @@ contains
             if (p_KCOL(jcol) .eq. jdfg) exit
           end do
           
-          ! Because columns in the global matrix are sorted 
+          ! Because columns in the global matrix are sorted
           ! ascendingly (except for the diagonal element),
           ! the next search can start after the column we just found.
           
@@ -2754,7 +2754,7 @@ contains
         ! define the rows in the matrix.
         do idofe=1,roptcassemblyinfo%indof
         
-          ! Row idofe of the local matrix corresponds 
+          ! Row idofe of the local matrix corresponds
           ! to row=global DOF KDFG(idofe) in the global matrix.
           ! This is one of the the "O"'s in the above picture.
           ! Get the starting position of the corresponding row
@@ -2770,7 +2770,7 @@ contains
           
           do jdofe=1,roptcassemblyinfo%indof
             
-            ! Get the global DOF of the "X" which interacts with 
+            ! Get the global DOF of the "X" which interacts with
             ! our "O".
             
             jdfg=roptcassemblyinfo%Idofs(jdofe,iel)
@@ -2784,7 +2784,7 @@ contains
               if (p_KCOL12(jcol) .eq. jdfg) exit
             end do
 
-            ! Because columns in the global matrix are sorted 
+            ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
             
@@ -2815,7 +2815,7 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(roptcassemblyinfo%p_relementDistribution%celement)
                     
     ! In the first loop, calculate the coordinates on the reference element.
@@ -2845,7 +2845,7 @@ contains
     ! Calculate the values of the basis functions.
     ! Pass p_DcubPts as point coordinates, which point either to the
     ! coordinates on the reference element (the same for all elements)
-    ! or on the real element - depending on whether this is a 
+    ! or on the real element - depending on whether this is a
     ! parametric or nonparametric element.
     call elem_generic_sim2 (roptcassemblyinfo%p_relementDistribution%celement, &
         roptcassemblyinfo%revalElementSet, roptcassemblyinfo%Bder, roptcassemblyinfo%Dbas)
@@ -3024,7 +3024,7 @@ contains
       call sys_halt()
     end if
     
-    ! Get pointers to the matrix content 
+    ! Get pointers to the matrix content
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
 
@@ -3162,7 +3162,7 @@ contains
           DentryA41,DentryA52,DentryA42,DentryA51,&
           DentryA14,DentryA25,DentryA24,DentryA15,&
           roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-          roptcoperator,roptcassemblyinfo)      
+          roptcoperator,roptcassemblyinfo)
       
       ! Incorporate the computed local matrices into the global matrix.
       !%OMP CRITICAL
@@ -3208,18 +3208,18 @@ contains
       if (associated(p_Da14)) &
         call incorporateLocalMatrix (DentryA14,p_Da14,roptcassemblyinfo%Kentry,dweight)
                                                     
-      if (associated(p_Da24)) &                     
+      if (associated(p_Da24)) &
         call incorporateLocalMatrix (DentryA24,p_Da24,roptcassemblyinfo%Kentry12,dweight)
                                                     
-      if (associated(p_Da15)) &                     
+      if (associated(p_Da15)) &
         call incorporateLocalMatrix (DentryA15,p_Da15,roptcassemblyinfo%Kentry12,dweight)
                                                     
-      if (associated(p_Da25)) &                     
+      if (associated(p_Da25)) &
         call incorporateLocalMatrix (DentryA25,p_Da25,roptcassemblyinfo%Kentry,dweight)
       
 
     end do ! ielset
-    !%OMP end do 
+    !%OMP end do
     
     ! Release memory
     deallocate(DentryA11)
@@ -3267,7 +3267,7 @@ contains
         do idofe=1,ubound(DaLocal,2)
           do jdofe=1,ubound(DaLocal,1)
             Da(Kentry(jdofe,idofe,iel)) = Da(Kentry(jdofe,idofe,iel)) + &
-                dweight * DaLocal(jdofe,idofe,iel) 
+                dweight * DaLocal(jdofe,idofe,iel)
           end do
         end do
       end do
@@ -3391,7 +3391,7 @@ contains
       call sys_halt()
     end if
     
-    ! Get pointers to the matrix content 
+    ! Get pointers to the matrix content
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
     call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
 
@@ -3593,7 +3593,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da11)) then
@@ -3648,7 +3648,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da41,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da51)) then
@@ -3722,7 +3722,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da11)) then
@@ -3777,7 +3777,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da41,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da51)) then
@@ -3853,7 +3853,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da12)) then
@@ -3884,7 +3884,7 @@ contains
           if (roptcoperator%ccontrolProjection .eq. 0) then
             call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
                                             roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-          else                                            
+          else
             select case (roptcoperator%cconstraintsType)
             case (0)
               call incorporateLocalMatVecCol (DentryA25,p_Da22,roptcassemblyinfo%Kentry,&
@@ -3908,7 +3908,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da42,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da52)) then
@@ -3982,7 +3982,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da12)) then
@@ -4037,7 +4037,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da42,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da52)) then
@@ -4113,7 +4113,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da14)) then
@@ -4168,7 +4168,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da44,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da54)) then
@@ -4242,7 +4242,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da14)) then
@@ -4297,7 +4297,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da44,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da54)) then
@@ -4374,7 +4374,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da15)) then
@@ -4429,7 +4429,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da45,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da55)) then
@@ -4503,7 +4503,7 @@ contains
             DentryA41,DentryA52,DentryA42,DentryA51,&
             DentryA14,DentryA25,DentryA24,DentryA15,&
             roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-            roptcoperator,roptcassemblyinfo)      
+            roptcoperator,roptcassemblyinfo)
         
         ! Incorporate the computed local matrices into the global matrix.
         if (associated(p_Da15)) then
@@ -4560,7 +4560,7 @@ contains
 
           call incorporateLocalMatVecCol (DentryA45,p_Da45,roptcassemblyinfo%Kentry,&
                                           roptcassemblyinfo%DdvelDofsAlt,2,idof,dweight2,Dtemp)
-        end if                                            
+        end if
 
 
         if (associated(p_Da55)) then
@@ -4577,7 +4577,7 @@ contains
       end do
 
     end do ! ielset
-    !%OMP end do 
+    !%OMP end do
     
     deallocate(Dtemp)
     
@@ -4693,7 +4693,7 @@ contains
       
 !<description>
   ! Calculate the defect of the nonlinear operator:
-  !   rd = rd - dweight*A(rvelocityVector)rx 
+  !   rd = rd - dweight*A(rvelocityVector)rx
 !</description>
 
 !<input>
@@ -4721,10 +4721,10 @@ contains
   real(DP), intent(in) :: dweight
 !</input>
   
-!<inputoutput>  
+!<inputoutput>
   ! On entry: RHS. On exit: Defect.
   type(t_vectorBlock), intent(inout) :: rd
-!</inputoutput>  
+!</inputoutput>
 
 !</subroutine>
 
@@ -4874,7 +4874,7 @@ contains
           DentryA41,DentryA52,DentryA42,DentryA51,&
           DentryA14,DentryA25,DentryA24,DentryA15,&
           roptcassemblyinfo%DlocalDeltaPrimal,roptcassemblyinfo%DlocalDeltaDual,&
-          roptcoperator,roptcassemblyinfo)      
+          roptcoperator,roptcassemblyinfo)
       
       ! Perform a local matrix-vector multiplication with the local matrices.
       ! Incorporate the computed local matrices into the global matrix.
@@ -4914,7 +4914,7 @@ contains
       end if
       
     end do ! ielset
-    !%OMP end do 
+    !%OMP end do
     
     ! Release memory
     deallocate(DentryA11)
@@ -5025,7 +5025,7 @@ contains
   real(DP), intent(IN) :: dnu
   
   ! user defined parameter for configuring the streamline diffusion.
-  ! < 0: Simple calculation of ddelta, using 
+  ! < 0: Simple calculation of ddelta, using
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
@@ -5083,7 +5083,7 @@ contains
 
         if (dupsam .lt. 0.0_DP) then
 
-          ! For UPSAM<0, we use simple calculation of ddelta:        
+          ! For UPSAM<0, we use simple calculation of ddelta:
         
           DlocalDelta(iel) = abs(dupsam)*dlocalH
           
@@ -5112,7 +5112,7 @@ contains
   pure subroutine getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
                       XBETA2, JEL,Kvert,Dcorvg)
   
-  ! Determine the local mesh width for an element JEL of a 
+  ! Determine the local mesh width for an element JEL of a
   ! triangulation.
   
   ! Element where the local h should be calculated
@@ -5291,10 +5291,10 @@ contains
       ! beta and the vector are parallel
       dalpha=0.0_DP
       
-    else  
+    else
 
       ! Scalar product of (beta1,beta2) with the (inner) normal vector n2
-      ! of the line (xo,yo)->(xa,ya). 
+      ! of the line (xo,yo)->(xa,ya).
       dlambda=(BETA1*(YA-YO)-BETA2*(XA-XO))/dsp
 
       !                    (xb,yb)
@@ -5308,7 +5308,7 @@ contains
       !   !   /  ^__ n1     |   /
       !   !  /      \__     |  /
       !   ! /          \__  | /
-      !   !/              \_|/ 
+      !   !/              \_|/
       !   +-----------------+
       ! (xo,yo)            (xa,ya)
       !

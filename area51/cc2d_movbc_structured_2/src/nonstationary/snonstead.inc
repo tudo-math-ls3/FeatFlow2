@@ -19,7 +19,7 @@
 *
 * The structures themselves are realized as integer/double precision
 * arrays:
-*   IPARAM = array [1..SZISDI] of integer 
+*   IPARAM = array [1..SZISDI] of integer
 *          = TInstatDefIParams
 *   DPARAM = array [1..SZISDD] of double
 *          = TInstatDefDParams
@@ -36,7 +36,7 @@
 * The whole structure can be initializes with the INIISD subroutine
 * in NONSTEAD2.F.
 *
-* TInstatDefIParams = record 
+* TInstatDefIParams = record
 *   // The first part of TInstatDefIParams is the whole TSolverIParams-
 *   // structure, i.e. TInstatDefIParams is a direct extension of
 *   // TSolverIParams:
@@ -89,11 +89,11 @@
 *            = 1: steady inhomogenuous RHS
 *            = 2: time-dependent RHS
 *   IBDR   : Type of boundary conditions. Bitfield.
-*            =0: Dirichlet + not moving homogenuous Neumann 
+*            =0: Dirichlet + not moving homogenuous Neumann
 *                boundary conditions
-*            Bit 0: activate inhomogenuous Neumann boundary 
+*            Bit 0: activate inhomogenuous Neumann boundary
 *                   (=pressure drop)
-*            Bit 1: activate time-dependent location of 
+*            Bit 1: activate time-dependent location of
 *                   Dirichlet/Neumann boundary components,
 *                   time-dependent fictitious boundaries
 *   IDMESH : Type of dynamic mesh construction
@@ -110,10 +110,10 @@
 *             =0: geometric
 *             =1: H1-error
 *   IMSREP  : Number of repetitions of every time step if IDMESH>=2.
-*             The mesh is readapted in every step depending on the 
+*             The mesh is readapted in every step depending on the
 *             criterion IMSCRT
 *   IMSSTP  : Number of time steps between each grid adaption:
-*             The grid is adapted each IMSSTP steps. 
+*             The grid is adapted each IMSSTP steps.
 *             IMSSTP=0 adapts the mesh only in the very first iteration,
 *             even if IDMESH=2,3.
 *
@@ -127,7 +127,7 @@
 *
 * end
 *
-* TInstatDefDParams = record 
+* TInstatDefDParams = record
 *   // The first part of TInstatDefDParams is the whole TSolverDParams-
 *   // structure, i.e. TInstatDefDParams is a direct extension of
 *   // TSolverDParams:
@@ -185,7 +185,7 @@
 *   SSTHETA: Theta parameter for One-step (single step) Theta scheme.
 *            Only used if IFRSTP=0.
 *
-*   DMSMTM : If mesh adaption is activated: 
+*   DMSMTM : If mesh adaption is activated:
 *            Maximum simulational time for mesh adaption. If simulational
 *            time reaches DMSMTM, the mesh is kept fix.
 *            =-1D0: no maximum time

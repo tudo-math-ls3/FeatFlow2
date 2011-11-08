@@ -62,7 +62,7 @@ contains
   ! OPTIONAL: Target format of the matrix rdestMatrix. Standard is Format 9.
   integer, intent(in), optional :: cmatrixFormat
   
-  ! OPTIONAL: Data type for the entries of rdestMatrix. 
+  ! OPTIONAL: Data type for the entries of rdestMatrix.
   ! Standard is double precision.
   integer, intent(in), optional :: cdataType
 
@@ -258,7 +258,7 @@ contains
           call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
         end if
       end if
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Da', & 
+      if (balloc) call storage_new ('glsys_assembleGlobal', 'Da', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
                                     cdataTypeLocal, &
                                     rdestMatrix%RmatrixBlock(1,1)%h_Da,&
@@ -266,7 +266,7 @@ contains
             
       ! Set up KCOL and the matrix entries
       call glmatasm_KcolDa99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
-                                  Icolumns, Irows)      
+                                  Icolumns, Irows)
       
       ! Allocate a Kdiagonal in the destination matrix if we do not have a previous
       ! array in the correct size.
@@ -283,7 +283,7 @@ contains
         end if
       end if
 
-      ! Allocate a Kdiagonal in the destination matrix      
+      ! Allocate a Kdiagonal in the destination matrix
       if (balloc) call storage_new (&
                         'glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
@@ -356,9 +356,9 @@ contains
                         
       ! Set up KCOL and the matrix entries
       call glmatasm_Kcol99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
-                                Icolumns, Irows)      
+                                Icolumns, Irows)
       
-      ! Allocate a Kdiagonal in the destination matrix      
+      ! Allocate a Kdiagonal in the destination matrix
       call storage_new ('glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
                         ST_NEWBLOCK_NOINIT)
@@ -371,7 +371,7 @@ contains
       
     end select
     
-  else 
+  else
   
     ! Assemble only the entries of the global matrix; the structure
     ! is already there.
@@ -401,7 +401,7 @@ contains
           call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
         end if
       end if
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Da', & 
+      if (balloc) call storage_new ('glsys_assembleGlobal', 'Da', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
                                     cdataTypeLocal, &
                                     rdestMatrix%RmatrixBlock(1,1)%h_Da,&
@@ -409,7 +409,7 @@ contains
             
       ! Set up KCOL and the matrix entries
       call glmatasm_Da99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
-                              Icolumns, Irows)      
+                              Icolumns, Irows)
       
       ! Allocate a Kdiagonal in the destination matrix if necessary
       if (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal .ne. ST_NOHANDLE) then
@@ -454,7 +454,7 @@ contains
   subroutine glmatasm_initDestination (rsourceMatrix,rdestMatrix, &
                                         cmatrixFormat,cdataType)
 
-  ! The source block matrix 
+  ! The source block matrix
   type(t_matrixBlock), intent(in) :: rsourceMatrix
   
   ! The matrix to be initialised
@@ -463,7 +463,7 @@ contains
   ! Target format of the matrix rdestMatrix. Standard is Format 9.
   integer, intent(in) :: cmatrixFormat
   
-  ! Data type for the entries of rdestMatrix. 
+  ! Data type for the entries of rdestMatrix.
   ! Standard is double precision.
   integer, intent(in) :: cdataType
 
@@ -486,7 +486,7 @@ contains
     nullify(rdestMatrix%p_rdiscreteBC)
     nullify(rdestMatrix%p_rdiscreteBCfict)
 
-    ! Initialise structural information of the submatrix      
+    ! Initialise structural information of the submatrix
     rdestMatrix%RmatrixBlock(1,1)%NEQ = rsourceMatrix%NEQ
     rdestMatrix%RmatrixBlock(1,1)%NCOLS = rsourceMatrix%NCOLS
     rdestMatrix%RmatrixBlock(1,1)%cmatrixFormat = cmatrixFormat
@@ -502,7 +502,7 @@ contains
   ! Calculates the row-block offsets in the destination matrix
   subroutine glmatasm_getOffsets (rsourceMatrix,Icolumns,Irows)
 
-  ! The source block matrix 
+  ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! Real column numbers in each block-column of the block matrix.
@@ -524,7 +524,7 @@ contains
     
       do j=1,rsourceMatrix%nblocksPerRow
         ! When checking for the presence of the matrix, do not respect
-        ! the scaling factor; we only want to get the size of the matrix 
+        ! the scaling factor; we only want to get the size of the matrix
         ! columns/rows!
         if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j,.true.)) then
           
@@ -554,7 +554,7 @@ contains
   ! Calculates NA and the KLD row structure of the global matrix
   subroutine glmatasm_KLD (rsourceMatrix,rdestMatrix,Irows)
 
-  ! The source block matrix 
+  ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised.
@@ -608,7 +608,7 @@ contains
     end do
     
     ! Now we have:
-    ! KLD(1) = 0, 
+    ! KLD(1) = 0,
     ! KLD(2) = Number of entries in row 1,
     ! KLD(3) = Number of entries in row 2, etc.
     ! Sum up the values to get the actual KLD.
@@ -617,7 +617,7 @@ contains
       p_KldDest(irow+1) = p_KldDest(irow+1) + p_KldDest(irow)
     end do
     
-    ! and so we have NA. 
+    ! and so we have NA.
     rdestMatrix%NA = p_KldDest(rsourceMatrix%NEQ+1)-1
   
   end subroutine glmatasm_KLD
@@ -630,7 +630,7 @@ contains
   subroutine glmatasm_Kcol99dble (rsourceMatrix,rdestMatrix,&
                                   Icolumns, Irows)
 
-  ! The source block matrix 
+  ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised
@@ -698,7 +698,7 @@ contains
             p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
               p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
             
-            ! Increase the counter/index position array for how 
+            ! Increase the counter/index position array for how
             ! many elements are added to that row.
             p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
           
@@ -724,7 +724,7 @@ contains
   subroutine glmatasm_Da99dble (rsourceMatrix,rdestMatrix,&
                                 Icolumns, Irows)
 
-  ! The source block matrix 
+  ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised
@@ -787,11 +787,11 @@ contains
             ioffsetGlobal = p_KldTmp(irowGlobal+irow)
             ioffsetLocal  = p_Kld(irow)
             
-            ! Copy matrix data 
+            ! Copy matrix data
             p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
               dscale * p_Da(ioffsetLocal:ioffsetLocal+ncols-1)
             
-            ! Increase the counter/index position array for how 
+            ! Increase the counter/index position array for how
             ! many elements are added to that row.
             p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
           
@@ -818,7 +818,7 @@ contains
   subroutine glmatasm_KcolDa99dble (rsourceMatrix,rdestMatrix,&
                                     Icolumns, Irows)
 
-  ! The source block matrix 
+  ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised
@@ -895,7 +895,7 @@ contains
             p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
               p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
             
-            ! Increase the counter/index position array for how 
+            ! Increase the counter/index position array for how
             ! many elements are added to that row.
             p_KldTmp(irowGlobal+irow) = p_KldTmp(irowGlobal+irow) + ncols
           

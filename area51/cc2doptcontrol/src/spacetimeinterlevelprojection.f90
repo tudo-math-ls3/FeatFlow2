@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module realises the interlevel projection (prolongation and 
+!# This module realises the interlevel projection (prolongation and
 !# restriction) of space-time coupled solution vectors. The t_sptiProjection
 !# structure configures the interlevel projection. For the actual projection,
 !# the following routines can be found in this module:
@@ -16,7 +16,7 @@
 !#     -> Cleans up a space-time interlevel projection structure
 !#
 !# 3.) sptipr_performProlongation
-!#     -> Prolongation of a space-time coupled solution vector to a higher 
+!#     -> Prolongation of a space-time coupled solution vector to a higher
 !#        level
 !#
 !# 4.) sptipr_performRestriction
@@ -78,7 +78,7 @@ contains
   
 !<description>
   ! Initialises a space-time interlevel projection structure rprojection based
-  ! on the discretisation structure rprojection. By default, the time 
+  ! on the discretisation structure rprojection. By default, the time
   ! interpolation is configured to be 1st order, and the prolongation/restriction
   ! is done simultaneously in space/time.
   !
@@ -105,7 +105,7 @@ contains
 !</input>
 
 !<output>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjection), intent(OUT) :: rprojection
 !</output>
@@ -137,8 +137,8 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A space/time interlevel projection structure that configures the 
-  ! prolongation/restriction in space/time. 
+  ! A space/time interlevel projection structure that configures the
+  ! prolongation/restriction in space/time.
   ! The structure is cleaned up.
   type(t_sptiProjection), intent(INOUT) :: rprojection
 !</output>
@@ -165,14 +165,14 @@ contains
   ! Performs a prolongation for a given space/time vector (i.e. a projection
   ! in the primal space where the solution lives). The vector
   ! rcoarseVector on a coarser space/time mesh is projected to the vector
-  ! rfineVector on a finer space/time mesh. 
+  ! rfineVector on a finer space/time mesh.
   ! rprojection configures how the transfer is performed.
   ! This projection structure rprojection must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjection), intent(IN) :: rprojection
 
@@ -293,7 +293,7 @@ contains
       
         if (rprojection%bspaceTimeSimultaneously) then
         
-          ! Prolongation only in space. 
+          ! Prolongation only in space.
       
           ! Loop through the time steps.
           do istep = 1,rcoarseVector%NEQtime
@@ -391,7 +391,7 @@ contains
       
         if (rprojection%bspaceTimeSimultaneously) then
         
-          ! Prolongation only in space. 
+          ! Prolongation only in space.
       
           ! Loop through the time steps.
           do istep = 1,rcoarseVector%NEQtime-1
@@ -527,7 +527,7 @@ contains
           ! Save the last vector
           call sptivec_setTimestepData (rfineVector, rfineVector%NEQtime, rx3)
 
-          ! Save the quadratic interpolation.          
+          ! Save the quadratic interpolation.
           call lsysbl_copyVector (rx2,rtempVecFine)
           call lsysbl_vectorLinearComb (rx1,rtempVecFine,-0.125_DP,0.75_DP)
           call lsysbl_vectorLinearComb (rx3,rtempVecFine,0.375_DP,1.0_DP)
@@ -539,7 +539,7 @@ contains
       
         if (rprojection%bspaceTimeSimultaneously) then
         
-          ! Prolongation only in space. 
+          ! Prolongation only in space.
       
           ! Loop through the time steps.
           do istep = 1,rcoarseVector%NEQtime-1
@@ -580,14 +580,14 @@ contains
   ! Performs a restriction for a given space/time vector (i.e. a projection
   ! in the dual space where the RHS vector lives).The vector
   ! rfineVector on a finer grid is projected to the vector
-  ! rcoarseVector on a coarser space/time mesh. 
+  ! rcoarseVector on a coarser space/time mesh.
   ! rprojection configures how the transfer is performed.
   ! This projection structure rprojection must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjection), intent(IN) :: rprojection
 
@@ -663,7 +663,7 @@ contains
       call lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
       call lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
          
-      if (rcoarseVector%NEQtime .NE. rfineVector%NEQtime) then       
+      if (rcoarseVector%NEQtime .NE. rfineVector%NEQtime) then
       
         ! Load timestep 0,1 (fine grid) into the temp vectors.
         call sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
@@ -752,7 +752,7 @@ contains
         ! rx1 and rx3 according to
         !
         ! Timestep:    n-1          n       (fine grid)
-        !              rx3 --1/2--> X             
+        !              rx3 --1/2--> X
         !                          ^ \
         !                         /   \
         !                        +--1--+
@@ -849,7 +849,7 @@ contains
       call lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
       call lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
          
-      if (rcoarseVector%NEQtime .ne. rfineVector%NEQtime) then       
+      if (rcoarseVector%NEQtime .ne. rfineVector%NEQtime) then
       
         ! Load timestep 0,1 (fine grid) into the temp vectors.
         call sptivec_getTimestepData (rfineVector, 1+0, rtempVecFine)
@@ -923,7 +923,7 @@ contains
         ! rx1 and rx3 according to
         !
         ! Timestep:    n-1          n       (fine grid)
-        !              rx3 --1/2--> X             
+        !              rx3 --1/2--> X
         !                          ^ \
         !                         /   \
         !                        +--1--+
@@ -1035,7 +1035,7 @@ contains
 !      call sptivec_setTimestepData (rcoarseVector, 1+3, rtempVecCoarse)
 !      call lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
       
-      if (rcoarseVector%NEQtime .ne. rfineVector%NEQtime) then       
+      if (rcoarseVector%NEQtime .ne. rfineVector%NEQtime) then
       
         ! Load timestep 0
         call sptivec_getTimestepData (rfineVector, 1+0, rx5)
@@ -1118,7 +1118,7 @@ contains
           call sptivec_getTimestepData (rfineVector, rfineVector%NEQtime, rx5)
           
           ! The temp vector rtempVecFine now corresponds to a partially prepared
-          ! vector in the 'middle' of the patch like rx3. 
+          ! vector in the 'middle' of the patch like rx3.
           call lsysbl_vectorLinearComb  (rx4,rtempVecFine,0.75_DP/2.0_DP,1.0_DP)
           if (rprojection%bspaceTimeSimultaneously) then
             ! Space + time
@@ -1178,14 +1178,14 @@ contains
 !<description>
   ! Performs an interpolation for a given space/time vector to a lower level.
   ! The solution vector rfineVector on a finer grid is projected to the vector
-  ! rcoarseVector on a coarser space/time mesh. 
+  ! rcoarseVector on a coarser space/time mesh.
   ! rprojection configures how the transfer is performed.
   ! This projection structure rprojection must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
-  ! A space/time interlevel projection structure that configures the 
+  ! A space/time interlevel projection structure that configures the
   ! prolongation/restriction in space/time.
   type(t_sptiProjection), intent(IN) :: rprojection
 
@@ -1254,7 +1254,7 @@ contains
     call lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
     call lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
        
-    if (rcoarseVector%NEQtime .ne. rfineVector%NEQtime) then       
+    if (rcoarseVector%NEQtime .ne. rfineVector%NEQtime) then
       ! Load timestep 0,1 (fine grid) into the temp vectors.
       call sptivec_getTimestepData (rfineVector, 1+0, rtempVecFine)
       call sptivec_getTimestepData (rfineVector, 1+1, rx3)
@@ -1327,7 +1327,7 @@ contains
       ! rx1 and rx3 according to
       !
       ! Timestep:    n-1          n       (fine grid)
-      !              rx3 --1/4--> X             
+      !              rx3 --1/4--> X
       !                          ^ \
       !                         /   \
       !                        +-3/4-+

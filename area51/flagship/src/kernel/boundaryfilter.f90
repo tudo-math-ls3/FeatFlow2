@@ -529,7 +529,7 @@ contains
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
-        isegment  = IbdrCondCpIdx(ibct)        
+        isegment  = IbdrCondCpIdx(ibct)
 
         ! Check if this segment has strong boundary conditions
         if (iand(int(p_IbdrCondType(isegment),I32),&

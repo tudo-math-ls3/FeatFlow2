@@ -426,7 +426,7 @@ use vartypes
 			! die Matrix-Blöcke sind jetzt wie folgt angeordnet:	koeff_A%trimat(1) koeff_A%trimat(3)
 			!														koeff_A%trimat(4) koeff_A%trimat(2)
 	
-		end do		
+		end do
 		! Koeffizientenmatrix fertig: koeff_A
 	end subroutine create_koeff_Matrix
 	
@@ -450,7 +450,7 @@ use vartypes
 					else
 						limiterfunc2 = 0d0
 					end if
-			case(3)		
+			case(3)
 					limiterfunc2=h1*min(2.0d0*abs(z),(abs(z)+abs(n))/2.0d0,2.0d0*abs(n))	! MC
 			case(4)
 					limiterfunc2=h1*max(min(2.0d0*abs(z),abs(n)),min(abs(z),2.0d0*abs(n)))	!Superbee

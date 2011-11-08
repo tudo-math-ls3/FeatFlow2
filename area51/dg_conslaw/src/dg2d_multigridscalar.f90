@@ -59,11 +59,11 @@ module dg2d_multigridscalar
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -84,18 +84,18 @@ module dg2d_multigridscalar
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! A solution vector and a RHS vector on the finest level. 
+    ! A solution vector and a RHS vector on the finest level.
     type(t_vectorBlock) :: rvector,rrhs
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
-    ! to one level of the discretisation. 
+    ! to one level of the discretisation.
     type(t_problem_lvl), dimension(:), pointer :: RlevelInfo
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
 
@@ -258,7 +258,7 @@ contains
       ! for later use.
       rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
 
-      ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+      ! p_rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! Initialise the first element of the list to specify the element
       ! and cubature rule for this solution component:
@@ -318,7 +318,7 @@ contains
       
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -337,7 +337,7 @@ contains
        rform%ballCoeffConstant = .true.
        rform%BconstantCoeff = .true.
        rform%Dcoefficients(1)  = 1.0
-       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1))         
+       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1))
                 
       ! Create temporary empty solution vector which is needed to build the matrices
       call lsyssc_createVecIndMat (p_rmatrix%RmatrixBlock(1,1),rvectorSolTemp,.true.)
@@ -374,7 +374,7 @@ contains
        rform%Idescriptors(2,2) = DER_FUNC
        rform%ballCoeffConstant = .false.
        rform%BconstantCoeff = .false.
-       !rcollection%p_rvectorQuickAccess1 => rsolBlock   
+       !rcollection%p_rvectorQuickAccess1 => rsolBlock
        !rcollection%Dquickaccess(1) = dt
        call bilf_dg_buildMatrixScEdge2D_ss (rform, CUB_G5_1D, .false., p_rmatrix%RmatrixBlock(1,1),&
             rvectorSolTemp, rproblem%RlevelInfo(i)%raddTriaData,&
@@ -389,7 +389,7 @@ contains
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
 
     ! Although we could manually create the solution/RHS vector,
@@ -460,19 +460,19 @@ contains
     integer :: i
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -488,7 +488,7 @@ contains
     
     ! Get our right hand side / solution / matrix on the finest
     ! level from the problem structure.
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
@@ -633,7 +633,7 @@ contains
     write(*,*) ''
     write(*,*) 'Writing solution to file'
     
-    sofile = './gmv/u2d' 
+    sofile = './gmv/u2d'
 
     ! Output solution to gmv file
     call dg2gmv(p_rvector%Rvectorblock(1),3,sofile,-1)
@@ -774,7 +774,7 @@ contains
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
-    ! Number of Variables 
+    ! Number of Variables
     ! Shallow water : 3 (h, hu, hv)
     ! (h=Waterheights, u/v=speed in x/y-direction)
     ! Euler: 4 (rho, rho u, rho v, rho E)
@@ -806,11 +806,11 @@ contains
     type(t_vectorBlock), target :: rk0, rk1, rk2, rk3, rdefBlock, rimf1, rimf2
 
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of

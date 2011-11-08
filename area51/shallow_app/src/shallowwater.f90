@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This program is a simple test program for discretising the 
+!# This program is a simple test program for discretising the
 !# shallowwater equations.
 !#
 !# </purpose>
@@ -16,7 +16,7 @@ program shallowwater
   
   implicit none
   
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   
   call system_init()
@@ -26,8 +26,8 @@ program shallowwater
   ! well as to the file 'log/output.txt'.
   call output_init ('./log/output.txt')
 
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
  
 

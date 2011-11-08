@@ -118,7 +118,7 @@ contains
     ! Scalar vector to describe the bottom profile
     type(t_vectorScalar), target :: rvectorbottom, rvecBSX, rvecBSY
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -138,7 +138,7 @@ contains
     integer :: NLMAX
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
 
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -513,7 +513,7 @@ contains
     call stdop_assembleSimpleMatrix(rmatrixMC, DER_FUNC, DER_FUNC)
 
 
-    ! Next we create the Matrices CX and CY 
+    ! Next we create the Matrices CX and CY
     ! They represent the diskretisation of the nabla operator
 
     ! We could do this as we did with the mass matrix MC, but as CX and MC
@@ -617,7 +617,7 @@ contains
     ! First create an empty block matrix structur with nvar2d x nvar2d blocks
     call lsysbl_createEmptyMatrix (rmatrixBlockP, nvar2d)
 
-    ! Next create the diagonal blocks of P as empty matrices, using the 
+    ! Next create the diagonal blocks of P as empty matrices, using the
     ! matrix structur of the matrix MC
     ! We will only need the diagonal blocks, as we employ a block jacobi
     ! method here
@@ -717,7 +717,7 @@ contains
     ! we don't have to solve the system too precise, as it is only used for
     ! the inner loop of the defect correction
 
-    ! Set the output level of the solver 
+    ! Set the output level of the solver
     ! 0: No output, just warnings
     ! 2: Some output
     p_rsolverNode%ioutputLevel = 0
@@ -725,7 +725,7 @@ contains
     ! Attach the preconditioner of the outer defect correction loop
     ! to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Don't make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -756,7 +756,7 @@ contains
     !      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     !      CALL linsol_initData (p_rsolverNode1, ierror)
     !      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-    !      
+    !
     !      CALL linsol_initBiCGStab (p_rsolverNode2)
     !      p_rsolverNode2%depsRel = 1E-4_DP
     !      p_rsolverNode2%depsAbs = 1E-7_DP
@@ -767,7 +767,7 @@ contains
     !      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     !      CALL linsol_initData (p_rsolverNode2, ierror)
     !      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-    !      
+    !
     !      CALL linsol_initBiCGStab (p_rsolverNode3)
     !      p_rsolverNode3%depsRel = 1E-4_DP
     !      p_rsolverNode3%depsAbs = 1E-7_DP
@@ -840,33 +840,33 @@ contains
 !        ji = p_Kedge(4, iedge)
 !        ii = p_Kdiagonal(i)
 !        jj = p_Kdiagonal(j)
-! 
+!
 ! !        p_BXdata(ij) = -gravconst*p_CXdata(ij)*(p_bottom(j)-p_bottom(i))
 ! !        p_BYdata(ij) = -gravconst*p_CYdata(ij)*(p_bottom(j)-p_bottom(i))
-! !        
+! !
 ! !        p_BXdata(ji) = -gravconst*p_CXdata(ji)*(p_bottom(i)-p_bottom(j))
 ! !        p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
-! 
+!
 ! ! Now evaluate the derivative of the bottom profile
 !        Dpoints(:,1) = p_DvertexCoords(:,j)
 !        Dpoints(:,2) = p_DvertexCoords(:,i)
 !        call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
 !        call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
-! 
+!
 !        p_BXdata(ij) = -gravconst*p_MCdata(ij)*b_x(1)
 !        p_BYdata(ij) = -gravconst*p_MCdata(ij)*b_y(1)
-! 
+!
 !        p_BXdata(ji) = -gravconst*p_MCdata(ji)*b_x(2)
 !        p_BYdata(ji) = -gravconst*p_MCdata(ji)*b_y(2)
-!        
+!
 !        p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ij)*b_x(1)
 !        p_BSXdata(j) = p_BSXdata(j)-gravconst*p_MCdata(ji)*b_x(2)
-!        
+!
 !        p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ij)*b_y(1)
 !        p_BSYdata(j) = p_BSYdata(j)-gravconst*p_MCdata(ji)*b_y(2)
-! 
+!
 !     end do
-!     
+!
 !     do i = 1, neq
 !       Dpoints(:,1) = p_DvertexCoords(:,j)
 !       Dpoints(:,2) = p_DvertexCoords(:,i)
@@ -875,7 +875,7 @@ contains
 !       ii = p_Kdiagonal(i)
 !       p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ii)*b_x(2)
 !       p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ii)*b_y(2)
-!     
+!
 !     end do
     
     
@@ -1049,12 +1049,12 @@ contains
           ! We have calculated the defect and want to calculate a
           ! solution update that we can add to the solution.
           ! So we use
-          ! CALL linsol_precondDefect 
+          ! CALL linsol_precondDefect
           ! If we wanted to solve Au=b instead with
           ! b being the real RHS and u being the real solution vector,
-          ! we would use 
+          ! we would use
           ! CALL linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock).
-          call linsol_precondDefect (p_rsolverNode,rdefBlock)		
+          call linsol_precondDefect (p_rsolverNode,rdefBlock)
           ! Now we have the solution update in rdef.
 
           ! Add the solution update to the solution: rsol=rsol+rdef
@@ -1087,29 +1087,29 @@ contains
           
           
           
-!           
+!
 !           ! write gmvfiles for video (if needed)
 !        if (dcurrentDefect > 1000.0_dp*dinitialDefect) then
-! 
+!
 !           write(*,*)
 !           write(*,*) 'Writing Videofile'
 !           write(*,*)
-!           
+!
 !           write(*,*) dcurrentDefect , dinitialDefect
 !           pause
-! 
+!
 !           ifilenumber = ifilenumber + 1
-! 
+!
 !           write(sfilenumber,'(i0)') ifilenumber
-!           
+!
 !           ! Before writing add the bottom profile
 !           if (addbottomtoout==1) then
 !             call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
 !            end if
-!           
+!
 !           call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
 !                'gmv/error' // trim(sfilenumber) // '.gmv')
-! 
+!
 !           call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
 !           call ucd_addVariableVertexBased (rexport,'sol_h',UCD_VAR_STANDARD, p_Ddata)
 !           call lsyssc_getbase_double (rsolBlock%RvectorBlock(2),p_Ddata1)
@@ -1117,18 +1117,18 @@ contains
 !           call lsyssc_getbase_double (rsolBlock%RvectorBlock(3),p_Ddata2)
 !           call ucd_addVariableVertexBased (rexport,'sol_vh',UCD_VAR_STANDARD, p_Ddata2)
 !           call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
-!           
+!
 !           call lsyssc_getbase_double (rsourceBlock%RvectorBlock(1),p_Ddata)
 !           call ucd_addVariableVertexBased (rexport,'Source_1',UCD_VAR_STANDARD, p_Ddata)
 !           call lsyssc_getbase_double (rsourceBlock%RvectorBlock(2),p_Ddata1)
 !           call ucd_addVariableVertexBased (rexport,'Source_2',UCD_VAR_STANDARD, p_Ddata1)
 !           call lsyssc_getbase_double (rsourceBlock%RvectorBlock(3),p_Ddata2)
 !           call ucd_addVariableVertexBased (rexport,'Source_3',UCD_VAR_STANDARD, p_Ddata2)
-! 
+!
 !           ! Write the file to disc, that's it.
 !           call ucd_write (rexport)
 !           call ucd_release (rexport)
-!           
+!
 !           ! After writing substract the bottom profile
 !           if (addbottomtoout==1) then
 !             call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
@@ -1217,7 +1217,7 @@ contains
 !                p_Kdiagonal, p_Kedge, NEQ, nedge, &
 !                gravconst, dt, Method, prelimiting, syncromethod, &
 !                rtriangulation)
-!                
+!
 !           call new_syncronized(&
 !                rarraySol, rarraySolDot, rarrayRhs,&
 !                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
@@ -1333,7 +1333,7 @@ contains
     ! Write the calculated solution to a gmv file
 
     ! That's it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     write(*,*)
     write(*,*) 'Writing Solution at final time',ttime,'to File'
@@ -1419,7 +1419,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
 
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
 
     ! Finally release the domain, that's it.

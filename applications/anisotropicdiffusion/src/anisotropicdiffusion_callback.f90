@@ -30,7 +30,7 @@
 !#        'intf_bcassembly.inc'
 !#
 !# 4.) getBoundaryValuesFBC
-!#    
+!#
 !#     -> Returns analytic values in the inner of the domain on
 !#        fictitious boundary objects
 !#     -> Corresponds to the interface defined in the file
@@ -140,8 +140,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -216,8 +216,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -237,11 +237,11 @@ contains
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
-    isolution = rcollection%IquickAccess(1) 
-    A(1,1) = rcollection%DquickAccess(1) 
-    A(1,2) = rcollection%DquickAccess(2) 
-    A(2,1) = rcollection%DquickAccess(3) 
-    A(2,2) = rcollection%DquickAccess(4) 
+    isolution = rcollection%IquickAccess(1)
+    A(1,1) = rcollection%DquickAccess(1)
+    A(1,2) = rcollection%DquickAccess(2)
+    A(2,1) = rcollection%DquickAccess(3)
+    A(2,2) = rcollection%DquickAccess(4)
 
     select case (isolution)
     case (0,2)
@@ -262,7 +262,7 @@ contains
         +16.0_DP*DPoints(1,:,:)*DPoints(2,:,:)) &
         -32.0_DP*A(2,2)*DPoints(1,:,:)*(1 - DPoints(1,:,:)) )
 
-    case (3)             
+    case (3)
       Dcoefficients (1,:,:) = 32.0_DP * &
                       ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
                         Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
@@ -333,8 +333,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -354,11 +354,11 @@ contains
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
-    isolution = rcollection%IquickAccess(1) 
-    A(1,1) = rcollection%DquickAccess(1) 
-    A(1,2) = rcollection%DquickAccess(2) 
-    A(2,1) = rcollection%DquickAccess(3) 
-    A(2,2) = rcollection%DquickAccess(4) 
+    isolution = rcollection%IquickAccess(1)
+    A(1,1) = rcollection%DquickAccess(1)
+    A(1,2) = rcollection%DquickAccess(2)
+    A(2,1) = rcollection%DquickAccess(3)
+    A(2,2) = rcollection%DquickAccess(4)
 
   select case (cderivative)
   case (DER_FUNC)
@@ -405,9 +405,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(in)                           :: Icomponents
 
@@ -428,38 +428,38 @@ contains
   integer, intent(in)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer, intent(in)                                          :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(in)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional                 :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(out)                         :: Dvalues
 !</output>
@@ -472,11 +472,11 @@ contains
 
     ! Get information about the solution from the collection --
     ! as configured in the main program.
-    isolution = rcollection%IquickAccess(1) 
-    A(1,1) = rcollection%DquickAccess(1) 
-    A(1,2) = rcollection%DquickAccess(2) 
-    A(2,1) = rcollection%DquickAccess(3) 
-    A(2,2) = rcollection%DquickAccess(4) 
+    isolution = rcollection%IquickAccess(1)
+    A(1,1) = rcollection%DquickAccess(1)
+    A(1,2) = rcollection%DquickAccess(2)
+    A(2,1) = rcollection%DquickAccess(3)
+    A(2,2) = rcollection%DquickAccess(4)
 
     ! Get the X/Y-coordinates of the boundary point:
     !
@@ -487,7 +487,7 @@ contains
 !    SELECT CASE (isolution)
 !    CASE (0)
 !      Dvalues(1) = 0.0_DP
-!      
+!
 !    CASE (1)
 !      Dvalues(1) = 0.0_DP
 !      IF ((dwhere .GE. 0.0_DP) .AND. (dwhere .LE. 0.2_DP)) Dvalues(1) = 1.0_DP
@@ -503,10 +503,10 @@ contains
 !      IF ((dwhere .GE. 3.7_DP) .AND. (dwhere .LE. 3.8_DP)) &
 !        CALL mprim_linearRescale(dwhere,3.7_DP,3.8_DP,0.5_DP,1.0_DP,Dvalues(1))
 !      IF ((dwhere .GE. 3.8_DP) .AND. (dwhere .LE. 4.0_DP)) Dvalues(1) = 1.0_DP
-!      
+!
 !    CASE DEFAULT
 !      Dvalues(1) = 0.0_DP
-!      
+!
 !    END SELECT
     Dvalues(1) = analyticalFunction (isolution,dx,dy)
   
@@ -570,7 +570,7 @@ contains
     case (2)
       dvalue = 16.0_DP*dx*(1-dx)*dy*(1-dy)
     case (4)
-      if ((dx .eq. 0.0_DP) .or. (dy .eq. 0.0_DP) .or. & 
+      if ((dx .eq. 0.0_DP) .or. (dy .eq. 0.0_DP) .or. &
           (dx .eq. 1.0_DP) .or. (dy .eq. 1.0_DP)) then
         dvalue = 0.0_DP
       else
@@ -618,7 +618,7 @@ contains
 !</input>
     
 !</inputoutput>
-    ! An indicator vector. Entry i in the vector rindicatir that tells the 
+    ! An indicator vector. Entry i in the vector rindicatir that tells the
     ! mesh adaption routines whether to refine element i or to do coarsening
     ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
     ! in coarsening -- as specified during the initialisation of the
@@ -765,9 +765,9 @@ contains
 
     ! rindicator is currently the absolute error. If the relative error
     ! is to be used, the following lines must be commented in:
-    !    
+    !
     ! ! Compute L2-norm of solution
-    ! CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError) 
+    ! CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
     !
     ! ! Prepare indicator for grid refinement/coarsening
     ! daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))

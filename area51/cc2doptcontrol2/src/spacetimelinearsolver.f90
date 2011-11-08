@@ -47,7 +47,7 @@
 !#   CALL sptils_doneData (p_rsolver)
 !#   CALL sptils_doneStructure (p_rsolver)
 !#   CALL sptils_releaseSolver (p_rsolver)
-!#   
+!#
 !# The usage of the Multigrid preconditioner is slightly more complicated.
 !# You have to initialise a smoother and a coarse-grid solver and attach
 !# it to MG. Here an example of how to create a MG preconditioner with
@@ -86,7 +86,7 @@
 !#       !
 !#       ! Block Jacobi preconditioner
 !#       CALL sptils_initBlockJacobi (rsettings,p_rprecond,RspatialPrecond(ilev))
-!#       
+!#
 !#       ! Defect correction solver
 !#       CALL sptils_initDefCorr (rsettings,p_rcgrSolver,p_rprecond)
 !#     ELSE
@@ -94,8 +94,8 @@
 !#       CALL sptils_initBlockJacobi (rsettings,p_rsmoother,...)
 !#       CALL sptils_convertToSmoother (p_rsmoother...)
 !#     END IF
-!#      
-!#     ! Iinally initialise the level ilev with that       
+!#
+!#     ! Iinally initialise the level ilev with that
 !#     CALL sptils_setMultigridLevel (p_rsolver,ilev,...,&
 !#         p_rsmoother,p_rsmoother,p_rcgrSolver)
 !#   END DO
@@ -120,7 +120,7 @@
 !#   CALL sptils_doneData (p_rsolver)
 !#   CALL sptils_doneStructure (p_rsolver)
 !#   CALL sptils_releaseSolver (p_rsolver)
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -234,13 +234,13 @@ module spacetimelinearsolver
   ! Block Gauss-Seidel preconditioner
   integer, parameter, public :: SPTILS_ALG_BlockFBSOR    = 4
   
-  ! CG iteration (preconditioned) 
+  ! CG iteration (preconditioned)
   integer, parameter, public :: SPTILS_ALG_CG            = 6
 
-  ! BiCGStab iteration (left preconditioned) 
+  ! BiCGStab iteration (left preconditioned)
   integer, parameter, public :: SPTILS_ALG_BICGSTAB      = 7
 
-  ! BiCGStab iteration (right preconditioned) 
+  ! BiCGStab iteration (right preconditioned)
   integer, parameter, public :: SPTILS_ALG_BICGSTABRIGHT = 8
 
   ! UMFPACK solver
@@ -316,10 +316,10 @@ module spacetimelinearsolver
 
 !<typeblock>
   
-  ! The following structure defines a 'solver node' for the 
+  ! The following structure defines a 'solver node' for the
   ! solver / preconditioner of the global system.
   ! As solver, currently a single-grid preconditioner,
-  ! defect correction solver and multigrid solver/preconditioner is 
+  ! defect correction solver and multigrid solver/preconditioner is
   ! supported. The multigrid preconditioner solves the system
   ! simultaneously in space/time!
   !
@@ -337,19 +337,19 @@ module spacetimelinearsolver
     
     ! OUTPUT: Number of performed iterations, if the solver
     ! is of iterative nature.
-    ! Is to 1 by the solver if not used (indicating at least 1 performed 
+    ! Is to 1 by the solver if not used (indicating at least 1 performed
     ! iteration, which is always the case).
     integer                    :: iiterations
     
-    ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
+    ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Norm of initial residuum
     real(DP)                        :: dinitialDefect
 
-    ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
+    ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Norm of final residuum
     real(DP)                        :: dfinalDefect
 
-    ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK: 
+    ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK:
     ! Convergence rate
     real(DP)                        :: dconvergenceRate
 
@@ -373,17 +373,17 @@ module spacetimelinearsolver
     ! INPUT PARAMETER:
     ! General relaxation parameter.
     ! Standard value = 1.0.
-    ! The meaning of this parameter is algorithm dependent. 
+    ! The meaning of this parameter is algorithm dependent.
     real(DP)                        :: drelax  = 1.0_DP
     
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion; standard = 1E-5
     ! Remark: don't set depsAbs=depsRel=0!
     real(DP)                        :: depsRel = 1E-5_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Absolute stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
@@ -400,7 +400,7 @@ module spacetimelinearsolver
     ! holds!
     real(DP)                        :: depsDiff = 0.0_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative divergence criterion.  Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL * !!initial defect!!
@@ -408,7 +408,7 @@ module spacetimelinearsolver
     ! standard = 1E3
     real(DP)                        :: ddivRel = 1E3_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Absolute divergence criterion.  Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL
@@ -416,32 +416,32 @@ module spacetimelinearsolver
     ! standard = SYS_INFINITY_DP
     real(DP)                        :: ddivAbs = SYS_INFINITY_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! RHS-vector is treated as zero if max(defect) < drhsZero
     real(DP)                        :: drhsZero = 1E-90_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Type of stopping criterion to use. One of the
     ! SPTILS_STOP_xxxx constants.
     integer                    :: istoppingCriterion = SPTILS_STOP_STANDARD
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Minimum number of iterations top perform
     integer                    :: nminIterations = 1
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Maximum number of iterations top perform
     integer                    :: nmaxIterations = 50
     
-    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
+    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Perform residual checks
-    ! YES: check residuals (default), 
-    ! NO: don't check residuals, simply perform as many iterations as 
+    ! YES: check residuals (default),
+    ! NO: don't check residuals, simply perform as many iterations as
     ! configured by nminIterations. Is typically set to NO for smoothing
     ! with a solver.
     integer                    :: iresCheck = YES
 
-    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
+    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Type of norm to use in the residual checking (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
     integer                    :: iresNorm = 2
@@ -461,13 +461,13 @@ module spacetimelinearsolver
     ! <!-- Parameters maintained internally by the solvers -->
 
 
-    ! READ ONLY: Algorithm identifier. 
+    ! READ ONLY: Algorithm identifier.
     ! One of the SPTILS_ALG_xxxx constants.
-    ! Depending on the value, a solver-specific structure may be 
+    ! Depending on the value, a solver-specific structure may be
     ! assigned to this structure below.
     integer                    :: calgorithm = SPTILS_ALG_UNDEFINED
     
-    ! READ ONLY: Solver ability tag. 
+    ! READ ONLY: Solver ability tag.
     ! Bitfield. A combination of SPTILS_ABIL_xxxx
     ! flags that specify the ability of the actual solver (e.g.
     ! whether it can handle block-matrices or only scalar matrices,...).
@@ -475,11 +475,11 @@ module spacetimelinearsolver
     ! will cause an error by the framework.
     integer(I32)               :: ccapability = 0
 
-    ! Pointer to a projection hierarchy for the interlevel projection 
+    ! Pointer to a projection hierarchy for the interlevel projection
     ! in space (primal+dual space).
     type(t_sptiProjHierarchy), pointer :: p_rprjHierSpaceTimePrimal => null()
     
-    ! Pointer to a projection hierarchy for the interlevel projection in 
+    ! Pointer to a projection hierarchy for the interlevel projection in
     ! space (primal/dual space).
     type(t_sptiProjHierarchy), pointer :: p_rprjHierSpaceTimePrimalDual => null()
 
@@ -558,7 +558,7 @@ module spacetimelinearsolver
   
   ! This structure realises the subnode for the Defect correction solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
-  ! t_sptilsNode structure for the solver that realises the 
+  ! t_sptilsNode structure for the solver that realises the
   ! preconditioning.
   
   type t_sptilsSubnodeDefCorr
@@ -583,7 +583,7 @@ module spacetimelinearsolver
   
   ! This structure realises the subnode for the CG solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
-  ! t_linsolNode structure for the solver that realises the 
+  ! t_linsolNode structure for the solver that realises the
   ! preconditioning.
   
   type t_sptilsSubnodeCG
@@ -608,7 +608,7 @@ module spacetimelinearsolver
   
   ! This structure realises the subnode for the BiCGStab solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
-  ! t_linsolNode structure for the solver that realises the 
+  ! t_linsolNode structure for the solver that realises the
   ! preconditioning.
   
   type t_sptilsSubnodeBiCGStab
@@ -642,10 +642,10 @@ module spacetimelinearsolver
 
 !<typeblock>
   
-  ! This structure realises the subnode for the BiCGStab solver with right 
+  ! This structure realises the subnode for the BiCGStab solver with right
   ! preconditioning.
   ! The entry p_rpreconditioner points either to NULL() or to another
-  ! t_linsolNode structure for the solver that realises the 
+  ! t_linsolNode structure for the solver that realises the
   ! preconditioning.
   
   type t_sptilsSubnodeBiCGStabRight
@@ -868,7 +868,7 @@ module spacetimelinearsolver
     ! Relative daptive cycle convergence criterion for coarse levels.
     ! This value is usually =1E99_DP which deactivates adaptive cycles.
     ! The user can set this variable on initialisation of Multigrid to
-    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all 
+    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all
     ! levels except for the fine grid is repeated until
     !  |res. after postsmoothing| < depsRelCycle * |initial res on that level|.
     ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
@@ -879,7 +879,7 @@ module spacetimelinearsolver
     ! Absolute adaptive cycle convergence criterion for coarse levels.
     ! This value is usually =1E99_DP which deactivates adaptive cycles.
     ! The user can set this variable on initialisation of Multigrid to
-    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all 
+    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all
     ! levels except for the fine grid is repeated until
     !  |res. after postsmoothing| < depsAbsCycle.
     ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
@@ -888,7 +888,7 @@ module spacetimelinearsolver
     real(DP)                      :: depsAbsCycle = 1E99_DP
     
     ! Maximum number of adaptive cycles performed on that level.
-    ! Only used if adaptive cycles are activated by setting 
+    ! Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP. -1=infinity=standard
     integer                       :: nmaxAdaptiveCycles = -1
     
@@ -904,12 +904,12 @@ module spacetimelinearsolver
     integer                        :: ncyclesRemaining
     
     ! STATUS/INTERNAL: initial residuum when a solution is restricted to this
-    ! level. Only used if adaptive cycles are activated by setting 
+    ! level. Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
     real(DP)                       :: dinitResCycle = 0.0_DP
     
-    ! STATUS/INTERNAL: Number of current cycle on that level. 
-    ! Only used if adaptive cycles are activated by setting 
+    ! STATUS/INTERNAL: Number of current cycle on that level.
+    ! Only used if adaptive cycles are activated by setting
     ! depsRelCycle < 1E99_DP in t_sptilsSubnodeMultigrid.
     integer                        :: icycleCount = 0
     
@@ -929,16 +929,16 @@ module spacetimelinearsolver
   
   type t_sptilsSubnodeMultigrid
   
-    ! INPUT PARAMETER: Cycle identifier. 
-    !  0=F-cycle, 
-    !  1=V-cycle, 
+    ! INPUT PARAMETER: Cycle identifier.
+    !  0=F-cycle,
+    !  1=V-cycle,
     !  2=W-cycle.
     integer                       :: icycle                   = 0
     
     ! INPUT PARAMETER: Level in p_rspaceTimeHier which is used as coarse grid.
     integer                       :: nlmin                    = 1
     
-    ! INPUT PARAMETER: Level in p_rspaceTimeHier which is used for solvíng 
+    ! INPUT PARAMETER: Level in p_rspaceTimeHier which is used for solvíng
     ! the system.
     integer                       :: nlmax                    = 1
 
@@ -979,7 +979,7 @@ module spacetimelinearsolver
     ! STATISTICS OUTPUT: Total time needed for the coarse grid solver
     type(t_timer) :: rtimeCoarseGridSolver
     
-    ! STATISTICS OUTPUT: Time needed for linear algebra stuff (matrix-vector, 
+    ! STATISTICS OUTPUT: Time needed for linear algebra stuff (matrix-vector,
     ! vector-copy, prolongation/restriction,...)
     type(t_timer) :: rtimeLinearAlgebra
     
@@ -1174,7 +1174,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -1224,13 +1224,13 @@ contains
   ! initialisation routine itself can call this procedure to initialise
   ! its sub-solver nodes.
   ! The initialisation of the problem structure allows the solver component
-  ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can 
+  ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can
   ! perform a numerical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g.
 !</description>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -1291,7 +1291,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -1321,7 +1321,7 @@ contains
 !</description>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -1451,8 +1451,8 @@ contains
   
 !<input>
   ! OPTIONAL: If set to TRUE, the structure p_rsolverNode is not released
-  ! from memory. If set to FALSE or not existent (the usual setting), the 
-  ! structure p_rsolverNode will also be removed from the heap after 
+  ! from memory. If set to FALSE or not existent (the usual setting), the
+  ! structure p_rsolverNode will also be removed from the heap after
   ! cleaning up.
   ! Remark: The subnodes of the solver (if there are any) are always
   ! removed from the heap!
@@ -1524,7 +1524,7 @@ contains
   logical function sptils_testConvergence (rsolverNode, dvecNorm, rdef) result(loutput)
   
 !<description>
-  ! Tests a defect vector rdef whether it is in a defined tolerance configured 
+  ! Tests a defect vector rdef whether it is in a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
   ! can be treated as 'converged'.
   ! The iteration is treated as 'converged' if both, the relative and the
@@ -1536,7 +1536,7 @@ contains
 !</description>
   
 !<result>
-  ! Boolean value. =TRUE if the convergence criterion is reached; 
+  ! Boolean value. =TRUE if the convergence criterion is reached;
   ! =FALSE otherwise.
 !</result>
   
@@ -1552,7 +1552,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Norm of the defect vector. 
+  ! Norm of the defect vector.
   ! If rdef if present, the routine will calculate the norm of rdef and return
   ! it in dvecNorm.
   ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
@@ -1592,7 +1592,7 @@ contains
       end if
       
       ! Relative convergence criterion? Multiply with initial residuum
-      ! and check the norm. 
+      ! and check the norm.
       if (rsolverNode%depsRel .ne. 0.0_DP) then
         if (.not. &
             (dvecNorm .gt. rsolverNode%depsRel * rsolverNode%dinitialDefect)) then
@@ -1615,7 +1615,7 @@ contains
       end if
       
       ! Relative convergence criterion? Multiply with initial residuum
-      ! and check the norm. 
+      ! and check the norm.
       if (rsolverNode%depsRel .ne. 0.0_DP) then
         if (dvecNorm .gt. rsolverNode%depsRel * rsolverNode%dinitialDefect) then
           loutput = .false.
@@ -1633,7 +1633,7 @@ contains
   logical function sptils_testDivergence (rsolverNode, dvecNorm, rdef) result(loutput)
   
 !<description>
-  ! Tests a defect vector rx whether it is out of a defined tolerance configured 
+  ! Tests a defect vector rx whether it is out of a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
   ! can be treated as 'diverged'.
   ! The iteration is treated as 'diverged' if one criterion, the relative or the
@@ -1644,7 +1644,7 @@ contains
 !</description>
   
 !<result>
-  ! Boolean value. =TRUE if the divergence criterion is reached; 
+  ! Boolean value. =TRUE if the divergence criterion is reached;
   ! =FALSE otherwise.
 !</result>
   
@@ -1660,7 +1660,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Norm of the defect vector. 
+  ! Norm of the defect vector.
   ! If rdef if present, the routine will calculate the norm of rdef and return
   ! it in dvecNorm.
   ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
@@ -1689,7 +1689,7 @@ contains
     end if
     
     ! Relative divergence criterion? Multiply with initial residuum
-    ! and check the norm. 
+    ! and check the norm.
     if (rsolverNode%depsRel .ne. SYS_INFINITY_DP) then
       if ( .not. (dvecNorm .le. rsolverNode%dinitialDefect*rsolverNode%ddivRel) ) then
         loutput = .true.
@@ -1815,8 +1815,8 @@ contains
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the defect correction iteration.
-  ! The node can be used to directly solve a problem or to be attached 
-  ! as solver or preconditioner to another solver structure. The node can be 
+  ! The node can be used to directly solve a problem or to be attached
+  ! as solver or preconditioner to another solver structure. The node can be
   ! deleted by sptils_releaseSolver.
 !</description>
   
@@ -1829,8 +1829,8 @@ contains
   ! Id of the space-time level, this solver is based on.
   integer, intent(in) :: ispaceTimeLevel
 
-  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
-  ! used for preconditioning. If not given or set to NULL(), no preconditioning 
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_sptilsNode), pointer, optional   :: p_rpreconditioner
 !</input>
@@ -1858,9 +1858,9 @@ contains
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeDefCorr)
     
-    ! Attach the preconditioner if given. 
+    ! Attach the preconditioner if given.
     
-    if (present(p_rpreconditioner)) then 
+    if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner => p_rpreconditioner
     end if
     
@@ -1873,7 +1873,7 @@ contains
   recursive subroutine sptils_doneDefCorr (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the efect correction solver 
+  ! This routine releases all temporary memory for the efect correction solver
   ! from the heap.
 !</description>
   
@@ -1911,7 +1911,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -1945,12 +1945,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout), target :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -1997,12 +1997,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -2031,7 +2031,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -2058,7 +2058,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -2085,7 +2085,7 @@ contains
   recursive subroutine sptils_precDefCorr (rsolverNode,rd)
   
 !<description>
-  ! Applies the Defect Correction preconditioner $P \approx A$ to the defect 
+  ! Applies the Defect Correction preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -2146,7 +2146,7 @@ contains
  
     nminIterations = max(rsolverNode%nminIterations,0)
     
-    ! Use preconditioning? 
+    ! Use preconditioning?
     bprec = associated(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
     
     if (bprec) then
@@ -2162,7 +2162,7 @@ contains
     !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax) $$
     !
     ! At first, set up our temporary vectors, which holds the current
-    ! 'solution' and the current 'defect'. We already allocated them 
+    ! 'solution' and the current 'defect'. We already allocated them
     ! during the initialisation phase - now we want to use them!
     
     p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
@@ -2341,7 +2341,7 @@ contains
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         call output_line ('!!RES!!                 : '//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
           call output_line ('!!RES!!/!!INITIAL RES!! : '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
@@ -2364,7 +2364,7 @@ contains
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
-    end if  
+    end if
   
   end subroutine
   
@@ -2451,7 +2451,7 @@ contains
   recursive subroutine sptils_doneBlockJacobi (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the efect correction solver 
+  ! This routine releases all temporary memory for the efect correction solver
   ! from the heap.
 !</description>
   
@@ -2484,7 +2484,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -2513,12 +2513,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -2535,7 +2535,7 @@ contains
     call sth_getLevel (rsolverNode%p_rspaceTimeHierarchy,rsolverNode%ispaceTimeLevel,&
         ispaceLevel=ilevel)
 
-    ! Initialise a partial preconditioner. 
+    ! Initialise a partial preconditioner.
     call fbsim_initPreconditioner (rsolverNode%p_rsubnodeBlockJacobi%rspatialPrecond, &
         rsolverNode%p_rsettings, 1, ilevel, CCSPACE_PRIMALDUAL, &
         rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr, &
@@ -2571,12 +2571,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -2603,7 +2603,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -2625,7 +2625,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -2655,7 +2655,7 @@ contains
   recursive subroutine sptils_precBlockJacobi (rsolverNode,rd)
   
 !<description>
-  ! Applies the Block Jacobi preconditioner $P \approx A$ to the defect 
+  ! Applies the Block Jacobi preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -2766,7 +2766,7 @@ contains
               iiterate-1,p_rvector1)
         end if
         call sptivec_getVectorFromPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,&
-            iiterate,p_rvector2) 
+            iiterate,p_rvector2)
         if (iiterate .lt. neqtime) then
           call sptivec_getVectorFromPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,&
               iiterate+1,p_rvector3)
@@ -2777,7 +2777,7 @@ contains
       ! Get the defect to apply preconditioning to
       call sptivec_getTimestepData (rd, iiterate, rtempVectorD)
 
-      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
           rsolverNode%rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
           rsolverNode%rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
@@ -2857,7 +2857,7 @@ contains
     
     call lsysbl_releaseVector (rtempVectorD)
     
-    call stat_stopTimer (rsolverNode%rtimeTotal)    
+    call stat_stopTimer (rsolverNode%rtimeTotal)
     
   end subroutine
 
@@ -2871,7 +2871,7 @@ contains
       ssection,p_rsolverNode,drelaxSOR,drelaxGS,ssectionAlternative)
   
 !<description>
-  ! Creates a t_sptilsNode solver structure for the block 
+  ! Creates a t_sptilsNode solver structure for the block
   ! SOR preconditioner.
 !</description>
   
@@ -2955,7 +2955,7 @@ contains
   recursive subroutine sptils_doneBlockFBSOR (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the solver 
+  ! This routine releases all temporary memory for the solver
   ! from the heap.
 !</description>
   
@@ -2988,7 +2988,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -3017,12 +3017,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -3039,7 +3039,7 @@ contains
     call sth_getLevel (rsolverNode%p_rspaceTimeHierarchy,rsolverNode%ispaceTimeLevel,&
         ispaceLevel=ilevel)
 
-    ! Initialise a partial preconditioner. 
+    ! Initialise a partial preconditioner.
     call fbsim_initPreconditioner (rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecond, &
         rsolverNode%p_rsettings, 1, ilevel, CCSPACE_PRIMALDUAL, &
         rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr, &
@@ -3085,12 +3085,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -3117,7 +3117,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -3139,7 +3139,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -3174,7 +3174,7 @@ contains
   recursive subroutine sptils_precBlockFBSOR (rsolverNode,rd)
   
 !<description>
-  ! Applies the Block Forward-Backward SOR preconditioner $P \approx A$ to the 
+  ! Applies the Block Forward-Backward SOR preconditioner $P \approx A$ to the
   ! defect vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -3233,14 +3233,14 @@ contains
     call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
     
     call stat_clearTimer (rsolverNode%rtimeTotal)
-    call stat_startTimer (rsolverNode%rtimeTotal)   
+    call stat_startTimer (rsolverNode%rtimeTotal)
     
     if (rsolverNode%ioutputLevel .ge. 2) then
       ! Prepare a temp vector for residual output
       call sptivec_initVector (rtempVector,&
           rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
           rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
-    end if    
+    end if
     
     ! Create temp vectors.
     call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
@@ -3250,7 +3250,7 @@ contains
         
     if (rsolverNode%p_rsubnodeBlockFBSOR%ssectionAlternative .ne. "") then
       call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
-          rtempVectorD2,.true.)      
+          rtempVectorD2,.true.)
     end if
         
     ! Bind roseenAccess to the nonlinearity
@@ -3269,7 +3269,7 @@ contains
           -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT, dnorm, rsolverNode%p_roptcBDC, &
           rsolverNode%ioutputLevel .ge. 3)
       call output_line ("FBSOR: Initial defect = "//trim(sys_sdEL(dnorm,10)))
-    end if        
+    end if
         
     do i=1,max(rsolverNode%nminIterations,rsolverNode%nmaxIterations)
         
@@ -3327,7 +3327,7 @@ contains
             rsolverNode%ioutputLevel .ge. 3)
         call output_line ("FBSOR: Iteration = "//trim(sys_siL(i,10))//&
             ", Defect = "//trim(sys_sdEL(dnorm,10)))
-      end if        
+      end if
 
     end do
     
@@ -3342,7 +3342,7 @@ contains
     if (rsolverNode%ioutputLevel .ge. 2) then
       ! Prepare a temp vector for residual output
       call sptivec_releaseVector (rtempVector)
-    end if    
+    end if
     
     ! Replace rd by the new solution, damp it by the damping parameter.
     call sptivec_copyVector (p_rx,rd)
@@ -3369,7 +3369,7 @@ contains
     !
     ! which is in component form:
     !
-    !    x^i_n+1  =  x^i_n  +  Aii^-1 ( b^i - Aii-1 ( x_n + drelaxGS ( x_n+1 - x_n ) 
+    !    x^i_n+1  =  x^i_n  +  Aii^-1 ( b^i - Aii-1 ( x_n + drelaxGS ( x_n+1 - x_n )
     !                                       - Aii x^i_n - Aii+1 x^i+1_n )
     !
     ! Using the componentwise result as temporary solution, SOR can now be expressed as
@@ -3425,12 +3425,12 @@ contains
     ! one has a reduced system.
     ! Example for x2/l2:
     !
-    !                   x1 =    
-    !                   l1      
+    !                   x1 =
+    !                   l1
     ! M   AA            x2   bx2
     !     AA   M        l2   bl2
-    !                   x3      
-    !                   l3      
+    !                   x3
+    !                   l3
     !
     ! The complete formula using the solution of the previous iterate reads:
     !
@@ -3548,7 +3548,7 @@ contains
           end if
         end if
       
-        ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+        ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
             rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
             rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
@@ -3562,7 +3562,7 @@ contains
           ! Therefore, we just use both vectors to create the weighted average,
           ! we have to subtract from the RHS:
           !
-          ! rtempVectorD = x1^new, rtempVectorX = x1 
+          ! rtempVectorD = x1^new, rtempVectorX = x1
           ! => rtempVectorX = drelaxGS x1^new + (1-drelaxGS) x1.
           call lsysbl_vectorLinearComb (rtempVectorD,rtempVectorX,&
               drelaxGS,1.0_DP-drelaxGS)
@@ -3574,7 +3574,7 @@ contains
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
           call stlin_setupMatrixWeights (rmatrix,iiterate,-1,rnonlinearSpatialMatrix)
           
-          call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)          
+          call stat_startTimer (rsolverNode%rtimeSpaceDefectAssembly)
           call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
           call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
               
@@ -3618,7 +3618,7 @@ contains
           !call sptivec_getTimestepData (rx, iiterate, rtempVectorX)
           !call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
 
-        ! Implement the boundary conditions        
+        ! Implement the boundary conditions
         call vecfil_discreteBCdef(rtempVectorD,p_rdiscreteBC)
         call vecfil_discreteFBCdef(rtempVectorD,p_rdiscreteFBC)
 
@@ -3692,7 +3692,7 @@ contains
 
           ! Save back the preconditioned defect.
           call sptivec_setTimestepData (rx, iiterate, rtempVectorD)
-        end if 
+        end if
         
         ! rtempVectorX still contains the current, not updated x2. In the next
         ! loop, this will be the "old" x1 for the next timestep.
@@ -3808,7 +3808,7 @@ contains
           end if
         end if
       
-        ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+        ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
         call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
             rmatrix%p_rneumannBoundary%p_RneumannBoundary(iiterate),&
             rmatrix%p_rneumannBoundary%rneumannBoudaryOperator)
@@ -3873,7 +3873,7 @@ contains
         call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX,rtempVectorD,1.0_DP)
         call stat_stopTimer (rsolverNode%rtimeSpaceDefectAssembly)
 
-        ! Implement the boundary conditions        
+        ! Implement the boundary conditions
         call vecfil_discreteBCdef(rtempVectorD,p_rdiscreteBC)
         call vecfil_discreteFBCdef(rtempVectorD,p_rdiscreteFBC)
 
@@ -3981,8 +3981,8 @@ contains
   ! must not be released before the solver node is released.
   type(t_settings_optflow), target :: rsettings
 
-  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
-  ! used for preconditioning. If not given or set to NULL(), no preconditioning 
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_sptilsNode), pointer, optional   :: p_rpreconditioner
 !</input>
@@ -3997,22 +3997,22 @@ contains
 
 !    ! Create a default solver structure
 !    call sptils_initSolverGeneral(rsettings,p_rsolverNode)
-!    
+!
 !    ! Initialise the type of the solver
 !    p_rsolverNode%calgorithm = SPTILS_ALG_CG
-!    
+!
 !    ! Initialise the ability bitfield with the ability of this solver:
 !    p_rsolverNode%ccapability = LINSOL_ABIL_CHECKDEF + &
 !                                LINSOL_ABIL_USESUBSOLVER
-!    
+!
 !    ! Allocate the subnode for CG.
 !    ! This initialises most of the variables with default values appropriate
 !    ! to this solver.
 !    allocate(p_rsolverNode%p_rsubnodeCG)
-!    
-!    ! Attach the preconditioner if given. 
-!    
-!    if (present(p_rpreconditioner)) then 
+!
+!    ! Attach the preconditioner if given.
+!
+!    if (present(p_rpreconditioner)) then
 !      p_rsolverNode%p_rsubnodeCG%p_rpreconditioner => p_rpreconditioner
 !    end if
 
@@ -4033,7 +4033,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -4074,7 +4074,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -4085,7 +4085,7 @@ contains
 !    ! local variables
 !    integer :: i,NEQtime
 !    type(t_sptilsSubnodeCG), pointer :: p_rsubnode
-!    
+!
 !    ! A-priori we have no error...
 !    ierror = SPTILS_ERR_NOERROR
 !
@@ -4099,9 +4099,9 @@ contains
 !    if (associated(rsolverNode%p_rsubnodeCG%p_rpreconditioner)) then
 !      call sptils_initStructure (rsolverNode%p_rsubnodeCG%p_rpreconditioner,ierror)
 !    end if
-!    
-!    ! CG needs 3 temporary vectors + 1 for preconditioning. 
-!    ! Allocate that here! Use the default data type prescribed in the solver 
+!
+!    ! CG needs 3 temporary vectors + 1 for preconditioning.
+!    ! Allocate that here! Use the default data type prescribed in the solver
 !    ! structure for allocating the temp vectors.
 !    p_rsubnode => rsolverNode%p_rsubnodeCG
 !    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscr%NEQtime
@@ -4109,7 +4109,7 @@ contains
 !      call sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
 !        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
 !    end do
-!  
+!
 !    ! Allocate memory for a spatial temp vector.
 !    call lsysbl_createVecBlockByDiscr (&
 !        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
@@ -4136,7 +4136,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -4253,7 +4253,7 @@ contains
 !<description>
   ! This routine releases all temporary memory for the CG solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
-  ! structure, it's also released from the heap by calling 
+  ! structure, it's also released from the heap by calling
   ! linsol_releaseSolver for it.
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
@@ -4287,7 +4287,7 @@ contains
   recursive subroutine sptils_precCG (rsolverNode,rd)
   
 !<description>
-  ! Applies CG preconditioner $P \approx A$ to the defect 
+  ! Applies CG preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -4315,29 +4315,29 @@ contains
 !  ! The system matrix
 !  type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
 !  type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix
-!  
+!
 !  ! Minimum number of iterations, print-sequence for residuals
 !  integer :: nminIterations, niteResOutput
-!  
+!
 !  ! Whether to precondition
 !  logical bprec
-!  
+!
 !  ! Our structure
 !  type(t_sptilsSubnodeCG), pointer :: p_rsubnode
-!  
+!
 !  ! Pointers to temporary vectors - named for easier access
 !  type(t_spacetimeVector), pointer :: p_DR,p_DP,p_DD,p_rx
 !  type(t_sptilsNode), pointer :: p_rprecSubnode
-!  
+!
 !  ! DEBUG!!!
 !  real(DP), dimension(:), pointer :: p_DRdata,p_DPdata,p_DDdata,p_rxdata,p_rddata
-!  
+!
 !    ! Solve the system!
-!  
+!
 !    ! Status reset
 !    rsolverNode%iresult = 0
 !    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
-!    
+!
 !    ! Get some information
 !    p_rsubnode => rsolverNode%p_rsubnodeCG
 !    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
@@ -4346,20 +4346,20 @@ contains
 !    ! Check the parameters
 !    if ((rd%NEQtime .eq. 0) .or. &
 !        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .eq. 0) ) then
-!    
+!
 !      ! Parameters wrong
 !      rsolverNode%iresult = 2
 !      return
 !    end if
 !
 !    ! Minimum number of iterations
-! 
+!
 !    nminIterations = max(rsolverNode%nminIterations,0)
-!      
+!
 !    ! Use preconditioning? Filtering?
 !
 !    bprec = associated(rsolverNode%p_rsubnodeCG%p_rpreconditioner)
-!    
+!
 !    ! Iteration when the residuum is printed:
 !
 !    niteResOutput = max(1,rsolverNode%niteResOutput)
@@ -4373,23 +4373,23 @@ contains
 !    p_DD   => p_rsubnode%RtempVectors(3)
 !    ! solution vector
 !    p_rx   => p_rsubnode%RtempVectors(4)
-!    
+!
 !    if (bprec) then
 !      p_rprecSubnode => p_rsubnode%p_rpreconditioner
 !    end if
-!    
+!
 !    ! rd is our RHS. p_rx points to a new vector which will be our
 !    ! iteration vector. At the end of this routine, we replace
 !    ! rd by p_rx.
 !    ! Clear our iteration vector p_rx.
 !    call sptivec_clearVector (p_rx)
-!      
+!
 !    ! Initialize used vectors with zero
-!      
+!
 !    call sptivec_clearVector(p_DR)
 !    call sptivec_clearVector(p_DP)
 !    call sptivec_clearVector(p_DD)
-!    
+!
 !    ! Initialization
 !
 !    dalpha = 1.0_DP
@@ -4401,20 +4401,20 @@ contains
 !    ! is also our initial defect.
 !
 !    call sptivec_copyVector(rd,p_DR)
-!    
+!
 !    ! Filter the defect for boundary conditions in space and time.
 !    call tbc_implementInitCondDefect (&
 !        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
 !    call tbc_implementBCdefect (rsolverNode%p_rsettings,&
 !        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
-!    
+!
 !    ! Get the norm of the residuum
 !    dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
 !    if (.not.((dres .ge. 1E-99_DP) .and. &
 !              (dres .le. 1E99_DP))) dres = 0.0_DP
 !
 !    ! Initialize starting residuum
-!      
+!
 !    rsolverNode%dinitialDefect = dres
 !    rsolverNode%dlastDefect = 0.0_DP
 !
@@ -4423,13 +4423,13 @@ contains
 !    ! In that case we can directly stop our computation.
 !
 !    if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-!     
+!
 !      ! final defect is 0, as initialised in the output variable above
 !
 !      call sptivec_clearVector(p_rx)
 !      ite = 0
 !      rsolverNode%dfinalDefect = dres
-!          
+!
 !    else
 !
 !      if (rsolverNode%ioutputLevel .ge. 2) then
@@ -4450,14 +4450,14 @@ contains
 !
 !      ! Calculate gamma
 !      dgamma = sptivec_scalarProduct (p_DR, p_DP)
-!      
+!
 !      ! Perform at most nmaxIterations loops to get a new vector
-!      
+!
 !      ! Copy the preconditioned residual vector to the direction vector
 !      call sptivec_copyVector (p_DP, p_DD)
 !
 !      do ite = 1,rsolverNode%nmaxIterations
-!      
+!
 !        rsolverNode%icurrentIteration = ite
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! STEP 1: Calculate alpha
@@ -4471,7 +4471,7 @@ contains
 !        ! Using this trick, we can save one temporary vector.
 !        call stlin_spaceTimeMatVec (rsolverNode%p_rsettings, p_rmatrix, &
 !            p_DD,p_DP, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
-!        
+!
 !        ! Calculate alpha for the CG iteration
 !        dalpha = dgamma / sptivec_scalarProduct (p_DD, p_DP)
 !
@@ -4484,7 +4484,7 @@ contains
 !            exit
 !          end if
 !        end if
-!        
+!
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! STEP 2: Calculate x_{k+1}
 !        !
@@ -4512,7 +4512,7 @@ contains
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! Get the norm of the new (final?) residuum
 !        dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
-!     
+!
 !        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
 !        rsolverNode%dfinalDefect = dfr
 !
@@ -4522,13 +4522,13 @@ contains
 !          rsolverNode%iresult = 1
 !          exit
 !        end if
-!     
+!
 !        ! At least perform nminIterations iterations
 !        if (ite .ge. nminIterations) then
-!        
+!
 !          ! Check if the iteration converged
 !          if (sptils_testConvergence(rsolverNode,dfr)) exit
-!          
+!
 !        end if
 !
 !        ! print out the current residuum
@@ -4539,7 +4539,7 @@ contains
 !              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
 !              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
 !        end if
-!        
+!
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! STEP 5: Calculate h_{k+1}
 !        !
@@ -4548,14 +4548,14 @@ contains
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! Copy the residuum vector p_DR to the preconditioned one.
 !        call sptivec_copyVector(p_DR,p_DP)
-!    
+!
 !        if (bprec) then
 !          ! Perform preconditioning with the assigned preconditioning
 !          ! solver structure.
 !          call sptils_precondDefect (p_rprecSubnode,p_DP)
 !          call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
 !        end if
-!        
+!
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! STEP 6: Calculate gamma
 !        !
@@ -4564,7 +4564,7 @@ contains
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        dgammaOld = dgamma
 !        dgamma = sptivec_scalarProduct (p_DR, p_DP)
-!        
+!
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        ! STEP 7: Calculate beta
 !        !
@@ -4580,7 +4580,7 @@ contains
 !        ! d_{k+1} := beta * d_k + h_{k+1}
 !        !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !        call sptivec_vectorLinearComb (p_DP, p_DD, 1.0_DP, dbeta)
-!        
+!
 !        ! That's it - next iteration!
 !      end do
 !
@@ -4605,16 +4605,16 @@ contains
 !    end if
 !
 !    rsolverNode%iiterations = ite
-!    
+!
 !    ! Overwrite our previous RHS by the new correction vector p_rx.
 !    ! This completes the preconditioning.
 !    call sptivec_copyVector (p_rx,rd)
-!      
+!
 !    ! Don't calculate anything if the final residuum is out of bounds -
 !    ! would result in NaN's,...
-!      
+!
 !    if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-!    
+!
 !      ! If the initial defect was zero, the solver immediately
 !      ! exits - and so the final residuum is zero and we performed
 !      ! no steps; so the resulting convergence rate stays zero.
@@ -4637,7 +4637,7 @@ contains
 !             trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
 !        call output_line ('!!RES!!                 : '//&
 !             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-!        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
+!        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
 !          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
 !            trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
 !        else
@@ -4660,7 +4660,7 @@ contains
 !    else
 !      ! DEF=Infinity; RHO=Infinity, set to 1
 !      rsolverNode%dconvergenceRate = 1.0_DP
-!    end if  
+!    end if
   
   end subroutine
 
@@ -4736,7 +4736,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -4765,7 +4765,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -4867,7 +4867,7 @@ contains
         call sys_halt()
       end if
   
-      ! Cleanup    
+      ! Cleanup
       if ((ixfirst .ne. 0) .or. (ixlast .ne. 0) .or. &
           (iyfirst .ne. 0) .or. (iylast .ne. 0)) then
         ! Change the pointer back to the original matrix
@@ -4876,7 +4876,7 @@ contains
       
     end if
 
-    ! Now start to modify the temp matrix for UMFPACK's needs.  
+    ! Now start to modify the temp matrix for UMFPACK's needs.
     p_rmatrix => rtempMatrix%RmatrixBlock(1,1)
     
     !CALL matio_spyMatrix('matrix','matrix',p_rmatrix,.TRUE.)
@@ -5051,9 +5051,9 @@ contains
   ! Number of timesteps with pure Dirichlet BC`s.
   integer, intent(out) :: npureDirichletTimesteps
 
-    ! local variables  
+    ! local variables
     integer :: ivelSize,ipSize,neq,neqtime,ilevel
-    type(t_fbsimPreconditioner), target :: rpreconditioner 
+    type(t_fbsimPreconditioner), target :: rpreconditioner
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2,p_rvector3
     type(t_spatialMatrixNonlinearData) :: rnonlinearData
     type(t_discreteBC), pointer :: p_rdiscreteBC
@@ -5114,13 +5114,13 @@ contains
     ! Loop through the substeps
     do isubstep = 1,neqtime
 
-      ! Load the data of the 'next' timestep to p_rvector3.    
+      ! Load the data of the 'next' timestep to p_rvector3.
       if (associated(rsupermatrix%p_rsolution) .and. &
           (isubstep .ne. neqtime))  then
         call sptivec_getTimestepData (rsupermatrix%p_rsolution, isubstep+1, p_rvector3)
       end if
     
-      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX
       call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3,&
           rsupermatrix%p_rneumannBoundary%p_RneumannBoundary(isubstep),&
           rsupermatrix%p_rneumannBoundary%rneumannBoudaryOperator)
@@ -5184,7 +5184,7 @@ contains
         call matfil_discreteBC (p_rblockTemp,p_rdiscreteBC)
         call matfil_discreteFBC (p_rblockTemp,p_rdiscreteFBC)
 
-        ! Include the current matrix into the global matrix 
+        ! Include the current matrix into the global matrix
         call insertMatrix (p_rblockTemp,rmatrix,(isubstep-1+ix)*6+1,(isubstep-1)*6+1,.false.)
         
         ! DEBUG!!!
@@ -5193,7 +5193,7 @@ contains
         !    .TRUE., 0, 'matrix'//TRIM(sys_siL(ix,10))//'.txt', '(E20.10)')
         !END IF
         
-      end do  
+      end do
 
       ! Insert a 'point matrix' containing a zero in the pressure block.
       ! This allows the boundary condition implementation routine to
@@ -5251,7 +5251,7 @@ contains
     integer, intent(IN) :: ileft
     integer, intent(IN) :: itop
     ! Duplicate the structure. FALSE=share the structure.
-    logical, intent(IN) :: bcopyStructure 
+    logical, intent(IN) :: bcopyStructure
     
     integer :: i,j,ccopy
     
@@ -5303,9 +5303,9 @@ contains
       
       ! The matrix should get the shape:
       !   1 1 1 1 ... 1 1 1
-      !   0 0 0 0 ... 0 0 0      
+      !   0 0 0 0 ... 0 0 0
       !   ...
-      !   0 0 0 0 ... 0 0 0      
+      !   0 0 0 0 ... 0 0 0
       !
       ! Create the matrix by hand. If necessary, allocate memory.
       if (rmatrix%h_Kld .eq. ST_NOHANDLE) then
@@ -5354,7 +5354,7 @@ contains
     subroutine createPointMatrix (rmatrix,NEQ,irow)
     
     ! Creates a structure-9 matrix that contains exactly one 'zero'
-    ! on the diagonal of row irow. 
+    ! on the diagonal of row irow.
     
     ! Matrix to be set up
     type(t_matrixScalar), intent(inout) :: rmatrix
@@ -5434,7 +5434,7 @@ contains
     if (rsolverNode%p_rsubnodeUMFPACK4%inumeric .ne. 0) then
       call UMF4FNUM(rsolverNode%p_rsubnodeUMFPACK4%inumeric)
       rsolverNode%p_rsubnodeUMFPACK4%inumeric = 0
-    end if  
+    end if
     
     ! Release the symbolical factorisation if associated
     if (rsolverNode%p_rsubnodeUMFPACK4%isymbolic .ne. 0) then
@@ -5496,7 +5496,7 @@ contains
   recursive subroutine sptils_precUMFPACK4 (rsolverNode,rd)
   
 !<description>
-  ! Applies UMFPACK preconditioner $P \approx A$ to the defect 
+  ! Applies UMFPACK preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -5539,13 +5539,13 @@ contains
     p_rsubnode => rsolverNode%p_rsubnodeUMFPACK4
     
     call stat_clearTimer (rsolverNode%rtimeTotal)
-    call stat_startTimer (rsolverNode%rtimeTotal)    
+    call stat_startTimer (rsolverNode%rtimeTotal)
     
     ! Copy the RHS rd to the temp vector; it will be overwritten
     ! by the solution vector
     call sptivec_convertSupervecToVector (rd,rb)
 
-    ! Get the array    
+    ! Get the array
     call lsysbl_getbase_double(rb,p_Db)
 
     ! Allocate memory for the destination
@@ -5575,7 +5575,7 @@ contains
 !    call lsysbl_releaseMatrix (rmatrixGlobal)
 !    call lsysbl_releaseMatrix (rmatrixGlobalSc)
 !    call lsysbl_releaseVector (rrhs)
-!    
+!
 !    call sptivec_copyVector (rd,rsol2)
 !    CALL sptivec_convertVectorToSupervec (rx,rsol2)
 !    call stlin_spaceTimeMatVec (rsolverNode%p_rsettings, rsolverNode%rmatrix, &
@@ -5593,11 +5593,11 @@ contains
     call lsysbl_releaseVector (rx)
     call lsysbl_releaseVector (rb)
     
-    call stat_stopTimer (rsolverNode%rtimeTotal)    
+    call stat_stopTimer (rsolverNode%rtimeTotal)
   
     ! Check the solver status
     select case (int(Dinfo(1)))
-    case (0) 
+    case (0)
       ! All ok.
       rsolverNode%iiterations = 1
       rsolverNode%dconvergenceRate = 0.0_DP
@@ -5632,8 +5632,8 @@ contains
   ! Id of the space-time level, this solver is based on.
   integer, intent(in) :: ispaceTimeLevel
 
-  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
-  ! used for preconditioning. If not given or set to NULL(), no preconditioning 
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_sptilsNode), pointer, optional   :: p_rpreconditioner
 !</input>
@@ -5661,8 +5661,8 @@ contains
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeBiCGStab)
     
-    ! Attach the preconditioner if given. 
-    if (present(p_rpreconditioner)) then 
+    ! Attach the preconditioner if given.
+    if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner => p_rpreconditioner
     end if
 
@@ -5683,7 +5683,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -5724,7 +5724,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -5751,8 +5751,8 @@ contains
                                 isubgroup)
     end if
     
-    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. 
-    ! Allocate that here! Use the default data type prescribed in the solver 
+    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning.
+    ! Allocate that here! Use the default data type prescribed in the solver
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
     do i=1,7
@@ -5787,7 +5787,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -5830,7 +5830,7 @@ contains
 !</inputoutput>
   
 !<input>
-  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
   ! solvers in other solver subgroups are ignored.
@@ -5873,7 +5873,7 @@ contains
 !</inputoutput>
   
 !<input>
-  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
   ! solvers in other solver subgroups are ignored.
@@ -5922,7 +5922,7 @@ contains
 !<description>
   ! This routine releases all temporary memory for the BiCGStab solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
-  ! structure, it's also released from the heap by calling 
+  ! structure, it's also released from the heap by calling
   ! linsol_releaseSolver for it.
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
@@ -5959,7 +5959,7 @@ contains
   recursive subroutine sptils_precBiCGStab (rsolverNode,rd)
   
 !<description>
-  ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
+  ! Applies BiCGStab preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -6054,7 +6054,7 @@ contains
     end if
 
     call stat_clearTimer (rsolverNode%rtimeSpaceDefectAssembly)
-    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)    
+    call stat_clearTimer (rsolverNode%rtimeSpaceMatrixAssembly)
     
     call stat_clearTimer (rsolverNode%rtimeTotal)
     call stat_startTimer (rsolverNode%rtimeTotal)
@@ -6117,7 +6117,7 @@ contains
         ! We scale the absolute stopping criterion by the difference
         ! between the preconditioned and unpreconditioned defect --
         ! to encounter the difference in the residuals.
-        ! This is of course an approximation to 
+        ! This is of course an approximation to
         dresunprec = dres
         dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
         
@@ -6241,7 +6241,7 @@ contains
           end if
         end if
 
-        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
+        drho1 = sptivec_scalarProduct (p_DR0,p_DR)
 
         if (drho0*domega0 .eq. 0.0_DP) then
           ! Should not happen
@@ -6411,7 +6411,7 @@ contains
               call output_line ('Space-Time-BiCGStab: Iteration '// &
                   trim(sys_siL(ITE,10))//',  !!RES(precond)!! = '//&
                   trim(sys_sdEL(dresreal,15)) )
-            end if                
+            end if
 
             call output_line ('Space-Time-BiCGStab: Iteration '// &
                 trim(sys_siL(ITE,10))//',  !!RES!! = '//&
@@ -6459,7 +6459,7 @@ contains
             call output_line ('Space-Time-BiCGStab: Iteration '// &
                 trim(sys_siL(ITE,10))//',  !!RES(precond)!! = '//&
                 trim(sys_sdEL(dresreal,15)) )
-          end if                
+          end if
 
           call output_line ('Space-Time-BiCGStab: Iteration '// &
               trim(sys_siL(ITE,10))//',  !!RES!! = '//&
@@ -6505,7 +6505,7 @@ contains
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         call output_line ('!!RES!!                 : '//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
           call output_line ('!!RES!!/!!INITIAL RES!! : '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
@@ -6528,7 +6528,7 @@ contains
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
-    end if  
+    end if
   
   end subroutine
   
@@ -6556,8 +6556,8 @@ contains
   ! Id of the space-time level, this solver is based on.
   integer, intent(in) :: ispaceTimeLevel
 
-  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
-  ! used for preconditioning. If not given or set to NULL(), no preconditioning 
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning
   ! will be used.
   type(t_sptilsNode), pointer, optional   :: p_rpreconditioner
 !</input>
@@ -6585,8 +6585,8 @@ contains
     ! to this solver.
     allocate(p_rsolverNode%p_rsubnodeBiCGStabRight)
     
-    ! Attach the preconditioner if given. 
-    if (present(p_rpreconditioner)) then 
+    ! Attach the preconditioner if given.
+    if (present(p_rpreconditioner)) then
       p_rsolverNode%p_rsubnodeBiCGStabRight%p_rpreconditioner => p_rpreconditioner
     end if
 
@@ -6607,7 +6607,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -6648,7 +6648,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -6675,8 +6675,8 @@ contains
                                 isubgroup)
     end if
     
-    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. 
-    ! Allocate that here! Use the default data type prescribed in the solver 
+    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning.
+    ! Allocate that here! Use the default data type prescribed in the solver
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStabRight
     do i=1,7
@@ -6711,7 +6711,7 @@ contains
 !</inputoutput>
   
 !<output>
-  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -6754,7 +6754,7 @@ contains
 !</inputoutput>
   
 !<input>
-  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
   ! solvers in other solver subgroups are ignored.
@@ -6797,7 +6797,7 @@ contains
 !</inputoutput>
   
 !<input>
-  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! Optional parameter. isolverSubgroup allows to specify a specific
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
   ! solvers in other solver subgroups are ignored.
@@ -6846,7 +6846,7 @@ contains
 !<description>
   ! This routine releases all temporary memory for the BiCGStab solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
-  ! structure, it's also released from the heap by calling 
+  ! structure, it's also released from the heap by calling
   ! linsol_releaseSolver for it.
   ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
@@ -6882,7 +6882,7 @@ contains
   recursive subroutine sptils_precBiCGSRight (rsolverNode,rd)
   
 !<description>
-  ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
+  ! Applies BiCGStab preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -7047,7 +7047,7 @@ contains
       
         rsolverNode%icurrentIteration = ite
 
-        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
+        drho1 = sptivec_scalarProduct (p_DR0,p_DR)
 
         if (drho0*domega0 .eq. 0.0_DP) then
           ! Should not happen
@@ -7275,7 +7275,7 @@ contains
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         call output_line ('!!RES!!                 : '//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
           call output_line ('!!RES!!/!!INITIAL RES!! : '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
@@ -7298,7 +7298,7 @@ contains
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
-    end if  
+    end if
   
   end subroutine
   
@@ -7369,7 +7369,7 @@ contains
   recursive subroutine sptils_doneMultigrid (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the efect correction solver 
+  ! This routine releases all temporary memory for the efect correction solver
   ! from the heap.
 !</description>
   
@@ -7578,12 +7578,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout) :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -7604,7 +7604,7 @@ contains
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
 
-    ! Loop through the level. 
+    ! Loop through the level.
     do ilev=1,NLMAX
     
       p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
@@ -7679,12 +7679,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -7702,7 +7702,7 @@ contains
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
 
-    ! Loop through the level. 
+    ! Loop through the level.
     do ilev=1,size(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
      
       p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
@@ -7745,7 +7745,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -7758,7 +7758,7 @@ contains
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
 
-    ! Loop through the level. 
+    ! Loop through the level.
     do ilev=1,size(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
     
       p_rmgLevel => rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)
@@ -7798,7 +7798,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -7811,7 +7811,7 @@ contains
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
 
-    ! Loop through the level. 
+    ! Loop through the level.
     NLMAX = size(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
     do ilev=1,NLMAX
     
@@ -7909,12 +7909,12 @@ contains
 !<input>
   ! Number of the level to fetch.
   integer, intent(in) :: ilevel
-!</input>  
+!</input>
   
 !<output>
   ! A pointer to the corresponding t_levelInfo structure.
   type(t_sptilsMGLevelInfo), pointer :: p_rlevelInfo
-!</output>  
+!</output>
   
 !</subroutine>
 
@@ -7983,7 +7983,7 @@ contains
   ! belonging to a linear system $Ax=b$.
   ! rsolverNode identifies a solver structure that is converted to a
   ! smoother using sptils_convertToSmoother: The number of smoothing
-  ! steps is written to rsolverNode%nmaxIterations and 
+  ! steps is written to rsolverNode%nmaxIterations and
   ! rsolverNode%nmaxIterations so that the solver performs a definite
   ! number of iterations regardless of the residual.
   !
@@ -8149,7 +8149,7 @@ contains
   recursive subroutine sptils_precMultigrid (rsolverNode,rd)
   
 !<description>
-  ! Applies the Multigrid preconditioner $P \approx A$ to the defect 
+  ! Applies the Multigrid preconditioner $P \approx A$ to the defect
   ! vector rd and solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -8235,7 +8235,7 @@ contains
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     
-    ! We start on the maximum level. 
+    ! We start on the maximum level.
     ilev = p_rsubnode%NLMAX
     nlmax = p_rsubnode%NLMAX
     nlmin = p_rsubnode%NLMIN
@@ -8328,7 +8328,7 @@ contains
             p_rsubnode%p_Rlevels(i)%ncycles = 2
           else
             p_rsubnode%p_Rlevels(i)%ncycles = p_rsubnode%icycle
-          end if  
+          end if
         end do
         
         ! Afterwards, p_rcurrentLevel points to the maximum level again.
@@ -8399,7 +8399,7 @@ contains
           
           cycleloop: do  ! Loop for the cycles
           
-            ! On the maximum level we already built out defect vector. If we are    
+            ! On the maximum level we already built out defect vector. If we are
             ! on a lower level than NLMAX, perform smoothing+restriction down to the
             ! coarse level. We identify the coarse level by checking if
             ! the current level has a coarse grid solver.
@@ -8474,7 +8474,7 @@ contains
               ! the solution vector. It's used there as RHS and replaced in-situ
               ! by the solution by the coarse grid solver. So don't need the RHS vector
               ! on the coarse grid and save one vector-copy.
-              ! 
+              !
               ! Otherwise, we restrict to the RHS on the lower level and continue
               ! the smoothing process there.
               if (ilev .gt. nlmin+1) then
@@ -8499,7 +8499,7 @@ contains
                     
                 call stat_stopTimer (p_rsubnode%rtimeProlRest)
 
-                ! Choose zero as initial vector on lower level. 
+                ! Choose zero as initial vector on lower level.
                 call sptivec_clearVector (p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector)
                 
                 ! Extended output and/or adaptive cycles
@@ -8519,7 +8519,7 @@ contains
                     p_rsubnode%p_Rlevels(ilev-1)%icycleCount = 1
                   end if
 
-                  ! If the output level is high enough, print that residuum norm.   
+                  ! If the output level is high enough, print that residuum norm.
                   if (mod(ite,niteResOutput).eq. 0) then
                     call output_line ('Space-Time-Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
                         ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
@@ -8567,7 +8567,7 @@ contains
                       ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
                 end if
 
-              end if              
+              end if
             
               ! Go down one level
               ilev = ilev - 1
@@ -8577,8 +8577,8 @@ contains
                 call output_line ('Space-Time-Multigrid: Current mesh level: '//trim(sys_siL(ilev,5)))
               end if
               
-              ! If we are not on the lowest level, repeat the smoothing of 
-              ! the solution/restriction of the new defect in the next loop 
+              ! If we are not on the lowest level, repeat the smoothing of
+              ! the solution/restriction of the new defect in the next loop
               ! pass...
             end do   ! ilev > minimum level
             
@@ -8772,14 +8772,14 @@ contains
               end if
 
               ! Update the iteration counter(s) for realising the MG-cycle(s).
-              ! Then either repeat this loop to perform the next prolongation or   
-              ! repeat the cycleloop to do perform a next MG sweep on the current      
-              ! level.                                                        
-              !                                                               
-              ! Here icycle defines how the cycle-counters are updated.           
-              ! For a W-cycle the cycle counter is resetted to 2 if the sweep is 
+              ! Then either repeat this loop to perform the next prolongation or
+              ! repeat the cycleloop to do perform a next MG sweep on the current
+              ! level.
+              !
+              ! Here icycle defines how the cycle-counters are updated.
+              ! For a W-cycle the cycle counter is resetted to 2 if the sweep is
               ! fulfilled on the current level, for F-cycle it's set to 1 to not
-              ! perform more that 1 cycle on the current level anymore.       
+              ! perform more that 1 cycle on the current level anymore.
               
               p_rsubnode%p_Rlevels(ilev)%ncyclesRemaining = &
                   p_rsubnode%p_Rlevels(ilev)%ncyclesRemaining-1
@@ -8795,7 +8795,7 @@ contains
                        (p_rsubnode%p_Rlevels(ilev)%depsRelCycle .ne. 1E99_DP)) .and. &
                       (ilev .lt. NLMAX)) then
                       
-                    ! Adaptive cycles activated. 
+                    ! Adaptive cycles activated.
                     !
                     ! We are on a level < nlmax.
                     ! At first, calculate the residuum on that level.
@@ -8834,7 +8834,7 @@ contains
                       cycle cycleloop
                     end if
                     
-                    ! Otherwise: The cycle(s) is/are finished; 
+                    ! Otherwise: The cycle(s) is/are finished;
                     ! the END DO goes up one level.
                     
                   end if
@@ -8947,7 +8947,7 @@ contains
         end if
       end if
 
-      ! Total time    
+      ! Total time
       call stat_stopTimer (rsolverNode%rtimeTotal)
     
       ! Calculate the time for linear algebra
@@ -8978,7 +8978,7 @@ contains
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         call output_line ('!!RES!!                 : '//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
           call output_line ('!!RES!!/!!INITIAL RES!! : '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
@@ -9001,7 +9001,7 @@ contains
     else
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
-    end if  
+    end if
   
   contains
   
@@ -9045,9 +9045,9 @@ contains
       
 !      ! local variables
 !      real(DP) :: dnom, ddenom
-!    
+!
 !      ! The formula is just as for standard multigrid.
-!      ! With u=uncorrected solution, c=correction vector, 
+!      ! With u=uncorrected solution, c=correction vector,
 !      ! f=rhs vector, calculate
 !      !
 !      !           ( f-Au, c )
@@ -9071,11 +9071,11 @@ contains
 !      dnom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
 !
 !      ! Calculate the denominator:
-!      
+!
 !      call sptivec_clearVector (rtempVector)
 !      call stlin_spaceTimeMatVec (rsettings, rmatrix, &
 !          rcorrectionVector,rtempVector, 1.0_DP,0.0_DP,SPTID_FILTER_DEFECT)
-!      
+!
 !      ! Implement boundary conditions into the vector.
 !      !CALL tbc_implementInitCondDefect (&
 !      !    rmatrix%p_rspaceTimeDiscr,&
@@ -9084,15 +9084,15 @@ contains
 !      !    rmatrix%p_rspaceTimeDiscr,&
 !      !    rtempVector, rtempSpaceVector)
 !
-!      ! Get the denominator      
+!      ! Get the denominator
 !      ddenom = sptivec_scalarProduct (rtempVector,rcorrectionVector)
-!      
+!
 !      ! Trick to avoid div/0
 !      if (ddenom .eq. 0.0_DP) ddenom = 1.0_DP
-!      
+!
 !      ! Result...
 !      dstep = dnom / ddenom
-!                   
+!
 !      ! Force it to be in the allowed range.
 !      dstep = min(dalphamax,max(dalphamin,dstep))
                     
@@ -9146,9 +9146,9 @@ contains
     
 !      ! local variables
 !      real(DP) :: dnom, ddenom
-!    
+!
 !      ! The formula is just as for standard multigrid.
-!      ! With u=uncorrected solution, c=correction vector, 
+!      ! With u=uncorrected solution, c=correction vector,
 !      ! f=rhs vector, calculate
 !      !
 !      !           ( f-Au, c )
@@ -9171,11 +9171,11 @@ contains
 !      ! Get the nominator
 !      dnom = sptivec_scalarProductWeighted (rtempVector,rcorrectionVector,Dweights)
 !      ! Calculate the denominator:
-!      
+!
 !      call sptivec_clearVector (rtempVector)
 !      call stlin_spaceTimeMatVec (rsettings, rmatrix, &
 !          rcorrectionVector,rtempVector, 1.0_DP,0.0_DP,SPTID_FILTER_DEFECT)
-!      
+!
 !      ! Implement boundary conditions into the vector.
 !      !CALL tbc_implementInitCondDefect (&
 !      !    rmatrix%p_rspaceTimeDiscr,&
@@ -9184,15 +9184,15 @@ contains
 !      !    rmatrix%p_rspaceTimeDiscr,&
 !      !    rtempVector, rtempSpaceVector)
 !
-!      ! Get the denominator      
+!      ! Get the denominator
 !      ddenom = sptivec_scalarProductWeighted (rtempVector,rcorrectionVector,Dweights)
-!      
+!
 !      ! Trick to avoid div/0
 !      if (ddenom .eq. 0.0_DP) ddenom = 1.0_DP
-!      
+!
 !      ! Result...
 !      dstep = dnom / ddenom
-!                   
+!
 !      ! Force it to be in the allowed range.
 !      dstep = min(dalphamax,max(dalphamin,dstep))
                     
@@ -9280,7 +9280,7 @@ contains
   recursive subroutine sptils_doneFBsim (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the efect correction solver 
+  ! This routine releases all temporary memory for the efect correction solver
   ! from the heap.
 !</description>
   
@@ -9309,7 +9309,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -9337,12 +9337,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -9393,12 +9393,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -9428,7 +9428,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9450,7 +9450,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9471,7 +9471,7 @@ contains
   recursive subroutine sptils_precFBsim (rsolverNode,rd)
   
 !<description>
-  ! Applies the forward-backward solver to a defect vector rd and 
+  ! Applies the forward-backward solver to a defect vector rd and
   ! solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !
@@ -9575,7 +9575,7 @@ contains
     call sptivec_copyVector (rsolverNode%p_rsubnodeFBsim%rtempVector,rd)
     call sptivec_scaleVector (rd,rsolverNode%domega)
     
-    call stat_stopTimer (rsolverNode%rtimeTotal)    
+    call stat_stopTimer (rsolverNode%rtimeTotal)
 
   end subroutine
 
@@ -9659,7 +9659,7 @@ contains
   recursive subroutine sptils_doneTimeVanka (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the efect correction solver 
+  ! This routine releases all temporary memory for the efect correction solver
   ! from the heap.
 !</description>
   
@@ -9688,7 +9688,7 @@ contains
 !</description>
   
 !<input>
-  ! An array of system matrices which is simply passed to the initialisation 
+  ! An array of system matrices which is simply passed to the initialisation
   ! routine of the preconditioner.
   type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
 !</input>
@@ -9716,12 +9716,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -9770,12 +9770,12 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! One of the SPTILS_ERR_XXXX constants. A value different to
   ! SPTILS_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
   integer, intent(OUT) :: ierror
@@ -9805,7 +9805,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9827,7 +9827,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_sptilsNode structure 
+  ! The t_sptilsNode structure
   type(t_sptilsNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9848,7 +9848,7 @@ contains
   recursive subroutine sptils_precTimeVanka (rsolverNode,rd)
   
 !<description>
-  ! Applies the forward-backward solver to a defect vector rd and 
+  ! Applies the forward-backward solver to a defect vector rd and
   ! solves $Pd_{new} = d$.
   ! rd will be overwritten by the preconditioned defect.
   !

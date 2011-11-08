@@ -71,9 +71,9 @@
 !#      RfilterChain(3)%itoL20component = 3
 !# </code>
 !#
-!#    The above initialisation sets up a filter chain the implementation 
-!#    of Dirichlet boundary conditions on the real boundary and on 
-!#    fictitious boundary components to a vector and filters the 3rd 
+!#    The above initialisation sets up a filter chain the implementation
+!#    of Dirichlet boundary conditions on the real boundary and on
+!#    fictitious boundary components to a vector and filters the 3rd
 !#    component of a block vector into the space <tex>$L^2_0$</tex>.
 !#
 !# c) Either apply the filter chain to a matrix or vector, e.g.
@@ -90,14 +90,14 @@
 !#      p_filterChain => RfilterChain
 !#      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_filterChain)
 !# </code>
-!# 
-!# Notes: 
+!#
+!# Notes:
 !# a) The filter chain is processed until FILTER_NOFILTER is reached.
 !#    Setting ifilterType=FILTER_DONOTHING deactivates a filter.
 !#    Setting ifilterType=FILTER_NOFILTER stops processing the filter chain
 !#    at this position.
 !#
-!# b) There is no memory attached to filters. Therefore, no cleanup is 
+!# b) There is no memory attached to filters. Therefore, no cleanup is
 !#    necessary.
 !#
 !# </purpose>
@@ -137,35 +137,35 @@ module filtersupport
   ! Do-nothing filter; does nothing
   integer, parameter, public :: FILTER_DONOTHING         =  0
 
-  ! Vector filter for imposing discrete boundary conditions of the 
+  ! Vector filter for imposing discrete boundary conditions of the
   ! real boundary into a solution vector.
   integer, parameter, public :: FILTER_DISCBCSOLREAL     =  1
 
-  ! Vector filter for imposing discrete boundary conditions of the 
+  ! Vector filter for imposing discrete boundary conditions of the
   ! real boundary into a right-hand-side vector.
   integer, parameter, public :: FILTER_DISCBCRHSREAL     =  2
 
-  ! Vector filter for imposing discrete boundary conditions of the 
+  ! Vector filter for imposing discrete boundary conditions of the
   ! real boundary into a defect vector.
   integer, parameter, public :: FILTER_DISCBCDEFREAL     =  3
 
-  ! Matrix filter for imposing discrete boundary conditions of the 
+  ! Matrix filter for imposing discrete boundary conditions of the
   ! real boundary into a matrix.
   integer, parameter, public :: FILTER_DISCBCMATREAL     =  4
 
-  ! Vector filter for imposing discrete boundary conditions of 
+  ! Vector filter for imposing discrete boundary conditions of
   ! the fictitious boundary into a solution vector.
   integer, parameter, public :: FILTER_DISCBCSOLFICT     =  5
 
-  ! Vector filter for imposing discrete boundary conditions of 
+  ! Vector filter for imposing discrete boundary conditions of
   ! the fictitious boundary into a right-hand-side vector.
   integer, parameter, public :: FILTER_DISCBCRHSFICT     =  6
 
-  ! Vector filter for imposing discrete boundary conditions of 
+  ! Vector filter for imposing discrete boundary conditions of
   ! the fictitious boundary into a defect vector.
   integer, parameter, public :: FILTER_DISCBCDEFFICT     =  7
 
-  ! Matrix filter for imposing discrete boundary conditions of the 
+  ! Matrix filter for imposing discrete boundary conditions of the
   ! fictitious boundary into a matrix.
   integer, parameter, public :: FILTER_DISCBCMATFICT     =  8
 
@@ -217,7 +217,7 @@ contains
 
 !<description>
   ! This routine applies a filter chain on a (block) vector rx. All filters in
-  ! the chain are applied one after the other until the end of the array is 
+  ! the chain are applied one after the other until the end of the array is
   ! reached or the first filter is found with the filter tag FILTER_NOFILTER.
 !</description>
 
@@ -306,9 +306,9 @@ contains
   subroutine filter_applyFilterChainMat (rmatrix, RfilterChain)
 
 !<description>
-  ! This routine applies a filter chain on a (block) matrix rmatrix. All 
-  ! filters in the chain are applied one after the other until the end of 
-  ! the array is reached or the first filter is found with the filter 
+  ! This routine applies a filter chain on a (block) matrix rmatrix. All
+  ! filters in the chain are applied one after the other until the end of
+  ! the array is reached or the first filter is found with the filter
   ! tag FILTER_NOFILTER.
   !
   ! When implementing boundary conditions using filters, note that all

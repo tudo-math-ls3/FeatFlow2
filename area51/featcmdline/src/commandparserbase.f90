@@ -74,7 +74,7 @@ contains
     idest = 0
     bescape = .false.
     squotechar = ' '
-    do 
+    do
       if (i .gt. len(stemp)) exit
       
       ! Get the current character.
@@ -127,7 +127,7 @@ contains
     sdest = ""
     stemp = ""
   
-  end function 
+  end function
 
   !************************************************************************
 
@@ -167,7 +167,7 @@ contains
     bescape = .false.
     squotechar = ' '
     ilen = len_trim(stemp)
-    do 
+    do
       if (i .gt. ilen) exit
       
       ! Get the current character.
@@ -218,7 +218,7 @@ contains
       ilength = idest
     end if
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -320,7 +320,7 @@ contains
     ! Subduvides a line into an array of substrings.
     ! Quotation marks around substrings are removed.
     ! Escaped character are changed to standard characters.
-    ! The different words are separated by "\0" characters.         
+    ! The different words are separated by "\0" characters.
     ! the string is automatically trimmed.
   !</description>
   
@@ -423,7 +423,7 @@ contains
     ccurrchargroup = CHARGROUP_WHITESPACE
     btriggered = .false.
     
-    do 
+    do
     
       ! Stop is wew are behind the last character.
       if (ipos .gt. imaxlen) exit
@@ -1105,7 +1105,7 @@ contains
     
     do
 
-      ! Get the next token    
+      ! Get the next token
       call cmdprs_nexttoken (ssource,icurrenttokenstart,icurrenttokenend,ilength)
       
       ! Check the token.
@@ -1167,7 +1167,7 @@ contains
     
     do
 
-      ! Get the next token    
+      ! Get the next token
       call cmdprs_nexttoken (ssource,icurrenttokenstart,icurrenttokenend,ilength,.true.)
       
       !if (ssource(icurrenttokenstart:icurrenttokenend) .eq. ";") then

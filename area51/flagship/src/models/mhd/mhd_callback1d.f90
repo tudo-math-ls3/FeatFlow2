@@ -169,7 +169,7 @@
 !#
 !# 42.) mhd_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 43.) mhd_trafoNodalDenPreVel1d_sim
@@ -984,7 +984,7 @@ contains
         ! Compute auxiliary square root
         auxsqr = sqrt(rho_ij*aPow2_ij)
 
-        ! Compute matrix of right eigenvectors       
+        ! Compute matrix of right eigenvectors
         Reig(1,1) = auxf/aPow2_ij
         Reig(1,2) = RCONST(0.0)
         Reig(1,3) = auxs/aPow2_ij
@@ -1103,7 +1103,7 @@ contains
             (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
              IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
-#else        
+#else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
             (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
@@ -1301,7 +1301,7 @@ contains
                                    IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
                  RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-\
                                       IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),2))*cfi )
-#else   
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cfj,&
@@ -1490,7 +1490,7 @@ contains
       
       ! Set coefficient to zero
       DmatrixAtEdge(:,:,idx) = 0.0
-    end do  
+    end do
 
   end subroutine mhd_calcMatGalMatD1d_sim
 
@@ -2275,7 +2275,7 @@ contains
         ! Compute auxiliary square root
         auxsqr = sqrt(rho_ij*aPow2_ij)
 
-        ! Compute matrix of right eigenvectors       
+        ! Compute matrix of right eigenvectors
         Reig(1,1) = auxf/aPow2_ij
         Reig(1,2) = RCONST(0.0)
         Reig(1,3) = auxs/aPow2_ij
@@ -2515,7 +2515,7 @@ contains
                                    IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
                  RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-\
                                       IDX3(DcoeffsAtEdge,1,1,idx,0,0,0),2))*cfi )
-#else   
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cfj,&
@@ -3779,7 +3779,7 @@ contains
 
 !<description>
     ! This subroutine computes the transformation of the given
-    ! conservative variables to fluxes for the density, pressure 
+    ! conservative variables to fluxes for the density, pressure
     ! and velocity in 1D.
 !</description>
 
@@ -3902,7 +3902,7 @@ contains
 
 !<description>
     ! This subroutine computes the transformation of the given
-    ! conservative variables to differences for the density, 
+    ! conservative variables to differences for the density,
     ! pressure and velocity in 1D.
 !</description>
 
@@ -4098,7 +4098,7 @@ contains
 
 !<description>
     ! This subroutine computes the transformation of the given
-    ! conservative convervative to differences for the magnetic 
+    ! conservative convervative to differences for the magnetic
     ! field in 1D.
 !</description>
 

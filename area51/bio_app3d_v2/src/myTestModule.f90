@@ -37,7 +37,7 @@ contains
     real(DP), dimension(:), pointer :: p_Da_mass, p_Da
     integer , dimension(:) , allocatable :: iaux
 
-    call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
     call lsyssc_getbase_double (rmatrix,p_Da)
@@ -46,7 +46,7 @@ contains
     DO i = 1,nvt
         Do j = p_Kld(i), p_Kld(i+1)-1
             print *,i,": ",p_Kcol(j),": ",p_Da( j )
-        end Do            
+        end Do
     end do
     
   end subroutine
@@ -54,7 +54,7 @@ contains
 
 
   !<subroutine>
-  ! test purposes: print vektor 
+  ! test purposes: print vektor
   subroutine testPrintVector (rvector)
   
     type(t_vectorScalar) , intent(IN) :: rvector
@@ -63,7 +63,7 @@ contains
     ! some local variables
     integer :: i, j, nvt
 
-    call lsyssc_getbase_double (rvector,p_vector)		
+    call lsyssc_getbase_double (rvector,p_vector)
     nvt = rvector%NEQ
     
     DO i = 1,nvt
@@ -78,7 +78,7 @@ contains
   ! multiplication of the inverse lumped matrix by vector
   subroutine multInvLumpedVector (rmatrix, rvector)
 
-    type(t_matrixScalar) , intent(IN) :: rmatrix    
+    type(t_matrixScalar) , intent(IN) :: rmatrix
     type(t_vectorScalar) , intent(INOUT) :: rvector
     real(DP), dimension(:), pointer :: p_vector
     
@@ -89,20 +89,20 @@ contains
     real(DP), dimension(:), pointer :: p_Da_mass, p_Da
 
     !matrix initialization things
-    !call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+    !call lsyssc_getbase_Kld (rmatrix,p_Kld)
     !call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
     call lsyssc_getbase_double (rmatrix,p_Da)
     nvt = rmatrix%NEQ
     
     !vector initialization things
-    call lsyssc_getbase_double (rvector,p_vector)		
+    call lsyssc_getbase_double (rvector,p_vector)
     nvt = rvector%NEQ
     
     DO i = 1,nvt
         p_vector( i ) = (1.0_DP/p_Da(p_Kdiagonal(i)))*p_vector( i )
     end do
     
-  end subroutine   
+  end subroutine
 
 end module

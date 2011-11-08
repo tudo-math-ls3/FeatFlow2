@@ -13,7 +13,7 @@
 !#
 !#  1.) lsysbl_createVecBlockDirect
 !#      -> Create a block vector by specifying the size of the subblocks
-!# 
+!#
 !#  2.) lsysbl_createVecBlockIndirect
 !#      -> Create a block vector by copying the structure of another block
 !#         vector
@@ -92,7 +92,7 @@
 !#      -> Scale a block vector by a constant
 !#
 !# 25.) lsysbl_clearVector
-!#      -> Clear a block vector, i.e. overwrites all entries with 0.0 or 
+!#      -> Clear a block vector, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
 !# 26.) lsysbl_vectorLinearComb
@@ -162,7 +162,7 @@
 !#      -> Outputs information about the matrix (mostly used for debugging)
 !#
 !# 47.) lsysbl_clearMatrix
-!#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or 
+!#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
 !# 48.) lsysbl_convertVecFromScalar
@@ -196,7 +196,7 @@
 !#
 !# 57.) lsyssc_unshareMatrix
 !#      -> Renders a matrix independent, resets the sharing state
-!# 
+!#
 !# 58.) lsyssc_unshareVector
 !#      -> Renders a vector independent, resets the sharing state
 !#
@@ -282,21 +282,21 @@ module linearsystemblock
   !  (B2 0 )
   integer(I32), parameter, public :: LSYSBS_MSPEC_SADDLEPOINT       =        2
 
-  ! Block matrix is nearly of saddle-point type 
+  ! Block matrix is nearly of saddle-point type
   !  (A  B1)
   !  (B2 C )
   ! with C~0 being a stabilisation matrix
   integer(I32), parameter, public :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
 
   ! The block matrix is a submatrix of another block matrix and not
-  ! located at the diagonal of its parent. 
+  ! located at the diagonal of its parent.
   ! This e.g. modifies the way, boundary conditions are implemented
   ! into a matrix; see in the boundary condition implementation
   ! routines for details.
   integer(I32), parameter, public :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4
 
   ! The submatrices in the block matrix all share the same structure.
-  ! Submatrices are allowed to be empty. 
+  ! Submatrices are allowed to be empty.
   integer(I32), parameter, public :: LSYSBS_MSPEC_GROUPMATRIX       =        5
 
 !</constantblock>
@@ -344,7 +344,7 @@ module linearsystemblock
     type(t_blockDiscretisation), pointer :: p_rblockDiscr => null()
 
     ! A pointer to discretised boundary conditions for real boundary components.
-    ! These boundary conditions allow to couple multiple equations in the 
+    ! These boundary conditions allow to couple multiple equations in the
     ! system and do not belong only to one single scalar component of the
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBC
@@ -353,7 +353,7 @@ module linearsystemblock
     
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components.
-    ! These boundary conditions allow to couple multiple equations in the 
+    ! These boundary conditions allow to couple multiple equations in the
     ! system and do not belong only to one single scalar component of the
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
@@ -386,7 +386,7 @@ module linearsystemblock
     type(t_uuid) :: ruuid
 
     ! Total number of equations = rows in the whole matrix.
-    ! This usually coincides with NCOLS. NCOLS > NEQ indicates, that 
+    ! This usually coincides with NCOLS. NCOLS > NEQ indicates, that
     ! at least one block row in the block matrix is completely zero.
     integer :: NEQ         = 0
 
@@ -401,7 +401,7 @@ module linearsystemblock
     ! Number of blocks per column.
     integer :: nblocksPerCol = 0
 
-    ! Matrix specification tag. This is a bitfield coming from an OR 
+    ! Matrix specification tag. This is a bitfield coming from an OR
     ! combination of different LSYSBS_MSPEC_xxxx constants and specifies
     ! various details of the matrix. If it is =LSYSBS_MSPEC_GENERAL,
     ! the matrix is a usual matrix that needs no special handling.
@@ -424,13 +424,13 @@ module linearsystemblock
     ! with different trial and test functions.
     logical :: bidenticalTrialAndTest = .true.
 
-    ! A pointer to discretised boundary conditions for real boundary 
+    ! A pointer to discretised boundary conditions for real boundary
     ! components. If no boundary conditions are specified, p_rdiscreteBC
     ! can be set to NULL().
     type(t_discreteBC), pointer :: p_rdiscreteBC => null()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
-    ! components. If no fictitious boundary conditions are specified, 
+    ! components. If no fictitious boundary conditions are specified,
     ! p_rdiscreteBCfict can be set to NULL().
     type(t_discreteFBC), pointer :: p_rdiscreteBCfict => null()
     
@@ -448,12 +448,12 @@ module linearsystemblock
 !</types>
 
   interface lsysbl_createVectorBlock
-    module procedure lsysbl_createVecBlockDirect 
+    module procedure lsysbl_createVecBlockDirect
     module procedure lsysbl_createVecBlockDirectIntl
     module procedure lsysbl_createVecBlockDirectIntl2
     module procedure lsysbl_createVecBlockDirectDims
     module procedure lsysbl_createVecBlockDirectDims2
-    module procedure lsysbl_createVecBlockIndirect 
+    module procedure lsysbl_createVecBlockIndirect
     module procedure lsysbl_createVecBlockIndMat
     module procedure lsysbl_createVecBlockByDiscr
     module procedure lsysbl_createVecBlockByDiscrIntl
@@ -1232,7 +1232,7 @@ contains
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   integer, intent(in), optional :: cdataType
 
@@ -1292,7 +1292,7 @@ contains
   rx%NEQ     = n-1
   rx%nblocks = size(Isize)
   
-  ! The data of the vector belongs to us (we created the handle), 
+  ! The data of the vector belongs to us (we created the handle),
   ! not to somebody else.
   rx%bisCopy = .false.
   
@@ -1341,7 +1341,7 @@ contains
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   integer, intent(in), optional :: cdataType
 
@@ -1409,7 +1409,7 @@ contains
   rx%NEQ     = n-1
   rx%nblocks = size(Isize)
   
-  ! The data of the vector belongs to us (we created the handle), 
+  ! The data of the vector belongs to us (we created the handle),
   ! not to somebody else.
   rx%bisCopy = .false.
   
@@ -1458,7 +1458,7 @@ contains
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   integer, intent(in), optional :: cdataType
 
@@ -1519,7 +1519,7 @@ contains
   rx%NEQ     = n-1
   rx%nblocks = size(Isize)
   
-  ! The data of the vector belongs to us (we created the handle), 
+  ! The data of the vector belongs to us (we created the handle),
   ! not to somebody else.
   rx%bisCopy = .false.
   
@@ -1568,7 +1568,7 @@ contains
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   integer, intent(in), optional :: cdataType
 
@@ -1628,7 +1628,7 @@ contains
   rx%NEQ     = n-1
   rx%nblocks = iblocks
   
-  ! The data of the vector belongs to us (we created the handle), 
+  ! The data of the vector belongs to us (we created the handle),
   ! not to somebody else.
   rx%bisCopy = .false.
   
@@ -1680,7 +1680,7 @@ contains
   ! OPTIONAL: If set to YES, the vector will be filled with zero initially.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   integer, intent(in), optional :: cdataType
 
@@ -1741,7 +1741,7 @@ contains
   rx%NEQ     = n-1
   rx%nblocks = iblocks
   
-  ! The data of the vector belongs to us (we created the handle), 
+  ! The data of the vector belongs to us (we created the handle),
   ! not to somebody else.
   rx%bisCopy = .false.
   
@@ -1784,7 +1784,7 @@ contains
   ! Otherwise the content of rx is undefined.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, the new vector will
   ! receive the same data type as rtemplate.
   integer, intent(in), optional :: cdataType
@@ -1872,7 +1872,7 @@ contains
   
 !<description>
   ! Initialises the vector block structure rx based on a block discretisation
-  ! structure rblockDiscretisation. 
+  ! structure rblockDiscretisation.
   !
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
   ! is calculated according to the number of DOF`s indicated by the
@@ -1896,7 +1896,7 @@ contains
   ! Otherwise the content of rx is undefined.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
   integer, intent(in), optional :: cdataType
 
@@ -1952,7 +1952,7 @@ contains
   
 !<description>
   ! Initialises the vector block structure rx based on a block discretisation
-  ! structure rblockDiscretisation. 
+  ! structure rblockDiscretisation.
   !
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
   ! is calculated according to the number of DOF`s indicated by the
@@ -1979,7 +1979,7 @@ contains
   ! Otherwise the content of rx is undefined.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
   integer, intent(in), optional :: cdataType
 
@@ -2035,7 +2035,7 @@ contains
   
 !<description>
   ! Initialises the vector block structure rx based on a block discretisation
-  ! structure rblockDiscretisation. 
+  ! structure rblockDiscretisation.
   !
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
   ! is calculated according to the number of DOF`s indicated by the
@@ -2062,7 +2062,7 @@ contains
   ! Otherwise the content of rx is undefined.
   logical, intent(in), optional :: bclear
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
   integer, intent(in), optional :: cdataType
 
@@ -2117,8 +2117,8 @@ contains
                                            rblockDiscretisationTest)
   
 !<description>
-  ! Initialises the matrix block structure rmatrix based on a block 
-  ! discretisation structure rblockDiscretisation. 
+  ! Initialises the matrix block structure rmatrix based on a block
+  ! discretisation structure rblockDiscretisation.
   !
   ! The basic variables of the structure are initialised (number of blocks,
   ! pointer to the block discretisation). The submatrices of the matrix
@@ -2150,8 +2150,8 @@ contains
   integer :: NEQ,NCOLS
   integer, dimension(:), pointer :: p_Isize,p_Isize2
   
-  allocate(p_Isize(max(1,rblockDiscretisationTrial%ncomponents))) 
-  allocate(p_Isize2(max(1,rblockDiscretisationTrial%ncomponents))) 
+  allocate(p_Isize(max(1,rblockDiscretisationTrial%ncomponents)))
+  allocate(p_Isize2(max(1,rblockDiscretisationTrial%ncomponents)))
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF`s)
   ! of all the subblocks.
@@ -2230,7 +2230,7 @@ contains
   ! Number of blocks per column in the matrix
   integer, intent(in) :: nblocksPerCol
   
-  ! OPTIONAL: Number of blocks per row in the matrix. If not given, 
+  ! OPTIONAL: Number of blocks per row in the matrix. If not given,
   ! nblocksPerCol is used.
   integer, optional, intent(in) :: nblocksPerRow
 !</input>
@@ -2308,7 +2308,7 @@ contains
   ! vector multiplication (A^T x) is possible.
   logical, intent(in), optional :: btransposed
   
-  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! OPTIONAL: Data type identifier for the entries in the vector.
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
   integer, intent(in), optional :: cdataType
 
@@ -2437,7 +2437,7 @@ contains
       end do
       
       if (j .gt. nbpc) then
-        ! Let us hope this situation (an empty equation) never occurs - 
+        ! Let us hope this situation (an empty equation) never occurs -
         ! might produce some errors elsewhere :)
         rx%RvectorBlock(i)%NEQ  = 0
         rx%RvectorBlock(i)%NVAR = 1
@@ -2476,7 +2476,7 @@ contains
   subroutine lsysbl_assignDiscrIndirect (rtemplate,rx)
   
 !<description>
-  ! Assigns discretisation-related information (spatial discretisation, 
+  ! Assigns discretisation-related information (spatial discretisation,
   ! boundary conditions,...) to rx. The vector rtemplate is used as a
   ! template, so at the end of the routine, rx and rtemplate share the
   ! same discretisation.
@@ -2520,9 +2520,9 @@ contains
   subroutine lsysbl_assignDiscrIndirectMat (rtemplateMat,rx,btransposed)
   
 !<description>
-  ! Assigns discretisation-related information (spatial discretisation, 
-  ! boundary conditions,...) of a matrix to rx. The matrix rtemplateMat is 
-  ! used as a template, so at the end of the routine, rx and rtemplate 
+  ! Assigns discretisation-related information (spatial discretisation,
+  ! boundary conditions,...) of a matrix to rx. The matrix rtemplateMat is
+  ! used as a template, so at the end of the routine, rx and rtemplate
   ! share the same discretisation and boundary conditions.
   ! (More precisely, the blocks in rx and the diagonal blocks of
   !  rtemplateMat!)
@@ -2967,7 +2967,7 @@ contains
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
   !    <tex>  $$  Dy   =   cx * rMatrix * rx   +   cy * ry  $$  </tex>
-  ! Vector and matrix must be compatible to each other (same size, sorting 
+  ! Vector and matrix must be compatible to each other (same size, sorting
   ! strategy,...).
 !</description>
   
@@ -3088,14 +3088,14 @@ contains
   
 !<description>
   ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
-  ! of the diagonal blocks in the matrix rmatrix with the vector rvectorSrc and 
+  ! of the diagonal blocks in the matrix rmatrix with the vector rvectorSrc and
   ! stores the result into the vector rvectorDst:
   !   <tex>$$rvectorDst_i = dscale * D_i^{-1} * rvectorSrc_i  , i=1..nblocks$$</tex>
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
   
 !<input>
-  ! The matrix. 
+  ! The matrix.
   type(t_matrixBlock), intent(in) :: rmatrix
 
   ! The source vector.
@@ -3153,7 +3153,7 @@ contains
 !</description>
   
 !<input>
-  ! The matrix. 
+  ! The matrix.
   type(t_matrixScalar), intent(in) :: rmatrix
 
   ! The source vector.
@@ -3204,7 +3204,7 @@ contains
   ! If the destination vector is empty, a new vector is created and all
   ! data of rx is copied into that.
   ! If the destination vector ry exists in memory, it must be at least
-  ! as large as rx. All structural data as well as the content of rx is  
+  ! as large as rx. All structural data as well as the content of rx is
   ! transferred to ry, so rx and ry are compatible to each other afterwards.
 !</description>
 
@@ -3287,10 +3287,10 @@ contains
     ry%RvectorBlock(i)%h_Ddata = h_Ddata
     ry%RvectorBlock(i)%bisCopy = bisCopy
     ry%RvectorBlock(i)%cdataType = cdataType
-    ry%RvectorBlock(i)%iidxFirstEntry = ioffset 
+    ry%RvectorBlock(i)%iidxFirstEntry = ioffset
   end do
   
-  ! And finally copy the data. 
+  ! And finally copy the data.
   call lsysbl_copyVectorDirect (rx,ry)
    
   end subroutine
@@ -3442,12 +3442,12 @@ contains
   case (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     call lsysbl_getbase_double(rx,p_Ddata)
-    call lalg_scaleVectorDble (p_Ddata,c)  
+    call lalg_scaleVectorDble (p_Ddata,c)
 
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsysbl_getbase_single(rx,p_Fdata)
-    call lalg_scaleVectorSngl (p_Fdata,real(c,SP))  
+    call lalg_scaleVectorSngl (p_Fdata,real(c,SP))
 
   case DEFAULT
     call output_line('Unsupported data type!',&
@@ -3521,9 +3521,9 @@ contains
   ! Performs a linear combination: ry = cx * rx  +  cy * ry
   ! If rdest is given, the routine calculates rdest = cx * rx  +  cy * ry
   ! without overwriting ry.
-  ! All vectors must be compatible to each other (same size, sorting 
+  ! All vectors must be compatible to each other (same size, sorting
   ! strategy,...).
-!</description>  
+!</description>
   
 !<input>
   ! First source vector
@@ -3605,7 +3605,7 @@ contains
   
 !<description>
   ! Calculates a scalar product of two block vectors.
-  ! Both vectors must be compatible to each other (same size, sorting 
+  ! Both vectors must be compatible to each other (same size, sorting
   ! strategy,...).
 !</description>
   
@@ -3733,12 +3733,12 @@ contains
   case (ST_DOUBLE)
     ! Get the array and calculate the norm
     call lsysbl_getbase_double (rx,p_Ddata)
-    lsysbl_vectorNorm = lalg_norm (p_Ddata,cnorm,iposMax) 
+    lsysbl_vectorNorm = lalg_norm (p_Ddata,cnorm,iposMax)
     
   case (ST_SINGLE)
     ! Get the array and calculate the norm
     call lsysbl_getbase_single (rx,p_Fdata)
-    lsysbl_vectorNorm = lalg_norm (p_Fdata,cnorm,iposMax) 
+    lsysbl_vectorNorm = lalg_norm (p_Fdata,cnorm,iposMax)
     
   case DEFAULT
     call output_line('Unsupported data type!',&
@@ -3751,7 +3751,7 @@ contains
   !****************************************************************************
 !<subroutine>
   
-  subroutine lsysbl_vectorNormBlock (rx,Cnorms,Dnorms,IposMax) 
+  subroutine lsysbl_vectorNormBlock (rx,Cnorms,Dnorms,IposMax)
   
 !<description>
   ! Calculates the norms of all subvectors in a given block vector.
@@ -3767,14 +3767,14 @@ contains
   ! Vector to calculate the norm of.
   type(t_vectorBlock), intent(in) :: rx
 
-  ! Identifier list. For every subvector in rx, this identifies the norm 
+  ! Identifier list. For every subvector in rx, this identifies the norm
   ! to calculate. Each entry is a LINALG_NORMxxxx constants.
   integer, dimension(:), intent(in) :: Cnorms
 !</input>
 
 !<output>
-  ! OPTIONAL: For each subvector: if the MAX norm is to calculate, 
-  ! this returns the position of the largest element in that subvector. 
+  ! OPTIONAL: For each subvector: if the MAX norm is to calculate,
+  ! this returns the position of the largest element in that subvector.
   ! If another norm is to be calculated, the result is undefined.
   integer, dimension(:), intent(out), optional :: IposMax
 !</output>
@@ -3793,7 +3793,7 @@ contains
   nblk = min(rx%nblocks,size(Cnorms))
   if (present(IposMax)) nblk = min(nblk,size(IposMax))
 
-  ! Loop over the subvectors. Do not calculate more subvectors as we 
+  ! Loop over the subvectors. Do not calculate more subvectors as we
   ! are allowed to.
   do i=1,nblk
     ! Calculate the norm of that subvector.
@@ -3964,12 +3964,12 @@ contains
   ! rscalarVec will contain the information from all subvectors in rvector
   ! in the order specified by rvector.
   ! If bshare=TRUE, the routine shares the information of rvector
-  ! with rscalarVec without allocating new memory, so changing the content of 
-  ! rscalarVec will also change rvector. The bisCopy flag of the subvector 
+  ! with rscalarVec without allocating new memory, so changing the content of
+  ! rscalarVec will also change rvector. The bisCopy flag of the subvector
   ! in the block vector will be set to TRUE.
   !
   ! If the source vector contains exactly one subvector, the routine copies
-  ! additional information (pointer to the discretisation structure) to 
+  ! additional information (pointer to the discretisation structure) to
   ! rscalarVec. Otherwise, rscalarVec will contain only the basic data.
 !</description>
   
@@ -4058,12 +4058,12 @@ contains
   
 !<description>
   ! This routine enforces the structure of the vector rtemplate
-  ! in the vector rvector. 
+  ! in the vector rvector.
   !
   ! WARNING: This routine should be used with care if you know
   !          what you are doing !!!
-  ! All structural data of rtemplate (boundary conditions, spatial 
-  ! discretisation, size,sorting,...) are copied from rtemplate to 
+  ! All structural data of rtemplate (boundary conditions, spatial
+  ! discretisation, size,sorting,...) are copied from rtemplate to
   ! rvector without checking the compatibility!!!
   !
   ! The only check in this routine is that rvector%NEQ is
@@ -4160,11 +4160,11 @@ contains
   
 !<description>
   ! This routine enforces the structure of the vector rtemplate
-  ! in the vector rvector. 
+  ! in the vector rvector.
   !
   ! WARNING: This routine should be used with care if you know
   !          what you are doing !!!
-  ! 
+  !
   ! The routine enforces SIZE(Isize) subvectors in rvector and
   ! sets the size of the i-th subvector to Isize(i).
   !
@@ -4231,18 +4231,18 @@ contains
   
 !<description>
   ! This routine enforces the structure of the discretisation rdiscretisaation
-  ! in the vector rvector. 
+  ! in the vector rvector.
   !
   ! WARNING: This routine should be used with care if you know
   !          what you are doing !!!
-  ! 
+  !
   ! The routine can be used to save space if multiple vectors with a different
   ! structure share the same memory array. Nevertheless, the caller must
   ! take care of which information is aactually in the arrays.
   !
   ! The only check in this routine is that the free space in the vector is
-  ! at least as large as NEQ specified by the discretisation structure; 
-  ! otherwise an error is thrown. The data type of rvector is also not 
+  ! at least as large as NEQ specified by the discretisation structure;
+  ! otherwise an error is thrown. The data type of rvector is also not
   ! changed.
 !</description>
   
@@ -4308,7 +4308,7 @@ contains
   ! This routine must be called, if the application changes structural
   ! information in one or more of the matrix blocks of a submatrix.
   ! In this case, this routine recalculates crucial information
-  ! of the global matrix (number of blocks, global NEQ,...) by checking 
+  ! of the global matrix (number of blocks, global NEQ,...) by checking
   ! the submatrices.
 !</description>
   
@@ -4362,7 +4362,7 @@ contains
   subroutine lsysbl_clearMatrix (rmatrix,dvalue)
   
 !<description>
-  ! Clears the entries in all submatrices of a block matrix. 
+  ! Clears the entries in all submatrices of a block matrix.
   ! All entries are overwritten with 0.0 or with dvalue (if specified).
 !</description>
   
@@ -4398,7 +4398,7 @@ contains
   subroutine lsysbl_scaleMatrix (rmatrix,dvalue)
   
 !<description>
-  ! Scales the entries in all submatrices of a block matrix. 
+  ! Scales the entries in all submatrices of a block matrix.
 !</description>
   
 !<inputoutput>
@@ -4453,7 +4453,7 @@ contains
   ! Remark: There is never memory allocated on the heap for the sorting
   !  permutation. A matrix is never the 'owner' of a permutation, i.e.
   !  does not maintain it. Therefore, copying a permutation in one of
-  !  the submatrices means copying the corresponding handle. 
+  !  the submatrices means copying the corresponding handle.
   !  The application must keep track of the permutations.
 !</description>
   
@@ -4468,25 +4468,25 @@ contains
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from
   !   rdestMatrix if there is any. Releases memory if necessary.
   !   Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
   ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   structural data as rsourceMatrix and therefore shares the same structure.
-  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of 
-  !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of
+  !   rsourceMatrix. If necessary, new memory is allocated for the structure.
   !   If rdestMatrix already contains allocated memory, structural data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
-  !   of the structure; new memory is allocated if necessary (the same as 
+  !   of the structure; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
   !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
   !   rsourceMatrix and is therefore a third matrix sharing the same structure
-  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the
   !   other matrix have the same structure).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
@@ -4503,9 +4503,9 @@ contains
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from
   !   rdestMatrix if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed.
   ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
@@ -4514,13 +4514,13 @@ contains
   !   If necessary, new memory is allocated for the content.
   !   If rdestMatrix already contains allocated memory, content data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
-  !   of the content; new memory is allocated if necessary (the same as 
+  !   of the content; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
   !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
   !   rsourceMatrix and is therefore a third matrix sharing the same content
-  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the
   !   other matrix have the same content).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
@@ -4534,7 +4534,7 @@ contains
 !<output>
   ! Destination matrix.
   type(t_matrixBlock), intent(inout) :: rdestMatrix
-!</output>  
+!</output>
 
 !</subroutine>
 
@@ -4602,7 +4602,7 @@ contains
   ! information.
   !
   ! We follow the following convention:
-  !  Structure = NEQ, sorting permutation(s), discretisation-related 
+  !  Structure = NEQ, sorting permutation(s), discretisation-related
   !              information, boundary conditions.
   !  Content   = Enties in the vector.
   !
@@ -4635,9 +4635,9 @@ contains
   ! of ry. Not all flags are possible!
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Ignore the content of rx.
-  ! LSYSSC_DUP_REMOVE : Removes any existing content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing content from
   !   ry if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS : Removes any existing content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing content from
   !   ry if there is any. No memory is released, handles are simply
   !   dismissed.
   ! LSYSSC_DUP_SHARE : ry receives the same handles for
@@ -4651,20 +4651,20 @@ contains
   !   Note that this respects the ownership! I.e. if the destination vector is not
   !   the owner of the content/structure data arrays, new memory is allocated to
   !   prevent the actual owner from getting destroyed!
-  ! LSYSSC_DUP_COPYOVERWRITE:   The destination vector gets a copy of the content 
+  ! LSYSSC_DUP_COPYOVERWRITE:   The destination vector gets a copy of the content
   !   of rx. If necessary, new memory is allocated.
   !   If the destination vector already contains allocated memory, content
   !   data is simply copied from rx into that.
   !   The ownership of the content/data arrays is not respected, i.e. if the
   !   destination vector is not the owner, the actual owner of the data arrays is
   !   modified, too!
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of
   !   rx belongs to rx, ry gets a copy
-  !   of the content; new memory is allocated if necessary (the same as 
+  !   of the content; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the content of rx belongs to another
   !   vector than rx, ry receives the same handles as
   !   rx and is therefore a third vector sharing the same content
-  !   (the same as LSYSSC_DUP_SHARE, so rx, ry and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rx, ry and the
   !   other vector have the same content).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size in rsourceMatrix but no data is copied;
@@ -4728,7 +4728,7 @@ contains
         ry%RvectorBlock(i)%h_Ddata = h_Ddata
         ry%RvectorBlock(i)%bisCopy = bisCopy
         ry%RvectorBlock(i)%cdataType = cdataType
-        ry%RvectorBlock(i)%iidxFirstEntry = ioffset 
+        ry%RvectorBlock(i)%iidxFirstEntry = ioffset
       end do
 
     end if
@@ -4736,7 +4736,7 @@ contains
     ! Now the content
 
     select case (cdupContent)
-    case (LSYSSC_DUP_IGNORE) 
+    case (LSYSSC_DUP_IGNORE)
       ! Nothing to do
     
     case (LSYSSC_DUP_REMOVE)
@@ -4787,7 +4787,7 @@ contains
         ry%bisCopy = .false.
       end if
       
-      if (ry%h_Ddata .ne. ST_NOHANDLE) then    
+      if (ry%h_Ddata .ne. ST_NOHANDLE) then
         call storage_getsize (ry%h_Ddata, isize)
         if (isize .lt. rx%NEQ) then
           ! Reallocate by first releasing the data
@@ -4805,7 +4805,7 @@ contains
     case (LSYSSC_DUP_COPYOVERWRITE)
     
       ! Some basic checks
-      if (ry%h_Ddata .ne. ST_NOHANDLE) then    
+      if (ry%h_Ddata .ne. ST_NOHANDLE) then
         call storage_getsize (ry%h_Ddata, isize)
         if (isize .lt. rx%NEQ) then
           ! Reallocate by first releasing the data
@@ -4852,7 +4852,7 @@ contains
           ry%bisCopy = .false.
         end if
         
-        if (ry%h_Ddata .ne. ST_NOHANDLE) then    
+        if (ry%h_Ddata .ne. ST_NOHANDLE) then
           call storage_getsize (ry%h_Ddata, isize)
           if (isize .lt. rx%NEQ) then
             ! Reallocate by first releasing the data
@@ -4898,8 +4898,8 @@ contains
     ! not changed.
     type(t_vectorBlock), intent(inout) :: ry
 
-      ! Allocate memory   
-      ry%cdataType = rx%cdataType 
+      ! Allocate memory
+      ry%cdataType = rx%cdataType
       ry%bisCopy = .false.
       call storage_new ('lsyssc_duplicateVector','vec-copy',rx%NEQ,&
                         ry%cdataType, ry%h_Ddata, ST_NEWBLOCK_NOINIT)
@@ -5083,7 +5083,7 @@ contains
     do j = 1, rmatrixSrc%nblocksPerRow
       ! Loop through all rows in that column. Find the first matrix that can
       ! provide us with a sorting strategy we can use.
-      ! We can assume that all submatrices in that matrix column have 
+      ! We can assume that all submatrices in that matrix column have
       ! the same sorting strategy, otherwise something like matrix-vector
       ! multiplication will quickly lead to a program failure...
       do i = 1,rmatrixSrc%nblocksPerCol
@@ -5124,7 +5124,7 @@ contains
 
 !<input>
   ! An array of sorting strategy identifiers (SSTRAT_xxxx), each for one
-  ! subvector of the global vector. 
+  ! subvector of the global vector.
   ! The negative value of this identifier is saved to the corresponding
   ! subvector.
   ! DIMENSION(rvector\%nblocks)
@@ -5143,7 +5143,7 @@ contains
   
 !</subroutine>
 
-  ! Install the sorting strategy in every block. 
+  ! Install the sorting strategy in every block.
   rvector%RvectorBlock(1:rvector%nblocks)%isortStrategy = &
     -abs(IsortStrategy(1:rvector%nblocks))
   rvector%RvectorBlock(1:rvector%nblocks)%h_IsortPermutation = &
@@ -5300,7 +5300,7 @@ contains
     ! ilastSubvector is the index of a scalar subvector in rvectorSrc
     ! which should be used as the last vector in rvectorDest.
     !
-    ! rvectorDest will therefore contain the subvectors 
+    ! rvectorDest will therefore contain the subvectors
     ! ifirstSubvector..ilastSubvector of rvectorSrc.
     !
     ! If bshare=TRUE, the vector rvectorDest will be created by copying
@@ -5310,7 +5310,7 @@ contains
     ! If bshare=FALSE (the standard setting), a new vector will be created
     ! and the content of the specified subvectors will be copied to that.
     !
-    ! The newly created block vector will not have any block discretisation 
+    ! The newly created block vector will not have any block discretisation
     ! structure attached!
     ! The caller may therefore want to use lsysbl_assignDiscrDirectVec
     ! to specify the correct discretisation structure after
@@ -5321,11 +5321,11 @@ contains
   ! Source block vector
   type(t_vectorBlock), intent(in) :: rvectorSrc
 
-  ! OPTIONAL: Number of the subvector of rvectorSrc that should be used as first 
+  ! OPTIONAL: Number of the subvector of rvectorSrc that should be used as first
   ! subvector in rvectorDest. Default value is =1.
   integer, intent(in), optional :: ifirstSubvector
 
-  ! OPTIONAL: Number of the subvector of rvectorSrc that should be used as 
+  ! OPTIONAL: Number of the subvector of rvectorSrc that should be used as
   ! last subvector in rvectorDest. Default value is the number of blocks
   ! in rvectorSrc.
   integer, intent(in), optional :: ilastSubvector
@@ -5412,9 +5412,9 @@ contains
                           rvectorDest%h_Ddata, ST_NEWBLOCK_NOINIT)
       rvectorDest%RvectorBlock(1:ncount)%h_Ddata = rvectorDest%h_Ddata
     else
-      ! The new vector should be a subvector of the old one. 
-      ! That means, we have to set the index of the first entry 
-      ! in rvectorDest to the first entry of the specified first 
+      ! The new vector should be a subvector of the old one.
+      ! That means, we have to set the index of the first entry
+      ! in rvectorDest to the first entry of the specified first
       ! subvector in rvectorSrc.
       rvectorDest%iidxFirstEntry = rvectorSrc%RvectorBlock(ifirst)%iidxFirstEntry
       
@@ -5445,7 +5445,7 @@ contains
           LSYSSC_DUP_COPY,idupflag)
     end do
     
-  end subroutine 
+  end subroutine
 
   !****************************************************************************
   
@@ -5465,7 +5465,7 @@ contains
   ! ilastBlock is the index the last diagonal block in rdestMatrix
   ! which should be put to rdestMatrix.
   !
-  ! The newly created block matrix will not have any block discretisation 
+  ! The newly created block matrix will not have any block discretisation
   ! structure attached!
   ! The caller may therefore want to use lsysbl_assignDiscrDirectMat
   ! to specify the correct discretisation structure after
@@ -5486,7 +5486,7 @@ contains
   ! Remark: There is never memory allocated on the heap for the sorting
   !  permutation. A matrix is never the 'owner' of a permutation, i.e.
   !  does not maintain it. Therefore, copying a permutation in one of
-  !  the submatrices means copying the corresponding handle. 
+  !  the submatrices means copying the corresponding handle.
   !  The application must keep track of the permutations.
   !
   ! Remark 2: When ifirstBlockCol,ilastBlockCol is not specified, the routine
@@ -5494,7 +5494,7 @@ contains
   !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlock:ilastBlock)
   !  If ifirstBlockCol,ilastBlockCol is specified, the routine creates
   !  a submatrix based on X/Y block coordinates. ifirstBlock,ilastBlock in this
-  !  case specify the Y-coordinates in the block matrix while 
+  !  case specify the Y-coordinates in the block matrix while
   !  ifirstBlockCol,ilastBlockCol specify the X-coordinates:
   !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockCol:ilastBlockCol)
 !</description>
@@ -5503,25 +5503,25 @@ contains
   ! Source matrix.
   type(t_matrixBlock), intent(in) :: rsourceMatrix
   
-  ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to 
+  ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to
   ! position (1,1) into rdestMatrix. Default value is =1.
   ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
   ! to (1,1) of rdestMatrix.
   integer, intent(in), optional :: ifirstBlock
 
-  ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to 
+  ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to
   ! rdestMatrix. Default value is the number of blocks in rsourceMatrix.
   ! If ilastBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ilastBlock,ilastBlock) is put
   ! to (ndiagBlocks,ndiagblocks) of rdestMatrix.
   integer, intent(in), optional :: ilastBlock
 
-  ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
+  ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to
   ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
   integer, intent(in), optional :: ifirstBlockCol
 
-  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
+  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to
   ! rdestMatrix. Default value is ilastBlock.
   integer, intent(in), optional :: ilastBlockCol
 
@@ -5539,25 +5539,25 @@ contains
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from
   !   rdestMatrix if there is any. Releases memory if necessary.
   !   Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
   ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   structural data as rsourceMatrix and therefore shares the same structure.
-  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of 
-  !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of
+  !   rsourceMatrix. If necessary, new memory is allocated for the structure.
   !   If rdestMatrix already contains allocated memory, structural data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
-  !   of the structure; new memory is allocated if necessary (the same as 
+  !   of the structure; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
   !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
   !   rsourceMatrix and is therefore a third matrix sharing the same structure
-  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the
   !   other matrix have the same structure).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
@@ -5574,9 +5574,9 @@ contains
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from
   !   rdestMatrix if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed.
   ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
@@ -5585,13 +5585,13 @@ contains
   !   If necessary, new memory is allocated for the content.
   !   If rdestMatrix already contains allocated memory, content data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
-  !   of the content; new memory is allocated if necessary (the same as 
+  !   of the content; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
   !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
   !   rsourceMatrix and is therefore a third matrix sharing the same content
-  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the
   !   other matrix have the same content).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
@@ -5603,14 +5603,14 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Destination matrix. 
+  ! Destination matrix.
   ! If the matrix exists and has exactly as many blocks as specified by
   ! ifirstBlock/ilastBlock, the destination matrix is kept and overwritten
   ! as specified by cdupStructure/cdubContent.
   ! If the matrix exists but the block count does not match, the matrix
   ! is released and recreated in the correct size.
   type(t_matrixBlock), intent(inout) :: rdestMatrix
-!</inputoutput>  
+!</inputoutput>
 
 !</subroutine>
 
@@ -5658,7 +5658,7 @@ contains
     end if
     
     ! For every submatrix in the source matrix, call the 'scalar' variant
-    ! of duplicateMatrix. 
+    ! of duplicateMatrix.
     if (rdestMatrix%NEQ .eq. 0) &
       call lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1),(ilastX-ifirstX+1))
       
@@ -5749,7 +5749,7 @@ contains
   ! Remark: There is never memory allocated on the heap for the sorting
   !  permutation. A matrix is never the 'owner' of a permutation, i.e.
   !  does not maintain it. Therefore, copying a permutation in one of
-  !  the submatrices means copying the corresponding handle. 
+  !  the submatrices means copying the corresponding handle.
   !  The application must keep track of the permutations.
   !
   ! Remark 2: When ifirstBlockCol,ilastBlockCol is not specified, the routine
@@ -5757,7 +5757,7 @@ contains
   !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlock:ilastBlock)
   !  If ifirstBlockCol,ilastBlockCol is specified, the routine creates
   !  a submatrix based on X/Y block coordinates. ifirstBlock,ilastBlock in this
-  !  case specify the Y-coordinates in the block matrix while 
+  !  case specify the Y-coordinates in the block matrix while
   !  ifirstBlockCol,ilastBlockCol specify the X-coordinates:
   !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockCol:ilastBlockCol)
   !
@@ -5765,30 +5765,30 @@ contains
   !  with no discretisation structure is created. The 'local' discretisation
   !  structures in the scalar matrices will remain.
   !  If the destination matrix is based on a discretisation structure, the
-  !  discretisation structures of the scalar matrices in the source matrix 
+  !  discretisation structures of the scalar matrices in the source matrix
   !  is changed according to this 'guiding' block discretisation structure.
 !</description>
   
 !<input>
-  ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to 
+  ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to
   ! position (1,1) into rdestMatrix. Default value is =1.
   ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
   ! to (1,1) of rdestMatrix.
   integer, intent(in), optional :: ifirstBlock
 
-  ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to 
+  ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to
   ! rdestMatrix. Default value is the number of blocks in rsourceMatrix.
   ! If ilastBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ilastBlock,ilastBlock) is put
   ! to (ndiagBlocks,ndiagblocks) of rdestMatrix.
   integer, intent(in), optional :: ilastBlock
 
-  ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
+  ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to
   ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
   integer, intent(in), optional :: ifirstBlockCol
 
-  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
+  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to
   ! rdestMatrix. Default value is ilastBlock.
   integer, intent(in), optional :: ilastBlockCol
 
@@ -5805,11 +5805,11 @@ contains
   ! Source matrix.
   type(t_matrixBlock), intent(inout) :: rsourceMatrix
 
-  ! Destination matrix. 
+  ! Destination matrix.
   ! If necessary, this matrix is regenerated based on the size of the matrix
   ! part to be extracted from rsourceMatrix
   type(t_matrixBlock), intent(inout) :: rdestMatrix
-!</inputoutput>  
+!</inputoutput>
 
 !</subroutine>
 
@@ -5859,7 +5859,7 @@ contains
     end if
     
     ! Move the source matrix to the destination matrix.
-    !    
+    !
     ! loop over all columns and rows in the source matrix
     do j=ifirstX,ilastX
       do i=ifirstY,ilastY
@@ -5868,7 +5868,7 @@ contains
         if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScale)) then
         
           ! For every submatrix in the source matrix, call the 'scalar' variant
-          ! of moveMatrix. 
+          ! of moveMatrix.
           call lsyssc_moveMatrix(rsourceMatrix%RmatrixBlock(i,j),&
               rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1))
                
@@ -5933,7 +5933,7 @@ contains
   ! This routine checks if the submatrix at position (irow,icolumn)
   ! is present in the matrix rmatrix or not.
   !
-  ! Note: If the rmatrix identifies an empty/uninitialised matrix, 
+  ! Note: If the rmatrix identifies an empty/uninitialised matrix,
   ! .false. is returned.
 !</description>
   
@@ -5948,7 +5948,7 @@ contains
   integer, intent(in) :: icolumn
   
   ! OPTIONAL: Whether to check the scaling factor.
-  ! FALSE: A scaling factor of 0.0 disables a submatrix. 
+  ! FALSE: A scaling factor of 0.0 disables a submatrix.
   !        This is the standard setting.
   ! TRUE: The scaling factor is ignored.
   logical, intent(in), optional :: bignoreScaleFactor
@@ -5956,7 +5956,7 @@ contains
 
 !<output>
   ! Whether the submatrix at position (irow,icolumn) exists or not.
-!</output>  
+!</output>
 
 !</function>
     logical :: bscale
@@ -5993,7 +5993,7 @@ contains
 !<description>
   ! Resize the vector block structure rx. Isize is an array
   ! of integers containing the length of the individual blocks.
-  ! 
+  !
   ! Remark: If the vector structure rx is not initialized, then
   ! it cannot be resized and the routine stops with an error.
   ! If it exists already, then the total memory on the heap is
@@ -6145,7 +6145,7 @@ contains
       rx%RvectorBlock(i)%iidxFirstEntry = n
       n = n + rx%RvectorBlock(i)%NEQ*rx%RvectorBlock(i)%NVAR
 
-      ! Remove any sorting strategy 
+      ! Remove any sorting strategy
       rx%RvectorBlock(i)%isortStrategy      = 0
       rx%RvectorBlock(i)%h_iSortPermutation = ST_NOHANDLE
     end do
@@ -6202,7 +6202,7 @@ contains
   ! Remark: If the vector structure rx is not initialized, then
   ! it cannot be resized and the routine stops with an error.
   ! If it exists already, then the total memory on the heap is
-  ! reallocated if "(rx%nblocks*isize) > SIZE(rx)", that is, 
+  ! reallocated if "(rx%nblocks*isize) > SIZE(rx)", that is,
   ! the new dimension of rx exceeds that of the old vectors. If the old
   ! vector is larger than the new one, then the dimensions of the
   ! subvectors are only adjusted without reallocation.
@@ -6268,7 +6268,7 @@ contains
 
 !<description>
   ! Resize the vector block structure rx based on a block discretisation
-  ! structure rblockDiscretisation. 
+  ! structure rblockDiscretisation.
   !
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
   ! is calculated according to the number of DOF`s indicated by the
@@ -6348,8 +6348,8 @@ contains
   ! the template vector. If rx has not been initialized, than it is
   ! initialized adopting the same memory layout as the template vector.
   !
-  ! Remark: If the vector exists already, then the total memory on 
-  ! the heap is reallocated if "SIZE(rTemplate) > SIZE(rx)", that is, 
+  ! Remark: If the vector exists already, then the total memory on
+  ! the heap is reallocated if "SIZE(rTemplate) > SIZE(rx)", that is,
   ! the new dimension of rx exceeds that of the old vectors. If the old
   ! vector is larger than the new one, then the dimensions of the
   ! subvectors are only adjusted without reallocation.
@@ -6442,8 +6442,8 @@ contains
     ! the template matrix. If rx has not been initialized, than it is
     ! initialized adopting the same memory layout as the template matrix.
     !
-    ! Remark: If the vector exists already, then the total memory on 
-    ! the heap is reallocated if "rtemplateMat%NCOLS > SIZE(rx)", that is, 
+    ! Remark: If the vector exists already, then the total memory on
+    ! the heap is reallocated if "rtemplateMat%NCOLS > SIZE(rx)", that is,
     ! the new dimension of rx exceeds that of the old vector. If the old
     ! vector is larger than the new one, then the dimensions of the
     ! subvectors are only adjusted without reallocation.
@@ -6593,7 +6593,7 @@ contains
         end do
 
         if (j .gt. rtemplateMat%nblocksPerCol) then
-          ! Let us hope this situation (an empty equation) never occurs - 
+          ! Let us hope this situation (an empty equation) never occurs -
           ! might produce some errors elsewhere :)
           rx%RvectorBlock(i)%NEQ = 0
           rx%RvectorBlock(i)%iidxFirstEntry = 0
@@ -6817,7 +6817,7 @@ contains
   ! so changing the content of rmatrix will change rscalarMat, too.
   ! In contrast to lsysbl_createMatFromScalar, the 1x1 block matrix rmatrix
   ! is marked as template matrix, whereas the imatrixSpec flag of the original
-  ! scalar matrix rscalarMat is set to LSYSSC_MSPEC_ISCOPY. This allows to 
+  ! scalar matrix rscalarMat is set to LSYSSC_MSPEC_ISCOPY. This allows to
   ! release the scalar matrix without releasing the 1x1 block matrix.
 !</description>
   
@@ -6903,25 +6903,25 @@ contains
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix structure from
   !   rdestMatrix if there is any. Releases memory if necessary.
   !   Does not delete 'static' information like NEQ,NCOLS,NA,...
-  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix structure from
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
   ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
   !   structural data as rsourceMatrix and therefore shares the same structure.
-  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of 
-  !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
+  ! LSYSSC_DUP_COPY : rdestMatrix gets a copy of the structure of
+  !   rsourceMatrix. If necessary, new memory is allocated for the structure.
   !   If rdestMatrix already contains allocated memory, structural data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the structure of
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
-  !   of the structure; new memory is allocated if necessary (the same as 
+  !   of the structure; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
   !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
   !   rsourceMatrix and is therefore a third matrix sharing the same structure
-  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the
   !   other matrix have the same structure).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
@@ -6938,9 +6938,9 @@ contains
   ! One of the LSYSSC_DUP_xxxx flags:
   ! LSYSSC_DUP_IGNORE : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
-  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from 
+  ! LSYSSC_DUP_REMOVE : Removes any existing matrix content from
   !   rdestMatrix if there is any. Releases memory if necessary.
-  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from 
+  ! LSYSSC_DUP_DISMISS : Removes any existing matrix content from
   !   rdestMatrix if there is any. No memory is released, handles are simply
   !   dismissed.
   ! LSYSSC_DUP_SHARE : rdestMatrix receives the same handles for
@@ -6949,13 +6949,13 @@ contains
   !   If necessary, new memory is allocated for the content.
   !   If rdestMatrix already contains allocated memory, content data
   !   is simply copied from rsourceMatrix into that.
-  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of 
+  ! LSYSSC_DUP_ASIS : Duplicate by ownership. If the content of
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
-  !   of the content; new memory is allocated if necessary (the same as 
+  !   of the content; new memory is allocated if necessary (the same as
   !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
   !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
   !   rsourceMatrix and is therefore a third matrix sharing the same content
-  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the
   !   other matrix have the same content).
   ! LSYSSC_DUP_EMPTY : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
@@ -6971,9 +6971,9 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Destination matrix where the source matrix should be put into. 
+  ! Destination matrix where the source matrix should be put into.
   type(t_matrixBlock), intent(inout) :: rdestMatrix
-!</inputoutput>  
+!</inputoutput>
   
 !</subroutine>
 
@@ -7086,7 +7086,7 @@ contains
       p_fpdbDataItem%ctype = FPDB_LINK
     else
       p_fpdbDataItem%ctype = FPDB_NULL
-    end if  
+    end if
 
     ! Fill the array of data items: p_rdiscreteBCfict
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
@@ -7305,7 +7305,7 @@ contains
                size(rmatrix%RmatrixBlock,1)*&
                size(rmatrix%RmatrixBlock,2)))
 
-      ! For each scalar submatrix a new ObjectItem is created and 
+      ! For each scalar submatrix a new ObjectItem is created and
       ! associated to the DataItem of the array of scalar matrices.
       do j = 1, rmatrix%nblocksPerRow
         do i = 1, rmatrix%nblocksPerCol
@@ -7333,7 +7333,7 @@ contains
   subroutine lsysbl_restoreFpdbObjectVec (rfpdbObjectItem, rvector)
 
 !<description>
-    ! This subroutine restores the block vector from the abstract ObjectItem 
+    ! This subroutine restores the block vector from the abstract ObjectItem
 !</description>
 
 !<input>
@@ -7566,7 +7566,7 @@ contains
   subroutine lsysbl_restoreFpdbObjectMat (rfpdbObjectItem, rmatrix)
 
 !<description>
-    ! This subroutine restores the block matrix from the abstract ObjectItem 
+    ! This subroutine restores the block matrix from the abstract ObjectItem
 !</description>
 
 !<input>
@@ -7842,13 +7842,13 @@ contains
   ! Revoke the sharing state of the matrix data. If the matrix
   ! is not the owner of the data, a new data array is allocated
   ! in memory and the data of the old structure is copied.
-  logical, intent(in) :: bdata  
+  logical, intent(in) :: bdata
 !</input>
 
 !<inputoutput>
   ! Matrix to be changed matrix.
   type(t_matrixBlock), intent(inout) :: rmatrix
-!</inputoutput>  
+!</inputoutput>
 
 !</subroutine>
 
@@ -7861,7 +7861,7 @@ contains
       do i=1,rmatrix%nblocksPerCol
         call lsyssc_unshareMatrix (rmatrix%RmatrixBlock(i,j),bstructure,bdata)
       end do
-    end do    
+    end do
     
   end subroutine
     
@@ -7877,13 +7877,13 @@ contains
   ! structure/data, nothing happens. If the vector shares its structure/data
   ! with another vector, the new memory is allocated, the old data is
   ! copied and the new independent data arrays are associated
-  ! to the vector. 
+  ! to the vector.
 !</description>
   
 !<output>
   ! Vector to be changed matrix.
   type(t_vectorBlock), intent(inout) :: rvector
-!</output>  
+!</output>
 
 !</subroutine>
 
@@ -7926,11 +7926,11 @@ contains
   ! matrix. The source matrix remains as 'shared copy' of the destination
   ! matrix and can (and should) be removed.
   !
-  ! Remark: If no block discretisation is assigned to the destination matrix, 
+  ! Remark: If no block discretisation is assigned to the destination matrix,
   !  the 'local' discretisation structures in the source matrices will
   !  be transferred to the destination matrix.
   !  If a block discretisation is assigned to the destination matrix, the
-  !  discretisation structures of the scalar matrices in the source matrix 
+  !  discretisation structures of the scalar matrices in the source matrix
   !  is changed according to this 'guiding' block discretisation structure.
 !</description>
 
@@ -7953,9 +7953,9 @@ contains
   ! matrix remains as 'shared copy' of the destination.
   type(t_matrixBlock), intent(inout) :: rsourceMatrix
 
-  ! Destination matrix where the source matrix should be put into. 
+  ! Destination matrix where the source matrix should be put into.
   type(t_matrixBlock), intent(inout) :: rdestMatrix
-!</inputoutput>  
+!</inputoutput>
   
 !</subroutine>
 
@@ -8049,7 +8049,7 @@ contains
   
 !<description>
   ! This routine allocates memory for the matrix entries of all existing
-  ! submatrix without computing the entries. 
+  ! submatrix without computing the entries.
   ! This can be used to attach an 'empty' matrix to a matrix
   ! structure. The number of entries NA as well as the type of the matrix
   ! cmatrixFormat must be initialised in rmatrixScalar.
@@ -8110,7 +8110,7 @@ contains
   !
   ! IMPORTANT NOTE: This routine works algebraically. It should not be used
   ! to calculate the maximum vector length of a vector field given by a
-  ! finite element function (like a velocity field), as this would need the 
+  ! finite element function (like a velocity field), as this would need the
   ! evaluation of finite elements! This is NOT done here. Use routines from
   ! the feevaluation.f90 module instead!
 !</description>
@@ -8426,7 +8426,7 @@ contains
       end do
     end if
     
-    ! Create block vector according to the structure of the scalar vector    
+    ! Create block vector according to the structure of the scalar vector
     if (rvectorBlock%NEQ .eq. 0) then
       call lsysbl_createVectorBlock(rvectorBlock, rvectorScalar%NEQ,&
           rvectorScalar%NVAR, .false., rvectorScalar%cdataType)
@@ -8544,7 +8544,7 @@ contains
       call output_line ('Scalar vector is not compatible with block vector!', &
           OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_convertBlockScalarVector')
       call sys_halt()
-    end if 
+    end if
 
     ! Check if block vector is compatible to interleaved format
     do iblock = 1, rvectorBlock%nblocks

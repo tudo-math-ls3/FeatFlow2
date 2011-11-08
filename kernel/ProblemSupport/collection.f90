@@ -10,7 +10,7 @@
 !# - character
 !# - Character string
 !# - double real
-!# - integer 
+!# - integer
 !# - a vector - scalar and block type
 !# - a matrix - scalar and block type
 !# - triangulation structures
@@ -33,19 +33,19 @@
 !# - a group finite element set and block type
 !#
 !# The list supports 'level tags' and 'section tags' to group values:
-!# 
+!#
 !# 1.) There is one unnamed section ('') in the collection for general purpose
-!#     variables. All other sections are named and independent from each other. 
-!#     Sections can be added if necessary. 
+!#     variables. All other sections are named and independent from each other.
+!#     Sections can be added if necessary.
 !# 2.) Each section contains of a 'level 0' list for general, level-independent
 !#     data. Furthermore it contains a level structure for level 1..n
 !#     where n can by increased dynamically. All level are independent from
 !#     each other.
 !#
-!# Names of sections and variables are case-insensitive. Allowed characters 
+!# Names of sections and variables are case-insensitive. Allowed characters
 !# for names are: 'A'..'Z', '0'..'9', '-', '_', '(', ')'.
 !#
-!# A collection is similar to a large INI file containing all basic 
+!# A collection is similar to a large INI file containing all basic
 !# information. One can think of the following structure:
 !#
 !# <verb>
@@ -95,7 +95,7 @@
 !#   SOLUTION       = (vector structure for solution vector on level 3)
 !#   RHS            = (vector structure for RHS vector on level 3)
 !#   ...
-!# 
+!#
 !# [NONLINEARDEFCOR]
 !# ... (parameters for the nonlinear defect correction)
 !#
@@ -107,19 +107,19 @@
 !# Additionally to these 'named variables', the collection contains
 !# a small integer and double precision 'temporary quick access'
 !# array directly in the t_collection structure with size of at
-!# least 128 elemens. 
+!# least 128 elemens.
 !# Care must be taken when an application wants to use these arays.
-!# Not maintained by the collection internally, they are of 
+!# Not maintained by the collection internally, they are of
 !# *pure temporary nature*. Long-life information should never be stored
-!# in there! They can be used e.g. in assembly routines to provide 
-!# callback routines with information that must quickly be accessed 
+!# in there! They can be used e.g. in assembly routines to provide
+!# callback routines with information that must quickly be accessed
 !# without the need of asking the collection for a named variable.
 !# Their content can be described at best as `only valid for one
 !# operation` (e.g. for one matrix asembly).
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
-!# 1.) collct_init 
+!# 1.) collct_init
 !#     -> Initialises an empty list of named scalar values.
 !#
 !# 2.) collct_done
@@ -139,10 +139,10 @@
 !#     -> Determines whether or not a parameter exists
 !#
 !# 7.) collct_gettype
-!#     -> Get the type of a variable. 
+!#     -> Get the type of a variable.
 !#
 !# 8.) collct_getvalue_xxx
-!#     -> Get a value from the list. xxx corresponds to the type of 
+!#     -> Get a value from the list. xxx corresponds to the type of
 !#        the variable.
 !#
 !# 9.) collct_setvalue_xxx
@@ -152,7 +152,7 @@
 !# 10.) collct_deletevalue
 !#      -> Deletes a value from the list.
 !#
-!# 11.) collct_printStatistics 
+!# 11.) collct_printStatistics
 !#      -> Prints out the current content of the structure to the terminal
 !#
 !# 12.) collct_addsection
@@ -191,14 +191,14 @@
 !#
 !# NO PROBLEM-SPECIFIC STRUCTURES
 !#
-!#  The collection is a black-box container. It is designed to hold low- and 
+!#  The collection is a black-box container. It is designed to hold low- and
 !#  mid-level information (numbers, strings, as well as linear algebra stuff
 !#  like vectors, matrices) that is used for solving linear problems. It is
 !#  clearly NOT designed that a user adds problem-specific data structures
 !#  there. Trying this will result in circular dependencies! Adding information
-!#  from a problem-dependent structure to the collection with the 'add' 
+!#  from a problem-dependent structure to the collection with the 'add'
 !#  routines is completely right, but do not extent the collection
-!#  by new data types / structures unless you are absolutely sure that this 
+!#  by new data types / structures unless you are absolutely sure that this
 !#  is relevant for all users and that you will not get circular dependencies!
 !#
 !# USE THE COLLECTION AS AN INDEX
@@ -216,7 +216,7 @@
 !# USE THE TEMPORARY QUICK ACCESS ARRAYS FOR INFORMATION TO BE ACCESSED QUICKLY
 !#
 !#  Although the quick-access arrays are only of temporary nature,
-!#  you can use them to store information of simple type that you often 
+!#  you can use them to store information of simple type that you often
 !#  need in a callback routine. Make use of this feature to get speed,
 !#  but do not use this feature for storing long-life information!
 !#  Example:
@@ -250,10 +250,10 @@
 !#  rcollection%p_rvectorQuickAccessX and rcollection%p_rmatrixQuickAccessX
 !#  provides pointers for some user defined matrices and vectors which
 !#  can be accessed directly.
-!# 
+!#
 !#  The rcollection%p_rnextCollection pointer is also user defined. Here,
 !#  the user can set a pointer to another collection structure if necessary.
-!#  This allows to build a small list of collection structures that can 
+!#  This allows to build a small list of collection structures that can
 !#  directly be accessed.
 !#
 !# STORE ONLY SMALL-SIZE ARRAYS
@@ -262,7 +262,7 @@
 !#  should only be small and the application must keep track of the size
 !#  of these arrays. To store larger arrays, use the STORAGE module to
 !#  allocate memory and store the handle of the memory block in the collection!
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -352,7 +352,7 @@ module collection
   ! Integer value
   integer, parameter, public :: COLLCT_INTEGER      = 3
   
-  ! Double precision REAL value 
+  ! Double precision REAL value
   integer, parameter, public :: COLLCT_REAL         = 4
 
   ! Scalar discretisation structure
@@ -499,7 +499,7 @@ module collection
     ! Integer value
     integer :: ivalue = 0
     
-    ! Double precision value 
+    ! Double precision value
     real(DP) :: dvalue = 0.0_DP
 
     ! Pointer to a spatial discretisation structure
@@ -688,9 +688,9 @@ module collection
     ! Quick-access array for integers. This is a short, temporary
     ! array that can be used by the application to save intermediate
     ! values (e.g. some information that is to pass and to be accessed
-    ! by callback routines). 
+    ! by callback routines).
     ! No long life information should be stored here. Long-life
-    ! information should be named and added as such to the collection 
+    ! information should be named and added as such to the collection
     ! directly. The collection itself does not maintain this array!
     integer, dimension(COLLCT_QALENGTH) :: IquickAccess = 0
   
@@ -698,9 +698,9 @@ module collection
     ! Quick-access array for reals. This is a short, temporary
     ! array that can be used by the application to save intermediate
     ! values (e.g. some information that is to pass and to be accessed
-    ! by callback routines). 
+    ! by callback routines).
     ! No long life information should be stored here. Long-life
-    ! information should be named and added as such to the collection 
+    ! information should be named and added as such to the collection
     ! directly. The collection itself does not maintain this array!
     real(DP), dimension(COLLCT_QALENGTH) :: DquickAccess = 0.0_DP
   
@@ -785,7 +785,7 @@ module collection
   end interface
   
   interface collct_queryvalue
-    module procedure collct_queryvalue_direct 
+    module procedure collct_queryvalue_direct
     module procedure collct_queryvalue_indir
   end interface
 
@@ -794,102 +794,102 @@ module collection
     module procedure collct_getmaxlevel_indir
   end interface
   
-  public :: collct_init 
-  public :: collct_done 
+  public :: collct_init
+  public :: collct_done
   public :: collct_addlevel
-  public :: collct_addsection 
-  public :: collct_deletesection 
-  public :: collct_cleanupvalue 
-  public :: collct_deletevalue 
-  public :: collct_printStatistics 
+  public :: collct_addsection
+  public :: collct_deletesection
+  public :: collct_cleanupvalue
+  public :: collct_deletevalue
+  public :: collct_printStatistics
   public :: collct_copyQuickAccess
 
-  public :: collct_setvalue_char 
-  public :: collct_setvalue_string 
-  public :: collct_setvalue_int 
-  public :: collct_setvalue_intarr 
-  public :: collct_setvalue_real 
-  public :: collct_setvalue_realarr 
-  public :: collct_setvalue_discr 
-  public :: collct_setvalue_bldiscr 
-  public :: collct_setvalue_tria 
-  public :: collct_setvalue_bdry 
+  public :: collct_setvalue_char
+  public :: collct_setvalue_string
+  public :: collct_setvalue_int
+  public :: collct_setvalue_intarr
+  public :: collct_setvalue_real
+  public :: collct_setvalue_realarr
+  public :: collct_setvalue_discr
+  public :: collct_setvalue_bldiscr
+  public :: collct_setvalue_tria
+  public :: collct_setvalue_bdry
   public :: collct_setvalue_bdreg
-  public :: collct_setvalue_bc 
-  public :: collct_setvalue_vecsca 
-  public :: collct_setvalue_matsca 
-  public :: collct_setvalue_vec 
-  public :: collct_setvalue_mat 
-  public :: collct_setvalue_parlst 
-  public :: collct_setvalue_linsol 
-  public :: collct_setvalue_discbc 
-  public :: collct_setvalue_ilvpsc 
-  public :: collct_setvalue_ilvp 
-  public :: collct_setvalue_coll 
-  public :: collct_setvalue_pars 
-  public :: collct_setvalue_geom 
-  public :: collct_setvalue_fchn 
-  public :: collct_setvalue_hadapt 
-  public :: collct_setvalue_afcstab 
-  public :: collct_setvalue_timer 
-  public :: collct_setvalue_list 
-  public :: collct_setvalue_arraylist 
-  public :: collct_setvalue_btree 
+  public :: collct_setvalue_bc
+  public :: collct_setvalue_vecsca
+  public :: collct_setvalue_matsca
+  public :: collct_setvalue_vec
+  public :: collct_setvalue_mat
+  public :: collct_setvalue_parlst
+  public :: collct_setvalue_linsol
+  public :: collct_setvalue_discbc
+  public :: collct_setvalue_ilvpsc
+  public :: collct_setvalue_ilvp
+  public :: collct_setvalue_coll
+  public :: collct_setvalue_pars
+  public :: collct_setvalue_geom
+  public :: collct_setvalue_fchn
+  public :: collct_setvalue_hadapt
+  public :: collct_setvalue_afcstab
+  public :: collct_setvalue_timer
+  public :: collct_setvalue_list
+  public :: collct_setvalue_arraylist
+  public :: collct_setvalue_btree
   public :: collct_setvalue_mshh
   public :: collct_setvalue_fesp
   public :: collct_setvalue_feh
   public :: collct_setvalue_tsh
   public :: collct_setvalue_mlprjh
   public :: collct_setvalue_graph
-  public :: collct_setvalue_particles 
+  public :: collct_setvalue_particles
   public :: collct_setvalue_particles3D
   public :: collct_setvalue_gfemset
   public :: collct_setvalue_gfemblk
 
   public :: collct_getmaxlevel
-  public :: collct_getmaxlevel_direct 
-  public :: collct_getmaxlevel_indir 
+  public :: collct_getmaxlevel_direct
+  public :: collct_getmaxlevel_indir
   public :: collct_queryvalue
-  public :: collct_queryvalue_indir 
-  public :: collct_queryvalue_direct 
+  public :: collct_queryvalue_indir
+  public :: collct_queryvalue_direct
   public :: collct_gettype
   public :: collct_settag
   public :: collct_gettag
   
-  public :: collct_getvalue_struc 
-  public :: collct_getvalue_string 
-  public :: collct_getvalue_intarr 
-  public :: collct_getvalue_realarr 
-  public :: collct_getvalue_char 
-  public :: collct_getvalue_int 
-  public :: collct_getvalue_real 
-  public :: collct_getvalue_discr 
-  public :: collct_getvalue_bldiscr 
-  public :: collct_getvalue_tria 
-  public :: collct_getvalue_bdry 
+  public :: collct_getvalue_struc
+  public :: collct_getvalue_string
+  public :: collct_getvalue_intarr
+  public :: collct_getvalue_realarr
+  public :: collct_getvalue_char
+  public :: collct_getvalue_int
+  public :: collct_getvalue_real
+  public :: collct_getvalue_discr
+  public :: collct_getvalue_bldiscr
+  public :: collct_getvalue_tria
+  public :: collct_getvalue_bdry
   public :: collct_getvalue_bdreg
-  public :: collct_getvalue_bc 
-  public :: collct_getvalue_vecsca 
-  public :: collct_getvalue_matsca 
-  public :: collct_getvalue_vec 
-  public :: collct_getvalue_mat 
-  public :: collct_getvalue_linsol 
-  public :: collct_getvalue_discbc 
-  public :: collct_getvalue_parlst 
-  public :: collct_getvalue_ilvpsc 
-  public :: collct_getvalue_ilvp 
-  public :: collct_getvalue_coll 
-  public :: collct_getvalue_pars 
+  public :: collct_getvalue_bc
+  public :: collct_getvalue_vecsca
+  public :: collct_getvalue_matsca
+  public :: collct_getvalue_vec
+  public :: collct_getvalue_mat
+  public :: collct_getvalue_linsol
+  public :: collct_getvalue_discbc
+  public :: collct_getvalue_parlst
+  public :: collct_getvalue_ilvpsc
+  public :: collct_getvalue_ilvp
+  public :: collct_getvalue_coll
+  public :: collct_getvalue_pars
   public :: collct_getvalue_geom
   public :: collct_getvalue_particles
   public :: collct_getvalue_particles3D
-  public :: collct_getvalue_fchn 
-  public :: collct_getvalue_hadapt 
-  public :: collct_getvalue_afcstab 
-  public :: collct_getvalue_timer 
-  public :: collct_getvalue_list 
-  public :: collct_getvalue_arraylist 
-  public :: collct_getvalue_btree 
+  public :: collct_getvalue_fchn
+  public :: collct_getvalue_hadapt
+  public :: collct_getvalue_afcstab
+  public :: collct_getvalue_timer
+  public :: collct_getvalue_list
+  public :: collct_getvalue_arraylist
+  public :: collct_getvalue_btree
   public :: collct_getvalue_graph
   public :: collct_getvalue_mshh
   public :: collct_getvalue_fesp
@@ -982,8 +982,8 @@ contains
 !<description>
 
     ! Internal subroutine: Reallocate a level.
-    ! This increases the size of a level subgroup by 
-    ! reallocation of the arrays. 
+    ! This increases the size of a level subgroup by
+    ! reallocation of the arrays.
 
 !</description>
 
@@ -995,7 +995,7 @@ contains
 
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
 
     ! The section to reallocate.
     type(t_collctLevel), intent(inout) :: rcollctLevel
@@ -1064,7 +1064,7 @@ contains
 
 !</inputoutput>
 
-!<output>  
+!<output>
 
     ! The pointer of the newly created value
     type(t_collctValue), pointer :: p_rvalue
@@ -1084,7 +1084,7 @@ contains
     if (sparamName .eq. '') return
     
     ! Get the section
-    call collct_fetchsection(rcollection, ssectionName, p_rsection) 
+    call collct_fetchsection(rcollection, ssectionName, p_rsection)
     if (.not. associated(p_rsection)) return
     
     ! Get the level
@@ -1350,7 +1350,7 @@ contains
 
 !<subroutine>
   
-  subroutine collct_fetchparameter_indir (rlevel, sname, iparamnum) 
+  subroutine collct_fetchparameter_indir (rlevel, sname, iparamnum)
 
 !<description>
 
@@ -1364,7 +1364,7 @@ contains
     ! The level where to search
     type(t_collctLevel), intent(in) :: rlevel
     
-    ! The parameter name to look for. 
+    ! The parameter name to look for.
     character(LEN=*), intent(in) :: sname
 
 !</input>
@@ -1408,10 +1408,10 @@ contains
 
   ! ***************************************************************************
  
-!<subroutine> 
+!<subroutine>
   
   subroutine collct_fetchparameter_direct (rcollection, ssectionName, ilevel, &
-                                           sparameter, p_rvalue) 
+                                           sparameter, p_rvalue)
 
 !<description>
 
@@ -1431,7 +1431,7 @@ contains
     ! The level where to search; maybe 0 for level-independent parameters
     integer, intent(in) :: ilevel
     
-    ! The parameter name to look for. 
+    ! The parameter name to look for.
     character(LEN=*), intent(in) :: sparameter
 
 !</input>
@@ -1458,7 +1458,7 @@ contains
     
     nullify(p_rvalue)
     
-    call collct_fetchsection(rcollection, ssectionName, p_rsection) 
+    call collct_fetchsection(rcollection, ssectionName, p_rsection)
     
     if (.not. associated(p_rsection)) then
       ! Section does not exist - return NULL
@@ -1479,7 +1479,7 @@ contains
     end if
     
     ! Get the index of the value
-    call collct_fetchparameter_indir (p_rlevel, sparameter, i) 
+    call collct_fetchparameter_indir (p_rlevel, sparameter, i)
     
     ! and finally the pointer to it
     if (i .ne. 0) then
@@ -1490,14 +1490,14 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>  
+!<subroutine>
   
-  subroutine collct_fetchsection(rcollection, sname, p_rsection, isectionIndex) 
+  subroutine collct_fetchsection(rcollection, sname, p_rsection, isectionIndex)
 
 !<description>
 
     ! Internal subroutine: Search in a collection for a section
-    ! and return a pointer to the section - or NULL() if the section does 
+    ! and return a pointer to the section - or NULL() if the section does
     ! not exist.
 
 !</description>
@@ -1507,7 +1507,7 @@ contains
     ! The section.
     type(t_collection), intent(in) :: rcollection
     
-    ! The parameter name to look for. 
+    ! The parameter name to look for.
     character(LEN=*), intent(in) :: sname
 
 !</input>
@@ -1553,7 +1553,7 @@ contains
 
 !<subroutine>
 
-  subroutine collct_fetchlevel(rcollection, ssectionName, ilevel, p_rlevel) 
+  subroutine collct_fetchlevel(rcollection, ssectionName, ilevel, p_rlevel)
 
 !<description>
 
@@ -1568,7 +1568,7 @@ contains
     ! The section.
     type(t_collection), intent(in) :: rcollection
     
-    ! The section name to look for. 
+    ! The section name to look for.
     character(LEN=*), intent(in) :: ssectionName
     
     ! The level number where to search for
@@ -1591,7 +1591,7 @@ contains
     nullify(p_rlevel)
     
     ! Get the section
-    call collct_fetchsection(rcollection, ssectionName, p_rsection) 
+    call collct_fetchsection(rcollection, ssectionName, p_rsection)
     if (.not. associated(p_rsection)) return
     
     ! Get the level
@@ -1615,7 +1615,7 @@ contains
   
 !<description>
   
-  ! This routine initialises a collection. It must be applied 
+  ! This routine initialises a collection. It must be applied
   ! before doing anything to it, just to initialise.
   
 !</description>
@@ -1713,7 +1713,7 @@ contains
     type(t_collctSection), pointer :: p_rsection
   
     ! Fetch the section number
-    call collct_fetchsection(rcollection, ssectionName, p_rsection) 
+    call collct_fetchsection(rcollection, ssectionName, p_rsection)
     
     if (.not. associated(p_rsection)) then
       call output_line('Section not found: '//ssectionName,&
@@ -1821,7 +1821,7 @@ contains
   ! given, the level is added to the unnamed section.
   character(LEN=*), intent(in), optional :: ssectionName
 
-!</input>  
+!</input>
   
 !<output>
   
@@ -1843,7 +1843,7 @@ contains
     
     ! Get the section
     if (present(ssectionName)) then
-      call collct_fetchsection(rcollection, ssectionName, p_rsection) 
+      call collct_fetchsection(rcollection, ssectionName, p_rsection)
       if (.not. associated(p_rsection)) then
         call output_line('Section not found: '//ssectionName,&
                          OU_CLASS_ERROR,OU_MODE_STD,'collct_addlevel_direct')
@@ -1890,7 +1890,7 @@ contains
     ! Go through all sections
     do i = 1, rcollection%isectionCount
       ! Add the level there
-      call collct_addlevel_indir (rcollection%p_Rsections(i), ilevelid)  
+      call collct_addlevel_indir (rcollection%p_Rsections(i), ilevelid)
     end do
     
   end subroutine collct_addlevel_all
@@ -1986,7 +1986,7 @@ contains
       call sys_halt()
     end if
     
-    call collct_fetchsection(rcollection, ssectionName, p_rsection, isectionIndex) 
+    call collct_fetchsection(rcollection, ssectionName, p_rsection, isectionIndex)
     
     if (.not. associated(p_rsection)) then
       call output_line('Section does not exist: '//ssectionName,&
@@ -2019,7 +2019,7 @@ contains
 
 !<description>
   ! Cleans up a value structure. Releases all associated memory.
-!</description>  
+!</description>
   
 !<inputoutput>
   ! The value to clean up.
@@ -2067,13 +2067,13 @@ contains
   
 !<subroutine>
 
-  subroutine collct_deletevalue (rcollection, sparameter, ilevel, ssectionName) 
+  subroutine collct_deletevalue (rcollection, sparameter, ilevel, ssectionName)
 
 !<description>
   ! Deletes the stored parameter 'sparameter' from the collection.
   ! This simply removes a pointer or value from the collection, no memory
   ! is released.
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -2108,10 +2108,10 @@ contains
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     else
       call collct_fetchparameter_direct (rcollection, '', ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     end if
     
     ! Does the value exist?
@@ -2122,9 +2122,9 @@ contains
       
       ! Modify the level info:
       if (present(ssectionName)) then
-        call collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)     
+        call collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)
       else
-        call collct_fetchlevel(rcollection, '', ilv, p_rlevel)      
+        call collct_fetchlevel(rcollection, '', ilv, p_rlevel)
       end if
       
       ! Decrement the value counter
@@ -2146,7 +2146,7 @@ contains
 !<description>
   ! This routine prints the current content of the whole collection in
   ! user-readable form to screen.
-!</description>  
+!</description>
   
 !<input>
   ! The parameter list.
@@ -2228,7 +2228,7 @@ contains
           
 !<description>
   ! Checks whether a parameter sparameter exists in in section rsection.
-!</description>  
+!</description>
   
 !<result>
   ! >0, if the parameter exists in the section rsection (it is the index of the
@@ -2276,7 +2276,7 @@ contains
     end if
     
     ! Search for the parameter in the level
-    call collct_fetchparameter_indir(p_rlevel, sparameter, exists) 
+    call collct_fetchparameter_indir(p_rlevel, sparameter, exists)
     
   end function collct_queryvalue_indir
 
@@ -2294,7 +2294,7 @@ contains
   ! parameter set, otherwise on level ilevel.
   ! If ssectionName='' or not given, the parameter is searched in the unnamed
   ! section, otherwise in section ssectionName.
-!</description>  
+!</description>
   
 !<result>
   ! >0, if the parameter exists in the section (it is the index of the
@@ -2342,8 +2342,8 @@ contains
     if (.not. present(ssectionName)) then
       p_rsection => rcollection%p_Rsections(1)
     else
-      call collct_fetchsection(rcollection, ssectionName, p_rsection) 
-      if (.not. associated(p_rsection)) then 
+      call collct_fetchsection(rcollection, ssectionName, p_rsection)
+      if (.not. associated(p_rsection)) then
         call output_line('Section not found',&
                          OU_CLASS_ERROR,OU_MODE_STD,'collct_queryvalue_direct')
         call sys_halt()
@@ -2362,7 +2362,7 @@ contains
                         ilevel, ssectionName, bexists) result (itype)
 !<description>
   ! Returns the data type of the parameter sparameter.
-!</description>  
+!</description>
   
 !<result>
   ! One of the COLLCT_XXXX constants (COLLCT_UNDEFINED,...).
@@ -2406,10 +2406,10 @@ contains
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     else
       call collct_fetchparameter_direct (rcollection, '', ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     end if
     
     ! Return whether or not that thing exists
@@ -2432,7 +2432,7 @@ contains
                         ilevel, ssectionName, bexists) result (itag)
 !<description>
   ! Returns the user defined tag of the parameter sparameter.
-!</description>  
+!</description>
   
 !<result>
   ! User defined integer tag.
@@ -2476,10 +2476,10 @@ contains
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     else
       call collct_fetchparameter_direct (rcollection, '', ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     end if
     
     ! Return whether or not that thing exists
@@ -2502,7 +2502,7 @@ contains
                         ilevel, ssectionName, bexists)
 !<description>
   ! Sets the user defined tag of the parameter sparameter.
-!</description>  
+!</description>
   
 !<result>
   ! User defined integer tag.
@@ -2550,10 +2550,10 @@ contains
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     else
       call collct_fetchparameter_direct (rcollection, '', ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     end if
     
     ! Return whether or not that thing exists
@@ -2587,10 +2587,10 @@ contains
   ! ssectionName allows to specify the name of a section where to search
   ! for the value structure.
   !
-  ! itype specifies the desired type of the value. 
+  ! itype specifies the desired type of the value.
   ! If itype <> COLLCT_UNDEFINED is specified, there is a type check:
   ! If the value exists but is not of type itype, an error is thrown.
-!</description>  
+!</description>
   
 !<input>
     
@@ -2642,10 +2642,10 @@ contains
     ! Get the parameter
     if (present(ssectionName)) then
       call collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     else
       call collct_fetchparameter_direct (rcollection, '', ilv, &
-                                         sparameter, p_rvalue) 
+                                         sparameter, p_rvalue)
     end if
     
     ! Return whether or not that thing exists.
@@ -2698,7 +2698,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as character.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
   ! The value of the parameter.
@@ -2758,7 +2758,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as string.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<input>
     
@@ -2821,7 +2821,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as integer.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
   ! The value of the parameter.
@@ -2877,14 +2877,14 @@ contains
 !<subroutine>
 
   subroutine collct_getvalue_intarr (rcollection, sparameter, value, &
-                                     ilevel, ssectionName, bexists) 
+                                     ilevel, ssectionName, bexists)
 !<description>
   ! Returns the the parameter sparameter as integer array.
   ! An error is thrown if the value is of the wrong type.
   !
   ! The routine returns the actual array, not a reference to it. The previous
   ! content of the destination array is overwritten.
-!</description>  
+!</description>
   
 !<inputoutput>
   ! The value of the parameter an array. The destination array must have the
@@ -2949,7 +2949,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as real.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
   ! The value of the parameter.
@@ -3005,14 +3005,14 @@ contains
 !<subroutine>
 
   subroutine collct_getvalue_realarr (rcollection, sparameter, value, &
-                                  ilevel, ssectionName, bexists) 
+                                  ilevel, ssectionName, bexists)
 !<description>
   ! Returns the the parameter sparameter as real array.
   ! An error is thrown if the value is of the wrong type.
   !
   ! The routine returns the actual array, not a reference to it. The previous
   ! content of the destination array is overwritten.
-!</description>  
+!</description>
   
 !<inputoutput>
   ! The value of the parameter an array. The destination array must have the
@@ -3077,10 +3077,10 @@ contains
   function collct_getvalue_discr (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a discretisation 
+  ! Returns the the parameter sparameter as pointer to a discretisation
   ! structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
   ! The value of the parameter.
@@ -3140,10 +3140,10 @@ contains
   function collct_getvalue_bldiscr (rcollection, sparameter, &
                                     ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a block discretisation 
+  ! Returns the the parameter sparameter as pointer to a block discretisation
   ! structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3204,10 +3204,10 @@ contains
   function collct_getvalue_tria (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a triangulation 
+  ! Returns the the parameter sparameter as pointer to a triangulation
   ! structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3268,10 +3268,10 @@ contains
   function collct_getvalue_bdry (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a boundary 
+  ! Returns the the parameter sparameter as pointer to a boundary
   ! structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3332,10 +3332,10 @@ contains
   function collct_getvalue_bdreg (rcollection, sparameter, &
                                    ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a boundary region 
+  ! Returns the the parameter sparameter as pointer to a boundary region
   ! structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3396,10 +3396,10 @@ contains
   function collct_getvalue_bc (rcollection, sparameter, &
                                ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a triangulation 
+  ! Returns the the parameter sparameter as pointer to a triangulation
   ! structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3462,7 +3462,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a scalar vector.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3525,7 +3525,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a scalar matrix.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3588,7 +3588,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a block vector.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3651,7 +3651,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a scalar matrix.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3715,7 +3715,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a linear solver
   ! configuration node.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3779,7 +3779,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a discrete boundary
   ! condition structure
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3842,7 +3842,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a parameter list.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3906,7 +3906,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a scalar interlevel
   ! projection structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -3970,7 +3970,7 @@ contains
   ! Returns the the parameter sparameter as pointer to a (block) interlevel
   ! projection structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4033,7 +4033,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a collection object.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4096,7 +4096,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a parser object.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4159,7 +4159,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a geometry object.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4222,7 +4222,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a particle collection object.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4285,7 +4285,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a particle3D collection object.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4348,7 +4348,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a filter chain.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4411,7 +4411,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a grid adaptation structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4474,7 +4474,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a stabilisation structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4537,7 +4537,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a timer structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4600,7 +4600,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a linked list.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4663,7 +4663,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to an arraylist.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4726,7 +4726,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a binary search tree.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4789,7 +4789,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a graph structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4852,7 +4852,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a mesh hierarchy.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4915,7 +4915,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a finite element space level.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -4978,7 +4978,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a finite element hierarchy.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -5041,7 +5041,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a time scale hierarchy.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -5104,7 +5104,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a multilevel projection structure.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -5167,7 +5167,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a group finite element set.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -5230,7 +5230,7 @@ contains
 !<description>
   ! Returns the the parameter sparameter as pointer to a group finite element block.
   ! An error is thrown if the value is of the wrong type.
-!</description>  
+!</description>
   
 !<result>
 
@@ -5289,16 +5289,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_char (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Sets the value of the parameter: sparameter=value
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5350,16 +5350,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_string (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Sets the value of the parameter: sparameter=value
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5415,16 +5415,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_int (rcollection, sparameter, value, badd, &
-                                  ilevel, ssectionName) 
+                                  ilevel, ssectionName)
 !<description>
   ! Sets the value of the parameter: sparameter=value
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5476,10 +5476,10 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_intarr (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Sets the value of the parameter: sparameter=value.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
@@ -5488,7 +5488,7 @@ contains
   !
   ! The routine creates a new memory block on the heap and copies the
   ! data to there. There is no reference to the old array stored.
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5548,16 +5548,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_real (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Sets the value of the parameter: sparameter=value
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5609,10 +5609,10 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_realarr (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Sets the value of the parameter: sparameter=value
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
@@ -5621,7 +5621,7 @@ contains
   !
   ! The routine creates a new memory block on the heap and copies the
   ! data to there. There is no reference to the old array stored.
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5681,16 +5681,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_discr (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5742,16 +5742,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_bldiscr (rcollection, sparameter, value, badd, &
-                                      ilevel, ssectionName) 
+                                      ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5803,16 +5803,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_tria (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5864,16 +5864,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_bdry (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5925,16 +5925,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_bdreg (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -5986,16 +5986,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_bc (rcollection, sparameter, value, badd, &
-                                 ilevel, ssectionName) 
+                                 ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6047,16 +6047,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_vecsca (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6108,16 +6108,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_matsca (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6169,16 +6169,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_vec (rcollection, sparameter, value, badd, &
-                                  ilevel, ssectionName) 
+                                  ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6230,16 +6230,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_mat (rcollection, sparameter, value, badd, &
-                                  ilevel, ssectionName) 
+                                  ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6291,16 +6291,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_parlst (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6352,16 +6352,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_linsol (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6413,16 +6413,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_discbc (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6474,16 +6474,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_ilvpsc (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6535,16 +6535,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_ilvp (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6596,16 +6596,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_coll (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6657,16 +6657,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_pars (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6718,16 +6718,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_geom (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6779,16 +6779,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_fchn (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6840,16 +6840,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_hadapt (rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6901,16 +6901,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_afcstab (rcollection, sparameter, value, badd, &
-                                      ilevel, ssectionName) 
+                                      ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -6962,16 +6962,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_timer (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7023,16 +7023,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_list (rcollection, sparameter, value, badd, &
-                                   ilevel, ssectionName) 
+                                   ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7084,16 +7084,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_arraylist (rcollection, sparameter, value, badd, &
-                                        ilevel, ssectionName) 
+                                        ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7145,16 +7145,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_btree (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7206,16 +7206,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_mshh (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7260,23 +7260,23 @@ contains
     ! Set the value
     p_rvalue%p_rmeshHierarchy => value
     
-  end subroutine 
+  end subroutine
   
   ! ***************************************************************************
   
 !<subroutine>
 
   subroutine collct_setvalue_fesp (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7328,16 +7328,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_feh (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7389,16 +7389,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_tsh (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7450,16 +7450,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_mlprjh (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7511,16 +7511,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_graph (rcollection, sparameter, value, badd, &
-                                    ilevel, ssectionName) 
+                                    ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7572,16 +7572,16 @@ contains
 !<subroutine>
 
   subroutine collct_setvalue_particles(rcollection, sparameter, value, badd, &
-                                       ilevel, ssectionName) 
+                                       ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7628,21 +7628,21 @@ contains
     
   end subroutine collct_setvalue_particles
 
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
 
   subroutine collct_setvalue_particles3D(rcollection, sparameter, value, badd, &
-                                         ilevel, ssectionName) 
+                                         ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7689,21 +7689,21 @@ contains
     
   end subroutine collct_setvalue_particles3D
 
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
 
   subroutine collct_setvalue_gfemset(rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7750,21 +7750,21 @@ contains
     
   end subroutine collct_setvalue_gfemset
 
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
 
   subroutine collct_setvalue_gfemblk(rcollection, sparameter, value, badd, &
-                                     ilevel, ssectionName) 
+                                     ilevel, ssectionName)
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
-  ! If the parameter does not exist, the behaviour depends on the 
+  ! If the parameter does not exist, the behaviour depends on the
   ! parameter badd:
   !  badd=false: an error is thrown,
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
-!</description>  
+!</description>
   
 !<inputoutput>
   
@@ -7811,13 +7811,13 @@ contains
     
   end subroutine collct_setvalue_gfemblk
 
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
 
   subroutine collct_copyQuickAccess(rcollectionSrc, rcollectionDest)
 
-!<description>  
+!<description>
   ! This subroutine copies all quick access arrays from the collection
   ! structure rcollectionSrc to the collection structure rcollectionDest
 !</description>

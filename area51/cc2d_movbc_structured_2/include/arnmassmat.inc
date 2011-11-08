@@ -8,7 +8,7 @@
 ***********************************************************************
 
       CHARACTER CARRM*12
-      DIMENSION CARRM(NNLEV)      
+      DIMENSION CARRM(NNLEV)
 
       DATA CARRM /'data/VM.1  ','data/VM.2  ','data/VM.3  ',
      *            'data/VM.4  ','data/VM.5  ','data/VM.6  ',

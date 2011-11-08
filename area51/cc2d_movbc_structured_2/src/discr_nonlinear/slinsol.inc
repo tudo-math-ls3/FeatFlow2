@@ -8,7 +8,7 @@
 * structure should be augmented to the specific needs.
 *
 * The structure itselves is realized as integer array:
-*   IPARAM = array [1..SZLSLI] of integer 
+*   IPARAM = array [1..SZLSLI] of integer
 *          = TLinearSolverParams
 *
 * TLinearSolverParams = record

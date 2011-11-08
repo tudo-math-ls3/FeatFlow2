@@ -76,8 +76,8 @@
   !</input>
 
   !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
   

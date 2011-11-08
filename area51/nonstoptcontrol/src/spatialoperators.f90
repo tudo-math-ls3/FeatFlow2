@@ -91,7 +91,7 @@ contains
     call lsyssc_duplicateMatrix(&
         rmatvecTempl%rmatrixTemplateA11,rmatvecTempl%rmatrixLaplaceA11,&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    call stdop_assembleLaplaceMatrix (rmatvecTempl%rmatrixLaplaceA11,.true.,1.0_DP)    
+    call stdop_assembleLaplaceMatrix (rmatvecTempl%rmatrixLaplaceA11,.true.,1.0_DP)
     
     ! Calculate the mass matrix
     call lsyssc_duplicateMatrix(&

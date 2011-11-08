@@ -59,12 +59,12 @@
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
   !</input>
 
   !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
   

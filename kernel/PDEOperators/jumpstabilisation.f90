@@ -15,7 +15,7 @@
 !# 2.) jstab_matvecUEOJumpStabilBlk2d
 !#     -> Performs a matrix vector multiplication with the jump stabilisation
 !#        matrix for a 2d block vector.
-!# 
+!#
 !# 3.) jstab_calcReacJumpStabil
 !#     -> Modifies a scalar matrix to add the reactive
 !#        jump stabilisation term.
@@ -23,7 +23,7 @@
 !# 4.) jstab_matvecReacJumpStabilBlk2d
 !#     -> Performs a matrix vector multiplication with the reactive jump
 !#        stabilisation matrix for a 2d block vector.
-!# 
+!#
 !# Some auxiliary routines:
 !#
 !# 1.) jstab_ueoJumpStabil2d_m_unidble
@@ -133,7 +133,7 @@ contains
 
     ! local variables
     ! At the moment, we only support a rather limited set of configurations:
-    ! Matrix and vectors must all be double precision, matrix must be format 
+    ! Matrix and vectors must all be double precision, matrix must be format
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
@@ -188,7 +188,7 @@ contains
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
   ! <tex>
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2)
   !            \int_E [grad u] [grad v] ds $$
   ! </tex>
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -295,7 +295,7 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: Dbas
 
@@ -304,7 +304,7 @@ contains
   integer, dimension(:), allocatable :: Kentry
   real(DP), dimension(:), allocatable :: Dentry
 
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -429,7 +429,7 @@ contains
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
@@ -445,10 +445,10 @@ contains
           
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Do not calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
@@ -472,12 +472,12 @@ contains
     
 !      ! Check if we have 1 or 2 elements on the current edge
 !      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
-!      
+!
 !        ! This only happens if we have a boundary edge.
 !        ! The boundary handling is... doing nothing! So we can skip
 !        ! the handling of that edge completely!
 !        cycle
-!      
+!
 !      end if
 
       ! Check how many elements we have on that edge.
@@ -510,7 +510,7 @@ contains
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide
       ! with the first couple of local DOF`s of the element patch! Only
       ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
@@ -542,7 +542,7 @@ contains
         ! Collect all the DOF's.
         skiploop: do IDOFE = 1,indofPerElement
           
-          ! Do we have the DOF? 
+          ! Do we have the DOF?
           idof = IdofsTempl(IDOFE,IELcount)
           do JDOFE=1,ndof
             if (Idofs(JDOFE) .eq. idof) then
@@ -631,7 +631,7 @@ contains
       !
       ! The next step is to evaluate the basis functions in the cubature
       ! points on the edge. To compute the jump, this has to be done
-      ! for both elements on the edge. 
+      ! for both elements on the edge.
       !
       ! Figure out which edge on the current element is IMT.
       ! We need this local numbering later to determine on which edge we
@@ -680,7 +680,7 @@ contains
       !
       ! Global DOF on elemenr 2:      60      30      70      50
       ! Dbas(1..4,*,*,2):    d2psi60 d2psi30 d2psi70 d2psi50
-      ! 
+      !
       ! and will be transformed to:
       !
       ! local patch-DOF:            1       2       3       4       5      6        7
@@ -689,10 +689,10 @@ contains
       ! Dbas(1..7,*,*,2): --------------------------unused-----------------------
       ! Dbas(1..7,*,*,3):     0.0     0.0 d2psi60     0.0 d2psi30 d2psi70 d2psi50
       !
-      ! ("d1psi10" = grad(psi_10) on element 1, 
+      ! ("d1psi10" = grad(psi_10) on element 1,
       !  "psi_10" = test function on global DOF #10)
       !
-      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
+      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and
       ! partially overwrite with the reordered values of the basis functions.
       Dbas (:,:,:,3) = 0.0_DP
       if (IELcount .eq. 2) then
@@ -730,7 +730,7 @@ contains
       dcoeff = max(dgammastar * dnu * dedgelength, &
                    dgamma * dedgelength**deojEdgeExp )
       
-      ! Now we have the values of the basis functions in all the cubature 
+      ! Now we have the values of the basis functions in all the cubature
       ! points.
       !
       ! Integrate the jump over the edges. This calculates the local matrix.
@@ -786,9 +786,9 @@ contains
       end do
       
       ! Incorporate our "local" system matrix
-      ! into the global matrix. The position of each entry DENTRY(X,Y)    
+      ! into the global matrix. The position of each entry DENTRY(X,Y)
       ! in the global matrix array A was saved in element Kentry(X,Y)
-      ! before.                                                      
+      ! before.
       ! Kentry gives the position of the additive contributions in Dentry.
       ! The entry is weighted by the current dtheta, which is usually
       ! the weighting parameter of the corresponding THETA-scheme of a
@@ -817,10 +817,10 @@ contains
     
     deallocate(Dbas)
 
-    deallocate(Kentry) 
+    deallocate(Kentry)
     deallocate(Dentry)
 
-    deallocate(IdofsTempl) 
+    deallocate(IdofsTempl)
     
   end subroutine
   
@@ -1002,7 +1002,7 @@ contains
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
   ! <tex>
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2)
   !            \int_E [grad u] [grad v] ds$$
   ! </tex>
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -1359,12 +1359,12 @@ contains
             if(p_Kcol(idx) .eq. IdofsPatch(idof2)) then
               p_Da(idx) = p_Da(idx) + dtheta*Dmatrix(idof1,idof2)
               exit
-            end if 
+            end if
           end do ! idx
           
         end do ! idof2
       
-      end do ! idof1 
+      end do ! idof1
       
       ! Proceed with the next face
       
@@ -1401,7 +1401,7 @@ contains
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
   ! <tex>
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2)
   !            \int_E [grad u] [grad v] ds$$
   ! </tex>
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -1688,12 +1688,12 @@ contains
             if(p_Kcol(idx) .eq. IdofsPatch(idof2)) then
               p_Da(idx) = p_Da(idx) + dtheta*Dmatrix(idof1,idof2)
               exit
-            end if 
+            end if
           end do ! idx
           
         end do ! idof2
       
-      end do ! idof1 
+      end do ! idof1
       
       ! Proceed with the next face
       
@@ -1728,13 +1728,13 @@ contains
   !   y := cx * J x + cy y
   ! with J being the stabilisation matrix of the operator
   ! <tex>
-  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2)
   !            \int_E [grad u] [grad v] ds.$$
   ! </tex>
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   ! The matrix rtemplateMat must contain the structure of a FE template
-  ! matrix created with an extended matrix stencil: The matrix structure must 
+  ! matrix created with an extended matrix stencil: The matrix structure must
   ! be set up with the BILF_MATC_EDGEBASED switch!!!
   !
   ! For a rerefence about the stabilisation, see
@@ -1846,7 +1846,7 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: Dbas
 
@@ -1878,7 +1878,7 @@ contains
   ! Derivative specifiers
   logical, dimension(EL_MAXNDER) :: Bder
 
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Data arrays for the vectors
@@ -1989,7 +1989,7 @@ contains
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
@@ -2010,10 +2010,10 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Do not calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Fill the basis function arrays with 0. Essential, as only parts
@@ -2032,12 +2032,12 @@ contains
     
 !      ! Check if we have 1 or 2 elements on the current edge
 !      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
-!      
+!
 !        ! This only happens if we have a boundary edge.
 !        ! The boundary handling is... doing nothing! So we can skip
 !        ! the handling of that edge completely!
 !        cycle
-!      
+!
 !      end if
 
       ! Check how many elements we have on that edge.
@@ -2070,7 +2070,7 @@ contains
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide
       ! with the first couple of local DOF`s of the element patch! Only
       ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
@@ -2097,7 +2097,7 @@ contains
         ! Collect all the DOF's.
         skiploop: do IDOFE = 1,indofPerElement
           
-          ! Do we have the DOF? 
+          ! Do we have the DOF?
           idof = IdofsTempl(IDOFE,IELcount)
           do JDOFE=1,ndof
             if (Idofs(JDOFE) .eq. idof) then
@@ -2186,7 +2186,7 @@ contains
       !
       ! The next step is to evaluate the basis functions in the cubature
       ! points on the edge. To compute the jump, this has to be done
-      ! for both elements on the edge. 
+      ! for both elements on the edge.
       !
       ! Figure out which edge on the current element is IMT.
       ! We need this local numbering later to determine on which edge we
@@ -2235,7 +2235,7 @@ contains
       !
       ! Global DOF on elemenr 2:      60      30      70      50
       ! Dbas(1..4,*,*,2):    d2psi60 d2psi30 d2psi70 d2psi50
-      ! 
+      !
       ! and will be transformed to:
       !
       ! local patch-DOF:            1       2       3       4       5      6        7
@@ -2244,10 +2244,10 @@ contains
       ! Dbas(1..7,*,*,2): --------------------------unused-----------------------
       ! Dbas(1..7,*,*,3):     0.0     0.0 d2psi60     0.0 d2psi30 d2psi70 d2psi50
       !
-      ! ("d1psi10" = grad(psi_10) on element 1, 
+      ! ("d1psi10" = grad(psi_10) on element 1,
       !  "psi_10" = test function on global DOF #10)
       !
-      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
+      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and
       ! partially overwrite with the reordered values of the basis functions.
       Dbas (:,:,:,3) = 0.0_DP
       if (IELcount .eq. 2) then
@@ -2285,7 +2285,7 @@ contains
       dcoeff = max(dgammastar * dnu * dedgelength, &
                    dgamma * dedgelength**deojEdgeExp )
       
-      ! Now we have the values of the basis functions in all the cubature 
+      ! Now we have the values of the basis functions in all the cubature
       ! points.
       !
       ! Integrate the jump over the edges. This calculates the local matrix.
@@ -2340,13 +2340,13 @@ contains
       
       end do
       
-      ! Build the defect vector                     
+      ! Build the defect vector
       !     y = cAx + y
-      ! This is done matrix free, only with the help of the local 
-      ! matrix.                                                   
-      ! In this case, D=(D1,D2) is expected to be the RHS on      
-      ! entry and will be updated to be the defect vector when    
-      ! this routine is left.                                     
+      ! This is done matrix free, only with the help of the local
+      ! matrix.
+      ! In this case, D=(D1,D2) is expected to be the RHS on
+      ! entry and will be updated to be the defect vector when
+      ! this routine is left.
       
       do IDOFE=0,ndof-1
 
@@ -2354,7 +2354,7 @@ contains
 
         do JDOFE=1,ndof
 
-          dval = cx * Dentry(IDOFE*ndof+JDOFE)         
+          dval = cx * Dentry(IDOFE*ndof+JDOFE)
 
           jcol=Idofs(JDOFE)
           p_Dy1(irow) = p_Dy1(irow) + dval*p_Dx1(jcol)
@@ -2375,10 +2375,10 @@ contains
     
     deallocate(Dbas)
 
-    deallocate(Kentry) 
+    deallocate(Kentry)
     deallocate(Dentry)
 
-    deallocate(IdofsTempl) 
+    deallocate(IdofsTempl)
 
   end subroutine
 
@@ -2428,7 +2428,7 @@ contains
 
     ! local variables
     ! At the moment, we only support a rather limited set of configurations:
-    ! Matrix and vectors must all be double precision, matrix must be format 
+    ! Matrix and vectors must all be double precision, matrix must be format
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
@@ -2571,7 +2571,7 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: Dbas
 
@@ -2580,7 +2580,7 @@ contains
   integer, dimension(:), allocatable :: Kentry
   real(DP), dimension(:), allocatable :: Dentry
 
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -2706,7 +2706,7 @@ contains
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
@@ -2722,7 +2722,7 @@ contains
           
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Do not calculate coordinates on the reference element -- we do this manually.
@@ -2773,7 +2773,7 @@ contains
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide
       ! with the first couple of local DOF`s of the element patch! Only
       ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
@@ -2802,7 +2802,7 @@ contains
       
       skiploop: do IDOFE = 1,indofPerElement
         
-        ! Do we have the DOF? 
+        ! Do we have the DOF?
         idof = IdofsTempl(IDOFE,IELcount)
         do JDOFE=1,ndof
           if (Idofs(JDOFE) .eq. idof) then
@@ -2876,7 +2876,7 @@ contains
       !
       ! The next step is to evaluate the basis functions in the cubature
       ! points on the edge. To compute the jump, this has to be done
-      ! for both elements on the edge. 
+      ! for both elements on the edge.
       !
       ! Figure out which edge on the current element is IMT.
       ! We need this local numbering later to determine on which edge we
@@ -2925,7 +2925,7 @@ contains
       !
       ! Global DOF on elemenr 2:      60      30      70      50
       ! Dbas(1..4,*,*,2):    d2psi60 d2psi30 d2psi70 d2psi50
-      ! 
+      !
       ! and will be transformed to:
       !
       ! local patch-DOF:            1       2       3       4       5      6        7
@@ -2934,10 +2934,10 @@ contains
       ! Dbas(1..7,*,*,2): --------------------------unused-----------------------
       ! Dbas(1..7,*,*,3):     0.0     0.0 d2psi60     0.0 d2psi30 d2psi70 d2psi50
       !
-      ! ("d1psi10" = grad(psi_10) on element 1, 
+      ! ("d1psi10" = grad(psi_10) on element 1,
       !  "psi_10" = test function on global DOF #10)
       !
-      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
+      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and
       ! partially overwrite with the reordered values of the basis functions.
       Dbas (:,:,:,3) = 0.0_DP
       Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
@@ -2970,7 +2970,7 @@ contains
       ! < Ju,v > = sum_E gamma*nu/|E| int_E [u] [v] ds
       dcoeff = dgamma * dnu / dedgelength
       
-      ! Now we have the values of the basis functions in all the cubature 
+      ! Now we have the values of the basis functions in all the cubature
       ! points.
       !
       ! Integrate the jump over the edges. This calculates the local matrix.
@@ -3019,9 +3019,9 @@ contains
       end do
       
       ! Incorporate our "local" system matrix
-      ! into the global matrix. The position of each entry DENTRY(X,Y)    
+      ! into the global matrix. The position of each entry DENTRY(X,Y)
       ! in the global matrix array A was saved in element Kentry(X,Y)
-      ! before.                                                      
+      ! before.
       ! Kentry gives the position of the additive contributions in Dentry.
       ! The entry is weighted by the current dtheta, which is usually
       ! the weighting parameter of the corresponding THETA-scheme of a
@@ -3050,10 +3050,10 @@ contains
     
     deallocate(Dbas)
 
-    deallocate(Kentry) 
+    deallocate(Kentry)
     deallocate(Dentry)
 
-    deallocate(IdofsTempl) 
+    deallocate(IdofsTempl)
 
   end subroutine
 
@@ -3412,12 +3412,12 @@ contains
             if(p_Kcol(idx) .eq. IdofsPatch(idof2)) then
               p_Da(idx) = p_Da(idx) + dtheta*Dmatrix(idof1,idof2)
               exit
-            end if 
+            end if
           end do ! idx
           
         end do ! idof2
       
-      end do ! idof1 
+      end do ! idof1
       
       ! Proceed with the next face
       
@@ -3460,7 +3460,7 @@ contains
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   ! The matrix rtemplateMat must contain the structure of a FE template
-  ! matrix created with an extended matrix stencil: The matrix structure must 
+  ! matrix created with an extended matrix stencil: The matrix structure must
   ! be set up with the BILF_MATC_EDGEBASED switch!!!
   !
   ! For a rerefence about the stabilisation, see
@@ -3561,7 +3561,7 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(DP), dimension(:,:), pointer :: p_Ddetj
 
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: Dbas
 
@@ -3593,7 +3593,7 @@ contains
   ! Derivative specifiers
   logical, dimension(EL_MAXNDER) :: Bder
 
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Data arrays for the vectors
@@ -3705,7 +3705,7 @@ contains
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like
     !  allocate(Dbas(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock+1))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
@@ -3726,10 +3726,10 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Do not calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Fill the basis function arrays with 0. Essential, as only parts
@@ -3773,7 +3773,7 @@ contains
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide
       ! with the first couple of local DOF`s of the element patch! Only
       ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
@@ -3802,7 +3802,7 @@ contains
       
       skiploop: do IDOFE = 1,indofPerElement
         
-        ! Do we have the DOF? 
+        ! Do we have the DOF?
         idof = IdofsTempl(IDOFE,IELcount)
         do JDOFE=1,ndof
           if (Idofs(JDOFE) .eq. idof) then
@@ -3876,7 +3876,7 @@ contains
       !
       ! The next step is to evaluate the basis functions in the cubature
       ! points on the edge. To compute the jump, this has to be done
-      ! for both elements on the edge. 
+      ! for both elements on the edge.
       !
       ! Figure out which edge on the current element is IMT.
       ! We need this local numbering later to determine on which edge we
@@ -3925,7 +3925,7 @@ contains
       !
       ! Global DOF on elemenr 2:      60      30      70      50
       ! Dbas(1..4,*,*,2):    d2psi60 d2psi30 d2psi70 d2psi50
-      ! 
+      !
       ! and will be transformed to:
       !
       ! local patch-DOF:            1       2       3       4       5      6        7
@@ -3934,10 +3934,10 @@ contains
       ! Dbas(1..7,*,*,2): --------------------------unused-----------------------
       ! Dbas(1..7,*,*,3):     0.0     0.0 d2psi60     0.0 d2psi30 d2psi70 d2psi50
       !
-      ! ("d1psi10" = grad(psi_10) on element 1, 
+      ! ("d1psi10" = grad(psi_10) on element 1,
       !  "psi_10" = test function on global DOF #10)
       !
-      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
+      ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and
       ! partially overwrite with the reordered values of the basis functions.
       Dbas (:,:,:,3) = 0.0_DP
       Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
@@ -3970,7 +3970,7 @@ contains
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
       dcoeff = dgamma * dnu / dedgelength
       
-      ! Now we have the values of the basis functions in all the cubature 
+      ! Now we have the values of the basis functions in all the cubature
       ! points.
       !
       ! Integrate the jump over the edges. This calculates the local matrix.
@@ -4017,13 +4017,13 @@ contains
       
       end do
       
-      ! Build the defect vector                     
+      ! Build the defect vector
       !     y = cAx + y
-      ! This is done matrix free, only with the help of the local 
-      ! matrix.                                                   
-      ! In this case, D=(D1,D2) is expected to be the RHS on      
-      ! entry and will be updated to be the defect vector when    
-      ! this routine is left.                                     
+      ! This is done matrix free, only with the help of the local
+      ! matrix.
+      ! In this case, D=(D1,D2) is expected to be the RHS on
+      ! entry and will be updated to be the defect vector when
+      ! this routine is left.
       
       do IDOFE=0,ndof-1
 
@@ -4031,7 +4031,7 @@ contains
 
         do JDOFE=1,ndof
 
-          dval = cx * Dentry(IDOFE*ndof+JDOFE)         
+          dval = cx * Dentry(IDOFE*ndof+JDOFE)
 
           jcol=Idofs(JDOFE)
           p_Dy1(irow) = p_Dy1(irow) + dval*p_Dx1(jcol)
@@ -4052,10 +4052,10 @@ contains
     
     deallocate(Dbas)
 
-    deallocate(Kentry) 
+    deallocate(Kentry)
     deallocate(Dentry)
 
-    deallocate(IdofsTempl) 
+    deallocate(IdofsTempl)
 
   end subroutine
 

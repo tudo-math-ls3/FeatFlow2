@@ -424,7 +424,7 @@ contains
     ! (2) with integration by parts:
     !     $$ -\int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
     !
-    !     with weakly imposed boundary conditions 
+    !     with weakly imposed boundary conditions
     !
     !     $$ \int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
     !
@@ -1211,7 +1211,7 @@ contains
       !
       !   $$ rhs = 0 $$
       !
-      ! Note that there is no explicit part from algebraic flux corretion 
+      ! Note that there is no explicit part from algebraic flux corretion
       !-------------------------------------------------------------------------
 
       ! Clear right-hand side vector
@@ -1242,7 +1242,7 @@ contains
     !
     ! $$ res^{(m)} = rhs-[M*U^{(m)}-\theta\Delta t div F(U^{(m)})-S^{(m)}-b.c.`s $$
     !
-    ! for the standard two-level theta-scheme, whereby the  source 
+    ! for the standard two-level theta-scheme, whereby the  source
     ! term $S^{(m)}$ is optional. The constant right-hand side
     !
     !  $$ rhs = [M*U^n + (1-\theta)\Delta t div F(U^n) + S^n + b.c.`s $$
@@ -1938,7 +1938,7 @@ contains
       
         else
           
-          ! Build the raw antidiffusive fluxes without including 
+          ! Build the raw antidiffusive fluxes without including
           ! the contribution from consistent mass matrix
           call mhd_calcFluxFCT(rproblemLevel, rsolution, 0.0_DP,&
               1.0_DP, 1.0_DP, .true., .true., AFCSTAB_FCTFLUX_EXPLICIT,&
@@ -2049,7 +2049,7 @@ contains
     logical, intent(in) :: bclear
 
     ! Switch for flux assembly
-    ! TRUE  : fluxes are not modified externally so that 
+    ! TRUE  : fluxes are not modified externally so that
     !         quicker assembly procedures may be feasible
     ! FALSE : fluxes are truely assembled even if this
     !         leads to an expensive addition of zeros
@@ -2831,7 +2831,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -2905,7 +2905,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3070,7 +3070,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3144,7 +3144,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3309,7 +3309,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3383,7 +3383,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3470,7 +3470,7 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
     !
-    ! The following data must be passed to this routine in the collection in order 
+    ! The following data must be passed to this routine in the collection in order
     ! to work correctly:
     !
     ! IquickAccess(1) = systemFormat
@@ -3508,8 +3508,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   
@@ -3591,7 +3591,7 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
     !
-    ! The following data must be passed to this routine in the collection in order 
+    ! The following data must be passed to this routine in the collection in order
     ! to work correctly:
     !
     ! DquickAccess(1)          = dtime % simulation time
@@ -3629,8 +3629,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   
@@ -4157,7 +4157,7 @@ contains
           
           ! Prepare quick access array of temporal collection structure
           rcollectionTmp%DquickAccess(5) = rregion%dminParam
-          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam          
+          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam
         end if
 
         ! Assemble the linear form
@@ -4573,7 +4573,7 @@ contains
     character(LEN=*), intent(in) :: ssectionName
 
     ! OPTIONAL: source vector
-    type(t_vectorBlock), intent(in), optional :: rsource   
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>

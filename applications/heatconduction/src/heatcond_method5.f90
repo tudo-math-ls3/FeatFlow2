@@ -4,11 +4,11 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple 
-!# heat conduction problem with constant coefficients 
+!# This module is a demonstation program how to solve a simple
+!# heat conduction problem with constant coefficients
 !# on a simple domain.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -165,9 +165,9 @@ contains
   subroutine heatcond5
   
 !<description>
-  ! This is a 'separated' heatcond solver for solving a nonstationary heat 
+  ! This is a 'separated' heatcond solver for solving a nonstationary heat
   ! conduction problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (This is somehow a cleaner implementation than using a collection!).
@@ -222,8 +222,8 @@ contains
     !
     ! Initialisation
     call hc5_initParamTriang (rproblem%ilvmin,rproblem%ilvmax,rproblem)
-    call hc5_initDiscretisation (rproblem)    
-    call hc5_initMatVec (rproblem,rparams)    
+    call hc5_initDiscretisation (rproblem)
+    call hc5_initMatVec (rproblem,rparams)
 
     ! Use the auxiliary RHS vector on the finest level to create an
     ! initial RHS and solution vector, which we pass later to the timeloop.
@@ -231,7 +231,7 @@ contains
     call lsysbl_createVecBlockIndirect (rproblem%rrhs,rvector,.true.)
 
     ! Calculate the initial RHS, do not incorporate any BC`s.
-    call hc5_calcRHS (rproblem,rrhs)  
+    call hc5_calcRHS (rproblem,rrhs)
     
     ! Discretise the boundary conditions
     call hc5_initDiscreteBC (rproblem)

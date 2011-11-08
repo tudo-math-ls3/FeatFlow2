@@ -52,7 +52,7 @@ contains
 !<description>
   ! This routine calculates the integration of a given finite element function
   ! in rvectorscalar to a given analytical callback function ffunctionReference.
-  ! ffunctionReference will provided the function values at the cubature points. 
+  ! ffunctionReference will provided the function values at the cubature points.
   ! 2D version for double-precision vectors.
 !</description>
 
@@ -68,11 +68,11 @@ contains
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
   
-  ! Optional: A collection structure to provide additional 
+  ! Optional: A collection structure to provide additional
   ! information for callback routines.
   type(t_collection), intent(INOUT), optional      :: rcollection
 
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFuncSc.inc'
@@ -141,7 +141,7 @@ contains
     ! An allocateable array accepting the DOF's of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
-    ! type of transformation from the reference to the real element 
+    ! type of transformation from the reference to the real element
     integer(I32) :: ctrafotype
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -157,9 +157,9 @@ contains
 
     Bder = .false.
     select case (cerrortype)
-    case (PPERR_L1ERROR, PPERR_L2ERROR) 
+    case (PPERR_L1ERROR, PPERR_L2ERROR)
       Bder(DER_FUNC) = .true.
-    case (PPERR_H1ERROR) 
+    case (PPERR_H1ERROR)
       Bder(DER_DERIV_X) = .true.
       Bder(DER_DERIV_Y) = .true.
     case DEFAULT
@@ -227,7 +227,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       if (present(ffunctionReference)) then
@@ -263,7 +263,7 @@ contains
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
-        ! Prepare the call to the evaluation routine of the analytic function.    
+        ! Prepare the call to the evaluation routine of the analytic function.
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
@@ -314,7 +314,7 @@ contains
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF's and cubature points to calculate the
           ! integral: int_Omega abs(u-u_h) dx
@@ -334,7 +334,7 @@ contains
               derror = derror + &
                        OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
 
-            end do ! ICUBP 
+            end do ! ICUBP
 
           end do ! IEL
 
@@ -368,9 +368,9 @@ contains
 !*****************************************************************************
 
  ! ***************************************************************************
-! The following subroutine is to calculate  
+! The following subroutine is to calculate
 ! \sum_{E} {\sum{\Phi_i b_i}^3-\sum{\Phi_i b_i}}
-! Question: is it same as 
+! Question: is it same as
 ! (\sum_{E} {\sum{\Phi_i b_i}})^3-(\sum_{E}[\sum{\Phi_i b_i}])?
 
 !<subroutine>
@@ -380,7 +380,7 @@ contains
                                       
 !<description>
   ! This routine allows to evaluate a finite element solution vector
-  ! rvectorScalar simultaneously in multiple points on multiple elements in a 
+  ! rvectorScalar simultaneously in multiple points on multiple elements in a
   ! discretisation.
   ! rdomainIntSubset must specify all information about where and how
   ! to evaluate; e.g. the coordinates of the evaluation points are
@@ -390,7 +390,7 @@ contains
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
   ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
-  ! is not allowed e.g.. 
+  ! is not allowed e.g..
   !
   ! The interface of this routine is designed to be called in callback
   ! functions during linearform and bilinearform evaluation.

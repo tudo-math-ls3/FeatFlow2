@@ -71,7 +71,7 @@ CONTAINS
     ! local variables
     integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs
@@ -80,7 +80,7 @@ CONTAINS
     ! pointer to structure for saving discrete BC's:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     
-    ! A set of variables describing the analytic boundary conditions.    
+    ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! A pointer to the domain
@@ -92,7 +92,7 @@ CONTAINS
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
-    rCHproblem%rcollection%Dquickaccess(1) = rCHproblem%rtimedependence%dtime 
+    rCHproblem%rcollection%Dquickaccess(1) = rCHproblem%rtimedependence%dtime
     call collct_setvalue_real(rCHproblem%rcollection,'TIME',&
          rCHproblem%rtimedependence%dtime,.TRUE.)
 
@@ -133,14 +133,14 @@ CONTAINS
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC's for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC's can be applied
       !   to matrices and vectors
       ! - Add the calculated discrete BC's to rdiscreteBC for later use.
 
-! For 1st compoenent, phase field variable 
-!MCai We use Neumann BC, so we remark ...Q: why there are problem, 
+! For 1st compoenent, phase field variable
+!MCai We use Neumann BC, so we remark ...Q: why there are problem,
 !      CALL bcasm_newDirichletBConrealBD (p_rdiscretisation,1,&
 !         rboundaryRegion,rCHproblem%RlevelInfo(i)%p_rdiscreteBC,&
 !         getBoundaryValues)
@@ -202,7 +202,7 @@ CONTAINS
     ! to the matrix on the finest level.
     p_rdiscreteBC => rCHproblem%RlevelInfo(rCHproblem%NLMAX)%p_rdiscreteBC
     
-    p_rrhs    => rCHproblem%rrhs   
+    p_rrhs    => rCHproblem%rrhs
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
                 
   end subroutine
@@ -227,7 +227,7 @@ CONTAINS
     ! local variables
 !    integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
 !    type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
@@ -248,7 +248,7 @@ CONTAINS
       ! Assemble boundary conditions
 !      call CH_assembleBDconditions (rproblem,p_rdiscretisation,&
 !          rproblem%RlevelInfo(i)%p_rdiscreteBC,rproblem%rcollection)
-! MCai, so far, we do no have CH_assembleBDconditions      
+! MCai, so far, we do no have CH_assembleBDconditions
      
 !    end do
 
@@ -290,7 +290,7 @@ CONTAINS
   ! local variables
   integer :: i,NLMAX
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     
@@ -314,7 +314,7 @@ CONTAINS
 !    call vecfil_discreteBCrhs (rCHrhs,dtimeWeight,p_rdiscreteBC)
 !    call vecfil_discreteBCsol (rCHvector,dtimeWeight,p_rdiscreteBC)
 
-    ! Implement discrete boundary conditions into the matrices on all 
+    ! Implement discrete boundary conditions into the matrices on all
     ! levels, too. call the appropriate matrix filter to modify
     ! all matrices according to the attached discrete boundary conditions.
     do i=rCHproblem%NLMIN,rCHproblem%NLMAX

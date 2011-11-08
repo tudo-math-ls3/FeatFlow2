@@ -409,7 +409,7 @@ contains
       ! this type of boundary conditions?
       
       if (nexpr .lt. 0) then
-        ! Reread parameters from file and obtain 
+        ! Reread parameters from file and obtain
         ! number of periodic boundary segment
         backspace iunit
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&

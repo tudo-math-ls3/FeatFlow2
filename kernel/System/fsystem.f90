@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains system routines like time measurement,          
+!# This module contains system routines like time measurement,
 !# string/value conversions and auxiliary routines.
 !#
 !# On start of the main program, the routine system_init() must be called
@@ -64,7 +64,7 @@
 !# 15.) sys_str2Single
 !#      -> Convert string to single value
 !#
-!# 16.) sys_d   ,sys_sd  ,sys_sdP  ,sys_sdE ,sys_sdEP ,sys_sdL ,sys_sdEL, 
+!# 16.) sys_d   ,sys_sd  ,sys_sdP  ,sys_sdE ,sys_sdEP ,sys_sdL ,sys_sdEL,
 !#      sys_r   ,sys_s3  ,sys_s5   ,sys_s6  ,sys_s14  ,sys_s18 ,sys_s32,
 !#      sys_s54 ,sys_s61 ,sys_s63  ,sys_s84 ,
 !#      sys_s2E ,sys_s4E ,sys_s6E  ,sys_s10E
@@ -72,13 +72,13 @@
 !#
 !# 17.) sys_si  ,sys_si0 ,sys_sli ,sys_sli0 ,sys_siL ,sys_si0L ,
 !#      sys_i03 ,sys_i04 ,sys_i05 ,sys_i1   ,sys_i2  ,sys_i3   ,sys_i4,
-!#      sys_i6  ,sys_i8  ,sys_i10 ,sys_i12  ,sys_i16 ,sys_i64  
+!#      sys_i6  ,sys_i8  ,sys_i10 ,sys_i12  ,sys_i16 ,sys_i64
 !#      -> String routines to convert integer numbers to strings
 !#
 !# 18.) sys_sliL, sys_sli0L, sys_li12
 !#      -> String routines to convert long integer numbers to strings
 !#
-!# 19.) sys_sl  
+!# 19.) sys_sl
 !#      -> String routines to convert a logical to a strings
 !#
 !# 20.) sys_smem, sys_smemL
@@ -98,7 +98,7 @@
 !#
 !# 24.) sys_dequote
 !#      -> De-quote a string; remove any quotation marks
-!# 
+!#
 !# 25.) sys_stringToCharArray
 !#      -> Converts a string into a character array
 !#
@@ -316,7 +316,7 @@ module fsystem
     integer                   :: iprojectStart = 0
 
     ! Starting time of this project (long time runs).
-    ! Format: year / month / day / time-difference to UTC / 
+    ! Format: year / month / day / time-difference to UTC /
     !         hours / minutes / seconds / milliseconds.
     integer, dimension(8)     :: iprojectStartLong = 0
     
@@ -337,8 +337,8 @@ module fsystem
   integer, save :: sys_haltmode = SYS_HALT_STOP
 
   ! The Fortran system_clock timer, like all integer timers, has a cycle
-  ! time of real(max)/real(rate) seconds. After max clock cycles the 
-  ! clock will start counting again from zero. This is the maximum time 
+  ! time of real(max)/real(rate) seconds. After max clock cycles the
+  ! clock will start counting again from zero. This is the maximum time
   ! span that can be measured when using system_clock manually.
   !
   ! Note: Timing routines in the statistics module automatically
@@ -464,7 +464,7 @@ contains
   subroutine system_init_simple()
 
 !<description>
-    ! This subroutine initialises internal data structures 
+    ! This subroutine initialises internal data structures
     ! with standard values.
 !</description>
 
@@ -568,7 +568,7 @@ contains
   subroutine sys_toupper_replace (str)
 
 !<description>
-    ! Convert a string to upper case. 
+    ! Convert a string to upper case.
     ! The given string is replaced by its uppercase version.
 !</description>
 
@@ -599,7 +599,7 @@ contains
 
 !<subroutine>
   
-  subroutine sys_toupper_copy (str,strUpper) 
+  subroutine sys_toupper_copy (str,strUpper)
 
 !<description>
     ! Convert a string to upper case.
@@ -649,7 +649,7 @@ contains
 
 !<subroutine>
   
-  subroutine sys_tolower_replace (str) 
+  subroutine sys_tolower_replace (str)
 
 !<description>
     ! Convert a string to lower case.
@@ -683,7 +683,7 @@ contains
 
 !<subroutine>
   
-  subroutine sys_tolower_copy (str,strLower) 
+  subroutine sys_tolower_copy (str,strLower)
 
 !<description>
     ! Convert a string to lower case.
@@ -936,8 +936,8 @@ contains
     
 !<description>
     ! This routine flushes the buffers associated with an open output unit.
-    ! This normally happens when the file is closed or the program ends, 
-    ! but this routine ensures the buffers are flushed before any other 
+    ! This normally happens when the file is closed or the program ends,
+    ! but this routine ensures the buffers are flushed before any other
     ! processing occurs.
 !</description>
 
@@ -2209,7 +2209,7 @@ contains
     ! OPTIONAL: Value of the option
     character(len=*), intent(out), optional :: svalue
 
-    ! OPTIONAL: Type of the command line argument. 
+    ! OPTIONAL: Type of the command line argument.
     ! A value -1 indicates that the command line arguzment does not exist and no sdefault
     ! is specified.
     ! A value 0 indicates a direct option.

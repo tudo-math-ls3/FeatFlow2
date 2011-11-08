@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains routines to support a space-time linear system
 !# for the underlying problem. As this is problem specific, there is a special
-!# routine included here for setting up the and doing multiplication with 
+!# routine included here for setting up the and doing multiplication with
 !# the global matrix.
 !#
 !# The routines in this module form the basic set of routines:
@@ -37,7 +37,7 @@
 !# the above assembling routines a large space-time coupled system which solves
 !# the nonstationary (Navier-)Stokes problem in all time steps simultaneously.
 !# The main system matrix is assembled from the matrix blocks that are used in
-!# each time step of a usual time-dependent simulation. It has the following 
+!# each time step of a usual time-dependent simulation. It has the following
 !# form (here for 2 timesteps with solutions y_0(initial), y_1 and y_2):
 !#
 !#  Explicit Euler.
@@ -49,7 +49,7 @@
 !#  Navier-Stokes:   Standard iteration:
 !#                   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
 !#                   N = N(y_i) = -nu*Laplace(.) - y_i*grad(.) + (.)*grad(y_i)
-!#                   R = R(l_i) = -M                                   
+!#                   R = R(l_i) = -M
 !#                   P = 1/a M
 !#
 !#                   Newton iteration:
@@ -61,7 +61,7 @@
 !#        with M~(l_i)_kl = int (c(l_i) phi_l phi_k) dx
 !#        and c(l_i) = 1 if a < -1/alpha l_i(x) < b and c(l_i) = 0 otherwise
 !#        (derivative of the projection operator for constrains on the control)
-!#  
+!#
 !#  ====================================================================================================
 !#  [I     ]                       |                                  |
 !#                                 |                                  |
@@ -81,16 +81,16 @@
 !#                                 | from the        [-B^t     ]      |
 !#                                 | RHS                              |
 !#  -------------------------------+----------------------------------+---------------------------------
-!#                                 | [-M/dt   ]                       |  [M/dt + A] [-B] [ P      ]      
-!#                                 |                                  |                                  
-!#                                 |                                  |  [-B^t    ]                      
-!#                                 |                                  |                                  
-!#                                 |                                  |  [ g R    ]      [M/dt + N] [-B] 
-!#                                 |                                  |    ^                             
-!#                                 |                                  |  from the        [-B^t    ]      
-!#                                 |                                  |  RHS                                  
+!#                                 | [-M/dt   ]                       |  [M/dt + A] [-B] [ P      ]
+!#                                 |                                  |
+!#                                 |                                  |  [-B^t    ]
+!#                                 |                                  |
+!#                                 |                                  |  [ g R    ]      [M/dt + N] [-B]
+!#                                 |                                  |    ^
+!#                                 |                                  |  from the        [-B^t    ]
+!#                                 |                                  |  RHS
 !#  ====================================================================================================
-!#  
+!#
 !# More general:
 !#
 !#  Crank Nicolson.
@@ -99,36 +99,36 @@
 !#                   N(y_i) = not present
 !#  Navier-Stokes:   A(y_i) = -nu*Laplace(.) + y_i*grad(.)
 !#                   N(y_i) = -nu*Laplace(.) - y_i*grad(.) + (.)*grad(y_i)
-!#  
+!#
 !# WARNING: WRONG. HAS TO BE REWRITTEN!
 !#
 !#  ===============================================================================================================================================================
-!#  [I                ]                                   |                                                    |                                            
-!#                                                        |                                                    |                                            
-!#                      [I      ]                         |                                                    |                                            
-!#                                                        |                                                    |                                            
-!#                                [M/dt + T A(y_0)] [-B ] |                          [-M/dt+(1-T)N(y_0)]       |                                            
-!#                                                        |                                        ^           |                                            
-!#                                [-B^t           ]       |                                        |           |                                            
-!#                                                        |                                    !correct!       |                                            
+!#  [I                ]                                   |                                                    |
+!#                                                        |                                                    |
+!#                      [I      ]                         |                                                    |
+!#                                                        |                                                    |
+!#                                [M/dt + T A(y_0)] [-B ] |                          [-M/dt+(1-T)N(y_0)]       |
+!#                                                        |                                        ^           |
+!#                                [-B^t           ]       |                                        |           |
+!#                                                        |                                    !correct!       |
 !#  ------------------------------------------------------+----------------------------------------------------+---------------------------------------------------
-!#  [-M/dt+(1-T)A(y_0)]                                   | [M/dt + T A(y_1) ] [-B ] [ P               ]       |                                            
-!#                                                        |                                                    |                                            
-!#                                                        | [-B^t            ]                                 |                                            
-!#                                                        |                                                    |                                            
+!#  [-M/dt+(1-T)A(y_0)]                                   | [M/dt + T A(y_1) ] [-B ] [ P               ]       |
+!#                                                        |                                                    |
+!#                                                        | [-B^t            ]                                 |
+!#                                                        |                                                    |
 !#                                                        | [-T M            ]       [ M/dt + T N(y_1) ] [-B ] |                          [-M/dt+(1-T)N(y_1)]
-!#                                                        |   ^                                                |                                        ^    
-!#                                                        | from the                 [ -B^t            ]       |                                        |    
-!#                                                        | RHS                                                |                                    !correct!    
+!#                                                        |   ^                                                |                                        ^
+!#                                                        | from the                 [ -B^t            ]       |                                        |
+!#                                                        | RHS                                                |                                    !correct!
 !#  ------------------------------------------------------+----------------------------------------------------+---------------------------------------------------
-!#                                                        | [-M/dt+(1-T)A(y_1)]                                |  [M/dt + T A(y_2)] [-B ] [ P               ]       
-!#                                                        |                                                    |                                                   
-!#                                                        |                                                    |  [-B^t           ]                                
-!#                                                        |                                                    |                                                   
-!#                                                        |                                                    |  [-g T M         ]       [ M/dt + T N(y_2) ] [-B ] 
-!#                                                        |                                                    |    ^                                              
-!#                                                        |                                                    |  from the                [ -B^t            ]       
-!#                                                        |                                                    |  RHS                                                   
+!#                                                        | [-M/dt+(1-T)A(y_1)]                                |  [M/dt + T A(y_2)] [-B ] [ P               ]
+!#                                                        |                                                    |
+!#                                                        |                                                    |  [-B^t           ]
+!#                                                        |                                                    |
+!#                                                        |                                                    |  [-g T M         ]       [ M/dt + T N(y_2) ] [-B ]
+!#                                                        |                                                    |    ^
+!#                                                        |                                                    |  from the                [ -B^t            ]
+!#                                                        |                                                    |  RHS
 !#  ===============================================================================================================================================================
 !#
 !##############################################################################
@@ -258,8 +258,8 @@ contains
   ! the submatrix below the diagonal.
   !
   ! The matrix weights in rnonlinearSpatialMatrix are initialised based on this
-  ! information such that the 'assembleMatrix' and 'assembleDefect' routines of 
-  ! the core equation will build the system matrix / defect at that position 
+  ! information such that the 'assembleMatrix' and 'assembleDefect' routines of
+  ! the core equation will build the system matrix / defect at that position
   ! in the supermatrix.
   !
   ! The routine does not initialise the pointers to the basic matrices/discretisation
@@ -291,7 +291,7 @@ contains
 
 !<inputoutput>
   ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
-  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! equation. The weights that specify the submatrices of a small 6x6
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps.
   !
@@ -304,16 +304,16 @@ contains
 !    ! If the following constant is set from 1.0 to 0.0, the primal system is
 !    ! decoupled from the dual system!
 !    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
-!    
+!
 !    ! If the following constant is set from 1.0 to 0.0, the dual system is
 !    ! decoupled from the primal system!
 !    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
-!    
+!
 !    ! If the following parameter is set from 1.0 to 0.0, the terminal
 !    ! condition between the primal and dual equation is decoupled, i.e.
 !    ! the dual equation gets independent from the primal one.
 !    real(DP), parameter :: dterminalCondDecoupled = 1.0_DP
-!    
+!
 !    ! If the following parameter is set from 1.0 to 0.0, the time coupling
 !    ! is disabled, resulting in a stationary simulation in every timestep.
 !    real(DP), parameter :: dtimeCoupling = 1.0_DP
@@ -557,7 +557,7 @@ contains
 
         rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(1,1) = (1.0_DP-dtheta) 
+        rnonlinearSpatialMatrix%Dtheta(1,1) = (1.0_DP-dtheta)
         
         if (.not. bconvectionExplicit) then
 
@@ -580,7 +580,7 @@ contains
         rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
 
-      else if (irelpos .eq. 0) then    
+      else if (irelpos .eq. 0) then
 
         ! The diagonal matrix.
         if (.not. bconvectionExplicit) then
@@ -621,17 +621,17 @@ contains
         rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
         rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
-            (-dequationType) * dtheta 
+            (-dequationType) * dtheta
             
         if (.not. bconvectionExplicit) then
 
           if (dnewton .ne. 0.0_DP) then
             rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
+                ( dequationType) * dtheta
             !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType) * dtheta 
+            !    ( dequationType) * dtheta
             rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
+                (-dequationType) * dtheta
 
             ! For Crank-Nicolson there appears a 2nd reactive term
             ! stemming from the next timestep.
@@ -648,11 +648,11 @@ contains
         
           if (dnewton .ne. 0.0_DP) then
             rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
+                ( dequationType) * dtheta
             !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType) * dtheta 
+            !    ( dequationType) * dtheta
             rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
+                (-dequationType) * dtheta
           end if
         
         end if
@@ -684,7 +684,7 @@ contains
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
         rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta) 
+        rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta)
         
         if (.not. bconvectionExplicit) then
 
@@ -705,7 +705,7 @@ contains
         end if
 
         rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
-            (-dequationType) * (1.0_DP-dtheta) 
+            (-dequationType) * (1.0_DP-dtheta)
             
         if (bconvectionExplicit) then
 
@@ -749,7 +749,7 @@ contains
 
         rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(1,1) = (1.0_DP-dtheta) 
+        rnonlinearSpatialMatrix%Dtheta(1,1) = (1.0_DP-dtheta)
         
         if (.not. bconvectionExplicit) then
 
@@ -770,7 +770,7 @@ contains
         rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
 
-      else if (irelpos .eq. 0) then    
+      else if (irelpos .eq. 0) then
 
         ! The diagonal matrix.
         rnonlinearSpatialMatrix%iprimalSol = 2
@@ -794,13 +794,13 @@ contains
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
               dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP) 
+              - dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP) 
+                dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
                 
-        end if        
+        end if
 
         rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
@@ -819,20 +819,20 @@ contains
           ! That's the only difference to the implementation above!
           if (dnewton .ne. 0.0_DP) then
             rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
+                ( dequationType) * dtheta
             !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType) * dtheta 
+            !    ( dequationType) * dtheta
             rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
+                (-dequationType) * dtheta
           end if
 
         end if
 
-      end if        
+      end if
         
     end if
     
-    ! The dumin/dumax parameters are the same for all equations. 
+    ! The dumin/dumax parameters are the same for all equations.
     rnonlinearSpatialMatrix%dumin1 = rproblem%roptcontrol%dumin1
     rnonlinearSpatialMatrix%dumax1 = rproblem%roptcontrol%dumax1
     rnonlinearSpatialMatrix%dumin2 = rproblem%roptcontrol%dumin2
@@ -843,7 +843,7 @@ contains
     rnonlinearSpatialMatrix%ccontrolConstraints = rspaceTimeMatrix%ccontrolConstraints
     rnonlinearSpatialMatrix%cmatrixType = rspaceTimeMatrix%cmatrixType
 
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
   
@@ -863,7 +863,7 @@ contains
 
 !<inputoutput>
   ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
-  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! equation. The weights that specify the submatrices of a small 6x6
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps.
   !
@@ -896,7 +896,7 @@ contains
   subroutine cc_getFullMatrixDummy(rphysicsPrimal,rnonlinearSpatialMatrix)
   
 !<description>
-  ! Configures the parameters in rnonlinearSpatialMatrix with dummy 
+  ! Configures the parameters in rnonlinearSpatialMatrix with dummy
   ! coefficients so that the configuration resembles the matrix structure
   ! in the current situation. This is used during the allocation of memory
   ! to figure out the matrix structure and allocate necessary submatrices.
@@ -909,7 +909,7 @@ contains
 
 !<inputoutput>
   ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
-  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! equation. The weights that specify the submatrices of a small 6x6
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps. The coefficients in this
   ! structure are either set to 1.0 or 0.0 depending on whether a
@@ -1233,7 +1233,7 @@ contains
         ! Release the block mass matrix.
         call lsysbl_releaseMatrix (rblockTemp)
 
-        ! -----      
+        ! -----
 
         ! Now the diagonal matrix.
       
@@ -1270,7 +1270,7 @@ contains
         ! Release the block mass matrix.
         call lsysbl_releaseMatrix (rblockTemp)
 
-      else 
+      else
         
         ! We are in the last substep. Here, we have to handle the following
         ! part of the supersystem:
@@ -1320,7 +1320,7 @@ contains
       
       end if
 
-      ! Implement the BC`s?      
+      ! Implement the BC`s?
       if (iand(cfilter,SPTID_FILTER_BCDEF) .ne. 0) then
 
         ! Discretise the boundary conditions at the new point in time.
@@ -1335,7 +1335,7 @@ contains
 
         ! Implement the boundary conditions into the defect.
         call vecfil_discreteBCdef (rtempVectorD)
-        call vecfil_discreteFBCdef (rtempVectorD)      
+        call vecfil_discreteFBCdef (rtempVectorD)
       end if
 
       if ((ieqTime .eq. 0) .and. (iand(cfilter,SPTID_FILTER_ICDEF) .ne. 0)) then
@@ -1405,7 +1405,7 @@ contains
     call bcasm_releaseDiscreteFBC(rdiscreteFBC)
     call bcasm_releaseDiscreteBC(rdiscreteBC)
     
-  end subroutine 
+  end subroutine
    
   ! ***************************************************************************
   
@@ -1425,7 +1425,7 @@ contains
 
 !<inputoutput>
   ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
-  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! equation. The weights that specify the submatrices of a small 6x6
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps.
   !
@@ -1492,11 +1492,11 @@ contains
 !    ! If the following constant is set from 1.0 to 0.0, the primal system is
 !    ! decoupled from the dual system!
 !    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
-!    
+!
 !    ! If the following constant is set from 1.0 to 0.0, the dual system is
 !    ! decoupled from the primal system!
 !    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
-!    
+!
 !    ! If the following parameter is set from 1.0 to 0.0, the time coupling
 !    ! is disabled, resulting in a stationary simulation in every timestep.
 !    real(DP), parameter :: dtimeCoupling = 1.0_DP
@@ -1581,7 +1581,7 @@ contains
   end subroutine
 
 !  ! ***************************************************************************
-!  
+!
 !!<subroutine>
 !
 !  SUBROUTINE cc_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
@@ -1599,7 +1599,7 @@ contains
 !  ! A problem structure that provides information on all
 !  ! levels as well as temporary vectors.
 !  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-!  
+!
 !  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
 !  ! coupled space-time system.
 !  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
@@ -1617,7 +1617,7 @@ contains
 !
 !  ! A space-time vector that receives the RHS.
 !  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
-!  
+!
 !  ! Whether to implement boundary conditions into the RHS or not.
 !  LOGICAL, INTENT(IN) :: bimplementBC
 !!</inputoutput>
@@ -1628,20 +1628,20 @@ contains
 !    INTEGER :: isubstep
 !    REAL(DP) :: dtheta
 !    TYPE(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
-!    
+!
 !    ! A temporary vector for the creation of the RHS.
 !    TYPE(t_vectorBlock) :: rtempVectorRHS
-!    
+!
 !    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd, p_Drhs
 !
 !    ! Theta-scheme identifier.
 !    ! =1: impliciz Euler.
 !    ! =0.5: Crank Nicolson
 !    dtheta = rproblem%rtimedependence%dtimeStepTheta
-!    
+!
 !    ! ----------------------------------------------------------------------
 !    ! Generate the global RHS vector
-!    
+!
 !    CALL lsysbl_getbase_double (rtempVector1,p_Dx)
 !    CALL lsysbl_getbase_double (rtempVector2,p_Db)
 !    CALL lsysbl_getbase_double (rtempVector3,p_Dd)
@@ -1649,7 +1649,7 @@ contains
 !    ! Assemble 1st RHS vector in X temp vector.
 !    CALL generateRHS (rproblem,0,rb%ntimesteps,rspaceTimeDiscr%rtimeDiscr%dtstep,&
 !        rtempVector1, .TRUE., .FALSE.)
-!        
+!
 !    ! Assemble the 2nd RHS vector in the RHS temp vector
 !    CALL generateRHS (rproblem,1,rb%ntimesteps,rspaceTimeDiscr%rtimeDiscr%dtstep,&
 !        rtempVector2, .TRUE., .FALSE.)
@@ -1661,20 +1661,20 @@ contains
 !    ELSE
 !      CALL lsysbl_copyVector (rtempVector2,rtempVector3)
 !    END IF
-!        
+!
 !    ! Create a copy of the X temp vector (RHS0). That vector will be
 !    ! our destination vector for assembling the RHS in all timesteps.
 !    CALL lsysbl_copyVector (rtempVector1,rtempVectorRHS)
-!    
+!
 !    ! DEBUG!!!
 !    CALL lsysbl_getbase_double (rtempVectorRHS,p_Drhs)
-!    
+!
 !    ! RHS 0,1,2 -> 1-2-3
-!    
+!
 !    DO isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals
-!    
+!
 !      IF (isubstep .EQ. 0) THEN
-!      
+!
 !        ! Primal RHS comes from rtempVector1. The dual from the
 !        ! isubstep+1'th RHS in rtempVector2.
 !        !
@@ -1689,12 +1689,12 @@ contains
 !            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
 !            dtheta,(1.0_DP-dtheta),&
 !            rtempVectorRHS%RvectorBlock(4))
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
 !            dtheta,(1.0_DP-dtheta),&
 !            rtempVectorRHS%RvectorBlock(5))
 !        ! Pressure is fully implicit
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
 !            dtheta,(1.0_DP-dtheta),&
 !            rtempVectorRHS%RvectorBlock(6))
@@ -1707,9 +1707,9 @@ contains
 !        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(4))
 !        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(5))
 !        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(6))
-!            
+!
 !      ELSE IF (isubstep .LT. rspaceTimeDiscr%rtimeDiscr%nintervals) THEN
-!      
+!
 !        ! We are somewhere 'in the middle'.
 !        !
 !        ! Dual RHS comes from rtempVector3. The primal from the
@@ -1717,17 +1717,17 @@ contains
 !        !
 !        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
 !        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
-!        
+!
 !        CALL lsyssc_vectorLinearComb (&
 !            rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
 !            (1.0_DP-dtheta),dtheta,&
-!            rtempVectorRHS%RvectorBlock(1))                                        
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVectorRHS%RvectorBlock(1))
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
 !            (1.0_DP-dtheta),dtheta,&
-!            rtempVectorRHS%RvectorBlock(2))                                        
+!            rtempVectorRHS%RvectorBlock(2))
 !        ! Pressure is fully implicit
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
 !            (1.0_DP-dtheta),dtheta,&
 !            rtempVectorRHS%RvectorBlock(3))
@@ -1736,16 +1736,16 @@ contains
 !            rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
 !            dtheta,(1.0_DP-dtheta),&
 !            rtempVectorRHS%RvectorBlock(4))
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
 !            dtheta,(1.0_DP-dtheta),&
 !            rtempVectorRHS%RvectorBlock(5))
 !        ! Pressure is fully implicit
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
 !            dtheta,(1.0_DP-dtheta),&
 !            rtempVectorRHS%RvectorBlock(6))
-!        
+!
 !        IF (isubstep .LT. rspaceTimeDiscr%rtimeDiscr%nintervals-1) THEN
 !          ! Shift the RHS vectors and generate the RHS for the next time step.
 !          ! (Yes, I know, this could probably be solved more elegant without copying anything
@@ -1756,9 +1756,9 @@ contains
 !              rspaceTimeDiscr%rtimeDiscr%nintervals,&
 !              rspaceTimeDiscr%rtimeDiscr%dtstep,rtempVector3, .TRUE., .FALSE.)
 !        END IF
-!        
+!
 !      ELSE
-!      
+!
 !        ! We are 'at the end'.
 !        !
 !        ! Dual RHS comes from rtempVector3. The primal from the
@@ -1766,17 +1766,17 @@ contains
 !        !
 !        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
 !        ! dual RHS(0)   = DUALRHS(0)
-!      
+!
 !        CALL lsyssc_vectorLinearComb (&
 !            rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
 !            (1.0_DP-dtheta),dtheta,&
-!            rtempVectorRHS%RvectorBlock(1))                                        
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVectorRHS%RvectorBlock(1))
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
 !            (1.0_DP-dtheta),dtheta,&
-!            rtempVectorRHS%RvectorBlock(2))                                        
+!            rtempVectorRHS%RvectorBlock(2))
 !        ! Pressure is fully implicit
-!        CALL lsyssc_vectorLinearComb (&                                                   
+!        CALL lsyssc_vectorLinearComb (&
 !            rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
 !            (1.0_DP-dtheta),dtheta,&
 !            rtempVectorRHS%RvectorBlock(3))
@@ -1794,53 +1794,53 @@ contains
 !
 !      END IF
 !
-!      ! Implement the boundary conditions into the RHS vector        
+!      ! Implement the boundary conditions into the RHS vector
 !      IF (bimplementBC) THEN
 !        CALL generateRHS (rproblem,isubstep,&
 !            rspaceTimeDiscr%rtimeDiscr%nintervals,&
 !            rspaceTimeDiscr%rtimeDiscr%dtstep, rtempVectorRHS, .FALSE., .TRUE.)
 !      END IF
-!      
+!
 !      ! Save the RHS.
 !      CALL sptivec_setTimestepData(rb, isubstep, rtempVectorRHS)
-!      
+!
 !    END DO
-!    
+!
 !    ! Release the temp vector for generating the RHS.
 !    CALL lsysbl_releaseVector (rtempVectorRHS)
 !
 !  CONTAINS
-!  
+!
 !    SUBROUTINE generateRHS (rproblem,isubstep,nsubsteps,dtstep,&
 !        rvector, bgenerate, bincludeBC)
-!    
+!
 !    ! Generate the RHS vector of timestep isubstep and/or include boundary
 !    ! conditions.
-!    
+!
 !    ! Problem structure.
 !    TYPE(t_problem), INTENT(INOUT) :: rproblem
-!    
+!
 !    ! Number of the substep where to generate the RHS vector
 !    INTEGER, INTENT(IN) :: isubstep
-!    
+!
 !    ! Total number of substeps
 !    INTEGER, INTENT(IN) :: nsubsteps
-!    
+!
 !    ! Length od one timestep
 !    REAL(DP), INTENT(IN) :: dtstep
-!    
+!
 !    ! Destination vector
 !    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
-!    
+!
 !    ! Whether to generate the RHS vector or not
 !    LOGICAL, INTENT(IN) :: bgenerate
-!    
+!
 !    ! Whether to include boundary conditions
 !    LOGICAL, INTENT(IN) :: bincludeBC
-!    
+!
 !    ! DEBUG!!!
 !    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-!    
+!
 !      ! DEBUG!!!
 !      CALL lsysbl_getbase_double (rvector,p_Ddata)
 !
@@ -1848,24 +1848,24 @@ contains
 !      rproblem%rtimedependence%dtime = &
 !          rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 !      rproblem%rtimedependence%itimestep = isubstep
-!          
+!
 !      ! Assemble the RHS?
 !      IF (bgenerate) THEN
-!      
+!
 !        ! Generate the RHS of that point in time into the vector.
 !        CALL cc_generateBasicRHS (rproblem,rvector)
 !
 !      END IF
-!      
+!
 !      ! Include BC's?
 !      IF (bincludeBC) THEN
-!        
+!
 !        ! Initialise the collection for the assembly process with callback routines.
 !        ! Basically, this stores the simulation time in the collection if the
 !        ! simulation is nonstationary.
 !        CALL cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 !
-!        ! Discretise the boundary conditions at the new point in time -- 
+!        ! Discretise the boundary conditions at the new point in time --
 !        ! if the boundary conditions are nonconstant in time!
 !        IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
 !          CALL cc_updateDiscreteBC (rproblem)
@@ -1875,15 +1875,15 @@ contains
 !        ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,
 !        ! as Dirichlet values mustn't be multiplied with GAMMA!
 !        CALL vecfil_discreteBCsol (rvector)
-!        CALL vecfil_discreteFBCsol (rvector)      
-!      
+!        CALL vecfil_discreteFBCsol (rvector)
+!
 !        ! Clean up the collection (as we are done with the assembly, that's it.
 !        CALL cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-!        
+!
 !      END IF
-!    
+!
 !    END SUBROUTINE
-!    
+!
 !  END SUBROUTINE
 
 !betrachte die GMV's. Entkoppelt gibt's 2. Ordnung in der Geschwindigkeit

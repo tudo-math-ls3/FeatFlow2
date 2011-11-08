@@ -446,7 +446,7 @@ contains
     ! (2) with integration by parts:
     !     $$ -\int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
     !
-    !     with weakly imposed boundary conditions 
+    !     with weakly imposed boundary conditions
     !
     !     $$ \int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
     !
@@ -1291,7 +1291,7 @@ contains
         case (NDIM1D)
           call hydro_calcLinfBdrCond1D(rproblemLevel, rsolver,&
               rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
-              hydro_coeffVectorBdr1d_sim, rrhs, ssectionName, rcollection)       
+              hydro_coeffVectorBdr1d_sim, rrhs, ssectionName, rcollection)
 
         case (NDIM2D)
           call hydro_calcLinfBdrCond2D(rproblemLevel, rsolver,&
@@ -3164,7 +3164,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3238,7 +3238,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3400,7 +3400,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3474,7 +3474,7 @@ contains
           
           ! We always handle GFSYS_NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most GFSYS_NEDGESIM edges simultaneously.
           
           IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
@@ -3561,7 +3561,7 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
     !
-    ! The following data must be passed to this routine in the collection in order 
+    ! The following data must be passed to this routine in the collection in order
     ! to work correctly:
     !
     ! IquickAccess(1) = systemFormat
@@ -3599,8 +3599,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   
@@ -3682,7 +3682,7 @@ contains
     ! According to the terms in the linear form, the routine has to compute
     ! simultaneously for all these points.
     !
-    ! The following data must be passed to this routine in the collection in order 
+    ! The following data must be passed to this routine in the collection in order
     ! to work correctly:
     !
     ! DquickAccess(1)          = dtime % simulation time
@@ -3720,8 +3720,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   
@@ -4337,7 +4337,7 @@ contains
 
           ! Prepare quick access array of temporal collection structure
           rcollectionTmp%DquickAccess(5) = rregion%dminParam
-          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam          
+          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam
         end if
         ! Assemble the linear form
         if (rvector%nblocks .eq. 1) then
@@ -4884,7 +4884,7 @@ contains
 
       end if
 
-    end subroutine doSource1DBlockLumped    
+    end subroutine doSource1DBlockLumped
     
     !**************************************************************
     ! Calculate the geometric source term for cylindrically (dalpha=1)

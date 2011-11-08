@@ -7,7 +7,7 @@
 !# This module contains routines to discretise analytically given boundary
 !# conditions. Analytically given boundary conditions are 'discretised', i.e.
 !# a discrete version (realised by the structure t_discreteBCEntry in the case
-!# of BC`s on the real boundary and by the structure t_discreteFBCEntry in 
+!# of BC`s on the real boundary and by the structure t_discreteFBCEntry in
 !# the case of fictitious boundary) is calculated.
 !# This structure is used during the solution process to impose the boundary
 !# conditions into the solution vector. Therefore, this module contains
@@ -40,15 +40,15 @@
 !# 6.) bcasm_newPdropBConRealBd
 !#     -> Discretises pressure drop boundary conditions on a 2D boundary region
 !#
-!# 7.) bcasm_newDirichletBConMR 
-!#     -> Discretises Dirichlet boundary conditions on a mesh region 
+!# 7.) bcasm_newDirichletBConMR
+!#     -> Discretises Dirichlet boundary conditions on a mesh region
 !#        (all dimensions)
 !#
 !# 8.) bcasm_newSlipBConRealBd
 !#     -> Discretises slip boundary conditions n a 2D boundary region
-!#     
+!#
 !# 9.) bcasm_initDiscreteFBC
-!#     -> Initialise a structure collecting discrete fictitious 
+!#     -> Initialise a structure collecting discrete fictitious
 !#        boundary boundary conditions.
 !#
 !# 10.) bcasm_clearDiscreteFBC
@@ -127,7 +127,7 @@ module bcassembly
 
 !<constantblock description="Additional options for assembling boundary conditions">
 
-  ! Integral mean values (e.g. for Q1) are computed exactly by the callback routine. 
+  ! Integral mean values (e.g. for Q1) are computed exactly by the callback routine.
   ! Without this option, integral mean values are computed by a proper cubature formula.
   integer(I32), parameter, public :: BCASM_DISCOPT_INTBYCB = 2**0
 
@@ -158,7 +158,7 @@ module bcassembly
   ! special parameters which are not known by the analytical definition.
   type t_configDiscreteFeastMirrorBC
   
-    ! Coarsening level. Used when adding additional contributions to the 
+    ! Coarsening level. Used when adding additional contributions to the
     ! matrix/vector. Usually = 0. Must be increased for every level coarser
     ! than the maximum one in a mesh hierarchy.
     real(DP) :: icoarseningLevel = 0
@@ -199,7 +199,7 @@ module bcassembly
   public :: bcasm_newDirichletBC_1D
   public :: bcasm_newDirichletBConRealBd
   public :: bcasm_newPdropBConRealBd
-  public :: bcasm_newDirichletBConMR 
+  public :: bcasm_newDirichletBConMR
   public :: bcasm_newSlipBConRealBd
   public :: bcasm_initDiscreteFBC
   public :: bcasm_clearDiscreteFBC
@@ -277,7 +277,7 @@ contains
     ! Reset the number of used handles.
     rdiscreteBC%inumEntriesUsed = 0
 
-    ! The rest of the structure is initialised by default initialisation.    
+    ! The rest of the structure is initialised by default initialisation.
 
   end subroutine
 
@@ -306,7 +306,7 @@ contains
     if (associated(rdiscreteBC%p_RdiscBCList)) then
     
       ! Destroy all the substructures in the array.
-      do icurrentRegion = 1,size(rdiscreteBC%p_RdiscBCList)  
+      do icurrentRegion = 1,size(rdiscreteBC%p_RdiscBCList)
         
         ! Release all allocated information to this boundary region
         select case (rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype)
@@ -335,7 +335,7 @@ contains
         ! BC released, indicate this
         rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
         
-      end do  
+      end do
       
       ! Reset the counters
       rdiscreteBC%inumEntriesUsed = 0
@@ -350,8 +350,8 @@ contains
   subroutine bcasm_releaseDiscreteBC (rdiscreteBC)
   
 !<description>
-  ! This routine cleans up the rdiscreteBC structure. 
-  ! All allocated memory is released. 
+  ! This routine cleans up the rdiscreteBC structure.
+  ! All allocated memory is released.
 !</description>
 
 !<inputoutput>
@@ -403,7 +403,7 @@ contains
     ! Reset the number of used handles.
     rdiscreteFBC%inumEntriesUsed = 0
     
-    ! The rest of the structure is initialised by default initialisation.    
+    ! The rest of the structure is initialised by default initialisation.
 
   end subroutine
 
@@ -433,7 +433,7 @@ contains
     if (associated(rdiscreteFBC%p_RdiscFBCList)) then
     
       ! Destroy all the substructures in the array.
-      do icurrentRegion = 1,size(rdiscreteFBC%p_RdiscFBCList)  
+      do icurrentRegion = 1,size(rdiscreteFBC%p_RdiscFBCList)
         
         ! Release all allocated information to this boundary region
         select case (rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype)
@@ -447,7 +447,7 @@ contains
         ! BC released, indicate this
         rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
         
-      end do  
+      end do
       
     end if
     
@@ -460,8 +460,8 @@ contains
   subroutine bcasm_releaseDiscreteFBC (rdiscreteFBC)
   
 !<description>
-  ! This routine cleans up the rdiscreteBC structure. 
-  ! All allocated memory is released. 
+  ! This routine cleans up the rdiscreteBC structure.
+  ! All allocated memory is released.
 !</description>
 
 !<inputoutput>
@@ -528,7 +528,7 @@ contains
       rdiscreteBC%p_RdiscBCList => p_RdbcList
       rdiscreteBC%inumEntriesAlloc = inumAlloc + DISCBC_LISTBLOCKSIZE
       
-    end if  
+    end if
     
     rdiscreteBC%inumEntriesUsed = rdiscreteBC%inumEntriesUsed + 1
     
@@ -582,7 +582,7 @@ contains
       rdiscreteFBC%p_RdiscFBCList => p_RdbcList
       rdiscreteFBC%inumEntriesAlloc = inumAlloc + DISCBC_LISTBLOCKSIZE
       
-    end if  
+    end if
     
     rdiscreteFBC%inumEntriesUsed = rdiscreteFBC%inumEntriesUsed + 1
     
@@ -613,10 +613,10 @@ contains
   ! OPTIONAL: The equation for which the BC's should be applied to.
   ! If not present, this defaults to the first equation.
   integer, optional :: iequation
-!</input>  
+!</input>
 
 !<inputoutput>
-  ! A t_discreteBC structures, representing the boundary discretised 
+  ! A t_discreteBC structures, representing the boundary discretised
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
@@ -762,7 +762,7 @@ contains
       ! Store the DOF
       p_IdirichletDOFs(1) = iDOF
     
-    end if 
+    end if
     
     if (present(dright)) then
     
@@ -873,7 +873,7 @@ contains
   type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! An identifier for the equation, this boundary condition refers to.
-  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
   ! Y-velocity), etc.
   integer, intent(in) :: iequation
 
@@ -886,7 +886,7 @@ contains
   include 'intf_bcassembly.inc'
   
   ! Optional: A collection structure to inform the callback function with
-  ! additional information. 
+  ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
@@ -900,10 +900,10 @@ contains
   ! Optional: A field specifying additional options for the assembly.
   ! If not specified, BCASM_DISCOPT_STD is assumed.
   integer(I32), intent(in), optional :: coptions
-!</input>  
+!</input>
 
 !<inputoutput>
-  ! A t_discreteBC structures, representing the boundary discretised 
+  ! A t_discreteBC structures, representing the boundary discretised
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
@@ -942,7 +942,7 @@ contains
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
     
     ! Position of cubature points for 2-point Gauss formula on an edge.
-    ! Used for Q2T. 
+    ! Used for Q2T.
     real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
     real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
     
@@ -1024,7 +1024,7 @@ contains
     ! As we are in 2D, we can use parameter values at first to figure out,
     ! which points and which edges are on the boundary.
     ! What we have is a boundary segment. Now ask the boundary-index routine
-    ! to give us the vertices and edges on the boundary that belong to 
+    ! to give us the vertices and edges on the boundary that belong to
     ! this boundary segment.
     
     allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
@@ -1046,7 +1046,7 @@ contains
                                    
     ! Reserve some memory to save temporarily all DOF`s of all boundary
     ! elements.
-    ! We handle all boundary elements simultaneously - let us hope that there are 
+    ! We handle all boundary elements simultaneously - let us hope that there are
     ! never so many elements on the boundary that our memory runs out :-)
     allocate (Idofs(EL_MAXNBAS,icount))
     
@@ -1170,9 +1170,9 @@ contains
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
-            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1209,9 +1209,9 @@ contains
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
-            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1245,9 +1245,9 @@ contains
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint2,dpar, Dvalues, rcollection)
                                     
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
-            DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1) 
+            DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1277,9 +1277,9 @@ contains
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then   
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value of the corner.
-            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1317,7 +1317,7 @@ contains
             ! Save the computed function value of the edge midpoint.
             ! This is found at position ilocalEdge+4, as the first four
             ! elements in DdofValue correspond to the corners!
-            DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1348,9 +1348,9 @@ contains
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then   
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value of the corner.
-            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1384,9 +1384,9 @@ contains
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint2,dpar, Dvalues, rcollection)
                                     
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
-            DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1) 
+            DdofValue(mod(ilocalEdge,NNVE)+1,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1418,7 +1418,7 @@ contains
             ! Save the computed function value of the edge midpoint.
             ! This is found at position ilocalEdge+4, as the first four
             ! elements in DdofValue correspond to the corners!
-            DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge+nve,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1436,7 +1436,7 @@ contains
         end if
 
       case (EL_QP1,EL_DG_T1_2D)
-        ! Three DOF`s: Function value in the element midpoint 
+        ! Three DOF`s: Function value in the element midpoint
         ! and derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
         
@@ -1470,7 +1470,7 @@ contains
         end if
         
       case (EL_DG_T2_2D)
-        ! Six DOF`s: Function value in the element midpoint 
+        ! Six DOF`s: Function value in the element midpoint
         ! and first and second derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
         
@@ -1525,7 +1525,7 @@ contains
           
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             ! Save the computed function value
-            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1)
           end if
           
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1562,7 +1562,7 @@ contains
 
               if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
                 ! Save the computed function value
-                DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+                DdofValue(ilocalEdge,ielidx) = Dvalues(1)
               end if
               
               ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1682,7 +1682,7 @@ contains
                                       
             if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
               ! Save the computed function value
-              DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+              DdofValue(ilocalEdge,ielidx) = Dvalues(1)
             end if
             
             ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1702,7 +1702,7 @@ contains
         ! On the other hand, we have integral mean values of function*parameter
         ! value on the edge.
         !
-        ! Edge inside? 
+        ! Edge inside?
         if ( iedge .ne. 0 ) then
           
           ! We neet to set up two values for each edge E: On one hand the
@@ -1778,7 +1778,7 @@ contains
 !                dpar2 = boundary_convertParameter(p_rspatialDiscr%p_rboundary,&
 !                    rboundaryRegion%iboundCompIdx, dpar2, &
 !                    BDR_PAR_01, BDR_PAR_LENGTH)
-!                    
+!
 !                IF (dpar2 .EQ. 0.0_DP) THEN
 !                  ! Wrap around
 !                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
@@ -1799,7 +1799,7 @@ contains
               dval = ( (dval1*Q2G1) + (dval2*Q2G2) ) * 0.5_DP
             
               ! Save the computed function value
-              DdofValue(ilocalEdge+nve,ielidx) = dval 
+              DdofValue(ilocalEdge+nve,ielidx) = dval
             end if
             
             ! Set the DOF number < 0 to indicate that it is Dirichlet
@@ -1820,7 +1820,7 @@ contains
       
     end do
 
-    ! Temp arrays no more necessary    
+    ! Temp arrays no more necessary
     deallocate(IverticesAtBoundaryIdx)
     deallocate(IedgesAtBoundaryIdx)
     deallocate(IelementsAtBoundary)
@@ -1846,7 +1846,7 @@ contains
       call storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
       
       if (iand(casmComplexity,int(not(BCASM_DISCFORDEFMAT),I32)) .ne. 0) then
-        call storage_new('bcasm_newDirichletBConRealBd', 'h_DdirichletValues', & 
+        call storage_new('bcasm_newDirichletBConRealBd', 'h_DdirichletValues', &
                         icount, ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                         ST_NEWBLOCK_NOINIT)
         call storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_DdirichletValues)
@@ -1930,7 +1930,7 @@ contains
   type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! An identifier for the equation, this boundary condition refers to.
-  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
   ! Y-velocity), etc.
   integer, intent(in) :: iequation
 
@@ -1948,10 +1948,10 @@ contains
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
   integer(I32), intent(in), optional :: ccomplexity
-!</input>  
+!</input>
 
 !<inputoutput>
-  ! A t_discreteBC structures, representing the boundary discretised 
+  ! A t_discreteBC structures, representing the boundary discretised
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
@@ -1988,7 +1988,7 @@ contains
     ! done with Q1!
     
     ! The BC`s only exist as modification of the matrix.
-    ! If we should not compute them for the matrix/defect, we do not 
+    ! If we should not compute them for the matrix/defect, we do not
     ! have to do anything.
     if (iand(casmComplexity,BCASM_DISCFORMAT) .eq. 0) return
 
@@ -2162,7 +2162,7 @@ contains
   include 'intf_bcassembly.inc'
   
   ! Optional: A collection structure to inform the callback function with
-  ! additional information. 
+  ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
@@ -2172,10 +2172,10 @@ contains
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
   integer(I32), intent(in), optional :: ccomplexity
-!</input>  
+!</input>
 
 !<inputoutput>
-  ! A t_discreteBC structures, representing the boundary discretised 
+  ! A t_discreteBC structures, representing the boundary discretised
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
@@ -2287,7 +2287,7 @@ contains
                     icount, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                     ST_NEWBLOCK_NOINIT)
     ImodifierSize = (/NDIM2D,icount/)
-    call storage_new('bcasm_discrBCpressureDrop', 'h_Dmodifier', & 
+    call storage_new('bcasm_discrBCpressureDrop', 'h_Dmodifier', &
                       ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                       ST_NEWBLOCK_NOINIT)
                       
@@ -2311,7 +2311,7 @@ contains
     ! we save "P_j  int_Sj  phi_k * n  ds" as modifier for the DOF of
     ! the RHS!
     !
-    ! Loop through all edges on the boundary belonging to our current 
+    ! Loop through all edges on the boundary belonging to our current
     ! boundary segment.
     do i=1,icount
       ! Get information about the edge and the adjacent element
@@ -2425,10 +2425,10 @@ contains
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
   integer(I32), intent(in), optional :: ccomplexity
-!</input>  
+!</input>
 
 !<inputoutput>
-  ! A t_discreteBC structures, representing the boundary discretised 
+  ! A t_discreteBC structures, representing the boundary discretised
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
@@ -2469,7 +2469,7 @@ contains
 
     ! Pressure drop BC`s only exist as modification of the defect vector
     ! and matrix.
-    ! If we should not compute them for the matrix/defect, we do not 
+    ! If we should not compute them for the matrix/defect, we do not
     ! have to do anything.
     if (iand(casmComplexity,BCASM_DISCFORDEFMAT) .eq. 0) return
 
@@ -2484,7 +2484,7 @@ contains
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
     p_rspatialDiscr => &
-      rblockDiscretisation%RspatialDiscr(Iequations(1))  
+      rblockDiscretisation%RspatialDiscr(Iequations(1))
 
     if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       print *,'Discrete Slip boundary conditions currently only supported'
@@ -2545,7 +2545,7 @@ contains
                     icount, ST_INT, p_rslipBCs%h_IslipDOFs, &
                     ST_NEWBLOCK_NOINIT)
     InormalsSize = (/NDIM2D,icount/)
-    call storage_new('bcasm_discrBCSlip', 'h_Dnormals', & 
+    call storage_new('bcasm_discrBCSlip', 'h_Dnormals', &
                       InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
                       ST_NEWBLOCK_NOINIT)
                       
@@ -2569,7 +2569,7 @@ contains
     ! we save "P_j  int_Sj  phi_k * n  ds" as modifier for the DOF of
     ! the RHS!
     !
-    ! Loop through all edges on the boundary belonging to our current 
+    ! Loop through all edges on the boundary belonging to our current
     ! boundary segment.
     do i=1,icount
     
@@ -2596,7 +2596,7 @@ contains
       d = 1.0_DP / sqrt(Dnormal(1)**2+Dnormal(2)**2)
       Dnormal(1:2) = Dnormal(1:2) * d
       
-      ! Save the DOF and the normal of the edge.            
+      ! Save the DOF and the normal of the edge.
       p_IslipDOFs(i) = iedge
       p_Dnormals(1:NDIM2D,i) = Dnormal(1:NDIM2D)
     
@@ -2661,7 +2661,7 @@ contains
   ! conditions inside of this structure are discretised.
   type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
-  ! An array of identifiers for the equations, this boundary condition 
+  ! An array of identifiers for the equations, this boundary condition
   ! refers to. Example: Iequations = [1 2] for X-velocity-component (1) and
   ! Y-velocity component (2).
   integer, dimension(:), intent(in) :: Iequations
@@ -2671,7 +2671,7 @@ contains
   include 'intf_fbcassembly.inc'
   
   ! Optional: A collection structure to inform the callback function with
-  ! additional information. 
+  ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
@@ -2685,7 +2685,7 @@ contains
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
-!</input>  
+!</input>
 
 !<inputoutput>
   ! This structure receives the result of the discretisation of rbcRegion.
@@ -3243,30 +3243,30 @@ contains
 
 
 !    ! local variables
-!    
+!
 !    integer :: nDOFs
 !    integer :: h_Ddofs, h_Idofs, i, j, iidx, ieldist
 !    integer(I32) :: celement
 !    integer :: nequations
 !    integer, dimension(2) :: IdofCount
-!    
+!
 !    integer, dimension(:), pointer :: p_Ielements
 !    integer :: ndofloc, nve
-!    
+!
 !    integer, dimension(:), pointer :: p_Idofs
 !    real(DP), dimension(:,:), pointer   :: p_Ddofs
-!    
+!
 !    integer, dimension(:), pointer :: p_IdofUsed
 !    type(t_directAccessIntSet) :: rset
 !
-!    
-!    integer :: isubsetStart, isubsetLength, icurrentDof
-!    
-!    type(t_discreteFBCevaluation), dimension(DISCFBC_MAXDISCBC) :: Revaluation
-!    
-!    
 !
-!    
+!    integer :: isubsetStart, isubsetLength, icurrentDof
+!
+!    type(t_discreteFBCevaluation), dimension(DISCFBC_MAXDISCBC) :: Revaluation
+!
+!
+!
+!
 !    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
 !      call output_line (&
 !          'Element space not supported!', &
@@ -3278,32 +3278,32 @@ contains
 !
 !    ! All elements are of the samne type. Get it in advance.
 !    celement = p_rspatialDiscr%RelementDistr(1)%celement
-!    
+!
 !    ! Depending on the element type, prepare the evaluation structure and call
 !    ! the callback routine to calculate what we need.
-!    
+!
 !    icurrentDof = 0
-!    
+!
 !    if(p_rspatialDiscr%ndimension .eq. NDIM2D) then
-!    
+!
 !      ! Calculate values in the vertices for Q1,Q2,P1,P2
 !      if ((celement .eq. EL_P1) .or. &
 !          (celement .eq. EL_Q1) .or. &
 !          (celement .eq. EL_P2) .or. &
 !          (celement .eq. EL_Q2)) then
-!      
+!
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. At first, loop through the vertices in case we have a
 !        ! P1/P2/Q1/Q2 discretisation
 !        do isubsetStart = 1,p_rtriangulation%NVT,p_rperfconfig%NITEMSIM
-!        
+!
 !          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,&
 !                              p_rperfconfig%NITEMSIM)
-!        
+!
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
 !          call fillsubset (isubsetStart,isubsetLength,Isubset)
-!          
+!
 !          ! Fill the evaluation structure with data for the callback routine
 !          do i=1,nequations
 !            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
@@ -3315,16 +3315,16 @@ contains
 !
 !          ! Clear the Iinside array
 !          Iinside = 0
-!          
+!
 !          ! Call the callback routine to calculate the values.
 !          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
 !                                      rblockDiscretisation,&
 !                                      Revaluation, rcollection)
-!                                      
+!
 !          ! Transfer the DOF`s that are affected
 !
 !          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-!            
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
@@ -3334,36 +3334,36 @@ contains
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          else
-!          
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          end if
-!        
+!
 !        end do
-!      
+!
 !        ! In case of a P2/Q2 discretisation, also loop about the edges.
 !        if ((celement .eq. EL_P2) .or. &
 !            (celement .eq. EL_Q2)) then
-!        
+!
 !          ! Let us start to collect values. This is a rather element-dependent
 !          ! part. At first, loop through the vertices in case we have a
 !          ! P1/P2/Q1/Q2 discretisation
 !          do isubsetStart = 1,p_rtriangulation%NMT,p_rperfconfig%NITEMSIM
-!          
+!
 !            isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,&
 !                                p_rperfconfig%NITEMSIM)
-!          
+!
 !            ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !            ! subset we evaluate.
 !            call fillsubset (isubsetStart,isubsetLength,Isubset)
-!            
+!
 !            ! Fill the evaluation structure with data for the callback routine
 !            do i=1,nequations
 !              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCMID
@@ -3375,16 +3375,16 @@ contains
 !
 !            ! Clear the Iinside array
 !            Iinside = 0
-!            
+!
 !            ! Call the callback routine to calculate the values.
 !            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
 !                                        rblockDiscretisation,&
 !                                        Revaluation, rcollection)
-!                                        
+!
 !            ! Transfer the DOF`s that are affected
 !
 !            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-!              
+!
 !              do i=1,isubsetLength
 !                if (Iinside(i) .ne. 0) then
 !                  icurrentDof = icurrentDof + 1
@@ -3395,9 +3395,9 @@ contains
 !                  p_Idofs(icurrentDof) = p_rtriangulation%NVT+isubsetStart+i-1
 !                end if
 !              end do
-!              
+!
 !            else
-!            
+!
 !              do i=1,isubsetLength
 !                if (Iinside(i) .ne. 0) then
 !                  icurrentDof = icurrentDof + 1
@@ -3405,28 +3405,28 @@ contains
 !                  p_Idofs(icurrentDof) = p_rtriangulation%NVT+isubsetStart+i-1
 !                end if
 !              end do
-!              
+!
 !            end if
-!          
+!
 !          end do
-!        
-!        end if 
+!
+!        end if
 !
 !        ! In case of a Q2 discretisation, also loop about the element midpoints.
 !        if ((celement .eq. EL_Q2)) then
-!        
+!
 !          ! Let us start to collect values. This is a rather element-dependent
 !          ! part. At first, loop through the vertices in case we have a
 !          ! P1/P2/Q1/Q2 discretisation
 !          do isubsetStart = 1,p_rtriangulation%NEL,p_rperfconfig%NITEMSIM
-!          
+!
 !            isubsetLength = min(p_rtriangulation%NEL-isubsetStart+1,&
 !                                p_rperfconfig%NITEMSIM)
-!          
+!
 !            ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !            ! subset we evaluate.
 !            call fillsubset (isubsetStart,isubsetLength,Isubset)
-!            
+!
 !            ! Fill the evaluation structure with data for the callback routine
 !            do i=1,nequations
 !              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCELMID
@@ -3438,16 +3438,16 @@ contains
 !
 !            ! Clear the Iinside array
 !            Iinside = 0
-!            
+!
 !            ! Call the callback routine to calculate the values.
 !            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
 !                                        rblockDiscretisation,&
 !                                        Revaluation, rcollection)
-!                                        
+!
 !            ! Transfer the DOF`s that are affected
 !
 !            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-!              
+!
 !              do i=1,isubsetLength
 !                if (Iinside(i) .ne. 0) then
 !                  icurrentDof = icurrentDof + 1
@@ -3459,9 +3459,9 @@ contains
 !                      p_rtriangulation%NMT+isubsetStart+i-1
 !                end if
 !              end do
-!              
+!
 !            else
-!            
+!
 !              do i=1,isubsetLength
 !                if (Iinside(i) .ne. 0) then
 !                  icurrentDof = icurrentDof + 1
@@ -3470,30 +3470,30 @@ contains
 !                      isubsetStart+i-1
 !                end if
 !              end do
-!              
+!
 !            end if
-!          
+!
 !          end do
-!        
-!        end if 
-!      
+!
+!        end if
+!
 !      end if ! end if el_typ
-!    
+!
 !      ! Calculate values in the face midpoints / / integral mean values for Q1~
 !      if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
-!      
+!
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. At first, loop through the vertices in case we have a
 !        ! P1/Q1/Q2 discretisation
 !        do isubsetStart = 1,p_rtriangulation%NMT,p_rperfconfig%NITEMSIM
-!        
+!
 !          isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,&
 !                              p_rperfconfig%NITEMSIM)
-!        
+!
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
 !          call fillsubset (isubsetStart,isubsetLength,Isubset)
-!          
+!
 !          ! Fill the evaluation structure with data for the callback routine
 !          do i=1,nequations
 !            if ((celement .eq. EL_E031) .or. &
@@ -3507,19 +3507,19 @@ contains
 !            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
 !            Revaluation(i)%p_Iinside   => Iinside
 !          end do
-!          
+!
 !          ! Clear the Iinside array
 !          Iinside = 0
-!          
+!
 !          ! Call the callback routine to calculate the values.
 !          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
 !                                      rblockDiscretisation,&
 !                                      Revaluation, rcollection)
-!                                      
+!
 !          ! Transfer the DOF`s that are affected
 !
 !          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-!            
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
@@ -3529,40 +3529,40 @@ contains
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          else
-!          
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          end if
-!        
+!
 !        end do
-!      
+!
 !      end if ! end if q1tilde
-!    
+!
 !    end if ! end dim2d
-!    
+!
 !    ! q2,q1,q1t
 !    if(p_rspatialDiscr%ndimension .eq. NDIM3D)then
-!      if(elem_getPrimaryElement(celement) .eq. EL_Q1_3D)then      
-!      
+!      if(elem_getPrimaryElement(celement) .eq. EL_Q1_3D)then
+!
 !        ! Let us start to collect values. This is a rather element-dependent
 !        ! part. At first, loop through the vertices in case we have a
 !        ! Q1/Q2 discretisation
 !        do isubsetStart = 1,p_rtriangulation%NVT,p_rperfconfig%NITEMSIM
-!        
+!
 !          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,&
 !                              p_rperfconfig%NITEMSIM)
-!        
+!
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
 !          call fillsubset (isubsetStart,isubsetLength,Isubset)
-!          
+!
 !          ! Fill the evaluation structure with data for the callback routine
 !          do i=1,nequations
 !            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
@@ -3574,16 +3574,16 @@ contains
 !
 !          ! Clear the Iinside array
 !          Iinside = 0
-!          
+!
 !          ! Call the callback routine to calculate the values.
 !          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
 !                                      rblockDiscretisation,&
 !                                      Revaluation, rcollection)
-!                                      
+!
 !          ! Transfer the DOF`s that are affected
 !
 !          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-!            
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
@@ -3593,36 +3593,36 @@ contains
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          else
-!          
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          end if
-!        
+!
 !        end do
 !
 !      end if
-!      
+!
 !      ! Calculate values in the face midpoints / / integral mean values for Q1~
 !      if(elem_getPrimaryElement(celement) .eq. EL_Q1T_3D)then
-!      
+!
 !        ! Let us start to collect values. This is a rather element-dependent
-!        ! part. 
+!        ! part.
 !        do isubsetStart = 1,p_rtriangulation%NAT,p_rperfconfig%NITEMSIM
-!        
+!
 !          isubsetLength = min(p_rtriangulation%NAT-isubsetStart+1,&
 !                              p_rperfconfig%NITEMSIM)
-!        
+!
 !          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
 !          ! subset we evaluate.
 !          call fillsubset (isubsetStart,isubsetLength,Isubset)
-!          
+!
 !          ! Fill the evaluation structure with data for the callback routine
 !          do i=1,nequations
 !            if ((celement .eq. EL_E031) .or. &
@@ -3636,19 +3636,19 @@ contains
 !            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
 !            Revaluation(i)%p_Iinside   => Iinside
 !          end do
-!          
+!
 !          ! Clear the Iinside array
 !          Iinside = 0
-!          
+!
 !          ! Call the callback routine to calculate the values.
 !          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
 !                                      rblockDiscretisation,&
 !                                      Revaluation, rcollection)
-!                                      
+!
 !          ! Transfer the DOF`s that are affected
 !
 !          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-!            
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
@@ -3658,30 +3658,30 @@ contains
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          else
-!          
+!
 !            do i=1,isubsetLength
 !              if (Iinside(i) .ne. 0) then
 !                icurrentDof = icurrentDof + 1
 !                p_Idofs(icurrentDof) = isubsetStart+i-1
 !              end if
 !            end do
-!            
+!
 !          end if
-!        
+!
 !        end do
-!      
-!      
+!
+!
 !      end if ! end EL_Q1T_3D
-!      
+!
 !    end if ! end if NDIM3d
-!    
-!    
-!    
+!
+!
+!
 !    ! Cancel if we did not find any DOF.
 !    if (icurrentDof .gt. 0) then
-!      
+!
 !      ! Reallocate to save memory. Store the final handles in the structure.
 !      if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 !        ! In the 2D-array, the size of the 2nd dimension is changed to the
@@ -3690,7 +3690,7 @@ contains
 !                              h_Ddofs, ST_NEWBLOCK_NOINIT)
 !        p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
 !      end if
-!      
+!
 !      call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
 !                            h_Idofs, ST_NEWBLOCK_NOINIT)
 !      p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
@@ -3703,12 +3703,12 @@ contains
 !    end if
 !
 !    p_rdirichletFBCs%nDOF = icurrentDof
-!    
+!
 !    ! Release temporary data
 !    deallocate(p_Dsubset)
-!    
+!
 !  contains
-!  
+!
 !    pure subroutine fillsubset (istart, ilength, Isubset)
 !    integer, intent(in) :: istart, ilength
 !    integer, dimension(:), intent(out) :: Isubset
@@ -3717,7 +3717,7 @@ contains
 !        Isubset(i) = istart-1+i
 !      end do
 !    end subroutine
-!    
+!
 !  end subroutine
 
   ! ***************************************************************************
@@ -3727,7 +3727,7 @@ contains
   subroutine bcasm_releaseFBCDirichlet (rdiscreteFBCDirichlet)
   
 !<description>
-  ! This routine cleans up the discrete Dirichlet conditions for fictitious 
+  ! This routine cleans up the discrete Dirichlet conditions for fictitious
   ! boundary objects in rdiscreteFBCDirichlet.
 !</description>
 
@@ -3769,7 +3769,7 @@ contains
   type(t_blockDiscretisation), intent(in) :: rblockDiscretisation
   
   ! An identifier for the equation, this boundary condition refers to.
-  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g.
   ! Y-velocity), etc.
   integer, intent(in)                     :: iequation
 
@@ -3781,13 +3781,13 @@ contains
   include 'intf_discretebc.inc'
 
   ! Optional: A collection structure to inform the callback function with
-  ! additional information. 
+  ! additional information.
   type(t_collection), intent(inout), optional :: rcollection
 
 !</input>
 
 !<inputoutput>
-  ! A t_discreteBC structures, representing the boundary discretised 
+  ! A t_discreteBC structures, representing the boundary discretised
   ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
@@ -3949,9 +3949,9 @@ contains
     ! array twice. To ensure this, we will create an array called DOF-Bitmap.
     ! This is an array of 32-bit integers, but we will interpret it as an
     ! array of bits.
-    ! Assume we are currently processing the DOF with number 'idof', then we 
+    ! Assume we are currently processing the DOF with number 'idof', then we
     ! need to calculate 2 values to access the bit of the DOF in the bitmap:
-    ! 1. idofHigh: the index of the 32-bit integer inside the bitmap where 
+    ! 1. idofHigh: the index of the 32-bit integer inside the bitmap where
     !              our DOF is in
     ! 2. idofMask: a 32-bit-mask for the DOF inside that 32-bit integer
     !
@@ -4099,7 +4099,7 @@ contains
 
         ! 2D Q1/Q2/Q3 element
         case (EL_Q1,EL_Q2,EL_Q3)
-          do j = 1, 4 
+          do j = 1, 4
             if (p_IvertsAtElem(j,iel) .eq. ivt) then
               idof = IdofGlob(j)
               exit
@@ -4961,6 +4961,6 @@ contains
           
     end subroutine ! addDofToDirichletEntry(...)
 
-  end subroutine 
+  end subroutine
 
 end module

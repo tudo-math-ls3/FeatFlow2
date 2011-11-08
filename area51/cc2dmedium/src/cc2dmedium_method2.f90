@@ -5,14 +5,14 @@
 !#
 !# <purpose>
 !# This module is a demonstation program how to solve a stationary
-!# Navier-Stokes problem 
+!# Navier-Stokes problem
 !#
 !#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p = f $$
 !#              $$ \Nable \cdot p = 0$$
 !#
 !# on a 2D domain for a 2D function $u=(u_1,u_2)$ and a pressure $p$.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using an application-specific structure saving problem data
@@ -124,7 +124,7 @@ contains
 
 !</subroutine>
 
-    ! Each 'readfromfile' command adds the parameter of the specified file 
+    ! Each 'readfromfile' command adds the parameter of the specified file
     ! to the parameter list.
     call parlst_readfromfile (rparamList, './data/discretisation.dat')
     call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
@@ -146,7 +146,7 @@ contains
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (This is somehow a cleaner implementation than using a collection!).
@@ -184,7 +184,7 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
     
     ! Initialise the timers by zero:
     call stat_clearTimer(rtimerTotal)
@@ -208,12 +208,12 @@ contains
     call parlst_init (p_rproblem%rparamList)
     
     ! Add the parameter list to the collection so that the parameters
-    ! from the DAT/INI files are available everywhere where we have the   
+    ! from the DAT/INI files are available everywhere where we have the
     ! collection.
     call collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
                                 p_rproblem%rparamList,.true.)
 
-    ! Read parameters from the INI/DAT files into the parameter list. 
+    ! Read parameters from the INI/DAT files into the parameter list.
     call cc2dmedium2_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
@@ -265,7 +265,7 @@ contains
       call output_separator (OU_SEP_MINUS)
       call output_line('Initialising discretisation...')
     end if
-    call c2d2_initDiscretisation (p_rproblem)    
+    call c2d2_initDiscretisation (p_rproblem)
 
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
       call output_lbrk ()
@@ -291,7 +291,7 @@ contains
     
     call stat_startTimer(rtimerMatrixGeneration)
     
-    call c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
+    call c2d2_allocMatVec (p_rproblem,rvector,rrhs)
     
     call stat_stopTimer(rtimerMatrixGeneration)
     call output_lbrk ()
@@ -302,7 +302,7 @@ contains
       call output_separator (OU_SEP_MINUS)
       call output_line('Initialising analytic boundary conditions...')
     end if
-    call c2d2_initAnalyticBC (p_rproblem)   
+    call c2d2_initAnalyticBC (p_rproblem)
 
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
@@ -368,7 +368,7 @@ contains
       end if
       call c2d2_generateBasicRHS (p_rproblem,rrhs)
       
-      ! Initialise the boundary conditions, but 
+      ! Initialise the boundary conditions, but
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
@@ -399,7 +399,7 @@ contains
     call c2d2_doneMatVec (p_rproblem,rvector,rrhs)
     call c2d2_doneBC (p_rproblem)
     call c2d2_doneDiscretisation (p_rproblem)
-    call c2d2_donepostprocessing (rpostprocessing)    
+    call c2d2_donepostprocessing (rpostprocessing)
     call c2d2_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.

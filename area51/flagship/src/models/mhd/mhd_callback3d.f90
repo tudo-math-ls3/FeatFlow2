@@ -183,7 +183,7 @@
 !#
 !# 45.) mhd_trafoDiffDenPreVel3d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 46.) mhd_trafoNodalDenPreVel3d_sim
@@ -1760,7 +1760,7 @@ contains
     do idx = 1, nedges
       
       !-------------------------------------------------------------------------
-      ! Evaluate the Galerkin fluxes      
+      ! Evaluate the Galerkin fluxes
       !-------------------------------------------------------------------------
 
       ! Compute velocities
@@ -2313,7 +2313,7 @@ contains
                                    IDX3(DcoeffsAtEdge,3,1,idx,0,0,0))*wi)+&
               RCONST(0.5)*sqrt(POW(IDX3(DcoeffsAtEdge,3,2,idx,0,0,0)-
                                    IDX3(DcoeffsAtEdge,3,1,idx,0,0,0),2))*cf3i)
-#else   
+#else
       ! Compute scalar dissipation with dimensional splitting
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cf1j,&

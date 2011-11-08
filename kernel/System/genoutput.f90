@@ -20,7 +20,7 @@
 !#     -> Writes a separator line to the terminal and/or the log file.
 !#
 !# 4.) output_lbrk
-!#     -> Writes an empty line / line break to the terminal and/or the log 
+!#     -> Writes an empty line / line break to the terminal and/or the log
 !#        file.
 !#
 !# 5.) output_simple
@@ -40,7 +40,7 @@
 !#
 !# HOW TO USE:
 !# -----------
-!# As long as output_init is not called, all output is redirected only to the 
+!# As long as output_init is not called, all output is redirected only to the
 !# standard output channel. Directly after program start, output_init should
 !# be called so that the log file is written.
 !#
@@ -57,12 +57,12 @@
 !#        terminal output
 !#
 !#     Alternatively one can use
-!# 
+!#
 !#     call output_init ('mylogfile.txt','myerrorlogfile.txt')
 !#     -> Opens a log file 'mylogfile.txt' for the output and
 !#        'myerrorlogfile.txt' for error output (both additionally to
 !#        terminal output).
-!#     
+!#
 !# 2.) call output_line ('This is a message')
 !#
 !#     -> Writes a message to the terminal. If output_init was used
@@ -89,13 +89,13 @@
 !#     d) call output_line ('A special debug message.', &
 !#                          OU_CLASS_TRACE1,OU_MODE_STD,'mysubroutine')
 !#
-!#     -> Writes a debug message with '*** (mysubroutine):' in front to the 
+!#     -> Writes a debug message with '*** (mysubroutine):' in front to the
 !#        terminal and the log file. This is usually used for debug purposes.
 !#
 !#     e) call output_line ('This is an error message.', &
 !#                          OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
 !#
-!#     -> Writes a debug message with 'Error (mysubroutine):' in front to the 
+!#     -> Writes a debug message with 'Error (mysubroutine):' in front to the
 !#        error log file and error output channel.
 !#
 !#       or even simpler:
@@ -109,26 +109,26 @@
 !#
 !#     g) MT = 1
 !#        call output_simple (MT,'A log file message.')
-!#     
+!#
 !#     -> Writes a message to the log file, not to the terminal. FEAT1.0
 !#        compatibility routine for "MT=1"
 !#
 !#     h) MT = 2
 !#        call output_simple (MT,'A log file message')
-!#     
+!#
 !#     -> Writes a message to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
 !#
 !#     i) MT = 2
 !#        call output_simple (MT)
-!#     
+!#
 !#     -> Writes an empty line to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
 !#
 !#     i) MT = 2
 !#        call output_simple_sep (MT,OU_SEP_MINUS)
-!#     
-!#     -> Writes a separation line with '-' signs to the terminal and 
+!#
+!#     -> Writes a separation line with '-' signs to the terminal and
 !#        to the log file. FEAT1.0 compatibility routine for "MT=2".
 !#
 !#     For futher possibilities, consider the documentation out output_line.
@@ -284,7 +284,7 @@ module genoutput
   ! Separator line: MINUS character
   integer, parameter, public :: OU_SEP_MINUS  = 0
 
-  ! Separator line: STAR character 
+  ! Separator line: STAR character
   integer, parameter, public :: OU_SEP_STAR   = 1
 
   ! Separator line: EQUAL character
@@ -332,12 +332,12 @@ module genoutput
   ! <=0: no log file output.
   integer, public :: OU_LOG                 = 0
   
-  ! Global device number for error log file. The error log file is opened 
+  ! Global device number for error log file. The error log file is opened
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
   integer, public :: OU_ERRORLOG            = 0
 
-  ! Global device number for benchmark log file. The error log file is opened 
+  ! Global device number for benchmark log file. The error log file is opened
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
   integer, public :: OU_BENCHLOG            = 0
@@ -352,15 +352,15 @@ module genoutput
   ! Add date.
   integer, parameter, public :: OU_DTP_ADDDATE         = 1
 
-  ! Add time.            
+  ! Add time.
   integer, parameter, public :: OU_DTP_ADDTIME         = 2
 
-  ! Add date + time.            
+  ! Add date + time.
   integer, parameter, public :: OU_DTP_ADDDATETIME     = 3
 
 !</constantblock>
 
-!</constants>  
+!</constants>
 
 !<publicvars>
 
@@ -414,7 +414,7 @@ contains
   subroutine output_openLogfile(sfilename, iunit)
 
   !<description>
-    ! This routine opens a file sfilename for writing. This is 
+    ! This routine opens a file sfilename for writing. This is
     ! usually used to create a log file. The routine will return a
     ! handle iunit with an output channel where text can be written to.
     ! If the file exists, it is overwritten.
@@ -439,7 +439,7 @@ contains
 
     integer :: istatus ! status variable for opening procedure
 
-    if (trim(sfilename) .eq. "") then 
+    if (trim(sfilename) .eq. "") then
       write (*,'(A)') 'Error: io_openFileForWriting. sfilename undefined!'
       return
     endif
@@ -486,15 +486,15 @@ contains
   subroutine output_init_logfile (slogFilename)
 
 !<description>
-  ! Initialises the output system. 
+  ! Initialises the output system.
   ! If sfilename is given, a log file with that name is opened and all log and error
-  ! messages are written to it. If not given, all output is directed to the 
+  ! messages are written to it. If not given, all output is directed to the
   ! terminal only.
 !</description>
   
 !<input>
 
-  ! Name of a log file for standard messages. If "" is specified, 
+  ! Name of a log file for standard messages. If "" is specified,
   ! output messages are written to the standard output.
   character(LEN=*), intent(in) :: slogFilename
   
@@ -513,9 +513,9 @@ contains
   subroutine output_init_standard (slogFilename,serrorFilename,sbenchLogfile)
 
 !<description>
-  ! Initialises the output system. 
-  ! If sfilename is given, a log file with that name is opened and all log 
-  ! messages are written to it. If not given, all output is directed to the 
+  ! Initialises the output system.
+  ! If sfilename is given, a log file with that name is opened and all log
+  ! messages are written to it. If not given, all output is directed to the
   ! terminal only.
   ! If serrorFilename is given, an error log file with filename serrorFilename
   ! is opened and all error messages are redirected to it. If not given,
@@ -530,12 +530,12 @@ contains
   character(LEN=*), intent(in) :: slogFilename
   
   ! Name of an log file for error messages. If ""
-  ! is specified, errors are written to the standard log file. The name of 
+  ! is specified, errors are written to the standard log file. The name of
   ! the file may also coincide with slogFilename.
   character(LEN=*), intent(in) :: serrorFilename
 
-  ! OPTIONAL: Name of an log file for deterministic benchmark messages. If 
-  ! not present or set to "", benchmark messages are not written out. The 
+  ! OPTIONAL: Name of an log file for deterministic benchmark messages. If
+  ! not present or set to "", benchmark messages are not written out. The
   ! name of the file may also coincide with slogFilename.
   character(LEN=*), intent(in), optional :: sbenchLogfile
   
@@ -544,7 +544,7 @@ contains
 !</subroutine>
 
     ! Close previously opened log files.
-    call output_done ()    
+    call output_done ()
     
     ! Name of the standard logfile given?
     if (slogFilename .ne. "") then
@@ -763,7 +763,7 @@ contains
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
   ! depending on the input parameters.
-  ! smessage is the message to be written out. 
+  ! smessage is the message to be written out.
   ! coutputMode decides (if given) about whether the output if written to file,
   ! terminal or both.
   ! coutputClass classifies (if given) the message as standard message, trace
@@ -790,7 +790,7 @@ contains
   logical, intent(in), optional :: bnolinebreak
 
   ! OPTIONAL: When specifying bnotrim=TRUE, the output routine will
-  ! not trim the string when printing. This does only work for 
+  ! not trim the string when printing. This does only work for
   ! coutputClass=OU_CLASS_MSG and coutputClass=OU_CLASS_ERROR
   ! (or if coutputClass is not specified)!
   logical, intent(in), optional :: bnotrim
@@ -874,7 +874,7 @@ contains
     else
     
       ! Build the actual error message
-      smsg = output_reformatMsg (smessage, coutputClass, ssubroutine, cdateTimeLogPolicy) 
+      smsg = output_reformatMsg (smessage, coutputClass, ssubroutine, cdateTimeLogPolicy)
       
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
@@ -918,7 +918,7 @@ contains
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
   ! depending on the input parameters.
-  ! smsg is the message to be written out. 
+  ! smsg is the message to be written out.
   ! coutputMode decides (if given) about whether the output if written to file,
   ! terminal or both.
   ! coutputClass classifies (if given) the message as standard message, trace
@@ -1122,7 +1122,7 @@ contains
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
   ! depending on the input parameters.
-  ! smsg is the message to be written out. 
+  ! smsg is the message to be written out.
   ! ioutputLevel decides on where the message is written to, to the terminal
   ! and/or the log file.
   ! coutputClass classifies (if given) the message as standard message, trace

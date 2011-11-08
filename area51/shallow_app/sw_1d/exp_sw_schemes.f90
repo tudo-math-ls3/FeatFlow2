@@ -464,7 +464,7 @@ module exp_sw_schemes
 					else
 						limiterfunc2 = 0d0
 					end if
-			case(3)		
+			case(3)
 					limiterfunc2=h1*min(2.0d0*abs(z),(abs(z)+abs(n))/2.0d0,2.0d0*abs(n))	! MC
 			case(4)
 					limiterfunc2=h1*max(min(2.0d0*abs(z),abs(n)),min(abs(z),2.0d0*abs(n)))	!Superbee

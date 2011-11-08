@@ -8,7 +8,7 @@
 !# The routines here work directly on the matrix structure/entries and
 !# have no relationship with discretisation routines/information or similar.
 !#
-!# The following routines can be found in this module: 
+!# The following routines can be found in this module:
 !#
 !# 1.) mmod_replaceLinesByUnit
 !#     -> Replaces some rows in a scalar matrix by unit vectors
@@ -231,7 +231,7 @@ contains
   subroutine mmod_clearOffdiags (rmatrix,Irows)
   
 !<description>
-    ! This routine replaces the offdiagonal entries in some lines of 
+    ! This routine replaces the offdiagonal entries in some lines of
     ! a given scalar matrix by zero. The diagonal elements are not
     ! changed.
 !</description>
@@ -658,7 +658,7 @@ contains
           
         elseif (ImergeWithRow(ieq) .gt. ieq) then
 
-          ! The two rows have already been merged, hence 
+          ! The two rows have already been merged, hence
           ! we can adopt all entries from the indicated row
           jeq = ImergeWithRow(ieq)
 
@@ -829,7 +829,7 @@ contains
           
         elseif (ImergeWithRow(ieq) .gt. ieq) then
 
-          ! The two rows have already been merged, hence 
+          ! The two rows have already been merged, hence
           ! we can adopt all entries from the indicated row
           jeq = ImergeWithRow(ieq)
 
@@ -964,7 +964,7 @@ contains
         p_KldAux(ieq) = p_Kld(ieq+1)-p_Kld(ieq)
       end do
 
-      ! Next, subtract the number of nonzero entries present in each column. 
+      ! Next, subtract the number of nonzero entries present in each column.
       do ild = 1, rmatrix%NA
         icol = p_Kcol(ild)
         p_KldAux(icol) = p_KldAux(icol)-1
@@ -972,7 +972,7 @@ contains
 
       ! If an entry is zero, then the number of nonzero entries in the corresponding
       ! row equals the number of nonzero entries in the corresponding column and
-      ! nothing needs to be done. A negative entry indicates that the number of 
+      ! nothing needs to be done. A negative entry indicates that the number of
       ! nonzero entries in the corresponding column exceeds the number of nonzero
       ! entries in the corresponding column. Hence, we must fill the missing entries.
       naIncr = 0
@@ -1072,7 +1072,7 @@ contains
       
       ! Free temporal storage
       call storage_free(h_KldAux)
-      call storage_free(h_KcolAux)      
+      call storage_free(h_KcolAux)
     end subroutine mergeColumns_format7
 
     
@@ -1105,7 +1105,7 @@ contains
         p_KldAux(ieq) = p_Kld(ieq+1)-p_Kld(ieq)
       end do
 
-      ! Next, subtract the number of nonzero entries present in each column. 
+      ! Next, subtract the number of nonzero entries present in each column.
       do ild = 1, rmatrix%NA
         icol = p_Kcol(ild)
         p_KldAux(icol) = p_KldAux(icol)-1
@@ -1113,7 +1113,7 @@ contains
 
       ! If an entry is zero, then the number of nonzero entries in the corresponding
       ! row equals the number of nonzero entries in the corresponding column and
-      ! nothing needs to be done. A negative entry indicates that the number of 
+      ! nothing needs to be done. A negative entry indicates that the number of
       ! nonzero entries in the corresponding column exceeds the number of nonzero
       ! entries in the corresponding column. Hence, we must fill the missing entries.
       naIncr = 0
@@ -1217,7 +1217,7 @@ contains
 
       ! Free temporal storage
       call storage_free(h_KldAux)
-      call storage_free(h_KcolAux)      
+      call storage_free(h_KcolAux)
     end subroutine mergeColumns_format9
   end subroutine mmod_mergeLines
 
@@ -1236,8 +1236,8 @@ contains
     ! vectors
     integer, intent(in) :: iblockRow
 
-    ! A list of row numbers of all the rows in block row iblockRow which are 
-    ! to be replaced by unit vectors. These numbers are not global DOF`s 
+    ! A list of row numbers of all the rows in block row iblockRow which are
+    ! to be replaced by unit vectors. These numbers are not global DOF`s
     ! but the starting indices relative to the block row iblockRow
     ! (e.g. "1" identifies the first row in the block row iblockrow).
     integer, intent(in), dimension(:) :: Irows

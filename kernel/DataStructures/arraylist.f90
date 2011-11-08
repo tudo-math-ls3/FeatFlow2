@@ -132,7 +132,7 @@ module arraylist
   ! Identifier for decreasingly ordered arraylist
   integer, parameter, public :: ARRAYLIST_DECREASING = 2
 
-  ! Identifier for ordered arraylist 
+  ! Identifier for ordered arraylist
   integer, parameter, public :: ARRAYLIST_CSR7       = 3
 
 !</constantblock>
@@ -259,7 +259,7 @@ module arraylist
   interface arrlst_releaseArrayList
     module procedure arrlst_releaseArrayListDefault
     module procedure arrlst_releaseArrayListTbl
-  end interface 
+  end interface
   
   interface arrlst_copyArrayList
     module procedure arrlst_copyFromArrayList
@@ -339,7 +339,7 @@ contains
     ! Format-tag. Type of list format (Double,Single,Integer)
     integer, intent(in) :: carraylistFormat
 
-    ! OPTIONAL: Format-tag. Type of list ordering 
+    ! OPTIONAL: Format-tag. Type of list ordering
     integer, intent(in), optional :: cordering
     
     ! OPTIONAL: Factor by which the list should be enlarged if memory
@@ -518,7 +518,7 @@ contains
       call sys_halt()
     end if
 
-    ! Decrease number of entries by the number of entries present 
+    ! Decrease number of entries by the number of entries present
     ! in the table which is released
     rarraylist%NA = rarraylist%NA - rarraylist%p_Ktable(ARRLST_NA,itable)
 
@@ -711,7 +711,7 @@ contains
     integer,  dimension(:), pointer :: p_IData
     integer :: isize
 
-    ! Transform the content of the arraylist and the 
+    ! Transform the content of the arraylist and the
     ! table to h_Data and h_Table, respectively
     if (h_Table .eq. ST_NOHANDLE) then
       call storage_new('arrlst_copyFromArrayListTbl','Table',&
@@ -938,7 +938,7 @@ contains
 
 !<description>
     ! This subroutine copies the content of the table and all lists
-    ! to the given arrays.   
+    ! to the given arrays.
 !</description>
 
 !<input>
@@ -1053,7 +1053,7 @@ contains
 
 !<description>
     ! This subroutine copies the content of the table and all lists
-    ! to the given arrays.   
+    ! to the given arrays.
 !</description>
 
 !<input>
@@ -2647,7 +2647,7 @@ contains
       ipred=-ipred
 
       do while(ipred.ne.itail)
-        inext = rarraylist%p_Knext(ipred)     
+        inext = rarraylist%p_Knext(ipred)
         if (rarraylist%p_DData(inext) .eq. da) then
           f=ARRAYLIST_FOUND; exit
         end if

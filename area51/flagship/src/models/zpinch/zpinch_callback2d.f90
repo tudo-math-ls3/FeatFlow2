@@ -883,7 +883,7 @@ contains
                            DcoeffsAtEdge(1,1,iedge))**2+&
                           (DcoeffsAtEdge(2,2,iedge)-&
                            DcoeffsAtEdge(2,1,iedge))**2)*ci )
-#else 
+#else
       ! Compute dissipation tensor D_ij
       DmatrixAtEdge(1,iedge) = dscale*&
           max( abs(DcoeffsAtEdge(1,1,iedge)*uj +&
@@ -1109,7 +1109,7 @@ contains
                            DcoeffsAtEdge(1,1,iedge))**2+&
                           (DcoeffsAtEdge(2,2,iedge)-&
                            DcoeffsAtEdge(2,1,iedge))**2)*ci )
-#else      
+#else
       ! Compute dissipation tensor D_ij
       DmatrixAtEdge(1,iedge) = dscale*&
           max( abs(DcoeffsAtEdge(1,1,iedge)*uj +&

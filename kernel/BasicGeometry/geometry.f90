@@ -65,12 +65,12 @@
 !#         optionally converts the vertices into world coordinates.
 !#
 !# Remark:
-!# This module contains a lot more routines, which however are not meant to  
+!# This module contains a lot more routines, which however are not meant to
 !# be called by the user, e.g. routines which are called by wrapper routines
 !# listed above or routines which are needed for the boundary approximation
 !# of a composed object.
 !#
-!# 
+!#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= \\
 !# Composed Geometry Objects \\
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -141,23 +141,23 @@
 !#  2.
 !#  3. ! create a small square with edge length of 0.4 around (0.5, 0.5)
 !#  4. CALL geom_init_square(S, 0.4_DP, (/0.5_DP, 0.5_DP/))
-!#  5. 
+!#  5.
 !#  6. ! create a rectangle with edge lengths of (0.2, 0.4) around (0.5, 0.775)
 !#  7. CALL geom_init_rectangle(R, (/0.2_DP, 0.4_DP/), (/0.5_DP, 0.775_DP/))
-!#  8. 
+!#  8.
 !#  9. ! create the COMPLEMENT of a UNION-node with 2 children
 !# 10. CALL geom_init_composed(SR, 2, GEOM_COMP_TYPE_OR, .TRUE.)
-!# 11. 
+!# 11.
 !# 12. ! add S and R to the UNION-node
 !# 13. CALL geom_composed_addNode(SR, S, 1)
 !# 14. CALL geom_composed_addNode(SR, R, 2)
-!# 15. 
+!# 15.
 !# 16. ! create a big square with edge length of 0.7 around (0.5, 0.5)
 !# 17. CALL geom_init_square(S, 0.7_DP, (/0.5_DP, 0.5_DP/))
 !# 18.
 !# 19. ! create an INTERSECTION-node with 2 children
 !# 20. CALL geom_init_composed(S_SR, 2, GEOM_COMP_TYPE_AND)
-!# 21.  
+!# 21.
 !# 22. ! add S and SR to the INTERSECTION-node
 !# 23. CALL geom_composed_addNode(S_SR,  S, 1)
 !# 24. CALL geom_composed_addNode(S_SR, SR, 2)
@@ -194,7 +194,7 @@
 !# it is expensive to calculate.
 !#
 !# Here's a small list for all analytic geometry objects and a rating of how
-!# expensive the inside-outside-test routines are (++ = cheap, -- = expensive): 
+!# expensive the inside-outside-test routines are (++ = cheap, -- = expensive):
 !# <verb>
 !# Circle..........: ++
 !# Ellipse.........:  +
@@ -313,9 +313,9 @@ module geometry
 
 !<constantblock description="various parameters">
   ! default number of vertices in polygon representation
-  integer, parameter, public :: GEOM_STANDARD_VCOUNT  = 64  
+  integer, parameter, public :: GEOM_STANDARD_VCOUNT  = 64
   
-  integer, parameter, public :: GEOM_VERTICES_TRIANGLE  = 3  
+  integer, parameter, public :: GEOM_VERTICES_TRIANGLE  = 3
   
 !</constantblock>
 
@@ -406,7 +406,7 @@ module geometry
     ! a file in the 3dm file format
     character(LEN=SYS_STRLEN) :: sfile3dm = ""
     
-    ! In the case that we have multiple curves, we need to indentify 
+    ! In the case that we have multiple curves, we need to indentify
     ! the curves by an ID, so we assign an integer id
     integer :: iID
     
@@ -590,9 +590,9 @@ module geometry
   
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
   
-!<typeblock>  
+!<typeblock>
   ! This is a type that describes a particle in
   ! a situation with certain parameters.
   ! The geometry object describes the shape of the
@@ -601,43 +601,43 @@ module geometry
   type t_particle
   
     ! structure for a geometry object
-    type(t_geometryObject) :: rgeometryObject    
+    type(t_geometryObject) :: rgeometryObject
 
-    ! mass of the particle  
+    ! mass of the particle
     real(DP) :: dmass
     
     ! radius of the circle, that circumferes the particle
     real(dp) :: drad
     
     ! density of the particle
-    real(dp) :: drho    
+    real(dp) :: drho
 
     ! the translational x-velocity of the particle
-    real(dp) :: dtransVelX     = 0.0_dp  
+    real(dp) :: dtransVelX     = 0.0_dp
 
     ! the translational x-velocity of the particle from the previous timestep
-    real(dp) :: dtransVelXold  = 0.0_dp  
+    real(dp) :: dtransVelXold  = 0.0_dp
 
     ! the translational y-velocity of the particle
     real(dp) :: dtransVelY     = 0.0_dp
 
     ! the translational y-velocity of the particle from the previous timestep
-    real(dp) :: dtransVelYold  = 0.0_dp  
+    real(dp) :: dtransVelYold  = 0.0_dp
     
     ! the angular of the particle
     real(dp) :: dangVelocity   = 0.0_dp
     
     ! the actual x-position of the particle from the previous timestep
-    real(dp) :: PosXactual = 0.0_dp  
+    real(dp) :: PosXactual = 0.0_dp
 
     ! the actual y-position of the particle from the previous timestep
-    real(dp) :: PosYactual = 0.0_dp  
+    real(dp) :: PosYactual = 0.0_dp
     
     ! the area/volume of the particle
-    real(dp) :: dvolume = 0.0_dp  
+    real(dp) :: dvolume = 0.0_dp
 
     ! the moment of inertia about mass center of the particle
-    real(dp) :: dimomir = 0.0_dp  
+    real(dp) :: dimomir = 0.0_dp
     
     ! A particle is considered a fictitious boundary object
     ! these FBOs are described by a 01-Vector. If we have
@@ -667,48 +667,48 @@ module geometry
     real(dp), dimension(2) :: dAccel  = 0
     real(dp), dimension(2) :: pForceX = 0
     real(dp), dimension(2) :: pForceY = 0
-    real(dp), dimension(2) :: pTorque = 0          
-    real(dp), dimension(2) :: rForceWall = 0              
+    real(dp), dimension(2) :: pTorque = 0
+    real(dp), dimension(2) :: rForceWall = 0
   
   end type
 
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
 
-!<typeblock>  
+!<typeblock>
   ! The 3d version of a particle, see above for a description
   type t_particle3D
   
     ! structure for a geometry object
-    type(t_geometryObject) :: rgeometryObject    
+    type(t_geometryObject) :: rgeometryObject
 
-    ! mass of the particle  
+    ! mass of the particle
     real(DP) :: dmass
     
     ! radius of the circle, that circumferes the particle
     real(dp) :: drad
     
     ! density of the particle
-    real(dp) :: drho    
+    real(dp) :: drho
 
     ! the translational x-velocity of the particle
-    real(dp) :: dtransVelX     = 0.0_dp  
+    real(dp) :: dtransVelX     = 0.0_dp
 
     ! the translational y-velocity of the particle
-    real(dp) :: dtransVelY     = 0.0_dp  
+    real(dp) :: dtransVelY     = 0.0_dp
 
     ! the translational z-velocity of the particle
-    real(dp) :: dtransVelZ     = 0.0_dp  
+    real(dp) :: dtransVelZ     = 0.0_dp
     
     ! the x-angular velocity of the particle
-    real(dp) :: dangVelocityX   = 0.0_dp  
+    real(dp) :: dangVelocityX   = 0.0_dp
 
     ! the y-angular velocity of the particle
-    real(dp) :: dangVelocityY   = 0.0_dp  
+    real(dp) :: dangVelocityY   = 0.0_dp
 
     ! the z-angular velocity of the particle
-    real(dp) :: dangVelocityZ   = 0.0_dp  
+    real(dp) :: dangVelocityZ   = 0.0_dp
     
     ! A particle is considered a fictitious boundary object
     ! these FBOs are described by a 01-Vector. If we have
@@ -741,13 +741,13 @@ module geometry
 
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
 
 
-!<typeblock> 
+!<typeblock>
   ! This structure holds a collection of particles
   ! the particles themselves are of "t_particle" type
-  ! An example for the use of this structure is 
+  ! An example for the use of this structure is
   ! to add it to a collection, so that access to the
   ! particles is possible in callback functions
   type t_particleCollection
@@ -768,12 +768,12 @@ module geometry
   end type
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
 
-!<typeblock> 
+!<typeblock>
   ! This structure holds a collection of particles
   ! the particles themselves are of "t_particle" type
-  ! An example for the use of this structure is 
+  ! An example for the use of this structure is
   ! to add it to a collection, so that access to the
   ! particles is possible in callback functions
   type t_particleCollection3D
@@ -788,10 +788,10 @@ module geometry
   end type
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
 
   
-!<typeblock> 
+!<typeblock>
   ! In a particulate flow simulation the user may want to
   ! define a group of particles for use in the simulation.
   ! The particles have different parameters like starting position,
@@ -805,7 +805,7 @@ module geometry
     ! according to the parameters given in pparameters
     ! pparameters is a double array of size [4,iparticles]
     ! The structure of this array is as follows:
-    !           
+    !
     !       [1,i]:= initial x position of the i-th particle
     !       [2,i]:= initial y position of the i-th particle
     !       [3,i]:= the radius of a circle that circumferes the i-th particle
@@ -828,9 +828,9 @@ module geometry
   end type
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
   
-!<typeblock> 
+!<typeblock>
   ! The 3d version of a particle descriptor, see above for a description
   type t_particleDescriptor3D
   
@@ -838,7 +838,7 @@ module geometry
     ! according to the parameters given in pparameters
     ! pparameters is a double array of size [4,iparticles]
     ! The structure of this array is as follows:
-    !           
+    !
     ! <verb>
     !       [1,i]:= initial x position of the i-th particle
     !       [2,i]:= initial y position of the i-th particle
@@ -861,7 +861,7 @@ module geometry
   end type
 !</typeblock>
 
-! *****************************************************************************  
+! *****************************************************************************
 
 
   public :: t_particleDescriptor3D
@@ -1256,7 +1256,7 @@ end subroutine
   subroutine geom_composed_calcSignDist (rgeomObject, Dcoords, ddistance)
 
 !<description>
-  ! This routine calculates the signed distance of a given point and a 
+  ! This routine calculates the signed distance of a given point and a
   ! composed geometry object.
 !</description>
 
@@ -1590,7 +1590,7 @@ end subroutine
 !<input>
   ! OPTIONAL: The tolerance for the boundary approximation.
   ! If not present, 10e-2 is used.
-  real(DP), optional, intent(in) :: dtolerance  
+  real(DP), optional, intent(in) :: dtolerance
 !</input>
 
 !<input>
@@ -1865,7 +1865,7 @@ end subroutine
       iisInObject = 0
     end if
 
-    ! Maybe the circle is inverted?    
+    ! Maybe the circle is inverted?
     if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
     end if
@@ -2126,7 +2126,7 @@ end subroutine
     ! Get number of vertices to allocate
     call geom_circle_getNAV(rgeomObject, dtolerance, nverts)
 
-    ! Calculate angle delta    
+    ! Calculate angle delta
     dstep = (2.0_DP * SYS_PI) / real(nverts, DP)
     
     ! Loop though all vertices
@@ -2555,7 +2555,7 @@ end subroutine
   real(DP), dimension(:,:), pointer :: p_Dvertices
   real(DP) :: dedge
 
-  integer, dimension(2), parameter :: Isize = (/ 2, 4 /)  
+  integer, dimension(2), parameter :: Isize = (/ 2, 4 /)
   
     ! Get edge length
     dedge = rgeomObject%rsquare%dlength * 0.5_DP
@@ -3034,7 +3034,7 @@ end subroutine
       ! X-coord of point is negative, so multiply with -1
       Dmirror(1) = -1.0_DP
       DcoordsRef(1) = -DcoordsRef(1)
-    else 
+    else
       Dmirror(1) = 1.0_DP
     end if
     
@@ -3319,7 +3319,7 @@ end subroutine
     dr1 = rgeomObject%rellipse%Dradii(1)
     dr2 = rgeomObject%rellipse%Dradii(2)
 
-    ! Calculate alpha and beta    
+    ! Calculate alpha and beta
     if (dr1 .lt. dr2) then
       dalpha = dr2
       dbeta = dr1
@@ -3393,7 +3393,7 @@ end subroutine
     ! Special thanks to Dr. Marcus Stiemer and Manuel Jaraczewski for their
     ! help with the following piece of code...
     
-    ! Calculate angle delta    
+    ! Calculate angle delta
     dangle = 0.0_DP
     
     ! Loop though all vertices
@@ -3970,7 +3970,7 @@ end subroutine
   ! Is set to .FALSE. if not given.
   logical, optional,           intent(in)  :: binverted
 
-!</input>  
+!</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
@@ -4046,7 +4046,7 @@ end subroutine
   ! Is set to .FALSE. if not given.
   logical, optional,           intent(in)  :: binverted
 
-!</input>  
+!</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
@@ -4097,7 +4097,7 @@ end subroutine
   ! This routine checks whether a given point is inside the polygon or not.
   !
   ! This routine calls the geom_polygon_iIG_convex routine if the polygon
-  ! type is set to GEOM_POLYGON_CONVEX, otherwise it calls the 
+  ! type is set to GEOM_POLYGON_CONVEX, otherwise it calls the
   ! geom_polygon_projector method.
   !
   ! iisInObject is set to 0 if the point is outside the polygon, it is set
@@ -4459,7 +4459,7 @@ end subroutine
           iprev = iminVert - 1
         else
           iprev = ub
-        end if 
+        end if
 
         Dray1 = p_Dvertices(1:2, iminVert) - p_Dvertices(1:2, iprev)
         Dray2 = p_Dvertices(1:2, inext) - p_Dvertices(1:2, iminVert)
@@ -4635,7 +4635,7 @@ end subroutine
   ! The polygon's vertices
   real(DP), dimension(2) :: Dedge
   
-    ! Get the polygon's bounds  
+    ! Get the polygon's bounds
     lb = lbound(rgeomObject%rpolygon%p_Dvertices, 2)
     ub = ubound(rgeomObject%rpolygon%p_Dvertices, 2);
     
@@ -4698,7 +4698,7 @@ end subroutine
   real(DP), dimension(2) :: Dedge, DlastVert
   integer :: i, j, nvpe, lb, ub
   
-    ! Get the polygon's bounds  
+    ! Get the polygon's bounds
     lb = lbound(rgeomObject%rpolygon%p_Dvertices, 2)
     ub = ubound(rgeomObject%rpolygon%p_Dvertices, 2);
     
@@ -4773,7 +4773,7 @@ end subroutine
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! ***************************************************************************
     
- ! ***************************************************************************    
+ ! ***************************************************************************
 
 !<subroutine>
   subroutine geom_init_NURBS_indirect(rgeomObject,dx,dy,s3dm)
@@ -4783,8 +4783,8 @@ end subroutine
 
 !<input>
   ! the name of the file that contains the nurbs curve information
-  character(LEN=*),intent(in)              :: s3dm 
-!</input>  
+  character(LEN=*),intent(in)              :: s3dm
+!</input>
   real(dp), intent(in)                  :: dx
   real(dp), intent(in)                  :: dy
 !<output>
@@ -4793,7 +4793,7 @@ end subroutine
 !</output>
 
 !</subroutine>
-!  interface 
+!  interface
 !    integer function get() result(iverts)
 !      ! This routine must change dtstep to the new timestep size.
 !    end function
@@ -4985,13 +4985,13 @@ end subroutine
 !</subroutine>
   real(dp) :: dx,dy
   
-  interface 
+  interface
     integer function getnumverts() result(iverts)
       ! This routine must change dtstep to the new timestep size.
     end function
   end interface
 
-  interface 
+  interface
     subroutine getvertex(iid,dx,dy)
       use fsystem
       ! This routine must change dtstep to the new timestep size
@@ -5029,7 +5029,7 @@ end subroutine
 
 #endif
 
-  ! ***************************************************************************      
+  ! ***************************************************************************
 
 
 
@@ -5178,10 +5178,10 @@ end subroutine
       call geom_sphere_isInGeometry(rgeomObject, Dcoords, iisInObject)
     case (GEOM_ELLIPSOID)
       call geom_ellipsoid_isInGeometry(rgeomObject, Dcoords, iisInObject)
-#if defined FEAT2_NURBS      
+#if defined FEAT2_NURBS
     case (GEOM_NURBS)
       call geom_NURBS_isInGeometry(rgeomObject, Dcoords, iisInObject)
-#endif      
+#endif
     case DEFAULT
       iisInObject = 0
     end select
@@ -5486,7 +5486,7 @@ end subroutine
       call geom_polygon_polygonise(rgeomObject, hpolyHandle)
 #if defined FEAT2_NURBS
     case (GEOM_NURBS)
-      call geom_NURBS_polygonise(rgeomObject, hpolyHandle)      
+      call geom_NURBS_polygonise(rgeomObject, hpolyHandle)
 #endif
     end select
     
@@ -5714,7 +5714,7 @@ end subroutine
     rgeomObject%ndimension = NDIM3D
     
     ! We want a circle.
-    rgeomObject%ctype = GEOM_SPHERE 
+    rgeomObject%ctype = GEOM_SPHERE
     
     ! Store the coordinate system.
     rgeomObject%rcoord3D = rcoordSys
@@ -5860,7 +5860,7 @@ end subroutine
       iisInObject = 0
     end if
 
-    ! Maybe the circle is inverted?    
+    ! Maybe the circle is inverted?
     if (rgeomObject%binverted) then
       iisInObject = 1 - iisInObject
     end if
@@ -5869,7 +5869,7 @@ end subroutine
     
   end subroutine
   
-! ***************************************************************************    
+! ***************************************************************************
 
 !<subroutine>
 
@@ -6078,7 +6078,7 @@ end subroutine
   ! Dcoords are the coordinates of the point
   ! after the transformation into coordinate system of the
   ! ellipsoid( model coordiantes)
-  real(DP), dimension(3) :: Dcoords  
+  real(DP), dimension(3) :: Dcoords
   real(dp) :: maxabc,t,f,f1,eps,t1
   ! Inside the polygon?
   integer :: binside,maxiter,i
@@ -6086,7 +6086,7 @@ end subroutine
   maxiter=20
   eps=1e-8
  
-  call bgeom_transformBackPoint3D(rgeomObject%rcoord3D, Dcoord, Dcoords) 
+  call bgeom_transformBackPoint3D(rgeomObject%rcoord3D, Dcoord, Dcoords)
  
   maxabc=max(rgeomObject%rellipsoid%dradii(1),rgeomObject%rellipsoid%dradii(2),rgeomObject%rellipsoid%dradii(3))
   Dabc(:)=rgeomObject%rellipsoid%dradii(:)
@@ -6130,7 +6130,7 @@ end subroutine
   subroutine evalF(t,a,b,c,u,v,w,f)
     real(dp), intent(in)  :: t,a,b,c,u,v,w
     real(dp), intent(out) :: f
-      f = (t+a**2)**2 * (t+b**2)**2 * (t+c**2)**2-a**2 * u**2 * (t+b**2)**2 * (t+c**2)**2 - & 
+      f = (t+a**2)**2 * (t+b**2)**2 * (t+c**2)**2-a**2 * u**2 * (t+b**2)**2 * (t+c**2)**2 - &
             b**2 * v**2 * (t+a**2)**2 * (t+c**2)**2 - c**2 * w**2 * (t+a**2)**2 * (t+b**2)**2
   end subroutine evalF
 
@@ -6183,29 +6183,29 @@ end subroutine
     case (GEOM_SPHERE)
       call geom_triangulateSphere(rgeomObject,30,30,hpolyHandle)
     case (GEOM_ELLIPSOID)
-      call geom_triangulateEllipsoid(rgeomObject,30,30,hpolyHandle)      
+      call geom_triangulateEllipsoid(rgeomObject,30,30,hpolyHandle)
     case default
       call output_line ('Unsupported geometry type for triangulation.!', &
           OU_CLASS_ERROR,OU_MODE_STD,'geom_triangulate')
-      call sys_halt()    
+      call sys_halt()
     end select
                               
-  end subroutine                             
+  end subroutine
   
 ! ***************************************************************************
 
 !<subroutine>
   subroutine geom_triangulateSphere(rgeomObject,slices,stacks,iHandle)
 !<description>
-  ! 
+  !
 !</description>
 
 !<input>
   ! The sphere to be triangulated
   type(t_geometryObject), intent(in)  :: rgeomObject
   integer, intent(in) :: slices
-  integer, intent(in) :: stacks  
-  integer,dimension(3), intent(inout) :: iHandle  
+  integer, intent(in) :: stacks
+  integer,dimension(3), intent(inout) :: iHandle
 !</input>
 
 
@@ -6217,7 +6217,7 @@ end subroutine
   integer, dimension(:,:), pointer :: p_Itriangles
   integer, dimension(:), pointer :: p_Idata
   real(dp), dimension(3) :: DPoint
-  integer, dimension(2) :: Isize  
+  integer, dimension(2) :: Isize
   
   !
   drad=rgeomObject%rsphere%dradius
@@ -6247,20 +6247,20 @@ end subroutine
                      ST_INT, iHandle(3), ST_NEWBLOCK_NOINIT)
 
                      
-  call storage_getbase_double2D(iHandle(1), p_Dvertices)                     
+  call storage_getbase_double2D(iHandle(1), p_Dvertices)
   
-  call storage_getbase_int2D(iHandle(2), p_Itriangles)                       
+  call storage_getbase_int2D(iHandle(2), p_Itriangles)
   
-  call storage_getbase_int(iHandle(3), p_Idata)   
+  call storage_getbase_int(iHandle(3), p_Idata)
   
   p_Idata(1)= iverts
-  p_Idata(2)= itriangles                    
+  p_Idata(2)= itriangles
   
   call sphereValue(halfpi,0.0_dp,DPoint,drad,dx,dy,dz)
-  p_Dvertices(:,1)=DPoint(:)  
+  p_Dvertices(:,1)=DPoint(:)
   
   call sphereValue(-1.0_dp*halfpi,0.0_dp,DPoint,drad,dx,dy,dz)
-  p_Dvertices(:,iverts)=DPoint(:)  
+  p_Dvertices(:,iverts)=DPoint(:)
   
   ive=1
   phi  = halfpi-dphi
@@ -6276,7 +6276,7 @@ end subroutine
     phi=phi-dphi
   end do
 
-  ! top fan  
+  ! top fan
   do i=0,stacks2-1
     p_Itriangles(1,i+1)=0
     p_Itriangles(2,i+1)=1+i
@@ -6291,7 +6291,7 @@ end subroutine
     do j=0,stacks2-1
       p_Itriangles(1,ioffset)=index+j
       p_Itriangles(2,ioffset)=index+stacks2+j
-      p_Itriangles(3,ioffset)=index+mod((j+1),stacks2)      
+      p_Itriangles(3,ioffset)=index+mod((j+1),stacks2)
       
       p_Itriangles(1,ioffset+1)=index+mod((j+1),stacks2)
       p_Itriangles(2,ioffset+1)=index+stacks2+j
@@ -6300,7 +6300,7 @@ end subroutine
     end do
   end do
   
-  ! bottom fan  
+  ! bottom fan
   index = (iverts-1) - stacks2
   do i=0,(stacks2-1)
     p_Itriangles(1,ioffset)=(iverts-1)
@@ -6335,15 +6335,15 @@ end subroutine
 !<subroutine>
   subroutine geom_triangulateEllipsoid(rgeomObject,slices,stacks,iHandle)
 !<description>
-  ! 
+  !
 !</description>
 
 !<input>
   ! The sphere to be triangulated
   type(t_geometryObject), intent(in)  :: rgeomObject
   integer, intent(in) :: slices
-  integer, intent(in) :: stacks  
-  integer,dimension(3), intent(inout) :: iHandle  
+  integer, intent(in) :: stacks
+  integer,dimension(3), intent(inout) :: iHandle
 !</input>
 
 
@@ -6355,7 +6355,7 @@ end subroutine
   integer, dimension(:,:), pointer :: p_Itriangles
   integer, dimension(:), pointer :: p_Idata
   real(dp), dimension(3) :: DPoint,dradii
-  integer, dimension(2) :: Isize  
+  integer, dimension(2) :: Isize
   
   !
   dradii(:)=rgeomObject%rellipsoid%dRadii(:)
@@ -6386,20 +6386,20 @@ end subroutine
                      ST_INT, iHandle(3), ST_NEWBLOCK_NOINIT)
 
                      
-  call storage_getbase_double2D(iHandle(1), p_Dvertices)                     
+  call storage_getbase_double2D(iHandle(1), p_Dvertices)
   
-  call storage_getbase_int2D(iHandle(2), p_Itriangles)                       
+  call storage_getbase_int2D(iHandle(2), p_Itriangles)
   
-  call storage_getbase_int(iHandle(3), p_Idata)   
+  call storage_getbase_int(iHandle(3), p_Idata)
   
   p_Idata(1)= iverts
-  p_Idata(2)= itriangles                    
+  p_Idata(2)= itriangles
   
   call ellipsoidValue(halfpi,0.0_dp,DPoint,dradii,dx,dy,dz)
-  p_Dvertices(:,1)=DPoint(:)  
+  p_Dvertices(:,1)=DPoint(:)
   
   call ellipsoidValue(-1.0_dp*halfpi,0.0_dp,DPoint,dradii,dx,dy,dz)
-  p_Dvertices(:,iverts)=DPoint(:)  
+  p_Dvertices(:,iverts)=DPoint(:)
   
   ive=1
   phi  = halfpi-dphi
@@ -6415,7 +6415,7 @@ end subroutine
     phi=phi-dphi
   end do
 
-  ! top fan  
+  ! top fan
   do i=0,stacks2-1
     p_Itriangles(1,i+1)=0
     p_Itriangles(2,i+1)=1+i
@@ -6430,7 +6430,7 @@ end subroutine
     do j=0,stacks2-1
       p_Itriangles(1,ioffset)=index+j
       p_Itriangles(2,ioffset)=index+stacks2+j
-      p_Itriangles(3,ioffset)=index+mod((j+1),stacks2)      
+      p_Itriangles(3,ioffset)=index+mod((j+1),stacks2)
       
       p_Itriangles(1,ioffset+1)=index+mod((j+1),stacks2)
       p_Itriangles(2,ioffset+1)=index+stacks2+j
@@ -6439,7 +6439,7 @@ end subroutine
     end do
   end do
   
-  ! bottom fan  
+  ! bottom fan
   index = (iverts-1) - stacks2
   do i=0,(stacks2-1)
     p_Itriangles(1,ioffset)=(iverts-1)
@@ -6468,9 +6468,9 @@ end subroutine
   
   end subroutine geom_triangulateEllipsoid
 
-! ***************************************************************************  
+! ***************************************************************************
 
-!<subroutine>  
+!<subroutine>
   subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy,s3dm)
 !<description>
   ! this routines initializes a t_particle structure
@@ -6481,12 +6481,12 @@ end subroutine
   !
 !</description>
   
-!<inputoutput>  
+!<inputoutput>
   ! structure for a geometry object
-  type(t_particle),intent(inout) :: rParticle    
-!</inputoutput>  
+  type(t_particle),intent(inout) :: rParticle
+!</inputoutput>
   
-!<input>  
+!<input>
   ! particle density
   real(dp),intent(in) :: drho
   
@@ -6504,10 +6504,10 @@ end subroutine
 !<input>
   ! If we want to construct the particle geometry from a
   ! nurbs curve the data has to be read from a file in most cases
-  character(LEN=*),optional :: s3dm 
-!</input>  
+  character(LEN=*),optional :: s3dm
+!</input>
   
-!</subroutine>  
+!</subroutine>
 
   
   select case(iid)
@@ -6552,9 +6552,9 @@ end subroutine
   
   end subroutine ! end geom_initParticle
 
-! ***************************************************************************  
+! ***************************************************************************
 
-!<subroutine>  
+!<subroutine>
   subroutine geom_initParticle3D(rParticle,iid,drad,drho,dx,dy,dz)
 !<description>
   ! this routines initializes a t_particle structure
@@ -6564,12 +6564,12 @@ end subroutine
   !
 !</description>
   
-!<inputoutput>  
+!<inputoutput>
   ! structure for a geometry object
-  type(t_particle3D),intent(inout) :: rParticle    
-!</inputoutput>  
+  type(t_particle3D),intent(inout) :: rParticle
+!</inputoutput>
   
-!<input>  
+!<input>
   ! particle density
   real(dp),intent(in) :: drho
   
@@ -6586,9 +6586,9 @@ end subroutine
   ! shape of the object
   integer, intent(in) :: iid
   
-!</input>  
+!</input>
   
-!</subroutine>  
+!</subroutine>
 
   
   select case(iid)
@@ -6717,7 +6717,7 @@ end subroutine
   ! check if there are particles for
   ! which memory has been allocated
   
-  if(rparticleCollection%nparticles .gt. 0) then 
+  if(rparticleCollection%nparticles .gt. 0) then
   
     do i=1,rparticleCollection%nparticles
       if(rparticleCollection%p_rparticles(i)%rvectorScalarFB%NEQ .ne. 0) then
@@ -6751,7 +6751,7 @@ end subroutine
   ! check if there are particles for
   ! which memory has been allocated
   
-  if(rparticleCollection%nparticles .gt. 0) then 
+  if(rparticleCollection%nparticles .gt. 0) then
   
     do i=1,rparticleCollection%nparticles
       if(rparticleCollection%p_rparticles(i)%rvectorScalarFB%NEQ .ne. 0) then

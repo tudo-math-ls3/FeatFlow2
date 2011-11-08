@@ -44,8 +44,8 @@
     ! The bilinear form which is currently to be evaluated:
     type(t_bilinearForm), intent(in) :: rform
     
-    ! Start index of the current element block Ielements in the current element 
-    ! distribution ielementDistribution. If this is =1, the routine is called the 
+    ! Start index of the current element block Ielements in the current element
+    ! distribution ielementDistribution. If this is =1, the routine is called the
     ! first time for the current element distribution.
     integer, intent(in) :: ielementStartIdx
 
@@ -89,11 +89,11 @@
     ! The Jacobian determinant of the mapping of each point from the
     ! reference element to each real element
     real(DP), dimension(npointsPerElement,nelements), intent(in) :: Ddetj
-  !</input>    
+  !</input>
 
   !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</inputoutput>
   

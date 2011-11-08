@@ -37,12 +37,12 @@ contains
   subroutine gsmth_laplaceHC2d(rtriangulation)
   
 !<description>
-  ! 
+  !
   ! Implements a laplace smoother that uses a relaxation parameter:
   ! p_new = p + (drelax/n) * sum_{i=0}^{n-1} (q_i - p),
   ! where p: position of vertex, n: #neighbours of p, q_i: adjacent vertices
   ! of p.
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -88,10 +88,10 @@ contains
     ivt2 = p_IverticesAtEdge(2,iedge)
     
     ! get the coordinates
-    dx1 = p_DvertexCoords(1,ivt1) 
+    dx1 = p_DvertexCoords(1,ivt1)
     dy1 = p_DvertexCoords(2,ivt1)
     
-    dx2 = p_DvertexCoords(1,ivt2) 
+    dx2 = p_DvertexCoords(1,ivt2)
     dy2 = p_DvertexCoords(2,ivt2)
     
     if(p_Iproperty(ivt1) .eq. 0)then
@@ -130,18 +130,18 @@ contains
   
   end subroutine
  
- ! ****************************************************************************************  
+ ! ****************************************************************************************
   
 !<subroutine>
   subroutine gsmth_laplace2d(rtriangulation)
   
 !<description>
-  ! 
+  !
   ! Implements a laplace smoother that uses a relaxation parameter:
   ! p_new = p + (drelax/n) * sum_{i=0}^{n-1} (q_i - p),
   ! where p: position of vertex, n: #neighbours of p, q_i: adjacent vertices
   ! of p.
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -187,10 +187,10 @@ contains
     ivt2 = p_IverticesAtEdge(2,iedge)
     
     ! get the coordinates
-    dx1 = p_DvertexCoords(1,ivt1) 
+    dx1 = p_DvertexCoords(1,ivt1)
     dy1 = p_DvertexCoords(2,ivt1)
     
-    dx2 = p_DvertexCoords(1,ivt2) 
+    dx2 = p_DvertexCoords(1,ivt2)
     dy2 = p_DvertexCoords(2,ivt2)
     
     if(p_Iproperty(ivt1) .eq. 0)then
@@ -228,20 +228,20 @@ contains
   end do
   
   
-  end subroutine  
+  end subroutine
   
- ! ****************************************************************************************  
+ ! ****************************************************************************************
   
 !<subroutine>
   subroutine gsmth_umbrella2d(rtriangulation)
   
 !<description>
-  ! 
+  !
   ! Implements a laplace smoother that uses a relaxation parameter:
   ! p_new = (1-relax) * p + (drelax/sum_{i=0}^{n-1} d_i) * sum_{i=0}^{n-1} d_i*q_i ,
   ! where p: position of vertex, n: #neighbours of p, q_i: adjacent vertices
   ! of p, d_i: length of edge(p,d_i)
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -291,10 +291,10 @@ contains
     ivt2 = p_IverticesAtEdge(2,iedge)
     
     ! get the coordinates
-    dx1 = p_DvertexCoords(1,ivt1) 
+    dx1 = p_DvertexCoords(1,ivt1)
     dy1 = p_DvertexCoords(2,ivt1)
     
-    dx2 = p_DvertexCoords(1,ivt2) 
+    dx2 = p_DvertexCoords(1,ivt2)
     dy2 = p_DvertexCoords(2,ivt2)
 
     dw = sqrt((p_DvertexCoords(1,ivt1)-p_DvertexCoords(1,ivt2))**2 + &
@@ -337,16 +337,16 @@ contains
   
   end subroutine
   
- ! ****************************************************************************************  
+ ! ****************************************************************************************
       
 !<subroutine>
   subroutine gsmth_laplace(rtriangulation)
   
 !<description>
-  ! 
+  !
   ! This wrapper examines the dimension of
   ! the problem and calls the according subroutine
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -364,16 +364,16 @@ contains
   
   end subroutine
   
- ! ****************************************************************************************    
+ ! ****************************************************************************************
   
 !<subroutine>
   subroutine gsmth_umbrella(rtriangulation)
   
 !<description>
-  ! 
+  !
   ! This wrapper examines the dimension of
   ! the problem and calls the according subroutine
-  ! 
+  !
 !</description>
 
 !<inputoutput>
@@ -389,6 +389,6 @@ contains
   
   end if
   
-  end subroutine  
+  end subroutine
   
 end module

@@ -50,7 +50,7 @@ MODULE AllenCahn_partridiscr
   USE collection
   USE paramlist
   use convection
-  use vectorio    
+  use vectorio
 
 
   USE AllenCahn_callback
@@ -92,7 +92,7 @@ CONTAINS
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev,ierror
     integer(PREC_VECIDX) :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     type(t_linearForm) :: rlinform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
@@ -107,7 +107,7 @@ CONTAINS
 
     ctypeInitialSolution=3
     
-	!istart 
+	!istart
     !sfileString
 
     ! What is the type of the initial solution?
@@ -246,14 +246,14 @@ CONTAINS
       ! Prepare the solver for the velocity.
       ! Prepare the solver for the X-velocity.
 
-! We should make sure that rmatrixMass has been assembled. 
+! We should make sure that rmatrixMass has been assembled.
 
 
      call lsysbl_createMatFromScalar(&
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass%RmatrixBlock(1,1),Rmatrices(1))
 
 
-      call lsyssc_copyvector(rvector%RvectorBlock(1), rtemp)	
+      call lsyssc_copyvector(rvector%RvectorBlock(1), rtemp)
       call lsyssc_scalevector(rtemp, 0.0_DP)
 !      call lsyssc_synchroniseSortMatVec (Rmatrices(1)%RmatrixBlock(1,1), &
 !	                                     rvector%RvectorBlock(1), rtemp)
@@ -278,7 +278,7 @@ CONTAINS
         call output_line('Cannot compute L2 projection, solver broke down. Using zero!')
         call lsysbl_clearVector (rvector)
 
-!      else 
+!      else
 !        call lsysbl_copyVector(rsingleSol, rvector)
       end if
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -296,7 +296,7 @@ CONTAINS
       call linsol_doneStructure (p_rsolverNode,ierror)
       call linsol_releaseSolver (p_rsolverNode)
     
-    end select        
+    end select
 
   end subroutine
 
@@ -349,7 +349,7 @@ CONTAINS
   ! and has usually not to be changed by the user.
   !
   ! After the assembly process, this subroutine is called to release temporary
-  ! information from the collection which was stored there by 
+  ! information from the collection which was stored there by
   ! cc_initCollectForAssembly.
 !</description>
   
@@ -367,7 +367,7 @@ CONTAINS
 
     ! Currently, this subroutine is empty as all information stored in
     ! the collection in cc_initCollectForAssembly is put to the quick-access
-    ! arrays -- which do not have to be cleaned up. 
+    ! arrays -- which do not have to be cleaned up.
     ! This might change in future...
 
   end subroutine
@@ -481,7 +481,7 @@ CONTAINS
       ! for later use.
       rACproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
 
-      ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+      ! p_rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! Initialise the first element of the list to specify the element
       ! and cubature rule for this solution component:

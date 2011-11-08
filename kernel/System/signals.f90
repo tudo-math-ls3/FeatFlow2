@@ -5,8 +5,8 @@
 !#
 !# <purpose>
 !# This module provides basic routines for signal handling in Fortran.
-!# Signal handling is rather tricky in Fortran (because the function 
-!# that is registered as a signal handler is later called by value 
+!# Signal handling is rather tricky in Fortran (because the function
+!# that is registered as a signal handler is later called by value
 !# rather than by reference), so this module provides functions which
 !# are used as wrapper for the underlying C routines.
 !# </purpose>
@@ -58,7 +58,7 @@ module signals
   integer, parameter :: SIGUNUSED = 31
 
 !</constantblock>
-!</constants>  
+!</constants>
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -81,7 +81,7 @@ contains
     integer, intent(in) :: sig
     
     ! signal handler
-    interface 
+    interface
       function func(sig)
         integer, intent(in) :: sig
         integer :: func

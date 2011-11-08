@@ -74,8 +74,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
   
@@ -139,8 +139,8 @@ contains
   
     ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
     ! if a point is located outside of the domain. May happen e.g. in
-    ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
-    ! parameter if cnonmeshPoints is not specified. 
+    ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default
+    ! parameter if cnonmeshPoints is not specified.
     integer, intent(in), optional :: cnonmeshPoints
 !</input>
 

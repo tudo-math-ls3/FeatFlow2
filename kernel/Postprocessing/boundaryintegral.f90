@@ -77,7 +77,7 @@ contains
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
   integer(I32), intent(in) :: ccubType
   
-  ! A callback function that provides the analytical reference 
+  ! A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_functionScBdr2D.inc'
@@ -88,7 +88,7 @@ contains
   type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
   
   ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
+  ! callback function to provide additional information.
   type(t_collection), intent(in), target, optional :: rcollection
 !</input>
 
@@ -163,16 +163,16 @@ contains
   integer(I32), intent(in)                     :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
-  ! to calculate. 
+  ! to calculate.
   type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
-  ! A callback function that provides the analytical reference 
+  ! A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_functionScBdr2D.inc'
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
 !</input>
 
@@ -264,7 +264,7 @@ contains
         ! Element number
         Ielements(NEL) = p_IelementsAtBoundary(iedge)
         
-        ! Element orientation; i.e. the local number of the boundary edge 
+        ! Element orientation; i.e. the local number of the boundary edge
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
           if (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedge)) .eq. &
               p_IedgesAtBoundary(iedge)) exit
@@ -380,7 +380,7 @@ contains
       do ipoint = 1,ncubp
         ! Dxi1D is in [-1,1] while the current edge has parmeter values
         ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-        ! transformation to transform Dxi1D into that interval, this 
+        ! transformation to transform Dxi1D into that interval, this
         ! gives the parameter values in length parametrisation
         call mprim_linearRescale(Dxi1D(ipoint,1),-1.0_DP,1.0_DP,&
             DedgePosition(1,iel),DedgePosition(2,iel),DpointPar(ipoint,iel))
@@ -411,11 +411,11 @@ contains
     
       ! Get the length of the edge. Let us use the parameter values
       ! on the boundary for that purpose; this is a more general
-      ! implementation than using simple lines as it will later 
+      ! implementation than using simple lines as it will later
       ! support isoparametric elements.
       !
       ! The length of the current edge serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on 
+      ! in the cubature, so we have to divide it by 2 as an edge on
       ! the unit interval [-1,1] has length 2.
       dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
     
@@ -425,7 +425,7 @@ contains
     end do
     
     deallocate(DpointPar)
-    deallocate(Dvalues)  
+    deallocate(Dvalues)
       
     ! Release memory
 
@@ -491,7 +491,7 @@ contains
     
     ! Save the vector to the collection, so we can restore it in
     ! the callback routine
-    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.) 
+    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.)
 
     call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
       ccubType, ffunctionFEevaluation2D, dvalue, rboundaryRegion, rcollection)
@@ -517,7 +517,7 @@ contains
     
   !<description>
     ! This subroutine is called during the calculation of boundary
-    ! integrals. It has to compute the (analytical) values of a 
+    ! integrals. It has to compute the (analytical) values of a
     ! function in a couple of points Dpoints on a couple of elements
     ! Ielements. The integral evaluation function uses these values
     ! to compute integrals.
@@ -558,8 +558,8 @@ contains
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
   !</input>
   
@@ -643,7 +643,7 @@ contains
     
     ! Save the vector to the collection, so we can restore it in
     ! the callback routine
-    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.) 
+    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.)
 
     call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
       ccubType, ffunctionNormalDeriv2D, dvalue, rboundaryRegion, rcollection)
@@ -669,7 +669,7 @@ contains
     
   !<description>
     ! This subroutine is called during the calculation of boundary
-    ! integrals. It has to compute the (analytical) values of a 
+    ! integrals. It has to compute the (analytical) values of a
     ! function in a couple of points Dpoints on a couple of elements
     ! Ielements. The integral evaluation function uses these values
     ! to compute integrals.
@@ -710,8 +710,8 @@ contains
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
   !</input>
   

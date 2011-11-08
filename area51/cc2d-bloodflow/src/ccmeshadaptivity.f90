@@ -347,7 +347,7 @@ contains
     end if
     call cc_generateBasicRHS (rproblem,rrhs)
 
-    ! Initialise the boundary conditions, but 
+    ! Initialise the boundary conditions, but
     ! do not implement any boundary conditions as the nonstationary solver
     ! does not like this.
     if (rproblem%MSHOW_Initialisation .ge. 1) then

@@ -153,8 +153,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -229,8 +229,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -310,8 +310,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -402,8 +402,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -465,9 +465,9 @@ contains
     
   !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the solution component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...,
     !   3=3rd solution component, e.g. pressure)
     ! For pressure drop boundary / normal stress:
@@ -493,46 +493,46 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+    ! cinfoNeeded=DISCBC_NEEDFUNCMID :
     !   iwhere = number of the edge in which midpoint the value
     !            should be computed
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
-    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
     !   iwhere = Number of the edge where the normal stress should be computed.
     integer, intent(in)                                         :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
-    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
     !   dwhere = parameter value of the point on edge iwhere where the normal
     !            stress should be computed.
     real(DP), intent(in)                                        :: dwhere
      
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
   !</input>
   
   !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     !
     ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -575,9 +575,9 @@ contains
     
   !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the solution component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...,
     !   3=3rd solution component, e.g. pressure)
     ! For pressure drop boundary / normal stress:
@@ -603,46 +603,46 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+    ! cinfoNeeded=DISCBC_NEEDFUNCMID :
     !   iwhere = number of the edge in which midpoint the value
     !            should be computed
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
-    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
     !   iwhere = Number of the edge where the normal stress should be computed.
     integer, intent(in)                                         :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
-    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
     !   dwhere = parameter value of the point on edge iwhere where the normal
     !            stress should be computed.
     real(DP), intent(in)                                        :: dwhere
      
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
   !</input>
   
   !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     !
     ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -685,9 +685,9 @@ contains
     
   !<input>
     ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! For Dirichlet boundary:
     !   Icomponents(1) defines the number of the solution component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
     !   2=2nd solution component, e.g. Y-velocity,...,
     !   3=3rd solution component, e.g. pressure)
     ! For pressure drop boundary / normal stress:
@@ -713,46 +713,46 @@ contains
     integer, intent(in)                                         :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+    ! cinfoNeeded=DISCBC_NEEDFUNCMID :
     !   iwhere = number of the edge in which midpoint the value
     !            should be computed
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
-    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
     !   iwhere = Number of the edge where the normal stress should be computed.
     integer, intent(in)                                         :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
-    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
     !   dwhere = parameter value of the point on edge iwhere where the normal
     !            stress should be computed.
     real(DP), intent(in)                                        :: dwhere
      
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
 
   !</input>
   
   !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     !
     ! The function may return SYS_INFINITY_DP as a value. This indicates the

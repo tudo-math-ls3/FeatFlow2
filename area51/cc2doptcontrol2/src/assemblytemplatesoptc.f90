@@ -31,7 +31,7 @@ module assemblytemplatesoptc
   use timediscretisation
   use timescalehierarchy
 
-  use meshhierarchy  
+  use meshhierarchy
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy

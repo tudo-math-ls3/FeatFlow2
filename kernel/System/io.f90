@@ -15,7 +15,7 @@
 !#     -> Opens a file for writing; the file handle is automatically determined
 !#
 !# 3.) io_readlinefromfile
-!#     -> Reads one line from an opend file 
+!#     -> Reads one line from an opend file
 !#
 !# 4.) io_deleteFile
 !#     -> Deletes a file.
@@ -89,7 +89,7 @@ contains
     !filename
     character(*), intent(in) :: sfilename
 
-    ! OPTIONAL: 
+    ! OPTIONAL:
     ! TRUE : Open the file formatted, i.e. in human readable form
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
@@ -170,7 +170,7 @@ contains
     !mode: SYS_APPEND or SYS_REPLACE
     integer, intent(in) :: cflag
 
-    ! OPTIONAL: 
+    ! OPTIONAL:
     ! TRUE : Open the file formatted, i.e. in human readable form
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
@@ -191,7 +191,7 @@ contains
     logical :: bexists !true, if the file to be written in exists
     integer :: istatus !status variable for opening procedure
 
-    if (trim(sfilename) .eq. "") then 
+    if (trim(sfilename) .eq. "") then
       call error_print(ERR_IO_EMPTYFILENAME, "io_openFileForWriting", ERR_NOT_CRITICAL, &
                        sarg1 = "sfilename")
       return
@@ -229,7 +229,7 @@ contains
           open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
               position="append", form="unformatted")
         end if
-      endif    
+      endif
     end if
     if (present(bfileExists)) then
       bfileExists = bexists
@@ -276,10 +276,10 @@ contains
   !This routine reads a line from a text file
 !</description>
 
-!<input>  
+!<input>
     ! The unit where to read from; must be connected to a file.
     integer, intent(in) :: iunit
-!</input>  
+!</input>
 
 !<output>
     ! The string where to write data to
@@ -321,7 +321,7 @@ contains
       ! Proceed to next character
       cycle
 
-      ! End of file. 
+      ! End of file.
 10    ios = -1
       exit
 
@@ -349,7 +349,7 @@ contains
   !</input>
   
   !<output>
-    ! OPTIONAL: Receives the directory that contains the specific file, 
+    ! OPTIONAL: Receives the directory that contains the specific file,
     ! or "" if no directory was specified in sfile.
     character(len=*), intent(out), optional :: sfilepath
 

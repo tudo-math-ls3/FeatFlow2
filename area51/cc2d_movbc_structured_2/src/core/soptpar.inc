@@ -11,7 +11,7 @@
 * The entries are defined as follows:
 *
 * THList : record
-*   
+*
 *   // Triangulation and matrix/vector data
 *
 *   LTRIAS   : handle to      INTEGER TRIAS(SZTRIA,NNLEV)
@@ -25,20 +25,20 @@
 *
 *   LISTPAR  : handle to      INTEGER ISTPAR(SZNSDI)
 *   LDSTPAR  : handle to      DOUBLE PRECISION DSTPAR(SZNSDD)
-*    
+*
 *   // Multigrid structures provide space for one MG-Solver, Smoother
 *   // and coarse grid solver:
-*    
+*
 *   LIMGPAR  : handle to      INTEGER IMGPAR (SZ020I+SZSLVI+SZSLVI+SZSLVI)
 *   LDMGPAR  : handle to      DOUBLE PRECISION DMGPAR (SZ020D+SZSLVD+SZSLVD+SZSLVD)
-*    
+*
 *   // Assembly information
 *
 *   LIASMBL  : handle to      INTEGER IASMBL(SZASMI)
 *   LDASMBL  : handle to      DOUBLE PRECISION DASMBL(SZASMD)
 *
 *   // Geometry information
-*    
+*
 *   LIGEOM    : handle to     INTEGER IGEOM(*)
 *   LDGEOM    : handle to     DOUBLE PRECISION DGEOM(*)
 *
@@ -71,8 +71,8 @@
 ************************************************************************
 
       INTEGER OLTRIAS ,OLMATDAT,OLVECDAT,OLISTPAR,OLDSTPAR,OLIMGPAR
-      INTEGER OLDMGPAR,OLIASMBL,OLDASMBL,OLIGEOM ,OLDGEOM ,ODUP    
-      INTEGER ODRHS   ,ONUVP   ,OIFXOUT ,OLCURTR 
+      INTEGER OLDMGPAR,OLIASMBL,OLDASMBL,OLIGEOM ,OLDGEOM ,ODUP
+      INTEGER ODRHS   ,ONUVP   ,OIFXOUT ,OLCURTR
       INTEGER OLIOPTP ,OLDOPTP
 
       PARAMETER (OLTRIAS  = 1)

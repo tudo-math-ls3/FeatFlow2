@@ -9,8 +9,8 @@
 !# different quantities into solution and/or defect vectors.
 !#
 !# The discrete boundary conditions realised in the module 'bcassembly' are
-!# one type of filter. While being created in the module 'bcassembly', 
-!# this module now provides the functionality to impose discrete boundary 
+!# one type of filter. While being created in the module 'bcassembly',
+!# this module now provides the functionality to impose discrete boundary
 !# conditions into a vector.
 !# Also other filters can be found here, e.g. normalisation ov vectors, etc.
 !#
@@ -21,13 +21,13 @@
 !#
 !# a) 'Linear' filters
 !#
-!#   These filters realise simple vector filters like 
+!#   These filters realise simple vector filters like
 !#   - implementation of Dirichlet boundary conditions
 !#   - filter a vector to be in <tex>$L^2_0$</tex>
 !#   or similar.
 !#   The name comes from the ability to be able to be used as a filter
 !#   when solving a *linear system*. Some iterative solvers like BiCGStab
-!#   or Multigrid allow a vector to be filtered during the iteration. 
+!#   or Multigrid allow a vector to be filtered during the iteration.
 !#   All filters marked as 'linear filters' can be collected to a
 !#   'filter chain' that is applied to a vector in such an iteration.
 !#   For this purpose, there exists a higher-level module 'filtersupport',
@@ -49,14 +49,14 @@
 !#   - implementation of Pressure Drop boundary conditions.
 !#
 !# Note that filters are allowed consist a linear and a nonlinear part!
-!# In such a case, the 'nonlinear' filter part is usually called during 
+!# In such a case, the 'nonlinear' filter part is usually called during
 !# the nonlinear iteration, while the 'linear' part is used during the
 !# solution of a linear system. An example for this may be the
 !# predictor-corrector implementation of Slip boundary conditions (not
 !# realised here), where the nonlinear iteration treats the BC while
 !# in the solution process of the linear system, all respective nodes
 !# are handled as Dirichlet.
-!# 
+!#
 !# The following routines can be found here:
 !#
 !#  1.) vecfil_normaliseToL20Sca
@@ -71,27 +71,27 @@
 !#  3.) vecfil_discreteBCrhs
 !#      -> Linear filter
 !#      -> Apply the 'discrete boundary conditions for RHS vectors' filter
-!#         onto a given (block) vector. 
+!#         onto a given (block) vector.
 !#
 !#  4.) vecfil_discreteBCdef
 !#      -> Linear filter
-!#      -> Apply the 'discrete boundary conditions for defect vectors' filter 
-!#         onto a given (block) vector. 
+!#      -> Apply the 'discrete boundary conditions for defect vectors' filter
+!#         onto a given (block) vector.
 !#
 !#  5.) vecfil_discreteFBCsol
 !#      -> Linear filter
 !#      -> Apply the 'discrete fictitious boundary conditions for solution vectors'
-!#         filter onto a given (block) solution vector. 
+!#         filter onto a given (block) solution vector.
 !#
 !#  6.) vecfil_discreteFBCrhs
 !#      -> Linear filter
-!#      -> Apply the 'discrete fictitious boundary conditions for RHS vectors' 
-!#         filter onto a given (block) vector. 
+!#      -> Apply the 'discrete fictitious boundary conditions for RHS vectors'
+!#         filter onto a given (block) vector.
 !#
 !#  7.) vecfil_discreteFBCdef
 !#      -> Linear filter
-!#      -> Apply the 'discrete fictitious boundary conditions for defect vectors' 
-!#         filter onto a given (block) vector. 
+!#      -> Apply the 'discrete fictitious boundary conditions for defect vectors'
+!#         filter onto a given (block) vector.
 !#
 !#  8.) vecfil_subvectorToL20
 !#      -> Linear filter
@@ -118,7 +118,7 @@
 !#      -> Implements discrete Dirichlet BC`s into a scalar defect vector.
 !#
 !#  3.)  vecfil_imposeDirichletFBC (rx,icomponent,rdbcStructure)
-!#      -> Implements discrete Dirichlet fictitious boundary conditions into a 
+!#      -> Implements discrete Dirichlet fictitious boundary conditions into a
 !#      -> scalar vector.
 !#
 !#  4.) vecfil_normaliseToL20Sca (rx)
@@ -127,7 +127,7 @@
 !#  5.) vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
 !#      -> Implements discrete pressure drop BC`s into a block vector.
 !#
-!#  6.) vecfil_imposeNLSlipDefectBC 
+!#  6.) vecfil_imposeNLSlipDefectBC
 !#      -> Implements discrete nonlinear slip BC`s into a scalar defect vector
 !#         as configured in the slip BC structure.
 !#
@@ -168,9 +168,9 @@ module vectorfilters
   public :: vecfil_subvectorSmallL1To0
   public :: vecfil_imposeDirichletBC
   public :: vecfil_imposeDirichletDefectBC
-  public :: vecfil_imposeDirichletFBC 
+  public :: vecfil_imposeDirichletFBC
   public :: vecfil_imposePressureDropBC
-  public :: vecfil_imposeNLSlipDefectBC 
+  public :: vecfil_imposeNLSlipDefectBC
   public :: vecfil_normaliseSmallL1To0Sca
   
 contains
@@ -242,7 +242,7 @@ contains
       call sys_halt()
     end if
     
-    call lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)
     
     if (.not.associated(p_vec)) then
       call output_line('No vector!',&
@@ -262,7 +262,7 @@ contains
       end do
     else
       ! Ups, vector sorted. At first get the permutation how its sorted
-      ! - or more precisely, the back-permutation, as we need this one for 
+      ! - or more precisely, the back-permutation, as we need this one for
       ! the loop below.
       call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
@@ -325,7 +325,7 @@ contains
       call sys_halt()
     end if
     
-    call lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)
     
     if (.not.associated(p_vec)) then
       call output_line('No vector!',&
@@ -348,7 +348,7 @@ contains
       end do
     else
       ! Ups, vector sorted. At first get the permutation how its sorted -
-      ! or more precisely, the back-permutation, as we need this one for 
+      ! or more precisely, the back-permutation, as we need this one for
       ! the loop below.
       call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
@@ -368,7 +368,7 @@ contains
   subroutine vecfil_imposeDirichletFBC (rx,icomponent,rdbcStructure)
   
 !<description>
-  ! Implements discrete Dirichlet fictitious boundary conditions into a 
+  ! Implements discrete Dirichlet fictitious boundary conditions into a
   ! scalar vector.
 !</description>
 
@@ -425,7 +425,7 @@ contains
     ! Impose the DOF value directly into the vector - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     
-    call lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)
     
     if (.not.associated(p_vec)) then
       call output_line('Error: No vector',&
@@ -445,7 +445,7 @@ contains
       end do
     else
       ! Ups, vector sorted. At first get the permutation how its sorted
-      ! - or more precisely, the back-permutation, as we need this one for 
+      ! - or more precisely, the back-permutation, as we need this one for
       ! the loop below.
       call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
@@ -465,7 +465,7 @@ contains
   subroutine vecfil_imposeDirichletDefectFBC (rx,rdbcStructure)
   
 !<description>
-  ! Implements discrete Dirichlet fictitious boundary conditions into 
+  ! Implements discrete Dirichlet fictitious boundary conditions into
   ! a scalar defect vector.
 !</description>
 
@@ -509,7 +509,7 @@ contains
       call sys_halt()
     end if
     
-    call lsyssc_getbase_double (rx, p_vec)  
+    call lsyssc_getbase_double (rx, p_vec)
     
     if (.not.associated(p_vec)) then
       call output_line('No vector!',&
@@ -532,7 +532,7 @@ contains
       end do
     else
       ! Ups, vector sorted. At first get the permutation how its sorted -
-      ! or more precisely, the back-permutation, as we need this one for 
+      ! or more precisely, the back-permutation, as we need this one for
       ! the loop below.
       call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
@@ -587,7 +587,7 @@ contains
           p_rdiscretisation%RelementDistr(1)%celement)
   
       select case (itrialspace)
-      case (EL_P0, EL_Q0) 
+      case (EL_P0, EL_Q0)
     
         ! Ok, easy case. Get from the triangulation the AREA-array for calculating
         ! a simple integral of rx:
@@ -606,7 +606,7 @@ contains
         !   dpintegral = SUM_Elements P(Element)*Volume(Element)
         
         dpintegral=0.0_DP
-        do iel=1,nel 
+        do iel=1,nel
           dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
         end do
         
@@ -624,7 +624,7 @@ contains
         
       case (EL_QP1)
     
-        ! Ok, quadrilateral P1 element. Get from the triangulation the AREA-array for 
+        ! Ok, quadrilateral P1 element. Get from the triangulation the AREA-array for
         ! calculating a simple integral of rx:
         
         call storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
@@ -644,7 +644,7 @@ contains
         ! is the same as in the Q0 and P0 case, respectively.
         
         dpintegral=0.0_DP
-        do iel=1,nel 
+        do iel=1,nel
           dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
         end do
         
@@ -731,7 +731,7 @@ contains
 !</description>
 
 !<input>
-  ! The t_discreteBCpressureDrop that describes the discrete pressure 
+  ! The t_discreteBCpressureDrop that describes the discrete pressure
   ! drop BC`s
   type(t_discreteBCpressureDrop), intent(in), target  :: rpdbcStructure
   
@@ -777,7 +777,7 @@ contains
       call sys_halt()
     end if
     
-    ! Currently, only 2D is supported. 
+    ! Currently, only 2D is supported.
     ! First handle the X-velocity (j=1), then the Y-velocity (j=2)
     do j=1,NDIM2D
     
@@ -803,7 +803,7 @@ contains
         end do
       else
         ! Oops, vector sorted. At first get the permutation how its sorted
-        ! - or more precisely, the back-permutation, as we need this one for 
+        ! - or more precisely, the back-permutation, as we need this one for
         ! the loop below.
         call storage_getbase_int (rx%RvectorBlock(j)%h_IsortPermutation,p_Iperm)
         p_Iperm => p_Iperm(rx%RvectorBlock(j)%NEQ+1:)
@@ -870,7 +870,7 @@ contains
     end if
     
     ! Only double precision vectors supported.
-    if (rx%cdataType .ne. ST_DOUBLE) then 
+    if (rx%cdataType .ne. ST_DOUBLE) then
       call output_line('Only double precision supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
       call sys_halt()
@@ -936,7 +936,7 @@ contains
       end do
     else
       ! Ups, vector sorted. At first get the permutation how its sorted -
-      ! or more precisely, the back-permutation, as we need this one for 
+      ! or more precisely, the back-permutation, as we need this one for
       ! the loop below.
       call storage_getbase_int (rx%RvectorBlock(1)%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%NEQ+1:)
@@ -1171,7 +1171,7 @@ contains
   ! This routine realises the 'impose discrete boundary conditions to solution'
   ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
   ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
-  ! which are  associated to the vector rx (with rx%p_discreteBC) to this 
+  ! which are  associated to the vector rx (with rx%p_discreteBC) to this
   ! (block) vector.
 !</description>
   
@@ -1227,10 +1227,10 @@ contains
         call vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
             p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
         
-      case (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)
         ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
 
-      case (DISCBC_TPSLIP)  
+      case (DISCBC_TPSLIP)
         ! Nothing to do
         
       case (DISCBC_TPFEASTMIRROR)
@@ -1261,7 +1261,7 @@ contains
   ! This routine realises the 'impose discrete boundary conditions to RHS'
   ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
   ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
-  ! which are  associated to the vector rx (with rx%p_discreteBC) to this 
+  ! which are  associated to the vector rx (with rx%p_discreteBC) to this
   ! (block) vector.
 !</description>
   
@@ -1312,7 +1312,7 @@ contains
         call vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
                                       p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
       
-      case (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)
         ! Nothing to do.
         
       case (DISCBC_TPSLIP)
@@ -1345,7 +1345,7 @@ contains
   ! Implements discrete pressure drop BC`s into a block RHS vector.
   ! To be called inside of a nonlinear or time-stepping loop.
   ! This routine performs a special filtering to the RHS vector
-  ! of the type $r_m := r_m - \sum_j P_j \int_{S_j} \phi n ds$ as described 
+  ! of the type $r_m := r_m - \sum_j P_j \int_{S_j} \phi n ds$ as described
   ! on page 257 (235) Turek`s book.
   !
   ! The filtering is applied to the boundary components configured
@@ -1406,7 +1406,7 @@ contains
       ! Only implement discrete pressure drop BC`s.
       if (p_rdiscreteBC%p_RdiscBCList(i)%itype .eq. DISCBC_TPPRESSUREDROP) then
         call vecfil_imposePressureDropBC (rx,dtweight,&
-            p_rdiscreteBC%p_RdiscBCList(i)%rpressureDropBCs)        
+            p_rdiscreteBC%p_RdiscBCList(i)%rpressureDropBCs)
       end if
       
     end do
@@ -1425,7 +1425,7 @@ contains
   ! This routine realises the 'impose discrete boundary conditions to defect'
   ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
   ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
-  ! which are  associated to the defect vector rx (with rx%p_discreteBC) to 
+  ! which are  associated to the defect vector rx (with rx%p_discreteBC) to
   ! this (block) vector.
 !</description>
   
@@ -1481,7 +1481,7 @@ contains
         call vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
             p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
         
-      case (DISCBC_TPPRESSUREDROP)  
+      case (DISCBC_TPPRESSUREDROP)
         ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
         
       case (DISCBC_TPSLIP)
@@ -1561,7 +1561,7 @@ contains
     
       ! Only implement discrete slip BC`s.
       if (p_rdiscreteBC%p_RdiscBCList(i)%itype .eq. DISCBC_TPSLIP) then
-        call vecfil_imposeNLSlipDefectBC (rx,p_rdiscreteBC%p_RdiscBCList(i)%rslipBCs)          
+        call vecfil_imposeNLSlipDefectBC (rx,p_rdiscreteBC%p_RdiscBCList(i)%rslipBCs)
       end if
       
     end do
@@ -1569,7 +1569,7 @@ contains
   end subroutine
   
   ! ***************************************************************************
-  ! Implementation of discrete fictitious boundary conditions into 
+  ! Implementation of discrete fictitious boundary conditions into
   ! block solution vectors
   ! ***************************************************************************
 
@@ -1578,17 +1578,17 @@ contains
   subroutine vecfil_discreteFBCsol (rx,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the `impose discrete fictitious boundary conditions 
-  ! to solution` filter. 
+  ! This routine realises the `impose discrete fictitious boundary conditions
+  ! to solution` filter.
   ! This filter imposes the discrete fictitious boundary conditions rdiscreteFBC
   ! (if specified) or (if rdiscreteFBC is not specified) the boundary conditions
-  ! which are  associated to the vector rx (with rx%p_discreteBC) to this 
+  ! which are  associated to the vector rx (with rx%p_discreteBC) to this
   ! (block) vector.
 !</description>
   
 !<input>
   ! OPTIONAL: boundary conditions to impose into the vector.
-  ! If not specified, the default fictitious boundary conditions associated 
+  ! If not specified, the default fictitious boundary conditions associated
   ! to the vector rx are imposed to the matrix.
   type(t_discreteFBC), optional, intent(in), target :: rdiscreteFBC
 !</input>
@@ -1607,7 +1607,7 @@ contains
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBCfict)) then
-        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
+        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList
       else
         ! No BC
         nullify(p_RdiscreteFBC)
@@ -1656,7 +1656,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  ! Implementation of discrete fictitious boundary conditions into 
+  ! Implementation of discrete fictitious boundary conditions into
   ! block RHS vectors
   ! ***************************************************************************
 
@@ -1665,11 +1665,11 @@ contains
   subroutine vecfil_discreteFBCrhs (rx,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the `impose discrete fictitious boundary conditions 
-  ! to RHS` filter. 
+  ! This routine realises the `impose discrete fictitious boundary conditions
+  ! to RHS` filter.
   ! This filter imposes the discrete fictitious boundary conditions rdiscreteFBC
   ! (if specified) or (if rdiscreteFBC is not specified) the boundary conditions
-  ! which are  associated to the vector rx (with rx%p_discreteFBC) to this 
+  ! which are  associated to the vector rx (with rx%p_discreteFBC) to this
   ! (block) vector.
 !</description>
   
@@ -1694,7 +1694,7 @@ contains
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBCfict)) then
-        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
+        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList
       else
         ! No BC
         nullify(p_RdiscreteFBC)
@@ -1743,7 +1743,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  ! Implementation of discrete fictitious boundary conditions into 
+  ! Implementation of discrete fictitious boundary conditions into
   ! block defect vectors
   ! ***************************************************************************
 
@@ -1752,11 +1752,11 @@ contains
   subroutine vecfil_discreteFBCdef (rx,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the `impose discrete fictitious boundary conditions 
-  ! to defect` filter. 
+  ! This routine realises the `impose discrete fictitious boundary conditions
+  ! to defect` filter.
   ! This filter imposes the discrete fictitious boundary conditions rdiscretFeBC
   ! (if specified) or (if rdiscreteFBC is not specified) the boundary conditions
-  ! which are  associated to the defect vector rx (with rx%p_discreteFBC) to 
+  ! which are  associated to the defect vector rx (with rx%p_discreteFBC) to
   ! this (block) vector.
 !</description>
   
@@ -1781,7 +1781,7 @@ contains
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rx%p_rdiscreteBCfict)) then
-        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
+        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList
       else
         ! No BC.
         nullify(p_RdiscreteFBC)

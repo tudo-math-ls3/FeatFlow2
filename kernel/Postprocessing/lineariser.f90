@@ -406,7 +406,7 @@ contains
       rtriangulationDest%NVT  = rtriangulationSrc%NVT
       rtriangulationDest%NEL  = rtriangulationSrc%NEL
       
-      ! Duplicate shared vertices? 
+      ! Duplicate shared vertices?
       if (bisDiscontinuous)&
           call lin_prepareUnshareVertices(p_IverticesAtElementSrc,&
           p_InodalPropertySrc, rtriangulationDest%NVT,&
@@ -940,7 +940,7 @@ contains
           ! Process first edge (I1,I2)
           jel = IneighboursAtElement(1,iel)
           if ((iel .lt. jel) .or. (jel .eq. 0)) then
-            ! Insert new vertex           
+            ! Insert new vertex
             NVT = NVT+1; i4 = NVT
             DvertexCoords(:,i4) = 0.5_DP*(DvertexCoords(:,i1)+DvertexCoords(:,i2))
             if (InodalProperty(i1)*InodalProperty(i2) .ne. 0) then
@@ -1115,7 +1115,7 @@ contains
 
 
 !<description>
-    ! This subroutine linearises the given FE-solution rvectorSrc 
+    ! This subroutine linearises the given FE-solution rvectorSrc
     ! by evaluating it at the degrees of freedom of the destination
     ! discretisation structure rspatialDiscreDest and stores the
     ! values in the destination FE-vector rvectorDest
@@ -1593,7 +1593,7 @@ contains
     ! local variables
     type(t_evalElementSet) :: revalElementSet
     type(t_elementDistribution), pointer :: p_relementDistribution
-    real(DP), dimension(:,:), allocatable :: DcubPtsRef    
+    real(DP), dimension(:,:), allocatable :: DcubPtsRef
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:,:), allocatable :: Idofs
     integer, dimension(:), pointer :: p_IelementList
@@ -1669,7 +1669,7 @@ contains
       ! Release memory
       deallocate(DcubPtsRef,Idofs)
       
-      call elprep_releaseElementSet(revalElementSet)  
+      call elprep_releaseElementSet(revalElementSet)
     end do ! icurrentElementDistribution
         
   end subroutine lin_calcDofCoordsSc
@@ -1703,7 +1703,7 @@ contains
     ! local variables
     type(t_evalElementSet) :: revalElementSet
     type(t_elementDistribution), pointer :: p_relementDistribution
-    real(DP), dimension(:,:), allocatable :: DcubPtsRef    
+    real(DP), dimension(:,:), allocatable :: DcubPtsRef
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:,:), allocatable :: Idofs
     integer, dimension(:), pointer :: p_IelementList
@@ -1790,7 +1790,7 @@ contains
       ! Release memory
       deallocate(DcubPtsRef,Idofs)
       
-      call elprep_releaseElementSet(revalElementSet)  
+      call elprep_releaseElementSet(revalElementSet)
     end do ! icurrentElementDistribution
         
   end subroutine lin_calcDofCoordsBl

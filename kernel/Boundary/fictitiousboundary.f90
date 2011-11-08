@@ -7,7 +7,7 @@
 !# This module defines the basic structure to handle fictitious boundary
 !# objects.
 !#
-!# A fictitious boundary object is a general, analytically described part of 
+!# A fictitious boundary object is a general, analytically described part of
 !# the underlying domain. To identify it, the structure t_fictBoundaryRegion
 !# is defined, which contains basically some tags like a string for
 !# the name of the fictitious boundary region. The analytic description

@@ -18,7 +18,7 @@
 !#
 !# where n = (-1, 0), at the 4 th edge.
 !#
-!# The analytic solution is assumed to be. 
+!# The analytic solution is assumed to be.
 !#
 !#          u(x,y) = x^2 + y^2
 !#
@@ -62,16 +62,16 @@ module poisson2d_method1_robin
 contains
 
   ! ***************************************************************************
-  ! Our Robin BC is of the form: grad u \cdot n + c u = g and splits in 
+  ! Our Robin BC is of the form: grad u \cdot n + c u = g and splits in
   ! three parts:
   !
   ! 1.) u \cdot n + ... = ...
   !     -> This part pops out automatically from the weak form of the equation
-  !        because of the partial integration of the Laplace operator. It is 
+  !        because of the partial integration of the Laplace operator. It is
   !        realised by "doing nothing" on the 4th edge of the boundary.
   !
   ! 2.)       ... + c u = ...
-  !     -> This gives a mass matrix on the boundary, realised by 
+  !     -> This gives a mass matrix on the boundary, realised by
   !        coeff_mass_robinBC.
   !
   ! 3.)       ... + ... = g
@@ -149,8 +149,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
@@ -165,8 +165,8 @@ contains
     
   !</subroutine>
     
-    ! This coefficient returns \alpha, where \alpha (u, \phi)_{\Gamma} is 
-    ! the weak form from the boundary and \alpha is the Robin coeff, 
+    ! This coefficient returns \alpha, where \alpha (u, \phi)_{\Gamma} is
+    ! the weak form from the boundary and \alpha is the Robin coeff,
     ! in our case, we set \alpha=DquickAccess(1); the caller placed
     ! the coefficient to use there.
 
@@ -230,8 +230,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -324,8 +324,8 @@ contains
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
@@ -340,10 +340,10 @@ contains
     
   !</subroutine>
 
-    ! u(x,y) = x**2+y**2 
+    ! u(x,y) = x**2+y**2
     ! => g(x,y)=-2x+(x**2+y**2), where g(x,y) = grad(u(x,y)) \cdot n + u(x,y)
     ! with n=(-1, 0)
-    Dcoefficients(1,:,:) = -2.0_DP * Dpoints(1,:,:) + & 
+    Dcoefficients(1,:,:) = -2.0_DP * Dpoints(1,:,:) + &
                            (Dpoints(1,:,:)**2 + Dpoints(2,:,:)**2)
 
 
@@ -368,9 +368,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -391,38 +391,38 @@ contains
   integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   iwhere = number of the point in the triangulation or
   !          = 0, if only the parameter value of the point is known; this
   !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
   integer, intent(IN)                                          :: iwhere
 
   ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
+  ! cinfoNeeded=DISCBC_NEEDFUNC :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
+  ! cinfoNeeded=DISCBC_NEEDDERIV :
   !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+  ! cinfoNeeded=DISCBC_NEEDINTMEAN :
   !   dwhere = 0 (not used)
   real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional                 :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
@@ -495,8 +495,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -570,11 +570,11 @@ contains
     type(t_matrixBlock) :: rmatrixBlock
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -607,19 +607,19 @@ contains
     ! assembly on the boundary. We need...
     !
     ! A bilinear and linear form describing the analytic problem to solve
-    ! for assembling the mass matrix from boundary. 
+    ! for assembling the mass matrix from boundary.
     type(t_bilinearForm) :: rbilinform_boundary
     type(t_linearForm) :: rlinform_boundary
     
     ! For specifying the cubature rule on the boundary, usually, CUB_xxxx_1D
     integer :: ccubType_boundary
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 7
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -674,8 +674,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -730,7 +730,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -762,10 +762,10 @@ contains
     ! Take care here, we also need to do something for assembling RHS from Robin BC
 
     ! We assume that the 4th edge is Robin type. Therefore, We also need to do assembling
-    ! for the Mass matrix from the boundary. For this purpose, we have to know how to map the 
-    ! local boundary nodal index to global index of variable. This part has been implemented 
-    ! in the kernel, bilf_buildMatrixScalarBdr2D for assemling matrix from the boundary, 
-    ! and linf_buildVectorScalarBdr2d for the RHS assembling from the boundary. 
+    ! for the Mass matrix from the boundary. For this purpose, we have to know how to map the
+    ! local boundary nodal index to global index of variable. This part has been implemented
+    ! in the kernel, bilf_buildMatrixScalarBdr2D for assemling matrix from the boundary,
+    ! and linf_buildVectorScalarBdr2d for the RHS assembling from the boundary.
 
     ! We need to specify the quadrature rule for assembling the terms from boundary
     ! CUB_xxxx_1D to be used for line integration
@@ -784,10 +784,10 @@ contains
     ! Pass the coefficient "1" via the quick access arrays.
     rcollection%DquickAccess(1) = 1.0_DP
 
-    ! Create the mass matrix for the Robin BC on the 4th edge and directly 
+    ! Create the mass matrix for the Robin BC on the 4th edge and directly
     ! add it to our existing Laplace matrix (specifying bclear=.false.).
     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    call bilf_buildMatrixScalarBdr2D (rbilinform_boundary, ccubType_boundary, .false.,& 
+    call bilf_buildMatrixScalarBdr2D (rbilinform_boundary, ccubType_boundary, .false.,&
         rmatrix, coeff_mass_robinBC, rboundaryRegion, rcollection)
 
     ! The same has to be done for the right hand side of the problem.
@@ -840,7 +840,7 @@ contains
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -865,7 +865,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -921,7 +921,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that is it.

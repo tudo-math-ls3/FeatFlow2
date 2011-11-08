@@ -37,7 +37,7 @@
 !# 4.) coeff_Conv1
 !# 5.) coeff_Conv2
 !# 6.) coeff_Poly
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -109,7 +109,7 @@ CONTAINS
 ! Feng's example
 !     delta=x**2/0.01_DP+y**2/0.0225_DP-1.0_DP
 !     f_val=tanh(delta)
-! 
+!
 
    ! Feng Shen
 !    delta=sqrt((x-0.5_DP)**2+(y-0.5_DP)**2)-50.0_DP/128.0_DP
@@ -127,12 +127,12 @@ CONTAINS
 ! f_val=-tanh(delta/eps)
 
 ! constant, for debuggin
-!     f_val=1.0_DP	
+!     f_val=1.0_DP
 
 ! Square bubble
 !    if ((x .ge. 0.35) .and. (x .le. 0.65) .and. (y .ge. 0.35) .and. (y .le. 0.65)) then
 !       f_val=1.0_DP
-!    else 
+!    else
 !       f_val=-1.0_DP
 !    end if
 
@@ -197,8 +197,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), OPTIONAL      :: rcollection
 
   !</input>
@@ -219,10 +219,10 @@ CONTAINS
 
 	! rInnervector is to save rACvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
 
-    !  rOutervector is to save rNSvector 
-!    type(t_vectorblock) :: rOutvector 
+    !  rOutervector is to save rNSvector
+!    type(t_vectorblock) :: rOutvector
   !</output>
 
 !</subroutine>
@@ -251,7 +251,7 @@ CONTAINS
       end do
 
       deallocate(Dvalues)
-  end if 
+  end if
 
   end subroutine
 
@@ -260,7 +260,7 @@ CONTAINS
   real(DP), intent(INOUT) :: f_val
 
      f_val=(phi**2- 1.0_DP)*phi
-  end subroutine 
+  end subroutine
 ! ***************************************************************************
   !<subroutine>
   subroutine coeff_Jacobian(rdiscretisationTrial,rdiscretisationTest,rform, &
@@ -318,8 +318,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -342,12 +342,12 @@ CONTAINS
 
 	! rInnervector is to save rvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
 ! Note that we do not need gamma and eps here, because rnonlinearIteration%dgamma include
 ! gamma/eps**2
 
   !</subroutine>
-! we treat the nonlinear term as: 
+! we treat the nonlinear term as:
 !    (\gamma/eps^2)((\phi(t_n)^2-1)\phi(t_n+1), \psi)
 
     if (present(rcollection)) then
@@ -368,7 +368,7 @@ CONTAINS
         
       end do
       deallocate(Dvalues)
-    end if 
+    end if
   end subroutine
 
 
@@ -429,8 +429,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -453,11 +453,11 @@ CONTAINS
 
 	! rInnervector is to save rvector from previous step
     type(t_vectorblock),pointer :: rInnervector
-    real(DP) :: f_val 
+    real(DP) :: f_val
   !</output>
 
   !</subroutine>
-! we treat the nonlinear term as: 
+! we treat the nonlinear term as:
 !    (\gamma/eps^2)((\phi(t_n)^2-1)\phi(t_n+1), \psi)
 
     if (present(rcollection)) then
@@ -478,7 +478,7 @@ CONTAINS
         
       end do
       deallocate(Dvalues)
-    end if 
+    end if
   end subroutine
 
 !**********************************************************************************
@@ -497,7 +497,7 @@ CONTAINS
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
     !
-    ! In this example, we compute the poisson example with a nonconstant 
+    ! In this example, we compute the poisson example with a nonconstant
     ! coefficient depending on a finite element function. The FE function is
     ! passed to this routine via the collection structure rcollection.
   !</description>
@@ -541,8 +541,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
   !</subroutine>
     ! local variables
@@ -586,7 +586,7 @@ CONTAINS
       end do
 
       deallocate(Dvalues_X)
-    end if 
+    end if
 
   end subroutine
 
@@ -606,7 +606,7 @@ CONTAINS
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
     !
-    ! In this example, we compute the poisson example with a nonconstant 
+    ! In this example, we compute the poisson example with a nonconstant
     ! coefficient depending on a finite element function. The FE function is
     ! passed to this routine via the collection structure rcollection.
   !</description>
@@ -650,8 +650,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
   !</subroutine>
     ! local variables
@@ -690,12 +690,12 @@ CONTAINS
         do j = 1, npointsPerElement
           ! MCai: {\bf u} \cdot \grad \phi
           ! Dcoefficients have 2 items?
-          Dcoefficients(1,j,i)=Dvalues_Y(1,j,i) 
+          Dcoefficients(1,j,i)=Dvalues_Y(1,j,i)
         end do
       end do
 		
       deallocate(Dvalues_Y)
-    end if 
+    end if
 
   end subroutine
 
@@ -757,8 +757,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -817,7 +817,7 @@ CONTAINS
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
@@ -858,8 +858,8 @@ CONTAINS
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -879,7 +879,7 @@ CONTAINS
        do j = 1, npointsPerElement
          call AllenCahn_inicon(Dpoints(1,j, i), Dpoints(2, j, i), Dvalues(j, i))
        end do
-    end do   
+    end do
 
      ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -953,8 +953,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
     
   !</input>
@@ -1039,8 +1039,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   !</input>
@@ -1063,8 +1063,8 @@ CONTAINS
     type(t_vectorblock),pointer :: rInnervector
 
 
-    ! rOutervector is to save rNSvector 
-!    type(t_vectorblock) :: rOutvector 
+    ! rOutervector is to save rNSvector
+!    type(t_vectorblock) :: rOutvector
   !</output>
 
   !</subroutine>
@@ -1138,8 +1138,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   !</input>
@@ -1161,8 +1161,8 @@ CONTAINS
 	! rInnervector is to save rACvector from previous step
     type(t_vectorblock),pointer :: rInnervector
     real(DP) :: f_val
-    !  rOutervector is to save rNSvector 
-!    type(t_vectorblock) :: rOutvector 
+    !  rOutervector is to save rNSvector
+!    type(t_vectorblock) :: rOutvector
   !</output>
 
   !</subroutine>
@@ -1195,9 +1195,9 @@ CONTAINS
       end do
 
       deallocate(Dvalues)
-!MCai, we shall also release the pointers: rInnervector 
+!MCai, we shall also release the pointers: rInnervector
         
-  end if 
+  end if
  !     call lsysbl_releasevector(rinnervector)
   end subroutine
 
@@ -1207,7 +1207,7 @@ CONTAINS
 
      f_val=(phi**2-1.0_DP)*phi
 
-  end subroutine 
+  end subroutine
 
 ! MCai
 !***************************************************************************
@@ -1271,8 +1271,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     TYPE(t_collection), INTENT(INOUT), OPTIONAL      :: rcollection
 
   !</input>
@@ -1296,11 +1296,11 @@ CONTAINS
     integer :: i, j
 
 	! rInnervector is to save rACvector from previous step
-    ! type(t_vectorblock) :: rInnervector 
-    ! rOutvector is to save rNSvector 
+    ! type(t_vectorblock) :: rInnervector
+    ! rOutvector is to save rNSvector
     type(t_vectorblock),pointer :: rInnervector
-    type(t_vectorblock),pointer :: rOutvector 
-!    real(DP) :: dtime 
+    type(t_vectorblock),pointer :: rOutvector
+!    real(DP) :: dtime
 
 !***************rdomainIntSubset_NS****************************
 !    TYPE(t_domainIntSubset)  :: rdomainIntSubset_NS
@@ -1338,7 +1338,7 @@ CONTAINS
       call fevl_evaluate_sim4 (rOutvector%RvectorBlock(2), &
 	                         rdomainIntSubset, DER_FUNC, Dvalues_Y, 1)
 !****We should use the following code, rather than the above*****************
-! How to get rdomainIntSubset_NS????????? An example can be found in 
+! How to get rdomainIntSubset_NS????????? An example can be found in
 !  Postprocessing/pprocgradients/
 !      call fevl_evaluate_sim4 (rOutvector%RvectorBlock(1), &
 !	                         rdomainIntSubset_NS, DER_FUNC, Dvalues_X, 1)
@@ -1366,7 +1366,7 @@ CONTAINS
        deallocate(Dvalues_Y)
 !MCai, we shall also release the pointers: rInnervector and rOutvector
 
-  end if 
+  end if
 ! call lsysbl_releasevector(routvector)
 
   END SUBROUTINE
@@ -1434,8 +1434,8 @@ CONTAINS
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), OPTIONAL, target  :: rcollection
 
   !</input>
@@ -1456,8 +1456,8 @@ CONTAINS
     integer :: i, j
 
 	! rInnervector is to save rACvector from previous step
-    ! type(t_vectorblock) :: rInnervector 
-    ! rOutervector is to save rNSvector 
+    ! type(t_vectorblock) :: rInnervector
+    ! rOutervector is to save rNSvector
     type(t_vectorblock),pointer :: rInnervector
     type(t_vectorScalar) :: rtmpvectorScalar
     real(DP) :: dtime
@@ -1469,7 +1469,7 @@ CONTAINS
   if (present(rcollection)) then
 
 !MCai, we need to modify something here?
-! Through rcollection, we can get rcollection%p_rvectorQuickAccess1 
+! Through rcollection, we can get rcollection%p_rvectorQuickAccess1
     rInnervector=>rcollection%p_rvectorQuickAccess1
 
     call lsyssc_createVecByDiscr (rInnervector%RvectorBlock(1)%p_rspatialDiscr, &
@@ -1478,7 +1478,7 @@ CONTAINS
     call lsyssc_clearvector(rtmpvectorScalar)
   
 ! We use a technique similar to cal L^1 error to get the integration of f(\phi(t_n))
-! fun2d_Target will provided the function values at the cubature points. 
+! fun2d_Target will provided the function values at the cubature points.
     call fun_integral2d_conf(rtmpvectorScalar, PPERR_L1ERROR,Dvalues_Integ,&
                                   rdiscretisation,fun2d_Target,rcollection)
 
@@ -1490,13 +1490,13 @@ CONTAINS
 
 
     call lsyssc_releaseVector(rtmpvectorScalar)
-  end if 
+  end if
 
   end subroutine
 !
 ! We need use rcollection to get rACvector, and use rACvector to evaluate
 ! the function value of \phi^3-\phi at any given (x,y), but the problem here is
-! that Dpoints may only corresponds to quadrature points. 
+! that Dpoints may only corresponds to quadrature points.
   
 ! ***************************************************************************
   
@@ -1517,7 +1517,7 @@ CONTAINS
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
@@ -1558,8 +1558,8 @@ CONTAINS
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -1598,9 +1598,9 @@ CONTAINS
                  rdomainIntSubset, cderivative, DvaluesTmp, 1)
 
         Dvalues(:,:)=DvaluesTmp(1, :, :)
-	  else 
+	  else
 	    write(*,*) 'This code is only for evaluating fun value, not derivative'
-      end if 
+      end if
 
       deallocate(DvaluesTmp)
     end if

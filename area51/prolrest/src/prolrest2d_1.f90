@@ -84,7 +84,7 @@ contains
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rproj
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverC,p_rsolverF
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -95,7 +95,7 @@ contains
     integer :: NLMIN,i
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
 
     NLMIN = 2
 
@@ -148,7 +148,7 @@ contains
     rform%Idescriptors(2,1) = DER_FUNC
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
 
     ! Build the two mass matrices
     call bilf_buildMatrixScalar (rform,.true.,rmatrixC%RmatrixBlock(1,1))
@@ -254,7 +254,7 @@ contains
         trim(sys_sdEP(p_DsolF(i),20,13)) // '    ' // &
         trim(sys_sdEP(p_Dprol(i),20,13)) // '    ' // &
         trim(sys_sdEP(p_DtmpF(i),20,13)))
-    end do    
+    end do
     
     ! -------------------------------------------------------------------------
     ! Restriction Test
@@ -277,7 +277,7 @@ contains
         trim(sys_sdEP(p_DrhsC(i),20,13)) // '    ' // &
         trim(sys_sdEP(p_Drest(i),20,13)) // '    ' // &
         trim(sys_sdEP(p_DtmpC(i),20,13)))
-    end do    
+    end do
     
     ! -------------------------------------------------------------------------
     ! Interpolation Test
@@ -300,7 +300,7 @@ contains
         trim(sys_sdEP(p_DsolC (i),20,13)) // '    ' // &
         trim(sys_sdEP(p_Dinter(i),20,13)) // '    ' // &
         trim(sys_sdEP(p_DtmpC (i),20,13)))
-    end do    
+    end do
     
     ! Release the projection
     call mlprj_doneProjection (rproj)
@@ -333,7 +333,7 @@ contains
     call spdiscr_releaseBlockDiscr(rdiscrF)
     call spdiscr_releaseBlockDiscr(rdiscrC)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriaF)
     call tria_done (rtriaC)
     

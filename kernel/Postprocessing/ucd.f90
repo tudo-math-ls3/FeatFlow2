@@ -34,7 +34,7 @@
 !#      -> Add a vertex/element-based vector to the output.
 !#
 !#  7.) ucd_setVertexMaterial
-!#      -> Allows to specify for every vertex/node (corner vertex, edge 
+!#      -> Allows to specify for every vertex/node (corner vertex, edge
 !#         midpoint,...) a material id.
 !#
 !#  8.) ucd_setCellMaterial
@@ -67,7 +67,7 @@
 !#      -> Add a configuration parameter list as comments to the output.
 !#
 !# 17.) ucd_setOutputNumberFormat
-!#      -> Allows to specify a custom format of double precision numbers 
+!#      -> Allows to specify a custom format of double precision numbers
 !#         in the output file.
 !#
 !# 18.) ucd_write
@@ -96,17 +96,17 @@
 !#
 !# a) ucd_startXXXX     - Create an output structure for a file
 !#
-!# b) ucd_addVariableVertexBased  
+!# b) ucd_addVariableVertexBased
 !#                      - Add a variable consisting of values in vertices
-!#    ucd_addVariableElementBased 
+!#    ucd_addVariableElementBased
 !#                      - Add a variable consisting of values in elements
 !#    ucd_addVarVertBasedVec
 !#                      - Add a vector variable consisting of values
 !#                        in vertices
 !#
-!# c) ucd_setAlternativeSource 
+!# c) ucd_setAlternativeSource
 !#                      - Optional: Set an alternative input file for parts
-!#                        of the mesh or the whole mesh. 
+!#                        of the mesh or the whole mesh.
 !#
 !# d) ucd_write         - Write all pending data and close the file
 !#
@@ -117,12 +117,12 @@
 !# of output. Afterwards, the ucd_setXXXX and ucd_addXXXX routines
 !# can be used to specify all the output.\\
 !#
-!# Depending on the type of file (AVS, GMV or what else), the output may 
-!# be written to the disc directly or first collected in memory. 
-!# The final ucd_write command then finishes the output process 
+!# Depending on the type of file (AVS, GMV or what else), the output may
+!# be written to the disc directly or first collected in memory.
+!# The final ucd_write command then finishes the output process
 !# and creates a valid GMV/AVS/...-file.\\
 !#
-!# The ucd_release command at the end must be used to release all memory 
+!# The ucd_release command at the end must be used to release all memory
 !# that was used by the ucd_setXXXX and ucd_addXXXX routines.
 !# </purpose>
 !##############################################################################
@@ -137,7 +137,7 @@ module ucd
   use triangulation
   use paramlist
   use io
-  use geometry 
+  use geometry
   implicit none
   
   private
@@ -205,8 +205,8 @@ module ucd
   ! edge midpoints. Implies UCD_FLAG_USEEDGEMIDPOINTS.
   integer(I32), parameter, public :: UCD_FLAG_BULBQUADRATIC       = 2**2
   
-  ! Output of a linear interpolated solution on a once refined mesh. 
-  ! Implies UCD_FLAG_USEEDGEMIDPOINTS and UCD_FLAG_USEELEMENTMIDPOINTS. 
+  ! Output of a linear interpolated solution on a once refined mesh.
+  ! Implies UCD_FLAG_USEEDGEMIDPOINTS and UCD_FLAG_USEELEMENTMIDPOINTS.
   ! Cannot be used with UCD_FLAG_BULBQUADRATIC.
   integer(I32), parameter, public :: UCD_FLAG_ONCEREFINED         = 2**3
 
@@ -400,11 +400,11 @@ module ucd
     ! ""=no alternative source file.
     character(LEN=SYS_STRLEN) :: saltFilePoints = ""
 
-    ! Filename of file containing cell structure. 
+    ! Filename of file containing cell structure.
     ! ""=no alternative source file.
     character(LEN=SYS_STRLEN) :: saltFileCells = ""
 
-    ! Filename of file containing material structure. 
+    ! Filename of file containing material structure.
     ! ""=no alternative source file.
     character(LEN=SYS_STRLEN) :: saltFileMaterials = ""
 
@@ -428,7 +428,7 @@ module ucd
     ! The first dimension of this vector is always 4.
     integer, dimension(:,:), pointer :: p_Ivectors => null()
     
-    ! A pointer to a list of handles of double precision pointers. 
+    ! A pointer to a list of handles of double precision pointers.
     ! p_Hvariables(I) points to the data of variable I.
     integer, dimension(:), pointer :: p_Hvariables => null()
     
@@ -471,7 +471,7 @@ module ucd
     ! If not specified, every cell gets a default material id.
     integer :: hIcellMaterial = ST_NOHANDLE
 
-    ! A handle to an array containing for every node/vertex (corners, 
+    ! A handle to an array containing for every node/vertex (corners,
     ! midpoints,...) a material id.
     ! If not specified, every vertex/node gets a default material id.
     integer :: hIvertexMaterial = ST_NOHANDLE
@@ -877,7 +877,7 @@ contains
     rexport%sfilename = sfilename
     rexport%p_rtriangulation => rtriangulation
     
-    ! How many vertices do we have in the triangulation that have to be 
+    ! How many vertices do we have in the triangulation that have to be
     ! filled with values?
     rexport%nvertices = rtriangulation%NVT
     rexport%ncells = rtriangulation%NEL
@@ -940,7 +940,7 @@ contains
     rexport%sfilename = sfilename
     rexport%p_rtriangulation => rtriangulation
     
-    ! How many vertices do we have in the trangulation that have to be 
+    ! How many vertices do we have in the trangulation that have to be
     ! filled with values?
     rexport%nvertices = rtriangulation%NVT
     rexport%ncells = rtriangulation%NEL
@@ -1004,7 +1004,7 @@ contains
     rexport%p_rtriangulation => rtriangulation
     rexport%p_Scomments => null()
     
-    ! How many vertices do we have in the trangulation that have to be 
+    ! How many vertices do we have in the trangulation that have to be
     ! filled with values?
     rexport%nvertices = rtriangulation%NVT
     rexport%ncells = rtriangulation%NEL
@@ -1083,7 +1083,7 @@ contains
       rexport%cparam = cparam
     end if
     
-    ! How many vertices do we have in the trangulation that have to be 
+    ! How many vertices do we have in the trangulation that have to be
     ! filled with values?
     rexport%nvertices = rtriangulation%NVT
     rexport%ncells = rtriangulation%NEL
@@ -1192,10 +1192,10 @@ contains
  
 !<description>
   ! This command allows to specify an alternative source file for
-  ! a part of the triangulation or the whole triangulation. 
-  ! If no alternative source file is specified, the full mesh is 
-  ! written to the output file. If an alternative source file is specified 
-  ! for parts of a triangulation or for the full triangulation, a 
+  ! a part of the triangulation or the whole triangulation.
+  ! If no alternative source file is specified, the full mesh is
+  ! written to the output file. If an alternative source file is specified
+  ! for parts of a triangulation or for the full triangulation, a
   ! reference to that file is written to the output file instead of
   ! the mesh. This allows to save disc space e.g. in a nonstationary
   ! simulation, where a mesh has only to be written into the first file
@@ -1208,11 +1208,11 @@ contains
   ! The routine can be called multiple times with different filenames
   ! and a different flag-bitfield. This allows to specify different
   ! alternative source files for different parts of the triangulation.
-  ! However, the most easiest way to use it is to specify 
+  ! However, the most easiest way to use it is to specify
   ! caltFlags=UCD_ASRC_ALL. In this case, the whole mesh is specified
   ! to be found in 'sfilename'.
   !
-  ! Remark: Whether or not this technique is supported depends on 
+  ! Remark: Whether or not this technique is supported depends on
   ! the output file format (GMV i.e. supports this). If not supported,
   ! the full mesh is written to the output file when ucd_write is called.
 !</description>
@@ -1278,8 +1278,8 @@ contains
 !<description>
   ! This routine allows to specify names for material ID`s.
   ! SmaterialsCells is a list of material names for cells and
-  ! SmaterialsVert a list of material names for vertices/nodes. 
-  ! SmaterialsCell(i)/SmaterialsVert(i) is the 
+  ! SmaterialsVert a list of material names for vertices/nodes.
+  ! SmaterialsCell(i)/SmaterialsVert(i) is the
   ! name that is to be assigned to material id i.
   !
   ! SmaterialVert is an optional parameter; if not specified, the
@@ -1340,7 +1340,7 @@ contains
 !<description>
   ! This routine allows to specify for each cell a material id.
   ! Imaterials contains for each cell an integer with the corresponding
-  ! id. How this id is visualised (if at all) depends on the 
+  ! id. How this id is visualised (if at all) depends on the
   ! postprocessing tool (GMV, AVS,...).
 !</description>
  
@@ -1397,8 +1397,8 @@ contains
 
 !<description>
   ! This routine allows to specify for each vertex/node a material id.
-  ! ImaterialsVert contains for each corner vertex an integer with the 
-  ! corresponding id. How this id is visualised (if at all) depends on the 
+  ! ImaterialsVert contains for each corner vertex an integer with the
+  ! corresponding id. How this id is visualised (if at all) depends on the
   ! postprocessing tool (GMV, AVS,...).
   ! The optional ImaterialsMid and ImaterialsElem arrays allow to specify
   ! also for each edge midpoint and element midpoint a material id as well.
@@ -1415,12 +1415,12 @@ contains
   ! should be assigned to that vertex.
   integer, intent(in), dimension(:) :: ImaterialsVert
 
-  ! OPTIONAL: Array with as many elements as NMT in the triangulation. 
+  ! OPTIONAL: Array with as many elements as NMT in the triangulation.
   ! For every edge i, ImaterialsMid(i) specifies the material id
   ! that should be assigned to the corresponding edge midpoint.
   integer, intent(in), dimension(:), optional :: ImaterialsMid
 
-  ! OPTIONAL: Array with as many elements as NEL in the triangulation. 
+  ! OPTIONAL: Array with as many elements as NEL in the triangulation.
   ! For every element i, ImaterialsElem(i) specifies the material id
   ! that should be assigned to the corresponding element midpoint.
   ! Note: The material of the element midpoint need not to coincide
@@ -1501,7 +1501,7 @@ contains
         call lalg_copyVectorInt( &
             ImaterialsElem(1:NEL),p_Idata(NVT+NMT+1:NVT+NMT+NEL))
       end if
-    end if    
+    end if
 
   end subroutine
 
@@ -1513,7 +1513,7 @@ contains
 
 !<description>
   ! Writes the output of UCD data into a postprocessig file.
-  ! All pending data in rexport is written into the file. 
+  ! All pending data in rexport is written into the file.
   ! If the file is identified by a filename, a new file is opened,
   ! data is written to it and the file is closed at the end.
 !</description>
@@ -1593,7 +1593,7 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:), pointer :: p_Idata
     real(DP), dimension(:,:), pointer :: p_DvertexCoords,p_Ddata2D
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge 
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     real(DP) :: dx
@@ -1683,7 +1683,7 @@ contains
                 if (ivt .ne. 0) then
                   dx = dx + p_DvertexCoords(icoor,ivt)
                 else
-                  ! We have only (i-1) vertices in that element; 
+                  ! We have only (i-1) vertices in that element;
                   ! happens e.g. in triangles that are mixed into a quad mesh.
                   ! We stop here.
                   exit
@@ -1691,7 +1691,7 @@ contains
               end do
               
               ! If all vertices of the element are touched, there is i=NVE+1.
-              ! Divide by the number of vertices to get the coordinate of the 
+              ! Divide by the number of vertices to get the coordinate of the
               ! midpoint of the element.
               dx = dx / real(i-1,DP)
               
@@ -1849,7 +1849,7 @@ contains
                 
             end do
 
-          end select          
+          end select
             
         else
 
@@ -1929,20 +1929,20 @@ contains
                 !
                 ! Let a coarse grid triangle be locally numbered as:
                 !
-                !   2 
+                !   2
                 !   |  \
                 !   |    \
                 !   | IEL  \
                 !   |        \
                 !   3----------1
-                ! 
+                !
                 ! Then the refinement process assigns the following numbers:
                 !
                 !   2_
                 !   |  \_
                 !   | NEL \_
                 !   | +1     \_
-                !   2*-------- 1* 
+                !   2*-------- 1*
                 !   | \_  IEL=1|  \_
                 !   |NEL \_    | NEL \_
                 !   |+3     \_ | +2     \_
@@ -2172,7 +2172,7 @@ contains
             write (mfile,rexport%sdataFormat) p_Ddata(ivt)
           end do
           
-          write (mfile,'(A)') 'endvars'      
+          write (mfile,'(A)') 'endvars'
           
         end do ! j
 
@@ -2312,7 +2312,7 @@ contains
             end if
 
             ! Write X coordinate
-            ! Do not be confused! ivt=number of cell, as we are in the 
+            ! Do not be confused! ivt=number of cell, as we are in the
             ! 'cell-oriented' case here!!!
             do ivt=1,rexport%ncells
               write (mfile,rexport%sdataFormat) p_Ddata(ivt)
@@ -2322,7 +2322,7 @@ contains
             i = rexport%p_Ivectors(3,j)
             if (i .ne. 0) then
               call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
-              ! Do not be confused! ivt=number of cell, as we are in the 
+              ! Do not be confused! ivt=number of cell, as we are in the
               ! 'cell-oriented' case here!!!
               do ivt=1,rexport%ncells
                 write (mfile,rexport%sdataFormat) p_Ddata(ivt)
@@ -2337,7 +2337,7 @@ contains
             i = rexport%p_Ivectors(4,j)
             if (i .ne. 0) then
               call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
-              ! Do not be confused! ivt=number of cell, as we are in the 
+              ! Do not be confused! ivt=number of cell, as we are in the
               ! 'cell-oriented' case here!!!
               do ivt=1,rexport%ncells
                 write (mfile,rexport%sdataFormat) p_Ddata(ivt)
@@ -2380,14 +2380,14 @@ contains
           ! Write all polygons.
           do i=1,rexport%npolygons
             
-            ! Coordinates        
+            ! Coordinates
             call storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
             
             ! Write material, #points
             write (mfile,'(2I10)') p_Idata(i),ubound(p_Ddata2D,2)
             
-            ! Either we have 2D or 3D coordinates. 
-            ! Write coordinates of the points forming the line segments 
+            ! Either we have 2D or 3D coordinates.
+            ! Write coordinates of the points forming the line segments
             ! of the polygon
             ! First all X-, then all Y- and at the end all Z-coordinates -- or 0.0.
             do k=1,NDIM3D
@@ -2417,7 +2417,7 @@ contains
         
         call storage_getbase_double2d(rexport%htracers,p_Ddata2D)
         
-        ! First write all X-coordinates, then Y-coordinates, 
+        ! First write all X-coordinates, then Y-coordinates,
         ! then Z-coordinates -- if specified.
         do i=1,3
           if (i .le. ubound(p_Ddata2d,1)) then
@@ -2513,7 +2513,7 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:), pointer :: p_Idata
     real(DP), dimension(:,:), pointer :: p_DvertexCoords,p_Ddata2D
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge 
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
 
@@ -2613,7 +2613,7 @@ contains
               if (ivt .ne. 0) then
                 dx = dx + real(p_DvertexCoords(1,ivt))
               else
-                ! We have only (i-1) vertices in that element; 
+                ! We have only (i-1) vertices in that element;
                 ! happens e.g. in triangles that are mixed into a quad mesh.
                 ! We stop here.
                 exit
@@ -2621,7 +2621,7 @@ contains
             end do
             
             ! If all vertices of the element are touched, there is i=NVE+1.
-            ! Divide by the number of vertices to get the coordinate of the 
+            ! Divide by the number of vertices to get the coordinate of the
             ! midpoint of the element.
             dx = dx / real(i-1)
             
@@ -2689,7 +2689,7 @@ contains
                 dx = dx + real(p_DvertexCoords(1,ivt))
                 dy = dy + real(p_DvertexCoords(2,ivt))
               else
-                ! We have only (i-1) vertices in that element; 
+                ! We have only (i-1) vertices in that element;
                 ! happens e.g. in triangles that are mixed into a quad mesh.
                 ! We stop here.
                 exit
@@ -2697,7 +2697,7 @@ contains
             end do
             
             ! If all vertices of the element are touched, there is i=NVE+1.
-            ! Divide by the number of vertices to get the coordinate of the 
+            ! Divide by the number of vertices to get the coordinate of the
             ! midpoint of the element.
             dx = dx / real(i-1)
             dy = dy / real(i-1)
@@ -2769,7 +2769,7 @@ contains
                 dy = dy + real(p_DvertexCoords(2,ivt))
                 dz = dz + real(p_DvertexCoords(3,ivt))
               else
-                ! We have only (i-1) vertices in that element; 
+                ! We have only (i-1) vertices in that element;
                 ! happens e.g. in triangles that are mixed into a quad mesh.
                 ! We stop here.
                 exit
@@ -2777,7 +2777,7 @@ contains
             end do
             
             ! If all vertices of the element are touched, there is i=NVE+1.
-            ! Divide by the number of vertices to get the coordinate of the 
+            ! Divide by the number of vertices to get the coordinate of the
             ! midpoint of the element.
             dx = dx / real(i-1)
             dy = dy / real(i-1)
@@ -2980,7 +2980,7 @@ contains
 
             case DEFAULT
               call output_line ('Invalid element!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')             
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
             
           end do
@@ -3004,7 +3004,7 @@ contains
 
             case DEFAULT
               call output_line ('Invalid element!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')   
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
             
           end do
@@ -3026,20 +3026,20 @@ contains
               !
               ! Let a coarse grid triangle be locally numbered as:
               !
-              !   2 
+              !   2
               !   |  \
               !   |    \
               !   | IEL  \
               !   |        \
               !   3----------1
-              ! 
+              !
               ! Then the refinement process assigns the following numbers:
               !
               !   2_
               !   |  \_
               !   | NEL \_
               !   | +1     \_
-              !   2*-------- 1* 
+              !   2*-------- 1*
               !   | \_  IEL=1|  \_
               !   |NEL \_    | NEL \_
               !   |+3     \_ | +2     \_
@@ -3266,7 +3266,7 @@ contains
           ! Allocate temporal memory
           allocate(X(rexport%ncells), Y(rexport%ncells), Z(rexport%ncells))
           
-          ! Do not be confused! ivt=number of cell, as we are in the 
+          ! Do not be confused! ivt=number of cell, as we are in the
           ! 'cell-oriented' case here!!!
           do ivt=1,rexport%ncells
             X(ivt) = p_Ddata(ivt)
@@ -3458,13 +3458,13 @@ contains
         ! Write all polygons.
         do i=1,rexport%npolygons
           
-          ! Coordinates        
+          ! Coordinates
           call storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
           
           ! Allocate temporal memory
           allocate(X(ubound(p_Ddata2D,2)), Y(ubound(p_Ddata2D,2)), Z(ubound(p_Ddata2D,2)))
           
-          ! Either we have 2D or 3D coordinates. 
+          ! Either we have 2D or 3D coordinates.
           select case(ubound(p_Ddata2D,1))
             
           case (NDIM2D)
@@ -3539,12 +3539,12 @@ contains
       ! Deallocate temporal memory
       deallocate(X,Y,Z)
 
-!!$      
-!!$      
+!!$
+!!$
 !!$      ! Write tracer variables if specified
 !!$      DO i=1,rexport%ntracerVariables
 !!$        WRITE (mfile,'(A32)') rexport%p_StracerVariableNames(i)
-!!$        
+!!$
 !!$        CALL storage_getbase_double (rexport%p_HtracerVariables(i), p_Ddata)
 !!$        DO j=1,rexport%ntracers
 !!$          WRITE (mfile,rexport%sdataFormat) p_Ddata(j)
@@ -3857,7 +3857,7 @@ contains
     !****************************************************************
     
     subroutine ucd_writeVTKPolygon (rexport)
-    ! Specific output routine for VTK polygon output. 
+    ! Specific output routine for VTK polygon output.
     
     ! The export structure with all information
     type(t_ucdExport), intent(inout) :: rexport
@@ -3867,7 +3867,7 @@ contains
     integer, dimension(:), pointer :: p_IsurfData
     character(LEN=SYS_STRLEN) :: sdl
     character(LEN=SYS_STRLEN) :: sfilepoly
-    integer, dimension(GEOM_STANDARD_VCOUNT) :: iconnect    
+    integer, dimension(GEOM_STANDARD_VCOUNT) :: iconnect
     integer :: ioffset1,ioffset2,ilengthPolylist,ioffset,ipolygonsTotal
     ! Get file name
     sfilepoly = rexport%sfilepolyvtk
@@ -3906,7 +3906,7 @@ contains
     ipoints = GEOM_STANDARD_VCOUNT * rexport%npolygons
 
     do ipart=1,rexport%nsurfTri
-      call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)    
+      call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)
       ipoints = ipoints + p_IsurfData(1)
     end do
     write(rexport%iunit, '(A,I10,A)') "POINTS", ipoints, " double"
@@ -3917,7 +3917,7 @@ contains
       call storage_getbase_double2D (rexport%p_Hpolygons(ipart),p_Ddata2D)
       do j=1,GEOM_STANDARD_VCOUNT
          write(rexport%iunit, '(3E15.7)') p_Ddata2D(1, j),p_Ddata2D(2, j), 0.0_DP
-      end do    
+      end do
     end do
     
     do j=1,GEOM_STANDARD_VCOUNT
@@ -3930,10 +3930,10 @@ contains
     ioffset = GEOM_STANDARD_VCOUNT * rexport%npolygons
     do ipart=1,rexport%nsurfTri
       call storage_getbase_double2D(rexport%p_HsurfTris(ipart),p_Ddata2D)
-      call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)   
+      call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)
       do j=1,p_IsurfData(1)
          write(rexport%iunit, '(3E15.7)') p_Ddata2D(1, j),p_Ddata2D(2, j), p_Ddata2D(3, j)
-      end do    
+      end do
     end do
         
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -3942,8 +3942,8 @@ contains
     ipolygonsTotal=rexport%npolygons
     ilengthPolylist=rexport%npolygons*(GEOM_STANDARD_VCOUNT+1)
     do i=1,rexport%nsurfTri
-      call storage_getbase_int(rexport%p_HsurfData(i),p_IsurfData)   
-      ipolygonsTotal  = ipolygonsTotal+p_IsurfData(2) 
+      call storage_getbase_int(rexport%p_HsurfData(i),p_IsurfData)
+      ipolygonsTotal  = ipolygonsTotal+p_IsurfData(2)
       ilengthPolylist=ilengthPolylist + p_IsurfData(2)*4
     end do
 
@@ -3959,12 +3959,12 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     do ipart=1,rexport%nsurfTri
         call storage_getbase_int2d(rexport%p_Htriangles(ipart),p_Itriangles)
-        call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)       
-        do j=1,p_IsurfData(2)   
+        call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)
+        do j=1,p_IsurfData(2)
         write(rexport%iunit, '(4I10)') 3,p_Itriangles(1,j)+ioffset,&
-            p_Itriangles(2,j)+ioffset ,p_Itriangles(3,j)+ioffset  
+            p_Itriangles(2,j)+ioffset ,p_Itriangles(3,j)+ioffset
         end do
-        ioffset=ioffset+p_IsurfData(1)   
+        ioffset=ioffset+p_IsurfData(1)
     end do
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write list of lines
@@ -3972,7 +3972,7 @@ contains
     write(rexport%iunit,'(A,2I10)')"LINES",rexport%npolygons,rexport%npolygons*2+rexport%npolygons
     do ipart=1,rexport%npolygons
         ioffset1=(ipart-1)*GEOM_STANDARD_VCOUNT
-        ioffset2=ioffset1+GEOM_STANDARD_VCOUNT/2 
+        ioffset2=ioffset1+GEOM_STANDARD_VCOUNT/2
         write(rexport%iunit, '(3I10)') 2, ioffset1, ioffset2
     end do
     
@@ -3986,7 +3986,7 @@ contains
 
     end subroutine
     
-    !****************************************************************    
+    !****************************************************************
     
     subroutine ucd_writeVTK (rexport)
 
@@ -4200,7 +4200,7 @@ contains
           select case (p_InumVertsPerCell(j))
           case (2)
             ! quadratic edge
-            write(mfile, '(I4)') VTK_QUADRATIC_EDGE 
+            write(mfile, '(I4)') VTK_QUADRATIC_EDGE
              
           case (3)
             ! quadratic triangle
@@ -4578,7 +4578,7 @@ contains
   subroutine ucd_moreTracerVariables (rexport)
 
 !<description>
-  ! (Re)allocates memory for tracer variables. Increases the number of 
+  ! (Re)allocates memory for tracer variables. Increases the number of
   ! available tracer variables in the export structure.
 !</description>
 
@@ -4637,15 +4637,15 @@ contains
   ! DdataVert(I) is the value of the variable in vertex I of the triangulation.
   real(DP), dimension(:), intent(in) :: DdataVert
 
-  ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of 
+  ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of
   ! the triangulation. Must be specified if DdataElem is specified!
   real(DP), dimension(:), intent(in), optional :: DdataMid
 
-  ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of 
+  ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of
   ! the triangulation.
   real(DP), dimension(:), intent(in), optional :: DdataElem
 
-  ! OPTIONAL: Specification bitfield for the variable. A combination of the 
+  ! OPTIONAL: Specification bitfield for the variable. A combination of the
   ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
   ! If not specified, UCD_VAR_STANDARD is used.
   integer(I32), intent(in), optional :: cvarSpecOpt
@@ -4684,7 +4684,7 @@ contains
   ! Name of the variable.
   character(LEN=*), intent(in) :: sname
   
-  ! Specification bitfield for the variable. A combination of the 
+  ! Specification bitfield for the variable. A combination of the
   ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
   ! Standard value=UCD_VAR_STANDARD.
   integer(I32), intent(in) :: cvarSpec
@@ -4692,11 +4692,11 @@ contains
   ! DdataVert(I) is the value of the variable in vertex I of the triangulation.
   real(DP), dimension(:), intent(in) :: DdataVert
 
-  ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of 
+  ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of
   ! the triangulation. Must be specified if DdataElem is specified!
   real(DP), dimension(:), intent(in), optional :: DdataMid
 
-  ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of 
+  ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of
   ! the triangulation.
   real(DP), dimension(:), intent(in), optional :: DdataElem
 !</input>
@@ -4774,7 +4774,7 @@ contains
         call output_line ('Warning. No element midpoint data available!',&
             OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
       end if
-    end if    
+    end if
 
   end subroutine
 
@@ -5161,7 +5161,7 @@ contains
   ! Name of the variable.
   character(LEN=*), intent(in) :: sname
   
-  ! Specification bitfield for the variable. A combination of the 
+  ! Specification bitfield for the variable. A combination of the
   ! UCD_VAR_xxxx flags.
   integer(I32), intent(in) :: cvarSpec
   
@@ -5271,7 +5271,7 @@ contains
 !    ! p_HTriangles(I) is a handle an integer array that describes
 !    ! the connectivity of the vertices in p_HsurfTris(I)
 !    integer, dimension(:), pointer :: p_HTriangles => null()
-!    
+!
 !    ! A pointer to a list of handles to surface triangulation data.
 !    ! p_HsurfData(I) is a handle an integer array that describes
 !    ! how many vertices and triangles there are in p_HsurfTris(I)
@@ -5384,7 +5384,7 @@ contains
 
   end subroutine ucd_addSurfTri
   
-  !************************************************************************  
+  !************************************************************************
   
 !<subroutine>
 
@@ -5722,7 +5722,7 @@ contains
 !<input>
   ! Fortran format string, e.g. "(E15.8)"
   ! Specifies an output format of double precision numbers. Whether or
-  ! not and where this is used for writing to the file depends on the 
+  ! not and where this is used for writing to the file depends on the
   ! type of output format (GMV, AVS,...).
   character(LEN=*), intent(in), optional :: sformat
 !</input>
@@ -5884,7 +5884,7 @@ contains
 !<description>
   ! Reads a GMV file from the hard disc and creates a rexport structure
   ! containing the GMV data. The structure can be used to attach
-  ! more data if desired. The filename for the export can be changed 
+  ! more data if desired. The filename for the export can be changed
   ! by ucd_setFilename. Using ucd_write, the data can be written out
   ! to another output file.
   !
@@ -5909,7 +5909,7 @@ contains
 
 !<inputoutput>
   ! Triangulation structure.
-  ! If this triangulation structure is empty, the mesh is read from the GMV 
+  ! If this triangulation structure is empty, the mesh is read from the GMV
   ! and a new triangulation is created in rtriangulation.
   ! If this contains a valid mesh, the mesh is assumed to correspond to
   ! the one in the GMV file and based on that, vector data is read.
@@ -6078,7 +6078,7 @@ contains
       ! Probably read all Z-coordinates -- or ignore them
       if (rexport%p_rtriangulation%ndim .eq. NDIM3D) then
         read(mfile,*) DtracerCoordinates(3,:)
-      else 
+      else
         read(mfile,*) DtracerTemp(:)
       end if
       
@@ -6089,7 +6089,7 @@ contains
       if (trim(adjustl(skey)) .ne. 'endtrace') then
         call output_line ('Error reading GMV data!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'read_tracerdata')
-        call sys_halt() 
+        call sys_halt()
       end if
       
       ! Add the tracer data
@@ -6108,7 +6108,7 @@ contains
     ! Handle to the GMV file
     integer, intent(in) :: mfile
     
-    ! Last command line in the GMV file 
+    ! Last command line in the GMV file
     character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
@@ -6126,7 +6126,7 @@ contains
       call sys_tolower (sline)
       
       read(sline,*) skey
-      bfinish = (trim(adjustl(skey)) .ne. 'endtrace') 
+      bfinish = (trim(adjustl(skey)) .ne. 'endtrace')
       do while ((ios .eq. 0) .and. (.not. bfinish))
         
         ! Read material, #points
@@ -6145,7 +6145,7 @@ contains
         ! Probably Z-coordinates
         if (rexport%p_rtriangulation%ndim .eq. 3) then
           read(mfile,*) Dcoordinates(3,:)
-        else 
+        else
           read(mfile,*) Dtemp(:)
         end if
         
@@ -6160,7 +6160,7 @@ contains
         call sys_tolower (sline)
         
         read(sline,*) skey
-        bfinish = (trim(adjustl(skey)) .ne. 'endtrace') 
+        bfinish = (trim(adjustl(skey)) .ne. 'endtrace')
       end do
       
       if (ios .ne. 0) then
@@ -6180,7 +6180,7 @@ contains
     ! Handle to the GMV file
     integer, intent(in) :: mfile
     
-    ! Last command line in the GMV file 
+    ! Last command line in the GMV file
     character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
@@ -6202,14 +6202,14 @@ contains
       call sys_tolower (sline)
       
       read(sline,*) skey
-      bfinish = (trim(adjustl(skey)) .eq. 'endvars') 
+      bfinish = (trim(adjustl(skey)) .eq. 'endvars')
       do while ((ios .eq. 0) .and. (.not. bfinish))
         
         ! Read variable name, type
         read (sline,*) sname,itype
 
         select case (itype)
-        case (0) 
+        case (0)
           ! Cell based data. Read and remember
           read(mfile,*) Dcell(:)
           call ucd_addVariableElementBased (rexport,sname,UCD_VAR_STANDARD,Dcell)
@@ -6231,7 +6231,7 @@ contains
         call sys_tolower (sline)
         
         read(sline,*) skey
-        bfinish = (trim(adjustl(skey)) .eq. 'endvars') 
+        bfinish = (trim(adjustl(skey)) .eq. 'endvars')
         
       end do
       
@@ -6252,7 +6252,7 @@ contains
     ! Handle to the GMV file
     integer, intent(in) :: mfile
     
-    ! Last read command line in the GMV file 
+    ! Last read command line in the GMV file
     character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where tracer data is saved to.
@@ -6277,8 +6277,8 @@ contains
       
       ! Allocate memory for vertex/element material classification
       select case (itype)
-      case (0) 
-        ! Cell based data. 
+      case (0)
+        ! Cell based data.
         allocate(Imat(rexport%p_rtriangulation%NEL))
             
       case (1)
@@ -6301,8 +6301,8 @@ contains
 
       ! Specify the material for vertices / elements
       select case (itype)
-      case (0) 
-        ! Cell based data. 
+      case (0)
+        ! Cell based data.
         call ucd_setVertexMaterial (rexport,Imat)
             
       case (1)
@@ -6311,7 +6311,7 @@ contains
         
       end select
 
-      ! Deallocate memory      
+      ! Deallocate memory
       deallocate(Imat,Snames)
 
     end subroutine
@@ -6325,7 +6325,7 @@ contains
     ! Handle to the GMV file
     integer, intent(in) :: mfile
     
-    ! Last command line in the GMV file 
+    ! Last command line in the GMV file
     character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
@@ -6341,7 +6341,7 @@ contains
       read(scommand,*) sname,itype
 
       select case (itype)
-      case (0) 
+      case (0)
             
         ! Element based velocity data. Allocate memory.
         allocate(Ddata(rexport%p_rtriangulation%NEL,NDIM3D))
@@ -6416,7 +6416,7 @@ contains
     ! Handle to the GMV file
     integer, intent(in) :: mfile
       
-    ! Last command line in the GMV file 
+    ! Last command line in the GMV file
     character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
@@ -6434,7 +6434,7 @@ contains
       call sys_tolower (sline)
 
       read(sline,*) skey
-      bfinish = (trim(adjustl(skey)) .eq. 'endvect') 
+      bfinish = (trim(adjustl(skey)) .eq. 'endvect')
       do while ((ios .eq. 0) .and. (.not. bfinish))
         
         ! Read variable name, type, ncomps, cnameflag
@@ -6519,7 +6519,7 @@ contains
         call sys_tolower (sline)
         
         read(sline,*) skey
-        bfinish = (trim(adjustl(skey)) .eq. 'endvect') 
+        bfinish = (trim(adjustl(skey)) .eq. 'endvect')
         
       end do
 
@@ -6739,7 +6739,7 @@ contains
     
     subroutine reconstruct_InodalProperty_1D (rtriangulation)
 
-      ! Reconstructs the InodalProperty, IboundaryCpIdx and 
+      ! Reconstructs the InodalProperty, IboundaryCpIdx and
       ! IverticesAtBoundary arrays. Sets NBCT!
 
       ! Triangulation structure. InodalProperty and NBCT are initialised here.
@@ -6755,7 +6755,7 @@ contains
       integer, dimension(:), pointer :: p_IboundaryCpIdx
       integer :: ivt,iel,ive,nbct,nvbd,ivbd,ibctidx,icurrentbc
 
-      ! Allocate memory for the arrays 
+      ! Allocate memory for the arrays
       call storage_new ('reconstruct_InodalProperty_1D', 'KNPR', &
           rtriangulation%NVT, ST_INT, &
           rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -6783,7 +6783,7 @@ contains
         end do
       end do
 
-      ! There must be two boundary components 
+      ! There must be two boundary components
       ! - the interval start and end point
       if (nvbd .ne. 2) then
         call output_line ('Triangulation structure is invalid: NVBD does not match 2!', &
@@ -6851,7 +6851,7 @@ contains
 
     subroutine reconstruct_InodalProperty_2D (rtriangulation)
     
-      ! Reconstructs the InodalProperty, IboundaryCpIdx and 
+      ! Reconstructs the InodalProperty, IboundaryCpIdx and
       ! IverticesAtBoundary arrays. Sets NBCT!
       ! DvertexParameterValue is cleared.
       
@@ -6874,7 +6874,7 @@ contains
       integer :: ive,iveprevious,ivenext,nbct,nve,nvbd,ivbd,ibctidx,icurrentbc
       real(DP), dimension(:), pointer :: p_DvertexParameterValue
       
-      ! Allocate memory for the arrays 
+      ! Allocate memory for the arrays
       call storage_new ('reconstruct_InodalProperty_2D', 'KNPR', &
           rtriangulation%NVT, ST_INT, &
           rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -6939,7 +6939,7 @@ contains
           ! New boundary component found
           nbct = nbct+1
           
-          ! Go from edge to edge until we hit ivt again. This must happen as the 
+          ! Go from edge to edge until we hit ivt again. This must happen as the
           ! boundary component must be closed.
           ivt2 = ivt
           
@@ -6950,7 +6950,7 @@ contains
             ivbd = ivbd+1
             p_IverticesAtBoundary(ivbd) = ivt2
             
-            ! Check the edges adjacent to the vertex...for this purpose, we must 
+            ! Check the edges adjacent to the vertex...for this purpose, we must
             ! find them.
             do ielidx = p_IelementsAtVertexIdx(ivt2),p_IelementsAtVertexIdx(ivt2+1)-1
 
@@ -6958,7 +6958,7 @@ contains
             
               ! Where is the point in the element
               do ive=1,ubound(p_IverticesAtElement,1)
-                if (p_IverticesAtElement(ive,iel) .eq. ivt2) exit 
+                if (p_IverticesAtElement(ive,iel) .eq. ivt2) exit
               end do
               
               ! Triangle or quad?
@@ -6994,7 +6994,7 @@ contains
                 
             end do
           
-            ! Ok, there is no edge found starting from the vertex ivt2 that leads to 
+            ! Ok, there is no edge found starting from the vertex ivt2 that leads to
             ! another vertex on the boundary. That means we found all vertices
             ! on the boundary component!
             ! So we quit the loop here and continue to find the next non-classified

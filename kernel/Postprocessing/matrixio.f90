@@ -4,7 +4,7 @@
 !# ***********************************************************************
 !#
 !# <purpose>
-!# This module contains all routines and constant necessary to output 
+!# This module contains all routines and constant necessary to output
 !# matrices of different formats.
 !#
 !# The following routines can be found in this module:
@@ -16,11 +16,11 @@
 !#     -> Writes a block matrix in human readable form into a text file
 !#
 !# 3.) matio_spyMatrix
-!#     -> Writes a scalar matrix in CSR format into a file which can be 
+!#     -> Writes a scalar matrix in CSR format into a file which can be
 !#        visualised by means of the MATLAB command SPY
 !#
 !# 4.) matio_spyBlockMatrix
-!#     -> Writes a block matrix in CSR format into a file which can be 
+!#     -> Writes a block matrix in CSR format into a file which can be
 !#        visualised by means of the MATLAB command SPY
 !#
 !# 5.) matio_writeMatrixMaple
@@ -130,7 +130,7 @@ contains
     ! Release the temporary matrix
     call lsysbl_releaseMatrix (rtempMatrix)
 
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -214,7 +214,7 @@ contains
     call sys_halt()
   end select
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -773,7 +773,7 @@ contains
     call sys_halt()
   end select
     
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
   
@@ -854,7 +854,7 @@ contains
     write (cf,'(6A)') sarray,' := matrix(',&
         trim(sys_siL(nrow,10)),',',trim(sys_siL(ncol,10)),',0):'
         
-    ! Now the entries. This is a sparse matrix, so we insert commands 
+    ! Now the entries. This is a sparse matrix, so we insert commands
     ! only for the entries.
     do i=1, nrow
     
@@ -879,7 +879,7 @@ contains
                                           ifile, sfile, sformat,dthreshold)
   
   !<description>
-    ! This routine writes a block matrix into a text file using the MAPLE 
+    ! This routine writes a block matrix into a text file using the MAPLE
     ! syntax.
     ! Note that for this purpose, a new matrix is temporarily created in memory!
   !</description>
@@ -914,7 +914,7 @@ contains
     ! local variables
     type(t_matrixBlock) :: rtempMatrix
     real(DP), dimension(:), pointer :: p_DA
-    real(DP) :: dthres 
+    real(DP) :: dthres
 
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
@@ -934,7 +934,7 @@ contains
     ! Release the temporary matrix
     call lsysbl_releaseMatrix (rtempMatrix)
 
-  end subroutine 
+  end subroutine
 
 
   ! ***************************************************************************
@@ -992,7 +992,7 @@ contains
     ! Release the temporary matrix
     call lsysbl_releaseMatrix (rtempMatrix)
 
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 

@@ -43,7 +43,7 @@ module ccinitgeneralparameters
   
   use collection
   use convection
-  use geometry  
+  use geometry
   use ccbasic
   use ccnonstationary
   
@@ -110,12 +110,12 @@ end subroutine ! end cc_initParticleDescriptor
   
 !<subroutine>
 !subroutine cc_initParticleDescriptor(rPDescriptor)
-!  
+!
 !!<description>
 !  ! here we initialise a particle descriptor
 !  ! with the values we want to use
 !!</description>
-!  
+!
 !!<inputoutput>
 !  type(t_ParticleDescriptor), intent(inout) :: rPDescriptor
 !!</inputoutput>
@@ -125,11 +125,11 @@ end subroutine ! end cc_initParticleDescriptor
 !  integer :: i,j,m,n
 !  real(dp) :: dx,dy,drho,drad
 !  real(dp) :: x,y,e,h,dia,rem,quot,alpha
-!  
+!
 !  rPDescriptor%iparticles=1
-!  
+!
 !  allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
-!  
+!
 !!   drad = 0.05_dp
 !  drad = 0.025_dp
 !  drho = 1.25_dp
@@ -137,7 +137,7 @@ end subroutine ! end cc_initParticleDescriptor
 !!   dy = 0.2_dp
 !  dx = 1.0_dp
 !  dy = 1.0_dp
-!  
+!
 !  n = rPDescriptor%iparticles
 !  dia = 2*drad
 !  e = 0.05_dp ! minimum distance between particles and wall
@@ -183,14 +183,14 @@ end subroutine ! end cc_initParticleDescriptor
 !!!     rPDescriptor%pparameters(1,i);
 !!    rPDescriptor%pparameters(2,m*quot + i) = y - (dia + e)
 !!  end do
-!!  
+!!
 !!  do i=1,rPDescriptor%iparticles
 !!    rPDescriptor%pparameters(3,i)= drad
 !!    rPDescriptor%pparameters(4,i)= drho
 !!  end do
-!  
 !
-!  
+!
+!
 !end subroutine ! end cc_initParticleDescriptor
 
 ! ***************************************************************************
@@ -291,7 +291,7 @@ end subroutine ! end cc_initParticleDescriptor
       ! contains references to subfiles with data.
       call parlst_readfromfile (rparamList, smaster)
     else
-      ! Each 'readfromfile' command adds the parameter of the specified file 
+      ! Each 'readfromfile' command adds the parameter of the specified file
       ! to the parameter list.
       call parlst_readfromfile (rparamList, './data/discretisation.dat')
       call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')

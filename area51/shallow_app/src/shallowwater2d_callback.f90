@@ -79,8 +79,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
   
@@ -115,7 +115,7 @@ contains
     deriv_direction = Rcollection%IquickAccess(1)
     
     ! Use a higher cubature rule
-    p_rsolBlock%RvectorBlock(1)%p_rspatialDiscr%Relementdistr(1)%ccubtypelinform = CUB_G5X5    
+    p_rsolBlock%RvectorBlock(1)%p_rspatialDiscr%Relementdistr(1)%ccubtypelinform = CUB_G5X5
     
 
     ! Allocate temp arrays

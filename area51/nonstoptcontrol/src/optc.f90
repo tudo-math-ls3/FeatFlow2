@@ -4,8 +4,8 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This program is a simple test program for discretising a 
-!# stationary and nonstationary Navier-Stokes optimal control problem 
+!# This program is a simple test program for discretising a
+!# stationary and nonstationary Navier-Stokes optimal control problem
 !#
 !#  $$ min J(y,u) = 1/2||y-z||_{L^2} + \gamma/2||y(T)-z(T)||_{L^2} + \alpha/2||u||^2 $$
 !#
@@ -13,7 +13,7 @@
 !#  $$ \Nabla \cdot y = 0$$
 !#  $$- \nu Delta(\lambda) - y*\Nabla(\lambda) + (\Nabla y)^t\lambda + \Nabla \xi = y-z $$
 !#  $$ \Nabla \cdot \lambda = 0$$
-!#              
+!#
 !#
 !# on a 2D domain for a 2D function $y=(y_1,y_2)$, a pressure $p$,
 !# a dual velocity $\lambda$ and a dual pressure $\xi$. $u$ is the control

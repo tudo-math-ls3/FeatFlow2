@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains routines to evaluate/create the coupled space-time
-!# RHS-vector. 
+!# RHS-vector.
 !#
 !# The central routines in this module are:
 !#
@@ -153,7 +153,7 @@ contains
       roptimalControl, rdebugFlags, roptcBDC)
 
 !<description>
-  ! Assembles the space-time RHS vector rrhsDiscrete for a Theta-Scheme. 
+  ! Assembles the space-time RHS vector rrhsDiscrete for a Theta-Scheme.
 !</description>
 
 !<input>
@@ -297,22 +297,22 @@ contains
             call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(1),p_rvecCurrent%RvectorBlock(1),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(1))                                        
-            call lsyssc_vectorLinearComb (&                                                   
+                rtempVectorRHS%RvectorBlock(1))
+            call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(2),p_rvecCurrent%RvectorBlock(2),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(2))                                        
+                rtempVectorRHS%RvectorBlock(2))
             ! Divergence equation is fully implicit
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
             call lsyssc_vectorLinearComb (&
                 p_rvecNext%RvectorBlock(4),p_rvecCurrent%RvectorBlock(4),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(4))                                        
-            call lsyssc_vectorLinearComb (&                                                   
+                rtempVectorRHS%RvectorBlock(4))
+            call lsyssc_vectorLinearComb (&
                 p_rvecNext%RvectorBlock(5),p_rvecCurrent%RvectorBlock(5),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(5))                                        
+                rtempVectorRHS%RvectorBlock(5))
             ! Divergence equation is fully implicit
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
             
@@ -324,17 +324,17 @@ contains
             call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(1),p_rvecCurrent%RvectorBlock(1),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(1))                                        
-            call lsyssc_vectorLinearComb (&                                                   
+                rtempVectorRHS%RvectorBlock(1))
+            call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(2),p_rvecCurrent%RvectorBlock(2),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(2))                                        
+                rtempVectorRHS%RvectorBlock(2))
             ! Divergence equation is fully implicit
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
-            call lsyssc_vectorLinearComb (&                                                   
+            call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(6),p_rvecCurrent%RvectorBlock(6),&
                 1.0_DP-dtheta,dtheta,&
                 rtempVectorRHS%RvectorBlock(6))
@@ -362,7 +362,7 @@ contains
             call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),1.0_DP-dtheta)
             call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),1.0_DP-dtheta)
             
-          else 
+          else
           
             ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
             ! dual RHS(0)   = DUALRHS(0)
@@ -370,17 +370,17 @@ contains
             call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(1),p_rvecCurrent%RvectorBlock(1),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(1))                                        
-            call lsyssc_vectorLinearComb (&                                                   
+                rtempVectorRHS%RvectorBlock(1))
+            call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(2),p_rvecCurrent%RvectorBlock(2),&
                 1.0_DP-dtheta,dtheta,&
-                rtempVectorRHS%RvectorBlock(2))                                        
+                rtempVectorRHS%RvectorBlock(2))
             ! Divergence equation is fully implicit
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
             call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
-            call lsyssc_vectorLinearComb (&                                                   
+            call lsyssc_vectorLinearComb (&
                 p_rvecLast%RvectorBlock(6),p_rvecCurrent%RvectorBlock(6),&
                 1.0_DP-dtheta,dtheta,rtempVectorRHS%RvectorBlock(6))
           
@@ -403,7 +403,7 @@ contains
               call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
                   (dtheta + dtheta*roptimalControl%dgammaC/dtstep))
             
-            end if          
+            end if
             
           end if
           
@@ -416,7 +416,7 @@ contains
 !    call sptivec_getFreeBufferFromPool (raccessPool,1,p_rvecCurrent)
 !    call trhsevl_assembleSpatialRHS (rglobalData, rphysics, .true., rrhs, dtimePrimal, dtimeDual,&
 !        roptimalControl, p_rvecCurrent)
-!        
+!
 !    ! Assemble the 2nd RHS vector in the RHS temp vector
 !    call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,1,dtimePrimal,dtstep)
 !    dtimeDual = dtimePrimal
@@ -426,14 +426,14 @@ contains
 !
 !    call lsysbl_createVectorBlock (rrhsDiscrete%p_rspaceDiscr,rtempVectorRHS,.true.)
 !    dtheta = rrhsDiscrete%p_rtimeDiscr%dtheta
-!    
+!
 !    ! DEBUG!!!
 !    call lsysbl_getbase_double (rtempVectorRHS,p_Drhs)
-!    
+!
 !    do iiterate = 1,nintervals+1
-!    
+!
 !      if (iiterate .eq. 1) then
-!      
+!
 !        ! RHS comes from first vector.
 !        !
 !        ! primal RHS(0) = PRIMALRHS(0)
@@ -441,7 +441,7 @@ contains
 !
 !        call sptivec_getVectorFromPool (raccessPool,iiterate,p_rvecCurrent)
 !        call lsysbl_copyVector (p_rvecCurrent,rtempVectorRHS)
-!        
+!
 !        ! Scale the dual RHS according to the timestep scheme.
 !        select case (ithetaschemetype)
 !        case (0)
@@ -459,9 +459,9 @@ contains
 !            call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),1.0_DP-dtheta)
 !          end select
 !        end select
-!        
+!
 !      else if (iiterate .lt. nintervals+1) then
-!      
+!
 !        ! We are somewhere 'in the middle'.
 !        !
 !        ! Dual RHS comes from rtempVector3. The primal from the
@@ -469,7 +469,7 @@ contains
 !        !
 !        ! Get the vectors. Create missing vectors.
 !        call sptivec_getVectorFromPool (raccessPool,iiterate-1,p_rvecLast)
-!        
+!
 !        call sptivec_getVectorFromPool (raccessPool,iiterate,p_rvecCurrent)
 !        if (.not. associated(p_rvecCurrent)) then
 !          call sptivec_getFreeBufferFromPool (raccessPool,iiterate,p_rvecCurrent)
@@ -487,33 +487,33 @@ contains
 !          call trhsevl_assembleSpatialRHS (rglobalData, rphysics, .true., rrhs, dtimePrimal, dtimeDual,&
 !              roptimalControl, p_rvecNext)
 !        end if
-!        
+!
 !        select case (ithetaschemetype)
 !        case (0)
-!        
-!         
+!
+!
 !       case (1)
-!        
+!
 !          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
 !          ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
-!        
+!
 !          select case (rphysics%cequation)
 !          case (0,1)
 !            ! Stokes, Navier-Stokes
-!        
+!
 !          end select
 !
 !        end select
-!        
+!
 !      else
-!      
+!
 !        ! We are 'at the end'.
 !        !
 !        ! Dual RHS comes from rtempVector3. The primal from the
 !        ! iiterate-1'th RHS and rtempVector3.
-!        
+!
 !        call sptivec_getVectorFromPool (raccessPool,iiterate-1,p_rvecLast)
-!        
+!
 !        call sptivec_getVectorFromPool (raccessPool,iiterate,p_rvecCurrent)
 !        if (.not. associated(p_rvecCurrent)) then
 !          call sptivec_getFreeBufferFromPool (raccessPool,iiterate,p_rvecCurrent)
@@ -522,55 +522,55 @@ contains
 !          call trhsevl_assembleSpatialRHS (rglobalData, rphysics, .true., rrhs, dtimePrimal, dtimeDual,&
 !              roptimalControl, p_rvecCurrent)
 !        end if
-!        
+!
 !        select case (ithetaschemetype)
 !        case (0)
-!        
+!
 !          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
 !          ! dual RHS(0)   = DUALRHS(0)
-!          
+!
 !          select case (rphysics%cequation)
 !          case (0,1)
 !            ! Stokes, Navier-Stokes
-!        
+!
 !            ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
 !            ! dual RHS(0)   = DUALRHS(0)
-!          
+!
 !            call lsyssc_vectorLinearComb (&
 !                p_rvecLast%RvectorBlock(1),p_rvecCurrent%RvectorBlock(1),&
 !                1.0_DP-dtheta,dtheta,&
-!                rtempVectorRHS%RvectorBlock(1))                                        
-!            call lsyssc_vectorLinearComb (&                                                   
+!                rtempVectorRHS%RvectorBlock(1))
+!            call lsyssc_vectorLinearComb (&
 !                p_rvecLast%RvectorBlock(2),p_rvecCurrent%RvectorBlock(2),&
 !                1.0_DP-dtheta,dtheta,&
-!                rtempVectorRHS%RvectorBlock(2))                                        
+!                rtempVectorRHS%RvectorBlock(2))
 !            ! Divergence equation is fully implicit
 !            call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 !
 !            call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
 !            call lsyssc_copyVector (p_rvecCurrent%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
-!            call lsyssc_vectorLinearComb (&                                                   
+!            call lsyssc_vectorLinearComb (&
 !                p_rvecLast%RvectorBlock(6),p_rvecCurrent%RvectorBlock(6),&
 !                1.0_DP-dtheta,dtheta,&
 !                rtempVectorRHS%RvectorBlock(6))
-!                
+!
 !            ! Multiply the last RHS of the dual equation -z by theta+gamma/dtstep, that is it.
 !            call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),&
 !                1.0_DP + roptimalControl%dgammaC/dtstep)
 !            call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
 !                1.0_DP + roptimalControl%dgammaC/dtstep)
-!                
+!
 !          end select
 !
 !        case (1)
 !
 !          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
 !          ! dual RHS(0)   = DUALRHS(0)
-!          
+!
 !          select case (rphysics%cequation)
 !          case (0,1)
 !            ! Stokes, Navier-Stokes
-!        
+!
 !          end select
 !
 !        end select
@@ -582,7 +582,7 @@ contains
         call lsysbl_scaleVector (rtempVectorRHS,dtstep)
       end if
 
-      ! Implement the boundary conditions into the RHS vector        
+      ! Implement the boundary conditions into the RHS vector
       if (present(roptcBDC)) then
         call tbc_implementSpatialBCtoRHS (roptcBDC, &
             dtimePrimal, dtimeDual, rrhsDiscrete%p_rtimeDiscr, rtempVectorRHS, rglobalData)
@@ -711,7 +711,7 @@ contains
   end subroutine
 
 !  ! ***************************************************************************
-!  
+!
 !!<subroutine>
 !
 !  subroutine trhsevl_assembledG0RHS (rproblem, rspaceTimeDiscr, rb, bimplementBC)
@@ -727,11 +727,11 @@ contains
 !  ! A problem structure that provides information on all
 !  ! levels as well as temporary vectors.
 !  type(t_problem), intent(INOUT), target :: rproblem
-!  
+!
 !  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
 !  ! coupled space-time system.
 !  type(t_ccoptSpaceTimeDiscretisation), intent(IN) :: rspaceTimeDiscr
-!  
+!
 !  ! Whether to implement boundary conditions into the RHS or not.
 !  logical, intent(IN) :: bimplementBC
 !!</input>
@@ -739,7 +739,7 @@ contains
 !!<inputoutput>
 !  ! A space-time vector that receives the RHS.
 !  type(t_spacetimeVector), intent(INOUT) :: rb
-! 
+!
 !!</inputoutput>
 !
 !!</subroutine>
@@ -747,7 +747,7 @@ contains
 !    ! local variables
 !    integer :: isubstep,nintervals
 !    real(DP) :: dtstep
-!    
+!
 !    ! Temporary vector
 !    type(t_vectorBlock) :: rtempVector
 !
@@ -768,7 +768,7 @@ contains
 !    ! by the midpoint rule in time! So we just make a loop
 !    ! over the timesteps and calculate the f()-values in the
 !    ! midpoints of the time intervals!
-!    
+!
 !    dtstep = rrhsDiscrete%p_rtimeDiscr%dtstep
 !    nintervals = rrhsDiscrete%p_rtimeDiscr%nintervals
 !
@@ -776,10 +776,10 @@ contains
 !      ! Assemble at the midpoint of the time interval
 !      call trhsevl_assembleSpatialRHS (rproblem,isubstep,&
 !        (real(isubstep,DP)+0.5_DP)*dtstep,rtempVector)
-!        
+!
 !      call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
 !    end do
-!      
+!
 !    ! Release the temp vector.
 !    call lsysbl_releaseVector (rtempVector)
 !
@@ -845,10 +845,10 @@ contains
 !      nelements, npointsPerElement, Dpoints, &
 !      IdofsTest, rdomainIntSubset, &
 !      Dcoefficients, rcollection)
-!  
+!
 !  ! Standard evaluation routine. Evaluates component rcollection%Icollection(1)
 !  ! of the analytical solution identified by the name "RHS" in the collection.
-!  
+!
 !  use fsystem
 !  use basicgeometry
 !  use triangulation
@@ -856,7 +856,7 @@ contains
 !  use domainintegration
 !  use spatialdiscretisation
 !  use collection
-!  
+!
 !  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
 !  type(t_linearForm), intent(IN) :: rform
 !  integer, intent(IN) :: nelements
@@ -866,7 +866,7 @@ contains
 !  type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 !  type(t_collection), intent(INOUT), optional :: rcollection
 !  real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
-!  
+!
 !  integer :: ierror,i,j
 !  integer, dimension(3) :: Ibounds
 !  real(dp), dimension(:,:), allocatable :: Dvalues
@@ -878,7 +878,7 @@ contains
 !    ! Evaluate
 !    call ansol_evaluate (rcollection,"RHS",rcollection%IquickAccess(1),&
 !        Dvalues,npointsPerElement,nelements,Dpoints,rdomainIntSubset%p_Ielements,ierror)
-!    
+!
 !    do i=1,nelements
 !      do j=1,npointsPerElement
 !        if ( (Dpoints(1,j,i)-0.5_DP)**2 + (Dpoints(2,j,i)-0.2_DP)**2 .le. 0.05**2) then
@@ -886,7 +886,7 @@ contains
 !        end if
 !      end do
 !    end do
-!    
+!
 !    ! Check that this was ok. If yes, copy the data to the destination.
 !    if (ierror .eq. 0) then
 !      Dcoefficients(1,:,:) = Dvalues(:,:)
@@ -895,7 +895,7 @@ contains
 !                        OU_CLASS_ERROR,OU_MODE_STD,'trhsevl_evalFunction')
 !      call sys_halt()
 !    end if
-!        
+!
 !    ! Clean up
 !    deallocate(Dvalues)
 !
@@ -934,9 +934,9 @@ contains
 
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
-!</input>  
+!</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination vector
   type(t_vectorBlock), intent(inout) :: rrhsDiscrete
 !</inputoutput>
@@ -967,10 +967,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     !
@@ -1098,7 +1098,7 @@ contains
       end if
       
       ! Depending on the formulation, to get a reference dual velocity,
-      ! it might be necessary to switch the sign of the target velocity field 
+      ! it might be necessary to switch the sign of the target velocity field
       ! because the RHS of the dual equation is '-z'!
       ! Remember that it this case the signs of the mass matrices that couple
       ! primal and dual velocity must be changed, too!

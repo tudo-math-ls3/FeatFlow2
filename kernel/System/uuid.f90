@@ -8,101 +8,101 @@
 !#
 !# Citation from "http://en.wikipedia.org/wiki/UUID":
 !#
-!#    A Universally Unique Identifier (UUID) is an identifier standard used 
-!#    in software construction, standardized by the Open Software Foundation 
+!#    A Universally Unique Identifier (UUID) is an identifier standard used
+!#    in software construction, standardized by the Open Software Foundation
 !#    (OSF) as part of the Distributed Computing Environment (DCE). The intent
 !#    of UUIDs is to enable distributed systems to uniquely identify information
 !#    without significant central coordination. Thus, anyone can create a UUID
-!#    and use it to identify something with reasonable confidence that the 
-!#    identifier will never be unintentionally used by anyone for anything else. 
+!#    and use it to identify something with reasonable confidence that the
+!#    identifier will never be unintentionally used by anyone for anything else.
 !#    Information labeled with UUIDs can therefore be later combined into a single
 !#    database without needing to resolve name conflicts. The most widespread use
-!#    of this standard is in Microsoft`s Globally Unique Identifiers (GUIDs). 
-!#    Other significant users include Linux`s ext2/ext3 filesystem, LUKS encrypted 
-!#    partitions, GNOME, KDE, and Mac OS X, all of which use implementations 
+!#    of this standard is in Microsoft`s Globally Unique Identifiers (GUIDs).
+!#    Other significant users include Linux`s ext2/ext3 filesystem, LUKS encrypted
+!#    partitions, GNOME, KDE, and Mac OS X, all of which use implementations
 !#    derived from the uuid library found in the e2fsprogs package.
-!#   
-!#    A UUID is a 16-byte (128-bit) number. The number of theoretically 
+!#
+!#    A UUID is a 16-byte (128-bit) number. The number of theoretically
 !#    possible UUIDs is therefore $2^{16*8} = 2^128 = 256^16$ or about $3.4*10^38$.
-!#    This means that 1 trillion UUIDs would have to be created 
-!#    every nanosecond for 10 billion years to exhaust the number of 
+!#    This means that 1 trillion UUIDs would have to be created
+!#    every nanosecond for 10 billion years to exhaust the number of
 !#    UUIDs.
-!#    
-!#    In its canonical form, a UUID consists of 32 hexadecimal digits, 
+!#
+!#    In its canonical form, a UUID consists of 32 hexadecimal digits,
 !#    displayed in 5 groups separated by hyphens, in the form 8-4-4-4-
 !#    12 for a total of 36 characters. For example:
-!#    
+!#
 !# <verb>
 !#        550e8400-e29b-41d4-a716-446655440000
 !# </verb>
-!#    
-!#    A UUID may also be used with a specific identifier intentionally 
-!#    used repeatedly to identify the same thing in different contexts. 
-!#    For example, in Microsoft`s Component Object Model, every 
-!#    component must implement the IUnknown interface, which is done by 
-!#    creating a UUID representing IUnknown. In all cases wherever 
-!#    IUnknown is used, whether it is being used by a process trying to 
-!#    access the IUnknown interface in a component, or by a component 
-!#    implementing the IUnknown interface, it is always referenced by 
+!#
+!#    A UUID may also be used with a specific identifier intentionally
+!#    used repeatedly to identify the same thing in different contexts.
+!#    For example, in Microsoft`s Component Object Model, every
+!#    component must implement the IUnknown interface, which is done by
+!#    creating a UUID representing IUnknown. In all cases wherever
+!#    IUnknown is used, whether it is being used by a process trying to
+!#    access the IUnknown interface in a component, or by a component
+!#    implementing the IUnknown interface, it is always referenced by
 !#    the same identifier: 00000000-0000-0000-C000-000000000046.
-!#    
+!#
 !#    <bf> Version 1 (MAC address) </bf>
-!#    
-!#    Conceptually, the original (version 1) generation scheme for 
-!#    UUIDs was to concatenate the UUID version with the MAC address of 
-!#    the computer that is generating the UUID, and with the number of 
-!#    100-nanosecond intervals since the adoption of the Gregorian 
-!#    calendar. In practice, the actual algorithm is more complicated. 
-!#    This scheme has been criticized in that it is not sufficiently 
-!#    'opaque'; it reveals both the identity of the computer that 
+!#
+!#    Conceptually, the original (version 1) generation scheme for
+!#    UUIDs was to concatenate the UUID version with the MAC address of
+!#    the computer that is generating the UUID, and with the number of
+!#    100-nanosecond intervals since the adoption of the Gregorian
+!#    calendar. In practice, the actual algorithm is more complicated.
+!#    This scheme has been criticized in that it is not sufficiently
+!#    'opaque'; it reveals both the identity of the computer that
 !#    generated the UUID and the time at which it did so.
-!#    
+!#
 !#    <bf> Version 2 (DCE Security) </bf>
-!#    
-!#    Version 2 UUIDs are similar to Version 1 UUIDs, with the upper 
-!#    byte of the clock sequence replaced by the identifier for a 
-!#    "local domain" (typically either the "POSIX UID domain" or the 
-!#    "POSIX GID domain") and the first 4 bytes of the timestamp 
-!#    replaced by the user`s POSIX UID or GID (with the "local domain" 
+!#
+!#    Version 2 UUIDs are similar to Version 1 UUIDs, with the upper
+!#    byte of the clock sequence replaced by the identifier for a
+!#    "local domain" (typically either the "POSIX UID domain" or the
+!#    "POSIX GID domain") and the first 4 bytes of the timestamp
+!#    replaced by the user`s POSIX UID or GID (with the "local domain"
 !#    identifier indicating which it is).[1][2]
-!#    
+!#
 !#    <bf> Version 3 (MD5 hash) </bf>
-!#    
-!#    Version 3 UUIDs use a scheme deriving a UUID via MD5 from a URL, 
-!#    a fully qualified domain name, an Object identifier, a 
-!#    distinguished name (DN as used in Lightweight Directory Access 
-!#    Protocol), or on names in unspecified namespaces. Version 3 UUIDs 
-!#    have the form xxxxxxxx-xxxx-3xxx-xxxx-xxxxxxxxxxxx with 
+!#
+!#    Version 3 UUIDs use a scheme deriving a UUID via MD5 from a URL,
+!#    a fully qualified domain name, an Object identifier, a
+!#    distinguished name (DN as used in Lightweight Directory Access
+!#    Protocol), or on names in unspecified namespaces. Version 3 UUIDs
+!#    have the form xxxxxxxx-xxxx-3xxx-xxxx-xxxxxxxxxxxx with
 !#    hexadecimal digits x.
-!#    
-!#    To determine the version 3 UUID of a given name the UUID of the 
-!#    namespace, e.g. 6ba7b810-9dad-11d1-80b4-00c04fd430c8 for a 
-!#    domain, is transformed to a string of bytes corresponding to its 
-!#    hexadecimal digits, concatenated with the input name, hashed with 
-!#    MD5 yielding 128 bits. Six bits are replaced by fixed values, 
-!#    four of these bits indicate the version, 0011 for version 3. 
-!#    Finally the fixed hash is transformed back into the hexadecimal 
-!#    form with hyphens separating the parts relevant in other UUID 
+!#
+!#    To determine the version 3 UUID of a given name the UUID of the
+!#    namespace, e.g. 6ba7b810-9dad-11d1-80b4-00c04fd430c8 for a
+!#    domain, is transformed to a string of bytes corresponding to its
+!#    hexadecimal digits, concatenated with the input name, hashed with
+!#    MD5 yielding 128 bits. Six bits are replaced by fixed values,
+!#    four of these bits indicate the version, 0011 for version 3.
+!#    Finally the fixed hash is transformed back into the hexadecimal
+!#    form with hyphens separating the parts relevant in other UUID
 !#    versions.
-!#    
+!#
 !#    <bf> Version 4 (random) </bf>
-!#    
-!#    Version 4 UUIDs use a scheme relying only on random numbers. This 
-!#    algorithm sets the version number, as well as two reserved bits. 
-!#    All other bits are set using a random or pseudorandom data 
+!#
+!#    Version 4 UUIDs use a scheme relying only on random numbers. This
+!#    algorithm sets the version number, as well as two reserved bits.
+!#    All other bits are set using a random or pseudorandom data
 !#    source.
-!#    
+!#
 !#    <bf> Version 5 (SHA-1 hash) </bf>
-!#    
-!#    Version 5 UUIDs use a scheme with SHA-1 hashing, otherwise it is 
-!#    the same idea as in version 3. RFC 4122 states that version 5 is 
+!#
+!#    Version 5 UUIDs use a scheme with SHA-1 hashing, otherwise it is
+!#    the same idea as in version 3. RFC 4122 states that version 5 is
 !#    preferred over version 3 name based UUIDs.
 !#
 !# The following routines can be found here:
 !#
 !#  1.) uuid_createUUID = uuid_createUUID_directly /
 !#                        uuid_createUUID_indirectly
-!#      -> Create new UUID 
+!#      -> Create new UUID
 !#
 !#  2.) uuid_isEqual
 !#      -> Check if two UUIDs are equal

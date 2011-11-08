@@ -54,11 +54,11 @@ module solidmech2d_method0_simple
     ! solution, trial/test functions,...)
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
   end type
@@ -121,11 +121,11 @@ contains
 !     type(t_matrixBlock) :: rmatrix
     type(t_vectorBlock) :: rvector,rrhs,rtempBlock
 
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 !     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -172,7 +172,7 @@ contains
     ! information to the coefficient routine.
     type(t_collection) :: rcollection
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! +------------------------------------------------------------------------
     ! | READ DAT FILE PARAMETERS
@@ -314,7 +314,7 @@ contains
 
     ! Minimum level
     call parlst_getvalue_int (rparams, '', &
-                                     'NLMIN', rproblem%NLMIN)   
+                                     'NLMIN', rproblem%NLMIN)
     ! Maximum level
     call parlst_getvalue_int (rparams, '', &
                                      'NLMAX', rproblem%NLMAX)
@@ -329,9 +329,9 @@ contains
     ! Allocate memory for all levels
     allocate(Rlevels(rproblem%NLMIN:rproblem%NLMAX))
 
-    ! INPUT PARAMETER: Cycle identifier. 
-    !  0=F-cycle, 
-    !  1=V-cycle, 
+    ! INPUT PARAMETER: Cycle identifier.
+    !  0=F-cycle,
+    !  1=V-cycle,
     !  2=W-cycle.
     call parlst_getvalue_int (rparams, '', &
                                     'ccycle', rproblem%ccycle)
@@ -366,13 +366,13 @@ contains
       print *, 'inquirePoint Y'
       ! PointX
       call parlst_getvalue_double (rparams, '', &
-                                     'inquirePointX', rproblem%inquirePointX) 
+                                     'inquirePointX', rproblem%inquirePointX)
       ! PointY
       call parlst_getvalue_double (rparams, '', &
                                      'inquirePointY', rproblem%inquirePointY)
       ! Reference sol for U1
       call parlst_getvalue_double (rparams, '', &
-                                     'refSolU1', rproblem%refSolU1) 
+                                     'refSolU1', rproblem%refSolU1)
       ! Reference sol for U2
       call parlst_getvalue_double (rparams, '', &
                                      'refSolU2', rproblem%refSolU2)
@@ -488,7 +488,7 @@ contains
     end do
 
     ! poisson equation with multigrid
-    if (rproblem%ctypeOfEquation .eq. POISSON) then 
+    if (rproblem%ctypeOfEquation .eq. POISSON) then
 
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
@@ -526,7 +526,7 @@ contains
         ! Initialise the block matrix with default values based on
         ! the discretisation.
         call lsysbl_createMatBlockByDiscr (&
-            Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
+            Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
   
         ! Now as the discretisation is set up, we can start to generate
         ! the structure of the system matrix which is to solve.
@@ -549,8 +549,8 @@ contains
         ! In the standard case, we have constant coefficients:
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff = .true.
-        rform%Dcoefficients(1)  = 1.0 
-        rform%Dcoefficients(2)  = 1.0 
+        rform%Dcoefficients(1)  = 1.0
+        rform%Dcoefficients(2)  = 1.0
   
         ! Now we can build the matrix entries.
         ! We specify the callback function coeff_Laplace for the coefficients.
@@ -569,7 +569,7 @@ contains
       call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rrhs, .false.)
       call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rvector, .false.)
   
-      ! The vector structure is ready but the entries are missing. 
+      ! The vector structure is ready but the entries are missing.
       ! So the next thing is to calculate the content of that vector.
       !
       ! At first set up the corresponding linear form (f,Phi_j):
@@ -598,7 +598,7 @@ contains
       ! discretised boundary conditions'. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponsolidmechding filter.
-      !   
+      !
       ! Create a t_discreteBC structure where we store all discretised boundary
       ! conditions.
       do i = rproblem%NLMIN, rproblem%NLMAX
@@ -619,7 +619,7 @@ contains
               ! boundary there. The following call does the following:
               ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
               ! We specify icomponent='1' to indicate that we set up the
-              ! Dirichlet BC's for the first (here: one and only) component in the 
+              ! Dirichlet BC's for the first (here: one and only) component in the
               ! solution vector.
               ! - Discretise the boundary condition so that the BC's can be applied
               ! to matrices and vectorssolidmech
@@ -628,7 +628,7 @@ contains
                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                 getBoundaryValues_2D)
 
-            end do  
+            end do
           else if (rproblem%Sbc(j,k) .eq. 'N') then
             rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
             print *,'N',j,k
@@ -658,7 +658,7 @@ contains
       
 
     ! elsticity equations
-    else if (rproblem%ctypeOfEquation .eq. ELASTICITY) then    
+    else if (rproblem%ctypeOfEquation .eq. ELASTICITY) then
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this simple problem, we have two blocks.
@@ -834,7 +834,7 @@ contains
       call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rrhs, .false.)
       call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rvector, .false.)
   
-      ! The vector structure is ready but the entries are missing. 
+      ! The vector structure is ready but the entries are missing.
       ! So the next thing is to calculate the content of that vector.
       ! At first set up the corresponding linear form (f,Phi_j):
       rlinform%itermCount = 1
@@ -844,9 +844,9 @@ contains
       call lsysbl_clearVector(rrhs)
   
       ! ... and then discretise the RHS to the first two subvectors of
-      ! the block vector using the discretisation structure of the 
+      ! the block vector using the discretisation structure of the
       ! corresponding blocks.
-      !     
+      !
       ! Note that the vector is unsorted after calling this routine!
       ! For U1
       call linf_buildVectorScalar (Rlevels(rproblem%NLMAX)%rdiscretisation%RspatialDiscr(1),&
@@ -870,7 +870,7 @@ contains
       ! discretised boundary conditions'. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponsolidmechding filter.
-      !   
+      !
       ! Create a t_discreteBC structure where we store all discretised boundary
       ! conditions.
       do i = rproblem%NLMIN, rproblem%NLMAX
@@ -882,7 +882,7 @@ contains
       ! We 'know' already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
       ! some kind of boundary condition.
-      !    
+      !
       ! We ask the bondary routines to create a 'boundary region' - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
@@ -900,7 +900,7 @@ contains
               ! boundary there. The following call does the following:
               ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
               ! We specify icomponent='1' to indicate that we set up the
-              ! Dirichlet BC's for the first (here: one and only) component in the 
+              ! Dirichlet BC's for the first (here: one and only) component in the
               ! solution vector.
               ! - Discretise the boundary condition so that the BC's can be applied
               ! to matrices and vectorssolidmech
@@ -909,11 +909,11 @@ contains
 						    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
 						    getBoundaryValues_2D)
     
-              ! Now continue with defining the boundary conditions of the U2-velocity:	
+              ! Now continue with defining the boundary conditions of the U2-velocity:
 		          call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
 						    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
 						    getBoundaryValues_2D)
-	          end do  
+	          end do
           else if (rproblem%Sbc(j,k) .eq. 'N') then
 		        rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
             print *,'N',j,k
@@ -961,12 +961,12 @@ contains
 
  
     ! Hang the pointer into the vector. That way, these
-    ! boundary conditions are always connected to that 
+    ! boundary conditions are always connected to that
     ! vector.!
     rrhs%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
     rvector%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
 
-!     if (rproblem%ctypeOfEquation .eq. POISSON) then 
+!     if (rproblem%ctypeOfEquation .eq. POISSON) then
 !       ! Now we have block vectors for the RHS and the matrix. What we
 !       ! need additionally is a block vector for the solution and
 !       ! temporary data. Create them using the RHS as template.
@@ -986,9 +986,9 @@ contains
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -1008,7 +1008,7 @@ contains
       nullify(p_rpreconditioner)
       call linsol_initCG (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 
-    ! For Direct solver we use following 
+    ! For Direct solver we use following
     else if (rproblem%ctypeOfSolver .eq. DIRECT_SOLVER) then
       call linsol_initUMFPACK4 (p_rsolverNode)
       p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 0
@@ -1051,9 +1051,9 @@ contains
         
       end do
 
-      ! INPUT PARAMETER: Cycle identifier. 
-      !  0=F-cycle, 
-      !  1=V-cycle, 
+      ! INPUT PARAMETER: Cycle identifier.
+      !  0=F-cycle,
+      !  1=V-cycle,
       !  2=W-cycle.
       p_rsolverNode%p_rsubnodeMultigrid2%icycle = rproblem%ccycle
       
@@ -1090,9 +1090,9 @@ contains
         
       end do
 
-      ! INPUT PARAMETER: Cycle identifier. 
-      !  0=F-cycle, 
-      !  1=V-cycle, 
+      ! INPUT PARAMETER: Cycle identifier.
+      !  0=F-cycle,
+      !  1=V-cycle,
       !  2=W-cycle.
       p_rpreconditioner%p_rsubnodeMultigrid2%icycle = rproblem%ccycle
 
@@ -1157,11 +1157,11 @@ contains
           p_rsmoother%ioutputLevel = 0
         end if
         
-      end do 
+      end do
 
-      ! INPUT PARAMETER: Cycle identifier. 
-      !  0=F-cycle, 
-      !  1=V-cycle, 
+      ! INPUT PARAMETER: Cycle identifier.
+      !  0=F-cycle,
+      !  1=V-cycle,
       !  2=W-cycle.
       p_rsolverNode%p_rsubnodeMultigrid2%icycle = rproblem%ccycle
 
@@ -1233,20 +1233,20 @@ contains
     if (rproblem%inquirePoint .eq. Y) then
       call fevl_evaluate (DER_FUNC, Dvalues, rvector%RvectorBlock(1), Dpoints)
       U1 = Dvalues(1)
-      call output_line ('U1(X,Y): ' // sys_sdEL(U1,10) ) 
-      call fevl_evaluate (DER_FUNC, Dvalues, rvector%RvectorBlock(2), Dpoints) 
-      U2 = Dvalues(1) 
+      call output_line ('U1(X,Y): ' // sys_sdEL(U1,10) )
+      call fevl_evaluate (DER_FUNC, Dvalues, rvector%RvectorBlock(2), Dpoints)
+      U2 = Dvalues(1)
       call output_line ('U2(X,Y): ' // sys_sdEL(U2,10) )
-      call fevl_evaluate (DER_DERIV_X, Dvalues, rvector%RvectorBlock(1), Dpoints) 
+      call fevl_evaluate (DER_DERIV_X, Dvalues, rvector%RvectorBlock(1), Dpoints)
       U1_X = Dvalues(1)
       call output_line ('U1_X(X,Y): ' // sys_sdEL(U1_X,10) )
-      call fevl_evaluate (DER_DERIV_X, Dvalues, rvector%RvectorBlock(2), Dpoints) 
+      call fevl_evaluate (DER_DERIV_X, Dvalues, rvector%RvectorBlock(2), Dpoints)
       U2_X = Dvalues(1)
       call output_line ('U2_X(X,Y): ' // sys_sdEL(U2_X,10) )
-      call fevl_evaluate (DER_DERIV_Y, Dvalues, rvector%RvectorBlock(1), Dpoints) 
+      call fevl_evaluate (DER_DERIV_Y, Dvalues, rvector%RvectorBlock(1), Dpoints)
       U1_Y = Dvalues(1)
       call output_line ('U1_Y(X,Y): ' // sys_sdEL(U1_Y,10) )
-      call fevl_evaluate (DER_DERIV_Y, Dvalues, rvector%RvectorBlock(2), Dpoints) 
+      call fevl_evaluate (DER_DERIV_Y, Dvalues, rvector%RvectorBlock(2), Dpoints)
       U2_Y = Dvalues(1)
       call output_line ('U2_Y(X,Y): ' // sys_sdEL(U2_Y,10) )
       call output_line ('eps11: ' // sys_sdEL(U1_X,10) )
@@ -1319,7 +1319,7 @@ contains
     end if
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
-    ! We can now start the postprocessing. 
+    ! We can now start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevels(rproblem%NLMAX)%rtriangulation,&
         trim(sucddir)//'/u2d_0_simple.gmv')
@@ -1369,7 +1369,7 @@ contains
       call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     do i = rproblem%NLMAX, rproblem%NLMIN, -1
       call tria_done (Rlevels(i)%rtriangulation)
     end do
@@ -1379,6 +1379,6 @@ contains
     ! Finally release the domain, that's it.
     call boundary_release (rboundary)
 
-  end subroutine 
+  end subroutine
 
 end module

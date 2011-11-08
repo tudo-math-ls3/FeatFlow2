@@ -4,14 +4,14 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains matrix-vector assembly routines for the Allen_Cahn 
+!# This module contains matrix-vector assembly routines for the Allen_Cahn
 !# problem. The following routines can be found here:
 !#
 !# 1.) AC5_initMatVec
 !#     -> Allocate memory for matrices/vectors, generate 'static' matrices that
 !#        don't change in time.
 !#
-!# 2.) AC5_calcRHS 
+!# 2.) AC5_calcRHS
 !#     -> Calculate RHS vector. (Doesn't implement BC's.)
 !#
 !# 3.) AC5_doneMatVec
@@ -46,7 +46,7 @@ module AllenCahn_matvec
   use ccbasic
   use cccallback
 !  use ccnonstationary   ! do not use this, otherwise, wrong.
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   use AllenCahn_callback
   use AllenCahn_basic
@@ -94,7 +94,7 @@ CONTAINS
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixJacobian%RmatrixBlock(1,1))
 
-      ! Update the structural information 
+      ! Update the structural information
 	  call lsysbl_updateMatStrucInfo (p_rmatrixJacobian)
 
       ! In this case, we have nonconstant coefficients.
@@ -107,7 +107,7 @@ CONTAINS
       ! so the callback routine can access it.
       call collct_init(rcollectionTmp)
 
-      !MCai, we need the first block to evaluate the coefficient. 
+      !MCai, we need the first block to evaluate the coefficient.
       rcollectionTmp%p_rvectorQuickAccess1=>rACvectorTemp
 
       ! Build matrix, similar to variable coeff Mass matrix
@@ -123,7 +123,7 @@ CONTAINS
     ! release temp vector block
     call lsysbl_releasevector(rACvectorTemp)
     
-  end subroutine 
+  end subroutine
   !****************************************************************************
   subroutine AC_assembleMatPoly(rACproblem, rACvector)
 ! for assembling the matrix from nonlinear term: we do it this way:
@@ -164,7 +164,7 @@ CONTAINS
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixPoly%RmatrixBlock(1,1))
 
-      ! Update the structural information 
+      ! Update the structural information
 	  call lsysbl_updateMatStrucInfo (p_rmatrixPoly)
 
       ! In this case, we have nonconstant coefficients.
@@ -177,7 +177,7 @@ CONTAINS
       ! so the callback routine can access it.
       call collct_init(rcollectionTmp)
 
-      !MCai, we need the first block to evaluate the coefficient. 
+      !MCai, we need the first block to evaluate the coefficient.
       rcollectionTmp%p_rvectorQuickAccess1=>rACvectorTemp
 
       ! Build matrix, similar to variable coeff Mass matrix
@@ -196,7 +196,7 @@ CONTAINS
     ! release temp vector block
     call lsysbl_releasevector(rACvectorTemp)
     
-  end subroutine 
+  end subroutine
 
   !****************************************************************************
   subroutine AC_assembleMatConv(rACproblem, rACvector, rNSproblem, rNSvector)
@@ -239,7 +239,7 @@ CONTAINS
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixConv%RmatrixBlock(1,1),cconstrtype=BILF_MATC_ELEMENTBASED)
 
-      ! Update the structural information 
+      ! Update the structural information
        call lsysbl_updateMatStrucInfo (p_rmatrixConv)
 
       ! In this case, we have nonconstant coefficients.
@@ -257,7 +257,7 @@ CONTAINS
       ! so the callback routine can access it.
       call collct_init(rcollectionTmp)
 
-      !MCai, we need the first block to evaluate the coefficient. 
+      !MCai, we need the first block to evaluate the coefficient.
       rcollectionTmp%p_rvectorQuickAccess1=>rNSvectorTemp
 
       ! Build matrix, similar to variable coeff Mass matrix
@@ -281,7 +281,7 @@ CONTAINS
 !MCai, think about which discretisation we should use? I do this similar to Cui
 !     call conv_JumpStabilisation2d ( &
 !       rjumpstabil, conv_modmatrix, p_rmatrixConv%rmatrixBlock(1,1),&
-!         p_rdiscretisation)  
+!         p_rdiscretisation)
 
       IF(i.GT.rACproblem%NLMIN) &
         call prjF2C(rNSvectorTemp,rNSproblem%rlevelinfo(i-1)%rdiscretisation)
@@ -292,19 +292,19 @@ CONTAINS
     
     ! release temp vector block
 	call lsysbl_releasevector(rNSvectorTemp)
-  end subroutine 
+  end subroutine
 
 
 !**********************************************************************************
  subroutine prjF2C(rvector,rdiscretisation)
-! This subroutine is wrote by Zejun Cui, the purpose is to use fine grid vector to get 
+! This subroutine is wrote by Zejun Cui, the purpose is to use fine grid vector to get
 ! coarse grid vector. Projection from fine to coarse.
  
     type(t_vectorBlock), INTENT(INOUT) :: rvector
     !type(t_problem_lvl), INTENT(IN),TARGET :: rlevelInfo
     type(t_blockDiscretisation),intent(in):: rdiscretisation
     
-    !local 
+    !local
     type(t_interlevelProjectionBlock) :: rprojection
     type(t_vectorBlock):: rtmpvector
     type(t_vectorScalar) :: rvectorTemp
@@ -376,7 +376,7 @@ CONTAINS
     type(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
     ! Arrays for the Cuthill McKee renumbering strategy
-!    INTEGER, DIMENSION(1) :: H_Iresort 
+!    INTEGER, DIMENSION(1) :: H_Iresort
 !    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iresort
 
     ! Parameters from the DAT file
@@ -412,7 +412,7 @@ CONTAINS
     rform%Idescriptors(2,6) = DER_FUNC
     
     ! gamma * u
-    rform%Idescriptors(1,7) = DER_FUNC       
+    rform%Idescriptors(1,7) = DER_FUNC
     rform%Idescriptors(2,7) = DER_FUNC
 
     ! In the standard case, we have constant coefficients:
@@ -490,24 +490,24 @@ CONTAINS
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
 
-!~~~~~build the matrix entries, we may do other thing stuff here. 
+!~~~~~build the matrix entries, we may do other thing stuff here.
       call bilf_buildMatrixScalar (rform,.TRUE.,&
                                    p_rmatrixStatic%RmatrixBlock(1,1),coeff_AllenCahn,&
                                    rACproblem%rcollection)
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       ! -------------------------------------------------------------
-      ! Mass matrix, similar to Laplace matrix 
+      ! Mass matrix, similar to Laplace matrix
       
       p_rmatrixMass => rACproblem%RlevelInfo(i)%rmatrixMass
       
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixMass)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixMass)
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -534,7 +534,7 @@ CONTAINS
 
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -555,7 +555,7 @@ CONTAINS
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
     
-    p_rrhs    => rACproblem%rrhs   
+    p_rrhs    => rACproblem%rrhs
     p_rmatrixStatic => rACproblem%RlevelInfo(rACproblem%NLMAX)%rmatrixStatic
 
     ! Save the solution/RHS vector to the collection. Might be used
@@ -630,7 +630,7 @@ CONTAINS
   !optional
   type(t_problem), intent(IN), optional :: rNSproblem
   
-  ! OPTIONAL: 
+  ! OPTIONAL:
   type(t_vectorBlock), intent(IN), target, optional :: rNSvector
   type(t_vectorBlock), intent(IN), target, optional :: rNSrhs
 
@@ -652,8 +652,8 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
-!~~~Mcai, 
- 	! A parameter to determine, whether we use implicit scheme or explicit scheme for 
+!~~~Mcai,
+ 	! A parameter to determine, whether we use implicit scheme or explicit scheme for
 	! Allen-Cahn problem, if it is 0, we treat convective term explictly. Otherwise,implicitly
 	integer :: Implicit_Convective=1
 
@@ -661,15 +661,15 @@ CONTAINS
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
 
-    rACproblem%rcollection%Dquickaccess (1) = rACproblem%rtimedependence%dtime 
-!~~~Mcai, do we need the following code in cc2d(determine time dependent)?    
+    rACproblem%rcollection%Dquickaccess (1) = rACproblem%rtimedependence%dtime
+!~~~Mcai, do we need the following code in cc2d(determine time dependent)?
 	call collct_setvalue_real(rACproblem%rcollection,'TIME',&
          rACproblem%rtimedependence%dtime,.TRUE.)
 
 !~~~Mcai,
 ! Notice that there is a source term f(\phi)
  
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -679,32 +679,32 @@ CONTAINS
     p_rdiscretisation => rACproblem%RlevelInfo(rACproblem%NLMAX)%p_rdiscretisation
 
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
 
     rACproblem%rcollection%p_rvectorQuickAccess1 => rACvector
 
 !MCai, here we set bclear=.false. and call coeff_RHS0
     ! in the collection.
-!	if (rACproblem%rtimedependence%dtime .eq. 0.0_DP) then 
-!	! at the initial step, the right hand side is 0.  
+!	if (rACproblem%rtimedependence%dtime .eq. 0.0_DP) then
+!	! at the initial step, the right hand side is 0.
 !	! Debug,
 !	  write(*,*)'Make sure that this step is called at the very beginning'
 !      call linf_buildVectorScalar (&
 !              p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
 !              rACrhs%RvectorBlock(1),coeff_RHS0)
-!	else 
+!	else
     
-	! The following is for initialization, there is no time evolution. 
+	! The following is for initialization, there is no time evolution.
 
       call linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
               rACrhs%RvectorBlock(1),coeff_RHS0)
 
-!	end if 
+!	end if
 
 !     ! first calculate (f(phi(t_n)), psi)
 !         call linf_buildVectorScalar (&
@@ -721,9 +721,9 @@ CONTAINS
   ! treat the convective term as source term.
   ! Debug
 
-      Implicit_Convective=0 
+      Implicit_Convective=0
 
-	  if (Implicit_Convective .eq. 0) then 
+	  if (Implicit_Convective .eq. 0) then
 
   ! we need to calculate ({\bf u} \cdot \nabla \phi, \psi)
 !        rlinform%itermCount = 1
@@ -741,14 +741,14 @@ CONTAINS
     	! First, deal with the source term from AC problem
 	    !MCai, here we set bclear=.false. and call coeff_RHS0
         ! in the collection.
-        ! if (rACproblem%rtimedependence%dtime .eq. 0.0_DP) then 
-!	! at the initial step, the right hand side is 0.  
+        ! if (rACproblem%rtimedependence%dtime .eq. 0.0_DP) then
+!	! at the initial step, the right hand side is 0.
 !	! Debug,
 !	  write(*,*)'Make sure that this step is called at the very beginning'
 !      call linf_buildVectorScalar (&
 !              p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
 !              rACrhs%RvectorBlock(1),coeff_RHS0)
-!	else 
+!	else
 
 !****************************************************************************************************
 
@@ -796,7 +796,7 @@ CONTAINS
 !~~~Mcai,
 ! Notice that there is a source term f(\phi)
  
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -806,10 +806,10 @@ CONTAINS
     p_rdiscretisation => rACproblem%RlevelInfo(rACproblem%NLMAX)%p_rdiscretisation
 
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
 
     rACproblem%rcollection%p_rvectorQuickAccess1 => rACvector
@@ -864,9 +864,9 @@ CONTAINS
 
       ! Delete the Laplace matrix
       call lsysbl_releaseMatrix (rACproblem%RlevelInfo(i)%rmatrixStatic)
-      ! Delete the Convetive matrix 
+      ! Delete the Convetive matrix
       call lsysbl_releaseMatrix (rACproblem%RlevelInfo(i)%rmatrixConv)
-      ! Delete the Jacobian matrix 
+      ! Delete the Jacobian matrix
       call lsysbl_releaseMatrix (rACproblem%RlevelInfo(i)%rmatrixJacobian)
 
       ! Release the permutation for sorting matrix/vectors

@@ -11,7 +11,7 @@
 !#     -> Allocate memory for matrices/vectors, generate 'static' matrices that
 !#        do not change in time.
 !#
-!# 2.) hc5_calcRHS 
+!# 2.) hc5_calcRHS
 !#     -> Calculate RHS vector. (Does not implement BC`s.)
 !#
 !# 3.) hc5_doneMatVec
@@ -91,7 +91,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Arrays for the Cuthill McKee renumbering strategy
-    integer, dimension(1) :: H_Iresort 
+    integer, dimension(1) :: H_Iresort
     integer, dimension(:), pointer :: p_Iresort
 
     ! Parameters from the DAT file
@@ -127,7 +127,7 @@ contains
     rform%Idescriptors(2,6) = DER_FUNC
     
     ! gamma * u
-    rform%Idescriptors(1,7) = DER_FUNC       
+    rform%Idescriptors(1,7) = DER_FUNC
     rform%Idescriptors(2,7) = DER_FUNC
 
     ! In the standard case, we have constant coefficients:
@@ -181,7 +181,7 @@ contains
     
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixStatic)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixStatic)
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -201,7 +201,7 @@ contains
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.true.,&
@@ -215,7 +215,7 @@ contains
       
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixMass)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrixMass)
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -238,7 +238,7 @@ contains
 
       ! Initialise the block matrix with default values based on
       ! the discretisation.
-      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
@@ -255,7 +255,7 @@ contains
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rmatrixStatic => rproblem%RlevelInfo(rproblem%ilvmax)%rmatrixStatic
 
     ! Save the solution/RHS vector to the collection. Might be used
@@ -336,11 +336,11 @@ contains
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
-    rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime 
+    rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime
     call collct_setvalue_real(rproblem%rcollection,'TIME',&
          rproblem%rtimedependence%dtime,.true.)
 
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -350,10 +350,10 @@ contains
     p_rdiscretisation => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscretisation
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     call linf_buildVectorScalar (&

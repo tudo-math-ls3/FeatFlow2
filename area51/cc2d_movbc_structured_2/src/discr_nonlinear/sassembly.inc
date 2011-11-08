@@ -5,9 +5,9 @@
 *
 * The structures themselves are realized as integer/double array
 * combination:
-*   IASMBL = array [1..SZASMI] of integer 
+*   IASMBL = array [1..SZASMI] of integer
 *          = TIntAssembly
-*   DASMBL = array [1..SZASMD] of integer 
+*   DASMBL = array [1..SZASMD] of integer
 *          = TDoubleAssembly
 * where the entries can be accessed with the offsets defined in this
 * file. In detail the structures contain the following data:
@@ -21,7 +21,7 @@
 *            = 1: Discretize Stokes equation
 *
 *   // Discretization related information - describes how to discretize
-*   
+*
 *   IELEMT : Element identifier to prescribe the element that should be
 *            used for the discretization of the system matrix.
 *            = 0: E030
@@ -32,7 +32,7 @@
 *            0   =no adaptive matrix generation = standard
 *            Bit2=switch to constant mat. gen., depending on DMTEP
 *            Bit5(additionally to Bit2)
-*                =switch mat. gen. depenting on size of neighbour 
+*                =switch mat. gen. depenting on size of neighbour
 *                 element, too
 *   ICUBM  : Cubature formula for building the real mass matric
 *            Standard = 4
@@ -50,7 +50,7 @@
 *            = 0: Use standard mass lumping
 *            = 1: Use diagonal lumping (add non-diagonal entries to
 *                 the diagonal)
-*   IUPW   : =0: Use Upwinding technique to build nonlinearity; 
+*   IUPW   : =0: Use Upwinding technique to build nonlinearity;
 *                standard
 *            =1: Use streamline diffusion to build nonlinearity
 *   IPRECA : Method how to set up the system matrix
@@ -69,11 +69,11 @@
 *            Standard=1
 *   IPRECB : Method how to set up pressure coupling matrices.
 *            =0,
-*            =1: Calculation by exact quadrature rule 
+*            =1: Calculation by exact quadrature rule
 *                Works only with Q1~/Q0
 *            =2: (undefined)
 *            =3,
-*            =4: Calculation with complete evaluation 
+*            =4: Calculation with complete evaluation
 *                (slower, but works for all FE pairs)
 *            Standard=1
 *
@@ -82,8 +82,8 @@
 *   IINFCF : Type of inflow profile.
 *            Used in INDAT2D.F to choose the type of the inflow.
 *            Setting for standard INDAT2D:
-*            =0: benchmark configuration, parabolic inflow from 
-*                the left; 
+*            =0: benchmark configuration, parabolic inflow from
+*                the left;
 *            =1: vertical column, parabolic inflow from the bottom
 *            Can be user defined if INDAT2D is changed!
 *
@@ -101,15 +101,15 @@
 *            =1: The problem contains Dirichlet and Neumann boundaries
 *            Updated in the initialization and before each time step
 *
-*   IALPHA : The linear part of the nonlinear iteration matrix 
+*   IALPHA : The linear part of the nonlinear iteration matrix
 *            has the form
 *                    [ alpha*M + THETA*L ] u
-*            IALPHA=ALPHA=0/1 decides, whether the mass matrix is 
+*            IALPHA=ALPHA=0/1 decides, whether the mass matrix is
 *            added to the iteration matrix.
 *            =0: mass matrix is not added (typical for stationary
 *                simulation, standard)
 *            =1: mass matrix is added (typical for nonstationary
-*                simulation, e.g. if NSDEF is a sub-solver of a 
+*                simulation, e.g. if NSDEF is a sub-solver of a
 *                nonstationary solver)
 *
 *   IALE   : The convective part of the nonlinear iteration has the
@@ -119,7 +119,7 @@
 *            velocity" in case that the computational grid is moving.
 *            The convective part is then discretized in the form
 *                    U * grad(U-V)
-*            with 
+*            with
 *                    V = array [1..2,1..NVT] of double
 *            being an approximation to the velocity of the corner
 *            vertices of the grid (X- and Y-velocity).
@@ -143,14 +143,14 @@
 *   RE     : Reynolds-number 1/NU for the equation
 *   NY     : Must be set to NU=1/RE; helps to skip some divisions.
 *
-*   // Discretization related information   
+*   // Discretization related information
 *
 *   UPSAM  : Parameter to control the creation of the nonlinear terms.
 *            IUPW=0: UPSAM controls upwinding.
 *                    < 0: simple upwinding
 *                    >=0: Smarskji-Upwinding
 *            IUPW=1: UPSAM controls streamline diffusion
-*   DMTEP  : treshold parameter: switch construction of coarse grid 
+*   DMTEP  : treshold parameter: switch construction of coarse grid
 *            matrices from standard finite element approach to locally
 *            constant interpolation for all rows belonging to elements
 *            with aspect ratio >= DMTEPS.
@@ -186,7 +186,7 @@
 * end
 ************************************************************************
 
-      INTEGER OIELEMT,OIAPRM ,OICUBM ,OICUBA ,OICUBN ,OICUBB ,OICUBF 
+      INTEGER OIELEMT,OIAPRM ,OICUBM ,OICUBA ,OICUBN ,OICUBB ,OICUBF
       INTEGER OIMASS ,OIMASSL,OIUPW  ,OIPRECA,OIPRECB,OISTOK, OINEUM
       INTEGER OIALPHA,OIALE  ,OLGRVEL,OIINFCF
       

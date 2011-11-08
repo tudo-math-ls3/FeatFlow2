@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains the very basic matrix assembly routines for the
 !# core equation. It's independent of any nonlinear iteration and provides
-!# just one functionality: Assemble a matrix or a vector based on a given 
+!# just one functionality: Assemble a matrix or a vector based on a given
 !# set of parameters.
 !#
 !# The discretised core equation reads at the moment:
@@ -19,32 +19,32 @@
 !#
 !# with
 !#
-!#   $$ A_1 = \iota_{11} I  +  \alpha_{11} M  +  \theta_{11} L  +  
+!#   $$ A_1 = \iota_{11} I  +  \alpha_{11} M  +  \theta_{11} L  +
 !#            \gamma_{11} N(y) + dnewton_{11} N* + gammaT_{11} N^t(y) + dnewtonT_{11} N*^t(y)(y)$$
-!#   $$ A_2 = \iota_{22} I  +  \alpha_{22} M  +  \theta_{22} L  +  
+!#   $$ A_2 = \iota_{22} I  +  \alpha_{22} M  +  \theta_{22} L  +
 !#            \gamma_{22} N(y) + dnewton_2 N*(y) + \gammaT_{22} N^t(y) + dnewtonT_{22} N*^t(y)$$
 !#   $$ R_1 = \alpha_{12} (P)M(\lambda) $$
-!#   $$ R_2 = \alpha_{21} M  +  
-!#            \gamma_{21} N(\lambda) + dnewton_{21} N*(\lambda) + 
+!#   $$ R_2 = \alpha_{21} M  +
+!#            \gamma_{21} N(\lambda) + dnewton_{21} N*(\lambda) +
 !#            gammaT_{21} N^t(\lambda) + dnewtonT_{21} N*^t(\lambda) $$
 !#   $$ R2_2 =  dnewton_{21} N*(\lambda) + gammaT_{21} N^t(\lambda) $$
-!#  
+!#
 !# and
 !#
 !#   $I$     = identity matrix,
 !#   $M$     = mass matrix,
 !#   $L$     = Stokes matrix ($\nu$*Laplace),
-!#   $N(y)$  = Nonlinearity including stabilisation, depending on the 
+!#   $N(y)$  = Nonlinearity including stabilisation, depending on the
 !#             primal velocity, i.e.
 !#                   $$ (y\Delta)\cdot $$
 !#   $N*(y)$ = Newton matrix, depending on the primal velocity, i.e.
 !#                  $$ (\Delta y)\cdot $$
-!#   $N^t(y)$ = Transposed nonlinearity including stabilisation, depending on the 
+!#   $N^t(y)$ = Transposed nonlinearity including stabilisation, depending on the
 !#              primal velocity, i.e.
 !#                   $$ (y\Delta)^t\cdot $$
 !#   $N*^t(y)$ = Transposed Newton matrix, depending on the primal velocity, i.e.
 !#                  $$ (\Delta y)^t\cdot $$
-!#   
+!#
 !#   $\iota_{ij}$  = 0/1     - switches the identity matrix on/off,
 !#   $\alpha_{ij}$ = 0/1     - switches the mass matrices on/off;
 !#                             =0 for stationary problem,
@@ -61,7 +61,7 @@
 !# for the primal equation as well as for the dual one!
 !#
 !# To assemble such a matrix, the application has to follow two steps:
-!# 
+!#
 !# 1.) Create a structure of type t_nonlinearSpatialMatrix and set the
 !#     parameters in this structure according to the matrix which should
 !#     be assembled.
@@ -187,7 +187,7 @@ module spacematvecassembly
 !<typeblock>
 
 !<!--
-! The following structure encapsules all coefficients in front of the terms in each 
+! The following structure encapsules all coefficients in front of the terms in each
 ! submatrix of the global matrix. Here, we don't address each submatrix in the
 ! global matrix but provide coefficients always for a complete block of all dimensions
 ! for the primal as well as for the dual term.
@@ -204,7 +204,7 @@ module spacematvecassembly
 ! The use of the other parameters is similar.
 ! -->
 
-  ! This structure describes a nonlinear matrix in space. 
+  ! This structure describes a nonlinear matrix in space.
   ! The nonlinearity usually stems from a dependence of the Navier-Stokes operator
   ! on a solution (Oseen system) and stabilisation operators.
   type t_nonlinearSpatialMatrix
@@ -250,7 +250,7 @@ module spacematvecassembly
 !    ! IOTA-parameters that switch the identity in the primal/dual equation on/off.
 !    real(DP) :: diota1 = 0.0_DP
 !    real(DP) :: diota2 = 0.0_DP
-!    
+!
 !    ! KAPPA-parameters that switch the I matrix in the continuity equation
 !    ! on/off.
 !    real(DP) :: dkappa1 = 0.0_DP
@@ -260,30 +260,30 @@ module spacematvecassembly
 !    ! core equation. =0.0 for stationary simulations.
 !    real(DP) :: dalpha1 = 0.0_DP
 !    real(DP) :: dalpha2 = 0.0_DP
-!    
+!
 !    ! THETA-parameters that control the weight of the Stokes matrix
 !    ! in the core equation. =1.0 for stationary simulations.
 !    real(DP) :: dtheta1 = 0.0_DP
 !    real(DP) :: dtheta2 = 0.0_DP
-!    
+!
 !    ! GAMMA-parameters that control the weight in front of the
 !    ! nonlinearity. =1.0 for Navier-Stokes, =0.0 for Stokes equation.
 !    real(DP) :: dgamma1 = 0.0_DP
 !    real(DP) :: dgamma2 = 0.0_DP
-!    
+!
 !    ! DNEWTON-parameters that control the weight in font of the
 !    ! newton matrix (adjoint of the nonlinearity). =0.0 to dectivate.
 !    real(DP) :: dnewton1 = 0.0_DP
 !    real(DP) :: dnewton2 = 0.0_DP
-!    
+!
 !    ! ETA-parameters that switch the B-terms on/off.
 !    real(DP) :: deta1 = 0.0_DP
 !    real(DP) :: deta2 = 0.0_DP
-!    
+!
 !    ! TAU-parameters that switch the B^T-terms on/off
 !    real(DP) :: dtau1 = 0.0_DP
 !    real(DP) :: dtau2 = 0.0_DP
-!    
+!
 !    ! MU-parameters that weight the coupling mass matrices.
 !    real(DP) :: dmu1 = 0.0_DP
 !    real(DP) :: dmu2 = 0.0_DP
@@ -292,7 +292,7 @@ module spacematvecassembly
 !    ! in the primal equation.
 !    real(DP) :: dr11 = 0.0_DP
 !    real(DP) :: dr12 = 0.0_DP
-!    
+!
 !    ! R-parameter that weight the reactive coupling mass matrix
 !    ! in the dual equation.
 !    real(DP) :: dr21 = 0.0_DP
@@ -349,18 +349,18 @@ module spacematvecassembly
     ! if Crank-Nicolson is active.
     integer :: idualSol2  = 2
 
-    ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
-    ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
+    ! STABILISATION: Parameter that defines how to set up the nonlinearity and
+    ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx
     ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
     integer :: iupwind1 = CCMASM_STAB_STREAMLINEDIFF2
     integer :: iupwind2 = CCMASM_STAB_STREAMLINEDIFF2
     
-    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
+    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when
     ! a nonlinearity is set up.
     real(DP) :: dnu = 0.0_DP
     
-    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and 
-    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of 
+    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and
+    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of
     ! 0.0 deactivates any stabilisation.
     real(DP) :: dupsam1 = 0.0_DP
     real(DP) :: dupsam2 = 0.0_DP
@@ -373,12 +373,12 @@ module spacematvecassembly
     integer :: iadaptiveMatrices = 0
     
     ! MATRIX RESTRICTION: Threshold parameter for adaptive matrix generation
-    ! of coarse grid matrices (here: maximum aspect ratio). 
+    ! of coarse grid matrices (here: maximum aspect ratio).
     ! Only applicable if iadaptiveMatrices <> 0.
     ! Standard = 20.0
     real(DP) :: dadmatthreshold = 20.0_DP
     
-    ! ASSEMBLY SPECIALS: If set to TRUE, the D-matrices are assembled as 
+    ! ASSEMBLY SPECIALS: If set to TRUE, the D-matrices are assembled as
     ! virtually transposed B-matrices. With the standard setting FALSE, the
     ! D-matrices are assembled as standard divergence matrices.
     logical :: bvirtualTransposedD = .false.
@@ -445,7 +445,7 @@ contains
                
   !</subroutine>
       
-      ! Initialise the matrix assembly structure rnonlinearCCMatrix 
+      ! Initialise the matrix assembly structure rnonlinearCCMatrix
       ! with basic global information.
       !
       ! 1.) Model, stabilisation
@@ -486,9 +486,9 @@ contains
 !  ! ***************************************************************************
 !
 !  !<subroutine>
-!  
+!
 !    subroutine cc_initMatrixStructure (rnonlinearSpatialMatrix,rmatrix)
-!  
+!
 !  !<description>
 !    ! Analyses the matrix configuration in rnonlinearSpatialMatrix and creates
 !    ! an empty matrix rmatrix with the structure that allows to assemble
@@ -500,17 +500,17 @@ contains
 !    ! Must have been initialised at least with cc_initNonlinMatrix.
 !    type(t_nonlinearSpatialMatrix), intent(i) :: rnonlinearSpatialMatrix
 !  !</input>
-!  
+!
 !  !<inputoutput>
 !    ! Block matrix receiving the structure for all operators.
 !    type(t_matrixBlock), intent(in) :: rmatrix
 !  !</inputoutput>
-!               
-!  !</subroutine>
-!      
-!      
 !
-!      
+!  !</subroutine>
+!
+!
+!
+!
 !    end subroutine
 
 ! ***************************************************************************
@@ -577,8 +577,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -629,7 +629,7 @@ contains
     ! Calculate the function value of the solution vector in all
     ! our cubature points:
     !
-    ! Figure out the element type, then call the 
+    ! Figure out the element type, then call the
     ! evaluation routine for a prepared element set.
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector T we evaluate!
@@ -724,8 +724,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -778,7 +778,7 @@ contains
     ! Calculate the function value of the solution vector in all
     ! our cubature points:
     !
-    ! Figure out the element type, then call the 
+    ! Figure out the element type, then call the
     ! evaluation routine for a prepared element set.
     ! This works only if the trial space of the matrix coincides
     ! with the FE space of the vector T we evaluate!
@@ -810,7 +810,7 @@ contains
         end if
       end do
       
-      ! All points inactive? Ok. 
+      ! All points inactive? Ok.
       ! Partially active? Remember the element.
       ! Completely active? Return 0 everywhere.
       if (nptsInactive .eq.  ubound(Dcoefficients,2)) then
@@ -887,7 +887,7 @@ contains
     
     deallocate(p_Idofs)
 
-  end subroutine    
+  end subroutine
 
   ! -----------------------------------------------------
 
@@ -925,7 +925,7 @@ contains
     ! The Frechet derivative of this operator can be calculated by
     !
     !   (P(u+h)-P(u-h))/2 = DP(u)h
-    ! 
+    !
     ! with h being an arbitrary function <> 0.
     ! Rewriting this in a discrete sense yields
     !
@@ -968,7 +968,7 @@ contains
     
     end do
 
-  end subroutine    
+  end subroutine
 
   ! ***************************************************************************
 
@@ -979,14 +979,14 @@ contains
       rvector1,rvector2,rvector3,rfineMatrix)
 
 !<description>
-  ! This routine assembles a global matrix. The caller must initialise the 
+  ! This routine assembles a global matrix. The caller must initialise the
   ! rnonlinearSpatialMatrix according to how the matrix should look like.
   ! The 'coperation' parameter tells the routine what to do.
   ! The destination matrix rmatrix is then set up or updated.
   !
   ! The parameters rvector and rfineMatrix are optional. rvector must be
-  ! specified, if the nonlinearity is activated (parameter $\gamma\not=0$ in 
-  ! rnonlinearSpatialMatrix). This vector specifies the 'solution' where the nonlinearity 
+  ! specified, if the nonlinearity is activated (parameter $\gamma\not=0$ in
+  ! rnonlinearSpatialMatrix). This vector specifies the 'solution' where the nonlinearity
   ! $u\nabla u$ is evaluated.
   ! rfineMatrix allows to specify a matrix of a 'one level refined mesh'. This
   ! is usually used when setting up preconditioners over multiple levels.
@@ -1033,7 +1033,7 @@ contains
   integer, intent(IN) :: cmatrixType
 
   ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-  ! about how to set up the matrix. 
+  ! about how to set up the matrix.
   !
   ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX
   ! must be initialised as well as p_rdiscretisation!
@@ -1049,7 +1049,7 @@ contains
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity and must contain the data
-  ! for the 'current' timestep. 
+  ! for the 'current' timestep.
   type(t_vectorBlock), intent(IN), target, optional :: rvector2
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
@@ -1058,7 +1058,7 @@ contains
   ! like in the last timestep), the vector can be undefined.
   type(t_vectorBlock), intent(IN), target, optional :: rvector3
 
-  ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
+  ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is
   ! usually done when assembling matrices on multiple levels. If specified, the
   ! routine will (if possible) try to include a level-dependent stabilisation
   ! term into the matrix (-> e.g. constant matrix restriction for nonparametric
@@ -1070,7 +1070,7 @@ contains
 !<inputoutput>
 
   ! The destination matrix which should be set up.
-  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx 
+  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx
   ! was specified).
   ! If initialised, the existing matrix is updated or recreated, depending on
   ! coperation.
@@ -1134,19 +1134,19 @@ contains
       rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%Deta(2,2)
       rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%Deta(2,2)
 
-    end if   
+    end if
    
     if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
 
       if (.not. bnewmethod) then
         ! The system matrix in the whole looks like:
-        !          
-        !    ( A11  A12  B1  R1           ) 
-        !    ( A21  A22  B2       R1      ) 
-        !    ( B1^T B2^T I                ) 
-        !    ( R2            A44  A45  B1 ) 
-        !    (      R2       A54  A55  B2 ) 
-        !    (               B1^T B2^T I  ) 
+        !
+        !    ( A11  A12  B1  R1           )
+        !    ( A21  A22  B2       R1      )
+        !    ( B1^T B2^T I                )
+        !    ( R2            A44  A45  B1 )
+        !    (      R2       A54  A55  B2 )
+        !    (               B1^T B2^T I  )
         !
         ! With some multiplication factors in front of the matrices.
         !
@@ -1182,19 +1182,19 @@ contains
               rnonlinearSpatialMatrix,rtempMatrix,rvector1,&
               rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
               rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
-              rstabilisation)      
+              rstabilisation)
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,rvector2,&
               rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
               rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
-              rstabilisation)      
+              rstabilisation)
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,rvector3,&
               rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
               rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
-              rstabilisation)      
+              rstabilisation)
         end select
 
         ! Reintegrate the computed matrix
@@ -1202,8 +1202,8 @@ contains
 
         ! Include the mass matrix blocks
         !
-        !    (  .    .    .    R1   .    . ) 
-        !    (  .    .    .    .    R1   . ) 
+        !    (  .    .    .    R1   .    . )
+        !    (  .    .    .    .    R1   . )
         !    (  .    .    .    .    .    . )
         
         call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,1,3,4,6)
@@ -1243,19 +1243,19 @@ contains
               rnonlinearSpatialMatrix,rtempMatrix,rvector1,&
               rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
-              rstabilisation)      
+              rstabilisation)
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,rvector2,&
               rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
-              rstabilisation)      
+              rstabilisation)
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,rvector3,&
               rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
-              rstabilisation)      
+              rstabilisation)
         end select
 
         ! Reintegrate the computed matrix
@@ -1263,8 +1263,8 @@ contains
 
         ! Include the mass matrix blocks
         !
-        !    (  R2   .    .    .    .    .  ) 
-        !    (  .    R2   .    .    .    .  ) 
+        !    (  R2   .    .    .    .    .  )
+        !    (  .    R2   .    .    .    .  )
         !    (  .    .    .    .    .    .  )
         !
         ! Remember that they are nonlinear if we have a preconditioner with
@@ -1278,7 +1278,7 @@ contains
             rnonlinearSpatialMatrix%Dtheta(2,1),&
             rnonlinearSpatialMatrix%Deta(2,1),rnonlinearSpatialMatrix%Dtau(2,1),.false.)
 
-        ! Co stabilisation in the convective parts here.            
+        ! Co stabilisation in the convective parts here.
         ! rstabilisation = t_convecStabilisation(&
         !    rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2)
         rstabilisation = t_convecStabilisation(0,0.0_DP,NULL())
@@ -1296,7 +1296,7 @@ contains
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
             rnonlinearSpatialMatrix%Dgamma(2,1),rnonlinearSpatialMatrix%DgammaT(2,1),&
             rnonlinearSpatialMatrix%Dnewton(2,1),rnonlinearSpatialMatrix%DnewtonT(2,1),&
-            rstabilisation)      
+            rstabilisation)
             
         ! There is probably a 2nd reactive term stemming from the next time step.
         ! Assemble it.
@@ -1314,7 +1314,7 @@ contains
             rnonlinearSpatialMatrix,rtempMatrix,rtempVector,&
             0.0_DP,rnonlinearSpatialMatrix%DgammaT2(2,1),&
             rnonlinearSpatialMatrix%Dnewton2(2,1),0.0_DP,&
-            rstabilisation)      
+            rstabilisation)
 
         ! Reintegrate the computed matrix
         call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,1)
@@ -1398,7 +1398,7 @@ contains
           call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,2))
           
-          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))        
+          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))
           call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,5))
           call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,4))
           call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,5))
@@ -1437,7 +1437,7 @@ contains
                                         LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
         end if
         
-        if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then                              
+        if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then
           ! Furthermore, put B1^T and B2^T to the block matrix.
           ! These matrices are always 'shared'.
           if (rnonlinearSpatialMatrix%bvirtualTransposedD) then
@@ -1581,7 +1581,7 @@ contains
     ! The submatrix can then be inserted into a larger system matrix.
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearSpatialMatrix), intent(IN), target :: rnonlinearSpatialMatrix
 
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
@@ -1618,16 +1618,16 @@ contains
         bfulltensor = dnewton .ne. 0.0_DP
       end if
     
-      ! Let's consider the global system in detail. The standard matrix It has 
+      ! Let's consider the global system in detail. The standard matrix It has
       ! roughly the following shape:
       !
-      !    ( A11  .    B1  ) 
-      !    ( .    A22  B2  ) 
-      !    ( B1^T B2^T C   ) 
+      !    ( A11  .    B1  )
+      !    ( .    A22  B2  )
+      !    ( B1^T B2^T C   )
       !
       ! All matrices may have multiplication factors in their front.
       !
-      ! The structure of the matrices A11 and A22 of the global system matrix 
+      ! The structure of the matrices A11 and A22 of the global system matrix
       ! is governed by the template FEM matrix.
       ! Initialise them with the same structure, i.e. A11, A22 share (!) their
       ! structure (not the entries) with that of the template matrix.
@@ -1639,9 +1639,9 @@ contains
       call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixTemplateFEM,&
                   rsubmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
           
-      if (.not. bfulltensor) then     
+      if (.not. bfulltensor) then
            
-        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
+        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix
         ! A22 is identical to A11! So mirror A11 to A22 sharing the
         ! structure and the content.
         call lsyssc_duplicateMatrix (rsubmatrix%RmatrixBlock(1,1),&
@@ -1660,9 +1660,9 @@ contains
 
         ! We have a matrix in the following shape:
         !
-        !    ( A11  A12  B1  ) 
-        !    ( A21  A22  B2  ) 
-        !    ( B1^T B2^T C   ) 
+        !    ( A11  A12  B1  )
+        !    ( A21  A22  B2  )
+        !    ( B1^T B2^T C   )
         !
         ! Create A12 and A21.
       
@@ -1704,7 +1704,7 @@ contains
       ! Put a copy of them into the block matrix.
       !
       ! Note that we share the structure of B1/B2 with those B1/B2 of the
-      ! block matrix, while we create empty space for the entries. 
+      ! block matrix, while we create empty space for the entries.
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
       if ((deta .ne. 0.0_DP) .and. .not. bignoreEta) then
@@ -1733,7 +1733,7 @@ contains
       ! 'virtually transposing' B1 and B2 (i.e. they share the same
       ! data as B1 and B2 but hate the 'transpose'-flag set).
 
-      if (dtau .ne. 0.0_DP) then    
+      if (dtau .ne. 0.0_DP) then
         if (rnonlinearSpatialMatrix%bvirtualTransposedD) then
           call lsyssc_transposeMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixB1, &
                                         rsubmatrix%RmatrixBlock(3,1),&
@@ -1742,7 +1742,7 @@ contains
           call lsyssc_transposeMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixB2, &
                                         rsubmatrix%RmatrixBlock(3,2),&
                                         LSYSSC_TR_VIRTUAL)
-        else  
+        else
           call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixD1, &
                                         rsubmatrix%RmatrixBlock(3,1),&
                                         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -1761,11 +1761,11 @@ contains
         rmatrix,diota,dalpha,dtheta,deta,dtau,bignoreEta)
         
     ! Assembles a matrix containing only linear terms. The matrix is a
-    ! submatrix of a larger system matrix and can then be inserted 
+    ! submatrix of a larger system matrix and can then be inserted
     ! into a larger system matrix.
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
 
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
@@ -1914,7 +1914,7 @@ contains
                                       LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
       end if
       
-      if (dtau .ne. 0.0_DP) then                 
+      if (dtau .ne. 0.0_DP) then
         ! Furthermore, put B1^T and B2^T to the block matrix.
         ! These matrices are always 'shared'.
         if (rnonlinearSpatialMatrix%bvirtualTransposedD) then
@@ -1958,7 +1958,7 @@ contains
     ! add stabilisation into the matrix.
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled
@@ -2110,17 +2110,17 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = dgamma
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
+                              rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
+                                rmatrix%RmatrixBlock(2,2))
           end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
@@ -2156,17 +2156,17 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = dgamma
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
+                              rmatrix%RmatrixBlock(1,1))
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
+                                rmatrix%RmatrixBlock(2,2))
           end if
 
         case (CCMASM_STAB_EDGEORIENTED3)
@@ -2233,17 +2233,17 @@ contains
             ! Matrix weight
             rjumpStabil%dtheta = dgamma
 
-            ! Call the jump stabilisation technique to stabilise that stuff.   
+            ! Call the jump stabilisation technique to stabilise that stuff.
             ! We can assemble the jump part any time as it's independent of any
             ! convective parts...
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(1,1))   
+                                rmatrix%RmatrixBlock(1,1))
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                                   rjumpStabil, CONV_MODMATRIX, &
-                                  rmatrix%RmatrixBlock(2,2))   
+                                  rmatrix%RmatrixBlock(2,2))
             end if
             
           case (CCMASM_STAB_EDGEORIENTED3)
@@ -2271,7 +2271,7 @@ contains
         
       end if
       
-    end subroutine  
+    end subroutine
       
     ! -----------------------------------------------------
 
@@ -2285,7 +2285,7 @@ contains
     ! violates the bounds dmin/dmax.
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled.
@@ -2308,7 +2308,7 @@ contains
       type(t_bilfMatrixAssembly) :: rmatrixAssembly
       integer(I32) :: celement,ccubType
 
-      ! Assemble A14/A25? 
+      ! Assemble A14/A25?
       if (dweight .ne. 0.0_DP) then
           
         ! Switch on these matrices
@@ -2451,7 +2451,7 @@ contains
           
             ! Exact reassembly of the mass matrices with adaptive integration.
           
-            ! Create an array that saves all elements on the border of the active set.  
+            ! Create an array that saves all elements on the border of the active set.
             nelements = rnonlinearSpatialMatrix%p_rdiscretisation%RspatialDiscr(1)%&
                 p_rtriangulation%NEL
             call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
@@ -2518,7 +2518,7 @@ contains
               call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(1,1),&
                   p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
               call bilf_doneAssembly(rmatrixAssembly)
-            end if            
+            end if
 
             ! Now, set up A25, depending on lambda_2.
             rcollection%IquickAccess(1) = 2
@@ -2543,7 +2543,7 @@ contains
               call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(2,2),&
                   p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
               call bilf_doneAssembly(rmatrixAssembly)
-            end if            
+            end if
 
             ! Now we can forget about the collection again.
             call collct_done (rcollection)
@@ -2578,9 +2578,9 @@ contains
     end subroutine
 
 !    ! -----------------------------------------------------
-!  
+!
 !    subroutine allocMatrix (cmatrixType,rnonlinearSpatialMatrix,rmatrix)
-!    
+!
 !    ! Allocates memory for the system matrix. rnonlinearSpatialMatrix provides information
 !    ! about the submatrices that are 'plugged into' rmatrix.
 !    ! Therefore, before this routine is called, rnonlinearSpatialMatrix must have been set up.
@@ -2590,12 +2590,12 @@ contains
 !    integer, intent(IN) :: cmatrixType
 !
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-!    ! about how to set up the matrix. 
+!    ! about how to set up the matrix.
 !    type(t_nonlinearSpatialMatrix), intent(IN), target :: rnonlinearSpatialMatrix
 !
 !    ! A block matrix that receives the basic system matrix.
 !    type(t_matrixBlock), intent(INOUT) :: rmatrix
-!    
+!
 !      ! local variables
 !      logical :: bdecoupled, bfulltensor
 !
@@ -2604,10 +2604,10 @@ contains
 !
 !      ! A pointer to the discretisation structure with the data.
 !      type(t_blockDiscretisation), pointer :: p_rdiscretisation
-!    
+!
 !      ! Ask the problem structure to give us the discretisation structure
 !      p_rdiscretisation => rnonlinearSpatialMatrix%p_rdiscretisation
-!      
+!
 !      ! Get a pointer to the template FEM matrix. If that doesn't exist,
 !      ! take the Stokes matrix as template.
 !      p_rmatrixTemplateFEM => rnonlinearSpatialMatrix%p_rmatrixTemplateFEM
@@ -2633,7 +2633,7 @@ contains
 !      ! Initialise the block matrix with default values based on
 !      ! the discretisation.
 !      if (associated(p_rdiscretisation)) then
-!        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+!        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
 !      else
 !        ! No discretisation structure; create the matrix directly as 3x3 matrix.
 !        call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
@@ -2642,17 +2642,17 @@ contains
 !      ! -------------------------------------------------------------
 !      ! Primal equation
 !      ! -------------------------------------------------------------
-!        
+!
 !      ! Determine the shape of the matrix
 !      bdecoupled = cmatrixType .eq. CCMASM_MTP_DECOUPLED
 !      bfulltensor = cmatrixType .eq. CCMASM_MTP_FULLTENSOR
-!      
+!
 !      if (cmatrixType .eq. CCMASM_MTP_AUTOMATIC) then
 !        ! Should we assemble Newton? If yes, we have a full-tensor matrix.
 !        bfulltensor = rnonlinearSpatialMatrix%dnewton1 .ne. 0.0_DP
 !      end if
-!    
-!      ! Let's consider the global system in detail. The standard matrix It has 
+!
+!      ! Let's consider the global system in detail. The standard matrix It has
 !      ! roughly the following shape:
 !      !
 !      !    ( A11  .    B1  M   .   .   ) = ( A11  .    A13 A14 .   .   )
@@ -2661,7 +2661,7 @@ contains
 !      !
 !      ! All matrices may have multiplication factors in their front.
 !      !
-!      ! The structure of the matrices A11 and A22 of the global system matrix 
+!      ! The structure of the matrices A11 and A22 of the global system matrix
 !      ! is governed by the template FEM matrix.
 !      ! Initialise them with the same structure, i.e. A11, A22 share (!) their
 !      ! structure (not the entries) with that of the template matrix.
@@ -2672,30 +2672,30 @@ contains
 !      ! the entries.
 !      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
 !                  rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!          
-!      if (.not. bfulltensor) then     
-!           
-!        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
+!
+!      if (.not. bfulltensor) then
+!
+!        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix
 !        ! A22 is identical to A11! So mirror A11 to A22 sharing the
 !        ! structure and the content.
 !        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
 !                    rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!                    
+!
 !      else
-!      
+!
 !        ! Otherwise, create another copy of the template matrix.
 !        call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
 !                    rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                    
+!
 !      end if
-!      
-!      ! Manually change the discretisation structure of the Y-velocity 
+!
+!      ! Manually change the discretisation structure of the Y-velocity
 !      ! matrix to the Y-discretisation structure.
 !      ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
 !      ! so this is not really necessary - we do this for sure...
 !      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
 !          p_rdiscretisation%RspatialDiscr(2))
-!                                       
+!
 !      ! A 'full tensor matrix' consists also of blocks A12 and A21.
 !      if (bfulltensor) then
 !
@@ -2706,46 +2706,46 @@ contains
 !        !    ( B1^T B2^T .   .   .   .   )   ( A31  A32  .   .   .   .   )
 !        !
 !        ! Create A12 and A21.
-!      
+!
 !        if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat &
 !            .eq. LSYSSC_MATRIXUNDEFINED) then
-!            
+!
 !          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
 !            rmatrix%RmatrixBlock(1,2), &
 !            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!            
+!
 !          ! Allocate memory for the entries; don't initialise the memory.
 !          ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
 !          ! zero.
 !          ! CALL lsyssc_allocEmptyMatrix (&
 !          !     rmatrix%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
-!            
+!
 !        end if
 !
 !        if (rmatrix%RmatrixBlock(2,1)%cmatrixFormat &
 !            .eq. LSYSSC_MATRIXUNDEFINED) then
-!            
+!
 !          ! Create a new matrix A21 in memory. create a new matrix
 !          ! using the template FEM matrix...
 !          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
 !            rmatrix%RmatrixBlock(2,1), &
 !            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!            
+!
 !          ! Allocate memory for the entries; don't initialise the memory.
 !          ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
 !          ! zero.
 !          ! CALL lsyssc_allocEmptyMatrix (&
 !          !     p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
-!            
+!
 !        end if
-!        
+!
 !      end if
 !
 !      ! The B1/B2 matrices exist up to now only in our local problem structure.
 !      ! Put a copy of them into the block matrix.
 !      !
 !      ! Note that we share the structure of B1/B2 with those B1/B2 of the
-!      ! block matrix, while we create empty space for the entries. 
+!      ! block matrix, while we create empty space for the entries.
 !      ! Later, the B-matrices are copied into here and modified for boundary
 !      ! conditions.
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1, &
@@ -2755,7 +2755,7 @@ contains
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB2, &
 !                                    rmatrix%RmatrixBlock(2,3),&
 !                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!        
+!
 !      ! In the same manner, insert an identiy matrix for the pressure
 !      ! to the system matrix. The matrix is zero by default but may
 !      ! partially or fully be initialised to an identity matrix depending
@@ -2770,7 +2770,7 @@ contains
 !      ! If yes, take the given matrices. If not, create them by
 !      ! 'virtually transposing' B1 and B2 (i.e. they share the same
 !      ! data as B1 and B2 but hate the 'transpose'-flag set).
-!      
+!
 !      if (associated(rnonlinearSpatialMatrix%p_rmatrixB1T)) then
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1T, &
 !                                      rmatrix%RmatrixBlock(3,1),&
@@ -2793,8 +2793,8 @@ contains
 !
 !      ! Insert free space for the mass matrices to the matrix.
 !      !
-!      ! Note that we share the structure of M, while we create empty space 
-!      ! for the entries. 
+!      ! Note that we share the structure of M, while we create empty space
+!      ! for the entries.
 !      ! Later, the M-matrices are copied into here and modified for boundary
 !      ! conditions.
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass, &
@@ -2804,21 +2804,21 @@ contains
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass, &
 !                                    rmatrix%RmatrixBlock(2,5),&
 !                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                                    
+!
 !      ! -------------------------------------------------------------
 !      ! Dual equation
 !      ! -------------------------------------------------------------
-!        
+!
 !      ! Determine the shape of the matrix
 !      bdecoupled = cmatrixType .eq. CCMASM_MTP_DECOUPLED
 !      bfulltensor = cmatrixType .eq. CCMASM_MTP_FULLTENSOR
-!      
+!
 !      if (cmatrixType .eq. CCMASM_MTP_AUTOMATIC) then
 !        ! Should we assemble Newton? If yes, we have a full-tensor matrix.
 !        bfulltensor = rnonlinearSpatialMatrix%dnewton2 .ne. 0.0_DP
 !      end if
-!    
-!      ! Let's consider the global system in detail. The standard matrix It has 
+!
+!      ! Let's consider the global system in detail. The standard matrix It has
 !      ! roughly the following shape:
 !      !
 !      !    ( R2   .    .   A44  .    B1  ) = ( A41  .    .   A44 .   A46 )
@@ -2827,7 +2827,7 @@ contains
 !      !
 !      ! All matrices may have multiplication factors in their front.
 !      !
-!      ! The structure of the matrices A44 and A55 of the global system matrix 
+!      ! The structure of the matrices A44 and A55 of the global system matrix
 !      ! is governed by the template FEM matrix.
 !      ! Initialise them with the same structure, i.e. A44, A55 share (!) their
 !      ! structure (not the entries) with that of the template matrix.
@@ -2838,30 +2838,30 @@ contains
 !      ! the entries.
 !      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
 !                  rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!          
-!      if (.not. bdecoupled .and. .not. bfulltensor) then     
-!           
-!        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
+!
+!      if (.not. bdecoupled .and. .not. bfulltensor) then
+!
+!        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix
 !        ! A22 is identical to A44! So mirror A44 to A55 sharing the
 !        ! structure and the content.
 !        call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(4,4),&
 !                    rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-!                    
+!
 !      else
-!      
+!
 !        ! Otherwise, create another copy of the template matrix.
 !        call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
 !                    rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                    
+!
 !      end if
-!      
-!      ! Manually change the discretisation structure of the Y-velocity 
+!
+!      ! Manually change the discretisation structure of the Y-velocity
 !      ! matrix to the Y-discretisation structure.
 !      ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
 !      ! so this is not really necessary - we do this for sure...
 !      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(5,5),&
 !          p_rdiscretisation%RspatialDiscr(5))
-!                                          
+!
 !      ! A 'full tensor matrix' consists also of blocks A12 and A21.
 !      if (bfulltensor) then
 !
@@ -2872,46 +2872,46 @@ contains
 !        !    ( .    .    .   B1^T B2^T .   )   ( .    .    .   A64 A65 .   )
 !        !
 !        ! Create A45 and A54.
-!      
+!
 !        if (rmatrix%RmatrixBlock(4,5)%cmatrixFormat &
 !            .eq. LSYSSC_MATRIXUNDEFINED) then
-!            
+!
 !          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
 !            rmatrix%RmatrixBlock(4,5), &
 !            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!            
+!
 !          ! Allocate memory for the entries; don't initialise the memory.
 !          ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
 !          ! zero.
 !          ! CALL lsyssc_allocEmptyMatrix (&
 !          !     rmatrix%RmatrixBlock(4,5),LSYSSC_SETM_UNDEFINED)
-!            
+!
 !        end if
 !
 !        if (rmatrix%RmatrixBlock(5,4)%cmatrixFormat &
 !            .eq. LSYSSC_MATRIXUNDEFINED) then
-!            
+!
 !          ! Create a new matrix A54 in memory. create a new matrix
 !          ! using the template FEM matrix...
 !          call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
 !            rmatrix%RmatrixBlock(5,4), &
 !            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!            
+!
 !          ! Allocate memory for the entries; don't initialise the memory.
 !          ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
 !          ! zero.
 !          ! CALL lsyssc_allocEmptyMatrix (&
 !          !     p_rmatrixPreconditioner%RmatrixBlock(5,4),LSYSSC_SETM_UNDEFINED)
-!            
+!
 !        end if
-!        
+!
 !      end if
 !
 !      ! The B1/B2 matrices exist up to now only in our local problem structure.
 !      ! Put a copy of them into the block matrix.
 !      !
 !      ! Note that we share the structure of B1/B2 with those B1/B2 of the
-!      ! block matrix, while we create empty space for the entries. 
+!      ! block matrix, while we create empty space for the entries.
 !      ! Later, the B-matrices are copied into here and modified for boundary
 !      ! conditions.
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1, &
@@ -2921,13 +2921,13 @@ contains
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB2, &
 !                                    rmatrix%RmatrixBlock(5,6),&
 !                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!        
+!
 !      ! Now, prepare B1^T and B2^T. Are these matrices given?
 !      !
 !      ! If yes, take the given matrices. If not, create them by
 !      ! 'virtually transposing' B1 and B2 (i.e. they share the same
 !      ! data as B1 and B2 but hate the 'transpose'-flag set).
-!      
+!
 !      if (associated(rnonlinearSpatialMatrix%p_rmatrixB1T)) then
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1T, &
 !                                      rmatrix%RmatrixBlock(6,4),&
@@ -2955,11 +2955,11 @@ contains
 !                                    rmatrix%RmatrixBlock(6,6),&
 !                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(6,6))
-!      
+!
 !      ! Insert free space for the mass matrices to the matrix.
 !      !
-!      ! Note that we share the structure of M, while we create empty space 
-!      ! for the entries. 
+!      ! Note that we share the structure of M, while we create empty space
+!      ! for the entries.
 !      ! Later, the M-matrices are copied into here and modified for boundary
 !      ! conditions.
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass, &
@@ -2974,37 +2974,37 @@ contains
 !      ! Update the structural information of the block matrix, as we manually
 !      ! changed the submatrices:
 !      call lsysbl_updateMatStrucInfo (rmatrix)
-!        
+!
 !    end subroutine
-!    
+!
 !    ! -----------------------------------------------------
 !
 !    subroutine assembleVelocityBlocks (bdualEquation,&
 !        rnonlinearSpatialMatrix,rmatrix,rvector,dvectorWeight)
-!        
+!
 !    ! Assembles the velocity matrix in the block matrix rmatrix at position (1,1):
 !    !
 !    ! rmatrix := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
 !    !            dnewton*N*(p_rvector)
-!    
+!
 !    ! Whether to set up the primal or the dual equation.
 !    ! FALSE=primal, TRUE=dual equation.
 !    logical, intent(IN) :: bdualEquation
-!    
+!
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-!    ! about how to set up the matrix. 
+!    ! about how to set up the matrix.
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
-!    
+!
 !    ! Block matrix where the 2x2-velocity submatrix should be assembled
 !    type(t_matrixBlock), intent(INOUT) :: rmatrix
-!    
+!
 !    ! Velocity vector for the nonlinearity. Must be specified if
 !    ! GAMMA <> 0; can be omitted if GAMMA=0.
 !    type(t_vectorBlock), optional :: rvector
-!    
+!
 !    ! Weight for the velocity vector; standard = 1.
 !    real(DP), intent(IN), optional :: dvectorWeight
-!    
+!
 !    ! local variables
 !    logical :: bshared
 !    integer :: iupwind
@@ -3016,7 +3016,7 @@ contains
 !    real(DP) :: dvecWeight
 !    integer :: imatOffset
 !    real(DP) :: diota, dalpha, dtheta, dnewton, dgamma
-!    
+!
 !      if (.not. bdualEquation) then
 !        ! Set the weights used here according to the primal equation.
 !        ! Set imatOffset=0 so the submatrix at position 1,1 is tackled.
@@ -3044,12 +3044,12 @@ contains
 !      ! Standard value for dvectorWeight is = -1.
 !      dvecWeight = -1.0_DP
 !      if (present(dvectorWeight)) dvecWeight = dvectorWeight
-!    
+!
 !      ! Is A11=A22 physically?
 !      bshared = lsyssc_isMatrixContentShared(&
 !                    rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),&
 !                    rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))
-!                    
+!
 !      ! Allocate memory if necessary. Normally this should not be necessary...
 !      ! A11:
 !      if (.not. lsyssc_hasMatrixContent (&
@@ -3057,7 +3057,7 @@ contains
 !        call lsyssc_allocEmptyMatrix (&
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),LSYSSC_SETM_UNDEFINED)
 !      end if
-!    
+!
 !      ! A22:
 !      if (.not. bshared) then
 !        if (.not. lsyssc_hasMatrixContent (&
@@ -3080,41 +3080,41 @@ contains
 !              rmatrix%RmatrixBlock(imatOffset+2,imatOffset+1),LSYSSC_SETM_UNDEFINED)
 !        end if
 !      end if
-!    
+!
 !      ! ---------------------------------------------------
 !      ! If diota <> 0, initialise the matrix with the identity,
 !      ! otherwise with zero.
 !      if (diota .eq. 0.0_DP) then
 !        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))
-!        
+!
 !        if (.not. bshared) then
 !          call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))
 !        end if
-!        
+!
 !      else
-!        
+!
 !        call lsyssc_initialiseIdentityMatrix (&
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))
 !        call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),diota)
-!        
+!
 !        if (.not. bshared) then
 !          call lsyssc_initialiseIdentityMatrix (&
 !              rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))
 !          call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2),diota)
 !        end if
-!        
+!
 !      end if
-!    
+!
 !      ! ---------------------------------------------------
 !      ! Plug in the mass matrix?
 !      if (dalpha .ne. 0.0_DP) then
-!       
+!
 !        call lsyssc_matrixLinearComb (&
 !            rnonlinearSpatialMatrix%p_rmatrixMass  ,dalpha,&
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),1.0_DP,&
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),&
 !            .false.,.false.,.true.,.true.)
-!            
+!
 !        if (.not. bshared) then
 !
 !          call lsyssc_matrixLinearComb (&
@@ -3123,9 +3123,9 @@ contains
 !              rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2),&
 !              .false.,.false.,.true.,.true.)
 !        end if
-!        
+!
 !      end if
-!      
+!
 !      ! ---------------------------------------------------
 !      ! Plug in the Stokes matrix?
 !      if (dtheta .ne. 0.0_DP) then
@@ -3134,7 +3134,7 @@ contains
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),1.0_DP,&
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1),&
 !            .false.,.false.,.true.,.true.)
-!            
+!
 !        if (.not. bshared) then
 !          call lsyssc_matrixLinearComb (&
 !              rnonlinearSpatialMatrix%p_rmatrixStokes   ,dtheta,&
@@ -3143,47 +3143,47 @@ contains
 !              .false.,.false.,.true.,.true.)
 !        end if
 !      end if
-!      
+!
 !      ! ---------------------------------------------------
 !      ! That was easy -- the adventure begins now... The nonlinearity!
 !      if (dgamma .ne. 0.0_DP) then
-!      
+!
 !        if (.not. present(rvector)) then
 !          call output_line ('Velocity vector not present!', &
 !                             OU_CLASS_ERROR,OU_MODE_STD,'smva_assembleMatrix')
 !          call sys_halt()
 !        end if
-!      
+!
 !        select case (iupwind)
 !        case (CCMASM_STAB_STREAMLINEDIFF)
 !          ! Set up the SD structure for the creation of the defect.
 !          ! There's not much to do, only initialise the viscosity...
 !          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rstreamlineDiffusion%dupsam = dupsam
-!          
+!
 !          ! Matrix weight
 !          rstreamlineDiffusion%ddelta = dgamma
-!          
+!
 !          ! Weight for the Newton part; =0 deactivates Newton.
 !          rstreamlineDiffusion%dnewton = dnewton
-!          
+!
 !          if (dnewton .eq. 0.0_DP) then
-!          
+!
 !            ! If the submatrices A12 and A21 exist, fill them with zero.
 !            ! If they don't exist, we don't have to do anything.
 !            if (lsysbl_isSubmatrixPresent (rmatrix,imatOffset+1,imatOffset+2)) then
 !              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+1,imatOffset+2))
 !              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+2,imatOffset+1))
 !            end if
-!            
+!
 !          else
 !
 !            ! Clear A12/A21 that may receive parts of the Newton matrix
 !            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+1,imatOffset+2))
 !            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+2,imatOffset+1))
-!          
+!
 !          end if
 !
 !          ! Create a temporary block matrix only contining the velocity submatrices
@@ -3192,7 +3192,7 @@ contains
 !          call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
 !                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
 !                                       imatOffset+1,imatOffset+2)
-!          
+!
 !          ! Call the SD method to calculate the nonlinearity.
 !          ! As velocity vector, specify rvector!
 !          ! Therefore, the primal velcity is always used for assembling
@@ -3202,7 +3202,7 @@ contains
 !                              dvecWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODMATRIX, &
 !                              rtempMatrix)
-!                              
+!
 !          ! Release the temp matrix.
 !          call lsysbl_releaseMatrix (rtempMatrix)
 !
@@ -3210,18 +3210,18 @@ contains
 !          ! Set up the upwind structure for the creation of the defect.
 !          ! There's not much to do, only initialise the viscosity...
 !          rupwind%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rupwind%dupsam = dupsam
 !
 !          ! Matrix weight
 !          rupwind%dtheta = dgamma
-!          
+!
 !          if (dnewton .ne. 0.0_DP) then
 !            call output_line ('Warning: Upwind does not support assembly '&
 !                //'of the Newton matrix!',OU_CLASS_TRACE1)
 !          end if
-!          
+!
 !          ! Call the upwind method to calculate the nonlinear matrix.
 !          ! As velocity vector, specify rvector!
 !          ! Therefore, the primal velcity is always used for assembling
@@ -3229,15 +3229,15 @@ contains
 !          call conv_upwind2d (rvector, rvector, &
 !                              dvecWeight, 0.0_DP,&
 !                              rupwind, CONV_MODMATRIX, &
-!                              rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1)) 
-!                              
+!                              rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))
+!
 !          if (.not. bshared) then
 !            ! Modify also the matrix block (2,2)
 !            call conv_upwind2d (rvector, rvector, &
 !                                dvecWeight, 0.0_DP,&
 !                                rupwind, CONV_MODMATRIX, &
-!                                rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2)) 
-!          end if     
+!                                rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))
+!          end if
 !
 !        case (CCMASM_STAB_EDGEORIENTED)
 !          ! Jump stabilisation.
@@ -3246,16 +3246,16 @@ contains
 !          ! Set up the SD structure for the creation of the defect.
 !          ! There's not much to do, only initialise the viscosity...
 !          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
 !          rstreamlineDiffusion%dupsam = 0.0_DP
-!          
+!
 !          ! Matrix weight
 !          rstreamlineDiffusion%ddelta = dgamma
-!          
+!
 !          ! Weight for the Newtop part; =0 deactivates Newton.
 !          rstreamlineDiffusion%dnewton = dnewton
-!          
+!
 !          if (dnewton .eq. 0.0_DP) then
 !
 !            ! If the submatrices A12 and A21 exist, fill them with zero.
@@ -3264,26 +3264,26 @@ contains
 !              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+1,imatOffset+2))
 !              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+2,imatOffset+1))
 !            end if
-!            
+!
 !          else
 !
 !            ! Clear A12/A21 that receives parts of the Newton matrix
 !            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+1,imatOffset+2))
 !            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(imatOffset+2,imatOffset+1))
-!          
+!
 !            ! Activate the submatrices A12 and A21 if they aren't.
 !            rmatrix%RmatrixBlock(imatOffset+1,imatOffset+2)%dscaleFactor = 1.0_DP
 !            rmatrix%RmatrixBlock(imatOffset+2,imatOffset+1)%dscaleFactor = 1.0_DP
-!           
+!
 !          end if
-!         
+!
 !          ! Create a temporary block matrix only contining the velocity submatrices
 !          ! we want to change. Share structure and entries such that changing
 !          ! the temporary matrix will also change the original matrix.
 !          call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
 !                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
 !                                       imatOffset+1,imatOffset+2)
-!          
+!
 !          ! Call the SD method to calculate the nonlinearity.
 !          ! As velocity vector, specify rvector!
 !          ! Therefore, the primal velcity is always used for assembling
@@ -3293,97 +3293,97 @@ contains
 !                              dvecWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODMATRIX, &
 !                              rtempMatrix)
-!                             
+!
 !          ! Release the temp matrix.
-!          call lsysbl_releaseMatrix (rtempMatrix)          
-!        
+!          call lsysbl_releaseMatrix (rtempMatrix)
+!
 !          ! Set up the jump stabilisation structure.
 !          ! There's not much to do, only initialise the viscosity...
 !          rjumpStabil%dnu = rstreamlineDiffusion%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rjumpStabil%dgammastar = dupsam
 !          rjumpStabil%dgamma = rjumpStabil%dgammastar
-!          
+!
 !          ! Matrix weight
 !          rjumpStabil%dtheta = dgamma
 !
-!          ! Call the jump stabilisation technique to stabilise that stuff.   
+!          ! Call the jump stabilisation technique to stabilise that stuff.
 !          ! We can assemble the jump part any time as it's independent of any
 !          ! convective parts...
 !          call conv_jumpStabilisation2d (&
 !                              rjumpStabil, CONV_MODMATRIX, &
-!                              rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))   
+!                              rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))
 !
 !          if (.not. bshared) then
 !            call conv_jumpStabilisation2d (&
 !                                rjumpStabil, CONV_MODMATRIX, &
-!                                rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))   
+!                                rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))
 !          end if
 !
 !        case DEFAULT
 !          print *,'Don''t know how to set up nonlinearity!?!'
 !          stop
-!        
+!
 !        end select
 !
 !      else
-!      
+!
 !        ! That's the Stokes-case. Jump stabilisation is possible...
-!      
+!
 !        select case (iupwind)
 !        case (CCMASM_STAB_EDGEORIENTED)
-!          
+!
 !          ! Set up the jump stabilisation structure.
 !          ! There's not much to do, only initialise the viscosity...
 !          rjumpStabil%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rjumpStabil%dgammastar = dupsam
 !          rjumpStabil%dgamma = rjumpStabil%dgammastar
-!          
+!
 !          ! Matrix weight
 !          rjumpStabil%dtheta = dgamma
 !
-!          ! Call the jump stabilisation technique to stabilise that stuff.   
+!          ! Call the jump stabilisation technique to stabilise that stuff.
 !          ! We can assemble the jump part any time as it's independent of any
 !          ! convective parts...
 !          call conv_jumpStabilisation2d (&
 !                              rjumpStabil, CONV_MODMATRIX, &
-!                              rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))   
+!                              rmatrix%RmatrixBlock(imatOffset+1,imatOffset+1))
 !
 !          if (.not. bshared) then
 !            call conv_jumpStabilisation2d (&
 !                                rjumpStabil, CONV_MODMATRIX, &
-!                                rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))   
+!                                rmatrix%RmatrixBlock(imatOffset+2,imatOffset+2))
 !          end if
 !
 !        case DEFAULT
 !          ! No stabilisation
-!        
+!
 !        end select
-!      
+!
 !      end if ! gamma <> 0
 !
-!    end subroutine  
-!      
+!    end subroutine
+!
 !    ! -----------------------------------------------------
 !
 !    subroutine assembleMassBlocks (rnonlinearSpatialMatrix,rmatrix, rvector)
-!        
+!
 !    ! Assembles a 2x2 block matrix with mass matrices and
 !    ! probably nonlinear submatrices on the diagonal.
-!    
+!
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-!    ! about how to set up the matrix. 
+!    ! about how to set up the matrix.
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
-!    
+!
 !    ! Block matrix where the 2x2-velocity submatrix should be assembled
 !    type(t_matrixBlock), intent(INOUT) :: rmatrix
-!    
+!
 !    ! Vector that specifies where to evaluate nonlinear terms
 !    type(t_vectorBlock), intent(IN), target :: rvector
-!    
+!
 !      ! local variables
 !      type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
 !      type(t_matrixBlock) :: rtempmatrix
@@ -3391,33 +3391,33 @@ contains
 !      type(t_bilinearForm) :: rform
 !      type(t_collection) :: rcollection
 !
-!      ! Assemble A14/A25? 
+!      ! Assemble A14/A25?
 !      if (rnonlinearSpatialMatrix%dmu1 .ne. 0.0_DP) then
-!          
+!
 !        ! Calculate the usual mass matrix if conrol constraints are deactivated
 !        ! or if Newton is not active.
 !        if ((rnonlinearSpatialMatrix%ccontrolConstraints .eq. 0) .or. &
 !            (rnonlinearSpatialMatrix%cmatrixType .eq. 0)) then
-!      
+!
 !          ! Copy the entries of the mass matrix. Share the structure.
 !          ! We must not share the entries as these might be changed by the caller
 !          ! e.g. due to boundary conditions!
-!          
+!
 !          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !              rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-!        
+!
 !          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !              rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-!              
+!
 !          ! Scale the entries by dmu2.
 !          if (rnonlinearSpatialMatrix%dmu1 .ne. 1.0_DP) then
 !            call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,4),rnonlinearSpatialMatrix%dmu1)
 !            call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,5),rnonlinearSpatialMatrix%dmu1)
 !          end if
-!          
+!
 !        else if ((rnonlinearSpatialMatrix%ccontrolConstraints .eq. 1) .and. &
 !                 (rnonlinearSpatialMatrix%cmatrixType .eq. 1)) then
-!          
+!
 !          ! In A14/A25 we have to create a 'projective mass matrix'.
 !          ! This is the derivative of a projection operator
 !          ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
@@ -3425,7 +3425,7 @@ contains
 !          ! We assemble this matrix just as a standard mass matrix with noconstant
 !          ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
 !          ! we return 0 as coefficient, otherwise 1.
-!        
+!
 !          rform%itermCount = 1
 !          rform%Idescriptors(1,1) = DER_FUNC
 !          rform%Idescriptors(2,1) = DER_FUNC
@@ -3445,12 +3445,12 @@ contains
 !          ! Coefficient is dmu1=1/alpha or 0, depending on lambda
 !          rcollection%DquickAccess(3)  = rnonlinearSpatialMatrix%dalphaC
 !          rcollection%DquickAccess(4)  = rnonlinearSpatialMatrix%dmu1
-!          
+!
 !          ! At first, set up A14, depending on lambda_1.
 !          rcollection%IquickAccess(1) = 1
 !          rcollection%DquickAccess(1) = rnonlinearSpatialMatrix%dumin1
 !          rcollection%DquickAccess(2) = rnonlinearSpatialMatrix%dumax1
-!          
+!
 !          ! Now we can build the matrix entries.
 !          ! We specify the callback function coeff_Laplace for the coefficients.
 !          ! As long as we use constant coefficients, this routine is not used.
@@ -3469,20 +3469,20 @@ contains
 !
 !          call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,5),&
 !              coeff_ProjMass,rcollection)
-!          
+!
 !          ! Now we can forget about the collection again.
 !          call collct_done (rcollection)
 !
 !!          ! Copy the entries of the mass matrix. Share the structure.
 !!          ! We must not share the entries as these might be changed by the caller
 !!          ! e.g. due to boundary conditions!
-!!          
+!!
 !!          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !!              rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-!!        
+!!
 !!          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !!              rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-!!              
+!!
 !!          ! Scale the entries by dmu1.
 !!          if (rnonlinearSpatialMatrix%dmu1 .ne. 1.0_DP) then
 !!            call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,4),rnonlinearSpatialMatrix%dmu1)
@@ -3496,7 +3496,7 @@ contains
 !!          call massmatfilter (rmatrix%RmatrixBlock(2,5),rvector%RvectorBlock(5),&
 !!              rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%dumin2,rnonlinearSpatialMatrix%dumax2)
 !        end if
-!        
+!
 !        rmatrix%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP
 !        rmatrix%RmatrixBlock(2,5)%dscaleFactor = 1.0_DP
 !
@@ -3506,7 +3506,7 @@ contains
 !          if (.not. lsysbl_isSubmatrixPresent(rmatrix,2,4)) then
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                
+!
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(1,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !          end if
@@ -3517,41 +3517,41 @@ contains
 !
 !          rmatrix%RmatrixBlock(1,5)%dscaleFactor = 1.0_DP
 !          rmatrix%RmatrixBlock(2,4)%dscaleFactor = 1.0_DP
-!        
+!
 !        else
 !
 !          rmatrix%RmatrixBlock(1,5)%dscaleFactor = 0.0_DP
 !          rmatrix%RmatrixBlock(2,4)%dscaleFactor = 0.0_DP
-!          
+!
 !        end if
-!        
+!
 !      else if ((rnonlinearSpatialMatrix%dr11 .ne. 0.0_DP) .or. &
 !               (rnonlinearSpatialMatrix%dr12 .ne. 0.0_DP)) then
-!        
+!
 !        ! There is some data in A14/A25, so create empty space there
 !        ! in case it's missing.
 !        if (.not. lsysbl_isSubmatrixPresent(rmatrix,1,4)) then
 !          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !              rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!              
+!
 !          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !              rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !        end if
-!        
+!
 !        ! Clear the diagonal matrices, switch them on
 !        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,4))
 !        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,5))
 !
 !        rmatrix%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP
 !        rmatrix%RmatrixBlock(2,5)%dscaleFactor = 1.0_DP
-!        
+!
 !        if (rnonlinearSpatialMatrix%dr12 .ne. 0.0_DP) then
 !          ! There is some data in A42/A51, so create empty space there
 !          ! in case it's missing.
 !          if (.not. lsysbl_isSubmatrixPresent(rmatrix,2,4)) then
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(2,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                
+!
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(1,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !          end if
@@ -3562,16 +3562,16 @@ contains
 !
 !          rmatrix%RmatrixBlock(1,5)%dscaleFactor = 1.0_DP
 !          rmatrix%RmatrixBlock(2,4)%dscaleFactor = 1.0_DP
-!        
+!
 !        else
 !
 !          rmatrix%RmatrixBlock(1,5)%dscaleFactor = 0.0_DP
 !          rmatrix%RmatrixBlock(2,4)%dscaleFactor = 0.0_DP
-!         
+!
 !        end if
 !
 !      else
-!      
+!
 !        ! Deactivate this submatrix
 !        rmatrix%RmatrixBlock(1,4)%dscaleFactor = 0.0_DP
 !        rmatrix%RmatrixBlock(1,5)%dscaleFactor = 0.0_DP
@@ -3579,11 +3579,11 @@ contains
 !        rmatrix%RmatrixBlock(2,5)%dscaleFactor = 0.0_DP
 !
 !      end if
-!            
+!
 !      ! If we have a reactive coupling mass matrix, it gets interesting...
 !      if ((rnonlinearSpatialMatrix%dr11 .ne. 0.0_DP) .or. &
 !          (rnonlinearSpatialMatrix%dr12 .ne. 0.0_DP)) then
-!      
+!
 !        ! The reactive part is: "dr2 * . * grad(lambda)".
 !        ! This is exactly the 'Newton' part assembled by the streamline diffusion
 !        ! method if we use the dual velocity as velocity field!
@@ -3591,25 +3591,25 @@ contains
 !
 !        ! Viscosity; ok, actually not used.
 !        rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!        
+!
 !        ! Set stabilisation parameter
 !        rstreamlineDiffusion%dupsam = rnonlinearSpatialMatrix%dupsam2
-!        
+!
 !        ! Weight dr21 of the convective part.
 !        rstreamlineDiffusion%ddelta = rnonlinearSpatialMatrix%dr11
-!        
+!
 !        ! Weight for the Newton part; here, this is the dr22 weight.
 !        rstreamlineDiffusion%dnewton = rnonlinearSpatialMatrix%dr12
-!        
+!
 !        ! Create a temporary block matrix only contining the velocity submatrices
 !        ! we want to change. Share structure and entries such that changing
 !        ! the temporary matrix will also change the original matrix.
 !        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
 !                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,2,4,5)
-!                                      
+!
 !        ! Create a temporary block vector that points to the dual velocity.
 !        call lsysbl_deriveSubvector (rvector,rtempvector,4,5,.true.)
-!        
+!
 !        ! Call the SD method to calculate the nonlinearity.
 !        ! As velocity vector, specify rtempvector, which points to
 !        ! the dual velocity.
@@ -3622,53 +3622,53 @@ contains
 !        ! Release the temp matrix and temp vector.
 !        call lsysbl_releaseVector (rtempVector)
 !        call lsysbl_releaseMatrix (rtempMatrix)
-!      
+!
 !      end if
-!    
+!
 !    end subroutine
-!    
+!
 !    ! -----------------------------------------------------
 !
 !    subroutine assembleDualMassBlocks (rnonlinearSpatialMatrix,rmatrix,rvector)
-!        
+!
 !    ! Assembles a 2x2 block matrix with mass matrices on the diagonal
 !    ! in the dual equation. These matrices consist of a standard mass
 !    ! matrix and/or a reactive coupling mass matrix depending on the
 !    ! dual velocity.
-!    
+!
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-!    ! about how to set up the matrix. 
+!    ! about how to set up the matrix.
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
-!    
+!
 !    ! Block matrix where the 2x2-velocity submatrix should be assembled
 !    type(t_matrixBlock), intent(INOUT) :: rmatrix
-!    
+!
 !    ! Vector that specifies where to evaluate nonlinear terms
 !    type(t_vectorBlock), intent(IN) :: rvector
-!    
+!
 !      ! local variables
 !      type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
 !      type(t_matrixBlock) :: rtempmatrix
 !      type(t_vectorBlock) :: rtempvector
-!    
+!
 !      if (rnonlinearSpatialMatrix%dmu2 .ne. 0.0_DP) then
-!    
+!
 !        ! Copy the entries of the mass matrix. Share the structure.
 !        ! We must not share the entries as these might be changed by the caller
 !        ! e.g. due to boundary conditions!
-!        
+!
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !            rmatrix%RmatrixBlock(4,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-!      
+!
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !            rmatrix%RmatrixBlock(5,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-!            
+!
 !        ! Scale the entries by dmu2.
 !        if (rnonlinearSpatialMatrix%dmu2 .ne. 1.0_DP) then
 !          call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(4,1),rnonlinearSpatialMatrix%dmu2)
 !          call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(5,2),rnonlinearSpatialMatrix%dmu2)
 !        end if
-!        
+!
 !        rmatrix%RmatrixBlock(4,1)%dscaleFactor = 1.0_DP
 !        rmatrix%RmatrixBlock(5,2)%dscaleFactor = 1.0_DP
 !
@@ -3678,7 +3678,7 @@ contains
 !          if (.not. lsysbl_isSubmatrixPresent(rmatrix,4,2)) then
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(4,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                
+!
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(5,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !          end if
@@ -3689,41 +3689,41 @@ contains
 !
 !          rmatrix%RmatrixBlock(5,1)%dscaleFactor = 1.0_DP
 !          rmatrix%RmatrixBlock(4,2)%dscaleFactor = 1.0_DP
-!        
+!
 !        else
 !
 !          rmatrix%RmatrixBlock(5,1)%dscaleFactor = 0.0_DP
 !          rmatrix%RmatrixBlock(4,2)%dscaleFactor = 0.0_DP
-!          
+!
 !        end if
-!        
+!
 !      else if ((rnonlinearSpatialMatrix%dr21 .ne. 0.0_DP) .or. &
 !               (rnonlinearSpatialMatrix%dr22 .ne. 0.0_DP)) then
-!        
+!
 !        ! There is some data in A41/A52, so create empty space there
 !        ! in case it's missing.
 !        if (.not. lsysbl_isSubmatrixPresent(rmatrix,4,1)) then
 !          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !              rmatrix%RmatrixBlock(4,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!              
+!
 !          call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !              rmatrix%RmatrixBlock(5,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !        end if
-!        
+!
 !        ! Clear the diagonal matrices, switch them on
 !        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,1))
 !        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(5,2))
 !
 !        rmatrix%RmatrixBlock(4,1)%dscaleFactor = 1.0_DP
 !        rmatrix%RmatrixBlock(5,2)%dscaleFactor = 1.0_DP
-!        
+!
 !        if (rnonlinearSpatialMatrix%dr22 .ne. 0.0_DP) then
 !          ! There is some data in A42/A51, so create empty space there
 !          ! in case it's missing.
 !          if (.not. lsysbl_isSubmatrixPresent(rmatrix,4,2)) then
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(4,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!                
+!
 !            call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !                rmatrix%RmatrixBlock(5,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !          end if
@@ -3734,16 +3734,16 @@ contains
 !
 !          rmatrix%RmatrixBlock(5,1)%dscaleFactor = 1.0_DP
 !          rmatrix%RmatrixBlock(4,2)%dscaleFactor = 1.0_DP
-!        
+!
 !        else
 !
 !          rmatrix%RmatrixBlock(5,1)%dscaleFactor = 0.0_DP
 !          rmatrix%RmatrixBlock(4,2)%dscaleFactor = 0.0_DP
-!         
+!
 !        end if
 !
 !      else
-!      
+!
 !        ! Deactivate this submatrix
 !        rmatrix%RmatrixBlock(4,1)%dscaleFactor = 0.0_DP
 !        rmatrix%RmatrixBlock(5,1)%dscaleFactor = 0.0_DP
@@ -3751,11 +3751,11 @@ contains
 !        rmatrix%RmatrixBlock(5,2)%dscaleFactor = 0.0_DP
 !
 !      end if
-!            
+!
 !      ! If we have a reactive coupling mass matrix, it gets interesting...
 !      if ((rnonlinearSpatialMatrix%dr21 .ne. 0.0_DP) .or. &
 !          (rnonlinearSpatialMatrix%dr22 .ne. 0.0_DP)) then
-!      
+!
 !        ! The reactive part is: "dr2 * . * grad(lambda)".
 !        ! This is exactly the 'Newton' part assembled by the streamline diffusion
 !        ! method if we use the dual velocity as velocity field!
@@ -3763,25 +3763,25 @@ contains
 !
 !        ! Viscosity; ok, actually not used.
 !        rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!        
+!
 !        ! Set stabilisation parameter
 !        rstreamlineDiffusion%dupsam = rnonlinearSpatialMatrix%dupsam2
-!        
+!
 !        ! Weight dr21 of the convective part.
 !        rstreamlineDiffusion%ddelta = rnonlinearSpatialMatrix%dr21
-!        
+!
 !        ! Weight for the Newton part; here, this is the dr22 weight.
 !        rstreamlineDiffusion%dnewton = rnonlinearSpatialMatrix%dr22
-!        
+!
 !        ! Create a temporary block matrix only contining the velocity submatrices
 !        ! we want to change. Share structure and entries such that changing
 !        ! the temporary matrix will also change the original matrix.
 !        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
 !                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,5,1,2)
-!                                      
+!
 !        ! Create a temporary block vector that points to the dual velocity.
 !        call lsysbl_deriveSubvector (rvector,rtempvector,4,5,.true.)
-!        
+!
 !        ! Call the SD method to calculate the nonlinearity.
 !        ! As velocity vector, specify rtempvector, which points to
 !        ! the dual velocity.
@@ -3794,16 +3794,16 @@ contains
 !        ! Release the temp matrix and temp vector.
 !        call lsysbl_releaseVector (rtempVector)
 !        call lsysbl_releaseMatrix (rtempMatrix)
-!      
+!
 !      end if
-!      
+!
 !    end subroutine
-!    
+!
 !    ! -----------------------------------------------------
-!    
+!
 !    subroutine assembleGradientMatrices (bdualEquation,&
 !        rnonlinearSpatialMatrix,rmatrix,bsharedMatrix)
-!    
+!
 !    ! Initialises the gradient/divergence matrices with entries from
 !    ! the rnonlinearSpatialMatrix structure.
 !    !
@@ -3826,14 +3826,14 @@ contains
 !    logical, intent(IN) :: bdualEquation
 !
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-!    ! about how to set up the matrix. 
+!    ! about how to set up the matrix.
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
 !
 !    ! Block matrix where the B-matrices should be set up
 !    type(t_matrixBlock), intent(INOUT) :: rmatrix
 !
-!    ! Whether or not the matrix entries of the source gradient-matrices 
-!    ! should be copied in memory. 
+!    ! Whether or not the matrix entries of the source gradient-matrices
+!    ! should be copied in memory.
 !    !
 !    ! If set to TRUE, the routine tries to initialise rmatrix
 !    ! only with references to the original matrices, thus the caller must not
@@ -3848,7 +3848,7 @@ contains
 !
 !      ! local variables
 !      integer :: idubStructure,idubContent,imatOffset
-!      
+!
 !      if (.not. bdualEquation) then
 !        ! Set imatOffset=0 so the submatrix at position 1,1 is tackled.
 !        imatOffset = 0
@@ -3860,9 +3860,9 @@ contains
 !      ! Initialise a copy flag that tells the duplicateMatrix-routine whether to
 !      ! copy the entries or to create references.
 !      if (bsharedMatrix) then
-!      
+!
 !        idubContent = LSYSSC_DUP_SHARE
-!        
+!
 !        ! Normally we share entries -- except for if the submatrices belong to
 !        ! rmatrix! To avoid memory deallocation in this case, we copy
 !        ! the entries.
@@ -3872,15 +3872,15 @@ contains
 !                Rmatrix%RmatrixBlock(imatOffset+2,imatOffset+3)))) then
 !          idubContent = LSYSSC_DUP_COPY
 !        end if
-!        
+!
 !      else
-!      
+!
 !        idubContent = LSYSSC_DUP_COPY
-!        
+!
 !      end if
-!      
+!
 !      idubStructure = LSYSSC_DUP_SHARE
-!      
+!
 !      ! Let's consider the global system in detail:
 !      !
 !      !    ( A11  A12  B1  ) = ( A11  A12  A13 )
@@ -3910,7 +3910,7 @@ contains
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB2, &
 !                                    rmatrix%RmatrixBlock(imatOffset+2,imatOffset+3),&
 !                                    idubStructure,idubContent)
-!      
+!
 !      ! Furthermore, put B1^T and B2^T to the block matrix.
 !      ! These matrices are always 'shared'.
 !      call lsyssc_transposeMatrix (rnonlinearSpatialMatrix%p_rmatrixB1, &
@@ -3935,7 +3935,7 @@ contains
   ! This routine assembles the nonlinear defect
   !      rd := rd - cx A(ry) rx
   ! with the system matrix A(.) defined by the configuration in rnonlinearSpatialMatrix.
-  ! The caller must initialise the rnonlinearSpatialMatrix according to how the 
+  ! The caller must initialise the rnonlinearSpatialMatrix according to how the
   ! matrix should look like.
   !
   ! The parameters rvectorI are optional. If specified, these parameter defines where to
@@ -3955,7 +3955,7 @@ contains
 !</description>
 
   ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-  ! about how to set up the matrix. 
+  ! about how to set up the matrix.
   !
   ! The caller must provide either p_rmatrixTemplateXXXX in this structure
   ! or set the p_rmatrixTemplateXXXX as well as p_rdiscretisation to
@@ -3978,7 +3978,7 @@ contains
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity and must contain the data
-  ! for the 'current' timestep. 
+  ! for the 'current' timestep.
   type(t_vectorBlock), intent(IN), target, optional :: rvector2
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
@@ -4002,7 +4002,7 @@ contains
     type(t_vectorBlock) :: rtempVectorX,rtempVectorB
     type(t_vectorBlock) :: rvectorPrimal,rvectorDual,rvectorDual2
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
-    type(t_convecStabilisation) :: rstabilisation    
+    type(t_convecStabilisation) :: rstabilisation
     type(t_optcoperator) :: roptcoperator
     type(t_blockDIscretisation) :: rvelDiscr
     
@@ -4019,13 +4019,13 @@ contains
     if (.not. bnewmethod) then
     
       ! The system matrix looks like:
-      !          
-      !    ( A11  A12  B1  M~           ) 
-      !    ( A21  A22  B2       M~      ) 
-      !    ( B1^T B2^T                  ) 
-      !    ( M             A44  A45  B1 ) 
-      !    (      M        A54  A55  B2 ) 
-      !    (               B1^T B2^T    ) 
+      !
+      !    ( A11  A12  B1  M~           )
+      !    ( A21  A22  B2       M~      )
+      !    ( B1^T B2^T                  )
+      !    ( M             A44  A45  B1 )
+      !    (      M        A54  A55  B2 )
+      !    (               B1^T B2^T    )
       !
       ! We have now to manually perform a matrix-vector multiplication with
       ! all submatrices in that matrix. At first, we start with the
@@ -4033,12 +4033,12 @@ contains
       !
       ! ---------------------------------------------------
       ! 1.) Identity.
-      !    ( I                          ) 
-      !    (      I                     ) 
-      !    (                            ) 
-      !    (               I            ) 
-      !    (                    I       ) 
-      !    (                            ) 
+      !    ( I                          )
+      !    (      I                     )
+      !    (                            )
+      !    (               I            )
+      !    (                    I       )
+      !    (                            )
 
       if (rnonlinearSpatialMatrix%Diota(1,1) .ne. 0.0_DP) then
         call lsyssc_vectorLinearComb (&
@@ -4062,12 +4062,12 @@ contains
 
       ! ---------------------------------------------------
       ! 2.) Mass matrices
-      !    ( M                          ) 
-      !    (      M                     ) 
-      !    (                            ) 
-      !    ( M             M            ) 
-      !    (      M             M       ) 
-      !    (                            ) 
+      !    ( M                          )
+      !    (      M                     )
+      !    (                            )
+      !    ( M             M            )
+      !    (      M             M       )
+      !    (                            )
       if (rnonlinearSpatialMatrix%Dalpha(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixMass, &
             rx%RvectorBlock(1), rd%RvectorBlock(1), &
@@ -4103,12 +4103,12 @@ contains
       
       ! ---------------------------------------------------
       ! 3.) Stokes matrices
-      !    ( L                          ) 
-      !    (      L                     ) 
-      !    (                            ) 
-      !    (               L            ) 
-      !    (                    L       ) 
-      !    (                            ) 
+      !    ( L                          )
+      !    (      L                     )
+      !    (                            )
+      !    (               L            )
+      !    (                    L       )
+      !    (                            )
       if (rnonlinearSpatialMatrix%Dtheta(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixStokes, &
             rx%RvectorBlock(1), rd%RvectorBlock(1), &
@@ -4131,12 +4131,12 @@ contains
       
       ! ---------------------------------------------------
       ! 3.) B-matrices
-      !    (           B1               ) 
-      !    (           B2               ) 
-      !    (                            ) 
-      !    (                        B1  ) 
-      !    (                        B2  ) 
-      !    (                            ) 
+      !    (           B1               )
+      !    (           B2               )
+      !    (                            )
+      !    (                        B1  )
+      !    (                        B2  )
+      !    (                            )
       
       if (rnonlinearSpatialMatrix%Deta(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixB1, &
@@ -4160,12 +4160,12 @@ contains
       
       ! ---------------------------------------------------
       ! 4.) B^T-matrices
-      !    (                            ) 
-      !    (                            ) 
-      !    ( B1^T B2^T                  ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (              B1^T B2^T     ) 
+      !    (                            )
+      !    (                            )
+      !    ( B1^T B2^T                  )
+      !    (                            )
+      !    (                            )
+      !    (              B1^T B2^T     )
       
       if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixD1, &
@@ -4240,12 +4240,12 @@ contains
 
       ! 1.) Primal equation, y*grad(.), probably + grad(.)*y
       !
-      !    ( N(y) N(y)                  ) 
-      !    ( N(y) N(y)                  ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (                            ) 
+      !    ( N(y) N(y)                  )
+      !    ( N(y) N(y)                  )
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !    (                            )
       
       rstabilisation = t_convecStabilisation(&
           rnonlinearSpatialMatrix%iupwind1,rnonlinearSpatialMatrix%dupsam1,&
@@ -4258,19 +4258,19 @@ contains
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
           rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
-          rstabilisation,dcx)    
+          rstabilisation,dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
       
       ! 2.) Dual equation, y*grad(.) + grad(.)^T*y
       !
-      !    (                            ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (              N*(y) N*(y)   ) 
-      !    (              N*(y) N*(y)   ) 
-      !    (                            ) 
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !    (              N*(y) N*(y)   )
+      !    (              N*(y) N*(y)   )
+      !    (                            )
       
       rstabilisation = t_convecStabilisation(&
           rnonlinearSpatialMatrix%iupwind2,rnonlinearSpatialMatrix%dupsam2,&
@@ -4283,19 +4283,19 @@ contains
           rnonlinearSpatialMatrix,rtempMatrix,rvectorPrimal,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
           rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
-          rstabilisation,dcx)    
+          rstabilisation,dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
       
       ! 3.) Dual equation, Newton term lambda*grad(.) + grad(.)^T*lambda
       !
-      !    (                            ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (   N*(l) N*(l)              ) 
-      !    (   N*(l) N*(l)              ) 
-      !    (                            ) 
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !    (   N*(l) N*(l)              )
+      !    (   N*(l) N*(l)              )
+      !    (                            )
       
       ! No stabilisation here
       ! rstabilisation = t_convecStabilisation(&
@@ -4309,7 +4309,7 @@ contains
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
           rnonlinearSpatialMatrix%Dgamma(2,1),rnonlinearSpatialMatrix%DgammaT(2,1),&
           rnonlinearSpatialMatrix%Dnewton(2,1),rnonlinearSpatialMatrix%DnewtonT(2,1),&
-          rstabilisation,dcx)    
+          rstabilisation,dcx)
       
       ! There is probably a 2nd reactive term involved stemming from
       ! the next timestep when Crank-Nicolson is used.
@@ -4320,19 +4320,19 @@ contains
           rnonlinearSpatialMatrix,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,&
           0.0_DP,rnonlinearSpatialMatrix%DgammaT2(2,1),&
           rnonlinearSpatialMatrix%Dnewton2(2,1),0.0_DP,&
-          rstabilisation,dcx)    
+          rstabilisation,dcx)
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
       
       ! 4.) (Projected) mass matrix
       !
-      !    (              PM(l)         ) 
-      !    (                    PM(l)   ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (                            ) 
+      !    (              PM(l)         )
+      !    (                    PM(l)   )
+      !    (                            )
+      !    (                            )
+      !    (                            )
+      !    (                            )
       
       ! What's the type of the current matrix? Is this a Newton-matrix?
       if (rnonlinearSpatialMatrix%cmatrixType .eq. 0) then
@@ -4395,12 +4395,12 @@ contains
     
       ! ---------------------------------------------------
       ! 3.) B-matrices
-      !    (           B1               ) 
-      !    (           B2               ) 
-      !    (                            ) 
-      !    (                        B1  ) 
-      !    (                        B2  ) 
-      !    (                            ) 
+      !    (           B1               )
+      !    (           B2               )
+      !    (                            )
+      !    (                        B1  )
+      !    (                        B2  )
+      !    (                            )
       
       if (rnonlinearSpatialMatrix%Deta(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixB1, &
@@ -4424,12 +4424,12 @@ contains
       
       ! ---------------------------------------------------
       ! 4.) B^T-matrices
-      !    (                            ) 
-      !    (                            ) 
-      !    ( B1^T B2^T                  ) 
-      !    (                            ) 
-      !    (                            ) 
-      !    (              B1^T B2^T     ) 
+      !    (                            )
+      !    (                            )
+      !    ( B1^T B2^T                  )
+      !    (                            )
+      !    (                            )
+      !    (              B1^T B2^T     )
       
       if (rnonlinearSpatialMatrix%Dtau(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixD1, &
@@ -4524,11 +4524,11 @@ contains
     end if
     
 !    ! --------------------------------------------------------------------------
-!    ! 
+!    !
 !    ! Create a temporary matrix that covers this structure.
 !    call lsysbl_createEmptyMatrix (rmatrix,2*(NDIM2D+1))
-!    
-!    ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
+!
+!    ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect
 !    ! needs this template matrix to provide the structure for the stabilisation
 !    ! routines! The B-matrices are needed later.
 !    ! -----
@@ -4537,14 +4537,14 @@ contains
 !        rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixStokes,&
 !        rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-!    
+!
 !    if (rnonlinearSpatialMatrix%dnewton1 .ne. 0.0_DP) then
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixStokes,&
 !          rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixStokes,&
 !          rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !    end if
-!    
+!
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1,&
 !        rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB2,&
@@ -4569,14 +4569,14 @@ contains
 !        rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixStokes,&
 !        rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-!    
+!
 !    if (rnonlinearSpatialMatrix%dnewton2 .ne. 0.0_DP) then
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixStokes,&
 !          rmatrix%RmatrixBlock(4,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !      call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixStokes,&
 !          rmatrix%RmatrixBlock(5,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 !    end if
-!    
+!
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1,&
 !        rmatrix%RmatrixBlock(4,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB2,&
@@ -4598,7 +4598,7 @@ contains
 !    ! Update the structural information of the block matrix, as we manually
 !    ! changed the submatrices:
 !    call lsysbl_updateMatStrucInfo (rmatrix)
-!    
+!
 !    ! Get a reference to the correct velocity vector we have to use for the
 !    ! nonlinearity.
 !    select case (rnonlinearSpatialMatrix%iprimalSol)
@@ -4618,21 +4618,21 @@ contains
 !    case (3)
 !      p_rvectorDual => rvector3
 !    end select
-!    
+!
 !    ! OK, LET'S GO...
 !    !
 !    ! At first, initialise a matrix containing only the B-matrices. That's the easiest
 !    ! part.
 !    !
-!    !    (           B1               ) 
-!    !    (           B2               ) 
-!    !    ( B1^T B2^T                  ) 
-!    !    (                         B1 ) 
-!    !    (                         B2 ) 
-!    !    (               B1^T B2^T    ) 
+!    !    (           B1               )
+!    !    (           B2               )
+!    !    ( B1^T B2^T                  )
+!    !    (                         B1 )
+!    !    (                         B2 )
+!    !    (               B1^T B2^T    )
 !    !
 !    call lsysbl_createEmptyMatrix (rmatrix,2*(NDIM2D+1))
-!    
+!
 !    ! Primal
 !    call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixB1,&
 !        rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -4664,36 +4664,36 @@ contains
 !    ! Initialise the weights for the B/B^T matrices
 !    rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearSpatialMatrix%deta1
 !    rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearSpatialMatrix%deta1
-!    
+!
 !    rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearSpatialMatrix%dtau1
 !    rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearSpatialMatrix%dtau1
 !
 !    rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%deta2
 !    rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%deta2
-!    
+!
 !    rmatrix%RmatrixBlock(6,4)%dscaleFactor = rnonlinearSpatialMatrix%dtau2
 !    rmatrix%RmatrixBlock(6,5)%dscaleFactor = rnonlinearSpatialMatrix%dtau2
-!    
+!
 !    ! Create the defect
-!    call lsysbl_blockMatVec (rmatrix, rx, rd, -dcx, 1.0_DP)    
-!  
+!    call lsysbl_blockMatVec (rmatrix, rx, rd, -dcx, 1.0_DP)
 !
 !
 !
 !
 !
-!    
-!    
-!    ! In the first step, we assemble the defect that arises in the velocity 
+!
+!
+!
+!    ! In the first step, we assemble the defect that arises in the velocity
 !    ! components. This is characterised by the following submatrix:
 !    !
-!    !    ( A11  A12                   ) 
-!    !    ( A21  A22                   ) 
-!    !    (                            ) 
-!    !    (               A44  A45     ) 
-!    !    (               A54  A55     ) 
-!    !    (                            ) 
-!    ! 
+!    !    ( A11  A12                   )
+!    !    ( A21  A22                   )
+!    !    (                            )
+!    !    (               A44  A45     )
+!    !    (               A54  A55     )
+!    !    (                            )
+!    !
 !    ! assembleVelocityDefect handles exactly these submatrices.
 !    ! We call the routine twice -- once for the primal and once for the dual
 !    ! equation. In both cases, we specify the primal velocity p_ry
@@ -4716,23 +4716,23 @@ contains
 !      call assembleVelocityDefect (&
 !          .true.,rnonlinearSpatialMatrix,rmatrix,rx,rd,dcx,rvector3,1.0_DP)
 !    end select
-!    
+!
 !    ! Now, we treat all the remaining blocks. Let's see what is missing:
 !    !
-!    !    ( .    .    B1  M             ) 
-!    !    ( .    .    B2       M        ) 
-!    !    ( B1^T B2^T .                 ) 
-!    !    ( M             .    .    B1  ) 
-!    !    (      M        .    .    B2  ) 
-!    !    (               B1^T B2^T .   ) 
+!    !    ( .    .    B1  M             )
+!    !    ( .    .    B2       M        )
+!    !    ( B1^T B2^T .                 )
+!    !    ( M             .    .    B1  )
+!    !    (      M        .    .    B2  )
+!    !    (               B1^T B2^T .   )
 !
 !    ! To build the appropriate defect, we first remove the velocity blocks:
-!    
+!
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,1))
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,2))
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,1))
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(2,2))
-!    
+!
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(4,4))
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(4,5))
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(5,4))
@@ -4741,16 +4741,16 @@ contains
 !    ! Initialise the weights for the B/B^T matrices
 !    rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearSpatialMatrix%deta1
 !    rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearSpatialMatrix%deta1
-!    
+!
 !    rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearSpatialMatrix%dtau1
 !    rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearSpatialMatrix%dtau1
 !
 !    rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearSpatialMatrix%deta2
 !    rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearSpatialMatrix%deta2
-!    
+!
 !    rmatrix%RmatrixBlock(6,4)%dscaleFactor = rnonlinearSpatialMatrix%dtau2
 !    rmatrix%RmatrixBlock(6,5)%dscaleFactor = rnonlinearSpatialMatrix%dtau2
-!    
+!
 !    ! Initialise the weights for the mass matrices
 !    !if (rnonlinearSpatialMatrix%ccontrolConstraints .eq. 0) then
 !    !  rmatrix%RmatrixBlock(1,4)%dscaleFactor = rnonlinearSpatialMatrix%dmu1
@@ -4770,30 +4770,30 @@ contains
 !    ! is initialised with the multiplication factors in the submatrices
 !    ! from above!
 !    call lsysbl_blockMatVec (rmatrix, rx, rd, -dcx, 1.0_DP)
-!    
+!
 !    ! The coupling of lambda to the primal equation is a little bit tricky.
 !    ! Ok, if there are no constraints active, it's easy -- that case was handled
 !    ! in the MV above...
 !    if ( &!(rnonlinearSpatialMatrix%ccontrolConstraints .eq. 1) .and. &
 !        (rnonlinearSpatialMatrix%dmu1 .ne. 0.0_DP)) then
-!    
+!
 !      ! But now it get's interesting. When control constraints are active,
 !      ! we have the system
 !      !
-!      !    ( .    .    B1  PM            ) 
-!      !    ( .    .    B2       PM       ) 
-!      !    ( B1^T B2^T .                 ) 
-!      !    ( M             .    .    B1  ) 
-!      !    (      M        .    .    B2  ) 
-!      !    (               B1^T B2^T .   ) 
+!      !    ( .    .    B1  PM            )
+!      !    ( .    .    B2       PM       )
+!      !    ( B1^T B2^T .                 )
+!      !    ( M             .    .    B1  )
+!      !    (      M        .    .    B2  )
+!      !    (               B1^T B2^T .   )
 !      !
 !      ! Where P is a projection operator onto the allowed space. The dual variable
 !      ! \lambda must not be changed, but before adding M\lambda to the RHS,
 !      ! we have to apply a projection!
 !      !
 !      ! That's a little bit ugly because for this we have to carry out the matrix
-!      ! vector multiplication 'by hand'. 
-!      
+!      ! vector multiplication 'by hand'.
+!
 !
 !      ! What's the type of the current matrix? Is this a Newton-matrix?
 !      if (rnonlinearSpatialMatrix%cmatrixType .eq. 0) then
@@ -4809,18 +4809,18 @@ contains
 !!      ! receives the projected solution.
 !!      call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
 !!        LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
-!!      
+!!
 !!      ! Multiply with the mass matrix, correctly scaled.
 !!      call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rmatrixMass, rx%RvectorBlock(4), &
 !!        rtempVector, rnonlinearSpatialMatrix%dmu1, 0.0_DP)
-!!      
+!!
 !!      ! Project that to the allowed range.
 !!      call cc_projectControlTimestep (rtempVector,&
 !!          -rnonlinearSpatialMatrix%dumax1,-rnonlinearSpatialMatrix%dumin1)
-!!          
+!!
 !!      ! And then finally, carry our the defect calculation for y_1.
 !!      call lsyssc_vectorLinearComb (rtempVector,rd%RvectorBlock(1),-dcx,1.0_DP)
-!!      
+!!
 !!      ! The same stuff has to be done for y_1 / lambda_2:
 !!      call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rmatrixMass, rx%RvectorBlock(5), &
 !!        rtempVector, rnonlinearSpatialMatrix%dmu1, 0.0_DP)
@@ -4831,9 +4831,9 @@ contains
 !        ! Copy our solution vector \lambda_1. Scale it by -1/alpha.
 !        call lsyssc_duplicateVector (rx%RvectorBlock(4),rtempVector,&
 !            LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
-!            
+!
 !        call lsyssc_scaleVector (rtempVector,-rnonlinearSpatialMatrix%dmu1)
-!        
+!
 !        ! Project that to the allowed range to create u_1.
 !        if (rnonlinearSpatialMatrix%ccontrolConstraints .eq. 1) then
 !          call cc_projectControlTimestep (rtempVector,&
@@ -4851,12 +4851,12 @@ contains
 !        call lsyssc_duplicateVector (rx%RvectorBlock(5),rtempVector,&
 !            LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
 !        call lsyssc_scaleVector (rtempVector,-rnonlinearSpatialMatrix%dmu1)
-!        
+!
 !        if (rnonlinearSpatialMatrix%ccontrolConstraints .eq. 1) then
 !          call cc_projectControlTimestep (rtempVector,&
 !              rnonlinearSpatialMatrix%dumin2,rnonlinearSpatialMatrix%dumax2)
 !        end if
-!        
+!
 !        call lsyssc_scalarMatVec (rnonlinearSpatialMatrix%p_rmatrixMass, rtempVector, &
 !          rd%RvectorBlock(2), dcx, 1.0_DP)
 !
@@ -4869,7 +4869,7 @@ contains
 !        ! vector with the derivative of the projection operator:
 !        ! b-P[a,b]'(lambda).
 !        ! For that purpose, we have to assemble special mass matrices:
-!      
+!
 !        select case (rnonlinearSpatialMatrix%idualSol)
 !        case (1)
 !          call assemblePrimalUConstrMassDefect (rnonlinearSpatialMatrix,rx,&
@@ -4881,17 +4881,17 @@ contains
 !          call assemblePrimalUConstrMassDefect (rnonlinearSpatialMatrix,rx,&
 !              rd,dcx,rvector3)
 !        end select
-!        
+!
 !      end if
 !
 !    end if
-!    
+!
 !    ! If we have a reactive coupling mass matrix, it gets interesting...
 !    !
 !    ! Primal equation
 !    if ((rnonlinearSpatialMatrix%dr11 .ne. 0.0_DP) .or. &
 !        (rnonlinearSpatialMatrix%dr12 .ne. 0.0_DP)) then
-!    
+!
 !      ! Assemble the defect of the reactive coupling mass matrices
 !      select case (rnonlinearSpatialMatrix%idualSol)
 !      case (1)
@@ -4904,13 +4904,13 @@ contains
 !        call assemblePrimalReactMassDefect (rnonlinearSpatialMatrix,rx,&
 !            rd,dcx,rvector3,1.0_DP)
 !      end select
-!    
+!
 !    end if
 !
 !    ! Dual equation
 !    if ((rnonlinearSpatialMatrix%dr21 .ne. 0.0_DP) .or. &
 !        (rnonlinearSpatialMatrix%dr22 .ne. 0.0_DP)) then
-!    
+!
 !      ! Assemble the defect of the reactive coupling mass matrices
 !      select case (rnonlinearSpatialMatrix%idualSol)
 !      case (1)
@@ -4923,9 +4923,9 @@ contains
 !        call assembleDualReactMassDefect (rnonlinearSpatialMatrix,rx,&
 !            rd,dcx,rvector3,1.0_DP)
 !      end select
-!    
+!
 !    end if
-!    
+!
 !    ! Release the temporary matrix, we don't need it anymore.
 !    call lsysbl_releaseMatrix (rmatrix)
 
@@ -4946,7 +4946,7 @@ contains
     ! add stabilisation into the matrix.
     
     ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
     
     ! 2X2 block matrix that specifies the structure of the velocity FE space.
@@ -5095,17 +5095,17 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = dcx*dgamma
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),rx,rb)   
+                              rmatrix%RmatrixBlock(1,1),rx,rb)
 
 !          if (.not. bshared) then
 !            call conv_jumpStabilisation2d (&
 !                                rjumpStabil, CONV_MODDEFECT, &
-!                                rmatrix%RmatrixBlock(2,2),rx,rb)   
+!                                rmatrix%RmatrixBlock(2,2),rx,rb)
 !          end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
@@ -5144,14 +5144,14 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = dcx*dgamma
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           !
           ! The routine processes the X as well as the Y velocity!
           call conv_jumpStabilisation2d (&
                               rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),rx,rb)   
+                              rmatrix%RmatrixBlock(1,1),rx,rb)
 
         case (CCMASM_STAB_EDGEORIENTED3)
         
@@ -5216,17 +5216,17 @@ contains
             ! Matrix weight
             rjumpStabil%dtheta = dcx*dgamma
 
-            ! Call the jump stabilisation technique to stabilise that stuff.   
+            ! Call the jump stabilisation technique to stabilise that stuff.
             ! We can assemble the jump part any time as it's independent of any
             ! convective parts...
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODDEFECT, &
-                                rmatrix%RmatrixBlock(1,1),rx,rb)   
+                                rmatrix%RmatrixBlock(1,1),rx,rb)
 
 !            if (.not. bshared) then
 !              call conv_jumpStabilisation2d (&
 !                                  rjumpStabil, CONV_MODDEFECT, &
-!                                  rmatrix%RmatrixBlock(2,2),rx,rb)   
+!                                  rmatrix%RmatrixBlock(2,2),rx,rb)
 !            end if
             
           case (CCMASM_STAB_EDGEORIENTED3)
@@ -5252,13 +5252,13 @@ contains
         
       end if
       
-    end subroutine  
+    end subroutine
 
     subroutine assemblePrimalUConstrMassDefect (rnonlinearSpatialMatrix,&
         rvector,rdefect,dcx,rvelocityVector) !,cprojectionType)
         
     ! Assembles the defect arising from the projective coupling mass
-    ! matrices in the primal equation which comes from constraints on u. 
+    ! matrices in the primal equation which comes from constraints on u.
     ! rdefect must have been initialised with the right hand side vector.
     !
     ! Let the mass matrix M~ be the usual mass matrix where u is ok
@@ -5271,7 +5271,7 @@ contains
     ! about how the mass matrix part is weighted (dr11, dr12).
     type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
 
-    ! Solution vector. 
+    ! Solution vector.
     type(t_vectorBlock), intent(IN) :: rvector
     
     ! On entry: RHS vector.
@@ -5282,7 +5282,7 @@ contains
     real(DP), intent(IN) :: dcx
     
     ! Velocity vector field that should be used for the assembly of the
-    ! nonlinearity. Block 1 and 2 in that block vector are used as velocity 
+    ! nonlinearity. Block 1 and 2 in that block vector are used as velocity
     ! field and shall contain the dual velocity field.
     type(t_vectorBlock), intent(IN), target :: rvelocityVector
 
@@ -5312,7 +5312,7 @@ contains
         ! method for the mass matrices or rebuild them again.
         ! ccontrolConstraints=0 uses standard mass matrices.
         select case (rnonlinearSpatialMatrix%ccontrolConstraints)
-        case (0) 
+        case (0)
         
           call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -5338,7 +5338,7 @@ contains
 !            call lsyssc_scaleMatrix (rtempMatrix%RmatrixBlock(2,2),rnonlinearSpatialMatrix%dmu1)
 !          end if
 
-          ! In the case when we have constraints, filter the matrix. 
+          ! In the case when we have constraints, filter the matrix.
           ! All the rows corresponding to DOF's that violate
           ! the bounds must be set to zero.
           call massmatfilter (rtempMatrix%RmatrixBlock(1,1),rvelocityVector%RvectorBlock(4),&
@@ -5346,10 +5346,10 @@ contains
           call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
               rnonlinearSpatialMatrix%dalphaC,rnonlinearSpatialMatrix%dumin2,rnonlinearSpatialMatrix%dumax2)
             
-        case (2) 
+        case (2)
 
           ! Create a matrix with the structure we need. Share the structure
-          ! of the mass matrix. Entries are not necessary for the assembly      
+          ! of the mass matrix. Entries are not necessary for the assembly
           CALL lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
@@ -5410,7 +5410,7 @@ contains
         case (3)
         
           ! Create a matrix with the structure we need. Share the structure
-          ! of the mass matrix. Entries are not necessary for the assembly      
+          ! of the mass matrix. Entries are not necessary for the assembly
           call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
@@ -5434,7 +5434,7 @@ contains
           ! Exact reassembly of the mass matrices with adaptive integration.
 
           ! Create a matrix with the structure we need. Share the structure
-          ! of the mass matrix. Entries are not necessary for the assembly      
+          ! of the mass matrix. Entries are not necessary for the assembly
           CALL lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rstaticInfo%rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
@@ -5443,7 +5443,7 @@ contains
 
           CALL lsysbl_updateMatStrucInfo (rtempMatrix)
 
-          ! Create an array that saves all elements on the border of the active set.  
+          ! Create an array that saves all elements on the border of the active set.
           nelements = rnonlinearSpatialMatrix%p_rdiscretisation%RspatialDiscr(1)%&
               p_rtriangulation%NEL
           call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
@@ -5510,7 +5510,7 @@ contains
             call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rtempmatrix%RmatrixBlock(1,1),&
                 p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
             call bilf_doneAssembly(rmatrixAssembly)
-          end if            
+          end if
 
           ! Now, set up A25, depending on lambda_2.
           rcollection%IquickAccess(1) = 2
@@ -5535,7 +5535,7 @@ contains
             call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rtempmatrix%RmatrixBlock(2,2),&
                 p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
             call bilf_doneAssembly(rmatrixAssembly)
-          end if            
+          end if
 
           ! Now we can forget about the collection again.
           call collct_done (rcollection)
@@ -5580,7 +5580,7 @@ contains
 
 !    subroutine assembleVelocityDefect (bdualEquation,rnonlinearSpatialMatrix,&
 !        rmatrix,rvector,rdefect,dcx,rvelocityVector,dvectorWeight)
-!        
+!
 !    ! Assembles the velocity defect in the block matrix rmatrix at position
 !    ! itop..itop+1 in the velocity vector. rdefect must have been initialised
 !    ! with the right hand side vector.
@@ -5593,33 +5593,33 @@ contains
 !    ! the routine will construct
 !    !
 !    !       rdefect = rdefect - dcx * (dtheta A rvector)
-!    
+!
 !    ! Whether to set up the primal or the dual equation.
 !    ! FALSE=primal, TRUE=dual equation.
 !    logical, intent(IN) :: bdualEquation
-!        
+!
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
-!    ! about how to set up the matrix. 
+!    ! about how to set up the matrix.
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
 !
 !    ! Reference to the system matrix. Only the structure of the matrix
 !    ! is used to reconstruct the structure of the discretisation.
 !    ! The content of the matrix is not changed or used.
 !    type(t_matrixBlock), intent(INOUT) :: rmatrix
-!    
+!
 !    ! Solution vector.
 !    type(t_vectorBlock), intent(IN) :: rvector
-!    
+!
 !    ! On entry: RHS vector.
 !    ! Is overwritten by the defect vector in the velocity subsystem.
 !    type(t_vectorBlock), intent(INOUT) :: rdefect
-!    
+!
 !    ! Multiplication factor for the whole operator A*rvector
 !    real(DP), intent(IN) :: dcx
-!    
+!
 !    ! Weight for the velocity vector rvelocityVector; usually = 1.0
 !    real(DP), intent(IN) :: dvectorWeight
-!    
+!
 !    ! Velocity vector field that should be used for the assembly of the
 !    ! nonlinearity. The first two blocks in that block vector are
 !    ! used as velocity field.
@@ -5635,20 +5635,20 @@ contains
 !    type(t_matrixBlock) :: rtempMatrix
 !    integer :: imatOffset
 !    real(DP) :: dalpha, dtheta, dnewton, diota, dgamma
-!    
+!
 !    ! DEBUG!!!
 !    real(DP), dimension(:), pointer :: p_Dd
-!    
+!
 !    call lsysbl_getbase_double (rdefect,p_Dd)
-!    
+!
 !      if (.not. bdualEquation) then
 !        ! Set the weights used here according to the primal equation.
 !        ! Set imatOffset=0 so the submatrix at position 1,1 is tackled.
 !        imatOffset = 0
 !        dalpha = rnonlinearSpatialMatrix%dalpha1
-!        dtheta = rnonlinearSpatialMatrix%dtheta1 
+!        dtheta = rnonlinearSpatialMatrix%dtheta1
 !        diota  = rnonlinearSpatialMatrix%diota1
-!        dgamma = rnonlinearSpatialMatrix%dgamma1 
+!        dgamma = rnonlinearSpatialMatrix%dgamma1
 !        dnewton = rnonlinearSpatialMatrix%dnewton1
 !        iupwind = rnonlinearSpatialMatrix%iupwind1
 !        dupsam = rnonlinearSpatialMatrix%dupsam1
@@ -5657,21 +5657,21 @@ contains
 !        ! Set imatOffset=3 so the submatrix at position 4,4 is tackled.
 !        imatOffset = 3
 !        dalpha = rnonlinearSpatialMatrix%dalpha2
-!        dtheta = rnonlinearSpatialMatrix%dtheta2 
+!        dtheta = rnonlinearSpatialMatrix%dtheta2
 !        diota  = rnonlinearSpatialMatrix%diota2
 !        dgamma = rnonlinearSpatialMatrix%dgamma2
 !        dnewton = rnonlinearSpatialMatrix%dnewton2
 !        iupwind = rnonlinearSpatialMatrix%iupwind2
 !        dupsam = rnonlinearSpatialMatrix%dupsam2
 !      end if
-!    
+!
 !      ! Derive a temporary vector that contains only those velocity
 !      ! subvectors that might affect the matrix.
 !      call lsysbl_deriveSubvector(rvector,rtempVector, &
 !          imatOffset+1,imatOffset+2,.true.)
 !      call lsysbl_deriveSubvector(rdefect,rtempDefect, &
 !          imatOffset+1,imatOffset+2,.true.)
-!      
+!
 !      ! Create a temporary block matrix only contining the velocity submatrices
 !      ! we want to change. Share structure and entries such that changing
 !      ! the temporary matrix will also change the original matrix.
@@ -5711,7 +5711,7 @@ contains
 !            rdefect%RvectorBlock(imatOffset+2), &
 !            -dalpha*dcx, 1.0_DP)
 !      end if
-!      
+!
 !      ! ---------------------------------------------------
 !      ! Subtract the Stokes matrix stuff?
 !      if (dtheta*dcx .ne. 0.0_DP) then
@@ -5725,60 +5725,60 @@ contains
 !            rdefect%RvectorBlock(imatOffset+2), &
 !            -dtheta*dcx, 1.0_DP)
 !      end if
-!      
+!
 !      ! ---------------------------------------------------
 !      ! That was easy -- the adventure begins now... The nonlinearity!
 !      if (dgamma*dcx .ne. 0.0_DP) then
-!      
+!
 !        select case (iupwind)
 !        case (0)
 !          ! Set up the SD structure for the creation of the defect.
 !          ! There's not much to do, only initialise the viscosity...
 !          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rstreamlineDiffusion%dupsam = dupsam
-!          
+!
 !          ! Matrix weight
 !          rstreamlineDiffusion%ddelta = dgamma*dcx
-!          
+!
 !          ! Weight for the Newtop part; =0 deactivates Newton.
 !          rstreamlineDiffusion%dnewton = dnewton*dcx
-!          
+!
 !          ! Call the SD method to calculate the defect of the nonlinearity.
 !          ! As rrhsTemp shares its entries with rdefect, the result is
 !          ! directly written to rdefect!
 !          ! As velocity field, we specify rvelocityVector here -- the primal
 !          ! velocity!. The first two subvectors are used as velocity field.
-!          
+!
 !          call conv_streamlineDiffusionBlk2d (&
 !                              rvelocityVector, rvelocityVector, &
 !                              dvectorWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODDEFECT, &
 !                              rtempMatrix,rsolution=rtempVector,rdefect=rtempDefect)
-!                              
+!
 !        case (1)
 !          ! Set up the upwind structure for the creation of the defect.
 !          ! There's not much to do, only initialise the viscosity...
 !          rupwind%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rupwind%dupsam = dupsam
 !
 !          ! Matrix weight
 !          rupwind%dtheta = dgamma*dcx
-!          
+!
 !          ! Call the upwind method to calculate the nonlinear defect.
 !          call conv_upwind2d (rtempVector, rtempVector, &
 !                              dvectorWeight, 0.0_DP,&
 !                              rupwind, CONV_MODDEFECT, &
 !                              rtempMatrix%RmatrixBlock(1,1),&
-!                              rtempVector,rtempDefect) 
-!                              
+!                              rtempVector,rtempDefect)
+!
 !          if (.not. bshared) then
 !            print *,'Upwind does not support independent A11/A22!'
 !            stop
-!          end if     
+!          end if
 !
 !        case (2)
 !          ! Jump stabilisation.
@@ -5787,62 +5787,62 @@ contains
 !          ! Set up the SD structure for the creation of the defect.
 !          ! There's not much to do, only initialise the viscosity...
 !          rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
 !          rstreamlineDiffusion%dupsam = 0.0_DP
-!          
+!
 !          ! Matrix weight
 !          rstreamlineDiffusion%ddelta = dgamma*dcx
-!          
+!
 !          ! Weight for the Newtop part; =0 deactivates Newton.
 !          rstreamlineDiffusion%dnewton = dnewton*dcx
-!          
+!
 !          if (dnewton .eq. 0.0_DP) then
 !
 !            ! Deactivate the matrices A12 and A21 by setting the multiplicators
 !            ! to 0.0. Whatever the content is (if there's content at all),
 !            ! these matrices are ignored then by the kernel.
-!            
+!
 !            rtempMatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
 !            rtempMatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
-!            
+!
 !          else
 !
 !            ! Clear A12/A21 that receives parts of the Newton matrix
 !            call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,2))
 !            call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,1))
-!          
+!
 !            ! Activate the submatrices A12 and A21 if they aren't.
 !            rtempMatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
 !            rtempMatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-!           
+!
 !          end if
-!         
+!
 !          ! Call the SD method to calculate the nonlinearity.
 !          call conv_streamlineDiffusionBlk2d (&
 !                              rtempVector, rtempVector, &
 !                              dvectorWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODDEFECT, &
-!                              rtempMatrix,rsolution=rtempVector,rdefect=rtempDefect)  
-!                              
+!                              rtempMatrix,rsolution=rtempVector,rdefect=rtempDefect)
+!
 !          ! Set up the jump stabilisation structure.
 !          ! There's not much to do, only initialise the viscosity...
 !          rjumpStabil%dnu = rstreamlineDiffusion%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rjumpStabil%dgammastar = dupsam
 !          rjumpStabil%dgamma = rjumpStabil%dgammastar
-!          
+!
 !          ! Matrix weight
 !          rjumpStabil%dtheta = dgamma * dcx
 !
-!          ! Call the jump stabilisation technique to stabilise that stuff.   
+!          ! Call the jump stabilisation technique to stabilise that stuff.
 !          ! We can assemble the jump part any time as it's independent of any
 !          ! convective parts...
 !          call conv_jumpStabilisation2d (&
 !                              rjumpStabil, CONV_MODDEFECT, &
 !                              rtempMatrix%RmatrixBlock(1,1),&
-!                              rsolution=rtempVector,rdefect=rtempDefect)   
+!                              rsolution=rtempVector,rdefect=rtempDefect)
 !
 !          if (.not. bshared) then
 !            print *,'Edge oriented stabilisation does not support independent A11/A22!'
@@ -5852,13 +5852,13 @@ contains
 !        case DEFAULT
 !          print *,'Don''t know how to set up nonlinearity!?!'
 !          stop
-!        
+!
 !        end select
-!      
+!
 !      else
-!      
+!
 !        ! That's the Stokes-case. Jump stabilisation is possible...
-!      
+!
 !        select case (iupwind)
 !        case (2)
 !          ! Jump stabilisation.
@@ -5866,52 +5866,52 @@ contains
 !          ! Set up the jump stabilisation structure.
 !          ! There's not much to do, only initialise the viscosity...
 !          rjumpStabil%dnu = rnonlinearSpatialMatrix%dnu
-!          
+!
 !          ! Set stabilisation parameter
 !          rjumpStabil%dgammastar = dupsam
 !          rjumpStabil%dgamma = rjumpStabil%dgammastar
-!          
+!
 !          ! Matrix weight
 !          rjumpStabil%dtheta = dgamma * dcx
 !
-!          ! Call the jump stabilisation technique to stabilise that stuff.   
+!          ! Call the jump stabilisation technique to stabilise that stuff.
 !          ! We can assemble the jump part any time as it's independent of any
 !          ! convective parts...
 !          call conv_jumpStabilisation2d (&
 !                              rjumpStabil, CONV_MODDEFECT, &
 !                              rtempMatrix%RmatrixBlock(1,1),&
-!                              rsolution=rtempVector,rdefect=rtempDefect)   
+!                              rsolution=rtempVector,rdefect=rtempDefect)
 !
 !          if (.not. bshared) then
 !            call conv_jumpStabilisation2d (&
 !                                rjumpStabil, CONV_MODDEFECT, &
 !                                rtempMatrix%RmatrixBlock(2,2),&
-!                                rsolution=rtempVector,rdefect=rtempDefect)   
+!                                rsolution=rtempVector,rdefect=rtempDefect)
 !          end if
 !
 !        case DEFAULT
 !          ! No stabilisation
-!        
+!
 !        end select
-!      
+!
 !      end if ! gamma <> 0
-!      
+!
 !      ! Release the temp matrix
 !      call lsysbl_releaseMatrix (rtempMatrix)
-!                          
+!
 !      ! Release the temp vector if allocated.
 !      ! Derive a temporary vector that contains only those velocity
 !      ! subvectors that might affect the matrix.
 !      call lsysbl_releaseVector (rtempVector)
 !      call lsysbl_releaseVector (rtempDefect)
-!    
+!
 !    end subroutine
 
 !    subroutine assemblePrimalReactMassDefect (rnonlinearSpatialMatrix,&
 !        rvector,rdefect,dcx,rvelocityVector,dvectorWeight)
-!        
+!
 !    ! Assembles the defect arising from the reactive coupling mass
-!    ! matrices in the primal equation. rdefect must have been initialised 
+!    ! matrices in the primal equation. rdefect must have been initialised
 !    ! with the right hand side vector.
 !    !
 !    ! This special matrix is added in case that Newton is active. It has the
@@ -5921,26 +5921,26 @@ contains
 !    ! the routine will construct
 !    !
 !    !       rdefect = r(primal)defect - dcx * (dtheta M~ r(dual)vector)
-!    
+!
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
 !    ! about how the mass matrix part is weighted (dr11, dr12).
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
 !
 !    ! Solution vector. Provides the dual equation for the assembly.
 !    type(t_vectorBlock), intent(IN) :: rvector
-!    
+!
 !    ! On entry: RHS vector.
 !    ! Is overwritten by the defect vector in the velocity subsystem.
 !    type(t_vectorBlock), intent(INOUT) :: rdefect
-!    
+!
 !    ! Multiplication factor for the whole operator A*rvector
 !    real(DP), intent(IN) :: dcx
-!    
+!
 !    ! Weight for the velocity vector rvelocityVector; usually = 1.0
 !    real(DP), intent(IN) :: dvectorWeight
-!    
+!
 !    ! Velocity vector field that should be used for the assembly of the
-!    ! nonlinearity. Block 4 and 5 in that block vector are used as velocity 
+!    ! nonlinearity. Block 4 and 5 in that block vector are used as velocity
 !    ! field.
 !    type(t_vectorBlock), intent(IN) :: rvelocityVector
 !
@@ -5948,7 +5948,7 @@ contains
 !      type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
 !      type(t_matrixBlock) :: rtempmatrix
 !      type(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
-!      
+!
 !      ! If we have a reactive coupling mass matrix, it gets interesting...
 !      if ((rnonlinearSpatialMatrix%dr11 .ne. 0.0_DP) .or. &
 !          (rnonlinearSpatialMatrix%dr12 .ne. 0.0_DP)) then
@@ -5956,7 +5956,7 @@ contains
 !        call lsysbl_createEmptyMatrix (rtempMatrix,2)
 !
 !        ! Create a matrix with the structure we need. Share the structure
-!        ! of the mass matrix. Entries are not necessary for the assembly      
+!        ! of the mass matrix. Entries are not necessary for the assembly
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !
@@ -5968,12 +5968,12 @@ contains
 !
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!            
+!
 !        ! Switch the matrices on.
 !        rtempMatrix%RmatrixBlock(1:2,1:2)%dscaleFactor = 1.0_DP
-!        
+!
 !        call lsysbl_updateMatStrucInfo (rtempMatrix)
-!      
+!
 !        ! The reactive part is: "dr1 * . * grad(lambda)".
 !        ! This is exactly the 'Newton' part assembled by the streamline diffusion
 !        ! method if we use the dual velocity as velocity field!
@@ -5981,24 +5981,24 @@ contains
 !
 !        ! Viscosity; ok, actually not used.
 !        rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!        
+!
 !        ! Set stabilisation parameter
 !        rstreamlineDiffusion%dupsam = rnonlinearSpatialMatrix%dupsam2
-!        
+!
 !        ! Weight dr21 of the convective part.
 !        rstreamlineDiffusion%ddelta = rnonlinearSpatialMatrix%dr11*dcx
-!        
+!
 !        ! Weight for the Newton part; here, this is the dr22 weight.
 !        rstreamlineDiffusion%dnewton = rnonlinearSpatialMatrix%dr12*dcx
-!        
+!
 !        ! Create a temporary block vector that points to the dual velocity.
 !        ! This has to be evaluated during the assembly.
 !        call lsysbl_deriveSubvector (rvelocityVector,rtempvectorEval,4,5,.true.)
-!        
+!
 !        ! Create a temporary block vector for the dual defect.
 !        ! Matrix*primal velocity is subtracted from this.
 !        call lsysbl_deriveSubvector (rdefect,rtempvectorDef,1,2,.true.)
-!        
+!
 !        ! Call the SD method to calculate the nonlinearity.
 !        ! As velocity vector, specify rtempvector, which points to
 !        ! the dual velocity.
@@ -6012,16 +6012,16 @@ contains
 !        call lsysbl_releaseVector (rtempVectorEval)
 !        call lsysbl_releaseVector (rtempVectorDef)
 !        call lsysbl_releaseMatrix (rtempMatrix)
-!      
+!
 !      end if
-!      
+!
 !    end subroutine
-!      
+!
 !    subroutine assembleDualReactMassDefect (rnonlinearSpatialMatrix,&
 !        rvector,rdefect,dcx,rvelocityVector,dvectorWeight)
-!        
+!
 !    ! Assembles the defect arising from the reactive coupling mass
-!    ! matrices. rdefect must have been initialised with the right hand side 
+!    ! matrices. rdefect must have been initialised with the right hand side
 !    ! vector.
 !    !
 !    ! This special matrix is added in case that Newton is active. It has the
@@ -6031,24 +6031,24 @@ contains
 !    ! the routine will construct
 !    !
 !    !       rdefect = r(dual)defect - dcx * (dtheta M~ r(primal)vector)
-!    
+!
 !    ! A t_nonlinearSpatialMatrix structure providing all necessary 'source' information
 !    ! about how the mass matrix part is weighted (dr21, dr22).
 !    type(t_nonlinearSpatialMatrix), intent(IN) :: rnonlinearSpatialMatrix
 !
 !    ! Solution vector. Provides the dual equation for the assembly.
 !    type(t_vectorBlock), intent(IN) :: rvector
-!    
+!
 !    ! On entry: RHS vector.
 !    ! Is overwritten by the defect vector in the velocity subsystem.
 !    type(t_vectorBlock), intent(INOUT) :: rdefect
-!    
+!
 !    ! Multiplication factor for the whole operator A*rvector
 !    real(DP), intent(IN) :: dcx
-!    
+!
 !    ! Weight for the velocity vector rvelocityVector; usually = 1.0
 !    real(DP), intent(IN) :: dvectorWeight
-!    
+!
 !    ! Velocity vector field that should be used for the assembly of the
 !    ! nonlinearity. The first two blocks in that block vector are
 !    ! used as velocity field.
@@ -6058,7 +6058,7 @@ contains
 !      type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
 !      type(t_matrixBlock) :: rtempmatrix
 !      type(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
-!      
+!
 !      ! If we have a reactive coupling mass matrix, it gets interesting...
 !      if ((rnonlinearSpatialMatrix%dr21 .ne. 0.0_DP) .or. &
 !          (rnonlinearSpatialMatrix%dr22 .ne. 0.0_DP)) then
@@ -6066,7 +6066,7 @@ contains
 !        call lsysbl_createEmptyMatrix (rtempMatrix,2)
 !
 !        ! Create a matrix with the structure we need. Share the structure
-!        ! of the mass matrix. Entries are not necessary for the assembly      
+!        ! of the mass matrix. Entries are not necessary for the assembly
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !            rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !
@@ -6078,12 +6078,12 @@ contains
 !
 !        call lsyssc_duplicateMatrix (rnonlinearSpatialMatrix%p_rmatrixMass,&
 !            rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!            
+!
 !        ! Switch the matrices on.
 !        rtempMatrix%RmatrixBlock(1:2,1:2)%dscaleFactor = 1.0_DP
-!        
+!
 !        call lsysbl_updateMatStrucInfo (rtempMatrix)
-!      
+!
 !        ! The reactive part is: "dr2 * . * grad(lambda)".
 !        ! This is exactly the 'Newton' part assembled by the streamline diffusion
 !        ! method if we use the dual velocity as velocity field!
@@ -6091,24 +6091,24 @@ contains
 !
 !        ! Viscosity; ok, actually not used.
 !        rstreamlineDiffusion%dnu = rnonlinearSpatialMatrix%dnu
-!        
+!
 !        ! Set stabilisation parameter
 !        rstreamlineDiffusion%dupsam = rnonlinearSpatialMatrix%dupsam2
-!        
+!
 !        ! Weight dr21 of the convective part.
 !        rstreamlineDiffusion%ddelta = rnonlinearSpatialMatrix%dr21*dcx
-!        
+!
 !        ! Weight for the Newton part; here, this is the dr22 weight.
 !        rstreamlineDiffusion%dnewton = rnonlinearSpatialMatrix%dr22*dcx
-!        
+!
 !        ! Create a temporary block vector that points to the dual velocity.
 !        ! This has to be evaluated during the assembly.
 !        call lsysbl_deriveSubvector (rvelocityVector,rtempvectorEval,4,5,.true.)
-!        
+!
 !        ! Create a temporary block vector for the dual defect.
 !        ! Matrix*primal velocity is subtracted from this.
 !        call lsysbl_deriveSubvector (rdefect,rtempvectorDef,4,5,.true.)
-!        
+!
 !        ! Call the SD method to calculate the nonlinearity.
 !        ! As velocity vector, specify rtempvector, which points to
 !        ! the dual velocity.
@@ -6122,9 +6122,9 @@ contains
 !        call lsysbl_releaseVector (rtempVectorEval)
 !        call lsysbl_releaseVector (rtempVectorDef)
 !        call lsysbl_releaseMatrix (rtempMatrix)
-!      
+!
 !      end if
-!      
+!
 !    end subroutine
 
   end subroutine
@@ -6167,6 +6167,6 @@ contains
       p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
     end do
 
-  end subroutine   
+  end subroutine
 
 end module

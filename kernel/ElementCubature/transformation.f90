@@ -24,10 +24,10 @@
 !#        (=number of degrees of freedom of the transformation formula)
 !#
 !# 6.) trafo_calctrafo / trafo_calctrafoabs
-!#     -> Calculates the transformation of one point (from reference to the 
+!#     -> Calculates the transformation of one point (from reference to the
 !#        real element).
 !#        Supports triangular and quadrilateral mapping.
-!#        trafo_calctrafoabs calculates the absolute value of the Jacobian 
+!#        trafo_calctrafoabs calculates the absolute value of the Jacobian
 !#        determinant.
 !#
 !# 7.) trafo_calctrafo_mult / trafo_calctrafoabs_mult
@@ -61,30 +61,30 @@
 !#       in one routine)
 !#
 !# 15.) trafo_mapCubPts1Dto2D
-!#      -> Maps a set of 1D cubature point coordinates on the reference 
+!#      -> Maps a set of 1D cubature point coordinates on the reference
 !#         interval to an edge of a reference element.
 !#
 !# 16.) trafo_mapCubPts1Dto2DRefQuad
-!#      -> Maps a set of 1D cubature point coordinates on the reference 
+!#      -> Maps a set of 1D cubature point coordinates on the reference
 !#         interval to an edge of the 2D reference quadrilateral.
 !#
 !# 17.) trafo_mapCubPts1Dto2DTriBary
-!#      -> Maps a set of 1D cubature point coordinates on the reference 
+!#      -> Maps a set of 1D cubature point coordinates on the reference
 !#         interval to an edge of the 2D reference triangle; barycentric
 !#         coordinates.
-!# 
+!#
 !# 18.) trafo_calcBackTrafo_quad2d
-!#      -> Find the coordinates on the reference element 
+!#      -> Find the coordinates on the reference element
 !#         for a given point in real world coordinates
-!# 
+!#
 !# 19.) trafo_calcRefCoords
-!#      -> For a given point in world coordinates and an element, this 
+!#      -> For a given point in world coordinates and an element, this
 !#         routine calculates the coordinates of the point on the reference
 !#         element.
 !#         Supports triangular and quadrilateral mapping.
 !#
 !# 20.) trafo_mapCubPts2Dto3DRefHexa
-!#      -> Maps a set of 2D cubature point coordinates on the reference 
+!#      -> Maps a set of 2D cubature point coordinates on the reference
 !#         quadrilateral to a face of the 3D reference hexahedron.
 !#
 !# 21.) trafo_mapCubPtsRef2LvlEdge1D
@@ -135,7 +135,7 @@
 !#     -----------------------------------------------------------------
 !#         |         ****        | unused    |dimens |     trafo-ID    |
 !#
-!#   Bits 0..7   specify the type of transformation (triangular, quad, 
+!#   Bits 0..7   specify the type of transformation (triangular, quad,
 !#               linear, quadratic, ...). The different ID`s for this
 !#               field are expressed in the TRAFO_ID_xxxx constants.
 !#   Bits 8+ 9   encode the dimension of the reference element. =1: 1D, =2: 2D, =3: 3D.
@@ -144,10 +144,10 @@
 !#               bits are all =0 except for those types of transformation that
 !#               require special, additional information, like isoparametric elements.
 !#         trafo-ID = ...
-!#               TRAFO_ID_QUADTRI: 
+!#               TRAFO_ID_QUADTRI:
 !#                    Bit 16/17: These three bits encode how many edges of the tri
 !#                               element are to be handled with an isoparametric mapping
-!#                               to the reference element. 
+!#                               to the reference element.
 !#                               =0: isoparametric mapping with one edge not linear
 !#                               =1: isoparametric mapping with two edges not linear
 !#                               =2: isoparametric mapping with three edges not linear
@@ -157,10 +157,10 @@
 !#                               Bit 18:=1 1st edge maps nonlinear
 !#                               Bit 19:=1 2nd edge maps nonlinear
 !#                               Bit 20:=1 3rd edge maps nonlinear
-!#               TRAFO_ID_MQUADQUAD: 
+!#               TRAFO_ID_MQUADQUAD:
 !#                    Bit 16/17: These three bits encode how many edges of the quad
 !#                               element are to be handled with an isoparametric mapping
-!#                               to the reference element. 
+!#                               to the reference element.
 !#                               =0: isoparametric mapping with one edge not linear
 !#                               =1: isoparametric mapping with two edges not linear
 !#                               =2: isoparametric mapping with three edges not linear
@@ -223,11 +223,11 @@ module transformation
   ! Unspecified transformation
   integer, parameter, public :: TRAFO_ID_UNKNOWN       = 0
 
-  ! Linear transformation for simplex-type elements (1D-lines, 2D-triangles, 
+  ! Linear transformation for simplex-type elements (1D-lines, 2D-triangles,
   ! 3D-tetrahedra)
   integer, parameter, public :: TRAFO_ID_LINSIMPLEX    = 1
 
-  ! Multilinear (Bilinear/Trilinear) transformation for cubic-shaped elements 
+  ! Multilinear (Bilinear/Trilinear) transformation for cubic-shaped elements
   ! (2D-quadrilaterals, 3D-hexahedra)
   integer, parameter, public :: TRAFO_ID_MLINCUBE     = 2
   
@@ -237,11 +237,11 @@ module transformation
   ! Multilinear transformation for prismic shaped elements in 3D
   integer, parameter, public :: TRAFO_ID_MLINPRISM    = 4
   
-  ! Quadratic transformation for simplex-type elements (1D-lines, 2D-triangles, 
+  ! Quadratic transformation for simplex-type elements (1D-lines, 2D-triangles,
   ! 3D-tetrahedra)
   integer, parameter, public :: TRAFO_ID_QUADSIMPLEX  = 11
 
-  ! Multiquadratic (Biquadratic/Triquadratic) quadrilateral transformation 
+  ! Multiquadratic (Biquadratic/Triquadratic) quadrilateral transformation
   ! for cubic-shaped elements (2D-quadrilaterals, 3D-hexahedra)
   integer, parameter, public :: TRAFO_ID_MQUADCUBE    = 12
 !</constantblock>
@@ -261,7 +261,7 @@ module transformation
   integer(I32), parameter, public :: TRAFO_DIM_3D = ishft(NDIM3D,8)
 
   ! Bitmask for transformation ID, without additional information
-  integer(I32), parameter, public :: TRAFO_DIM_IDMASK = 255 
+  integer(I32), parameter, public :: TRAFO_DIM_IDMASK = 255
 
   ! Bitmask for transformation ID including dimension, without additional information
   integer(I32), parameter, public :: TRAFO_DIM_IDDIMMASK = TRAFO_DIM_IDMASK + TRAFO_DIM_DIMENSION
@@ -358,9 +358,9 @@ module transformation
   public :: trafo_calcJac_hexa3D
   public :: trafo_calcJac_pyra3D
   public :: trafo_calcJac_prism3D
-  public :: trafo_calcTrafo_quad2d 
-  public :: trafo_calcTrafo_hexa3d 
-  public :: trafo_calcTrafo_pyra3d 
+  public :: trafo_calcTrafo_quad2d
+  public :: trafo_calcTrafo_hexa3d
+  public :: trafo_calcTrafo_pyra3d
   public :: trafo_calcTrafo_prism3d
   public :: trafo_igetReferenceDimension
   public :: trafo_calcBackTrafo_hexa
@@ -397,7 +397,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function trafo_igetDimension(ctrafoType)
 
@@ -408,7 +408,7 @@ contains
   ! number of dimensions of world coordinates.
 !</description>
 
-!<input>    
+!<input>
   ! ID of transformation to calculate
   integer(I32), intent(in) :: ctrafoType
 !</input>
@@ -427,7 +427,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function trafo_igetReferenceDimension(ctrafoType)
 
@@ -437,7 +437,7 @@ contains
   ! E.g.: 3 for barycentric coordinates in 2D.
 !</description>
 
-!<input>    
+!<input>
   ! ID of transformation to calculate
   integer(I32), intent(in) :: ctrafoType
 !</input>
@@ -461,7 +461,7 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_MLINCUBE)
-        ! 1D linear line transformation. 
+        ! 1D linear line transformation.
         trafo_igetReferenceDimension = 1
         
       end select
@@ -473,12 +473,12 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 2D simplex -> linear triangular transformation. 
+        ! 2D simplex -> linear triangular transformation.
         ! 3 DOF`s in the transformation (given by the corners of the element)
         trafo_igetReferenceDimension = 3
       
       case (TRAFO_ID_MLINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         ! 4 DOF`s in the transformation (given by the corners of the element)
         trafo_igetReferenceDimension = 2
@@ -515,7 +515,7 @@ contains
 
   ! ***************************************************************************
 
-!<function>  
+!<function>
 
   elemental integer function trafo_igetNVE(ctrafoType)
 
@@ -525,7 +525,7 @@ contains
   ! of an element (corners, edge midpoints,...).
 !</description>
 
-!<input>    
+!<input>
   ! The transformation code identifier.
   integer(I32), intent(in) :: ctrafoType
 !</input>
@@ -551,7 +551,7 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_MLINCUBE)
-        ! 1D linear line transformation. 
+        ! 1D linear line transformation.
         ! 2 DOFs in the transformation (given by the corners of the element)
         trafo_igetNVE = 2
         
@@ -564,12 +564,12 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 2D simplex -> linear triangular transformation. 
+        ! 2D simplex -> linear triangular transformation.
         ! 3 DOFs in the transformation (given by the corners of the element)
         trafo_igetNVE = 3
       
       case (TRAFO_ID_MLINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         ! 4 DOFs in the transformation (given by the corners of the element)
         trafo_igetNVE = 4
@@ -583,12 +583,12 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 3D simplex -> linear triangular transformation. 
+        ! 3D simplex -> linear triangular transformation.
         ! 4 DOFs in the transformation (given by the corners of the element)
         trafo_igetNVE = 4
       
       case (TRAFO_ID_MLINCUBE)
-        ! Trilinear transformation for cubic-shaped elements 
+        ! Trilinear transformation for cubic-shaped elements
         ! -> Trilinear hexahedral transformation.
         ! 8 DOFs in the transformation (given by the corners of the element)
         trafo_igetNVE = 8
@@ -623,7 +623,7 @@ contains
 !</description>
 
 !<input>
-  ! ID of transformation 
+  ! ID of transformation
   integer(I32), intent(in) :: ctrafoType
 
   ! Triangulation structure that defines the elements.
@@ -635,7 +635,7 @@ contains
 
 !<output>
   ! Coordinates of the corners of the element
-  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i) = x-coordinates of corner i on an element,
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE).
   ! NVE depends on the type of transformation and can be determined with
@@ -653,11 +653,11 @@ contains
     
     case (NDIM1D)
       ! 1D elements. Lines
-      ! We always need the corner-coordinate array, so get it 
+      ! We always need the corner-coordinate array, so get it
       ! from the triangulation.
-      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoords)
-      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
       
       ! Check the actual transformation ID how to transform.
@@ -665,19 +665,19 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_MLINCUBE)
-        ! 1D simplex -> linear line transformation. 
+        ! 1D simplex -> linear line transformation.
         ! Transfer the corners of the element.
         Dcoords (1,1:2) = p_DvertexCoords(1, p_IverticesAtElement(1:2, iel))
                                 
       end select
     
     case (NDIM2D)
-      ! 2D elements. Triangles, Quadrilaterals. 
-      ! We always need the corner-coordinate array, so get it 
+      ! 2D elements. Triangles, Quadrilaterals.
+      ! We always need the corner-coordinate array, so get it
       ! from the triangulation.
-      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoords)
-      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
       
       ! Check the actual transformation ID how to transform.
@@ -685,13 +685,13 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 2D simplex -> linear triangular transformation. 
+        ! 2D simplex -> linear triangular transformation.
         ! Transfer the corners of the element.
         Dcoords (1:NDIM2D,1:3) = p_DvertexCoords(1:NDIM2D,&
                                     p_IverticesAtElement(1:3,iel))
       
       case (TRAFO_ID_MLINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
         Dcoords (1:NDIM2D,1:4) = p_DvertexCoords(1:NDIM2D,&
@@ -701,11 +701,11 @@ contains
 
     case (NDIM3D)
       ! 3D elements. Tetrahedra, Hexahedra.
-      ! We always need the corner-coordinate array, so get it 
+      ! We always need the corner-coordinate array, so get it
       ! from the triangulation.
-      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoords)
-      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
       
       ! Check the actual transformation ID how to transform.
@@ -713,26 +713,26 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 3D simplex -> linear tetrahedral transformation. 
+        ! 3D simplex -> linear tetrahedral transformation.
         ! Transfer the corners of the element.
         Dcoords (1:NDIM3D,1:4) = p_DvertexCoords(1:NDIM3D,&
                                     p_IverticesAtElement(1:4,iel))
       
       case (TRAFO_ID_MLINCUBE)
-        ! Trilinear transformation for cubic-shaped elements 
+        ! Trilinear transformation for cubic-shaped elements
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
         Dcoords (1:NDIM3D,1:8) = p_DvertexCoords(1:NDIM3D,&
                                     p_IverticesAtElement(1:8,iel))
       
       case (TRAFO_ID_MLINPYRAMID)
-        ! Bilinear transformation for pyramid shaped elements 
+        ! Bilinear transformation for pyramid shaped elements
         ! Transfer the corners of the element.
         Dcoords (1:NDIM3D,1:5) = p_DvertexCoords(1:NDIM3D,&
                                     p_IverticesAtElement(1:5,iel))
 
       case (TRAFO_ID_MLINPRISM)
-        ! Bilinear transformation for prismic shaped elements 
+        ! Bilinear transformation for prismic shaped elements
         ! Transfer the corners of the element.
         Dcoords (1:NDIM3D,1:6) = p_DvertexCoords(1:NDIM3D,&
                                     p_IverticesAtElement(1:6,iel))
@@ -759,7 +759,7 @@ contains
 !</description>
 
 !<input>
-  ! ID of transformation 
+  ! ID of transformation
   integer(I32), intent(in) :: ctrafoType
 
   ! Triangulation structure that defines the elements.
@@ -776,7 +776,7 @@ contains
 
 !<output>
   ! Coordinates of the corners of all the elements
-  !  Dcoord(1,i,.) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i,.) = x-coordinates of corner i on an element,
   !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE,size of Ielements)
   ! NVE depends on the type of transformation and can be determined with
@@ -805,11 +805,11 @@ contains
     
     case (NDIM1D)
       ! 2D elements. Lines.
-      ! We always need the corner-coordinate array, so get it 
+      ! We always need the corner-coordinate array, so get it
       ! from the triangulation.
-      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoords)
-      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
       
       ! Check the actual transformation ID how to transform.
@@ -817,7 +817,7 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_MLINCUBE)
-        ! 1D simplex -> linear line transformation. 
+        ! 1D simplex -> linear line transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
         !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
@@ -832,12 +832,12 @@ contains
       end select
 
     case (NDIM2D)
-      ! 2D elements. Triangles, Quadrilaterals. 
-      ! We always need the corner-coordinate array, so get it 
+      ! 2D elements. Triangles, Quadrilaterals.
+      ! We always need the corner-coordinate array, so get it
       ! from the triangulation.
-      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoords)
-      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
       
       ! Check the actual transformation ID how to transform.
@@ -845,7 +845,7 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 2D simplex -> linear triangular transformation. 
+        ! 2D simplex -> linear triangular transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
         !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
@@ -858,7 +858,7 @@ contains
         !$omp end parallel do
       
       case (TRAFO_ID_MLINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
@@ -875,11 +875,11 @@ contains
 
     case (NDIM3D)
       ! 3D elements. Tetrahedra, Hexahedra.
-      ! We always need the corner-coordinate array, so get it 
+      ! We always need the corner-coordinate array, so get it
       ! from the triangulation.
-      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoords)
-      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
+      call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
       
       ! Check the actual transformation ID how to transform.
@@ -887,7 +887,7 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 3D simplex -> linear tetrahedral transformation. 
+        ! 3D simplex -> linear tetrahedral transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
         !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
@@ -900,7 +900,7 @@ contains
         !$omp end parallel do
       
       case (TRAFO_ID_MLINCUBE)
-        ! Trilinear transformation for cubic-shaped elements 
+        ! Trilinear transformation for cubic-shaped elements
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
@@ -914,7 +914,7 @@ contains
         !$omp end parallel do
       
       case (TRAFO_ID_MLINPYRAMID)
-        ! Bilinear transformation for pyramid shaped elements 
+        ! Bilinear transformation for pyramid shaped elements
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
         !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
@@ -928,7 +928,7 @@ contains
       
       
       case (TRAFO_ID_MLINPRISM)
-        ! Bilinear transformation for prismic shaped elements 
+        ! Bilinear transformation for prismic shaped elements
         ! Transfer the corners of the element.
         !$omp parallel do private(ipoint) &
         !$omp if(size(Ielements) > p_rperfconfig%NELEMMIN_OMP)
@@ -971,13 +971,13 @@ contains
   integer(I32), intent(in) :: ctrafoType
 
   ! Coordinates of the corners of the element
-  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i) = x-coordinates of corner i on an element,
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
   real(DP), dimension(:,:), intent(in) :: Dcoords
 
-  ! Coordinates of the point on the reference element 
-  !  DpointRef(1) = x-coordinates of point i on an element, 
+  ! Coordinates of the point on the reference element
+  !  DpointRef(1) = x-coordinates of point i on an element,
   !  DpointRef(2) = y-coordinates of point i on an element.
   ! DIMENSION(#space dimension)
   real(DP), dimension(:), intent(in) :: DpointRef
@@ -1017,7 +1017,7 @@ contains
     case (TRAFO_ID_MLINCUBE)
     
       ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
-      Djac(1) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
+      Djac(1) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))
       ddetj = Djac(1)
       
       ! Do we need to transform the reference point?
@@ -1069,10 +1069,10 @@ contains
         ! Calculation of the real coordinates is also easy.
         DpointReal(1) = DpointRef(1)*dax &
                             + DpointRef(2)*dbx &
-                            + DpointRef(3)*dcx 
+                            + DpointRef(3)*dcx
         DpointReal(2) = DpointRef(1)*day &
                             + DpointRef(2)*dby &
-                            + DpointRef(3)*dcy 
+                            + DpointRef(3)*dcy
           
       end if
           
@@ -1220,7 +1220,7 @@ contains
   ! reference element for multiple points. The element is given
   ! as a list of corner points in Dcoords.
   !
-  ! For every of these npointsPerEl points in the element specified 
+  ! For every of these npointsPerEl points in the element specified
   ! by DpointsRef, the following information is calculated:
   ! 1.) Determinant of the mapping from the reference to the real element,
   ! 2.) the Jacobian matrix of the mapping,
@@ -1236,14 +1236,14 @@ contains
   integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
-  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i) = x-coordinates of corner i on an element,
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
   real(DP), dimension(:,:), intent(in) :: Dcoords
 
-  ! Coordinates of the points on the reference element for each element 
+  ! Coordinates of the points on the reference element for each element
   ! where to calculate the mapping.
-  !  DpointsRef(1,i) = x-coordinates of point i on an element, 
+  !  DpointsRef(1,i) = x-coordinates of point i on an element,
   !  DpointsRef(2,i) = y-coordinates of point i on an element.
   ! ! DIMENSION(#space dimension,npointsPerEl)
   real(DP), dimension(:,:), intent(in) :: DpointsRef
@@ -1291,7 +1291,7 @@ contains
         do ipt=1,npointsPerEl
         
           ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
-          Djac(1,ipt) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
+          Djac(1,ipt) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))
           ddetj(ipt) = Djac(1,ipt)
           
         end do
@@ -1302,7 +1302,7 @@ contains
         do ipt=1,npointsPerEl
         
           ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
-          Djac(1,ipt) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
+          Djac(1,ipt) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))
           ddetj(ipt) = Djac(1,ipt)
           
           ! Transform the reference point into real coordinates
@@ -1395,10 +1395,10 @@ contains
           ! Calculation of the real coordinates is also easy.
           DpointsReal(1,ipt) = DpointsRef(1,ipt)*dax &
                              + DpointsRef(2,ipt)*dbx &
-                             + DpointsRef(3,ipt)*dcx 
+                             + DpointsRef(3,ipt)*dcx
           DpointsReal(2,ipt) = DpointsRef(1,ipt)*day &
                              + DpointsRef(2,ipt)*dby &
-                             + DpointsRef(3,ipt)*dcy 
+                             + DpointsRef(3,ipt)*dcy
           
         end do ! ipt
           
@@ -1468,7 +1468,7 @@ contains
                               - Djac(5,ipt)*Djac(7,ipt))
         end do
         
-      else    
+      else
           
         ! Loop over the points
         do ipt=1,npointsPerEl
@@ -1603,7 +1603,7 @@ contains
 
 !<description>
   ! General transformation support for multiple points on multiple
-  ! elements. 
+  ! elements.
   !
   ! The aim of this routine is to calculate the transformation between the
   ! reference element and multiple real elements. The elements are given
@@ -1611,7 +1611,7 @@ contains
   !
   ! On every of the nelements elements given in this list, there are
   ! npointsPerEl points inside the element given in reference coordinates.
-  ! For every of these npointsPerEl*nelements points, the following 
+  ! For every of these npointsPerEl*nelements points, the following
   ! information is calculated:
   ! 1.) Determinant of the mapping from the reference to the real element,
   ! 2.) the Jacobian matrix of the mapping,
@@ -1630,18 +1630,18 @@ contains
   integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
-  !  Dcoord(1,i,.) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i,.) = x-coordinates of corner i on an element,
   !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE,nelements)
   real(DP), dimension(:,:,:), intent(in) :: Dcoords
 
-  ! Coordinates of the points on the reference element for each element 
+  ! Coordinates of the points on the reference element for each element
   ! where to calculate the mapping.
   ! DIMENSION(#space dimensions,npointsPerEl,nelements) for quadrilateral elements and
   ! DIMENSION(#space dimensions+1,npointsPerEl,nelements) for triangular elements.
   !
   ! For QUAD elements:
-  !  DpointsRef(1,i,.) = x-coordinates of point i on an element, 
+  !  DpointsRef(1,i,.) = x-coordinates of point i on an element,
   !  DpointsRef(2,i,.) = y-coordinates of point i on an element.
   !
   ! For triangular elements:
@@ -1730,7 +1730,7 @@ contains
           do ipt=1,npointsPerEl
         
             ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
-            Djac(1,ipt,iel) = 0.5_DP * (Dcoords(1,2,iel) - Dcoords(1,1,iel))   
+            Djac(1,ipt,iel) = 0.5_DP * (Dcoords(1,2,iel) - Dcoords(1,1,iel))
             ddetj(ipt,iel) = Djac(1,ipt,iel)
           
             ! Transform the reference point into real coordinates
@@ -1840,10 +1840,10 @@ contains
             ! Calculation of the real coordinates is also easy.
             DpointsReal(1,ipt,iel) = DpointsRef(1,ipt,iel)*dax &
                                    + DpointsRef(2,ipt,iel)*dbx &
-                                   + DpointsRef(3,ipt,iel)*dcx 
+                                   + DpointsRef(3,ipt,iel)*dcx
             DpointsReal(2,ipt,iel) = DpointsRef(1,ipt,iel)*day &
                                    + DpointsRef(2,ipt,iel)*dby &
-                                   + DpointsRef(3,ipt,iel)*dcy 
+                                   + DpointsRef(3,ipt,iel)*dcy
             
           end do ! ipt
           
@@ -1854,7 +1854,7 @@ contains
     
     case (TRAFO_ID_MLINCUBE)
     
-      ! Bilinear transformation for cubic-shaped elements 
+      ! Bilinear transformation for cubic-shaped elements
       ! -> Bilinear quadrilateral transformation.
       !
       ! Calculate with or without coordinates?
@@ -1941,7 +1941,7 @@ contains
            
         end do
         
-      else    
+      else
         
         ! Loop over the elements
         do iel=1, nelements
@@ -2143,13 +2143,13 @@ contains
   integer(I32), intent(in) :: ctrafoType
 
   ! Coordinates of the corners of the element
-  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i) = x-coordinates of corner i on an element,
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
   real(DP), dimension(:,:), intent(in) :: Dcoords
 
-  ! Coordinates of the point on the reference element 
-  !  DpointRef(1) = x-coordinates of point i on an element, 
+  ! Coordinates of the point on the reference element
+  !  DpointRef(1) = x-coordinates of point i on an element,
   !  DpointRef(2) = y-coordinates of point i on an element.
   ! DIMENSION(#space dimension)
   real(DP), dimension(:), intent(in) :: DpointRef
@@ -2196,7 +2196,7 @@ contains
   ! reference element for multiple points. The element is given
   ! as a list of corner points in Dcoords.
   !
-  ! For every of these npointsPerEl points in the element specified 
+  ! For every of these npointsPerEl points in the element specified
   ! by DpointsRef, the following information is calculated:
   ! 1.) Determinant of the mapping from the reference to the real element,
   ! 2.) the Jacobian matrix of the mapping,
@@ -2212,14 +2212,14 @@ contains
   integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
-  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i) = x-coordinates of corner i on an element,
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
   real(DP), dimension(:,:), intent(in) :: Dcoords
 
-  ! Coordinates of the points on the reference element for each element 
+  ! Coordinates of the points on the reference element for each element
   ! where to calculate the mapping.
-  !  DpointsRef(1,i) = x-coordinates of point i on an element, 
+  !  DpointsRef(1,i) = x-coordinates of point i on an element,
   !  DpointsRef(2,i) = y-coordinates of point i on an element.
   ! ! DIMENSION(#space dimension,npointsPerEl)
   real(DP), dimension(:,:), intent(in) :: DpointsRef
@@ -2231,9 +2231,9 @@ contains
   real(DP), dimension(:,:), intent(out) :: Djac
   
   ! Absolute values of the Jacobian determinants of the mapping for all
-  ! the points from the reference element to the real element.                                            
-  ! DIMENSION(npointsPerEl)                                                           
-  real(DP), dimension(:), intent(out) :: Ddetj                                        
+  ! the points from the reference element to the real element.
+  ! DIMENSION(npointsPerEl)
+  real(DP), dimension(:), intent(out) :: Ddetj
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
   ! mapped from the reference element to the real element.
@@ -2264,7 +2264,7 @@ contains
 
 !<description>
   ! General transformation support for multiple points on multiple
-  ! elements. 
+  ! elements.
   !
   ! The aim of this routine is to calculate the transformation between the
   ! reference element and multiple real elements. The elements are given
@@ -2272,7 +2272,7 @@ contains
   !
   ! On every of the nelements elements given in this list, there are
   ! npointsPerEl points inside the element given in reference coordinates.
-  ! For every of these npointsPerEl*nelements points, the following 
+  ! For every of these npointsPerEl*nelements points, the following
   ! information is calculated:
   ! 1.) Determinant of the mapping from the reference to the real element,
   ! 2.) the Jacobian matrix of the mapping,
@@ -2291,18 +2291,18 @@ contains
   integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
-  !  Dcoord(1,i,.) = x-coordinates of corner i on an element, 
+  !  Dcoord(1,i,.) = x-coordinates of corner i on an element,
   !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE,nelements)
   real(DP), dimension(:,:,:), intent(in) :: Dcoords
 
-  ! Coordinates of the points on the reference element for each element 
+  ! Coordinates of the points on the reference element for each element
   ! where to calculate the mapping.
   ! DIMENSION(#space dimensions,npointsPerEl,nelements) for quadrilateral elements and
   ! DIMENSION(#space dimensions+1,npointsPerEl,nelements) for triangular elements.
   !
   ! For QUAD elements:
-  !  DpointsRef(1,i,.) = x-coordinates of point i on an element, 
+  !  DpointsRef(1,i,.) = x-coordinates of point i on an element,
   !  DpointsRef(2,i,.) = y-coordinates of point i on an element.
   !
   ! For triangular elements:
@@ -2356,7 +2356,7 @@ contains
 !   (-1,1) ___ (1,1)         (x4,y4)   ___  (x3,y3)
 !         |  |                        /  \
 !         |__|           =>          /____\
-!  (-1,-1)    (1,-1)         (x1,y1)        (x2,y2)   
+!  (-1,-1)    (1,-1)         (x1,y1)        (x2,y2)
 !
 ! By theory this can by done with a bilinear mapping, i.e. a mapping
 ! Psi:R^2->R^2  of the form:
@@ -2385,15 +2385,15 @@ contains
 !  a3 = 1/4 * (-x1 - x2 + x3 + x4)      b3 = 1/4 * (-y1 - y2 + y3 + y4)
 !  a4 = 1/4 * ( x1 - x2 + x3 - x4)      b4 = 1/4 * ( y1 - y2 + y3 - y4)
 !
-! The factors in the brackets in these equations are only dependent on 
+! The factors in the brackets in these equations are only dependent on
 ! the corners of the quadrilateral, not of the current point. So they
 ! are constant for all points we want to map from the reference
 ! element to the real one. We call them here "auxiliary Jacobian factors".
 ! They can be calculated with trafo_calcJacPrepare in advance for all points
 ! that have to be mapped.
 !
-! The Jacobian matrix of the bilinear transformation is now 
-! calculated as usual by partial differentiation. Thing above 
+! The Jacobian matrix of the bilinear transformation is now
+! calculated as usual by partial differentiation. Thing above
 ! coefficients ai and bi one can write:
 !
 ! DPhi ( xi1 )  =  ( a2 + a4*xi2    a3 + a4*xi1 )
@@ -2406,7 +2406,7 @@ contains
 ! Using these information makes it possible to map a point (XI1,XI2)
 ! on the reference element to coordinates (XX,YY) on the real element by:
 !
-!   (XX,YY) := Psi(XI1,XI2) 
+!   (XX,YY) := Psi(XI1,XI2)
 ! ----------------------------------------------------------------------------
 
 !<subroutine>
@@ -2421,7 +2421,7 @@ contains
 
 !<input>
   ! Coordinates of the four corners of the real quadrilateral.
-  ! Dcoord(1,.) = x-coordinates, 
+  ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
   real(DP), dimension(:,:), intent(in) :: Dcoords
@@ -2444,7 +2444,7 @@ contains
   DjacPrep(7) = 0.25_DP*(-Dcoords(2,1)-Dcoords(2,2)+Dcoords(2,3)+Dcoords(2,4))
   DjacPrep(8) = 0.25_DP*(Dcoords(2,1)-Dcoords(2,2)+Dcoords(2,3)-Dcoords(2,4))
 
-  end subroutine 
+  end subroutine
 
   !************************************************************************
 
@@ -2464,9 +2464,9 @@ contains
   ! determinant is dependent of the point.
   !
   ! Before this routine can be called, the auxiliary factors DjacPrep
-  ! have to be calculated with trafo_calcJacPrepare for the 
+  ! have to be calculated with trafo_calcJacPrepare for the
   ! considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -2481,7 +2481,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -2529,14 +2529,14 @@ contains
   ! real element.
   !
   ! This routine only calculates the Jacobian determinant of the
-  ! mapping. This is on contrast to trafo_calcRealCoords, which not only 
+  ! mapping. This is on contrast to trafo_calcRealCoords, which not only
   ! calculates this determinant but also maps the point. So this routine
   ! can be used to speed up the code if the coordinates of the
   ! mapped point already exist.
   !
   ! Before this routine can be called, the auxiliary factors DJF
   ! have to be calculated with trafo_calcJacPrepare for the considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -2550,7 +2550,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -2582,11 +2582,11 @@ contains
   pure subroutine trafo_calcRealCoords2D (DjacPrep,dparx,dpary,dxreal,dyreal)
 
 !<description>
-  ! This subroutine computes the real coordinates of a point which 
-  ! is given by parameter values (dparx,dpary) on the reference element. 
+  ! This subroutine computes the real coordinates of a point which
+  ! is given by parameter values (dparx,dpary) on the reference element.
   ! It is assumed that the array DjacPrep was initialised before using
   ! with trafo_calcJacPrepare.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -2643,12 +2643,12 @@ contains
   
 !<output>
   ! Coordinates of the cubature points on the edge in 2D.
-  !        Dxi2D(1..ncubp,1)=x-coord, 
+  !        Dxi2D(1..ncubp,1)=x-coord,
   !        Dxi2D(1..ncubp,2)=y-coord
   real(DP), dimension(:,:), intent(out) :: Dxi2D
 !</output>
 
-!</subroutine>    
+!</subroutine>
 
   ! local variables
   integer :: ii
@@ -2695,7 +2695,7 @@ contains
 !<description>
   ! This routine maps the coordinates of the cubature points in 1D
   ! (given by Dxi1D(1..ncubp,1)) to an edge on a 2D triangle
-  ! in barycentric coordinates. 
+  ! in barycentric coordinates.
   ! iedge specifies the edge where to map the cubature points to.
 !</description>
 
@@ -2713,13 +2713,13 @@ contains
   
 !<output>
   ! Coordinates of the cubature points on the edge in 2D.
-  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate,
   !        Dxi2D(1..ncubp,2)=2nd barycentric coordinate,
   !        Dxi2D(1..ncubp,3)=3rd barycentric coordinate
   real(DP), dimension(:,:), intent(out) :: Dxi2D
 !</output>
 
-!</subroutine>    
+!</subroutine>
 
   ! local variables
   integer :: ii
@@ -2760,8 +2760,8 @@ contains
   subroutine trafo_mapCubPts1Dto2D(icoordSystem, iedge, ncubp, Dxi1D, Dxi2D)
 
 !<description>
-  ! This routine maps the coordinates of the cubature points 
-  ! (given by Dxi1D(1..ncubp,1)) on the 1D reference interval [-1,1] 
+  ! This routine maps the coordinates of the cubature points
+  ! (given by Dxi1D(1..ncubp,1)) on the 1D reference interval [-1,1]
   ! to an edge on the 2D reference element.
   ! iedge specifies the edge where to map the cubature points to.
   !
@@ -2791,16 +2791,16 @@ contains
 !<output>
   ! Coordinates of the cubature points on the edge in 2D.
   ! For 2D triangles with barycentric coordinates:
-  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate,
   !        Dxi2D(1..ncubp,2)=2nd barycentric coordinate,
   !        Dxi2D(1..ncubp,3)=3rd barycentric coordinate
   ! For 2D quads with standard coordinates:
-  !        Dxi2D(1..ncubp,1)=x-coord, 
+  !        Dxi2D(1..ncubp,1)=x-coord,
   !        Dxi2D(1..ncubp,2)=y-coord.
   real(DP), dimension(:,:), intent(out) :: Dxi2D
 !</output>
 
-!</subroutine>    
+!</subroutine>
 
   ! What type of transformation do we have? First decide on the dimension,
   ! then on the actual ID.
@@ -2816,8 +2816,8 @@ contains
   
   case DEFAULT
     call output_line ('Unsupported coordinate system.', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'trafo_mapCubPts1Dto2D')  
-  end select    
+                      OU_CLASS_ERROR,OU_MODE_STD,'trafo_mapCubPts1Dto2D')
+  end select
 
   end subroutine
 
@@ -2854,7 +2854,7 @@ contains
   real(DP), dimension(:,:), intent(out) :: Dxi3D
 !</output>
 
-!</subroutine>    
+!</subroutine>
 
   ! local variables
   integer :: i
@@ -2921,38 +2921,38 @@ contains
 
 !<description>
   ! This subroutine is to find the coordinates on the reference
-  ! element (dparx,dpary) for a given point (dxreal,dyreal) 
+  ! element (dparx,dpary) for a given point (dxreal,dyreal)
   ! in real coordinates.
   !
   ! Remark: This is a difficult task, as usually in FEM codes the
-  ! parameter values (dparx,dpary) are known and one wants to obtain 
+  ! parameter values (dparx,dpary) are known and one wants to obtain
   ! the real coordinates.
   !
-  ! Inverting the bilinear trafo in a straightforward manner by using 
+  ! Inverting the bilinear trafo in a straightforward manner by using
   ! pq-formula does not work very well, as it is numerically unstable.
   ! For parallelogram-shaped elements, one would have to introduce a
-  ! special treatment. For nearly parallelogram-shaped elements, this 
-  ! can cause a crash as the argument of the square root can become 
+  ! special treatment. For nearly parallelogram-shaped elements, this
+  ! can cause a crash as the argument of the square root can become
   ! negative due to rounding errors. In the case of points near
   ! the element borders, we divide nearly 0/0.
   !
   ! Therefore, we have implemented the algorithm described in
   !
   ! [Introduction to Finite Element Methods, Carlos Felippa,
-  !  Department of Aerospace Engineering Sciences and Center for 
+  !  Department of Aerospace Engineering Sciences and Center for
   !  Aerospace Structures, http://titan.colorado.edu/courses.d/IFEM.d/]
   !
   ! Note: For the transformation of coordinates to the barycentric
-  ! coordinate system for triangles, one can use 
+  ! coordinate system for triangles, one can use
   ! gaux_getBarycentricCoords_tri2D.
-!</description>  
+!</description>
 
 !<input>
   ! Coordinates of the four points forming the element.
   ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(in) :: Dcoord 
+  real(DP), dimension(:,:), intent(in) :: Dcoord
   
   ! Coordinates of a point on the real element
   real(DP), intent(in) :: dxreal,dyreal
@@ -3083,7 +3083,7 @@ contains
 !
 ! where:
 !
-!  yi1 = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2 
+!  yi1 = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2
 !      + a6*xi1*xi3 + a7*xi2*xi3 + a8*xi1*xi2*xi3
 !  yi2 = b1 + b2*xi1 + b3*xi2 + b4*xi3 + b5*xi1*xi2
 !      + b6*xi1*xi3 + b7*xi2*xi3 + b8*xi1*xi2*xi3
@@ -3163,7 +3163,7 @@ contains
 
 !<input>
   ! Coordinates of the four corners of the real hexahedron.
-  ! Dcoord(1,.) = x-coordinates, 
+  ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates,
   ! Dcoord(3,.) = z-coordinates.
   ! DIMENSION(#space dimensions,NVE)
@@ -3251,7 +3251,7 @@ contains
                  (-Dcoords(3,1)+Dcoords(3,2)-Dcoords(3,3)+Dcoords(3,4)&
                   +Dcoords(3,5)-Dcoords(3,6)+Dcoords(3,7)-Dcoords(3,8))
   
-  end subroutine 
+  end subroutine
 
   !************************************************************************
 
@@ -3272,9 +3272,9 @@ contains
   ! determinant is dependent of the point.
   !
   ! Before this routine can be called, the auxiliary factors DjacPrep
-  ! have to be calculated with trafo_calcJacPrepare3D for the 
+  ! have to be calculated with trafo_calcJacPrepare3D for the
   ! considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -3289,7 +3289,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -3372,14 +3372,14 @@ contains
   ! real element.
   !
   ! This routine only calculates the Jacobian determinant of the
-  ! mapping. This is on contrast to trafo_calcRealCoords, which not only 
+  ! mapping. This is on contrast to trafo_calcRealCoords, which not only
   ! calculates this determinant but also maps the point. So this routine
   ! can be used to speed up the code if the coordinates of the
   ! mapped point already exist.
   !
   ! Before this routine can be called, the auxiliary factors DJF
   ! have to be calculated with trafo_calcJacPrepare for the considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -3393,7 +3393,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -3454,7 +3454,7 @@ contains
 
 !<input>
   ! Coordinates of the four corners of the real hexahedron.
-  ! Dcoord(1,.) = x-coordinates, 
+  ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates,
   ! Dcoord(3,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
@@ -3500,7 +3500,7 @@ contains
     DjacPrep(15) = Dcoords(3,5) - 0.25_DP * (&
                    Dcoords(3,1)+Dcoords(3,2)+Dcoords(3,3)+Dcoords(3,4))
   
-  end subroutine 
+  end subroutine
 
   !************************************************************************
 
@@ -3521,9 +3521,9 @@ contains
   ! determinant is dependent of the point.
   !
   ! Before this routine can be called, the auxiliary factors DjacPrep
-  ! have to be calculated with trafo_calcJacPrepare3D for the 
+  ! have to be calculated with trafo_calcJacPrepare3D for the
   ! considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -3538,7 +3538,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -3587,9 +3587,9 @@ contains
     dxreal = DjacPrep(1) + DjacPrep(2)*dparx + DjacPrep(3)*dpary &
            + DjacPrep(4)*dparx*dpary + DjacPrep(5)*dparz
     dyreal = DjacPrep(6) + DjacPrep(7)*dparx + DjacPrep(8)*dpary &
-           + DjacPrep(9)*dparx*dpary + DjacPrep(10)*dparz 
+           + DjacPrep(9)*dparx*dpary + DjacPrep(10)*dparz
     dzreal = DjacPrep(11) + DjacPrep(12)*dparx + DjacPrep(13)*dpary &
-           + DjacPrep(14)*dparx*dpary + DjacPrep(15)*dparz 
+           + DjacPrep(14)*dparx*dpary + DjacPrep(15)*dparz
   
   end subroutine
 
@@ -3604,14 +3604,14 @@ contains
   ! real element.
   !
   ! This routine only calculates the Jacobian determinant of the
-  ! mapping. This is on contrast to trafo_calcRealCoords, which not only 
+  ! mapping. This is on contrast to trafo_calcRealCoords, which not only
   ! calculates this determinant but also maps the point. So this routine
   ! can be used to speed up the code if the coordinates of the
   ! mapped point already exist.
   !
   ! Before this routine can be called, the auxiliary factors DJF
   ! have to be calculated with trafo_calcJacPrepare for the considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -3625,7 +3625,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -3677,7 +3677,7 @@ contains
 
 !<input>
   ! Coordinates of the four corners of the real hexahedron.
-  ! Dcoord(1,.) = x-coordinates, 
+  ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates,
   ! Dcoord(3,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
@@ -3729,7 +3729,7 @@ contains
     DjacPrep(18) = 0.5_DP *&
                  ( Dcoords(3,1)-Dcoords(3,3)-Dcoords(3,3)+Dcoords(3,6))
   
-  end subroutine 
+  end subroutine
 
   !************************************************************************
 
@@ -3749,9 +3749,9 @@ contains
   ! determinant is dependent of the point.
   !
   ! Before this routine can be called, the auxiliary factors DjacPrep
-  ! have to be calculated with trafo_calcJacPrepare3D for the 
+  ! have to be calculated with trafo_calcJacPrepare3D for the
   ! considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -3766,7 +3766,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -3832,14 +3832,14 @@ contains
   ! real element.
   !
   ! This routine only calculates the Jacobian determinant of the
-  ! mapping. This is on contrast to trafo_calcRealCoords, which not only 
+  ! mapping. This is on contrast to trafo_calcRealCoords, which not only
   ! calculates this determinant but also maps the point. So this routine
   ! can be used to speed up the code if the coordinates of the
   ! mapped point already exist.
   !
   ! Before this routine can be called, the auxiliary factors DJF
   ! have to be calculated with trafo_calcJacPrepare for the considered element.
-!</description>  
+!</description>
 
 !<input>
   ! Auxiliary constants for the considered element with
@@ -3853,7 +3853,7 @@ contains
 !</input>
   
 !<output>
-  ! The Jacobian matrix of the mapping from the reference to the 
+  ! The Jacobian matrix of the mapping from the reference to the
   ! real element.
   !  Djac(1) = J(1,1)
   !  Djac(2) = J(2,1)
@@ -3899,11 +3899,11 @@ contains
 !<description>
   ! This subroutine finds the coordinates on the reference
   ! element DparPoint for a given point Dpoint in real coordinates.
-!</description>  
+!</description>
 
 !<input>
   ! ID of transformation to calculate. This specifies the format of the
-  ! destination array DparPoint (dimension, if to use barycentric 
+  ! destination array DparPoint (dimension, if to use barycentric
   ! coordinates etc.)
   integer(I32), intent(in) :: ctrafoType
   
@@ -3954,11 +3954,11 @@ contains
         ! Call the corresponding routine in geometryaux to calculate
         ! the barycentric coordinates to Dpoint.
         call gaux_getBarycentricCoords_tri2D(&
-          Dcoord,Dpoint(1),Dpoint(2),DparPoint(1),DparPoint(2),DparPoint(3))      
+          Dcoord,Dpoint(1),Dpoint(2),DparPoint(1),DparPoint(2),DparPoint(3))
           
       case (TRAFO_ID_MLINCUBE)
       
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         !
         ! Call the back transformation routine from above.
@@ -3967,7 +3967,7 @@ contains
         
       end select ! actual ID
     case (NDIM3D)
-      ! trilinear transformation for hexahedral elements 
+      ! trilinear transformation for hexahedral elements
       call trafo_calcBackTrafo_hexa(Dcoord, &
            Dpoint(1),Dpoint(2),Dpoint(3), &
            DparPoint(1),DparPoint(2),DparPoint(3),iresult)
@@ -3986,11 +3986,11 @@ contains
 !<description>
   ! This subroutine maps the coordinates of a point DpointRef on the
   ! reference element to a point Dpoint in world coordinates.
-!</description>  
+!</description>
 
 !<input>
   ! ID of transformation to calculate. This specifies the format of the
-  ! destination array DparPoint (dimension, if to use barycentric 
+  ! destination array DparPoint (dimension, if to use barycentric
   ! coordinates etc.)
   integer(I32), intent(in) :: ctrafoType
   
@@ -4052,10 +4052,10 @@ contains
           
       case (TRAFO_ID_MLINCUBE)
       
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         !
-        ! This is a little bit more complicated, we need the whole 
+        ! This is a little bit more complicated, we need the whole
         ! transformation. The Djac / Ddetj information is ignored.
         call trafo_calctrafo (ctrafoType,Dcoord,&
                               DpointRef,Djac,Ddetj,Dpoint)
@@ -4193,7 +4193,7 @@ contains
   ! Number of cubature points for the triangle
   integer , intent(in) :: ncubp
   
-  ! Cubature point coordinates for the fine mesh triangle given in 
+  ! Cubature point coordinates for the fine mesh triangle given in
   ! barycentric coordinates
   ! Dfine(1:3,1:ncubp) = barycentric coordinates
   real(DP), dimension(:,:), intent(in) :: Dfine
@@ -4260,7 +4260,7 @@ contains
     !
     ! Take a look at the following ASCII-Art of a refined triangle:
     !
-    !  y ^ 
+    !  y ^
     !    |
     !    1    V3
     !    |    |\__
@@ -4423,14 +4423,14 @@ contains
 
   end subroutine
   
-!************************************************************************  
+!************************************************************************
   
-!<subroutine>  
+!<subroutine>
   pure subroutine trafo_calcBackTrafo_hexa(Dcoord, &
      dxreal,dyreal,dzreal,dparx,dpary,dparz,iresult)
 !<description>
   ! This subroutine is to find the coordinates on the reference
-  ! element (dparx,dpary,dparz) for a given point (dxreal,dyreal,dzreal) 
+  ! element (dparx,dpary,dparz) for a given point (dxreal,dyreal,dzreal)
   ! in real coordinates.
   !
 !<input>
@@ -4439,7 +4439,7 @@ contains
   ! Dcoord(2,.) = y-coordinates.
   ! Dcoord(3,.) = z-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(in) :: Dcoord 
+  real(DP), dimension(:,:), intent(in) :: Dcoord
   
   ! Coordinates of a point on the real element
   real(DP), intent(in) :: dxreal,dyreal,dzreal
@@ -4473,11 +4473,11 @@ contains
   DjacPrep( 1) = 0.125_DP *&
                ( DCoord(1,1)+DCoord(1,2)+DCoord(1,3)+DCoord(1,4)&
                 +DCoord(1,5)+DCoord(1,6)+DCoord(1,7)+DCoord(1,8))
-  ! a2                
+  ! a2
   DjacPrep( 2) = 0.125_DP *&
                (-DCoord(1,1)+DCoord(1,2)+DCoord(1,3)-DCoord(1,4)&
                 -DCoord(1,5)+DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
-  ! a3                
+  ! a3
   DjacPrep( 3) = 0.125_DP *&
                (-DCoord(1,1)-DCoord(1,2)+DCoord(1,3)+DCoord(1,4)&
                 -DCoord(1,5)-DCoord(1,6)+DCoord(1,7)+DCoord(1,8))
@@ -4489,7 +4489,7 @@ contains
   DjacPrep( 5) = 0.125_DP *&
                ( DCoord(1,1)-DCoord(1,2)+DCoord(1,3)-DCoord(1,4)&
                 +DCoord(1,5)-DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
-  ! a6                
+  ! a6
   DjacPrep( 6) = 0.125_DP *&
                ( DCoord(1,1)-DCoord(1,2)-DCoord(1,3)+DCoord(1,4)&
                 -DCoord(1,5)+DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
@@ -4550,24 +4550,24 @@ contains
                (-DCoord(3,1)+DCoord(3,2)-DCoord(3,3)+DCoord(3,4)&
                 +DCoord(3,5)-DCoord(3,6)+DCoord(3,7)-DCoord(3,8))
   
-  !  dparx = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2 
+  !  dparx = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2
   !      + a6*xi1*xi3 + a7*xi2*xi3 + a8*xi1*xi2*xi3  dxreal,dyreal,dzreal
   ! DEBUG
 !  DPoints(1)=-1.0_dp
 !  DPoints(2)=-1.0_dp
 !  DPoints(3)=-1.0_dp
-!  
+!
 !  dparx_old = DjacPrep(1)+DjacPrep(2)*DPoints(1)+DjacPrep(3)*DPoints(2)+DjacPrep(4)*DPoints(3) &
 !              +DjacPrep(5)*DPoints(1)*DPoints(2)+ DjacPrep(6)*DPoints(1)*DPoints(3) &
-!              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)  
+!              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)
 !
 !  dpary_old = DjacPrep(9)+DjacPrep(10)*DPoints(1)+DjacPrep(11)*DPoints(2)+DjacPrep(12)*DPoints(3) &
 !              +DjacPrep(13)*DPoints(1)*DPoints(2)+ DjacPrep(14)*DPoints(1)*DPoints(3) &
-!              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)  
+!              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)
 !
 !  dparz_old = DjacPrep(17)+DjacPrep(18)*DPoints(1)+DjacPrep(19)*DPoints(2)+DjacPrep(20)*DPoints(3) &
 !              +DjacPrep(21)*DPoints(1)*DPoints(2)+ DjacPrep(22)*DPoints(1)*DPoints(3) &
-!              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)  
+!              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)
   
   do i=1,20
   
@@ -4611,7 +4611,7 @@ contains
     
     ! We have the rhs, now solve the system using cramer's rule
            
-!    ! determinant 
+!    ! determinant
 !    ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
 !          - Djac(2)*(Djac(4)*Djac(9) - Djac(6)*Djac(7)) &
 !          + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
@@ -4644,9 +4644,9 @@ contains
     
     ! DEBUG
 !    c1=Djac(1)*dparx + Djac(2)*dpary + Djac(3)*dparz
-!    
+!
 !    c2=Djac(4)*dparx + Djac(5)*dpary + Djac(6)*dparz
-!    
+!
 !    c3=Djac(7)*dparx + Djac(8)*dpary + Djac(9)*dparz
     
     ! compute the correction
@@ -4691,7 +4691,7 @@ contains
   
 !************************************************************************
   
-!<function>  
+!<function>
 
   elemental logical function trafo_isLinearTrafo (ctrafoType) result (blinearTrafo)
 
@@ -4729,7 +4729,7 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_MLINCUBE)
-        ! 1D linear line transformation. 
+        ! 1D linear line transformation.
         blinearTrafo = .true.
         
       end select
@@ -4741,11 +4741,11 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 2D simplex -> linear triangular transformation. 
+        ! 2D simplex -> linear triangular transformation.
         blinearTrafo = .true.
       
       case (TRAFO_ID_MLINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
+        ! Bilinear transformation for cubic-shaped elements
         ! -> Bilinear quadrilateral transformation.
         blinearTrafo = .true.
       
@@ -4758,11 +4758,11 @@ contains
       select case (iand(ctrafoType,TRAFO_DIM_IDMASK))
       
       case (TRAFO_ID_LINSIMPLEX)
-        ! 3D simplex -> linear triangular transformation. 
+        ! 3D simplex -> linear triangular transformation.
         blinearTrafo = .true.
       
       case (TRAFO_ID_MLINCUBE)
-        ! Trilinear transformation for cubic-shaped elements 
+        ! Trilinear transformation for cubic-shaped elements
         ! -> Trilinear hexahedral transformation.
         blinearTrafo = .true.
       
@@ -4780,4 +4780,4 @@ contains
   
   end function
 
-end module 
+end module

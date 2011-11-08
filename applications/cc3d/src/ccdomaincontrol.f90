@@ -31,12 +31,12 @@
 !#
 !# 6.) ccdc_calcParProfile
 !#     -> Calculates the parabolic profile for a given domain region.
-!#        
+!#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# = How to add a new domain =
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# - To Do -
-!# 
+!#
 !# </purpose>
 !##############################################################################
 

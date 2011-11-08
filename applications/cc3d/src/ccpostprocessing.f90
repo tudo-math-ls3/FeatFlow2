@@ -163,7 +163,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocessing structure. 
+  ! Postprocessing structure.
   type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -427,7 +427,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T_3D) then
       
-        ! Create a temporary vector 
+        ! Create a temporary vector
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(4)%p_rspatialDiscr,&
             rtempVector,.true.)
 
@@ -458,7 +458,7 @@ contains
       
       end if
       
-    end if    
+    end if
     
   end subroutine
 
@@ -489,7 +489,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing  
+  type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -543,7 +543,7 @@ contains
       
     end if
 
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -604,7 +604,7 @@ contains
     ! Initialise the discrete BC structure
     call bcasm_initDiscreteBC(rdiscreteBC)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdiscreteBC,rproblem%rcollection)
@@ -621,7 +621,7 @@ contains
     ! Filter the solution vector to implement discrete BC's.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC's for fictitious 
+    ! Filter the solution vector to implement discrete BC's for fictitious
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -702,20 +702,20 @@ contains
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
 !    IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
 !        ccomplexity .EQ. SPDISC_UNIFORM) THEN
-!        
+!
 !      ieltype = rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
 !                RelementDistr(1)%itrialElement
-!                
+!
 !      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T_3D) THEN
-!          
+!
 !        CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
-!        
+!
 !        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
 !        CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
 !            UCD_VAR_STANDARD, p_Ddata(1:p_rtriangulation%NVT))
-!            
+!
 !      END IF
-!      
+!
 !    END IF
     
     ! Write the file to disc, that's it.
@@ -747,7 +747,7 @@ contains
   subroutine cc_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! Writes Film output (raw data vectors) to a file as configured in the
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -769,7 +769,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing  
+  type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -783,10 +783,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -902,7 +902,7 @@ contains
   type(t_problem), intent(in),target :: rproblem
 !</input>
 
-!<output>  
+!<output>
   ! Postprocessing structure.
   type(t_cc3dpostprocessing), intent(out) :: rpostprocessing
 !</output>
@@ -972,7 +972,7 @@ contains
   type(t_cc3dpostprocessing), intent(in) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination Postprocessing structure.
   type(t_cc3dpostprocessing), intent(inout) :: rpostprocessingDst
 !</inputoutput>
@@ -1007,7 +1007,7 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   ! Postprocessing structure.
   type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
@@ -1045,7 +1045,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_cc3dpostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 

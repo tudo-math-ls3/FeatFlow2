@@ -1,12 +1,12 @@
 !**********************************************************************
 !* This file contains the public COMMON block and the definitions
-!* responsible for pseudodynamic memory management. 
+!* responsible for pseudodynamic memory management.
 !*
 !* The parameter NNWORK is to be modified by the user. It describes
 !* the total amount of memory (in doubles) that is used by the
 !* main problem.
 !*
-!* NNARR describes the total amount of handles available to the 
+!* NNARR describes the total amount of handles available to the
 !* program.
 !**********************************************************************
 

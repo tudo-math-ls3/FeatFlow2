@@ -41,7 +41,7 @@ module cc2dmediumm2basic
     
   implicit none
   
-  ! Maximum allowed level in this application; must be =9 for 
+  ! Maximum allowed level in this application; must be =9 for
   ! FEAT 1.x compatibility (still)!
   integer, parameter :: NNLEV = 9
   
@@ -70,7 +70,7 @@ module cc2dmediumm2basic
     ! Provides memory for intermediate calculations of the system matrix.
     ! This matrix is used e.g. as template matrix for a Multigrid preconditioner
     ! during the nonlinear iteration; in this case, the 'preconditioner matrices'
-    ! on all levels share some information with this to prevent frequent 
+    ! on all levels share some information with this to prevent frequent
     ! reallocation of memory. On the other hand, the matrix might have to be
     ! evaluated for some reason (e.g. the evaluation of damping parameters)
     ! which can be done with this variable to avoid memory allocation.
@@ -89,10 +89,10 @@ module cc2dmediumm2basic
     ! Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
-    ! B1-matrix for that specific level. 
+    ! B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
 
     ! Temporary vector in the size of the RHS/solution vector on that level.
@@ -107,7 +107,7 @@ module cc2dmediumm2basic
     ! Nonstationary simulation: Mass matrix
     type(t_matrixScalar) :: rmatrixMass
 
-    ! Nonstationary simulation: A scalar discretisation structure that 
+    ! Nonstationary simulation: A scalar discretisation structure that
     ! specifies how to generate the mass matrix.
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationMass
 
@@ -136,10 +136,10 @@ module cc2dmediumm2basic
     integer :: niterations         = 0
     
     ! Absolute start time of the simulation
-    real(DP) :: dtimeInit          = 0.0_DP     
+    real(DP) :: dtimeInit          = 0.0_DP
     
     ! Time step size; former TSTEP
-    real(DP) :: dtimeStep          = 0.0_DP       
+    real(DP) :: dtimeStep          = 0.0_DP
     
     ! Maximum time of the simulation
     real(DP) :: dtimeMax           = 0.0_DP
@@ -189,7 +189,7 @@ module cc2dmediumm2basic
     ! An object for saving the domain:
     type(t_boundary), pointer :: p_rboundary
 
-    ! Flag indicating if the X- and Y-velocity is decoupled (i.e. yield different 
+    ! Flag indicating if the X- and Y-velocity is decoupled (i.e. yield different
     ! matrices). This is the case e.g. for no-slip boundary conditions
     ! where then implementation of the BC's into the first velocity
     ! matrix must not affect the 2nd velocity matrix!
@@ -208,7 +208,7 @@ module cc2dmediumm2basic
     !     prssure drop and/or Neumann boundary parts
     integer :: iboundary
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer           :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
@@ -218,7 +218,7 @@ module cc2dmediumm2basic
     
     ! Type of simulation.
     ! =0: stationary simulation.
-    ! =1: time-dependent simulation with explicit time stepping configured 
+    ! =1: time-dependent simulation with explicit time stepping configured
     !     by rtimedependence
     integer                               :: itimedependence
     
@@ -226,8 +226,8 @@ module cc2dmediumm2basic
     ! Only valid if itimedependence=1!
     type(t_problem_explTimeStepping)      :: rtimedependence
     
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection)                    :: rcollection
     
@@ -297,7 +297,7 @@ module cc2dmediumm2basic
 ! c2d2_removeNonlinearLoop finally deletes these entries from the collection
 ! again.
 !
-! Expressions for boundary conditions are saved in special 
+! Expressions for boundary conditions are saved in special
 ! sections in the collection:
 !
 ! Section [BDEXPRESSIONS]:
@@ -307,7 +307,7 @@ module cc2dmediumm2basic
 ! During the assembly of RHS vectors and boundary conditions, the following
 ! additional information is valid in the collection:
 !
-!   collection%IquickAccess(1)   = 0: stationary, 
+!   collection%IquickAccess(1)   = 0: stationary,
 !                                  1: nonstationary with explicit time stepping
 !   collection%DquickAccess(1)   = current simulation time
 !   collection%DquickAccess(2)   = minimum simulation time

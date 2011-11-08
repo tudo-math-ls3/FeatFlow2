@@ -70,10 +70,10 @@ module cc2dmediumm2boundarydef
   ! Text expression, evaluated by parsing
   integer, parameter :: BDC_EXPRESSION = -1
   
-  ! Fixed double precision value 
+  ! Fixed double precision value
   integer, parameter :: BDC_VALDOUBLE = 0
 
-  ! Fixed integer value 
+  ! Fixed integer value
   integer, parameter :: BDC_VALINT    = 1
 
   ! Parabolic profile with prescribed maximum value
@@ -144,7 +144,7 @@ contains
     ! Triangulation on currently highest level.
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! A set of variables describing the analytic boundary conditions.    
+    ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_bcRegion), pointer :: p_rbcRegion
     
@@ -180,8 +180,8 @@ contains
     call bcond_initBC (rproblem%p_rboundaryConditions,p_rboundary)
     
     ! Get the expression/bc sections from the bondary condition block
-    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
-    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
+    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection)
+    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond)
     
     ! Add a section to the collection that accepts the boundary expressions
     call collct_addsection (rproblem%rcollection, SEC_SBDEXPRESSIONS)
@@ -230,7 +230,7 @@ contains
         ! Real-value
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (rproblem%rcollection, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS) 
+                                   0, SEC_SBDEXPRESSIONS)
       case (BDC_VALINT)
         ! Integer-value
         read(cstr,*) cname,ityp,ivalue
@@ -241,7 +241,7 @@ contains
         ! Parabolic profile with specified maximum velocity
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (rproblem%rcollection, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS) 
+                                   0, SEC_SBDEXPRESSIONS)
                                    
       case DEFAULT
         print *,'Expressions not implemented!'
@@ -250,7 +250,7 @@ contains
       end select
       
       ! Put the type of the expression to the temporary collection section
-      call collct_setvalue_int (rcoll, cname, ityp, .true.) 
+      call collct_setvalue_int (rcoll, cname, ityp, .true.)
       
     end do
     
@@ -283,7 +283,7 @@ contains
           case (1)
             read(cstr,*) ityp,ivalue,iintervalEnds,ibctyp
             dpar2 = real(ivalue,DP)
-          end select                                   
+          end select
                         
           ! Form a boundary condition segment that covers that boundary part
           if (dpar2 .ge. dpar1) then
@@ -299,7 +299,7 @@ contains
             select case (ibctyp)
             
             case (0)
-              ! Usually there's Neumann boundary in this region, but we can't be 
+              ! Usually there's Neumann boundary in this region, but we can't be
               ! sure. Check if, on the highest level, there's at least one edge
               ! of the triangulation belonging to the boundary. If yes, we
               ! have found Neumann boundary. If no, the segment is just too
@@ -400,7 +400,7 @@ contains
                 IvelEqns = (/1,2/)
                 call bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,&
                                               IvelEqns,&
-                                              rboundaryRegion,p_rbcRegion)          
+                                              rboundaryRegion,p_rbcRegion)
                 p_rbcRegion%stag = sbdex1
 
                 iexptyp = collct_getvalue_int (rcoll, sbdex1)
@@ -442,7 +442,7 @@ contains
         end do
       
       else
-        ! There is no parameter configuring the boundary condition on that 
+        ! There is no parameter configuring the boundary condition on that
         ! component - so we have Neumann boundary there.
         bNeumann = .true.
       end if
@@ -462,7 +462,7 @@ contains
     ! Remove the temporary collection from memory.
     call collct_done (rcoll)
 
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
 
@@ -489,7 +489,7 @@ contains
     ! A structure identifying the fictitious boundary component
     type(t_fictBoundaryRegion) :: rfictBoundaryRegion
 
-    ! A set of variables describing the analytic boundary conditions.    
+    ! A set of variables describing the analytic boundary conditions.
     type(t_bcRegion), pointer :: p_rbcRegion
     
     ! Add a new fictitious boundary object It should impose Dirichlet
@@ -499,8 +499,8 @@ contains
     rfictBoundaryRegion%sname = 'CIRCLE'
     Iequations = (/1,2/)    ! 1=x, 2=y-velocity
     !CALL bcond_newDirichletBConFictBD (rproblem%p_rboundaryConditions,Iequations,&
-    !                                   rfictBoundaryRegion,p_rbcRegion)    
+    !                                   rfictBoundaryRegion,p_rbcRegion)
 
-  end subroutine  
+  end subroutine
   
 end module

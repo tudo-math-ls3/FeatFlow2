@@ -417,7 +417,7 @@ contains
         call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
         call lsyssc_getbase_double(rmatrix, p_Ddata)
         
-        ! Assemble matrix diagonal 
+        ! Assemble matrix diagonal
         call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
             dscale, bclear, p_Ddata)
                 
@@ -492,7 +492,7 @@ contains
         call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
         call lsyssc_getbase_single(rmatrix, p_Fdata)
         
-        ! Assemble matrix diagonal 
+        ! Assemble matrix diagonal
         call doOperatorDiagSngl(p_IdiagList, p_FcoeffsAtDiag,&
             real(dscale,SP), bclear, p_Fdata)
         
@@ -1198,7 +1198,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Ddata
 
       ! local variables
-      integer :: iedge,igroup,ij,ji     
+      integer :: iedge,igroup,ij,ji
 
       !$omp parallel default(shared) private(ij,ji)&
       !$omp if (size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
@@ -1647,7 +1647,7 @@ contains
         
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronize memory access
-          do igroup = 1, size(IedgeListIdx)-1       
+          do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
               
@@ -1814,7 +1814,7 @@ contains
         
           ! Loop over the edge groups and process all edges of one group
           ! in parallel without the need to synchronize memory access
-          do igroup = 1, size(IedgeListIdx)-1       
+          do igroup = 1, size(IedgeListIdx)-1
             !$omp do
             do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
               
@@ -2457,7 +2457,7 @@ contains
 
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
-        ! Get the maximum position of matrix entries, such that we handle 
+        ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
         
         IAmax = min(size(InodeList), IAset-1+p_rperfconfig%NASIM)
@@ -2568,7 +2568,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -2711,7 +2711,7 @@ contains
         
         ! We always handle NASIM matrix entries simultaneously.
         ! How many matrix entries have we actually here?
-        ! Get the maximum position of matrix entries, such that we handle 
+        ! Get the maximum position of matrix entries, such that we handle
         ! at most NASIM matrix entries simultaneously.
         
         IAmax = min(size(InodeList,2), IAset-1+p_rperfconfig%NASIM)
@@ -2811,7 +2811,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -3108,7 +3108,7 @@ contains
     else
       call output_line('Matrix must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock2')
-      call sys_halt()        
+      call sys_halt()
     end if
     
   end subroutine gfsc_buildOperatorEdgeBlock2
@@ -3211,7 +3211,7 @@ contains
     else
       call output_line('Vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeBlock2')
-      call sys_halt()        
+      call sys_halt()
     end if
     
   end subroutine gfsc_buildOperatorEdgeBlock3
@@ -3487,7 +3487,7 @@ contains
         
         ! We always handle NEQSIM equations simultaneously.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations simultaneously.
         
         IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
@@ -3597,7 +3597,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
         
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3720,7 +3720,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -3859,7 +3859,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -4238,7 +4238,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -4383,7 +4383,7 @@ contains
         
         ! We always handle NEQSIM equations by one OpenMP thread.
         ! How many equations have we actually here?
-        ! Get the maximum equation number, such that we handle 
+        ! Get the maximum equation number, such that we handle
         ! at most NEQSIM equations by one OpenMP thread.
 
         IEQmax = min(size(InodeListIdx,2)-1, IEQset-1+p_rperfconfig%NEQSIM)
@@ -4841,7 +4841,7 @@ contains
 
           ! We always handle NEDGESIM edges simultaneously.
           ! How many edges have we actually here?
-          ! Get the maximum edge number, such that we handle 
+          ! Get the maximum edge number, such that we handle
           ! at most NEDGESIM edges simultaneously.
           
           IEDGEmax = min(IedgeListIdx(igroup+1)-1, IEDGEset-1+p_rperfconfig%NEDGESIM)
@@ -5228,7 +5228,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -5354,7 +5354,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -5419,7 +5419,7 @@ contains
 
     
     !**************************************************************
-    ! Assemble standard Jacobian matrix for convective 
+    ! Assemble standard Jacobian matrix for convective
     ! operator in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
@@ -5432,7 +5432,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
 
-      ! local variables     
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
       integer :: ii,ij,ji,jj,i,j
@@ -5481,7 +5481,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -5607,7 +5607,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -5734,7 +5734,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -5862,7 +5862,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -5987,7 +5987,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -6113,7 +6113,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -6191,7 +6191,7 @@ contains
       real(DP), dimension(:), intent(inout) :: Jac
       integer, dimension(:), intent(inout) :: Ksep
 
-      ! local variables     
+      ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
       integer :: ii,ij,ji,jj,i,j
@@ -6240,7 +6240,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -6366,7 +6366,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -6493,7 +6493,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 
@@ -6621,7 +6621,7 @@ contains
           ! respectively. The perturbation +/-h*e_k only influences the
           ! coefficients a_ij^k which s defined as
           !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and 
+          ! if either I=K or J=K. In short the loop over the I-th and
           ! J-th row only affects the matrix position II, IJ, JI, and JJ
           ! which are known a priori(!!)
 

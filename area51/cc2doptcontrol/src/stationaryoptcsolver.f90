@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module invokes the nonlinear solver to solve the basic CC2D 
+!# This module invokes the nonlinear solver to solve the basic CC2D
 !# optimal control problem.
 !#
 !# 1.) cc_solve
@@ -62,7 +62,7 @@ contains
   ! On call to this routine, rproblem%rrhs configures the right hand side of
   ! the nonlinear iteration, while rproblem%rvector specifies the initial iteration
   ! vector.
-  ! With $u$:=rvector, $f$:=rrhs and the (nonlinear) matrix $A(u)$ configured 
+  ! With $u$:=rvector, $f$:=rrhs and the (nonlinear) matrix $A(u)$ configured
   ! in rproblem, the routine calls the nonlinear solver to solve $A(u)u = f$.
   ! During the nonlinear iteration, the nonlinear matrix (matrices on all levels),
   ! and the vector rvector in rproblem will be changed.
@@ -94,20 +94,20 @@ contains
 !
 !    ! The nonlinear solver configuration
 !    TYPE(t_nlsolNode) :: rnlSol
-!    
+!
 !    ! Some parameters for the nonlinear loop
 !    INTEGER :: nminIterations,nmaxIterations,iglobIter
 !    REAL(DP) :: depsRel,depsAbs,domega,ddefNorm,dinitDefNorm
-!    
+!
 !    !!!!!!!!!!!!!!
 !    ! NOT TESTED !
 !    !!!!!!!!!!!!!!
-!    
+!
 !    ! Set up all the weights in the core equation according to the current timestep.
 !    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
 !                                'dalphaC',dalphaC,0.1_DP)
 !    rmatrix%dnu = rproblem%dnu
-!                                
+!
 !    rmatrix%diota1  = 0.0_DP
 !    rmatrix%dkappa1 = 0.0_DP
 !    rmatrix%dalpha1 = 0.0_DP
@@ -125,11 +125,11 @@ contains
 !    rmatrix%deta2   = 1.0_DP
 !    rmatrix%dtau2   = 1.0_DP
 !    rmatrix%dmu2    = -1.0_DP
-!    
+!
 !    ! Initialise pointers to the matrix building blocks
 !    rmatrix%p_rpreallocatedMatrix => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%rpreallocatedSystemMatrix
-!      
+!
 !    rmatrix%p_rdiscretisation => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation
 !
@@ -138,13 +138,13 @@ contains
 !
 !    rmatrix%p_rmatrixTemplateGradient => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixTemplateGradient
-!      
+!
 !    rmatrix%p_rmatrixStokes => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
-!      
+!
 !    rmatrix%p_rmatrixB1 => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
-!      
+!
 !    rmatrix%p_rmatrixB2 => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
 !
@@ -153,13 +153,13 @@ contains
 !
 !    rmatrix%p_rmatrixIdentityPressure => &
 !      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixIdentityPressure
-!    
-!    
+!
+!
 !    ! Initialise the preconditioner for the nonlinear iteration
 !    CALL cc_initPreconditioner (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
 !        rpreconditioner,0)
 !    CALL cc_configPreconditioner (rproblem,rpreconditioner)
-!        
+!
 !    ! Print out the value of the optimal control functional for the
 !    ! initial solution vector directly prior to the solution process.
 !    CALL cc_printControlFunctionalStat (rproblem,rvector)
@@ -197,42 +197,42 @@ contains
 !    DO WHILE ((iglobIter .LT. nminIterations) .OR. &
 !              ((ddefNorm .GT. depsRel*dinitDefNorm) .AND. (ddefNorm .GT. depsAbs) &
 !              .AND. (iglobIter .LT. nmaxIterations)))
-!    
+!
 !      iglobIter = iglobIter+1
-!      
+!
 !      ! Preconditioning of the defect: d=C^{-1}d
 !      CALL cc_precondDefect (rpreconditioner,rmatrix,rd,rvector,bsuccess,&
 !          rproblem%rcollection)
-!      
-!      ! Add the defect: x = x + omega*d          
+!
+!      ! Add the defect: x = x + omega*d
 !      CALL lsysbl_vectorLinearComb (rd,rvector,domega,1.0_DP)
-!          
+!
 !      ! Assemble the new defect: d=b-Ax
 !      CALL lsysbl_copyVector (rrhs,rd)
 !      CALL cc_assembleDefect (rmatrix,rvector,rd)
-!      
+!
 !      ! ... and its norm
 !      ddefNorm = lsysbl_vectorNorm (rd,LINALG_NORML2)
-!          
+!
 !      CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
 !          ' ||Res|| = '//sys_sdEP(ddefNorm,20,10))
-!      
+!
 !    END DO
 !
 !    CALL output_separator (OU_SEP_EQUAL)
-!             
+!
 !    ! Release the preconditioner and the temp vector
 !    CALL cc_releasePreconditioner (rpreconditioner)
-!    
+!
 !    CALL lsysbl_releaseVector (rd)
-!    
+!
 !    CALL output_lbrk()
 !    CALL output_line ('Nonlinear solver statistics')
 !    CALL output_line ('---------------------------')
 !    CALL output_line ('Initial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
 !    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
 !    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
-!    
+!
   end subroutine
 
 end module

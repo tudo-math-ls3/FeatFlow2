@@ -5,18 +5,18 @@
 !#
 !# <purpose>
 !# This module is a demonstation program how to solve a stationary
-!# Navier-Stokes problem 
+!# Navier-Stokes problem
 !#
 !#              $$- \nu Laplace(u) + u*grad(u) + \Nabla p = f $$
 !#              $$ \Nable \cdot p = 0$$
 !#
 !# on a 2D domain for a 2D function $u=(u_1,u_2)$ and a pressure $p$.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines, which are separated from the main application;
 !# they can be found in the files cc2dminim2basic.f90, cc2dminim2boundary,...
-!# The communication between these subroutines is done using an 
+!# The communication between these subroutines is done using an
 !# application-specific structure saving problem data
 !# as well as a collection structure for the communication with callback
 !# routines.
@@ -71,7 +71,7 @@ contains
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
-  ! subroutines. The problem uses a problem-specific structure for the 
+  ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
   ! (This is somehow a cleaner implementation than using a collection!).
@@ -97,7 +97,7 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! Allocate the problem structure on the heap -- it's rather large.
     allocate(p_rproblem)
@@ -112,13 +112,13 @@ contains
     call parlst_init (p_rproblem%rparamList)
     
     ! Add the parameter list to the collection so that the parameters
-    ! from the DAT/INI files are available everywhere where we have the 
+    ! from the DAT/INI files are available everywhere where we have the
     ! collection.
     call collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
                                 p_rproblem%rparamList,.true.)
 
-    ! Read parameters from the INI/DAT files into the parameter list. 
-    ! Each 'readfromfile' command adds the parameter of the specified file 
+    ! Read parameters from the INI/DAT files into the parameter list.
+    ! Each 'readfromfile' command adds the parameter of the specified file
     ! to the parameter list.
     call parlst_readfromfile (p_rproblem%rparamList, './data/discretisation.dat')
     call parlst_readfromfile (p_rproblem%rparamList, './data/linsol_cc2d.dat')
@@ -135,8 +135,8 @@ contains
     !
     ! Initialisation
     call c2d2_initParamTriang (p_rproblem)
-    call c2d2_initDiscretisation (p_rproblem)    
-    call c2d2_initMatVec (p_rproblem)    
+    call c2d2_initDiscretisation (p_rproblem)
+    call c2d2_initMatVec (p_rproblem)
     call c2d2_initDiscreteBC (p_rproblem)
     
     ! Implementation of boundary conditions

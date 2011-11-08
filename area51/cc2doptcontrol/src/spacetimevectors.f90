@@ -14,8 +14,8 @@
 !#
 !# The module provides the following subroutines:
 !#
-!# 1.) sptivec_initVector = 
-!#     sptivec_initVectorPlain, 
+!# 1.) sptivec_initVector =
+!#     sptivec_initVectorPlain,
 !#     sptivec_initVectorDirect,
 !#     sptivec_initVectorDiscr
 !#     -> Initialise a space-time vector for a given time discretisation
@@ -26,7 +26,7 @@
 !#
 !# 3.) sptivec_setTimestepData
 !#     -> Stores a timestep vector in a global space-time vector
-!# 
+!#
 !# 4.) sptivec_getTimestepData
 !#     -> Restores a timestep vector from a global space-time vector
 !#
@@ -138,8 +138,8 @@ module spacetimevectors
     ! Number of subvectors saved in p_IdataHandleList.
     integer :: NEQtime = 0
     
-    ! A list of handles (dimension 1:NEQtime) to double-precision arrays 
-    ! which save the data of the ntimesteps+1 data subvectors. 
+    ! A list of handles (dimension 1:NEQtime) to double-precision arrays
+    ! which save the data of the ntimesteps+1 data subvectors.
     ! A value ST_NOHANDLE indicates that there is currently no data stored
     ! at that timestep.
     integer, dimension(:), pointer :: p_IdataHandleList => null()
@@ -152,7 +152,7 @@ module spacetimevectors
 
   interface sptivec_initVector
     module procedure sptivec_initVectorPlain
-    module procedure sptivec_initVectorDirect 
+    module procedure sptivec_initVectorDirect
     module procedure sptivec_initVectorDiscr
   end interface
     
@@ -213,9 +213,9 @@ contains
   subroutine sptivec_initVectorDirect (rspaceTimeVector,NEQtime,rblockDiscr)
 
 !<description>
-  ! Initialises a space time vector. rblockDiscr is a block discretisation 
-  ! structure that defines the basic shape of the data vectors in all time 
-  ! steps that are to be maintained. ntimesteps defines the number of 
+  ! Initialises a space time vector. rblockDiscr is a block discretisation
+  ! structure that defines the basic shape of the data vectors in all time
+  ! steps that are to be maintained. ntimesteps defines the number of
   ! timesteps to maintain.
 !</desctiprion>
 
@@ -268,9 +268,9 @@ contains
 
 !<description>
   ! Initialises a space time vector according to a time discretisation
-  ! structure. rblockDiscr is a block discretisation 
-  ! structure that defines the basic shape of the data vectors in all time 
-  ! steps that are to be maintained. 
+  ! structure. rblockDiscr is a block discretisation
+  ! structure that defines the basic shape of the data vectors in all time
+  ! steps that are to be maintained.
 !</desctiprion>
 
 !<input>
@@ -296,11 +296,11 @@ contains
 
     ! Initialise the data.
 
-    ! Get the number of DOF's in time.    
+    ! Get the number of DOF's in time.
     NEQtime = tdiscr_igetNDofGlob(rtimediscr)
     
     rspaceTimeVector%NEQtime = NEQtime
-    rspaceTimeVector%p_rtimeDiscretisation => rtimeDiscr 
+    rspaceTimeVector%p_rtimeDiscretisation => rtimeDiscr
     
     allocate(rspaceTimeVector%p_IdataHandleList(1:NEQtime))
     allocate(rspaceTimeVector%p_Dscale(1:NEQtime))
@@ -473,7 +473,7 @@ contains
       return
     end if
 
-    ! Get the vector data. 
+    ! Get the vector data.
     !
     ! Don't use storage_copy, as this might give errors in case the array
     ! behind the handle is longer than the vector!
@@ -546,7 +546,7 @@ contains
     itimestep2 = int(dabstime + 0.5_DP)
     
     if (dabstime .eq. real(itimestep2,DP)) then
-      ! Nice coincidence, we have exactly timestep itimestep2. Ok, then we 
+      ! Nice coincidence, we have exactly timestep itimestep2. Ok, then we
       ! can call the routine to get that timestep; this saves us some
       ! time as the interpolation can be omitted.
       call sptivec_getTimestepData (rspaceTimeVector, itimestep2, rvector)
@@ -561,13 +561,13 @@ contains
     else
       ! Is this the first or the last timestep?
       if (itimestep2 .eq. 1) then
-        ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate 
+        ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate
         ! near timestep 0.
         itimestep1 = 0
         itimestep2 = 1
         itimestep3 = 2
       else if (itimestep2 .eq. rspaceTimeVector%NEQtime) then
-        ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate 
+        ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate
         ! near timestep n.
         itimestep1 = rspaceTimeVector%NEQtime-2
         itimestep2 = rspaceTimeVector%NEQtime-1
@@ -686,7 +686,7 @@ contains
       call sptivec_setTimestepData (ry, i, ryBlock)
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (ryBlock)
     call lsysbl_releaseVector (rxBlock)
 
@@ -764,7 +764,7 @@ contains
 
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (ryBlock)
     call lsysbl_releaseVector (rxBlock)
       
@@ -778,7 +778,7 @@ contains
   
 !<description>
   ! Calculates a scalar product of two block vectors.
-  ! Both vectors must be compatible to each other (same size, sorting 
+  ! Both vectors must be compatible to each other (same size, sorting
   ! strategy,...).
 !</description>
 
@@ -839,7 +839,7 @@ contains
 
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (ryBlock)
     call lsysbl_releaseVector (rxBlock)
       
@@ -855,7 +855,7 @@ contains
   
 !<description>
   ! Calculates a weighted scalar product of two block vectors.
-  ! Both vectors must be compatible to each other (same size, sorting 
+  ! Both vectors must be compatible to each other (same size, sorting
   ! strategy,...).
 !</description>
 
@@ -929,7 +929,7 @@ contains
 
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (ryBlock)
     call lsysbl_releaseVector (rxBlock)
       
@@ -987,7 +987,7 @@ contains
       end if
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (rxBlock)
     
     ! Calculate the actual norm.
@@ -1118,7 +1118,7 @@ contains
     Isize(:) = rxsuper%NEQ
     call lsysbl_createVecBlockDirect (rx,Isize,.false.)
 
-    ! Create a 1-block temp vector for the data    
+    ! Create a 1-block temp vector for the data
     call lsysbl_createVecBlockDirect (rvectorTmp,Isize(1:1),.false.)
     call lsysbl_getbase_double (rvectorTmp,p_Ddata1)
     
@@ -1165,7 +1165,7 @@ contains
     integer :: i
     real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2
     
-    ! Create a 1-block temp vector for the data    
+    ! Create a 1-block temp vector for the data
     Isize(1) = rxsuper%NEQ
     call lsysbl_createVecBlockDirect (rvectorTmp,Isize(1:1),.false.)
     call lsysbl_getbase_double (rvectorTmp,p_Ddata2)
@@ -1214,7 +1214,7 @@ contains
 
 !</subroutine>
 
-    ! Save the content of the structure    
+    ! Save the content of the structure
     call collct_setvalue_int (rcollection,trim(sname)//'_NEQ',&
         rx%NEQ,.true.,ilevel,ssection)
   
@@ -1271,7 +1271,7 @@ contains
     ! will not release the content.
     rx%bisCopy = .true.
 
-    ! Get the content of the structure    
+    ! Get the content of the structure
     rx%NEQ = collct_getvalue_int (rcollection,trim(sname)//'_NEQ',&
         ilevel,ssection)
   
@@ -1443,7 +1443,7 @@ contains
           if ((i .eq. istart) .and. (rx%NEQtime .eq. 0)) then
             ! At the first file, create a space-time vector holding the data.
             call sptivec_initVectorPlain (rx,rvectorScalar%NEQ,iend-istart+1)
-          end if         
+          end if
 
           ! Save the data
           call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvectorScalar%h_Ddata)
@@ -1456,7 +1456,7 @@ contains
           if (i .eq. istart) then
             ! At the first file, create a space-time vector holding the data.
             call sptivec_initVector (rx,1+iend-istart,rblockDiscretisation)
-          end if         
+          end if
           ! Save the data
           call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvector%h_Ddata)
           
@@ -1467,7 +1467,7 @@ contains
           ! The first file must exist!
           call output_line ('The first file must exist!', &
               ssubroutine='sptivec_loadFromFileSequence')
-        end if         
+        end if
 
         if (brepeat) then
           call output_line ('Warning: Unable to load file "'//trim(sfile) &
@@ -1518,7 +1518,7 @@ contains
   ! load a file sequence 'vector.txt.00000','vector.txt.00001',
   ! 'vector.txt.00002', ...).
   !
-  ! The destination files are written out using vecio_writeBlockVectorHR 
+  ! The destination files are written out using vecio_writeBlockVectorHR
   ! or vecio_writeVectorHR. Old files are overwritten.
 !</description>
 
@@ -1558,7 +1558,7 @@ contains
     if (present(rtempVector)) then
       p_rx => rtempVector
     else
-      ! Create a 1-block temp vector for the data    
+      ! Create a 1-block temp vector for the data
       allocate(p_rx)
       Isize(1) = rx%NEQ
       call lsysbl_createVecBlockDirect (p_rx,Isize(1:1),.false.)
@@ -1688,7 +1688,7 @@ contains
 
     end do
 
-    ! Release temp memory    
+    ! Release temp memory
     call lsysbl_releaseVector (rxBlock)
       
   end subroutine

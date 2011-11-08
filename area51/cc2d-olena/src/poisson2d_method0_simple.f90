@@ -87,11 +87,11 @@ CONTAINS
     TYPE(t_vectorBlock), INTENT(IN):: rvelocity
     TYPE(t_vectorBlock) :: rrhs
     
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     TYPE(t_boundaryRegion) :: rboundaryRegion
     TYPE(t_discreteBC), TARGET :: rdiscreteBC
     TYPE(t_discreteBC), TARGET :: p_rdiscreteBC
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -108,7 +108,7 @@ CONTAINS
     INTEGER :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    INTEGER :: ierror
     
     ! Error of FE function to reference function
     REAL(DP) :: derror
@@ -121,7 +121,7 @@ CONTAINS
     !Time-depend values
     REAL(DP), INTENT(IN):: dtime,dtstep
     
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 7
@@ -153,7 +153,7 @@ CONTAINS
     ! component in a block vector.
     CALL lsysbl_createVecBlockByDiscr (p_rdiscretisation,rrhs,.TRUE.)
     CALL linf_buildVectorScalar (p_rdiscretisation%RspatialDiscr(1),&
-                                rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_2D)  
+                                rlinform,.TRUE.,rrhs%RvectorBlock(1),coeff_RHS_2D)
                                     
     rform%itermCount = 1
     rform%Idescriptors(1,1) = DER_FUNC
@@ -161,13 +161,13 @@ CONTAINS
    
     rform%ballCoeffConstant = .TRUE.
     rform%BconstantCoeff = .TRUE.
-    rform%Dcoefficients(1)  = 1.0/dtstep 
+    rform%Dcoefficients(1)  = 1.0/dtstep
     
     CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,1))
     CALL lsysbl_blockMatVec(rmatrix,rvector,rrhs,1.0_DP,1.0_DP)
     
     
-    !Set up the correspponding trilinear form 
+    !Set up the correspponding trilinear form
     rform1%itermCount = 1
     rform1%Idescriptors(1,1) = DER_FUNC
     rform1%Idescriptors(2,1) = DER_DERIV_X
@@ -177,7 +177,7 @@ CONTAINS
     ! In the standard case, we have constant coefficients:
     rform1%ballCoeffConstant = .TRUE.
     rform1%BconstantCoeff = .TRUE.
-    rform1%Dcoefficients(1)  = 1.0 
+    rform1%Dcoefficients(1)  = 1.0
     
     
     CALL trilf_buildMatrixScalar (rform1,.FALSE.,rmatrix%RmatrixBlock(1,1),rvelocity%RvectorBlock(1))
@@ -201,8 +201,8 @@ CONTAINS
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .TRUE.
     rform%BconstantCoeff = .TRUE.
-    rform%Dcoefficients(1)  = 0.001        
-    rform%Dcoefficients(2)  = 0.001 
+    rform%Dcoefficients(1)  = 0.001
+    rform%Dcoefficients(2)  = 0.001
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -237,7 +237,7 @@ CONTAINS
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   Dirichlet BC's for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC's can be applied
     !   to matrices and vectors
@@ -266,13 +266,13 @@ CONTAINS
     CALL boundary_createRegion(p_rboundary,2,1,rboundaryRegion)
     CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)                       
+                                       getBoundaryValues_2D)
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
     rmatrix%p_rdiscreteBC => rdiscreteBC
     rrhs%p_rdiscreteBC => rdiscreteBC
-    rvector%p_rdiscreteBC => rdiscreteBC                           
+    rvector%p_rdiscreteBC => rdiscreteBC
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
     ! temporary data. Create them using the RHS as template.
@@ -313,7 +313,7 @@ CONTAINS
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Don't make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -338,7 +338,7 @@ CONTAINS
     CALL linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
     
     ! That's it, rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
                     'gmv/u2d_0_simple.gmv')

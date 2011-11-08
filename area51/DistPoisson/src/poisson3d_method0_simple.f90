@@ -96,11 +96,11 @@ contains
     ! An object for saving the boundary mesh region
     type(t_meshregion) :: rmeshRegion
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC), target :: rdiscreteBC
     type(t_discreteFBC), target :: rdiscreteFBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -131,16 +131,16 @@ contains
     real(DP), dimension(:), pointer :: p_error
     real(DP), dimension(:), pointer :: p_gradx
     real(DP), dimension(:), pointer :: p_grady
-    real(DP), dimension(:), pointer :: p_gradz    
+    real(DP), dimension(:), pointer :: p_gradz
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(dp) :: ddist    
+    real(dp) :: ddist
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 7
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -180,7 +180,7 @@ contains
     call spdiscr_initDiscr_simple (rdiscretisationgrad%RspatialDiscr(3), &
                                      EL_Q1_3D,CUB_G3_3D,rtriangulation)
 
-    call lsysbl_createVecBlockByDiscr (rdiscretisationgrad,rgradient,.true.)                 
+    call lsysbl_createVecBlockByDiscr (rdiscretisationgrad,rgradient,.true.)
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -204,9 +204,9 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
-    rform%Dcoefficients(3)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
+    rform%Dcoefficients(3)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -272,7 +272,7 @@ contains
     ! vector.
     rmatrixBlock%p_rdiscreteBC => rdiscreteBC
     rrhsBlock%p_rdiscreteBC => rdiscreteBC
-    rmatrixBlock%p_rdiscreteBCfict => rdiscreteFBC    
+    rmatrixBlock%p_rdiscreteBCfict => rdiscreteFBC
     rrhsBlock%p_rdiscreteBCfict => rdiscreteFBC
                              
     ! Now we have block vectors for the RHS and the matrix. What we
@@ -289,11 +289,11 @@ contains
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
     call vecfil_discreteBCrhs (rrhsBlock)
-    call vecfil_discreteFBCrhs(rrhsBlock)    
+    call vecfil_discreteFBCrhs(rrhsBlock)
     call vecfil_discreteBCsol (rvectorBlock)
-    call vecfil_discreteFBCrhs(rvectorBlock)    
+    call vecfil_discreteFBCrhs(rvectorBlock)
     call matfil_discreteBC (rmatrixBlock)
-    call matfil_discreteFBC(rmatrixBlock)    
+    call matfil_discreteFBC(rmatrixBlock)
 
     ! During the linear solver, the boundary conditions are also
     ! frequently imposed to the vectors. But as the linear solver
@@ -302,7 +302,7 @@ contains
     ! So, set up a filter chain that filters the defect vector
     ! during the solution process to implement discrete boundary conditions.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-    RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT    
+    RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
@@ -310,13 +310,13 @@ contains
     nullify(p_rpreconditioner)
 
     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
-    p_rsolverNode%nmaxIterations = 1000        
+    p_rsolverNode%nmaxIterations = 1000
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -341,7 +341,7 @@ contains
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -357,7 +357,7 @@ contains
     call ppgrd_calcGradient (rvectorBlock%RvectorBlock(1),rgradient)
     call lsyssc_getbase_double (rgradient%RvectorBlock(1),p_gradx)
     call lsyssc_getbase_double (rgradient%RvectorBlock(2),p_grady)
-    call lsyssc_getbase_double (rgradient%RvectorBlock(3),p_gradz)    
+    call lsyssc_getbase_double (rgradient%RvectorBlock(3),p_gradz)
     
     call storage_getbase_double2D (rtriangulation%h_DvertexCoords,&
         p_DvertexCoords)
@@ -369,10 +369,10 @@ contains
     
     do i = 1, size(p_Ddata)
          p_Ddata(i)=sqrt((p_gradx(i)**2)+(p_grady(i)**2)+(p_gradz(i)**2)+2*p_Ddata(i))&
-                   -sqrt((p_gradx(i)**2)+(p_grady(i)**2)+(p_gradz(i)**2)) 
+                   -sqrt((p_gradx(i)**2)+(p_grady(i)**2)+(p_gradz(i)**2))
     end do
     
-    call ucd_addVariableVertexBased (rexport,'distance',UCD_VAR_STANDARD, p_Ddata)    
+    call ucd_addVariableVertexBased (rexport,'distance',UCD_VAR_STANDARD, p_Ddata)
     
     
     ! Write the file to disc, that is it.
@@ -418,7 +418,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
   end subroutine

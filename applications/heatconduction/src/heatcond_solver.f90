@@ -69,9 +69,9 @@ contains
     integer :: i
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -87,9 +87,9 @@ contains
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.

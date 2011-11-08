@@ -11,15 +11,15 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) mapleio_writePointArray
-!#     -> Writes a MAPLE command to an output channel for creating a 
+!#     -> Writes a MAPLE command to an output channel for creating a
 !#        point array
 !#
 !# 2.) mapleio_writePolygonPlot
-!#     -> Writes a MAPLE PLOT command to an output channel for creating a 
+!#     -> Writes a MAPLE PLOT command to an output channel for creating a
 !#        polygon
 !#
 !# 3.) mapleio_writePointPlot
-!#     -> Writes a MAPLE PLOT command to an output channel for creating a 
+!#     -> Writes a MAPLE PLOT command to an output channel for creating a
 !#        point set
 !'
 !# </purpose>
@@ -117,7 +117,7 @@ contains
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
-    ! a MAPLE PLOT command for a polygon defined  by the points in Dpoints. 
+    ! a MAPLE PLOT command for a polygon defined  by the points in Dpoints.
     ! The MAPLE variable name will get the name 'sname'. If
     ! iindex is specified, the variable gets the name 'sname(iindex)'.
   !</description>
@@ -181,7 +181,7 @@ contains
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
-    ! a MAPLE PLOT command for a point defined by Dpoint. 
+    ! a MAPLE PLOT command for a point defined by Dpoint.
     ! The MAPLE variable name will get the name 'sname'. If
     ! iindex is specified, the variable gets the name 'sname(iindex)'.
   !</description>
@@ -234,7 +234,7 @@ contains
   
   !<description>
     ! Writes a MAPLE command to output channel ichannel which creates
-    ! a MAPLE PLOT command for a point set defined  by the points in Dpoints. 
+    ! a MAPLE PLOT command for a point set defined  by the points in Dpoints.
     ! The MAPLE variable name will get the name 'sname'. If
     ! iindex is specified, the variable gets the name 'sname(iindex)'.
   !</description>

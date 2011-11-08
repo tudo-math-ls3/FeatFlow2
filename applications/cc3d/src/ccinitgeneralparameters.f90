@@ -113,7 +113,7 @@ contains
 
 !</subroutine>
 
-    ! Each 'readfromfile' command adds the parameter of the specified file 
+    ! Each 'readfromfile' command adds the parameter of the specified file
     ! to the parameter list.
     call parlst_readfromfile (rparamList, './data/discretisation.dat')
     call parlst_readfromfile (rparamList, './data/linsol_cc3d.dat')

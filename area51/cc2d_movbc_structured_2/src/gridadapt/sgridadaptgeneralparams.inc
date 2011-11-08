@@ -2,9 +2,9 @@
 * This files describes the general parameter structure of the grid
 * adaption routines.
 *
-* The grid adaption routines take two parameters: IPARAM and DPARAM. 
-* These parameter blocks are designed as structures and realized by 
-* arrays. 
+* The grid adaption routines take two parameters: IPARAM and DPARAM.
+* These parameter blocks are designed as structures and realized by
+* arrays.
 * The structures contain substructures for the different
 * components of the method. Each structure and substructure contains
 * - a set of input variables, which determines the behaviour of
@@ -28,7 +28,7 @@
 *
 * The realization of the structures as arrays is made e.g. by:
 *
-*   IPARAM = array [1..SZGACI] of integer 
+*   IPARAM = array [1..SZGACI] of integer
 *          = TIGridAdaptionCommon
 *   DPARAM = array [1..SZGACD] of double
 *          = TDGridAdaptionCommon
@@ -50,19 +50,19 @@
 *            =2: grid adaption broke down in the solution process
 *                of a linear system
 *            =3: grid adaption broke down in moving the grid points
-*     
+*
 *   NLSITE : Number of iterations necessary for solving all
 *            linear systems on the finest level of the grid adaption
 *   NLSYS  : Number of solved linear systems
 *   NCODE  : Number of solved ODE subproblems
-*   NMFEVL : Number of monitor function evaluations 
+*   NMFEVL : Number of monitor function evaluations
 *
 *   // Input parameters:
 *
-*   NGASTP : Number of grid adaption (makro-)steps. >= 1, otherwise 
+*   NGASTP : Number of grid adaption (makro-)steps. >= 1, otherwise
 *            there is no grid adaption performed.
 *   IARCTR : Adaptive restart control
-*            =0: No adaptive restart control, anways perform NGASTP 
+*            =0: No adaptive restart control, anways perform NGASTP
 *            (macro-)steps
 *   IMNREL : Whether to use a relative or absolute monitor function.
 *            =0: Monitor function determines absolute cell size (standard)
@@ -70,7 +70,7 @@
 *                based on previous cell distribution
 *   IGSOUT : Controls the level of output in the grid adaption process
 *            to GMV-files. Bitfield.
-*   ICOLMC : Whether to colorize fine-grid cells according to 
+*   ICOLMC : Whether to colorize fine-grid cells according to
 *            coarse-grid cells for GMV-output
 *            =0: disable coloring
 *            =1: colorize macros
@@ -91,7 +91,7 @@
 * end
 *
 * TDGridAdaptionCommon = record
-*   // Output parameters: 
+*   // Output parameters:
 *
 *   TGTOT  : Total time necessary for grid adaption
 *   TGGAPR : Total time necessary for preparation of grid adaption
@@ -106,7 +106,7 @@
 *
 *   // Input parameters:
 *
-*   DMNTOL : Tolerance of monitor function for automatic 
+*   DMNTOL : Tolerance of monitor function for automatic
 *            determination of restarts
 *            =0: always perform NGASTP grid adaption steps
 *   EPS0GS : EPS0 of monitor function

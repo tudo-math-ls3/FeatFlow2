@@ -14,7 +14,7 @@
 *
 * The structure itselves is realized as integer array:
 *
-*   IPARAM = array [1..SZNLSI] of integer 
+*   IPARAM = array [1..SZNLSI] of integer
 *          = TNSDEFILinearSolution
 *
 * where the different entries can be accessed with the offsets defined
@@ -30,13 +30,13 @@
 *            boundary components in the geometry.
 *            Solver callback-routines can access this information
 *            to adapt to the problem.
-*   IMATS  : array [1..SZN2MI,1..NNLEV] of integer 
-*            During the solution process, IMATS receives a 
+*   IMATS  : array [1..SZN2MI,1..NNLEV] of integer
+*            During the solution process, IMATS receives a
 *            TNS2DMatrixParams structure that defines the system
 *            matrices of the problem.
 *            Solver callback-routines can access this information
 *            to adapt to the problem.
-*   ITRIAS : array [1..SZTRIA,1..NNLEV] of integer 
+*   ITRIAS : array [1..SZTRIA,1..NNLEV] of integer
 *            During the multigrid iteration, ITRIAS receives
 *            information about the triangulation of all levels.
 *            Solver callback-routines can access this information
@@ -47,7 +47,7 @@
 
       INTEGER OIMATS ,OITRIAS, OICNEUM
 
-      INTEGER SZNLSI 
+      INTEGER SZNLSI
       
       PARAMETER (OICNEUM = 1)
       PARAMETER (OIMATS  = 2)

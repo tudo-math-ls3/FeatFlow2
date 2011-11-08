@@ -459,7 +459,7 @@ contains
     error_askError = ierror
   end function error_askError
 
-!<subroutine>  
+!<subroutine>
   subroutine error_clearError()
 
 !<description>

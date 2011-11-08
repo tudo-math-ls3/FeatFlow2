@@ -1280,7 +1280,7 @@ contains
     if (present(ilev)) then
       
       p_rproblemLevel => rproblem%p_rproblemLevelMax
-      do while(associated(p_rproblemLevel))       
+      do while(associated(p_rproblemLevel))
         if (p_rproblemLevel%ilev .eq. ilev) then
           if ((coperation .eq. 'iand') .or.&
               (coperation .eq. 'IAND')) then
@@ -1302,7 +1302,7 @@ contains
     else
       
       p_rproblemLevel => rproblem%p_rproblemLevelMax
-      do while(associated(p_rproblemLevel))       
+      do while(associated(p_rproblemLevel))
         if ((coperation .eq. 'iand') .or.&
             (coperation .eq. 'IAND')) then
           p_rproblemLevel%iproblemSpec = iand(p_rproblemLevel%iproblemSpec, iSpec)

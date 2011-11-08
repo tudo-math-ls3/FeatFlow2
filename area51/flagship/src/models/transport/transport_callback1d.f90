@@ -484,7 +484,7 @@ contains
             p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(-DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -511,7 +511,7 @@ contains
             p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -737,7 +737,7 @@ contains
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
       !
@@ -1175,7 +1175,7 @@ contains
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
       !
@@ -1576,7 +1576,7 @@ contains
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form      
+      ! Do nothing since the boundary values are build into the linear form
       Dcoefficients = 0.0_DP
 
       ! This routine should not be called at all for homogeneous Neumann boundary
@@ -2102,7 +2102,7 @@ contains
             p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(-DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -2129,7 +2129,7 @@ contains
             p_DvelocityX(IedgeList(1,iedge))*DcoeffsAtEdge(1,2,iedge)
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -2334,9 +2334,9 @@ contains
           0.5_DP*DdataAtEdge(1,iedge)*DcoeffsAtEdge(1,2,iedge)
 #endif
       
-      ! Compute artificial diffusion coefficient 
+      ! Compute artificial diffusion coefficient
       !   $d_{ij} = abs(v_{ij}*0.5*(c_{ij}-c_{ji})$,
-      ! where 
+      ! where
       !   $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
       DmatrixAtEdge(1,iedge) = dscale*&
           abs(0.25_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
@@ -2559,7 +2559,7 @@ contains
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -([0.5*u]*u-d\nabla u)\cdot{\bf n} = -([0.5*g]*g)\cdot{\bf n} $$
       !
@@ -2917,7 +2917,7 @@ contains
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form      
+      ! Do nothing since the boundary values are build into the linear form
       Dcoefficients = 0.0_DP
 
       ! This routine should not be called at all for homogeneous Neumann boundary
@@ -3130,7 +3130,7 @@ contains
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for the primal Buckley-Leverett equation
     ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is given by
-    ! $f(u)=u^2/(u^2+0.5*(1-u)^2)$. 
+    ! $f(u)=u^2/(u^2+0.5*(1-u)^2)$.
     !
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
@@ -3202,7 +3202,7 @@ contains
         vij = ui*(1.0_DP-ui)/(ui*ui-0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))**2
       end if
 
-      ! Compute artificial diffusion coefficient 
+      ! Compute artificial diffusion coefficient
       ! $d_{ij} = abs(0.5*v_{ij}*(c_{ij}-c_{ji})$
       DmatrixAtEdge(1,iedge) = dscale*&
           abs(0.5_DP*vij*(DcoeffsAtEdge(1,1,iedge)-&
@@ -3426,7 +3426,7 @@ contains
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -([a]*u-d\nabla u)\cdot{\bf n} = -([a]*g)\cdot{\bf n} $$
       !
@@ -3800,7 +3800,7 @@ contains
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form      
+      ! Do nothing since the boundary values are build into the linear form
       Dcoefficients = 0.0_DP
 
       ! This routine should not be called at all for homogeneous Neumann boundary
@@ -3833,7 +3833,7 @@ contains
           
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1)/(Daux(ipoint,iel,1)**2&
-                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)  
+                      + 0.5_DP*(1-Daux(ipoint,iel,1))**2)
 
           ! Check if we are at the primal outflow boundary
           if (dnv .gt. 0.0_DP) then

@@ -26,20 +26,20 @@
 !#   $$ A_1 = \iota_1 I  +  \alpha_1 M  +  \theta_1 L  +  \gamma_1 N(y) + dnewton_1 N*(y)$$
 !#   $$ A_2 = \iota_2 I  +  \alpha_2 M  +  \theta_2 L  +  \gamma_2 N(y) + dnewton_2 N*(y)$$
 !#   $$ R_2 =               \mu_2    M  +                                 dr_2      N*(\lambda) $$
-!#  
+!#
 !# and
 !#
 !#   $I$     = identity matrix,
 !#   $M$     = mass matrix,
 !#   $L$     = Stokes matrix ($\nu$*Laplace),
-!#   $N(y)$  = Nonlinearity including stabilisation, depending on the 
+!#   $N(y)$  = Nonlinearity including stabilisation, depending on the
 !#             primal velocity, i.e.
 !#                   $$ (y\Delta)\cdot $$
 !#   $N*(y)$ = Newton matrix, depending on the primal velocity, i.e.
 !#                  $$ (\Delta y)\cdot $$
 !#   $N*(\lambda)$ = Newton matrix, depending on the dual velocity, i.e.
 !#                  $$ (\Delta \lambda)\cdot $$
-!#   
+!#
 !#   $\iota_i$  = 0/1     - switches the identity matrix on/off,
 !#   $\alpha_i$ = 0/1     - switches the mass matrix on/off;
 !#                          =0 for stationary problem,
@@ -53,7 +53,7 @@
 !#   $\kappa_i$ = 0/1     - Switches of the identity matrix I for the pressure
 !#                          in the continuity equation
 !#   $\dr_i \in R$        - Switches the 'reactive coupling mass matrix' on/off
-!#                    
+!#
 !# (y,p) is the velocity/pressure solution pair.
 !# (lambda,xi) is the dual velocity/pressure solution.
 !#
@@ -67,13 +67,13 @@
 !#  $$  x_{n+1}  =  x_n  +  \omega_n C^{-1} ( b - A(x_n) x_n )  $$
 !#
 !# where $C^{-1}$ means to apply a suitable preconditioner (inverse mass
-!# matrix, apply the linearised $A(x_n)^-1$ with multigrid, apply Newton or 
-!# do something similar). 
+!# matrix, apply the linearised $A(x_n)^-1$ with multigrid, apply Newton or
+!# do something similar).
 !#
 !# The following routines can be found here:
 !#
 !# 1.) cc_createSpacePreconditioner / cc_releasePreconditioner
-!#     -> Creates/Releases a basic preconditioner structure for a spatial 
+!#     -> Creates/Releases a basic preconditioner structure for a spatial
 !#        preconditioner.
 !#
 !# 2.) cc_precondSpaceDefect
@@ -186,7 +186,7 @@ module spacepreconditioner
     integer :: ismootherType = 3
     
     ! If the preconditioner is the linear multigrid solver:
-    ! Type of coarse grid solver.    
+    ! Type of coarse grid solver.
     ! =0: Gauss elimination (UMFPACK)
     ! =1: Defect correction with diagonal VANKA preconditioning.
     ! =2: BiCGStab with diagonal VANKA preconditioning
@@ -212,11 +212,11 @@ module spacepreconditioner
 !<typeblock>
 
   ! Represents the core equation on one level of the discretisation.
-  ! Collects all information that are necessary to assemble the 
+  ! Collects all information that are necessary to assemble the
   ! (linearised) system matrix and RHS vector.
   type t_cccoreEquationOneLevel
   
-    ! The (linearised) system matrix for that specific level. 
+    ! The (linearised) system matrix for that specific level.
     type(t_matrixBlock), pointer :: p_rmatrix => null()
     
     ! Reference to the discretisation structure.
@@ -431,12 +431,12 @@ contains
   use collection
   
 !<description>
-  ! Defect preconditioning routine. Based on the current iteration 
-  ! vector rx, this routine has to perform preconditioning on the defect 
+  ! Defect preconditioning routine. Based on the current iteration
+  ! vector rx, this routine has to perform preconditioning on the defect
   ! vector rd.
   !
   ! Note that no boundary conditions have to be attached to rd, rx1, rx2 and rx3.
-  ! The preconditioner internally applies the global boundary conditions of the 
+  ! The preconditioner internally applies the global boundary conditions of the
   ! problem where necessary.
 !</description>
 
@@ -616,7 +616,7 @@ contains
 
     ! Assembles on every level a matrix for the linear-solver/Newton preconditioner.
     ! bnewton allows to specify whether the Newton matrix or only the standard
-    ! system matrix is evaluated. The output is written to the p_rpreconditioner 
+    ! system matrix is evaluated. The output is written to the p_rpreconditioner
     ! matrices specified in the rnonlinearIteration structure.
 
     ! Spatial preconditioner structure that defines all parameters how to perform
@@ -636,14 +636,14 @@ contains
     logical, intent(IN) :: bassembleNewton
     
     ! Current iteration vector of the 'previous' timestep. May be undefined
-    ! if there is no previous timestep. 
+    ! if there is no previous timestep.
     type(t_vectorBlock), intent(IN), target          :: rx1
 
-    ! Current iteration vector. 
+    ! Current iteration vector.
     type(t_vectorBlock), intent(IN), target          :: rx2
 
     ! Current iteration vector of the 'next' timestep. May be undefined
-    ! if there is no previous timestep. 
+    ! if there is no previous timestep.
     type(t_vectorBlock), intent(IN), target          :: rx3
 
     ! local variables
@@ -693,7 +693,7 @@ contains
           ! We have to discretise a level hierarchy and are on a level < NLMAX.
 
           ! Get the temporary vector on level i. Will receive the solution
-          ! vector on that level. 
+          ! vector on that level.
           p_rvectorCoarse1 => rpreconditioner%RcoreEquation(ilev)%rtempVector1
           p_rvectorCoarse2 => rpreconditioner%RcoreEquation(ilev)%rtempVector2
           p_rvectorCoarse3 => rpreconditioner%RcoreEquation(ilev)%rtempVector3
@@ -799,7 +799,7 @@ contains
           
           ! Include a unit vector to the matrix part of the pressure in
           ! the primal equation -- as long as there is not a full identity
-          ! matrix in the pressure matrix (what would be the case for 
+          ! matrix in the pressure matrix (what would be the case for
           ! the initial condition).
           if (rlocalNonlSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
             ! Switch the pressure matrix on and clear it; we don't know what is inside.
@@ -830,7 +830,7 @@ contains
         
         if (rpreconditioner%rprecSpecials%isolverType .eq. 1) then
         
-          ! If we have a MG solver, We also check the coarse grid solver for 
+          ! If we have a MG solver, We also check the coarse grid solver for
           ! the same thing!
           ! What we don't check is the smoother, thus we assume that smoothers
           ! are always solvers that allow the applicance of a filter chain.
@@ -840,7 +840,7 @@ contains
             
             ! Include a unit vector to the matrix part of the pressure in
             ! the primal equation -- as long as there is not a full identity
-            ! matrix in the pressure matrix (what would be the case for 
+            ! matrix in the pressure matrix (what would be the case for
             ! the initial condition).
             if (rlocalNonlSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
               ! Switch the pressure matrix on and clear it; we don't know what is inside.
@@ -871,7 +871,7 @@ contains
           
         end if
           
-      end if        
+      end if
       
     end subroutine
     

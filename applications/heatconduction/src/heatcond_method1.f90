@@ -21,12 +21,12 @@
 !#
 !# The whole solution process is implemented into one routine, using a standard
 !# linear solver (not multigrid) for solving the linear subproblems in every
-!# timestep. The time domain is [0,T] and discretised by a simple explicit 
+!# timestep. The time domain is [0,T] and discretised by a simple explicit
 !# Euler.
 !#
 !# The module bases on the standard poisson example and shows which
 !# modifications are necessary to create a heat equation solver from a poisson
-!# solver. Boundary conditions, matrices and vectors are all reassembled in 
+!# solver. Boundary conditions, matrices and vectors are all reassembled in
 !# every timestep
 !# </purpose>
 !##############################################################################
@@ -119,11 +119,11 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -139,7 +139,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -154,7 +154,7 @@ contains
     real(DP) :: dtime
     integer :: itimestep
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our heat equation problem on level...
     NLMAX = 6
@@ -166,7 +166,7 @@ contains
     ! We start at time 0.0.
     dtime = 0.0_DP
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -207,7 +207,7 @@ contains
     ! Use the discretisation to create a solution vector.
     ! Fill it with zero -- that is out initial condition!
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),&
-        rvector,.true.)             
+        rvector,.true.)
     
     ! Start the timeloop
     do itimestep=1,ntimesteps
@@ -222,19 +222,19 @@ contains
 
       ! STEP 1: Form the right hand side:  dtimestep*f + M u_{old}
       !
-      ! To assemble the basic RHS f, set up the corresponding linear 
+      ! To assemble the basic RHS f, set up the corresponding linear
       ! form (f,Phi_j):
       rlinform%itermCount = 1
       rlinform%Idescriptors(1) = DER_FUNC
       
-      ! Discretise the RHS. We simply create a scalar vector 
+      ! Discretise the RHS. We simply create a scalar vector
       ! based on the one and only discretisation structure.
       ! The result is rrhs!
       call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                                  rlinform,.true.,rrhs,coeff_RHS)   
+                                  rlinform,.true.,rrhs,coeff_RHS)
                                   
 
-      ! And now to the entries of the mass matrix. 
+      ! And now to the entries of the mass matrix.
       ! For assembling of the entries,
       ! we need a bilinear form, which first has to be set up manually.
       ! We specify the bilinear form (Psi_j, Phi_i) for the
@@ -245,7 +245,7 @@ contains
       
       rform%ballCoeffConstant = .true.
       rform%BconstantCoeff = .true.
-      rform%Dcoefficients(1)  = 1.0 
+      rform%Dcoefficients(1)  = 1.0
       call bilf_buildMatrixScalar (rform,.true.,rmatrix)
       
       ! Now form the actual RHS by matrix vector multiplication!
@@ -266,17 +266,17 @@ contains
       rform%ballCoeffConstant = .true.
       rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = dtstep
-      rform%Dcoefficients(2)  = dtstep 
+      rform%Dcoefficients(2)  = dtstep
 
       ! Now we can build the matrix entries.
       ! Note that we set bclear=FALSE in this call, so the Laplace part
       ! is added to the existing (!) mass matrix!
-      ! So this results in (M + dtstep*Laplace), as we set 
+      ! So this results in (M + dtstep*Laplace), as we set
       ! the coefficient rform%Dcoefficients to dtstep above!
       call bilf_buildMatrixScalar (rform,.false.,rmatrix)
       
       ! STEP 3: Create block vectors and boundary conditions.
-      !      
+      !
       ! The linear solver only works for block matrices/vectors - but above,
       ! we created scalar ones. So the next step is to make a 1x1 block
       ! system from the matrices/vectors above which the linear solver
@@ -310,7 +310,7 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC`s for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
@@ -382,7 +382,7 @@ contains
       
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
-      ! only have one level here), then call the initialisation 
+      ! only have one level here), then call the initialisation
       ! routine to attach all these matrices.
       ! Remark: Do not make a call like
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -409,7 +409,7 @@ contains
       ! STEP 7: Postprocessing
       !
       ! That is it, rvectorBlock now contains our solution. We can now
-      ! start the postprocessing. 
+      ! start the postprocessing.
       !
       ! Get the path for writing postprocessing files from the environment variable
       ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -461,7 +461,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that is it.

@@ -8,9 +8,9 @@
 * simulation. The structure in this file defines the handles where to
 * write the tracked values to.
 *
-* The parameter block is defined as a structure and realized as 
+* The parameter block is defined as a structure and realized as
 * integer/double precision arrays:
-*   IPARAM = array [1..SZTRKI] of integer 
+*   IPARAM = array [1..SZTRKI] of integer
 *          = TNSDefPostprocessingIParams
 *
 * Elements of the structure can be accessed with the help of the offset
@@ -67,7 +67,7 @@
 *            =0, if values should not be written into a tracking file.
 *
 * end
-* 
+*
 ************************************************************************
 
       INTEGER OHBFB1, OHBFB2, OHBFV1,OHBFV2,OHBFL1,OHBFL2,OHVEL1,OHVEL2

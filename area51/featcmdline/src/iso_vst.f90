@@ -1,13 +1,13 @@
 MODULE iso_vst
   
-! Written by J.L.Schonfelder 
+! Written by J.L.Schonfelder
 ! Incorporating suggestions by members of the committee ISO/IEC JTC1/SC22/WG5
 
 ! Version produced (3-Nov-1998)
 ! Updated to exploit facilities included in Fortran 95
 
-!-----------------------------------------------------------------------------! 
-! This module defines the interface and one possible implementation for a     ! 
+!-----------------------------------------------------------------------------!
+! This module defines the interface and one possible implementation for a     !
 ! dynamic length character string facility in Fortran 95. The Fortran 95      !
 ! language is defined by the standard ISO/IEC 1539-1 : 1997.                  !
 ! The publicly accessible interface defined by this module is conformant      !
@@ -15,147 +15,147 @@ MODULE iso_vst
 ! The detailed implementation may be considered as an informal definition of  !
 ! the required semantics, and may also be used as a guide to the production   !
 ! of a portable implementation.                                               !
-! N.B. Although every care has been taken to produce valid Fortran code in    ! 
-!      construction of this module no guarantee is given or implied that this ! 
+! N.B. Although every care has been taken to produce valid Fortran code in    !
+!      construction of this module no guarantee is given or implied that this !
 !      code will work correctly without error on any specific processor, nor  !
 !      is this implementation intended to be in any way optimal either in use !
 !      of storage or CPU cycles.                                              !
-!-----------------------------------------------------------------------------! 
+!-----------------------------------------------------------------------------!
   
 IMPLICIT NONE
   
-PRIVATE 
+PRIVATE
   
-!-----------------------------------------------------------------------------! 
+!-----------------------------------------------------------------------------!
 ! By default all entities declared or defined in this module are private to   !
-! the module. Only those entities declared explicitly as being public are     ! 
-! accessible to programs using the module. In particular, the procedures and  ! 
-! operators defined herein are made accessible via their generic identifiers  ! 
-! only; their specific names are private.                                     ! 
-!-----------------------------------------------------------------------------! 
+! the module. Only those entities declared explicitly as being public are     !
+! accessible to programs using the module. In particular, the procedures and  !
+! operators defined herein are made accessible via their generic identifiers  !
+! only; their specific names are private.                                     !
+!-----------------------------------------------------------------------------!
   
 TYPE VARYING_STRING
- PRIVATE 
+ PRIVATE
  CHARACTER,DIMENSION(:),POINTER :: chars => NULL()
-ENDTYPE VARYING_STRING 
+ENDTYPE VARYING_STRING
   
-!-----------------------------------------------------------------------------! 
-! The representation chosen for this definition of the module is of a string  ! 
-! type consisting of a single component that is a pointer to a rank one array ! 
-! of characters.                                                              ! 
-! Note: this Module is defined only for characters of default kind. A similar ! 
-! module could be defined for non-default characters if these are supported   ! 
-! on a processor by adding a KIND parameter to the component in the type      ! 
-! definition, and to all delarations of objects of CHARACTER type.            ! 
-!-----------------------------------------------------------------------------! 
+!-----------------------------------------------------------------------------!
+! The representation chosen for this definition of the module is of a string  !
+! type consisting of a single component that is a pointer to a rank one array !
+! of characters.                                                              !
+! Note: this Module is defined only for characters of default kind. A similar !
+! module could be defined for non-default characters if these are supported   !
+! on a processor by adding a KIND parameter to the component in the type      !
+! definition, and to all delarations of objects of CHARACTER type.            !
+!-----------------------------------------------------------------------------!
   
-CHARACTER,PARAMETER :: blank = " " 
+CHARACTER,PARAMETER :: blank = " "
   
-!----- GENERIC PROCEDURE INTERFACE DEFINITIONS -------------------------------! 
+!----- GENERIC PROCEDURE INTERFACE DEFINITIONS -------------------------------!
   
-!----- LEN interface ---------------------------------------------------------! 
-INTERFACE LEN 
+!----- LEN interface ---------------------------------------------------------!
+INTERFACE LEN
   MODULE PROCEDURE len_s   ! length of string
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Conversion procedure interfaces ---------------------------------------!
 INTERFACE VAR_STR
   MODULE PROCEDURE c_to_s   ! character to string
-ENDINTERFACE 
+ENDINTERFACE
   
 INTERFACE CHAR
   MODULE PROCEDURE s_to_c, &   ! string to character
                    s_to_fix_c  ! string to specified length character
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- ASSIGNMENT interfaces -------------------------------------------------! 
-INTERFACE ASSIGNMENT(=) 
+!----- ASSIGNMENT interfaces -------------------------------------------------!
+INTERFACE ASSIGNMENT(=)
   MODULE PROCEDURE s_ass_s, &   ! string    = string
                    c_ass_s, &   ! character = string
                    s_ass_c      ! string    = character
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Concatenation operator interfaces -------------------------------------!
-INTERFACE OPERATOR(//) 
+INTERFACE OPERATOR(//)
   MODULE PROCEDURE s_concat_s, &  ! string//string
                    s_concat_c, &  ! string//character
                    c_concat_s     ! character//string
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- Repeated Concatenation interface --------------------------------------! 
-INTERFACE REPEAT 
+!----- Repeated Concatenation interface --------------------------------------!
+INTERFACE REPEAT
   MODULE PROCEDURE repeat_s
-ENDINTERFACE 
+ENDINTERFACE
   
 !------ Equality comparison operator interfaces-------------------------------!
-INTERFACE OPERATOR(==) 
+INTERFACE OPERATOR(==)
   MODULE PROCEDURE s_eq_s, &  ! string==string
                    s_eq_c, &  ! string==character
                    c_eq_s     ! character==string
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- not-equality comparison operator interfaces ---------------------------! 
-INTERFACE OPERATOR(/=) 
+!----- not-equality comparison operator interfaces ---------------------------!
+INTERFACE OPERATOR(/=)
   MODULE PROCEDURE s_ne_s, &  ! string/=string
                    s_ne_c, &  ! string/=character
                    c_ne_s     ! character/=string
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- less-than comparison operator interfaces ------------------------------!
-INTERFACE OPERATOR(<) 
+INTERFACE OPERATOR(<)
   MODULE PROCEDURE s_lt_s, &  ! string<string
                    s_lt_c, &  ! string<character
                    c_lt_s     ! character<string
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- less-than-or-equal comparison operator interfaces ---------------------! 
-INTERFACE OPERATOR(<=) 
+!----- less-than-or-equal comparison operator interfaces ---------------------!
+INTERFACE OPERATOR(<=)
   MODULE PROCEDURE s_le_s, &  ! string<=string
                    s_le_c, &  ! string<=character
                    c_le_s     ! character<=string
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- greater-than-or-equal comparison operator interfaces ------------------!
-INTERFACE OPERATOR(>=) 
+INTERFACE OPERATOR(>=)
   MODULE PROCEDURE s_ge_s, &  ! string>=string
                    s_ge_c, &  ! string>=character
                    c_ge_s     ! character>=string
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- greater-than comparison operator interfaces ---------------------------! 
-INTERFACE OPERATOR(>) 
+!----- greater-than comparison operator interfaces ---------------------------!
+INTERFACE OPERATOR(>)
   MODULE PROCEDURE s_gt_s, &  ! string>string
                    s_gt_c, &  ! string>character
                    c_gt_s     ! character>string
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- LLT procedure interfaces ----------------------------------------------!
-INTERFACE LLT 
+INTERFACE LLT
   MODULE PROCEDURE s_llt_s, &  ! LLT(string,string)
                    s_llt_c, &  ! LLT(string,character)
                    c_llt_s     ! LLT(character,string)
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- LLE procedure interfaces ----------------------------------------------! 
-INTERFACE LLE 
+!----- LLE procedure interfaces ----------------------------------------------!
+INTERFACE LLE
   MODULE PROCEDURE s_lle_s, &  ! LLE(string,string)
                    s_lle_c, &  ! LLE(string,character)
                    c_lle_s     ! LLE(character,string)
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- LGE procedure interfaces ----------------------------------------------!
-INTERFACE LGE 
+INTERFACE LGE
   MODULE PROCEDURE s_lge_s, &  ! LGE(string,string)
                    s_lge_c, &  ! LGE(string,character)
                    c_lge_s     ! LGE(character,string)
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- LGT procedure interfaces ----------------------------------------------! 
-INTERFACE LGT 
+!----- LGT procedure interfaces ----------------------------------------------!
+INTERFACE LGT
   MODULE PROCEDURE s_lgt_s, &  ! LGT(string,string)
                    s_lgt_c, &  ! LGT(string,character)
                    c_lgt_s     ! LGT(character,string)
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Input procedure interfaces --------------------------------------------!
 INTERFACE GET
@@ -165,7 +165,7 @@ INTERFACE GET
                    get_u_tset_s, & ! specified unit, string set termination
                    get_d_tset_c, & ! default unit, char set termination
                    get_u_tset_c    ! specified unit, char set termination
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Output procedure interfaces -------------------------------------------!
 INTERFACE PUT
@@ -173,25 +173,25 @@ INTERFACE PUT
                    put_u_s, & ! string to specified unit
                    put_d_c, & ! char to default unit
                    put_u_c    ! char to specified unit
-ENDINTERFACE 
+ENDINTERFACE
   
 INTERFACE PUT_LINE
   MODULE PROCEDURE putline_d_s, & ! string to default unit
                    putline_u_s, & ! string to specified unit
                    putline_d_c, & ! char to default unit
                    putline_u_c    ! char to specified unit
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Insert procedure interfaces -------------------------------------------!
-INTERFACE INSERT 
+INTERFACE INSERT
   MODULE PROCEDURE insert_ss, & ! string in string
                    insert_sc, & ! char in string
                    insert_cs, & ! string in char
                    insert_cc    ! char in char
-ENDINTERFACE 
+ENDINTERFACE
 
 !----- Replace procedure interfaces ------------------------------------------!
-INTERFACE REPLACE 
+INTERFACE REPLACE
   MODULE PROCEDURE replace_ss, &   ! string by string, at specified
                    replace_sc, &   ! string by char  , starting
                    replace_cs, &   ! char by string  , point
@@ -208,19 +208,19 @@ INTERFACE REPLACE
                    replace_csc, &  ! in char replace string by char
                    replace_ccs, &  ! in char replace char by string
                    replace_ccc     ! in char replace char by char
-ENDINTERFACE 
+ENDINTERFACE
 
-!----- Remove procedure interface --------------------------------------------! 
-INTERFACE REMOVE 
+!----- Remove procedure interface --------------------------------------------!
+INTERFACE REMOVE
   MODULE PROCEDURE remove_s, & ! characters from string, between start
                    remove_c    ! characters from char  , and finish
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Extract procedure interface -------------------------------------------!
-INTERFACE EXTRACT 
+INTERFACE EXTRACT
   MODULE PROCEDURE extract_s, & ! from string extract string, between start
                    extract_c
-ENDINTERFACE 
+ENDINTERFACE
 
 !----- Split procedure interface ---------------------------------------------!
 INTERFACE SPLIT
@@ -229,90 +229,90 @@ INTERFACE SPLIT
 ENDINTERFACE
 
 !----- Index procedure interfaces --------------------------------------------!
-INTERFACE INDEX 
+INTERFACE INDEX
   MODULE PROCEDURE index_ss, index_sc, index_cs
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Scan procedure interfaces ---------------------------------------------!
-INTERFACE SCAN 
+INTERFACE SCAN
   MODULE PROCEDURE scan_ss, scan_sc, scan_cs
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Verify procedure interfaces -------------------------------------------!
-INTERFACE VERIFY 
+INTERFACE VERIFY
   MODULE PROCEDURE verify_ss, verify_sc, verify_cs
-ENDINTERFACE 
+ENDINTERFACE
   
 !----- Interfaces for remaining intrinsic function overloads -----------------!
-INTERFACE LEN_TRIM 
+INTERFACE LEN_TRIM
   MODULE PROCEDURE len_trim_s
-ENDINTERFACE 
+ENDINTERFACE
   
-INTERFACE TRIM 
+INTERFACE TRIM
   MODULE PROCEDURE trim_s
-ENDINTERFACE 
+ENDINTERFACE
   
 INTERFACE IACHAR
   MODULE PROCEDURE iachar_s
-ENDINTERFACE 
+ENDINTERFACE
   
-INTERFACE ICHAR 
+INTERFACE ICHAR
   MODULE PROCEDURE ichar_s
-ENDINTERFACE 
+ENDINTERFACE
   
-INTERFACE ADJUSTL 
+INTERFACE ADJUSTL
   MODULE PROCEDURE adjustl_s
-ENDINTERFACE 
+ENDINTERFACE
   
-INTERFACE ADJUSTR 
+INTERFACE ADJUSTR
   MODULE PROCEDURE adjustr_s
-ENDINTERFACE 
+ENDINTERFACE
   
-!----- specification of publically accessible entities -----------------------! 
+!----- specification of publically accessible entities -----------------------!
 PUBLIC :: VARYING_STRING,VAR_STR,CHAR,LEN,GET,PUT,PUT_LINE,INSERT,REPLACE,   &
           SPLIT,REMOVE,REPEAT,EXTRACT,INDEX,SCAN,VERIFY,LLT,LLE,LGE,LGT,     &
           ASSIGNMENT(=),OPERATOR(//),OPERATOR(==),OPERATOR(/=),OPERATOR(<),  &
           OPERATOR(<=),OPERATOR(>=),OPERATOR(>),LEN_TRIM,TRIM,IACHAR,ICHAR,  &
           ADJUSTL,ADJUSTR,TOUPPER,SETCHAR,GETCHAR
   
-CONTAINS 
+CONTAINS
   
-!----- LEN Procedure ---------------------------------------------------------! 
+!----- LEN Procedure ---------------------------------------------------------!
   ELEMENTAL FUNCTION len_s(string) ! generic LEN
-  type(VARYING_STRING),INTENT(IN) :: string 
-  INTEGER                         :: len_s 
-  ! returns the length of the string argument or zero if there is no current 
-  ! string value 
-  IF(.NOT.ASSOCIATED(string%chars))THEN 
-    len_s = 0 
-  ELSE 
-    len_s = SIZE(string%chars) 
-  ENDIF 
- ENDFUNCTION len_s 
+  type(VARYING_STRING),INTENT(IN) :: string
+  INTEGER                         :: len_s
+  ! returns the length of the string argument or zero if there is no current
+  ! string value
+  IF(.NOT.ASSOCIATED(string%chars))THEN
+    len_s = 0
+  ELSE
+    len_s = SIZE(string%chars)
+  ENDIF
+ ENDFUNCTION len_s
   
-!----- Conversion Procedures ------------------------------------------------! 
+!----- Conversion Procedures ------------------------------------------------!
  ELEMENTAL FUNCTION c_to_s(chr) ! generic VAR_STR
-  type(VARYING_STRING)        :: c_to_s 
-  CHARACTER(LEN=*),INTENT(IN) :: chr 
-  ! returns the string consisting of the characters char 
+  type(VARYING_STRING)        :: c_to_s
+  CHARACTER(LEN=*),INTENT(IN) :: chr
+  ! returns the string consisting of the characters char
   INTEGER                     :: lc, i
-  lc=LEN(chr) 
-  ALLOCATE(c_to_s%chars(1:lc)) 
-  DO i=1,lc 
-    c_to_s%chars(i) = chr(i:i) 
-  ENDDO 
- ENDFUNCTION c_to_s 
+  lc=LEN(chr)
+  ALLOCATE(c_to_s%chars(1:lc))
+  DO i=1,lc
+    c_to_s%chars(i) = chr(i:i)
+  ENDDO
+ ENDFUNCTION c_to_s
   
  PURE FUNCTION s_to_c(string) ! generic CHAR
-  type(VARYING_STRING),INTENT(IN)   :: string 
-  CHARACTER(LEN=SIZE(string%chars)) :: s_to_c 
-  ! returns the characters of string as an automatically sized character 
+  type(VARYING_STRING),INTENT(IN)   :: string
+  CHARACTER(LEN=SIZE(string%chars)) :: s_to_c
+  ! returns the characters of string as an automatically sized character
   INTEGER                           :: lc, i
-  lc=SIZE(string%chars) 
-  DO i=1,lc 
-    s_to_c(i:i) = string%chars(i) 
-  ENDDO 
- ENDFUNCTION s_to_c 
+  lc=SIZE(string%chars)
+  DO i=1,lc
+    s_to_c(i:i) = string%chars(i)
+  ENDDO
+ ENDFUNCTION s_to_c
   
  PURE FUNCTION s_to_fix_c(string,length) ! generic CHAR
   type(VARYING_STRING),INTENT(IN) :: string
@@ -322,20 +322,20 @@ CONTAINS
   ! of string either padded with blanks or truncated on the right to fit
   INTEGER                         :: lc, i
   lc=MIN(SIZE(string%chars),length)
-  DO i=1,lc 
+  DO i=1,lc
     s_to_fix_c(i:i) = string%chars(i)
-  ENDDO 
+  ENDDO
   IF(lc < length)THEN  ! result longer than string padding needed
     s_to_fix_c(lc+1:length) = blank
   ENDIF
  ENDFUNCTION s_to_fix_c
 
 !----- ASSIGNMENT Procedures -------------------------------------------------!
-ELEMENTAL SUBROUTINE s_ass_s(var,expr) 
-  type(VARYING_STRING),INTENT(INOUT) :: var 
-  type(VARYING_STRING),INTENT(IN)  :: expr 
-  !  assign a string value to a string variable overriding default assignement 
-  !  reallocates string variable to size of string value and copies characters 
+ELEMENTAL SUBROUTINE s_ass_s(var,expr)
+  type(VARYING_STRING),INTENT(INOUT) :: var
+  type(VARYING_STRING),INTENT(IN)  :: expr
+  !  assign a string value to a string variable overriding default assignement
+  !  reallocates string variable to size of string value and copies characters
   IF(ASSOCIATED(var%chars,expr%chars))THEN
     CONTINUE ! identity assignment do nothing
   ELSEIF(ASSOCIATED(var%chars))THEN
@@ -344,102 +344,102 @@ ELEMENTAL SUBROUTINE s_ass_s(var,expr)
     var%chars = expr%chars
   ELSE
     ALLOCATE(var%chars(1:SIZE(expr%chars)))
-    var%chars = expr%chars  
-  ENDIF 
- ENDSUBROUTINE s_ass_s 
+    var%chars = expr%chars
+  ENDIF
+ ENDSUBROUTINE s_ass_s
   
-ELEMENTAL SUBROUTINE c_ass_s(var,expr) 
-  CHARACTER(LEN=*),INTENT(OUT)    :: var 
-  type(VARYING_STRING),INTENT(IN) :: expr 
-  ! assign a string value to a character variable 
-  ! if the string is longer than the character truncate the string on the right 
-  ! if the string is shorter the character is blank padded on the right 
-  INTEGER                         :: lc, ls, i 
-  lc = LEN(var); ls = MIN(LEN(expr),lc) 
-  DO i = 1,ls 
-   var(i:i) = expr%chars(i) 
-  ENDDO 
-  DO i = ls+1,lc 
-   var(i:i) = blank 
-  ENDDO 
- ENDSUBROUTINE c_ass_s 
+ELEMENTAL SUBROUTINE c_ass_s(var,expr)
+  CHARACTER(LEN=*),INTENT(OUT)    :: var
+  type(VARYING_STRING),INTENT(IN) :: expr
+  ! assign a string value to a character variable
+  ! if the string is longer than the character truncate the string on the right
+  ! if the string is shorter the character is blank padded on the right
+  INTEGER                         :: lc, ls, i
+  lc = LEN(var); ls = MIN(LEN(expr),lc)
+  DO i = 1,ls
+   var(i:i) = expr%chars(i)
+  ENDDO
+  DO i = ls+1,lc
+   var(i:i) = blank
+  ENDDO
+ ENDSUBROUTINE c_ass_s
   
 ELEMENTAL SUBROUTINE s_ass_c(var,expr)
-  type(VARYING_STRING),INTENT(OUT) :: var 
-  CHARACTER(LEN=*),INTENT(IN)      :: expr 
-  !  assign a character value to a string variable 
-  !  disassociates the string variable from its current value, allocates new 
-  !  space to hold the characters and copies them from the character value 
+  type(VARYING_STRING),INTENT(OUT) :: var
+  CHARACTER(LEN=*),INTENT(IN)      :: expr
+  !  assign a character value to a string variable
+  !  disassociates the string variable from its current value, allocates new
+  !  space to hold the characters and copies them from the character value
   !  into this space.
   INTEGER                          :: lc, i
-  lc = LEN(expr) 
-  IF(ASSOCIATED(var%chars))DEALLOCATE(var%chars)  
-  ALLOCATE(var%chars(1:lc)) 
-  DO i = 1,lc 
-    var%chars(i) = expr(i:i) 
-  ENDDO 
- ENDSUBROUTINE s_ass_c 
+  lc = LEN(expr)
+  IF(ASSOCIATED(var%chars))DEALLOCATE(var%chars)
+  ALLOCATE(var%chars(1:lc))
+  DO i = 1,lc
+    var%chars(i) = expr(i:i)
+  ENDDO
+ ENDSUBROUTINE s_ass_c
   
-!----- Concatenation operator procedures ------------------------------------! 
- ELEMENTAL FUNCTION s_concat_s(string_a,string_b)  ! string//string 
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  type(VARYING_STRING)            :: s_concat_s 
+!----- Concatenation operator procedures ------------------------------------!
+ ELEMENTAL FUNCTION s_concat_s(string_a,string_b)  ! string//string
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  type(VARYING_STRING)            :: s_concat_s
   INTEGER                         :: la,lb
   la = LEN(string_a); lb = LEN(string_b)
-  ALLOCATE(s_concat_s%chars(1:la+lb)) 
-  s_concat_s%chars(1:la) = string_a%chars 
-  s_concat_s%chars(1+la:la+lb) = string_b%chars 
- ENDFUNCTION s_concat_s 
+  ALLOCATE(s_concat_s%chars(1:la+lb))
+  s_concat_s%chars(1:la) = string_a%chars
+  s_concat_s%chars(1+la:la+lb) = string_b%chars
+ ENDFUNCTION s_concat_s
   
  ELEMENTAL FUNCTION s_concat_c(string_a,string_b)  ! string//character
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  type(VARYING_STRING)            :: s_concat_c 
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  type(VARYING_STRING)            :: s_concat_c
   INTEGER                         :: la,lb, i
   la = LEN(string_a); lb = LEN(string_b)
-  ALLOCATE(s_concat_c%chars(1:la+lb)) 
-  s_concat_c%chars(1:la) = string_a%chars 
+  ALLOCATE(s_concat_c%chars(1:la+lb))
+  s_concat_c%chars(1:la) = string_a%chars
   DO i = 1,lb
     s_concat_c%chars(la+i) = string_b(i:i)
-  ENDDO 
- ENDFUNCTION s_concat_c 
+  ENDDO
+ ENDFUNCTION s_concat_c
   
- ELEMENTAL FUNCTION c_concat_s(string_a,string_b)  ! character//string 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  type(VARYING_STRING)            :: c_concat_s 
+ ELEMENTAL FUNCTION c_concat_s(string_a,string_b)  ! character//string
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  type(VARYING_STRING)            :: c_concat_s
   INTEGER                         :: la,lb, i
   la = LEN(string_a); lb = LEN(string_b)
-  ALLOCATE(c_concat_s%chars(1:la+lb)) 
-  DO i = 1,la 
-     c_concat_s%chars(i) = string_a(i:i) 
-  ENDDO 
-  c_concat_s%chars(1+la:la+lb) = string_b%chars 
- ENDFUNCTION c_concat_s 
+  ALLOCATE(c_concat_s%chars(1:la+lb))
+  DO i = 1,la
+     c_concat_s%chars(i) = string_a(i:i)
+  ENDDO
+  c_concat_s%chars(1+la:la+lb) = string_b%chars
+ ENDFUNCTION c_concat_s
   
-!----- Reapeated concatenation procedures -----------------------------------! 
-ELEMENTAL FUNCTION repeat_s(string,ncopies)                                     
- type(VARYING_STRING),INTENT(IN) :: string 
- INTEGER,INTENT(IN)              :: ncopies 
+!----- Reapeated concatenation procedures -----------------------------------!
+ELEMENTAL FUNCTION repeat_s(string,ncopies)
+ type(VARYING_STRING),INTENT(IN) :: string
+ INTEGER,INTENT(IN)              :: ncopies
  type(VARYING_STRING)            :: repeat_s
- ! Returns a string produced by the concatenation of ncopies of the 
- ! argument string 
- INTEGER                         :: lr,ls,i 
- IF (ncopies <= 0) THEN 
+ ! Returns a string produced by the concatenation of ncopies of the
+ ! argument string
+ INTEGER                         :: lr,ls,i
+ IF (ncopies <= 0) THEN
      ALLOCATE(repeat_s%chars(1:0)) ! return a zero length string
      RETURN
- ENDIF 
- ls = LEN(string); lr = ls*ncopies 
+ ENDIF
+ ls = LEN(string); lr = ls*ncopies
  ALLOCATE(repeat_s%chars(1:lr))
- DO i = 1,ncopies 
-    repeat_s%chars(1+(i-1)*ls:i*ls) = string%chars 
- ENDDO 
-ENDFUNCTION repeat_s 
+ DO i = 1,ncopies
+    repeat_s%chars(1+(i-1)*ls:i*ls) = string%chars
+ ENDDO
+ENDFUNCTION repeat_s
   
-!------ Equality comparison operators ----------------------------------------! 
- ELEMENTAL FUNCTION s_eq_s(string_a,string_b)  ! string==string 
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  LOGICAL                         :: s_eq_s 
+!------ Equality comparison operators ----------------------------------------!
+ ELEMENTAL FUNCTION s_eq_s(string_a,string_b)  ! string==string
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  LOGICAL                         :: s_eq_s
   INTEGER                         :: la,lb
   la = LEN(string_a); lb = LEN(string_b)
   IF (la > lb) THEN
@@ -449,14 +449,14 @@ ENDFUNCTION repeat_s
      s_eq_s = ALL(string_a%chars == string_b%chars(1:la)) .AND. &
               ALL(blank == string_b%chars(la+1:lb))
   ELSE
-     s_eq_s = ALL(string_a%chars == string_b%chars) 
-  ENDIF 
- ENDFUNCTION s_eq_s 
+     s_eq_s = ALL(string_a%chars == string_b%chars)
+  ENDIF
+ ENDFUNCTION s_eq_s
 
- ELEMENTAL FUNCTION s_eq_c(string_a,string_b)  ! string==character 
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  LOGICAL                         :: s_eq_c 
+ ELEMENTAL FUNCTION s_eq_c(string_a,string_b)  ! string==character
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  LOGICAL                         :: s_eq_c
   INTEGER                         :: la,lb,ls, i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
   DO i = 1,ls
@@ -470,12 +470,12 @@ ENDFUNCTION repeat_s
     s_eq_c = .FALSE.; RETURN
   ENDIF
   s_eq_c = .TRUE.
- ENDFUNCTION s_eq_c 
+ ENDFUNCTION s_eq_c
   
- ELEMENTAL FUNCTION c_eq_s(string_a,string_b)  ! character==string 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  LOGICAL                         :: c_eq_s 
+ ELEMENTAL FUNCTION c_eq_s(string_a,string_b)  ! character==string
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  LOGICAL                         :: c_eq_s
   INTEGER                         :: la,lb,ls, i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
   DO i = 1,ls
@@ -489,12 +489,12 @@ ENDFUNCTION repeat_s
     c_eq_s = .FALSE.; RETURN
   ENDIF
   c_eq_s = .TRUE.
- ENDFUNCTION c_eq_s 
+ ENDFUNCTION c_eq_s
   
-!------ Non-equality operators -----------------------------------------------! 
- ELEMENTAL FUNCTION s_ne_s(string_a,string_b)  ! string/=string 
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  LOGICAL                         :: s_ne_s 
+!------ Non-equality operators -----------------------------------------------!
+ ELEMENTAL FUNCTION s_ne_s(string_a,string_b)  ! string/=string
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  LOGICAL                         :: s_ne_s
   INTEGER                         :: la,lb
   la = LEN(string_a); lb = LEN(string_b)
   IF (la > lb) THEN
@@ -505,13 +505,13 @@ ENDFUNCTION repeat_s
               ANY(blank /= string_b%chars(la+1:lb))
   ELSE
      s_ne_s = ANY(string_a%chars /= string_b%chars)
-  ENDIF 
- ENDFUNCTION s_ne_s 
+  ENDIF
+ ENDFUNCTION s_ne_s
   
  ELEMENTAL FUNCTION s_ne_c(string_a,string_b)  ! string/=character
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  LOGICAL                         :: s_ne_c 
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  LOGICAL                         :: s_ne_c
   INTEGER                         :: la,lb,ls, i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
   DO i = 1,ls
@@ -525,12 +525,12 @@ ENDFUNCTION repeat_s
     s_ne_c = .TRUE.; RETURN
   ENDIF
   s_ne_c = .FALSE.
- ENDFUNCTION s_ne_c 
+ ENDFUNCTION s_ne_c
   
- ELEMENTAL FUNCTION c_ne_s(string_a,string_b)  ! character/=string 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  LOGICAL                         :: c_ne_s 
+ ELEMENTAL FUNCTION c_ne_s(string_a,string_b)  ! character/=string
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  LOGICAL                         :: c_ne_s
   INTEGER                         :: la,lb,ls, i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
   DO i = 1,ls
@@ -544,21 +544,21 @@ ENDFUNCTION repeat_s
     c_ne_s = .TRUE.; RETURN
   ENDIF
   c_ne_s = .FALSE.
- ENDFUNCTION c_ne_s 
+ ENDFUNCTION c_ne_s
   
-!------ Less-than operators --------------------------------------------------! 
+!------ Less-than operators --------------------------------------------------!
  ELEMENTAL FUNCTION s_lt_s(string_a,string_b)  ! string<string
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  LOGICAL                         :: s_lt_s 
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  LOGICAL                         :: s_lt_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
-    IF( string_a%chars(i) < string_b%chars(i) )THEN 
+  DO i = 1,ls
+    IF( string_a%chars(i) < string_b%chars(i) )THEN
       s_lt_s = .TRUE.; RETURN
-    ELSEIF( string_a%chars(i) > string_b%chars(i) )THEN 
+    ELSEIF( string_a%chars(i) > string_b%chars(i) )THEN
       s_lt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank < string_b%chars(i) )THEN
@@ -577,21 +577,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_lt_s = .FALSE.
- ENDFUNCTION s_lt_s 
+ ENDFUNCTION s_lt_s
   
- ELEMENTAL FUNCTION s_lt_c(string_a,string_b)  ! string<character 
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  LOGICAL                         :: s_lt_c 
+ ELEMENTAL FUNCTION s_lt_c(string_a,string_b)  ! string<character
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  LOGICAL                         :: s_lt_c
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
-    IF( string_a%chars(i) < string_b(i:i) )THEN 
+  DO i = 1,ls
+    IF( string_a%chars(i) < string_b(i:i) )THEN
       s_lt_c = .TRUE.; RETURN
-    ELSEIF( string_a%chars(i) > string_b(i:i) )THEN 
+    ELSEIF( string_a%chars(i) > string_b(i:i) )THEN
       s_lt_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( blank < string_b(la+1:lb) )THEN
       s_lt_c = .TRUE.; RETURN
@@ -608,21 +608,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_lt_c = .FALSE.
- ENDFUNCTION s_lt_c 
+ ENDFUNCTION s_lt_c
   
  ELEMENTAL FUNCTION c_lt_s(string_a,string_b)  ! character<string
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  LOGICAL                         :: c_lt_s 
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  LOGICAL                         :: c_lt_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
-    IF( string_a(i:i) < string_b%chars(i) )THEN 
+  DO i = 1,ls
+    IF( string_a(i:i) < string_b%chars(i) )THEN
       c_lt_s = .TRUE.; RETURN
-    ELSEIF( string_a(i:i) > string_b%chars(i) )THEN 
+    ELSEIF( string_a(i:i) > string_b%chars(i) )THEN
       c_lt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank < string_b%chars(i) )THEN
@@ -639,21 +639,21 @@ ENDFUNCTION repeat_s
     ENDIF
   ENDIF
   c_lt_s = .FALSE.
- ENDFUNCTION c_lt_s 
+ ENDFUNCTION c_lt_s
 
-!------ Less-than-or-equal-to operators --------------------------------------! 
- ELEMENTAL FUNCTION s_le_s(string_a,string_b)  ! string<=string 
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  LOGICAL                         :: s_le_s 
+!------ Less-than-or-equal-to operators --------------------------------------!
+ ELEMENTAL FUNCTION s_le_s(string_a,string_b)  ! string<=string
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  LOGICAL                         :: s_le_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
-    IF( string_a%chars(i) < string_b%chars(i) )THEN 
+  DO i = 1,ls
+    IF( string_a%chars(i) < string_b%chars(i) )THEN
       s_le_s = .TRUE.; RETURN
-    ELSEIF( string_a%chars(i) > string_b%chars(i) )THEN 
+    ELSEIF( string_a%chars(i) > string_b%chars(i) )THEN
       s_le_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank < string_b%chars(i) )THEN
@@ -672,21 +672,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_le_s = .TRUE.
- ENDFUNCTION s_le_s 
+ ENDFUNCTION s_le_s
   
  ELEMENTAL FUNCTION s_le_c(string_a,string_b)  ! string<=character
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  LOGICAL                         :: s_le_c 
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  LOGICAL                         :: s_le_c
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
-    IF( string_a%chars(i) < string_b(i:i) )THEN 
+  DO i = 1,ls
+    IF( string_a%chars(i) < string_b(i:i) )THEN
       s_le_c = .TRUE.; RETURN
-    ELSEIF( string_a%chars(i) > string_b(i:i) )THEN 
+    ELSEIF( string_a%chars(i) > string_b(i:i) )THEN
       s_le_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( blank < string_b(la+1:lb) )THEN
       s_le_c = .TRUE.; RETURN
@@ -703,21 +703,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_le_c = .TRUE.
- ENDFUNCTION s_le_c 
+ ENDFUNCTION s_le_c
   
- ELEMENTAL FUNCTION c_le_s(string_a,string_b)  ! character<=string 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  LOGICAL                         :: c_le_s 
+ ELEMENTAL FUNCTION c_le_s(string_a,string_b)  ! character<=string
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  LOGICAL                         :: c_le_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
-    IF( string_a(i:i) < string_b%chars(i) )THEN 
+  DO i = 1,ls
+    IF( string_a(i:i) < string_b%chars(i) )THEN
       c_le_s = .TRUE.; RETURN
-    ELSEIF( string_a(i:i) > string_b%chars(i) )THEN 
+    ELSEIF( string_a(i:i) > string_b%chars(i) )THEN
       c_le_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank < string_b%chars(i) )THEN
@@ -734,21 +734,21 @@ ENDFUNCTION repeat_s
     ENDIF
   ENDIF
   c_le_s = .TRUE.
- ENDFUNCTION c_le_s 
+ ENDFUNCTION c_le_s
   
-!------ Greater-than-or-equal-to operators -----------------------------------! 
+!------ Greater-than-or-equal-to operators -----------------------------------!
  ELEMENTAL FUNCTION s_ge_s(string_a,string_b)  ! string>=string
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  LOGICAL                         :: s_ge_s 
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  LOGICAL                         :: s_ge_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( string_a%chars(i) > string_b%chars(i) )THEN
       s_ge_s = .TRUE.; RETURN
     ELSEIF( string_a%chars(i) < string_b%chars(i) )THEN
       s_ge_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank > string_b%chars(i) )THEN
@@ -767,21 +767,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_ge_s = .TRUE.
- ENDFUNCTION s_ge_s 
+ ENDFUNCTION s_ge_s
   
- ELEMENTAL FUNCTION s_ge_c(string_a,string_b)  ! string>=character 
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  LOGICAL                         :: s_ge_c 
+ ELEMENTAL FUNCTION s_ge_c(string_a,string_b)  ! string>=character
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  LOGICAL                         :: s_ge_c
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( string_a%chars(i) > string_b(i:i) )THEN
       s_ge_c = .TRUE.; RETURN
     ELSEIF( string_a%chars(i) < string_b(i:i) )THEN
       s_ge_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( blank > string_b(la+1:lb) )THEN
       s_ge_c = .TRUE.; RETURN
@@ -798,21 +798,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_ge_c = .TRUE.
- ENDFUNCTION s_ge_c 
+ ENDFUNCTION s_ge_c
   
  ELEMENTAL FUNCTION c_ge_s(string_a,string_b)  ! character>=string
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  LOGICAL                         :: c_ge_s 
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  LOGICAL                         :: c_ge_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( string_a(i:i) > string_b%chars(i) )THEN
       c_ge_s = .TRUE.; RETURN
     ELSEIF( string_a(i:i) < string_b%chars(i) )THEN
       c_ge_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank > string_b%chars(i) )THEN
@@ -829,21 +829,21 @@ ENDFUNCTION repeat_s
     ENDIF
   ENDIF
   c_ge_s = .TRUE.
- ENDFUNCTION c_ge_s 
+ ENDFUNCTION c_ge_s
   
-!------ Greater-than operators -----------------------------------------------! 
- ELEMENTAL FUNCTION s_gt_s(string_a,string_b)  ! string>string 
-  type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
-  LOGICAL                         :: s_gt_s 
+!------ Greater-than operators -----------------------------------------------!
+ ELEMENTAL FUNCTION s_gt_s(string_a,string_b)  ! string>string
+  type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+  LOGICAL                         :: s_gt_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( string_a%chars(i) > string_b%chars(i) )THEN
       s_gt_s = .TRUE.; RETURN
     ELSEIF( string_a%chars(i) < string_b%chars(i) )THEN
       s_gt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank > string_b%chars(i) )THEN
@@ -862,21 +862,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_gt_s = .FALSE.
- ENDFUNCTION s_gt_s 
+ ENDFUNCTION s_gt_s
   
  ELEMENTAL FUNCTION s_gt_c(string_a,string_b)  ! string>character
-  type(VARYING_STRING),INTENT(IN) :: string_a 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_b 
-  LOGICAL                         :: s_gt_c 
+  type(VARYING_STRING),INTENT(IN) :: string_a
+  CHARACTER(LEN=*),INTENT(IN)     :: string_b
+  LOGICAL                         :: s_gt_c
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( string_a%chars(i) > string_b(i:i) )THEN
       s_gt_c = .TRUE.; RETURN
     ELSEIF( string_a%chars(i) < string_b(i:i) )THEN
       s_gt_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( blank > string_b(la+1:lb) )THEN
       s_gt_c = .TRUE.; RETURN
@@ -893,21 +893,21 @@ ENDFUNCTION repeat_s
     ENDDO
   ENDIF
   s_gt_c = .FALSE.
- ENDFUNCTION s_gt_c 
+ ENDFUNCTION s_gt_c
   
- ELEMENTAL FUNCTION c_gt_s(string_a,string_b)  ! character>string 
-  CHARACTER(LEN=*),INTENT(IN)     :: string_a 
-  type(VARYING_STRING),INTENT(IN) :: string_b 
-  LOGICAL                         :: c_gt_s 
+ ELEMENTAL FUNCTION c_gt_s(string_a,string_b)  ! character>string
+  CHARACTER(LEN=*),INTENT(IN)     :: string_a
+  type(VARYING_STRING),INTENT(IN) :: string_b
+  LOGICAL                         :: c_gt_s
   INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( string_a(i:i) > string_b%chars(i) )THEN
       c_gt_s = .TRUE.; RETURN
     ELSEIF( string_a(i:i) < string_b%chars(i) )THEN
       c_gt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( blank > string_b%chars(i) )THEN
@@ -924,24 +924,24 @@ ENDFUNCTION repeat_s
     ENDIF
   ENDIF
   c_gt_s = .FALSE.
- ENDFUNCTION c_gt_s 
+ ENDFUNCTION c_gt_s
   
 !----- LLT procedures -------------------------------------------------------!
-ELEMENTAL FUNCTION s_llt_s(string_a,string_b)  ! string_a<string_b ISO-646 ordering 
- type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
- LOGICAL                         :: s_llt_s 
- ! Returns TRUE if string_a preceeds string_b in the ISO 646 collating 
- ! sequence. Otherwise the result is FALSE. The result is FALSE if both 
- ! string_a and string_b are zero length. 
+ELEMENTAL FUNCTION s_llt_s(string_a,string_b)  ! string_a<string_b ISO-646 ordering
+ type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+ LOGICAL                         :: s_llt_s
+ ! Returns TRUE if string_a preceeds string_b in the ISO 646 collating
+ ! sequence. Otherwise the result is FALSE. The result is FALSE if both
+ ! string_a and string_b are zero length.
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LLT(string_a%chars(i),string_b%chars(i)) )THEN
       s_llt_s = .TRUE.; RETURN
     ELSEIF( LGT(string_a%chars(i),string_b%chars(i)) )THEN
       s_llt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LLT(blank,string_b%chars(i)) )THEN
@@ -960,21 +960,21 @@ ELEMENTAL FUNCTION s_llt_s(string_a,string_b)  ! string_a<string_b ISO-646 order
     ENDDO
   ENDIF
   s_llt_s = .FALSE.
-ENDFUNCTION s_llt_s 
+ENDFUNCTION s_llt_s
   
-ELEMENTAL FUNCTION s_llt_c(string_a,string_b)   ! string_a<string_b ISO-646 ordering 
- type(VARYING_STRING),INTENT(IN) :: string_a 
- CHARACTER(LEN=*),INTENT(IN)     :: string_b 
- LOGICAL                         :: s_llt_c 
+ELEMENTAL FUNCTION s_llt_c(string_a,string_b)   ! string_a<string_b ISO-646 ordering
+ type(VARYING_STRING),INTENT(IN) :: string_a
+ CHARACTER(LEN=*),INTENT(IN)     :: string_b
+ LOGICAL                         :: s_llt_c
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LLT(string_a%chars(i),string_b(i:i)) )THEN
       s_llt_c = .TRUE.; RETURN
     ELSEIF( LGT(string_a%chars(i),string_b(i:i)) )THEN
       s_llt_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( LLT(blank,string_b(la+1:lb)) )THEN
       s_llt_c = .TRUE.; RETURN
@@ -991,7 +991,7 @@ ELEMENTAL FUNCTION s_llt_c(string_a,string_b)   ! string_a<string_b ISO-646 orde
     ENDDO
   ENDIF
   s_llt_c = .FALSE.
-ENDFUNCTION s_llt_c 
+ENDFUNCTION s_llt_c
   
 ELEMENTAL FUNCTION c_llt_s(string_a,string_b)  ! string_a,string_b ISO-646 ordering
  CHARACTER(LEN=*),INTENT(IN)     :: string_a
@@ -999,13 +999,13 @@ ELEMENTAL FUNCTION c_llt_s(string_a,string_b)  ! string_a,string_b ISO-646 order
  LOGICAL                         :: c_llt_s
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LLT(string_a(i:i),string_b%chars(i)) )THEN
       c_llt_s = .TRUE.; RETURN
     ELSEIF( LGT(string_a(i:i),string_b%chars(i)) )THEN
       c_llt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LLT(blank,string_b%chars(i)) )THEN
@@ -1022,23 +1022,23 @@ ELEMENTAL FUNCTION c_llt_s(string_a,string_b)  ! string_a,string_b ISO-646 order
     ENDIF
   ENDIF
   c_llt_s = .FALSE.
-ENDFUNCTION c_llt_s 
+ENDFUNCTION c_llt_s
   
-!----- LLE procedures -------------------------------------------------------! 
-ELEMENTAL FUNCTION s_lle_s(string_a,string_b)  ! string_a<=string_b ISO-646 ordering 
- type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
- LOGICAL                         :: s_lle_s 
- ! Returns TRUE if strings are equal or if string_a preceeds string_b in the 
+!----- LLE procedures -------------------------------------------------------!
+ELEMENTAL FUNCTION s_lle_s(string_a,string_b)  ! string_a<=string_b ISO-646 ordering
+ type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+ LOGICAL                         :: s_lle_s
+ ! Returns TRUE if strings are equal or if string_a preceeds string_b in the
  ! ISO 646 collating sequence.  Otherwise the result is FALSE.
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LLT(string_a%chars(i),string_b%chars(i)) )THEN
       s_lle_s = .TRUE.; RETURN
     ELSEIF( LGT(string_a%chars(i),string_b%chars(i)) )THEN
       s_lle_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LLT(blank,string_b%chars(i)) )THEN
@@ -1057,21 +1057,21 @@ ELEMENTAL FUNCTION s_lle_s(string_a,string_b)  ! string_a<=string_b ISO-646 orde
     ENDDO
   ENDIF
   s_lle_s = .TRUE.
-ENDFUNCTION s_lle_s 
+ENDFUNCTION s_lle_s
   
 ELEMENTAL FUNCTION s_lle_c(string_a,string_b)  ! strung_a<=string_b ISO-646 ordering
- type(VARYING_STRING),INTENT(IN) :: string_a 
- CHARACTER(LEN=*),INTENT(IN)     :: string_b 
- LOGICAL                         :: s_lle_c 
+ type(VARYING_STRING),INTENT(IN) :: string_a
+ CHARACTER(LEN=*),INTENT(IN)     :: string_b
+ LOGICAL                         :: s_lle_c
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LLT(string_a%chars(i),string_b(i:i)) )THEN
       s_lle_c = .TRUE.; RETURN
     ELSEIF( LGT(string_a%chars(i),string_b(i:i)) )THEN
       s_lle_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( LLT(blank,string_b(la+1:lb)) )THEN
       s_lle_c = .TRUE.; RETURN
@@ -1088,21 +1088,21 @@ ELEMENTAL FUNCTION s_lle_c(string_a,string_b)  ! strung_a<=string_b ISO-646 orde
     ENDDO
   ENDIF
   s_lle_c = .TRUE.
-ENDFUNCTION s_lle_c 
+ENDFUNCTION s_lle_c
   
-ELEMENTAL FUNCTION c_lle_s(string_a,string_b)  ! string_a<=string_b ISO-646 ordering 
- CHARACTER(LEN=*),INTENT(IN)     :: string_a 
- type(VARYING_STRING),INTENT(IN) :: string_b 
- LOGICAL                         :: c_lle_s 
+ELEMENTAL FUNCTION c_lle_s(string_a,string_b)  ! string_a<=string_b ISO-646 ordering
+ CHARACTER(LEN=*),INTENT(IN)     :: string_a
+ type(VARYING_STRING),INTENT(IN) :: string_b
+ LOGICAL                         :: c_lle_s
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LLT(string_a(i:i),string_b%chars(i)) )THEN
       c_lle_s = .TRUE.; RETURN
     ELSEIF( LGT(string_a(i:i),string_b%chars(i)) )THEN
       c_lle_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LLT(blank,string_b%chars(i)) )THEN
@@ -1119,23 +1119,23 @@ ELEMENTAL FUNCTION c_lle_s(string_a,string_b)  ! string_a<=string_b ISO-646 orde
     ENDIF
   ENDIF
   c_lle_s = .TRUE.
-ENDFUNCTION c_lle_s 
+ENDFUNCTION c_lle_s
   
-!----- LGE procedures -------------------------------------------------------! 
-ELEMENTAL FUNCTION s_lge_s(string_a,string_b)  ! string_a>=string_b ISO-646 ordering 
- type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
- LOGICAL                         :: s_lge_s 
- ! Returns TRUE if strings are equal or if string_a follows string_b in the 
+!----- LGE procedures -------------------------------------------------------!
+ELEMENTAL FUNCTION s_lge_s(string_a,string_b)  ! string_a>=string_b ISO-646 ordering
+ type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+ LOGICAL                         :: s_lge_s
+ ! Returns TRUE if strings are equal or if string_a follows string_b in the
  ! ISO 646 collating sequence. Otherwise the result is FALSE.
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LGT(string_a%chars(i),string_b%chars(i)) )THEN
       s_lge_s = .TRUE.; RETURN
     ELSEIF( LLT(string_a%chars(i),string_b%chars(i)) )THEN
       s_lge_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LGT(blank,string_b%chars(i)) )THEN
@@ -1154,21 +1154,21 @@ ELEMENTAL FUNCTION s_lge_s(string_a,string_b)  ! string_a>=string_b ISO-646 orde
     ENDDO
   ENDIF
   s_lge_s = .TRUE.
-ENDFUNCTION s_lge_s 
+ENDFUNCTION s_lge_s
   
 ELEMENTAL FUNCTION s_lge_c(string_a,string_b)  ! string_a>=string_b ISO-646 ordering
- type(VARYING_STRING),INTENT(IN) :: string_a 
- CHARACTER(LEN=*),INTENT(IN)     :: string_b 
- LOGICAL                         :: s_lge_c 
+ type(VARYING_STRING),INTENT(IN) :: string_a
+ CHARACTER(LEN=*),INTENT(IN)     :: string_b
+ LOGICAL                         :: s_lge_c
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LGT(string_a%chars(i),string_b(i:i)) )THEN
       s_lge_c = .TRUE.; RETURN
     ELSEIF( LLT(string_a%chars(i),string_b(i:i)) )THEN
       s_lge_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( LGT(blank,string_b(la+1:lb)) )THEN
       s_lge_c = .TRUE.; RETURN
@@ -1185,21 +1185,21 @@ ELEMENTAL FUNCTION s_lge_c(string_a,string_b)  ! string_a>=string_b ISO-646 orde
     ENDDO
   ENDIF
   s_lge_c = .TRUE.
-ENDFUNCTION s_lge_c 
+ENDFUNCTION s_lge_c
   
-ELEMENTAL FUNCTION c_lge_s(string_a,string_b)  ! string_a>=string_b ISO-646 ordering 
- CHARACTER(LEN=*),INTENT(IN)     :: string_a 
- type(VARYING_STRING),INTENT(IN) :: string_b 
- LOGICAL                         :: c_lge_s 
+ELEMENTAL FUNCTION c_lge_s(string_a,string_b)  ! string_a>=string_b ISO-646 ordering
+ CHARACTER(LEN=*),INTENT(IN)     :: string_a
+ type(VARYING_STRING),INTENT(IN) :: string_b
+ LOGICAL                         :: c_lge_s
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LGT(string_a(i:i),string_b%chars(i)) )THEN
       c_lge_s = .TRUE.; RETURN
     ELSEIF( LLT(string_a(i:i),string_b%chars(i)) )THEN
       c_lge_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LGT(blank,string_b%chars(i)) )THEN
@@ -1216,24 +1216,24 @@ ELEMENTAL FUNCTION c_lge_s(string_a,string_b)  ! string_a>=string_b ISO-646 orde
     ENDIF
   ENDIF
   c_lge_s = .TRUE.
-ENDFUNCTION c_lge_s 
+ENDFUNCTION c_lge_s
 
 !----- LGT procedures -------------------------------------------------------!
-ELEMENTAL FUNCTION s_lgt_s(string_a,string_b)  ! string_a>string_b ISO-646 ordering 
- type(VARYING_STRING),INTENT(IN) :: string_a,string_b 
- LOGICAL                         :: s_lgt_s 
+ELEMENTAL FUNCTION s_lgt_s(string_a,string_b)  ! string_a>string_b ISO-646 ordering
+ type(VARYING_STRING),INTENT(IN) :: string_a,string_b
+ LOGICAL                         :: s_lgt_s
  ! Returns TRUE if string_a follows string_b in the ISO 646 collating sequence.
- ! Otherwise the result is FALSE. The result is FALSE if both string_a and 
- ! string_b are zero length. 
+ ! Otherwise the result is FALSE. The result is FALSE if both string_a and
+ ! string_b are zero length.
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LGT(string_a%chars(i),string_b%chars(i)) )THEN
       s_lgt_s = .TRUE.; RETURN
     ELSEIF( LLT(string_a%chars(i),string_b%chars(i)) )THEN
       s_lgt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LGT(blank,string_b%chars(i)) )THEN
@@ -1252,21 +1252,21 @@ ELEMENTAL FUNCTION s_lgt_s(string_a,string_b)  ! string_a>string_b ISO-646 order
     ENDDO
   ENDIF
   s_lgt_s = .FALSE.
-ENDFUNCTION s_lgt_s 
+ENDFUNCTION s_lgt_s
   
-ELEMENTAL FUNCTION s_lgt_c(string_a,string_b)  ! string_a>string_b ISO-646 ordering 
- type(VARYING_STRING),INTENT(IN) :: string_a 
- CHARACTER(LEN=*),INTENT(IN)     :: string_b 
- LOGICAL                         :: s_lgt_c 
+ELEMENTAL FUNCTION s_lgt_c(string_a,string_b)  ! string_a>string_b ISO-646 ordering
+ type(VARYING_STRING),INTENT(IN) :: string_a
+ CHARACTER(LEN=*),INTENT(IN)     :: string_b
+ LOGICAL                         :: s_lgt_c
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LGT(string_a%chars(i),string_b(i:i)) )THEN
       s_lgt_c = .TRUE.; RETURN
     ELSEIF( LLT(string_a%chars(i),string_b(i:i)) )THEN
       s_lgt_c = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     IF( LGT(blank,string_b(la+1:lb)) )THEN
       s_lgt_c = .TRUE.; RETURN
@@ -1283,21 +1283,21 @@ ELEMENTAL FUNCTION s_lgt_c(string_a,string_b)  ! string_a>string_b ISO-646 order
     ENDDO
   ENDIF
   s_lgt_c = .FALSE.
-ENDFUNCTION s_lgt_c 
+ENDFUNCTION s_lgt_c
   
 ELEMENTAL FUNCTION c_lgt_s(string_a,string_b)  ! string_a>string_b ISO-646 ordering
- CHARACTER(LEN=*),INTENT(IN)     :: string_a 
- type(VARYING_STRING),INTENT(IN) :: string_b 
- LOGICAL                         :: c_lgt_s 
+ CHARACTER(LEN=*),INTENT(IN)     :: string_a
+ type(VARYING_STRING),INTENT(IN) :: string_b
+ LOGICAL                         :: c_lgt_s
  INTEGER                         :: ls,la,lb,i
   la = LEN(string_a); lb = LEN(string_b); ls = MIN(la,lb)
-  DO i = 1,ls 
+  DO i = 1,ls
     IF( LGT(string_a(i:i),string_b%chars(i)) )THEN
       c_lgt_s = .TRUE.; RETURN
     ELSEIF( LLT(string_a(i:i),string_b%chars(i)) )THEN
       c_lgt_s = .FALSE.; RETURN
-    ENDIF 
-  ENDDO 
+    ENDIF
+  ENDDO
   IF( la < lb )THEN
     DO i = la+1,lb
       IF( LGT(blank,string_b%chars(i)) )THEN
@@ -1314,7 +1314,7 @@ ELEMENTAL FUNCTION c_lgt_s(string_a,string_b)  ! string_a>string_b ISO-646 order
     ENDIF
   ENDIF
   c_lgt_s = .FALSE.
-ENDFUNCTION c_lgt_s 
+ENDFUNCTION c_lgt_s
   
   
 !----- Input string procedure -----------------------------------------------!
@@ -1347,22 +1347,22 @@ SUBROUTINE get_d_eor(string,maxlen,iostat)
    IF(toread <= 0)EXIT
    nb=MIN(80,toread)
    READ(*,FMT='(A)',ADVANCE='NO',EOR=9999,SIZE=nch,IOSTAT=ist) buffer(1:nb)
-   IF( ist /= 0 )THEN 
-     IF(PRESENT(iostat)) THEN 
-       iostat=ist 
-       RETURN 
-     ELSE 
+   IF( ist /= 0 )THEN
+     IF(PRESENT(iostat)) THEN
+       iostat=ist
+       RETURN
+     ELSE
        WRITE(*,*) " Error No.",ist, &
                   " during READ_STRING of varying string on default unit"
-       STOP 
-     ENDIF 
-   ENDIF 
+       STOP
+     ENDIF
+   ENDIF
    string = string //buffer(1:nb)
    toread = toread - nb
  ENDDO
  IF(PRESENT(iostat)) iostat = 0
  RETURN
- 9999 string = string //buffer(1:nch) 
+ 9999 string = string //buffer(1:nch)
  IF(PRESENT(iostat)) iostat = ist
 ENDSUBROUTINE get_d_eor
   
@@ -1382,7 +1382,7 @@ SUBROUTINE get_u_eor(unit,string,maxlen,iostat)
                                   ! if present used to return the status
                                   ! of the data transfer
                                   ! if absent errors cause termination
-! reads string from unit starting at next character in the file and 
+! reads string from unit starting at next character in the file and
 ! terminating at the end of record or after maxlen characters.
  CHARACTER(LEN=80) :: buffer
  INTEGER           :: ist,nch,toread,nb
@@ -1398,22 +1398,22 @@ SUBROUTINE get_u_eor(unit,string,maxlen,iostat)
    IF(toread <= 0)EXIT
    nb=MIN(80,toread)
    READ(unit,FMT='(A)',ADVANCE='NO',EOR=9999,SIZE=nch,IOSTAT=ist) buffer(1:nb)
-   IF( ist /= 0 )THEN 
-     IF(PRESENT(iostat)) THEN 
-       iostat=ist 
-       RETURN 
-     ELSE 
+   IF( ist /= 0 )THEN
+     IF(PRESENT(iostat)) THEN
+       iostat=ist
+       RETURN
+     ELSE
        WRITE(*,*) " Error No.",ist, &
                   " during READ_STRING of varying string on UNIT ",unit
-       STOP 
-     ENDIF 
-   ENDIF 
+       STOP
+     ENDIF
+   ENDIF
    string = string //buffer(1:nb)
    toread = toread - nb
  ENDDO
  IF(PRESENT(iostat)) iostat = 0
  RETURN
- 9999 string = string //buffer(1:nch) 
+ 9999 string = string //buffer(1:nch)
  IF(PRESENT(iostat)) iostat = ist
 ENDSUBROUTINE get_u_eor
 
@@ -1456,16 +1456,16 @@ SUBROUTINE get_d_tset_s(string,set,separator,maxlen,iostat)
  readchar:DO  ! repeatedly read buffer and add to string
    IF(toread <= 0)EXIT readchar  ! maxlen reached
    READ(*,FMT='(A)',ADVANCE='NO',EOR=9999,IOSTAT=ist) buffer
-   IF( ist /= 0 )THEN 
-     IF(PRESENT(iostat)) THEN 
-       iostat=ist 
-       RETURN 
-     ELSE 
+   IF( ist /= 0 )THEN
+     IF(PRESENT(iostat)) THEN
+       iostat=ist
+       RETURN
+     ELSE
        WRITE(*,*) " Error No.",ist, &
                   " during GET of varying string on default unit"
-       STOP 
-     ENDIF 
-   ENDIF 
+       STOP
+     ENDIF
+   ENDIF
    ! check for occurance of set character in buffer
      DO j = 1,lenset
        IF(buffer == set%chars(j))THEN
@@ -1506,7 +1506,7 @@ SUBROUTINE get_u_tset_s(unit,string,set,separator,maxlen,iostat)
                                   ! if present used to return the status
                                   ! of the data transfer
                                   ! if absent errors cause termination
-! reads string from unit starting at next character in the file and 
+! reads string from unit starting at next character in the file and
 ! terminating at the end of record, occurance of a character in set,
 ! or after reading maxlen characters.
  CHARACTER :: buffer  ! characters must be read one at a time to detect
@@ -1524,16 +1524,16 @@ SUBROUTINE get_u_tset_s(unit,string,set,separator,maxlen,iostat)
  readchar:DO  ! repeatedly read buffer and add to string
    IF(toread <= 0)EXIT readchar ! maxlen reached
    READ(unit,FMT='(A)',ADVANCE='NO',EOR=9999,IOSTAT=ist) buffer
-   IF( ist /= 0 )THEN 
-     IF(PRESENT(iostat)) THEN 
-       iostat=ist 
-       RETURN 
-     ELSE 
+   IF( ist /= 0 )THEN
+     IF(PRESENT(iostat)) THEN
+       iostat=ist
+       RETURN
+     ELSE
        WRITE(*,*) " Error No.",ist, &
                   " during GET of varying string on unit ",unit
-       STOP 
-     ENDIF 
-   ENDIF 
+       STOP
+     ENDIF
+   ENDIF
    ! check for occurance of set character in buffer
      DO j = 1,lenset
        IF(buffer == set%chars(j))THEN
@@ -1589,16 +1589,16 @@ SUBROUTINE get_d_tset_c(string,set,separator,maxlen,iostat)
  readchar:DO  ! repeatedly read buffer and add to string
    IF(toread <= 0)EXIT readchar ! maxlen reached
    READ(*,FMT='(A)',ADVANCE='NO',EOR=9999,IOSTAT=ist) buffer
-   IF( ist /= 0 )THEN 
-     IF(PRESENT(iostat)) THEN 
-       iostat=ist 
-       RETURN 
-     ELSE 
+   IF( ist /= 0 )THEN
+     IF(PRESENT(iostat)) THEN
+       iostat=ist
+       RETURN
+     ELSE
        WRITE(*,*) " Error No.",ist, &
                   " during GET of varying string on default unit"
-       STOP 
-     ENDIF 
-   ENDIF 
+       STOP
+     ENDIF
+   ENDIF
    ! check for occurance of set character in buffer
      DO j = 1,lenset
        IF(buffer == set(j:j))THEN
@@ -1657,16 +1657,16 @@ SUBROUTINE get_u_tset_c(unit,string,set,separator,maxlen,iostat)
  readchar:DO  ! repeatedly read buffer and add to string
    IF(toread <= 0)EXIT readchar ! maxlen reached
    READ(unit,FMT='(A)',ADVANCE='NO',EOR=9999,IOSTAT=ist) buffer
-   IF( ist /= 0 )THEN 
-     IF(PRESENT(iostat)) THEN 
-       iostat=ist 
-       RETURN 
-     ELSE 
+   IF( ist /= 0 )THEN
+     IF(PRESENT(iostat)) THEN
+       iostat=ist
+       RETURN
+     ELSE
        WRITE(*,*) " Error No.",ist, &
                   " during GET of varying string on unit ",unit
-       STOP 
-     ENDIF 
-   ENDIF 
+       STOP
+     ENDIF
+   ENDIF
    ! check for occurance of set character in buffer
      DO j = 1,lenset
        IF(buffer == set(j:j))THEN
@@ -1918,14 +1918,14 @@ ENDSUBROUTINE putline_u_c
   ! to the right and enlarging it accordingly,
   ! if start is greater than LEN(string) the substring is simply appended
   ! to string by concatenation. if start is less than 1
-  ! substring is inserted before string, ie. start is treated as if it were 1 
-  CHARACTER,POINTER,DIMENSION(:) :: work 
+  ! substring is inserted before string, ie. start is treated as if it were 1
+  CHARACTER,POINTER,DIMENSION(:) :: work
   INTEGER                        :: ip,is,lsub,ls
   lsub = LEN(substring); ls = LEN(string)
-  is = MAX(start,1) 
-  ip = MIN(ls+1,is) 
+  is = MAX(start,1)
+  ip = MIN(ls+1,is)
   ALLOCATE(work(1:lsub+ls))
-  work(1:ip-1) = string%chars(1:ip-1) 
+  work(1:ip-1) = string%chars(1:ip-1)
   work(ip:ip+lsub-1) =substring%chars
   work(ip+lsub:lsub+ls) = string%chars(ip:ls)
   insert_ss%chars => work
@@ -1941,17 +1941,17 @@ ENDSUBROUTINE putline_u_c
   ! to the right and enlarging it accordingly,
   ! if start is greater than LEN(string) the substring is simply appended
   ! to string by concatenation. if start is less than 1
-  ! substring is inserted before string, ie. start is treated as if it were 1 
-  CHARACTER,POINTER,DIMENSION(:) :: work 
+  ! substring is inserted before string, ie. start is treated as if it were 1
+  CHARACTER,POINTER,DIMENSION(:) :: work
   INTEGER                        :: ip,is,lsub,ls,i
   lsub = LEN(substring); ls = LEN(string)
-  is = MAX(start,1) 
-  ip = MIN(ls+1,is) 
+  is = MAX(start,1)
+  ip = MIN(ls+1,is)
   ALLOCATE(work(1:lsub+ls))
-  work(1:ip-1) = string%chars(1:ip-1) 
-  DO i = 1,lsub 
-   work(ip-1+i) = substring(i:i) 
-  ENDDO 
+  work(1:ip-1) = string%chars(1:ip-1)
+  DO i = 1,lsub
+   work(ip-1+i) = substring(i:i)
+  ENDDO
   work(ip+lsub:lsub+ls) = string%chars(ip:ls)
   insert_sc%chars => work
  ENDFUNCTION insert_sc
@@ -1966,12 +1966,12 @@ ENDSUBROUTINE putline_u_c
   ! to the right and enlarging it accordingly,
   ! if start is greater than LEN(string) the substring is simply appended
   ! to string by concatenation. if start is less than 1
-  ! substring is inserted before string, ie. start is treated as if it were 1 
-  CHARACTER,POINTER,DIMENSION(:) :: work 
+  ! substring is inserted before string, ie. start is treated as if it were 1
+  CHARACTER,POINTER,DIMENSION(:) :: work
   INTEGER                        :: ip,is,lsub,ls,i
   lsub = LEN(substring); ls = LEN(string)
-  is = MAX(start,1) 
-  ip = MIN(ls+1,is) 
+  is = MAX(start,1)
+  ip = MIN(ls+1,is)
   ALLOCATE(work(1:lsub+ls))
   DO i=1,ip-1
     work(i) = string(i:i)
@@ -1993,19 +1993,19 @@ ENDSUBROUTINE putline_u_c
   ! to the right and enlarging it accordingly,
   ! if start is greater than LEN(string) the substring is simply appended
   ! to string by concatenation. if start is less than 1
-  ! substring is inserted before string, ie. start is treated as if it were 1 
-  CHARACTER,POINTER,DIMENSION(:) :: work 
-  INTEGER                        :: ip,is,lsub,ls,i 
+  ! substring is inserted before string, ie. start is treated as if it were 1
+  CHARACTER,POINTER,DIMENSION(:) :: work
+  INTEGER                        :: ip,is,lsub,ls,i
   lsub = LEN(substring); ls = LEN(string)
-  is = MAX(start,1) 
-  ip = MIN(ls+1,is) 
+  is = MAX(start,1)
+  ip = MIN(ls+1,is)
   ALLOCATE(work(1:lsub+ls))
   DO i=1,ip-1
     work(i) = string(i:i)
   ENDDO
-  DO i = 1,lsub 
-   work(ip-1+i) = substring(i:i) 
-  ENDDO 
+  DO i = 1,lsub
+   work(ip-1+i) = substring(i:i)
+  ENDDO
   DO i=ip,ls
     work(i+lsub) = string(i:i)
   ENDDO
@@ -2019,10 +2019,10 @@ ENDSUBROUTINE putline_u_c
  INTEGER,INTENT(IN)              :: start
  type(VARYING_STRING),INTENT(IN) :: substring
  !  calculates the result string by the following actions:
- !  inserts the substring into string beginning at position 
- !  start replacing the following LEN(substring) characters of the string 
- !  and enlarging string if necessary. if start is greater than LEN(string) 
- !  substring is simply appended to string by concatenation. If start is less 
+ !  inserts the substring into string beginning at position
+ !  start replacing the following LEN(substring) characters of the string
+ !  and enlarging string if necessary. if start is greater than LEN(string)
+ !  substring is simply appended to string by concatenation. If start is less
  !  than 1, substring replaces characters in string starting at 1
  CHARACTER,POINTER,DIMENSION(:) :: work
  INTEGER                        :: ip,is,nw,lsub,ls
@@ -2043,7 +2043,7 @@ ENDFUNCTION replace_ss
  INTEGER,INTENT(IN)              :: start,finish
  type(VARYING_STRING),INTENT(IN) :: substring
  !  calculates the result string by the following actions:
- !  inserts the substring into string beginning at position 
+ !  inserts the substring into string beginning at position
  !  start replacing the following finish-start+1 characters of the string
  !  and enlarging or shrinking the string if necessary.
  !  If start is greater than LEN(string) substring is simply appended to string
@@ -2070,10 +2070,10 @@ ELEMENTAL FUNCTION replace_sc(string,start,substring)
  INTEGER,INTENT(IN)              :: start
  CHARACTER(LEN=*),INTENT(IN)     :: substring
  !  calculates the result string by the following actions:
- !  inserts the characters from substring into string beginning at position 
- !  start replacing the following LEN(substring) characters of the string 
- !  and enlarging string if necessary. If start is greater than LEN(string) 
- !  substring is simply appended to string by concatenation. If start is less 
+ !  inserts the characters from substring into string beginning at position
+ !  start replacing the following LEN(substring) characters of the string
+ !  and enlarging string if necessary. If start is greater than LEN(string)
+ !  substring is simply appended to string by concatenation. If start is less
  !  than 1, substring replaces characters in string starting at 1
  CHARACTER,POINTER,DIMENSION(:) :: work
  INTEGER                        :: ip,is,nw,lsub,ls,i
@@ -2096,7 +2096,7 @@ ELEMENTAL FUNCTION replace_sc_sf(string,start,finish,substring)
  INTEGER,INTENT(IN)              :: start,finish
  CHARACTER(LEN=*),INTENT(IN)     :: substring
  !  calculates the result string by the following actions:
- !  inserts the substring into string beginning at position 
+ !  inserts the substring into string beginning at position
  !  start replacing the following finish-start+1 characters of the string
  !  and enlarging or shrinking the string if necessary.
  !  If start is greater than LEN(string) substring is simply appended to string
@@ -2125,10 +2125,10 @@ ELEMENTAL FUNCTION replace_cs(string,start,substring)
  INTEGER,INTENT(IN)              :: start
  type(VARYING_STRING),INTENT(IN) :: substring
  !  calculates the result string by the following actions:
- !  inserts the substring into string beginning at position 
- !  start replacing the following LEN(substring) characters of the string 
- !  and enlarging string if necessary. if start is greater than LEN(string) 
- !  substring is simply appended to string by concatenation. If start is less 
+ !  inserts the substring into string beginning at position
+ !  start replacing the following LEN(substring) characters of the string
+ !  and enlarging string if necessary. if start is greater than LEN(string)
+ !  substring is simply appended to string by concatenation. If start is less
  !  than 1, substring replaces characters in string starting at 1
  CHARACTER,POINTER,DIMENSION(:) :: work
  INTEGER                        :: ip,is,nw,lsub,ls,i
@@ -2153,7 +2153,7 @@ ELEMENTAL FUNCTION replace_cs_sf(string,start,finish,substring)
  INTEGER,INTENT(IN)              :: start,finish
  type(VARYING_STRING),INTENT(IN) :: substring
  !  calculates the result string by the following actions:
- !  inserts the substring into string beginning at position 
+ !  inserts the substring into string beginning at position
  !  start replacing the following finish-start+1 characters of the string
  !  and enlarging or shrinking the string if necessary.
  !  If start is greater than LEN(string) substring is simply appended to string
@@ -2184,10 +2184,10 @@ ELEMENTAL FUNCTION replace_cc(string,start,substring)
  INTEGER,INTENT(IN)              :: start
  CHARACTER(LEN=*),INTENT(IN)     :: substring
  !  calculates the result string by the following actions:
- !  inserts the characters from substring into string beginning at position 
- !  start replacing the following LEN(substring) characters of the string 
- !  and enlarging string if necessary. If start is greater than LEN(string) 
- !  substring is simply appended to string by concatenation. If start is less 
+ !  inserts the characters from substring into string beginning at position
+ !  start replacing the following LEN(substring) characters of the string
+ !  and enlarging string if necessary. If start is greater than LEN(string)
+ !  substring is simply appended to string by concatenation. If start is less
  !  than 1, substring replaces characters in string starting at 1
  CHARACTER,POINTER,DIMENSION(:) :: work
  INTEGER                        :: ip,is,nw,lsub,ls,i
@@ -2214,7 +2214,7 @@ ELEMENTAL FUNCTION replace_cc_sf(string,start,finish,substring)
  INTEGER,INTENT(IN)              :: start,finish
  CHARACTER(LEN=*),INTENT(IN)     :: substring
  !  calculates the result string by the following actions:
- !  inserts the substring into string beginning at position 
+ !  inserts the substring into string beginning at position
  !  start replacing the following finish-start+1 characters of the string
  !  and enlarging or shrinking the string if necessary.
  !  If start is greater than LEN(string) substring is simply appended to string
@@ -2710,7 +2710,7 @@ ELEMENTAL FUNCTION replace_csc(string,target,substring,every,back)
      ENDDO
      RETURN
    ENDIF
- ENDIF 
+ ENDIF
  ALLOCATE(work(1:ls)); ALLOCATE(str(1:ls))
  DO i=1,ls
    str(i) = string(i:i)
@@ -2803,7 +2803,7 @@ ELEMENTAL FUNCTION replace_ccs(string,target,substring,every,back)
      ENDDO
      RETURN
    ENDIF
- ENDIF 
+ ENDIF
  ALLOCATE(work(1:ls))
  DO i=1,ls
    work(i) = string(i:i)
@@ -2892,7 +2892,7 @@ ELEMENTAL FUNCTION replace_ccc(string,target,substring,every,back)
      ENDDO
      RETURN
    ENDIF
- ENDIF 
+ ENDIF
  ALLOCATE(work(1:ls))
  DO i=1,ls
    work(i) = string(i:i)
@@ -2964,10 +2964,10 @@ ELEMENTAL FUNCTION remove_s(string,start,finish)
  INTEGER,INTENT(IN),OPTIONAL     :: start
  INTEGER,INTENT(IN),OPTIONAL     :: finish
  !  returns as result the string produced by the actions
- !  removes the characters between start and finish from string reducing it in 
- !  size by MAX(0,ABS(finish-start+1)) 
- !  if start < 1 or is missing then assumes start=1 
- !  if finish > LEN(string) or is missing then assumes finish=LEN(string) 
+ !  removes the characters between start and finish from string reducing it in
+ !  size by MAX(0,ABS(finish-start+1))
+ !  if start < 1 or is missing then assumes start=1
+ !  if finish > LEN(string) or is missing then assumes finish=LEN(string)
  CHARACTER,DIMENSION(:),POINTER :: arg_str
  INTEGER                        :: is,if,ls
  ls = LEN(string)
@@ -2998,10 +2998,10 @@ ELEMENTAL FUNCTION remove_c(string,start,finish)
  INTEGER,INTENT(IN),OPTIONAL :: start
  INTEGER,INTENT(IN),OPTIONAL :: finish
  !  returns as result the string produced by the actions
- !  removes the characters between start and finish from string reducing it in 
- !  size by MAX(0,ABS(finish-start+1)) 
- !  if start < 1 or is missing then assumes start=1 
- !  if finish > LEN(string) or is missing then assumes finish=LEN(string) 
+ !  removes the characters between start and finish from string reducing it in
+ !  size by MAX(0,ABS(finish-start+1))
+ !  if start < 1 or is missing then assumes start=1
+ !  if finish > LEN(string) or is missing then assumes finish=LEN(string)
  CHARACTER,DIMENSION(:),POINTER :: arg_str
  INTEGER                        :: is,if,ls,i
  ls = LEN(string)
@@ -3033,55 +3033,55 @@ ELEMENTAL FUNCTION remove_c(string,start,finish)
 ENDFUNCTION remove_c
   
 !----- Extract procedures ---------------------------------------------------!
-ELEMENTAL FUNCTION extract_s(string,start,finish) 
-  type(VARYING_STRING),INTENT(IN) :: string 
-  INTEGER,INTENT(IN),OPTIONAL     :: start     
-  INTEGER,INTENT(IN),OPTIONAL     :: finish     
-  type(VARYING_STRING)            :: extract_s 
-  ! extracts the characters between start and finish from string  and 
-  ! delivers these as the result of the function, string is unchanged 
-  ! if start < 1 or is missing then it is treated as 1 
-  ! if finish > LEN(string) or is missing then it is treated as LEN(string) 
-  INTEGER                         :: is,if 
-  IF (PRESENT(start)) THEN  
-     is = MAX(1,start) 
-  ELSE 
-     is = 1 
-  ENDIF 
-  IF (PRESENT(finish)) THEN  
-     if = MIN(LEN(string),finish) 
-  ELSE 
-     if = LEN(string) 
-  ENDIF 
-  ALLOCATE(extract_s%chars(1:if-is+1)) 
+ELEMENTAL FUNCTION extract_s(string,start,finish)
+  type(VARYING_STRING),INTENT(IN) :: string
+  INTEGER,INTENT(IN),OPTIONAL     :: start
+  INTEGER,INTENT(IN),OPTIONAL     :: finish
+  type(VARYING_STRING)            :: extract_s
+  ! extracts the characters between start and finish from string  and
+  ! delivers these as the result of the function, string is unchanged
+  ! if start < 1 or is missing then it is treated as 1
+  ! if finish > LEN(string) or is missing then it is treated as LEN(string)
+  INTEGER                         :: is,if
+  IF (PRESENT(start)) THEN
+     is = MAX(1,start)
+  ELSE
+     is = 1
+  ENDIF
+  IF (PRESENT(finish)) THEN
+     if = MIN(LEN(string),finish)
+  ELSE
+     if = LEN(string)
+  ENDIF
+  ALLOCATE(extract_s%chars(1:if-is+1))
   extract_s%chars = string%chars(is:if)
- ENDFUNCTION extract_s 
+ ENDFUNCTION extract_s
   
 ELEMENTAL FUNCTION extract_c(string,start,finish)
-  CHARACTER(LEN=*),INTENT(IN) :: string 
-  INTEGER,INTENT(IN),OPTIONAL :: start   
-  INTEGER,INTENT(IN),OPTIONAL :: finish  
-  type(VARYING_STRING)        :: extract_c 
-  ! extracts the characters between start and finish from character string and 
-  ! delivers these as the result of the function, string is unchanged 
-  ! if start < 1 or is missing then it is treated as 1 
-  ! if finish > LEN(string) or is missing then it is treated as LEN(string) 
+  CHARACTER(LEN=*),INTENT(IN) :: string
+  INTEGER,INTENT(IN),OPTIONAL :: start
+  INTEGER,INTENT(IN),OPTIONAL :: finish
+  type(VARYING_STRING)        :: extract_c
+  ! extracts the characters between start and finish from character string and
+  ! delivers these as the result of the function, string is unchanged
+  ! if start < 1 or is missing then it is treated as 1
+  ! if finish > LEN(string) or is missing then it is treated as LEN(string)
   INTEGER                      :: is,if,i
-  IF (PRESENT(start)) THEN    
-     is = MAX(1,start) 
-  ELSE 
-     is = 1 
-  ENDIF 
-  IF (PRESENT(finish)) THEN  
-     if = MIN(LEN(string),finish) 
-  ELSE 
-     if = LEN(string) 
-  ENDIF 
-  ALLOCATE(extract_c%chars(1:if-is+1)) 
-  DO i=is,if 
-    extract_c%chars(i-is+1) = string(i:i) 
-  ENDDO 
- ENDFUNCTION extract_c 
+  IF (PRESENT(start)) THEN
+     is = MAX(1,start)
+  ELSE
+     is = 1
+  ENDIF
+  IF (PRESENT(finish)) THEN
+     if = MIN(LEN(string),finish)
+  ELSE
+     if = LEN(string)
+  ENDIF
+  ALLOCATE(extract_c%chars(1:if-is+1))
+  DO i=is,if
+    extract_c%chars(i-is+1) = string(i:i)
+  ENDDO
+ ENDFUNCTION extract_c
 
 !----- Split procedures ------------------------------------------------------!
 ELEMENTAL SUBROUTINE split_s(string,word,set,separator,back)
@@ -3097,18 +3097,18 @@ ELEMENTAL SUBROUTINE split_s(string,word,set,separator,back)
   ! character found is returned in separator.
   ! If no character in set is found string and separator are returned as
   ! zero length and the whole input string is returned in word.
-  LOGICAL           :: dir_switch 
+  LOGICAL           :: dir_switch
   INTEGER           :: ls,tpos
   CHARACTER,ALLOCATABLE :: wst(:) ! working copy of string
   ls = LEN(string)
   ALLOCATE(wst(ls))
   wst=string%chars
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
     DO tpos = ls,1,-1
        IF(ANY(wst(tpos) == set%chars))EXIT
     ENDDO
@@ -3158,18 +3158,18 @@ ELEMENTAL SUBROUTINE split_c(string,word,set,separator,back)
   ! character found is returned in separator.
   ! If no character in set is found string and separator are returned as
   ! zero length and the whole input string is returned in word.
-  LOGICAL                    :: dir_switch 
+  LOGICAL                    :: dir_switch
   INTEGER                    :: ls,tpos,lset,i
   CHARACTER,ALLOCATABLE :: wst(:) ! working copy of string
   ls = LEN(string); lset = LEN(set)
   ALLOCATE(wst(ls))
   wst=string%chars
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
     BSEARCH:DO tpos = ls,1,-1
        DO i=1,lset
          IF(wst(tpos) == set(i:i))EXIT BSEARCH
@@ -3211,465 +3211,465 @@ ELEMENTAL SUBROUTINE split_c(string,word,set,separator,back)
  ENDSUBROUTINE split_c
 
 !----- INDEX procedures ------------------------------------------------------!
- ELEMENTAL FUNCTION index_ss(string,substring,back) 
-  type(VARYING_STRING),INTENT(IN) :: string,substring 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: index_ss 
-  ! returns the starting position in string of the substring 
-  ! scanning from the front or back depending on the logical argument back 
-  LOGICAL                         :: dir_switch 
+ ELEMENTAL FUNCTION index_ss(string,substring,back)
+  type(VARYING_STRING),INTENT(IN) :: string,substring
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: index_ss
+  ! returns the starting position in string of the substring
+  ! scanning from the front or back depending on the logical argument back
+  LOGICAL                         :: dir_switch
   INTEGER                         :: ls,lsub,i
-  ls = LEN(string); lsub = LEN(substring) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    DO i = ls-lsub+1,1,-1 
-      IF( ALL(string%chars(i:i+lsub-1) == substring%chars) )THEN 
-        index_ss = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    index_ss = 0 
-  ELSE ! forward search 
-    DO i = 1,ls-lsub+1 
-      IF( ALL(string%chars(i:i+lsub-1) == substring%chars) )THEN 
-        index_ss = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    index_ss = 0 
-  ENDIF 
- ENDFUNCTION index_ss 
+  ls = LEN(string); lsub = LEN(substring)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    DO i = ls-lsub+1,1,-1
+      IF( ALL(string%chars(i:i+lsub-1) == substring%chars) )THEN
+        index_ss = i
+        RETURN
+      ENDIF
+    ENDDO
+    index_ss = 0
+  ELSE ! forward search
+    DO i = 1,ls-lsub+1
+      IF( ALL(string%chars(i:i+lsub-1) == substring%chars) )THEN
+        index_ss = i
+        RETURN
+      ENDIF
+    ENDDO
+    index_ss = 0
+  ENDIF
+ ENDFUNCTION index_ss
   
  ELEMENTAL FUNCTION index_sc(string,substring,back)
-  type(VARYING_STRING),INTENT(IN) :: string 
-  CHARACTER(LEN=*),INTENT(IN)     :: substring 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: index_sc 
-  ! returns the starting position in string of the substring 
-  ! scanning from the front or back depending on the logical argument back 
-  LOGICAL                         :: dir_switch,matched 
+  type(VARYING_STRING),INTENT(IN) :: string
+  CHARACTER(LEN=*),INTENT(IN)     :: substring
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: index_sc
+  ! returns the starting position in string of the substring
+  ! scanning from the front or back depending on the logical argument back
+  LOGICAL                         :: dir_switch,matched
   INTEGER                         :: ls,lsub,i,j
-  ls = LEN(string); lsub = LEN(substring) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF (dir_switch) THEN ! backwards search 
-    DO i = ls-lsub+1,1,-1 
-      matched = .TRUE. 
-      DO j = 1,lsub 
-        IF( string%chars(i+j-1) /= substring(j:j) )THEN 
-          matched = .FALSE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        index_sc = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    index_sc = 0 
-  ELSE ! forward search 
-    DO i = 1,ls-lsub+1 
-      matched = .TRUE. 
-      DO j = 1,lsub 
-        IF( string%chars(i+j-1) /= substring(j:j) )THEN 
-          matched = .FALSE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        index_sc = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    index_sc = 0 
-  ENDIF 
- ENDFUNCTION index_sc 
+  ls = LEN(string); lsub = LEN(substring)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF (dir_switch) THEN ! backwards search
+    DO i = ls-lsub+1,1,-1
+      matched = .TRUE.
+      DO j = 1,lsub
+        IF( string%chars(i+j-1) /= substring(j:j) )THEN
+          matched = .FALSE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        index_sc = i
+        RETURN
+      ENDIF
+    ENDDO
+    index_sc = 0
+  ELSE ! forward search
+    DO i = 1,ls-lsub+1
+      matched = .TRUE.
+      DO j = 1,lsub
+        IF( string%chars(i+j-1) /= substring(j:j) )THEN
+          matched = .FALSE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        index_sc = i
+        RETURN
+      ENDIF
+    ENDDO
+    index_sc = 0
+  ENDIF
+ ENDFUNCTION index_sc
   
  ELEMENTAL FUNCTION index_cs(string,substring,back)
-  CHARACTER(LEN=*),INTENT(IN)     :: string 
-  type(VARYING_STRING),INTENT(IN) :: substring 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: index_cs 
-  ! returns the starting position in string of the substring 
-  ! scanning from the front or back depending on the logical argument back 
-  LOGICAL                         :: dir_switch,matched 
+  CHARACTER(LEN=*),INTENT(IN)     :: string
+  type(VARYING_STRING),INTENT(IN) :: substring
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: index_cs
+  ! returns the starting position in string of the substring
+  ! scanning from the front or back depending on the logical argument back
+  LOGICAL                         :: dir_switch,matched
   INTEGER                         :: ls,lsub,i,j
-  ls = LEN(string); lsub = LEN(substring) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    DO i = ls-lsub+1,1,-1 
-      matched = .TRUE. 
-      DO j = 1,lsub 
-        IF( string(i+j-1:i+j-1) /= substring%chars(j) )THEN 
-          matched = .FALSE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        index_cs = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    index_cs = 0 
-  ELSE ! forward search 
-    DO i = 1,ls-lsub+1 
-      matched = .TRUE. 
-      DO j = 1,lsub 
-        IF( string(i+j-1:i+j-1) /= substring%chars(j) )THEN 
-          matched = .FALSE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        index_cs = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    index_cs = 0 
-  ENDIF 
- ENDFUNCTION index_cs 
+  ls = LEN(string); lsub = LEN(substring)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    DO i = ls-lsub+1,1,-1
+      matched = .TRUE.
+      DO j = 1,lsub
+        IF( string(i+j-1:i+j-1) /= substring%chars(j) )THEN
+          matched = .FALSE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        index_cs = i
+        RETURN
+      ENDIF
+    ENDDO
+    index_cs = 0
+  ELSE ! forward search
+    DO i = 1,ls-lsub+1
+      matched = .TRUE.
+      DO j = 1,lsub
+        IF( string(i+j-1:i+j-1) /= substring%chars(j) )THEN
+          matched = .FALSE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        index_cs = i
+        RETURN
+      ENDIF
+    ENDDO
+    index_cs = 0
+  ENDIF
+ ENDFUNCTION index_cs
   
 !----- SCAN procedures ------------------------------------------------------!
- ELEMENTAL FUNCTION scan_ss(string,set,back) 
-  type(VARYING_STRING),INTENT(IN) :: string,set 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: scan_ss 
-  ! returns the first position in string occupied by a character from 
-  ! the characters in set, scanning is forward or backwards depending on back 
-  LOGICAL                         :: dir_switch 
+ ELEMENTAL FUNCTION scan_ss(string,set,back)
+  type(VARYING_STRING),INTENT(IN) :: string,set
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: scan_ss
+  ! returns the first position in string occupied by a character from
+  ! the characters in set, scanning is forward or backwards depending on back
+  LOGICAL                         :: dir_switch
   INTEGER                         :: ls,i
-  ls = LEN(string) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    DO i = ls,1,-1 
-      IF( ANY( set%chars == string%chars(i) ) )THEN 
-        scan_ss = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    scan_ss = 0 
-  ELSE ! forward search 
-    DO i = 1,ls 
-      IF( ANY( set%chars == string%chars(i) ) )THEN 
-        scan_ss = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    scan_ss = 0 
-  ENDIF 
- ENDFUNCTION scan_ss 
+  ls = LEN(string)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    DO i = ls,1,-1
+      IF( ANY( set%chars == string%chars(i) ) )THEN
+        scan_ss = i
+        RETURN
+      ENDIF
+    ENDDO
+    scan_ss = 0
+  ELSE ! forward search
+    DO i = 1,ls
+      IF( ANY( set%chars == string%chars(i) ) )THEN
+        scan_ss = i
+        RETURN
+      ENDIF
+    ENDDO
+    scan_ss = 0
+  ENDIF
+ ENDFUNCTION scan_ss
   
  ELEMENTAL FUNCTION scan_sc(string,set,back)
-  type(VARYING_STRING),INTENT(IN) :: string 
-  CHARACTER(LEN=*),INTENT(IN)     :: set 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: scan_sc 
-  ! returns the first position in string occupied by a character from 
-  ! the characters in set, scanning is forward or backwards depending on back 
-  LOGICAL                         :: dir_switch,matched 
+  type(VARYING_STRING),INTENT(IN) :: string
+  CHARACTER(LEN=*),INTENT(IN)     :: set
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: scan_sc
+  ! returns the first position in string occupied by a character from
+  ! the characters in set, scanning is forward or backwards depending on back
+  LOGICAL                         :: dir_switch,matched
   INTEGER                         :: ls,i,j
-  ls = LEN(string) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    DO i = ls,1,-1 
-      matched = .FALSE. 
-      DO j = 1,LEN(set) 
-        IF( string%chars(i) == set(j:j) )THEN 
-          matched = .TRUE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        scan_sc = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    scan_sc = 0 
-  ELSE ! forward search 
-    DO i = 1,ls 
-      matched = .FALSE. 
-      DO j = 1,LEN(set) 
-        IF( string%chars(i) == set(j:j) )THEN 
-          matched = .TRUE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        scan_sc = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    scan_sc = 0 
-  ENDIF 
- ENDFUNCTION scan_sc 
+  ls = LEN(string)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    DO i = ls,1,-1
+      matched = .FALSE.
+      DO j = 1,LEN(set)
+        IF( string%chars(i) == set(j:j) )THEN
+          matched = .TRUE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        scan_sc = i
+        RETURN
+      ENDIF
+    ENDDO
+    scan_sc = 0
+  ELSE ! forward search
+    DO i = 1,ls
+      matched = .FALSE.
+      DO j = 1,LEN(set)
+        IF( string%chars(i) == set(j:j) )THEN
+          matched = .TRUE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        scan_sc = i
+        RETURN
+      ENDIF
+    ENDDO
+    scan_sc = 0
+  ENDIF
+ ENDFUNCTION scan_sc
   
  ELEMENTAL FUNCTION scan_cs(string,set,back)
-  CHARACTER(LEN=*),INTENT(IN)     :: string 
-  type(VARYING_STRING),INTENT(IN) :: set 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: scan_cs 
-  ! returns the first position in character string occupied by a character from 
-  ! the characters in set, scanning is forward or backwards depending on back 
-  LOGICAL                         :: dir_switch,matched 
+  CHARACTER(LEN=*),INTENT(IN)     :: string
+  type(VARYING_STRING),INTENT(IN) :: set
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: scan_cs
+  ! returns the first position in character string occupied by a character from
+  ! the characters in set, scanning is forward or backwards depending on back
+  LOGICAL                         :: dir_switch,matched
   INTEGER                         :: ls,i,j
-  ls = LEN(string) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    DO i = ls,1,-1 
-      matched = .FALSE. 
-      DO j = 1,LEN(set) 
-        IF( string(i:i) == set%chars(j) )THEN 
-          matched = .TRUE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        scan_cs = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    scan_cs = 0 
-  ELSE ! forward search 
-    DO i = 1,ls 
-      matched = .FALSE. 
-      DO j = 1,LEN(set) 
-        IF( string(i:i) == set%chars(j) )THEN 
-          matched = .TRUE. 
-          EXIT 
-        ENDIF 
-      ENDDO 
-      IF( matched )THEN 
-        scan_cs = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    scan_cs = 0 
-  ENDIF 
- ENDFUNCTION scan_cs 
+  ls = LEN(string)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    DO i = ls,1,-1
+      matched = .FALSE.
+      DO j = 1,LEN(set)
+        IF( string(i:i) == set%chars(j) )THEN
+          matched = .TRUE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        scan_cs = i
+        RETURN
+      ENDIF
+    ENDDO
+    scan_cs = 0
+  ELSE ! forward search
+    DO i = 1,ls
+      matched = .FALSE.
+      DO j = 1,LEN(set)
+        IF( string(i:i) == set%chars(j) )THEN
+          matched = .TRUE.
+          EXIT
+        ENDIF
+      ENDDO
+      IF( matched )THEN
+        scan_cs = i
+        RETURN
+      ENDIF
+    ENDDO
+    scan_cs = 0
+  ENDIF
+ ENDFUNCTION scan_cs
 
 !----- VERIFY procedures ----------------------------------------------------!
- ELEMENTAL FUNCTION verify_ss(string,set,back) 
-  type(VARYING_STRING),INTENT(IN) :: string,set 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: verify_ss 
-  ! returns the first position in string not occupied by a character from 
-  ! the characters in set, scanning is forward or backwards depending on back 
-  LOGICAL                     :: dir_switch 
+ ELEMENTAL FUNCTION verify_ss(string,set,back)
+  type(VARYING_STRING),INTENT(IN) :: string,set
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: verify_ss
+  ! returns the first position in string not occupied by a character from
+  ! the characters in set, scanning is forward or backwards depending on back
+  LOGICAL                     :: dir_switch
   INTEGER                     :: ls,i
-  ls = LEN(string) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    DO i = ls,1,-1 
-      IF( .NOT.(ANY( set%chars == string%chars(i) )) )THEN 
-        verify_ss = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    verify_ss = 0 
-  ELSE ! forward search 
-    DO i = 1,ls 
-      IF( .NOT.(ANY( set%chars == string%chars(i) )) )THEN 
-        verify_ss = i 
-        RETURN 
-      ENDIF 
-    ENDDO 
-    verify_ss = 0 
-  ENDIF 
- ENDFUNCTION verify_ss 
+  ls = LEN(string)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    DO i = ls,1,-1
+      IF( .NOT.(ANY( set%chars == string%chars(i) )) )THEN
+        verify_ss = i
+        RETURN
+      ENDIF
+    ENDDO
+    verify_ss = 0
+  ELSE ! forward search
+    DO i = 1,ls
+      IF( .NOT.(ANY( set%chars == string%chars(i) )) )THEN
+        verify_ss = i
+        RETURN
+      ENDIF
+    ENDDO
+    verify_ss = 0
+  ENDIF
+ ENDFUNCTION verify_ss
   
  ELEMENTAL FUNCTION verify_sc(string,set,back)
-  type(VARYING_STRING),INTENT(IN) :: string 
-  CHARACTER(LEN=*),INTENT(IN)     :: set 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: verify_sc 
-  ! returns the first position in string not occupied by a character from 
-  ! the characters in set, scanning is forward or backwards depending on back 
+  type(VARYING_STRING),INTENT(IN) :: string
+  CHARACTER(LEN=*),INTENT(IN)     :: set
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: verify_sc
+  ! returns the first position in string not occupied by a character from
+  ! the characters in set, scanning is forward or backwards depending on back
   LOGICAL                     :: dir_switch
   INTEGER                     :: ls,i,j
-  ls = LEN(string) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    back_string_search:DO i = ls,1,-1 
-      DO j = 1,LEN(set) 
+  ls = LEN(string)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    back_string_search:DO i = ls,1,-1
+      DO j = 1,LEN(set)
         IF( string%chars(i) == set(j:j) )CYCLE back_string_search
         ! cycle string search if string character found in set
-      ENDDO 
+      ENDDO
       ! string character not found in set index i is result
-        verify_sc = i 
-        RETURN 
+        verify_sc = i
+        RETURN
     ENDDO back_string_search
     ! each string character found in set
-    verify_sc = 0 
-  ELSE ! forward search 
-    frwd_string_search:DO i = 1,ls 
-      DO j = 1,LEN(set) 
+    verify_sc = 0
+  ELSE ! forward search
+    frwd_string_search:DO i = 1,ls
+      DO j = 1,LEN(set)
         IF( string%chars(i) == set(j:j) )CYCLE frwd_string_search
-      ENDDO 
-        verify_sc = i 
-        RETURN 
+      ENDDO
+        verify_sc = i
+        RETURN
     ENDDO frwd_string_search
-    verify_sc = 0 
-  ENDIF 
- ENDFUNCTION verify_sc 
+    verify_sc = 0
+  ENDIF
+ ENDFUNCTION verify_sc
   
  ELEMENTAL FUNCTION verify_cs(string,set,back)
-  CHARACTER(LEN=*),INTENT(IN)     :: string 
-  type(VARYING_STRING),INTENT(IN) :: set 
-  LOGICAL,INTENT(IN),OPTIONAL     :: back 
-  INTEGER                         :: verify_cs 
-  ! returns the first position in icharacter string not occupied by a character 
-  ! from the characters in set, scanning is forward or backwards depending on 
-  ! back 
+  CHARACTER(LEN=*),INTENT(IN)     :: string
+  type(VARYING_STRING),INTENT(IN) :: set
+  LOGICAL,INTENT(IN),OPTIONAL     :: back
+  INTEGER                         :: verify_cs
+  ! returns the first position in icharacter string not occupied by a character
+  ! from the characters in set, scanning is forward or backwards depending on
+  ! back
   LOGICAL                     :: dir_switch
   INTEGER                     :: ls,i,j
-  ls = LEN(string) 
-  IF( PRESENT(back) )THEN 
-    dir_switch = back 
-  ELSE 
-    dir_switch = .FALSE. 
-  ENDIF 
-  IF(dir_switch)THEN ! backwards search 
-    back_string_search:DO i = ls,1,-1 
-      DO j = 1,LEN(set) 
+  ls = LEN(string)
+  IF( PRESENT(back) )THEN
+    dir_switch = back
+  ELSE
+    dir_switch = .FALSE.
+  ENDIF
+  IF(dir_switch)THEN ! backwards search
+    back_string_search:DO i = ls,1,-1
+      DO j = 1,LEN(set)
         IF( string(i:i) == set%chars(j) )CYCLE back_string_search
-      ENDDO 
-        verify_cs = i 
-        RETURN 
+      ENDDO
+        verify_cs = i
+        RETURN
     ENDDO back_string_search
-    verify_cs = 0 
-  ELSE ! forward search 
-    frwd_string_search:DO i = 1,ls 
-      DO j = 1,LEN(set) 
+    verify_cs = 0
+  ELSE ! forward search
+    frwd_string_search:DO i = 1,ls
+      DO j = 1,LEN(set)
         IF( string(i:i) == set%chars(j) )CYCLE frwd_string_search
-      ENDDO 
-        verify_cs = i 
-        RETURN 
+      ENDDO
+        verify_cs = i
+        RETURN
     ENDDO frwd_string_search
-    verify_cs = 0 
-  ENDIF 
- ENDFUNCTION verify_cs 
+    verify_cs = 0
+  ENDIF
+ ENDFUNCTION verify_cs
     
 !----- LEN_TRIM procedure ----------------------------------------------------!
-ELEMENTAL FUNCTION len_trim_s(string) 
- type(VARYING_STRING),INTENT(IN) :: string 
- INTEGER                         :: len_trim_s 
- ! Returns the length of the string without counting trailing blanks 
+ELEMENTAL FUNCTION len_trim_s(string)
+ type(VARYING_STRING),INTENT(IN) :: string
+ INTEGER                         :: len_trim_s
+ ! Returns the length of the string without counting trailing blanks
  INTEGER                         :: ls,i
- ls=LEN(string) 
- len_trim_s = 0 
- DO i = ls,1,-1 
-    IF (string%chars(i) /= BLANK) THEN 
-       len_trim_s = i 
-       EXIT 
-    ENDIF 
- ENDDO 
-ENDFUNCTION len_trim_s 
+ ls=LEN(string)
+ len_trim_s = 0
+ DO i = ls,1,-1
+    IF (string%chars(i) /= BLANK) THEN
+       len_trim_s = i
+       EXIT
+    ENDIF
+ ENDDO
+ENDFUNCTION len_trim_s
   
-!----- TRIM procedure -------------------------------------------------------! 
-ELEMENTAL FUNCTION trim_s(string) 
- type(VARYING_STRING),INTENT(IN)  :: string 
- type(VARYING_STRING)             :: trim_s 
- ! Returns the argument string with trailing blanks removed 
+!----- TRIM procedure -------------------------------------------------------!
+ELEMENTAL FUNCTION trim_s(string)
+ type(VARYING_STRING),INTENT(IN)  :: string
+ type(VARYING_STRING)             :: trim_s
+ ! Returns the argument string with trailing blanks removed
  INTEGER                      :: ls,pos,i
- ls=LEN(string) 
- pos=0 
- DO i = ls,1,-1 
-    IF(string%chars(i) /= BLANK) THEN 
-       pos=i 
-       EXIT 
-    ENDIF 
- ENDDO 
+ ls=LEN(string)
+ pos=0
+ DO i = ls,1,-1
+    IF(string%chars(i) /= BLANK) THEN
+       pos=i
+       EXIT
+    ENDIF
+ ENDDO
  ALLOCATE(trim_s%chars(1:pos))
- trim_s%chars(1:pos) = string%chars(1:pos) 
-ENDFUNCTION trim_s 
+ trim_s%chars(1:pos) = string%chars(1:pos)
+ENDFUNCTION trim_s
   
-!----- IACHAR procedure ------------------------------------------------------! 
-ELEMENTAL FUNCTION iachar_s(string) 
- type(VARYING_STRING),INTENT(IN) :: string 
- INTEGER                         :: iachar_s 
- ! returns the position of the character string in the ISO 646 
- ! collating sequence. 
- ! string must be of length one, otherwise result is as for intrinsic IACHAR 
- iachar_s = IACHAR(CHAR(string)) 
-ENDFUNCTION iachar_s 
+!----- IACHAR procedure ------------------------------------------------------!
+ELEMENTAL FUNCTION iachar_s(string)
+ type(VARYING_STRING),INTENT(IN) :: string
+ INTEGER                         :: iachar_s
+ ! returns the position of the character string in the ISO 646
+ ! collating sequence.
+ ! string must be of length one, otherwise result is as for intrinsic IACHAR
+ iachar_s = IACHAR(CHAR(string))
+ENDFUNCTION iachar_s
 
 !----- ICHAR procedure ------------------------------------------------------!
-ELEMENTAL FUNCTION ichar_s(string) 
- type(VARYING_STRING),INTENT(IN) :: string 
- INTEGER                         :: ichar_s 
- ! returns the position of character from string in the processor collating 
- ! sequence. 
+ELEMENTAL FUNCTION ichar_s(string)
+ type(VARYING_STRING),INTENT(IN) :: string
+ INTEGER                         :: ichar_s
+ ! returns the position of character from string in the processor collating
+ ! sequence.
  ! string must be of length one, otherwise it will behave as the intrinsic
  ! ICHAR with the equivalent character string
- ichar_s = ICHAR(CHAR(string)) 
-ENDFUNCTION ichar_s 
+ ichar_s = ICHAR(CHAR(string))
+ENDFUNCTION ichar_s
   
-!----- ADJUSTL procedure ----------------------------------------------------! 
-ELEMENTAL FUNCTION adjustl_s(string) 
- type(VARYING_STRING),INTENT(IN) :: string 
- type(VARYING_STRING)            :: adjustl_s 
- ! Returns the string adjusted to the left, removing leading blanks and 
- ! inserting trailing blanks 
- INTEGER                         :: ls,pos 
- ls=LEN(string) 
- DO pos = 1,ls 
-    IF(string%chars(pos) /= blank) EXIT 
- ENDDO 
- ! pos now holds the position of the first non-blank character 
+!----- ADJUSTL procedure ----------------------------------------------------!
+ELEMENTAL FUNCTION adjustl_s(string)
+ type(VARYING_STRING),INTENT(IN) :: string
+ type(VARYING_STRING)            :: adjustl_s
+ ! Returns the string adjusted to the left, removing leading blanks and
+ ! inserting trailing blanks
+ INTEGER                         :: ls,pos
+ ls=LEN(string)
+ DO pos = 1,ls
+    IF(string%chars(pos) /= blank) EXIT
+ ENDDO
+ ! pos now holds the position of the first non-blank character
  ! or ls+1 if all characters are blank
- ALLOCATE(adjustl_s%chars(1:ls)) 
+ ALLOCATE(adjustl_s%chars(1:ls))
  adjustl_s%chars(1:ls-pos+1) = string%chars(pos:ls)
  adjustl_s%chars(ls-pos+2:ls) = blank
-ENDFUNCTION adjustl_s 
+ENDFUNCTION adjustl_s
   
-!----- ADJUSTR procedure ----------------------------------------------------! 
-ELEMENTAL FUNCTION adjustr_s(string) 
- type(VARYING_STRING),INTENT(IN) :: string 
- type(VARYING_STRING)            :: adjustr_s 
- ! Returns the string adjusted to the right, removing trailing blanks 
- ! and inserting leading blanks 
- INTEGER                         :: ls,pos 
- ls=LEN(string) 
- DO pos = ls,1,-1 
-    IF(string%chars(pos) /= blank) EXIT 
- ENDDO 
+!----- ADJUSTR procedure ----------------------------------------------------!
+ELEMENTAL FUNCTION adjustr_s(string)
+ type(VARYING_STRING),INTENT(IN) :: string
+ type(VARYING_STRING)            :: adjustr_s
+ ! Returns the string adjusted to the right, removing trailing blanks
+ ! and inserting leading blanks
+ INTEGER                         :: ls,pos
+ ls=LEN(string)
+ DO pos = ls,1,-1
+    IF(string%chars(pos) /= blank) EXIT
+ ENDDO
  ! pos now holds the position of the last non-blank character
  ! or zero if all characters are blank
- ALLOCATE(adjustr_s%chars(1:ls)) 
- adjustr_s%chars(ls-pos+1:ls) = string%chars(1:pos) 
- adjustr_s%chars(1:ls-pos) = blank 
-ENDFUNCTION adjustr_s 
+ ALLOCATE(adjustr_s%chars(1:ls))
+ adjustr_s%chars(ls-pos+1:ls) = string%chars(1:pos)
+ adjustr_s%chars(1:ls-pos) = blank
+ENDFUNCTION adjustr_s
   
 !************************************************************************
 
@@ -3737,9 +3737,9 @@ ENDFUNCTION adjustr_s
 !************************************************************************
 
 elemental function GETCHAR (string,ipos)
-  type(varying_string),intent(in) :: string 
+  type(varying_string),intent(in) :: string
   integer,intent(in)          :: ipos
-  character                   :: getchar 
+  character                   :: getchar
   ! extracts the character at position ipos from the string.
   ! if ipos is out of bounds, \0 is returned.
   if (ipos .gt. len(string)) then
@@ -3747,6 +3747,6 @@ elemental function GETCHAR (string,ipos)
   else
     GETCHAR = string%chars(ipos)
   end if
- end function 
+ end function
  
 ENDMODULE

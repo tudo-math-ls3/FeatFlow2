@@ -33,11 +33,11 @@
 !#         face index array of the mesh region.
 !#
 !#  7.) mshreg_calcBoundaryNormals2D
-!#      -> Calculates the outer normal vectors for the boundary edges of a 
+!#      -> Calculates the outer normal vectors for the boundary edges of a
 !#         2D mesh region.
 !#
 !#  8.) mshreg_calcBoundaryNormals3D
-!#      -> Calculates the outer normal vectors for the boundary faces of a 
+!#      -> Calculates the outer normal vectors for the boundary faces of a
 !#         3D mesh region.
 !#
 !# </purpose>
@@ -185,7 +185,7 @@ module meshregion
   ! The number of entries in the nodal property array.
   integer, intent(in)                              :: ilen
 
-  ! ...  
+  ! ...
   integer, intent(in)                              :: iidx
   
   ! OPTIONAL: An array holding all allowed nodal properties that

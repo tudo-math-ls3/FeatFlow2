@@ -10,15 +10,15 @@
 !   IPRMFL  : integer
 !
 !   // Dimension flags
-! 
+!
 !   NDIM    : integer
 !   NEL     : integer
 !   NVT     : integer
 !   ...
 !   NANT    : integer
-! 
+!
 !   // Handles
-!  
+!
 !   LCORVG  : integer
 !   LCORMG  : integer
 !   ...
@@ -76,8 +76,8 @@
 !                in the structure. TRIFL should them be used as a
 !                bitfield with Bit0=1 to indicate extended style.
 ! IDPFLG  - integer
-!           Duplication flag. Bitfield. Used by TRIDUP/TRIRST/TRIDEL to 
-!           mark which information of a triangulation structure 
+!           Duplication flag. Bitfield. Used by TRIDUP/TRIRST/TRIDEL to
+!           mark which information of a triangulation structure
 !           coincides with those of another triangulation structure and
 !           must not be released from memory when deleting a copy of a
 !           triangulation structure.
@@ -161,9 +161,9 @@
 !   KMEL(.,IMT) contains the numbers of the two elements adjacent
 !   to an edge IMT. For boundary edges, KMEL(2,IMT) is set to 0.
 ! KNPR    - array [1..NVT+NMT] of integer
-!   Standard nodal property. KNPR(1,.) defines for each vertex 
+!   Standard nodal property. KNPR(1,.) defines for each vertex
 !   (1..NVT) and each edge (NVT+1..NVT+NMT) its function inside of the
-!   geometry. Generally said, the range of the KNPR-array 
+!   geometry. Generally said, the range of the KNPR-array
 !   characterizes the type of the node:
 !   = 0    : The vertex/edge is an inner node
 !   > 0    : For vertices: The vertex is a boundary node on the real
@@ -180,7 +180,7 @@
 !            -KNPR(.)-NEL defines the number of the fictitious
 !            boundary component.
 ! KXNPR  *- array [1..2,1..NVT+NMT] of integer
-!   Extended Nodal property. KXNPR(1,.) defines for each vertex 
+!   Extended Nodal property. KXNPR(1,.) defines for each vertex
 !   (1..NVT) and each edge (NVT+1..NVT+NMT) its function inside of the
 !   geometry. KXNPR(1,INODE) is a flag-bitfield + identifier for the
 !   type of the node INODE, while KXNPR(2,INODE) contains a numerical
@@ -200,8 +200,8 @@
 !     (512) =1: The node is an invalid node to a neighbour element.
 !               KXNPR(2,INODE) = number of the element, this node is
 !                                invalid to.
-!               Remarks: 1.) "Invalid node" normally means "hanging 
-!                node". As hanging nodes are not implemented in 
+!               Remarks: 1.) "Invalid node" normally means "hanging
+!                node". As hanging nodes are not implemented in
 !                FEAT, this bit is not used for now and only reserved
 !                for future use.
 !               2.) If the node is inside of a fictitious boundary
@@ -219,11 +219,11 @@
 !               The solution in this node is prescribed by a given
 !               (analytic) function.
 !   Bit 13: =0: The node is not lying in a fictitious boundary
-!    (8192)     component. 
+!    (8192)     component.
 !           =1: The node belongs currently to a fictitious boundary
 !               component.
 !               If the node is not a real boundary node:
-!                 KXNPR(2,I) = number of the fictitious boundary 
+!                 KXNPR(2,I) = number of the fictitious boundary
 !                              component that contains node I
 !               For boundary nodes inside of a fictitious boundary
 !               component, KXNPR(2,I) still shows the number of the
@@ -236,15 +236,15 @@
 !   KEAN(2,I) the number of the node following the edge.
 !   Remark: I must be the "real" edge number, i.e. when taking the
 !   value from KMID, NVT must be subtracted.
-! 
+!
 ! The following structures define the mandatory information
 ! describing the boundary:
 !
 ! KVBD    - array [1..NVBD] of integer
-!   Array containing the numbers of all corner vertices on the 
+!   Array containing the numbers of all corner vertices on the
 !   boundary. Takes values in the range 1..NVT.
 ! KVBDI  *- array [1..2,1..NVBD] of integer
-!   Inverse index array to KVBD. KVBDI(1,.) contains a vertex 
+!   Inverse index array to KVBD. KVBDI(1,.) contains a vertex
 !   number on the boundary and KVBDI(2,.) the appropriate index
 !   of this vertex inside of the KVBD-array. KVBDI is sorted
 !   for the vertex number, thus allowing quick access to the
@@ -260,7 +260,7 @@
 !   number on the boundary and KMBDI(2,.) the appropriate index
 !   of this edge inside of the KMBD-array.
 !   For compatibility reasons KMBDI(1,.) has a value in the range
-!   NVT+1..NVT+NMT). 
+!   NVT+1..NVT+NMT).
 !   KMBDI is sorted for the edge number, thus allowing quick
 !   access to the index of an edge in KMBD.
 ! KEBD    - array [1..NVBD] of integer
@@ -271,11 +271,11 @@
 !   at least two adjacent vertices on the boundary; elements with
 !   only one vertex on the boundary (e.g. an apex) are not
 !   maintained in this array.
-! KBCT    - array [1..NBCT+1] of integer 
-!   Index vector for KVBD/KMBD/DVBDP. For a (real) boundary 
-!   component IBCT all corner nodes for that boundary component are 
+! KBCT    - array [1..NBCT+1] of integer
+!   Index vector for KVBD/KMBD/DVBDP. For a (real) boundary
+!   component IBCT all corner nodes for that boundary component are
 !   saved in KVBD ( KBCT(IBCT)..KBCT(IBCT+1)-1 ).
-!   All boundary edges of this boundary component are saved in 
+!   All boundary edges of this boundary component are saved in
 !   KMBD ( KBCT(IBCT)..KBCT(IBCT+1)-1 ).
 !   KBCT(NBCT+1) points to NVBD+1 for easier access to the last
 !   boundary component.
@@ -298,21 +298,21 @@
 !             NVPED saves the number of vertices on each edge;
 !             e.g. 1 if midpoints on edges exist in DCORMG.
 !   NVEDT   - Total number of vertices on edges; normally = 0.
-!             Total number of vertices on all edges, realized in DCORMG. 
+!             Total number of vertices on all edges, realized in DCORMG.
 !             E.g. if midpoints on edges exist, there is NVEDT=NMT.
 !   NVEDT   - Number of inner-element vertices; normally = 0.
-!             If a regular distribution of vertices in the inner of 
-!             each element is given, NIELV saves the number of vertices 
-!             in the inner of each element; e.g. 1 if element-midpoints 
+!             If a regular distribution of vertices in the inner of
+!             each element is given, NIELV saves the number of vertices
+!             in the inner of each element; e.g. 1 if element-midpoints
 !             exist in DCORMG.
 !   NIEVT   - Total number of vertices on edges; normally = 0.
-!             Total number of vertices on all edges, realized in DCORMG. 
-!             E.g. if element-midpoints exist in DCORMG, there is 
+!             Total number of vertices on all edges, realized in DCORMG.
+!             E.g. if element-midpoints exist in DCORMG, there is
 !             NIEVT=NEL.
 !   NANT    - Number of additional nodes; normally = 0.
-!             Can be set <> 0 if there are any additional vertices 
-!             realized in DCORMG, that do not belong to a regular 
-!             distribution of vertices in corners, on edges or on 
+!             Can be set <> 0 if there are any additional vertices
+!             realized in DCORMG, that do not belong to a regular
+!             distribution of vertices in corners, on edges or on
 !             elements.
 !   NFBVT   - Number of fictitious boundary vertices; normally = 0
 !   NFBMT   - Number of fictitious boundary edges; normally = 0
@@ -327,11 +327,11 @@
 !   Array containing the X/Y-coordinates of all vertices on edges,
 !   inner element vertices and additional nodes in the geometry.
 !   DCORMG(1,.) contains the X-, DCORMG(2,.) the Y-coordinates.
-!   DCORMG(.,1..NVEDT) contains the coordinates of the regular 
-!   distributed vertices on edges. 
-!   DCORMG(.,NVEDT+1..NVEDT+NIEVT) contains the coordinates of the 
-!   regular distributed inner-element vertices. 
-!   DCORMG(.,NVEDT+NIEVT+1..NVEDT+NIEVT+NANT) contains the coordinates 
+!   DCORMG(.,1..NVEDT) contains the coordinates of the regular
+!   distributed vertices on edges.
+!   DCORMG(.,NVEDT+1..NVEDT+NIEVT) contains the coordinates of the
+!   regular distributed inner-element vertices.
+!   DCORMG(.,NVEDT+NIEVT+1..NVEDT+NIEVT+NANT) contains the coordinates
 !   of any additional vertices that do not belong to regular distributed
 !   vertices on edges or on elements.
 ! DAREA   - array [1..NEL+1] of double
@@ -361,26 +361,26 @@
 !  build from KXNPR with GENFBA if desired.
 !
 ! Remark: Additional nodes
-!  The DCORMG-array is originally designed to collect the midpoints 
-!  that are associated to the edges. In the new style, this behaviour 
+!  The DCORMG-array is originally designed to collect the midpoints
+!  that are associated to the edges. In the new style, this behaviour
 !  is only a special case that happens if NVEDT=NMT is set.
-!  The new style allowes DCORMG to save all vertex coordinates that 
+!  The new style allowes DCORMG to save all vertex coordinates that
 !  are not corner vertices. This includes regular distributed vertices
-!  on edges (either midpoints or points at 1/3 and 2/3 of the edge, 
+!  on edges (either midpoints or points at 1/3 and 2/3 of the edge,
 !  or...), on elements (either midpoints or the 4 Gauss-points, or...)
 !  as well as additional vertices the user wants to be realized, that
 !  do not belong to any of the previous two groups.
 !
 !  There is a numbering introduced to number all the nodes in DCORMG
 !  as well as DCORVG when accessing them in auxiliary routines:
-!  - 1..NVT 
+!  - 1..NVT
 !    represent all corner vertices.
-!  - NVT+1..NVT+NVEDT 
+!  - NVT+1..NVT+NVEDT
 !    represent all regular distributed vertices on edges.
-!  - NVT+NVEDT+1..NVT+NVEDT+NIEVT 
+!  - NVT+NVEDT+1..NVT+NVEDT+NIEVT
 !    represent all regular distributed vertices in the inner of elements
-!  - NVT+NVEDT+NIEVT..NVT+NVEDT+NIEVT+NANT 
-!    represent all additional nodes that do not belong to regular 
+!  - NVT+NVEDT+NIEVT..NVT+NVEDT+NIEVT+NANT
+!    represent all additional nodes that do not belong to regular
 !    distributed vertices on edges or inside of the elements.
 !  NVT+NVEDT+NIEVT+NANT is also the total number of nodes returned
 !  by TNDCNT. There is a special handling of the node-numbering
@@ -388,7 +388,7 @@
 !  TNDCNT returns NVT - as only NVT vertices exist in the triangulation
 !  structure. Furthermore only in this case the following alternative
 !  node numbering is used:
-!  - 1..NVT 
+!  - 1..NVT
 !    represent all corner vertices.
 !  - NVT+1..NVT+NMT
 !    represent all edge-midpoits
@@ -401,7 +401,7 @@
 ! The numbers of regularly distributed vertices on edges/elements can
 ! be directly calculated with an appropriate formula. E.g. let us assume,
 ! we have n regularly distributed vertices on each edge (excluding the
-! starting/ending point). Then the corresponding vertices on 
+! starting/ending point). Then the corresponding vertices on
 ! egde E (=1..NMT) have the numbers:
 !       (NVT-1)+(NMT-1) + (E-1)*n + 1
 !    .. (NVT-1)+(NMT-1) + (E-1)*n + n

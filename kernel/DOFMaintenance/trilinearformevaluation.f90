@@ -24,7 +24,7 @@
 !#
 !# 4.) trilf_initAssembly
 !#     -> Initialise a matrix assembly structure for assembling a bilinear form
-!# 
+!#
 !# 5.) trilf_doneAssembly
 !#     -> Clean up a matrix assembly structure.
 !#
@@ -40,7 +40,7 @@
 !# 9.) trilf_buildMatrixScalar2
 !#     -> Assembles the entries of a matrix according to a trilinear form
 !#        defined in terms of a volume integral. The matrix structure
-!#        must be build before via bilf_createMatrixStructure. This 
+!#        must be build before via bilf_createMatrixStructure. This
 !#        subroutine is a replacement of the previous version
 !#        trilf_buildMatrixScalar.
 !#
@@ -253,7 +253,7 @@ contains
   !     $$ a(u,phi_i,psi_j)  =  \int c(x,y) f(u) g(\psi_j) h(\phi_i) $$
   ! </tex>
   ! The function $u$ is specified in rvector. The derivative quantifier
-  ! rform(Idescriptors(1,.) specifies f(.), i.e. whether to take function 
+  ! rform(Idescriptors(1,.) specifies f(.), i.e. whether to take function
   ! values, derivatives or what else to get the function value f(u).
   !
   ! The matrix structure must be prepared with bilf_createMatrixStructure
@@ -267,10 +267,10 @@ contains
   !
   ! For the routine to work properly, it is important that the discretisation
   ! structure of rvector is 'compatible' with the discretisation structure
-  ! of the matrix! I.e., the element distributions must be the same 
+  ! of the matrix! I.e., the element distributions must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
-  ! The matrix must be unsorted when this routine is called, 
+  ! The matrix must be unsorted when this routine is called,
   ! otherwise an error is thrown.
 !</description>
 
@@ -288,7 +288,7 @@ contains
 
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
@@ -327,15 +327,15 @@ contains
 
   ! Do we have a uniform triangulation? Would simplify a lot...
   select case (rmatrixScalar%p_rspatialDiscrTest%ccomplexity)
-  case (SPDISC_UNIFORM) 
+  case (SPDISC_UNIFORM)
     ! Uniform discretisation; only one type of elements, e.g. P1 or Q1
     select case (rmatrixScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       ! Which matrix structure do we have?
-      select case (rmatrixScalar%cmatrixFormat) 
+      select case (rmatrixScalar%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-          call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
+          call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                           fcoeff_buildTrilMatrixSc_sim,&
                                           rcollection,rperfconfig)
       case (LSYSSC_MATRIX7)
@@ -343,7 +343,7 @@ contains
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
         
         ! Create the matrix in structure 9
-        call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
+        call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                         fcoeff_buildTrilMatrixSc_sim,&
                                         rcollection,rperfconfig)
                                        
@@ -361,16 +361,16 @@ contains
       call sys_halt()
     end select
     
-  case (SPDISC_CONFORMAL) 
+  case (SPDISC_CONFORMAL)
     
     ! Conformal discretisation; may have mixed P1/Q1 elements e.g.
     select case (rmatrixScalar%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       ! Which matrix structure do we have?
-      select case (rmatrixScalar%cmatrixFormat) 
+      select case (rmatrixScalar%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-          call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
+          call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                           fcoeff_buildTrilMatrixSc_sim,&
                                           rcollection,rperfconfig)
         
@@ -379,7 +379,7 @@ contains
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
         
         ! Create the matrix in structure 9
-        call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&  
+        call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                         fcoeff_buildTrilMatrixSc_sim,&
                                         rcollection,rperfconfig)
                                        
@@ -427,7 +427,7 @@ contains
   !
   ! For the routine to work properly, it is important that the discretisation
   ! structure of rvector is 'compatible' with the discretisation structure
-  ! of the matrix! I.e., the element distributions must be the same 
+  ! of the matrix! I.e., the element distributions must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
   ! Double-precision version.
@@ -447,7 +447,7 @@ contains
 
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
@@ -494,7 +494,7 @@ contains
   integer, dimension(:,:), allocatable, target :: IdofsFunc
   integer, dimension(:,:), pointer :: p_IdofsTrial,p_IdofsFunc
   
-  ! Allocateable arrays for the values of the basis functions - 
+  ! Allocateable arrays for the values of the basis functions -
   ! for test and trial spaces.
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasFunc,DbasTest,DbasTrial
   real(DP), dimension(:,:,:,:), pointer :: p_DbasFunc,p_DbasTrial
@@ -503,7 +503,7 @@ contains
   integer :: NA,NVE
   integer :: NEQ
   
-  ! Type of transformation from the reference to the real element 
+  ! Type of transformation from the reference to the real element
   integer(I32) :: ctrafoType
   
   ! Element evaluation tag; collects some information necessary for evaluating
@@ -748,7 +748,7 @@ contains
     do IALBET = 1,rform%itermcount
       ifunc = rform%Idescriptors(1,IALBET)
       IA = rform%Idescriptors(2,IALBET)
-      IB = rform%Idescriptors(3,IALBET)      
+      IB = rform%Idescriptors(3,IALBET)
 
       if ((ifunc.lt.0) .or. &
           (ifunc .gt. elem_getMaxDerivative(p_relementDistrFunc%celement))) then
@@ -795,7 +795,7 @@ contains
     ! with something like
     !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     
     allocate(DbasTest(indofTest,&
@@ -842,7 +842,7 @@ contains
                              p_relementDistrTest%celement
                              
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
-    ! space IdofTest (if both spaces are identical). 
+    ! space IdofTest (if both spaces are identical).
     ! We create a pointer for the trial space and not for the test space to
     ! prevent pointer-arithmetic in the innerst loop below!
     if (bIdenticalTrialAndTest) then
@@ -923,7 +923,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element IEL, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -940,7 +940,7 @@ contains
                                      IdofsTrial)
       end if
 
-      ! If the DOF`s for the coefficient function values are different, 
+      ! If the DOF`s for the coefficient function values are different,
       ! calculate them, too.
       if ((.not. bIdenticalFuncAndTest) .and. (.not. bIdenticalFuncAndTrial)) then
         call dof_locGlobMapping_mult(p_rdiscrFunc, p_IelementList(IELset:IELmax), &
@@ -957,19 +957,19 @@ contains
       !
       ! We have indofTrial trial DOF`s per element and
       ! indofTest test DOF`s per element. Therefore there are
-      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-      ! "active" (i.e. have common support) on our current element, each 
+      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+      ! "active" (i.e. have common support) on our current element, each
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! Kentry(1..indofTrial,1..indofTest) receives the position 
-      !   in the global system matrix, where the corresponding value 
+      ! Kentry(1..indofTrial,1..indofTest) receives the position
+      !   in the global system matrix, where the corresponding value
       !   has to be added to.
-      ! (The corresponding contrbutions can be saved separately, 
-      !  but we directly add them to the global matrix in this 
+      ! (The corresponding contrbutions can be saved separately,
+      !  but we directly add them to the global matrix in this
       !  approach.)
       !
-      ! We build local matrices for all our elements 
+      ! We build local matrices for all our elements
       ! in the set simultaneously.
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
@@ -980,7 +980,7 @@ contains
         ! define the rows in the matrix.
         do IDOFE=1,indofTest
         
-          ! Row IDOFE of the local matrix corresponds 
+          ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
@@ -996,7 +996,7 @@ contains
           
           do JDOFE=1,indofTrial
             
-            ! Get the global DOF of the "X" which interacts with 
+            ! Get the global DOF of the "X" which interacts with
             ! our "O".
             
             JDFG=p_IdofsTrial(JDOFE,IEL)
@@ -1010,7 +1010,7 @@ contains
               if (p_KCOL(JCOL) .eq. JDFG) exit
             end do
 
-            ! Because columns in the global matrix are sorted 
+            ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
             
@@ -1041,7 +1041,7 @@ contains
       !
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistrTrial%celement)
       cevaluationTag = ior(cevaluationTag,&
                       elem_getEvaluationTag(p_relementDistrTest%celement))
@@ -1077,7 +1077,7 @@ contains
           ctrafoType, p_DcubPtsRef(:,1:ncubp), rperfconfig=rperfconfig)
       p_Ddetj => revalElementSet%p_Ddetj
 
-      ! If the matrix has nonconstant coefficients c(x,y) , calculate the 
+      ! If the matrix has nonconstant coefficients c(x,y) , calculate the
       ! coefficients now.
       if (.not. rform%ballCoeffConstant) then
         ! Prepare an evaluation set that passes some information to the
@@ -1145,7 +1145,7 @@ contains
         end do
       else
         ! Nonconstant coefficients. Take the calculated coefficients in Dcoefficients
-        ! and multiply with the values of f(u).      
+        ! and multiply with the values of f(u).
         do IALBET = 1,rform%itermcount
           iderType = rform%Idescriptors(1,IALBET)
           if (iderType .ne. 0) then
@@ -1167,7 +1167,7 @@ contains
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate! As we have never the case of constant coefficients
       ! (because of the FE function u involved), we have only the 'complex'
       ! loop here in comparison to the standard bilinear form.
@@ -1192,13 +1192,13 @@ contains
           ! Loop over the additive factors in the bilinear form.
           do IALBET = 1,rform%itermcount
           
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be added to the matrix entry:
             !
             ! a_ij  =  int_... ( psi_j )_IA  *  ( phi_i )_IB
             !
-            ! -> Ix=0: function value, 
+            ! -> Ix=0: function value,
             !      =1: first derivative, ...
             !    as defined in the module 'derivative'.
             
@@ -1218,22 +1218,22 @@ contains
 
             do IDOFE=1,indofTest
               
-              ! Get the value of the (test) basis function 
+              ! Get the value of the (test) basis function
               ! phi_i (our "O") in the cubature point:
               DB = DbasTest(IDOFE,IB,ICUBP,IEL)
               
               ! Perform an inner loop through the other DOF`s
-              ! (the "X"). 
+              ! (the "X").
 
               do JDOFE=1,indofTrial
             
-                ! Get the value of the basis function 
-                ! psi_j (our "X") in the cubature point. 
+                ! Get the value of the basis function
+                ! psi_j (our "X") in the cubature point.
                 ! Them multiply:
                 !    DB * DBAS(..) * AUX
                 ! ~= phi_i * psi_j * coefficient * cub.weight
                 ! Summing this up gives the integral, so the contribution
-                ! to the global matrix. 
+                ! to the global matrix.
                 !
                 ! Simply summing up DB * DBAS(..) * AUX would give
                 ! the coefficient of the local matrix. We save this
@@ -1249,7 +1249,7 @@ contains
             
           end do ! IALBET
 
-        end do ! ICUBP 
+        end do ! ICUBP
         
         ! Incorporate the local matrices into the global one.
         ! Kentry gives the position of the additive contributions in Dentry.
@@ -1465,7 +1465,7 @@ contains
   
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     rmatrixAssembly%cevaluationTag = elem_getEvaluationTag(rmatrixAssembly%celementTest)
     rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
         elem_getEvaluationTag(rmatrixAssembly%celementTrial))
@@ -1482,12 +1482,12 @@ contains
 
 !<description>
   ! Clean up a matrix assembly structure.
-!</description>  
+!</description>
 
 !<inputoutput>
   ! Matrix assembly structure to clean up
   type(t_trilfMatrixAssembly), intent(inout) :: rmatrixAssembly
-!</inputoutput>  
+!</inputoutput>
 
 !</subroutine>
   
@@ -1529,7 +1529,7 @@ contains
     !  ALLOCATE(DbasTest(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasTrial(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
     !  ALLOCATE(DbasFunc(EL_MAXNBAS,EL_MAXNDER,ncubp,nelementsPerBlock))
-    ! would lead to nonused memory blocks in these arrays during the assembly, 
+    ! would lead to nonused memory blocks in these arrays during the assembly,
     ! which reduces the speed by 50%!
     allocate(rmatrixAssembly%p_DbasTest(rmatrixAssembly%indofTest,&
              elem_getMaxDerivative(rmatrixAssembly%celementTest),&
@@ -1630,7 +1630,7 @@ contains
 
   !****************************************************************************
   
-!<subroutine>  
+!<subroutine>
   
   subroutine trilf_assembleSubmeshMatrix9 (rmatrixAssembly, rmatrix, rvector,&
       IelementList, fcoeff_buildTrilMatrixSc_sim, rcollection, rperfconfig)
@@ -1671,7 +1671,7 @@ contains
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
   
 !</inputoutput>
@@ -1790,7 +1790,7 @@ contains
       !        #-----#-----#. . .#
       !
       ! --> On element iel, the basis function at "X" only interacts
-      !     with the basis functions in "O". Elements in the 
+      !     with the basis functions in "O". Elements in the
       !     neighbourhood ("*") have no support, therefore we only have
       !     to collect all "O" DOF`s.
       !
@@ -1824,19 +1824,19 @@ contains
       !
       ! We have indofTrial trial DOF`s per element and
       ! indofTest test DOF`s per element. Therefore there are
-      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
-      ! "active" (i.e. have common support) on our current element, each 
+      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j)
+      ! "active" (i.e. have common support) on our current element, each
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! Kentry(1..indofTrial,1..indofTest) receives the position 
-      ! in the global system matrix, where the corresponding value 
+      ! Kentry(1..indofTrial,1..indofTest) receives the position
+      ! in the global system matrix, where the corresponding value
       ! has to be added to.
-      ! (The corresponding contributions can be saved separately, 
-      ! but we directly add them to the global matrix in this 
+      ! (The corresponding contributions can be saved separately,
+      ! but we directly add them to the global matrix in this
       ! approach.)
       !
-      ! We build local matrices for all our elements 
+      ! We build local matrices for all our elements
       ! in the set simultaneously. Get the positions of the local matrices
       ! in the global matrix.
       call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTest,p_IdofsTrial,p_Kentry,&
@@ -1852,7 +1852,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = rlocalMatrixAssembly%cevaluationTag
 
       ! In the first loop, calculate the coordinates on the reference element.
@@ -2027,7 +2027,7 @@ contains
 
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
-      ! Values of all basis functions calculated. Now we can start 
+      ! Values of all basis functions calculated. Now we can start
       ! to integrate! As we have never the case of constant coefficients
       ! (because of the FE function u involved), we have only the 'complex'
       ! loop here in comparison to the standard bilinear form.
@@ -2054,13 +2054,13 @@ contains
           ! Loop over the additive factors in the bilinear form.
           do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
             
-            ! Get from Idescriptors the type of the derivatives for the 
+            ! Get from Idescriptors the type of the derivatives for the
             ! test and trial functions. The summand we calculate
             ! here will be added to the matrix entry:
             !
             ! a_ij  =  int_... ( psi_j )_ia  *  ( phi_i )_ib
             !
-            ! -> Ix=0: function value, 
+            ! -> Ix=0: function value,
             !      =1: first derivative, ...
             !    as defined in the module 'derivative'.
             
@@ -2080,22 +2080,22 @@ contains
             
             do idofe = 1,indofTest
               
-              ! Get the value of the (test) basis function 
+              ! Get the value of the (test) basis function
               ! phi_i (our "O") in the cubature point:
               db = p_DbasTest(idofe,ib,icubp,iel)
                 
               ! Perform an inner loop through the other DOF`s
-              ! (the "X"). 
+              ! (the "X").
 
               do jdofe = 1,indofTrial
                 
-                ! Get the value of the basis function 
-                ! psi_j (our "X") in the cubature point. 
+                ! Get the value of the basis function
+                ! psi_j (our "X") in the cubature point.
                 ! Them multiply:
                 !    db * dbas(..) * daux
                 ! ~= phi_i * psi_j * coefficient * cub.weight
                 ! Summing this up gives the integral, so the contribution
-                ! to the global matrix. 
+                ! to the global matrix.
                 !
                 ! Simply summing up db * dbas(..) * daux would give
                 ! the coefficient of the local matrix. We save this
@@ -2112,7 +2112,7 @@ contains
               
           end do ! ialbet
 
-        end do ! icubp 
+        end do ! icubp
           
       end do ! iel
       
@@ -2161,7 +2161,7 @@ contains
   !     $$ a(u,phi_i,psi_j)  =  \int c(x,y) f(u) g(\psi_j) h(\phi_i) $$
   ! </tex>
   ! The function $u$ is specified in rvector. The derivative quantifier
-  ! rform(Idescriptors(1,.) specifies f(.), i.e. whether to take function 
+  ! rform(Idescriptors(1,.) specifies f(.), i.e. whether to take function
   ! values, derivatives or what else to get the function value f(u).
   !
   ! The matrix structure must be prepared with bilf_createMatrixStructure
@@ -2175,10 +2175,10 @@ contains
   !
   ! For the routine to work properly, it is important that the discretisation
   ! structure of rvector is 'compatible' with the discretisation structure
-  ! of the matrix! I.e., the element distributions must be the same 
+  ! of the matrix! I.e., the element distributions must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
-  ! The matrix must be unsorted when this routine is called, 
+  ! The matrix must be unsorted when this routine is called,
   ! otherwise an error is thrown.
   !
   ! IMPLEMENTATIONAL REMARK:
@@ -2207,7 +2207,7 @@ contains
 
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
-  ! information. 
+  ! information.
   type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
@@ -2286,7 +2286,7 @@ contains
 
   ! Do we have a uniform triangulation? Would simplify a lot...
   select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
-  case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
+  case (SPDISC_UNIFORM,SPDISC_CONFORMAL)
     ! Uniform and conformal discretisations
 
     if (rmatrix%p_rspatialDiscrTest%inumFESpaces .ne.&
@@ -2297,9 +2297,9 @@ contains
     end if
 
     select case (rmatrix%cdataType)
-    case (ST_DOUBLE) 
+    case (ST_DOUBLE)
       ! Which matrix structure do we have?
-      select case (rmatrix%cmatrixFormat) 
+      select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9,LSYSSC_MATRIX9ROWC)
       
         ! Probably allocate/clear the matrix
@@ -2360,7 +2360,7 @@ contains
       call lsyssc_duplicateMatrix (rmatrix,rmatrixBackup,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
-      ! Convert the matrix 
+      ! Convert the matrix
       call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX9)
       
       ! Create the matrix in structure 9

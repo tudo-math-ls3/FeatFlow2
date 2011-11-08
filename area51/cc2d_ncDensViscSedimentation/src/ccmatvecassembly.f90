@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains the very basic matrix assembly routines for the
 !# core equation. It's independent of any nonlinear iteration and provides
-!# just one functionality: Assemble a matrix or a vector based on a given 
+!# just one functionality: Assemble a matrix or a vector based on a given
 !# set of parameters.
 !#
 !# The discretised core equation reads at the moment:
@@ -23,9 +23,9 @@
 !#   $M$     = mass matrix,
 !#   $L$     = Stokes matrix ($\nu$*Laplace),
 !#   $N(y)$  = Nonlinearity $y\delta(\cdot)$ includung stabilisation,
-!#   $N*(y)$ = Adjoint term $\cdot\delta(y)$ of the nonlinearity, 
+!#   $N*(y)$ = Adjoint term $\cdot\delta(y)$ of the nonlinearity,
 !#             used for the Newton matrix
-!#   
+!#
 !#   $\alpha$ - weight in front of the mass matrix;
 !#                =0 for stationary problem,
 !#   $\theta$ - weight for the Laplace matrix,
@@ -95,9 +95,9 @@ module ccmatvecassembly
   
   use convection
   use ccbasic
-  use stdoperators  
+  use stdoperators
   use linearsystemscalar
-  use geometry  
+  use geometry
   implicit none
   
 !<constants>
@@ -138,7 +138,7 @@ module ccmatvecassembly
   integer, parameter :: CCMASM_STAB_STREAMLINEDIFF2   = 4
   
   ! no stabilisation, just a bilinearform is evaluated
-  integer, parameter :: CCMASM_NOSTAB_BILINEARFORM   = 5  
+  integer, parameter :: CCMASM_NOSTAB_BILINEARFORM   = 5
 !</constantblock>
 
 !<constantblock description="Matrix type ID's specifying the general matrix class to set up.">
@@ -193,17 +193,17 @@ module ccmatvecassembly
     ! = 0.0 deactivates the Newton part.
     real(DP) :: dnewton = 0.0_DP
 
-    ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
-    ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
+    ! STABILISATION: Parameter that defines how to set up the nonlinearity and
+    ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx
     ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
     integer :: iupwind = CCMASM_STAB_STREAMLINEDIFF
     
-    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
+    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when
     ! a nonlinearity is set up.
     real(DP) :: dnu = 0.0_DP
     
-    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and 
-    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of 
+    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and
+    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of
     ! 0.0 deactivates any stabilisation.
     real(DP) :: dupsam = 0.0_DP
     
@@ -219,7 +219,7 @@ module ccmatvecassembly
     integer :: iadaptiveMatrices = 0
     
     ! MATRIX RESTRICTION: Threshold parameter for adaptive matrix generation
-    ! of coarse grid matrices (here: maximum aspect ratio). 
+    ! of coarse grid matrices (here: maximum aspect ratio).
     ! Only applicable if iadaptiveMatrices <> 0.
     ! Standard = 20.0
     real(DP) :: dadmatthreshold = 20.0_DP
@@ -228,15 +228,15 @@ module ccmatvecassembly
     ! (size of subvectors in the solution vector, trial/test functions,...).
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to a template FEM matrix that defines the structure of 
-    ! Laplace/Stokes/... matrices. 
+    ! Pointer to a template FEM matrix that defines the structure of
+    ! Laplace/Stokes/... matrices.
     type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM => null()
 
     ! A template FEM matrix that defines the structure of gradient
-    ! matrices (B1/B2) matrices. 
+    ! matrices (B1/B2) matrices.
     type(t_matrixScalar), pointer :: p_rmatrixTemplateGradient => null()
 
-    ! Pointer to Stokes matrix (=nu*Laplace). 
+    ! Pointer to Stokes matrix (=nu*Laplace).
     type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
 
     ! Pointer to a B1-matrix.
@@ -263,13 +263,13 @@ module ccmatvecassembly
     ! for the (edge) stabilisation.
     type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
 
-    ! Pointer to the Jump stabilisation matrix. 
+    ! Pointer to the Jump stabilisation matrix.
     ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
     type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
     
     real(DP) :: drho1 = 1.0_DP
     
-    real(DP) :: drho2 = 1.0_DP        
+    real(DP) :: drho2 = 1.0_DP
 
   end type
 
@@ -296,8 +296,8 @@ contains
   ! A(rvector), is then set up or updated.
   !
   ! The parameters rvector and rfineMatrix are optional. rvector must be
-  ! specified, if the nonlinearity is activated (parameter $\gamma\not=0$ in 
-  ! rnonlinearCCMatrix). This vector specifies the 'solution' where the  
+  ! specified, if the nonlinearity is activated (parameter $\gamma\not=0$ in
+  ! rnonlinearCCMatrix). This vector specifies the 'solution' where the
   ! nonlinearity $u\nabla u$ is evaluated.
   ! rfineMatrix allows to specify a matrix of a 'one level refined mesh'. This
   ! is usually used when setting up preconditioners over multiple levels.
@@ -344,11 +344,11 @@ contains
   integer, intent(IN) :: cmatrixType
 
   ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
-  ! about how to set up the matrix. 
+  ! about how to set up the matrix.
   !
-  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX 
+  ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX
   ! must be initialised as well as p_rdiscretisation!
-  ! The new matrix is created based p_rmatrixTemplateXXXX as well as 
+  ! The new matrix is created based p_rmatrixTemplateXXXX as well as
   ! p_rdiscretisation. Memory is allocated automatically if it's missing.
   type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
@@ -356,7 +356,7 @@ contains
   ! It specifies where to evaluate the nonlinearity.
   type(t_vectorBlock), intent(IN), optional :: rvector
 
-  ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
+  ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is
   ! usually done when assembling matrices on multiple levels. If specified, the
   ! routine will (if possible) try to include a level-dependent stabilisation
   ! term into the matrix (-> e.g. constant matrix restriction for nonparametric
@@ -368,13 +368,13 @@ contains
 !<inputoutput>
 
   ! The destination matrix which should be set up.
-  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx 
+  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx
   ! was specified).
   ! If initialised, the existing matrix is updated or recreated, depending on
   ! coperation.
   type(t_matrixBlock), intent(INOUT) :: rmatrix
   
-  type(t_problem), intent(inout) :: rproblem  
+  type(t_problem), intent(inout) :: rproblem
   
 !</inputoutput>
   
@@ -395,40 +395,40 @@ contains
       ! Release the matrix if present.
       call lsysbl_releaseMatrix (rmatrix)
     
-      ! Create a complete new matrix. 
+      ! Create a complete new matrix.
       call allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
-    end if   
+    end if
    
     if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
 
       ! The system matrix looks like:
-      !          
-      !    ( A11  A12  B1  ) 
-      !    ( A21  A22  B2  ) 
-      !    ( B1^T B2^T     ) 
+      !
+      !    ( A11  A12  B1  )
+      !    ( A21  A22  B2  )
+      !    ( B1^T B2^T     )
       !
       ! Assemble the velocity submatrices
       !
-      !    ( A11  A12   .  ) 
-      !    ( A21  A22   .  ) 
+      !    ( A11  A12   .  )
+      !    ( A21  A22   .  )
       !    (  .    .    .  )
       
       call assembleVelocityBlocks (&
           rnonlinearCCMatrix,rmatrix,rvector,1.0_DP,rproblem)
       
       ! Assemble the gradient submatrices
-      !          
-      !    ( .    .    B1  ) 
-      !    ( .    .    B2  ) 
-      !    ( B1^T B2^T .   ) 
+      !
+      !    ( .    .    B1  )
+      !    ( .    .    B2  )
+      !    ( B1^T B2^T .   )
       
       call assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,&
         iand(coperation,CMASM_QUICKREFERENCES) .ne. 0)
 
       ! 2.) Initialise the weights for the B-matrices
       !
-      !    (  .    .   B1  ) 
-      !    (  .    .   B2  ) 
+      !    (  .    .   B1  )
+      !    (  .    .   B2  )
       !    ( B1^T B2^T  .  )
       
       rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%deta
@@ -475,7 +475,7 @@ contains
     integer, intent(IN) :: cmatrixType
 
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(IN), target :: rnonlinearCCMatrix
 
     ! A block matrix that receives the basic system matrix.
@@ -516,13 +516,13 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       if (associated(p_rdiscretisation)) then
-        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+        call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
       else
         ! No discretisation structure; create the matrix directly as 3x3 matrix.
         call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
       end if
         
-      ! Let's consider the global system in detail. The standard matrix It has 
+      ! Let's consider the global system in detail. The standard matrix It has
       ! roughly the following shape:
       !
       !    ( A11       B1  ) = ( A11  A12  A13 )
@@ -531,7 +531,7 @@ contains
       !
       ! All matrices may have multiplication factors in their front.
       !
-      ! The structure of the matrices A11 and A22 of the global system matrix 
+      ! The structure of the matrices A11 and A22 of the global system matrix
       ! is governed by the template FEM matrix.
       ! Initialise them with the same structure, i.e. A11, A22 share (!) their
       ! structure (not the entries) with that of the template matrix.
@@ -543,9 +543,9 @@ contains
       call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
-      if (.not. bdecoupled .and. .not. bfulltensor) then     
+      if (.not. bdecoupled .and. .not. bfulltensor) then
            
-        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
+        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix
         ! A22 is identical to A11! So mirror A11 to A22 sharing the
         ! structure and the content.
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
@@ -559,7 +559,7 @@ contains
                     
       end if
       
-      ! Manually change the discretisation structure of the Y-velocity 
+      ! Manually change the discretisation structure of the Y-velocity
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
@@ -571,9 +571,9 @@ contains
 
         ! We have a matrix in the following shape:
         !
-        !    ( A11  A12  B1  ) 
-        !    ( A21  A22  B2  ) 
-        !    ( B1^T B2^T .   ) 
+        !    ( A11  A12  B1  )
+        !    ( A21  A22  B2  )
+        !    ( B1^T B2^T .   )
         !
         ! Create A12 and A21.
       
@@ -615,7 +615,7 @@ contains
       ! Put a copy of them into the block matrix.
       !
       ! Note that we share the structure of B1/B2 with those B1/B2 of the
-      ! block matrix, while we create empty space for the entries. 
+      ! block matrix, while we create empty space for the entries.
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
       call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
@@ -654,13 +654,13 @@ contains
     !            dnewton*N*(p_rvector)
     
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled
     type(t_matrixBlock), intent(INOUT) :: rmatrix
     
-    type(t_problem), intent(inout) :: rproblem    
+    type(t_problem), intent(inout) :: rproblem
     
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
@@ -681,8 +681,8 @@ contains
     real(DP) :: dvecWeight
     type(t_bilinearform) :: rform
     
-    rproblem%rcollection%Dquickaccess(5) = rproblem%drho1    
-    rproblem%rcollection%Dquickaccess(6) = rproblem%drho2    
+    rproblem%rcollection%Dquickaccess(5) = rproblem%drho1
+    rproblem%rcollection%Dquickaccess(6) = rproblem%drho2
     
     
       ! Standard value for dvectorWeight is = -1.
@@ -729,7 +729,7 @@ contains
         end if
         
         
-        ! now set up a bilinearform 
+        ! now set up a bilinearform
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
         rform%Idescriptors(2,1) = DER_FUNC
@@ -752,7 +752,7 @@ contains
         ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
         ! the framework will call the callback routine to get analytical data.
         !
-        ! We pass our collection structure as well to this routine, 
+        ! We pass our collection structure as well to this routine,
         ! so the callback routine has access to everything what is
         ! in the collection.
         call bilf_buildMatrixScalar (rform,.true.,&
@@ -763,7 +763,7 @@ contains
         !    bmemory,bsymb,bnumb,bisExactStructure)
 
         ! Adds constant times a matrix to another matrix
-        !   rmatrixC = cA*rmatrixA + cB*rmatrixB                                     
+        !   rmatrixC = cA*rmatrixA + cB*rmatrixB
         
 !        call lsysbl_duplicateMatrix(rmatrix,rmatrix2,LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
 !        call matio_writeMatrixHR (rmatrix2%RmatrixBlock(1,1), 'rmatrix2',&
@@ -796,9 +796,9 @@ contains
               rmatrix2%RmatrixBlock(2,2),0.0_DP,&
               rmatrix2%RmatrixBlock(2,2),&
               .false.,.false.,.true.,.true.)
-        end if            
+        end if
             
-        ! release the temporary matrix            
+        ! release the temporary matrix
         call lsyssc_releaseMatrix(rMass1)
         !call lsysbl_releaseMatrix(rmatrix2)
    
@@ -964,15 +964,15 @@ contains
           call conv_upwind2d (rvector, rvector, &
                               dvecWeight, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1)) 
+                              rmatrix%RmatrixBlock(1,1))
                               
           if (.not. bshared) then
             ! Modify also the matrix block (2,2)
             call conv_upwind2d (rvector, rvector, &
                                 dvecWeight, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2)) 
-          end if     
+                                rmatrix%RmatrixBlock(2,2))
+          end if
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
@@ -999,7 +999,7 @@ contains
                                rstreamlineDiffusion, CONV_MODMATRIX, &
                                rmatrix,rproblem)
           
-          ! DEBUG                                     
+          ! DEBUG
 !          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'nonlin',&
 !                                    .TRUE., 0, 'nonlin.txt', '(E20.5)')
 
@@ -1010,14 +1010,14 @@ contains
 !                              rvector, rvector, &
 !                              dvecWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODMATRIX, &
-!                              rmatrix)          
+!                              rmatrix)
 !
-!          ! DEBUG                                     
+!          ! DEBUG
 !          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'nonlinSD',&
 !                                    .TRUE., 0, 'nonlinSD.txt', '(E20.5)')
 !
 !
-!          ! DEBUG                                     
+!          ! DEBUG
 !          call matio_writeMatrixHR (rmatrix%RmatrixBlock(2,2), 'nonlinSD22',&
 !                                    .TRUE., 0, 'nonlinSD22.txt', '(E20.5)')
 
@@ -1033,7 +1033,7 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
@@ -1069,7 +1069,7 @@ contains
                               rvector, rvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)          
+                              rmatrix)
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
@@ -1110,19 +1110,19 @@ contains
           ! Call the SD method to calculate the nonlinearity.
           ! here we use the CONV_MODMATRIX parameter to
           ! control the behaviour of the assembly function
-          ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
-          !                 nonlinear part is added to the matrix. 
-          ! rstreamlineDiffusion: configuration structure 
+          ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the
+          !                 nonlinear part is added to the matrix.
+          ! rstreamlineDiffusion: configuration structure
           ! Configuration block for the streamline diffusion scheme
           
           ! rvector is a block vector with the
           ! X- and Y-velocity.
           ! p_rvelX1 => rvector%RvectorBlock(1)
-          ! p_rvelY1 => rvector%RvectorBlock(2)          
+          ! p_rvelY1 => rvector%RvectorBlock(2)
           call cc_nostabBilin (rvector, rvector, &
                                rstreamlineDiffusion, CONV_MODMATRIX, &
                                rmatrix,rproblem)
-          !DEBUG                   
+          !DEBUG
 !          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'matrix',&
 !                                    .TRUE., 0, 'matrixNOSTAB.txt', '(E20.5)')
         
@@ -1157,7 +1157,7 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
@@ -1208,7 +1208,7 @@ contains
       
       end if ! gamma <> 0
       
-    end subroutine  
+    end subroutine
       
     ! -----------------------------------------------------
     
@@ -1232,14 +1232,14 @@ contains
     ! so the new matrix is allowed to be changed!
 
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
     ! Block matrix where the B-matrices should be set up
     type(t_matrixBlock), intent(INOUT) :: rmatrix
 
-    ! Whether or not the matrix entries of the source gradient-matrices 
-    ! should be copied in memory. 
+    ! Whether or not the matrix entries of the source gradient-matrices
+    ! should be copied in memory.
     !
     ! If set to FALSE, the routine tries to initialise rmatrix
     ! only with references to the original matrices, thus the caller must not
@@ -1333,7 +1333,7 @@ contains
   ! matrix:
   !      rd := cx A(ry) rx + cd rd
   ! with the system matrix A(.) defined by the configuration in rnonlinearCCMatrix.
-  ! The caller must initialise the rnonlinearCCMatrix according to how the 
+  ! The caller must initialise the rnonlinearCCMatrix according to how the
   ! matrix should look like.
   !
   ! The parameter ry is optional. If specified, this parameter defines where to
@@ -1344,7 +1344,7 @@ contains
 !</description>
 
   ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
-  ! about how to set up the matrix. 
+  ! about how to set up the matrix.
   !
   ! The caller must provide either p_rmatrixTemplateXXXX in this structure
   ! or set the p_rmatrixTemplateXXXX as well as p_rdiscretisation to
@@ -1371,7 +1371,7 @@ contains
   ! Destination vector. cx*A(ry)*rx is subtracted from this vector.
   type(t_vectorBlock), intent(INOUT) :: rd
   
-  type(t_problem), intent(INOUT) :: rproblem  
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
   
 !</subroutine>
@@ -1383,8 +1383,8 @@ contains
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
     
-    rproblem%rcollection%Dquickaccess(5) = rproblem%drho1    
-    rproblem%rcollection%Dquickaccess(6) = rproblem%drho2    
+    rproblem%rcollection%Dquickaccess(5) = rproblem%drho1
+    rproblem%rcollection%Dquickaccess(6) = rproblem%drho2
     
     call lsysbl_getbase_double (rx,p_DdataX)
     call lsysbl_getbase_double (rd,p_DdataD)
@@ -1398,15 +1398,15 @@ contains
     end if
     
     ! The system matrix looks like:
-    !          
-    !    ( A11  A12  B1  ) 
-    !    ( A21  A22  B2  ) 
-    !    ( B1^T B2^T .   ) 
-    ! 
+    !
+    !    ( A11  A12  B1  )
+    !    ( A21  A22  B2  )
+    !    ( B1^T B2^T .   )
+    !
     ! Create a temporary matrix that covers this structure.
     call lsysbl_createMatBlockByDiscr (rnonlinearCCMatrix%p_rdiscretisation,rmatrix)
     
-    ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
+    ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect
     ! needs this template matrix to provide the structure for the stabilisation
     ! routines! The B-matrices are needed later.
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
@@ -1431,12 +1431,12 @@ contains
     call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2,&
         rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    ! In the first step, we assemble the defect that arises in the velocity 
+    ! In the first step, we assemble the defect that arises in the velocity
     ! components. This is characterised by the following submatrix:
     !
-    !    ( A11  A12  .  ) 
-    !    ( A21  A22  .  ) 
-    !    ( .    .    .  ) 
+    !    ( A11  A12  .  )
+    !    ( A21  A22  .  )
+    !    ( .    .    .  )
     !
     ! assembleVelocityDefect handles exactly these submatrices.
 
@@ -1444,9 +1444,9 @@ contains
     
     ! Now, we treat all the remaining blocks. Let's see what is missing:
     !
-    !    ( .    .    B1  ) 
-    !    ( .    .    B2  ) 
-    !    ( B1^T B2^T .   ) 
+    !    ( .    .    B1  )
+    !    ( .    .    B2  )
+    !    ( B1^T B2^T .   )
 
     ! To build the appropriate defect, we first remove the velocity blocks:
     
@@ -1492,7 +1492,7 @@ contains
     !       rdefect = rdefect - c A rvector
     
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
-    ! about how to set up the matrix. 
+    ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
 
     ! Reference to the system matrix. Only the structure of the matrix
@@ -1500,7 +1500,7 @@ contains
     ! The content of the matrix is not changed or used.
     type(t_matrixBlock), intent(INOUT) :: rmatrix
     
-    type(t_problem), intent(INOUT) :: rproblem    
+    type(t_problem), intent(INOUT) :: rproblem
     
     ! Solution vector.
     type(t_vectorBlock), intent(IN) :: rvector
@@ -1524,7 +1524,7 @@ contains
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(T_jumpStabilisation) :: rjumpStabil
     type(t_matrixScalar) :: rMass1
-    type(t_bilinearForm) :: rform 
+    type(t_bilinearForm) :: rform
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
@@ -1544,7 +1544,7 @@ contains
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
       if(CCMASM_NONCNSTDENS)then
       
-        ! now set up a bilinearform 
+        ! now set up a bilinearform
         rform%itermCount = 1
         rform%Idescriptors(1,1) = DER_FUNC
         rform%Idescriptors(2,1) = DER_FUNC
@@ -1562,15 +1562,15 @@ contains
                                      rMass1,cc_Rho,&
                                      rproblem%rcollection)
 
-        ! DEBUG                                     
+        ! DEBUG
 !        call matio_writeMatrixHR (rMass1, 'Mass',&
 !                                  .TRUE., 0, 'myMass.txt', '(E20.5)')
                                      
-        ! Incorporate the mass matrix into the rhs vector                              
+        ! Incorporate the mass matrix into the rhs vector
         ! subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose)
         ! Performs a matrix vector multiplicationwith a given scalar matrix:
         !    $$ Dy   =   cx * rMatrix * rx   +   cy * ry $$
-        ! multiply block11 by u1        
+        ! multiply block11 by u1
         call lsyssc_scalarMatVec (rMass1,&
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
@@ -1641,7 +1641,7 @@ contains
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rsolution=rvector,rdefect=rdefect)
                               
-        case (CCMASM_STAB_STREAMLINEDIFF2)     
+        case (CCMASM_STAB_STREAMLINEDIFF2)
                   
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
@@ -1677,13 +1677,13 @@ contains
           call conv_upwind2d (rvector, rvector, &
                               dvectorWeight, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),rvector,rdefect) 
+                              rmatrix%RmatrixBlock(1,1),rvector,rdefect)
                               
           if (.not. bshared) then
             call output_line ('Upwind does not support independent A11/A22!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
             call sys_halt()
-          end if     
+          end if
 
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
@@ -1733,19 +1733,19 @@ contains
          
 !          call vecio_writeBlockVectorHR (rdefect, 'def', .false.,&
 !                                    0, 'defnostab.txt', '(E20.5)')
-!         
+!
 !         stop
           ! Call the SD method to calculate the nonlinearity.
 !          call conv_streamlineDiffusionBlk2d (&
 !                              rvector, rvector, &
 !                              dvectorWeight, 0.0_DP,&
 !                              rstreamlineDiffusion, CONV_MODDEFECT, &
-!                              rmatrix,rsolution=rvector,rdefect=rdefect)          
+!                              rmatrix,rsolution=rvector,rdefect=rdefect)
 !
 !          call vecio_writeBlockVectorHR (rdefect, 'defSD', .false.,&
 !                                    0, 'defnSD.txt', '(E20.5)')
 !          stop
-!        
+!
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...<
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -1757,7 +1757,7 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
@@ -1816,7 +1816,7 @@ contains
                               rvector, rvector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rsolution=rvector,rdefect=rdefect)          
+                              rmatrix,rsolution=rvector,rdefect=rdefect)
         
           ! Subtract the stabilisation matrix stuff.
           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
@@ -1851,9 +1851,9 @@ contains
           ! X- and Y-velocity.
           ! p_rvelX1 => rvector%RvectorBlock(1)
           ! p_rvelY1 => rvector%RvectorBlock(2)
-          ! 
+          !
           ! we need to make the matrix multiplication
-          ! b=b-(rho*u*nabla)*u = b-N(u)*u          
+          ! b=b-(rho*u*nabla)*u = b-N(u)*u
           ! and then return in rdefect the defect vector
           call cc_nostabBilin (rvector, rvector, &
                                rstreamlineDiffusion, CONV_MODDEFECT, &
@@ -1892,7 +1892,7 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! Call the jump stabilisation technique to stabilise that stuff.
           ! We can assemble the jump part any time as it's independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
@@ -1933,10 +1933,10 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
-  ! $$ dtheta  *  (                dalpha * MASS  
-  !                  +              dbeta * STOKES  
-  !                  +             ddelta * u_1 * grad(.) 
+  !
+  ! $$ dtheta  *  (                dalpha * MASS
+  !                  +              dbeta * STOKES
+  !                  +             ddelta * u_1 * grad(.)
   !                  +            dnewton * (.) * grad(u_1)
   !                  +   ddeltaTransposed * grad(.)^T * u_1
   !                  +  dnewtonTransposed * grad(u_1)^T * (.) ) $$
@@ -1959,7 +1959,7 @@ contains
   ! defect, the nonlinear matrix or both.
   !
   ! rmeshVelocity is an optional mesh velocity field that must be present
-  ! if the ALE method should be used. 
+  ! if the ALE method should be used.
   !
   ! The configuration how the routine should react is to be configured
   ! in the configuration block rconfig.
@@ -1981,9 +1981,9 @@ contains
   type(t_convStreamlineDiffusion), intent(IN) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
-  ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
+  ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the
   !                 nonlinear part is added to the matrix.
-  ! CONV_MODDEFECT: Set up the nonlinear defect. rdefect and rsolution must be 
+  ! CONV_MODDEFECT: Set up the nonlinear defect. rdefect and rsolution must be
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
@@ -1997,7 +1997,7 @@ contains
 
 !<inputoutput>
   ! System block matrix.
-  ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
+  ! The content of the matrix must be present if cdef=CONV_MODMATRIX or
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
   ! The blocks A11,A12,A21 and A22 of this matrix are tackled by streamline
@@ -2009,7 +2009,7 @@ contains
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  ! The nonlinear part is subtracted from this vector: 
+  ! The nonlinear part is subtracted from this vector:
   ! $r = r - \theta * u_1*grad(u_2)$
   type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
 !</inputoutput>
@@ -2026,7 +2026,7 @@ contains
     real(DP), dimension(:), pointer :: p_DsolX,p_DsolY,p_DdefectX,p_DdefectY
     ! a bilinearform
     ! The bilinear form specifying the operator
-    type(t_bilinearForm) :: rform    
+    type(t_bilinearForm) :: rform
     
     ! assign the vector pointer
     rproblem%rcollection%p_rvectorQuickAccess1 => rvecPrimary
@@ -2064,7 +2064,7 @@ contains
     end if
       
     ! At the moment, we only support a rather limited set of configurations:
-    ! Matrix and vectors must all be double precision, matrix must be format 
+    ! Matrix and vectors must all be double precision, matrix must be format
     ! 7 or 9, discretisation must be Q1~, constant viscosity.
     if ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
@@ -2171,7 +2171,7 @@ contains
       call lsyssc_getbase_double (p_rdefectX,p_DdefectX)
       call lsyssc_getbase_double (p_rdefectY,p_DdefectY)
       
-      ! now set up a bilinearform 
+      ! now set up a bilinearform
       rform%itermCount = 2
       rform%Idescriptors(1,1) = DER_DERIV_X
       rform%Idescriptors(2,1) = DER_FUNC
@@ -2196,7 +2196,7 @@ contains
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.true.,&
@@ -2206,7 +2206,7 @@ contains
 !      call matio_writeMatrixHR (rmatrixScalar, 'Nu',&
 !                                .TRUE., 0, 'matrixNu.txt', '(E20.5)')
                                 
-      ! perform the actual multiplication: b=b-N(u)*u and write out 
+      ! perform the actual multiplication: b=b-N(u)*u and write out
       ! the defect vectors:
       ! first the u1-defect
       call lsyssc_scalarMatVec(rmatrixScalar,p_rvelX1,p_rdefectX,-1.0_dp,1.0_dp)
@@ -2238,7 +2238,7 @@ contains
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
-      ! We pass our collection structure as well to this routine, 
+      ! We pass our collection structure as well to this routine,
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.false.,&
@@ -2251,7 +2251,7 @@ contains
                     
     end if
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -2316,11 +2316,11 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     ! A list of the corner vertices of all elements in progress.
     ! array [1..dimension,1..#vertices per element,1..Number of elements] of double
-    ! real(DP), dimension(:,:,:), pointer           :: p_Dcoords => null()    
+    ! real(DP), dimension(:,:,:), pointer           :: p_Dcoords => null()
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -2344,7 +2344,7 @@ contains
     type(t_geometryObject), pointer :: p_rgeometryObject
     
     ! get a pointer to the geometry object
-    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
+    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')
     
     ! Definition of the circle
 !    dxcenter = 0.5
@@ -2359,7 +2359,7 @@ contains
     p_rvectorScalarUy => rcollection%p_rvectorQuickAccess1%RvectorBlock(2)
 
     ! allocate memory
-    allocate(Dvalues(2,npointsPerElement,nelements))    
+    allocate(Dvalues(2,npointsPerElement,nelements))
     ! evaluate u in the cubature points
     call fevl_evaluate_sim4 (p_rvectorScalarUx, &
                              rdomainIntSubset, DER_FUNC, Dvalues, 1)
@@ -2368,14 +2368,14 @@ contains
                              rdomainIntSubset, DER_FUNC, Dvalues, 2)
     
     ! loop over the elements and cubature points
-    ! and assign the coefficients 
+    ! and assign the coefficients
     do iel=1,nelements
       do icup=1,npointsPerElement
       
 !        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
 !        if(ddist .le. dradius)then
         call geom_isInGeometry (p_rgeometryObject, Dpoints(:,icup,iel), iin)
-        if(iin .eq. 1)then 
+        if(iin .eq. 1)then
           Dcoefficients(1,icup,iel) = rform%Dcoefficients(1) * Dvalues(1,icup,iel) * drho2
           Dcoefficients(2,icup,iel) = rform%Dcoefficients(2) * Dvalues(2,icup,iel) * drho2
         else
@@ -2451,8 +2451,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -2475,7 +2475,7 @@ contains
     type(t_geometryObject), pointer :: p_rgeometryObject
     
     ! get a pointer to the geometry object
-    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
+    p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')
     
     drho1    = rcollection%Dquickaccess(5)
     drho2    = rcollection%Dquickaccess(6)
@@ -2486,14 +2486,14 @@ contains
 !    dradius  = 0.15
 
     ! loop over the elements and cubature points
-    ! and assign the coefficients 
+    ! and assign the coefficients
     do iel=1,nelements
       do icup=1,npointsPerElement
         
 !        ddist = sqrt( (Dpoints(1,icup,iel) - dxcenter)**2 + (Dpoints(2,icup,iel)-dycenter)**2)
 !        if(ddist .le. dradius)then
         call geom_isInGeometry (p_rgeometryObject, Dpoints(:,icup,iel), iin)
-        if(iin .eq. 1)then 
+        if(iin .eq. 1)then
           Dcoefficients(1,icup,iel) = drho2
         else
           Dcoefficients(1,icup,iel) = drho1

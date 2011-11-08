@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains a hand full of auxiliary routines for the 
+!# This module contains a hand full of auxiliary routines for the
 !# elemdbg2d_testX debugger modules.
 !#
 !# The following routines can be found in this module:

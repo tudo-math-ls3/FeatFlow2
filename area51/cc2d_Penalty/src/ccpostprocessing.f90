@@ -165,7 +165,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocessing structure. 
+  ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -182,7 +182,7 @@ contains
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
-    if(rproblem%iParticles .gt. 0)then    
+    if(rproblem%iParticles .gt. 0)then
     ! Drag/Lift Calculation
       call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
     end if
@@ -235,7 +235,7 @@ contains
   ! if there is no previous timestep.
   real(dp), intent(in) :: dtimePrev
 
-  ! Solution vector of the current timestep. 
+  ! Solution vector of the current timestep.
   type(t_vectorBlock), intent(in) :: rvector
 
   ! Time of the current timestep.
@@ -258,7 +258,7 @@ contains
     ! Write the raw solution
     call cc_writeSolution (rproblem,rvector,dtime)
     
-    if(rproblem%iParticles .gt. 0)then    
+    if(rproblem%iParticles .gt. 0)then
     ! Drag/Lift Calculation
       call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
     end if
@@ -618,8 +618,8 @@ contains
   ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -730,7 +730,7 @@ contains
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
             dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         
-      case (2)      
+      case (2)
         ! Extended calculation method.
         !
         ! Select the tensor formulation to use.
@@ -750,7 +750,7 @@ contains
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
           
-        ! Prepare the collection. The "next" collection points to the user defined 
+        ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
         rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -798,7 +798,7 @@ contains
         ! Prepare a collection structure in the form necessary for
         ! the computation of a nonconstant viscosity.
         !
-        ! Prepare the collection. The "next" collection points to the user defined 
+        ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
         rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
@@ -882,7 +882,7 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
       
-        ! Create a temporary vector 
+        ! Create a temporary vector
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
             rtempVector,.true.)
 
@@ -905,7 +905,7 @@ contains
       
       end if
       
-    end if    
+    end if
     
   end subroutine
 
@@ -1064,7 +1064,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1102,7 +1102,7 @@ contains
     
     character(SYS_STRLEN) :: sfile,sfilename
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
@@ -1124,7 +1124,7 @@ contains
     ! create a Q1/P1 solution from rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
-    ! structure based on Q1/P1 by copying the main guiding block 
+    ! structure based on Q1/P1 by copying the main guiding block
     ! discretisation structure and modifying the discretisation
     ! structures of the two velocity subvectors:
     
@@ -1169,7 +1169,7 @@ contains
     ! Initialise the dynamic level information structure
     call cc_initDynamicLevelInfo (rdynamicInfo)
     
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection,.true.)
@@ -1185,7 +1185,7 @@ contains
     ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC`s for fictitious 
+    ! Filter the solution vector to implement discrete BC`s for fictitious
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -1344,7 +1344,7 @@ contains
   subroutine cc_writeFilm (rpostprocessing,rvector,rproblem,dtime)
 
 !<description>
-  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! Writes Film output (raw data vectors) to a file as configured in the
   ! DAT file.
   !
   ! Note: This file is usually only used in a nonstationary simulation.
@@ -1366,7 +1366,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1379,10 +1379,10 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
     
-    ! Type of output:    
+    ! Type of output:
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
@@ -1481,7 +1481,7 @@ contains
   type(t_problem), intent(in),target :: rproblem
 !</input>
 
-!<output>  
+!<output>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(out) :: rpostprocessing
 !</output>
@@ -1548,7 +1548,7 @@ contains
   type(t_c2d2postprocessing), intent(in) :: rpostprocessingSrc
 !</input>
 
-!<inputoutput>  
+!<inputoutput>
   ! Destination Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessingDst
 !</inputoutput>
@@ -1580,7 +1580,7 @@ contains
   ! in the postprocessing structure.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
@@ -1616,7 +1616,7 @@ contains
   ! is released.
 !</description>
 
-!<inputoutput>  
+!<inputoutput>
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -1645,7 +1645,7 @@ contains
   !<inputoutput>
   type(t_problem), intent(INOUT) :: rproblem
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
-  !</inputoutput>  
+  !</inputoutput>
 
   !<input>
   type(t_vectorBlock), intent(IN) :: rvector
@@ -1654,8 +1654,8 @@ contains
   !</subroutine>
 
   ! Local variables
-  ! pointer to the entries of the alpha vector  
-  real(DP), dimension(:), pointer :: p_Dvector  
+  ! pointer to the entries of the alpha vector
+  real(DP), dimension(:), pointer :: p_Dvector
 
   ! pointer to the nodes of the grid
   real(DP), dimension(:,:), pointer :: p_Ddata
@@ -1673,20 +1673,20 @@ contains
   
   type(t_particleCollection), pointer :: p_rparticleCollection
 
-  type(t_geometryObject), pointer :: p_rgeometryObject        
+  type(t_geometryObject), pointer :: p_rgeometryObject
 
   ! get the particle_collection out of the collection
   p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
   ! loop over all particles to calculate the hydrodynamic forces for
-  ! each particle  
+  ! each particle
   do ipart=1,p_rparticleCollection%nparticles
   
     ! if the vector contains data, we release it
     if (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB%NEQ .ne. 0) &
       call lsyssc_releaseVector (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB)
 
-    ! create the fictitious boundary fem-vector from the discretisation 
+    ! create the fictitious boundary fem-vector from the discretisation
     call lsyssc_createVecByDiscr(rvector%RvectorBlock(1)%p_rspatialDiscr, &
     p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,.true.)
 
@@ -1697,7 +1697,7 @@ contains
     
     
     ! get the pointer to the current geometry object
-    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
     
     ! get a pointer to the triangulation
     p_rtriangulation => &
@@ -1707,7 +1707,7 @@ contains
     ! calculate the fem-function by a l2-projection
     ! here for every particle this has to be evaluated individually
     call anprj_discrDirect (p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,cc_Particle,&
-                            rproblem%rcollection,iorder=1)  
+                            rproblem%rcollection,iorder=1)
     
     
     
@@ -1715,7 +1715,7 @@ contains
     call output_lbrk ()
     call output_separator(OU_SEP_EQUAL)
     call output_line ('Q1 Vector recalculated ')
-    call output_separator(OU_SEP_EQUAL)   
+    call output_separator(OU_SEP_EQUAL)
     
     ! get the center coordinates of the object
     ! to pass them to the forces function
@@ -1733,7 +1733,7 @@ contains
     
     call output_lbrk()
     call output_line ('Drag forces')
-    call output_line ('-----------')  
+    call output_line ('-----------')
     print*, p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)," / ",&
     p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
     
@@ -1741,7 +1741,7 @@ contains
   
   end subroutine
   
-! ***************************************************************************  
+! ***************************************************************************
 
 !<subroutine>
   subroutine cc_forcesIntegrationNonStat(rproblem,rvectorSol,rpostprocessing,&
@@ -1754,8 +1754,8 @@ contains
 
   ! The body forces are defined as the integrals
   !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
+  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds
+  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
@@ -1787,8 +1787,8 @@ contains
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
 
   real(dp), dimension(2), intent(inout) :: DforceX
-  real(dp), dimension(2), intent(inout) :: DforceY  
-  real(dp), dimension(2), intent(inout) :: Dtor 
+  real(dp), dimension(2), intent(inout) :: DforceY
+  real(dp), dimension(2), intent(inout) :: Dtor
   type(t_problem), intent(INOUT) :: rproblem
 !</subroutine>
 
@@ -1824,7 +1824,7 @@ contains
     ! Arrays for saving Jacobian determinants and matrices
     real(DP), dimension(:,:), pointer :: p_Ddetj
     
-    ! Array for saving Jacobian 
+    ! Array for saving Jacobian
     real(DP), dimension(7) :: Dj
     
     ! Current element distribution
@@ -1858,7 +1858,7 @@ contains
     integer, dimension(:,:), allocatable, target :: IdofsFunc2
     
   
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -1872,13 +1872,13 @@ contains
     character(len=SYS_STRLEN) :: stemp
     integer :: iunit
     integer :: cflag
-    logical :: bfileExists    
+    logical :: bfileExists
     
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
     if (present(df1)) dpf1 = df1
-    if (present(df2)) dpf2 = df2    
+    if (present(df2)) dpf2 = df2
 
     ! make the l2 projection to get the normal vector
 
@@ -1913,7 +1913,7 @@ contains
       ! Get the number of local DOF's for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
       
-      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement) 
+      indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement)
       
       indofFunc2 = elem_igetNDofLoc(p_relementDistributionP%celement)
       
@@ -1923,7 +1923,7 @@ contains
       if (NVE .NE. elem_igetNVE(p_relementDistributionA%celement)) then
         print *,'cc_forcesIntegration: element spaces incompatible!'
         call sys_halt()
-      end if      
+      end if
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -1949,19 +1949,19 @@ contains
       
       allocate(IdofsFunc1(indofFunc1,nelementsPerBlock))
     
-      allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))      
+      allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))
 
       ! Allocate memory for the coefficients
       allocate(Dcoefficients(ncubp,nelementsPerBlock,13))
     
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistributionU%celement)
       
       cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionP%celement))
       
-      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))     
+      cevaluationTag = ior(cevaluationTag,elem_getEvaluationTag(p_relementDistributionA%celement))
                       
       ! Make sure that we have determinants.
       cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
@@ -1982,8 +1982,8 @@ contains
       dTorque = 0.0_dp
       
           
-      ! Prepare the call to the evaluation routine of the analytic function.    
-      CALL elprep_init(rintSubset)    
+      ! Prepare the call to the evaluation routine of the analytic function.
+      CALL elprep_init(rintSubset)
   
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, PPERR_NELEMSIM
@@ -2003,15 +2003,15 @@ contains
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorSol%p_rblockDiscr%RspatialDiscr(1), &
                                      p_IelementList(IELset:IELmax),IdofsTrial)
-        !--------------------------------------------------------------------------------                                     
+        !--------------------------------------------------------------------------------
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorAlpha%p_rspatialDiscr, &
                                      p_IelementList(IELset:IELmax),IdofsFunc1)
-        !--------------------------------------------------------------------------------                                     
+        !--------------------------------------------------------------------------------
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvectorSol%p_rblockDiscr%RspatialDiscr(3), &
                                      p_IelementList(IELset:IELmax),IdofsFunc2)
-        !--------------------------------------------------------------------------------                                     
+        !--------------------------------------------------------------------------------
         ! Calculate all information that is necessary to evaluate the finite element
         ! on all cells of our subset. This includes the coordinates of the points
         ! on the cells.
@@ -2037,35 +2037,35 @@ contains
         !   | |       -p(x_i)      | + |...  you know this works  ...| + u^t | * | -dalpha/dy (x_i) |
         !    \                                                              /
         !
-        ! 
+        !
         ! Get the pressure in the cubature points
         ! Save the result to Dcoefficients(:,:,1)
 
         ! Build the p matrix
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(3), rintSubset, &
                 p_relementDistributionP%celement, &
-                IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))                
+                IdofsFunc2, DER_FUNC, Dcoefficients(:,1:IELmax-IELset+1_I32,1))
 
         ! Build the jacobi matrix of this (u1,u2,u3)
         ! First Row -------------------------------
         ! Save the result to Dcoefficients(:,:,2:4)
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(1), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))  
+                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,2))
 
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(1), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))  
+                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,3))
 
         ! Second Row -------------------------------
         ! Save the result to Dcoefficients(:,:,4:5)
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(2), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))  
+                IdofsTrial, DER_DERIV2D_X, Dcoefficients(:,1:IELmax-IELset+1_I32,4))
 
         call fevl_evaluate_sim3 (rvectorSol%RvectorBlock(2), rintSubset, &
                 p_relementDistributionU%celement, &
-                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))  
+                IdofsTrial, DER_DERIV2D_Y, Dcoefficients(:,1:IELmax-IELset+1_I32,5))
 
         ! Build the alpha vector
         ! Save the result to Dcoefficients(:,:,6:7)
@@ -2112,11 +2112,11 @@ contains
 !            ah1 = -dpp*dn1+dpf1*(2.0_dp*du1x*dn1+(du1y+du2x)*dn2)
 !            ah2 = -dpp*dn2+dpf1*((du1y+du2x)*dn1+2.0_dp*du2y*dn2)
             
-            Dfx = Dfx + ah1 * om         
+            Dfx = Dfx + ah1 * om
             Dfy = Dfy + ah2 * om
             
             ! for the torque calculate in 2d:
-            ! (x-x_i) .perpdot. (sigma * n) 
+            ! (x-x_i) .perpdot. (sigma * n)
             ! calculate the (x-x_i) part
             xtorque = rintSubset%p_DpointsReal(1,icubp,iel) - dcenterx
             ytorque = rintSubset%p_DpointsReal(2,icubp,iel) - dcentery
@@ -2131,7 +2131,7 @@ contains
             ! add up the forces
             dTorque = dTorque + atq * OM
 
-          end do ! ICUBP 
+          end do ! ICUBP
 
         end do ! IEL
         
@@ -2155,7 +2155,7 @@ contains
       Dfy = Dfy * 2.0_dp/dpf2
 
       sfilenameBodyForces='ns/DLBFMDT001'
-      cflag = SYS_APPEND      
+      cflag = SYS_APPEND
       ! Write the result to a text file.
       ! Format: timestep current-time value
       call io_openFileForWriting(sfilenameBodyForces, iunit, &
@@ -2167,7 +2167,7 @@ contains
       close (iunit)
       
       ! save the coefficients
-      rproblem%dCoefficientDrag = Dfx 
+      rproblem%dCoefficientDrag = Dfx
       rproblem%dCoefficientLift = Dfy
       
       ! Release memory
@@ -2183,7 +2183,7 @@ contains
     
   end subroutine
   
-! ***************************************************************************  
+! ***************************************************************************
   
 !<subroutine>
   subroutine cc_Particle(cderivative,rdiscretisation, &
@@ -2240,8 +2240,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -2265,26 +2265,26 @@ contains
   !p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
   
   ipart=rcollection%DQuickaccess(7)
-  p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+  p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
   select case (cderivative)
   case (DER_FUNC)
   
   ! loop over all elements and calculate the
   ! values in the cubature points
   do i=1,nelements
-    do j=1,npointsPerElement 
+    do j=1,npointsPerElement
       
       ! Get the distance to the center
       call geom_isInGeometry (p_rgeometryObject, (/Dpoints(1,j,i),Dpoints(2,j,i)/), iin)
-      ! check if it is inside      
-      if(iin .eq. 1)then 
-        Dvalues(j,i) =  1.0_DP 
+      ! check if it is inside
+      if(iin .eq. 1)then
+        Dvalues(j,i) =  1.0_DP
       else
         Dvalues(j,i) = 0.0_DP
       end if
       
     end do
-  end do    
+  end do
     
   case (DER_DERIV_X)
     ! Not really useful in the case at hand
@@ -2300,7 +2300,7 @@ contains
   
   end subroutine
 
-! ***************************************************************************  
+! ***************************************************************************
   
 
 end module

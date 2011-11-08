@@ -14,7 +14,7 @@
 !# The following routines can be found here:
 !#
 !# 1.) cc_allocPrecSystemMatrix
-!#     -> Allocates memory for the system matrix representing the 
+!#     -> Allocates memory for the system matrix representing the
 !#        core equation.
 !#
 !# 2.) cc_initSpacePreconditioner
@@ -24,7 +24,7 @@
 !#
 !# 3.) cc_doneSpacePreconditioner
 !#     -> Cleans up a spatial preconditioner structure initialised by
-!#        cc_initSpacePreconditioner. 
+!#        cc_initSpacePreconditioner.
 !#     -> Extension to cc_releaseSpacePreconditioner.
 !#
 !# 4.) cc_configPreconditioner
@@ -98,7 +98,7 @@ contains
       ilev,nlmin,nlmax,rlevelInfo,cmatrixType,rmatrix)
   
 !<description>
-  ! Allocates memory for the system matrix in a preconditioner. rlevelInfo 
+  ! Allocates memory for the system matrix in a preconditioner. rlevelInfo
   ! provides information about the level where the system matrix should be created.
   !
   ! Before this routine is called, the structure of all matrices in
@@ -155,7 +155,7 @@ contains
     
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
+    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)
       
     ! Let's consider the global system in detail. It has roughly
     ! the following shape:
@@ -166,7 +166,7 @@ contains
     !
     ! All matices may have multiplication factors in their front.
     !
-    ! The structure of the matrices A11 and A22 of the global system matrix 
+    ! The structure of the matrices A11 and A22 of the global system matrix
     ! is governed by the template FEM matrix.
     ! Initialise them with the same structure, i.e. A11, A22 share (!) their
     ! structure (not the entries) with that of the template matrix.
@@ -240,7 +240,7 @@ contains
     
     p_rparamList => rproblem%rparamList
         
-    call parlst_querysection(p_rparamList, ssection, p_rsection) 
+    call parlst_querysection(p_rparamList, ssection, p_rsection)
     
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create linear solver; no section '''//trim(ssection)//&
@@ -285,7 +285,7 @@ contains
       call linsol_initMultigrid2 (p_rsolverNode,nlevels,&
           rpreconditioner%RfilterChain)
       
-      ! Manually trim the coarse grid correction in Multigrid to multiply the 
+      ! Manually trim the coarse grid correction in Multigrid to multiply the
       ! pressure equation with -1. This (un)symmetrises the operator and gives
       ! much better convergence rates.
       call cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
@@ -461,7 +461,7 @@ contains
       
       ! Now after the coarse grid solver is done, we turn to the smoothers
       ! on all levels. Their initialisation is similar to the coarse grid
-      ! solver. Note that we use the same smoother on all levels, for 
+      ! solver. Note that we use the same smoother on all levels, for
       ! presmoothing as well as for postsmoothing.
       
       do ilev = 2,nlevels
@@ -674,7 +674,7 @@ contains
       call linsolinit_initParams (p_rsolverNode,p_rparamList,&
           ssolverSection,p_rsolverNode%calgorithm)
     
-    end select    
+    end select
 
     ! Put the final solver node to the preconditioner structure.
     rpreconditioner%p_rsolverNode => p_rsolverNode
@@ -747,7 +747,7 @@ contains
     integer :: ilevel
 
     ! Basic initialisation of the nonlinenar iteration structure.
-    call cc_createSpacePreconditioner (rpreconditioner,nlmin,nlmax)    
+    call cc_createSpacePreconditioner (rpreconditioner,nlmin,nlmax)
     
     ! Assign the matrix pointers in the nonlinear iteration structure to
     ! all our matrices that we want to use.
@@ -819,7 +819,7 @@ contains
     ! local variables
     integer :: i
 
-    ! Which preconditioner do we have?    
+    ! Which preconditioner do we have?
     select case (rpreconditioner%ctypePreconditioning)
     case (CCPREC_NONE)
       ! No preconditioning
@@ -1041,7 +1041,7 @@ contains
   logical, intent(IN) :: binit
 
   ! Whether the structure of the system matrices is new.
-  ! This variable has to be set to TRUE whenever there was a structure in 
+  ! This variable has to be set to TRUE whenever there was a structure in
   ! the system matrices. This reinitialises the linear solver.
   logical, intent(IN) :: bstructuralUpdate
 !</input>
@@ -1060,7 +1060,7 @@ contains
     logical :: bphystranspose
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A pointer to the matrix of the preconditioner
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner
@@ -1134,7 +1134,7 @@ contains
             !  B1^T B2^T 0
             !
             ! With A12, A21, A11, A22 independent of each other!
-            ! Do we have that case? If not, we have to allocate memory 
+            ! Do we have that case? If not, we have to allocate memory
             ! for these matrices.
             p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rstaticInfo%rmatrixTemplateFEM
             
@@ -1170,7 +1170,7 @@ contains
                 call lsyssc_allocEmptyMatrix (&
                     p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
 
-              end if               
+              end if
 
               if (p_rmatrixPreconditioner%RmatrixBlock(5,1)%cmatrixFormat &
                   .eq. LSYSSC_MATRIXUNDEFINED) then
@@ -1198,7 +1198,7 @@ contains
                 call lsyssc_allocEmptyMatrix (&
                     p_rmatrixPreconditioner%RmatrixBlock(4,2),LSYSSC_SETM_UNDEFINED)
 
-              end if               
+              end if
 
             end if
 
@@ -1221,7 +1221,7 @@ contains
                 p_rmatrixPreconditioner%RmatrixBlock(2,2),&
                 LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
-              ! ... then allocate memory for the entries; 
+              ! ... then allocate memory for the entries;
               ! don't initialise the memory.
               call lsyssc_allocEmptyMatrix (&
                   p_rmatrixPreconditioner%RmatrixBlock(2,2),&
@@ -1306,7 +1306,7 @@ contains
               if ((rpreconditioner%rprecSpecials%ismootherType .eq. 0) .or. &
                   (rpreconditioner%rprecSpecials%ismootherType .eq. 1)) then
                 bphystranspose = .true.
-              end if              
+              end if
               
             end if
 
@@ -1395,7 +1395,7 @@ contains
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       ! We use the default configuration; stop here.
@@ -1483,7 +1483,7 @@ contains
   !
   ! The routine must always be called if the situation changes during a
   ! simulation (e.g. if a nonstationary simulation proceeds to a new timestep
-  ! and changes boundary conditions). It is usually called in 
+  ! and changes boundary conditions). It is usually called in
   ! cc_updatePreconditioner.
 !</description>
 
@@ -1493,9 +1493,9 @@ contains
 !</inputoutput>
 
 !<inputoutput>
-  ! Nonlinear iteration structure. 
-  ! The t_ccPreconditionerSpecials substructure that receives information how to 
-  ! finally assembly the matrices such that everything in the callback routines 
+  ! Nonlinear iteration structure.
+  ! The t_ccPreconditionerSpecials substructure that receives information how to
+  ! finally assembly the matrices such that everything in the callback routines
   ! will work.
   type(t_ccspatialPreconditioner), intent(INOUT) :: rpreconditioner
 !</inputoutput>

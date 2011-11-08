@@ -438,7 +438,7 @@ contains
             +p_DvelocityZ(IedgeList(1,iedge))*DcoeffsAtEdge(3,2,iedge))
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(-DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -473,7 +473,7 @@ contains
             +p_DvelocityZ(IedgeList(1,iedge))*DcoeffsAtEdge(3,2,iedge))
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(DmatrixAtEdge(2,iedge), 0.0_DP,&

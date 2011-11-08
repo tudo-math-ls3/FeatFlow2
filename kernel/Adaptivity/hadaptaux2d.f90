@@ -9,7 +9,7 @@
 !#          know what you are doing. This module does no error checking!!!
 !#
 !# This module contains all auxiliary routines which are required for
-!# performing h-adaptivity in 2D. 
+!# performing h-adaptivity in 2D.
 !#
 !# The following routines are available:
 !#
@@ -33,7 +33,7 @@
 !#
 !#  7.) hadapt_writeGridSVG2D
 !#      -> Writes the adapted grid to file in SVG format in 2D
-!# 
+!#
 !#
 !# The following auxiliary routines are available:
 !#
@@ -148,7 +148,7 @@
 !# ------------------------ \\
 !# 1.) So, how does red-green grid refinement work in detail?
 !#
-!#     In general, a conforming mesh in two spatial dimensions consists of 
+!#     In general, a conforming mesh in two spatial dimensions consists of
 !#     triangles and/or quadrilaterals which have common vertices, that is,
 !#     there is no vertex located somewhere in the edge of one element.
 !#     If you want to refine your mesh, a natural choice is to subdivide
@@ -169,12 +169,12 @@
 !#         vertex at the midpoint of one edge and connect it to the two nodes
 !#         of the opposite edge.
 !#     (f) Refine one quadrilateral into four triangles by inserting two nodes
-!#         at the midpoint of adjacent edges, connect these vertices with 
+!#         at the midpoint of adjacent edges, connect these vertices with
 !#         oneanother and with the opposite corner vertex.
 !#     These four refinement strategies are known as green refinement.
 !#
 !#     Keep in mind, that there may be two hanging nodes for triangles or
-!#     three hanging nodes for quadrilaterals. If these elements were refined 
+!#     three hanging nodes for quadrilaterals. If these elements were refined
 !#     without introducing new vertices, we would perform blue refinement.
 !#     However, this strategy should be avoided and an element marked for
 !#     blue refinement should be subdivided into four similar elements
@@ -185,7 +185,7 @@
 !#     to produce very sharp angles leading to nasty "needle" elements.
 !#     In order to refine a green element, the original element from which
 !#     the green element was created has to be restored. Then red refinement
-!#     is performed for this element. 
+!#     is performed for this element.
 !#
 !#
 !# 2.) What are the different numbers for the element marker MARK_xxx?
@@ -195,7 +195,7 @@
 !#     a 5-bitfield [bit4,bit3,bit2,bit1,bit0]. The bit0 is used to distinguish
 !#     between triangles (bit0=0) and quadrilaterals (bit1=1). Each of bitX is
 !#     associated with the X-th edge. If you want to mark an edge for refinement,
-!#     then you have to set its bit to one. If you want to unmark it, then set 
+!#     then you have to set its bit to one. If you want to unmark it, then set
 !#     bitX=0. Finally, the integer associated to this 5-bitfiled is the element
 !#     marker. Here, is the table of bitfields and markers
 !#
@@ -275,7 +275,7 @@
 !#     more complicated since the difficult task is to identify groups of
 !#     elements that can be combined (i.e. glued together) to the original
 !#     macro elements. The identification of element patches is based on the
-!#     age of vertices and on the element state. 
+!#     age of vertices and on the element state.
 !# </purpose>
 !##############################################################################
 
@@ -329,7 +329,7 @@ module hadaptaux2d
   ! recoarsening into the macro quadrilateral together with its neighbors
   integer, parameter, public :: MARK_CRS_3TRIA1QUAD         = -6
 
-  ! Mark (left) green triangle of a 1-tria : 2-tria refinement for 
+  ! Mark (left) green triangle of a 1-tria : 2-tria refinement for
   ! recoarsening into the macro triangle together with its right neighbor
   integer, parameter, public :: MARK_CRS_2TRIA1TRIA         = -7
 
@@ -353,19 +353,19 @@ module hadaptaux2d
   ! conversion into three triangles keeping the second vertex
   integer, parameter, public :: MARK_CRS_2QUAD3TRIA         = -12
 
-  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for
   ! recoarsening into the macro quadrilateral together with its neighbors
   integer, parameter, public :: MARK_CRS_4QUAD1QUAD         = -13
 
-  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for
   ! recoarsening into two quadrilaterals
   integer, parameter, public :: MARK_CRS_4QUAD2QUAD         = -14
 
-  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for
   ! recoarsening into three triangles
   integer, parameter, public :: MARK_CRS_4QUAD3TRIA         = -15
 
-  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for
   ! recoarsening into four triangles
   integer, parameter, public :: MARK_CRS_4QUAD4TRIA         = -16
   
@@ -508,7 +508,7 @@ contains
 
 !<description>
     ! This subroutine marks all elements that should be refined
-    ! due to accuracy reasons. The decision is based on some 
+    ! due to accuracy reasons. The decision is based on some
     ! indicator vector which must be given element-wise in 2D.
 !</description>
 
@@ -594,17 +594,17 @@ contains
             if ((istate .eq. STATE_TRIA_REDINNER) .or.&
                 (istate .eq. STATE_TRIA_ROOT)) then
 
-              ! Inner red triangle or root triangle 
+              ! Inner red triangle or root triangle
               ! => no further refinement possible
               p_Imarker(iel) = MARK_ASIS
               
-              ! According to the indicator, this element should be refined. Since the 
-              ! maximum admissible refinement level has been reached no refinement 
+              ! According to the indicator, this element should be refined. Since the
+              ! maximum admissible refinement level has been reached no refinement
               ! was performed. At the same time, all vertices of the element should
               ! be "locked" to prevent this element from coarsening
               do ive = 1, TRIA_NVETRI2D
                 ivt = IverticesAtElement(ive)
-                rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
+                rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
               end do
 
               ! That is it for element IEL
@@ -626,13 +626,13 @@ contains
                 ! Outer red triangle => no further refinement
                 p_Imarker(iel) = MARK_ASIS
                 
-                ! According to the indicator, this element should be refined. Since the 
-                ! maximum admissible refinement level has been reached no refinement 
+                ! According to the indicator, this element should be refined. Since the
+                ! maximum admissible refinement level has been reached no refinement
                 ! was performed. At the same time, all vertices of the element should
                 ! be "locked" to prevent this element from coarsening
                 do ive = 1, TRIA_NVETRI2D
                   ivt = IverticesAtElement(ive)
-                  rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
+                  rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
                 end do
 
                 ! That is it for element IEL
@@ -653,7 +653,7 @@ contains
           end do
           
           
-          ! Update number of new vertices. In principle, we can increase the number of 
+          ! Update number of new vertices. In principle, we can increase the number of
           ! new vertices by 3, i.e., one for each edge. However, some care must be taken
           ! if the edge belongs to some adjacent element which has been marked for
           ! refinement previously. Hence, a new vertex is only added, if the edge is
@@ -694,14 +694,14 @@ contains
               ! Red quadrilateral => no further refinement
               p_Imarker(iel) = MARK_ASIS
               
-              ! According to the indicator, this element should be refined. Since the 
-              ! maximum admissible refinement level has been reached no refinement 
+              ! According to the indicator, this element should be refined. Since the
+              ! maximum admissible refinement level has been reached no refinement
               ! was performed. At the same time, all vertices of the element should
               ! be "locked" to prevent this element from coarsening
               do ive = 1, TRIA_NVEQUAD2D
                 ivt = IverticesAtElement(ive)
-                rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
-              end do              
+                rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
+              end do
 
               ! That is it for element IEL
               cycle mark_elem
@@ -719,7 +719,7 @@ contains
           end do
 
           
-          ! Update number of new vertices. In principle, we can increase the number of 
+          ! Update number of new vertices. In principle, we can increase the number of
           ! new vertices by 4, i.e., one for each edge. However, some care must be taken
           ! if the edge belongs to some adjacent element which has been marked for
           ! refinement previously. Hence, a new vertex is only added, if the edge is
@@ -768,14 +768,14 @@ contains
 
 !<description>
     ! This routine marks all elements that sould be recoarsened due to accuracy
-    ! reasons. The decision is based on some indicator vector which must be 
+    ! reasons. The decision is based on some indicator vector which must be
     ! given element-wise. The recoarsening strategy is as follows: A subset of
     ! elements can only be coarsened if this subset results from a previous
     ! refinement step. In other words, the grid cannot become coarser than the
     ! initial triangulation. Moreover, one recoarsening step can only "undo"
-    ! what one refinement step can "do". This is in contrast to other 
-    ! "node-removal" techniques, which remove all superficial vertices and 
-    ! retriangulate the generated "holes". However, such algorithms cannot 
+    ! what one refinement step can "do". This is in contrast to other
+    ! "node-removal" techniques, which remove all superficial vertices and
+    ! retriangulate the generated "holes". However, such algorithms cannot
     ! guarantee a grid hierarchy between refined and recoarsened grids.
     !
     ! In the context of hierarchical red-green mesh adaptivity, each recoarsening
@@ -783,14 +783,14 @@ contains
     ! the result of a complete recoarsening step could also be generated by locally
     ! refining the initial triangulation. The algorithm is as follows:
     !
-    ! 1) All vertices present in the initial triangulation cannot be removed. A 
+    ! 1) All vertices present in the initial triangulation cannot be removed. A
     ! vertex belongs to the initial triangulation if and only if its age is zero.
     !
-    ! 2) All other nodes which do not belong to elements that are marked for 
+    ! 2) All other nodes which do not belong to elements that are marked for
     ! refinement are potential candidates for removal. In order to prevent the
     ! removel of such vertices, the nodes must be "locked" by some mechanism.
-    ! 
-    ! 3) All three/four nodes of a red triangle/quadrilateral are "locked" if 
+    !
+    ! 3) All three/four nodes of a red triangle/quadrilateral are "locked" if
     ! the element should not be coarsened due to accuracy reasons.
     !
     ! 4) All vertices which belong to the macro element are "locked". Thus it
@@ -802,13 +802,13 @@ contains
     ! situation for all adjacent elements. The generation of blue elements can
     ! be prevented by applying the following rules:
     !
-    ! A) If an inner red triangle has two locked vertices, 
+    ! A) If an inner red triangle has two locked vertices,
     ! then the third vertex is locked, too.
     !
     ! B) If the youngest vertex of an outer green triangle (i.e. the vertex which
     ! is responsible for the green refinement) is locked, then lock all nodes
     ! connected to the green triangle. There is one exception to this rule. For
-    ! the "inner" green triangles resulting from a 1-quad : 4-tria refinement, 
+    ! the "inner" green triangles resulting from a 1-quad : 4-tria refinement,
     ! this rule should not be applied since the four triangles can be converted
     ! into three triangles if only one of the two "green vertices" are locked.
     ! (apply 4-tria : 1-quad coarsening and eliminate the handing node by suitable
@@ -851,7 +851,7 @@ contains
     call lsyssc_getbase_double(rindicator, p_Dindicator)
 
     
-    ! All nodes of the initial triangulation have age-0, and hence, 
+    ! All nodes of the initial triangulation have age-0, and hence,
     ! they will never be deleted by the re-coarsening procedure.
     !
     ! Phase 1: Lock vertices which cannot be deleted at first sight.
@@ -862,19 +862,19 @@ contains
     ! For each element which is marked for red refinement,
     ! the three/four corner vertices are "locked" unconditionally.
     !
-    ! For each element that is not marked for red refinement, the 
+    ! For each element that is not marked for red refinement, the
     ! indicator is considered and all vertices are "locked" if
     ! re-coarsening is not allowed due to accuracy reasons.
-    ! 
+    !
     ! There is one special case which needs to be considered.
-    ! If a green element is marked for refinement, then it is 
+    ! If a green element is marked for refinement, then it is
     ! converted into the corresponding red element prior to
     ! performing further refinement. Therefore, the intermediate
     ! grid after (!) the "redgreen-marking" procedure may not
     ! satisfy the conformity property, e.g. a quadrilateral that
     ! is marked for red refinement may be adjacent to some former
     ! green element which is (!) already subdivided regularly.
-    ! In this case, the "hanging" node at the edge midpoint 
+    ! In this case, the "hanging" node at the edge midpoint
     ! needs to be "locked" since it cannot be deleted. Note that
     ! such "hanging" nodes are not "locked" if the adjacent (not
     ! yet subdivided) element is not marked for red refinement.
@@ -888,7 +888,7 @@ contains
 
         ! The current element is marked for red refinement.
         ! Thus, we have to "lock" all vertices connected to it.
-        ! Moreover, we have to "lock" vertices located at edge 
+        ! Moreover, we have to "lock" vertices located at edge
         ! midpoints which may be generated due to conversion of
         ! neighboring green elements into corresponding red ones.
         do ive = 1, hadapt_getNVE(rhadapt, iel)
@@ -914,7 +914,7 @@ contains
               end if
             end do
 
-          elseif (jel .ne. 0) then   ! adjacent element has not been 
+          elseif (jel .ne. 0) then   ! adjacent element has not been
                                      ! subdivided and is not boundary
 
             ! Lock all vertices in adjacent element
@@ -1164,7 +1164,7 @@ contains
             end do
             
             ! We definitively modified some vertex in this iteration
-            bisModified = .true.           
+            bisModified = .true.
           end if
 
 
@@ -1189,7 +1189,7 @@ contains
                   ! Get number of midpoint vertex
                   jvt = rhadapt%p_IverticesAtElement(jve, jel)
             
-                  ! Check if midpoint vertex for the current edge is "locked", 
+                  ! Check if midpoint vertex for the current edge is "locked",
                   ! then lock all corner vertices of element IEL if required
                   if (rhadapt%p_IvertexAge(jvt) .le. 0) then
                     phase2_lock_all: do kve = 1, nve
@@ -1198,7 +1198,7 @@ contains
                         rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
 
                         ! We definitively modified some vertex in this iteration
-                        bisModified = .true.  
+                        bisModified = .true.
                       end if
                     end do phase2_lock_all
 
@@ -1219,7 +1219,7 @@ contains
 
     ! Phase 3: Determine re-coarsening rule based on "free" vertices.
     !
-    ! In the third phase, all elements are considered and the 
+    ! In the third phase, all elements are considered and the
     ! corresponding re-coarsening rule is adopted based on the
     ! number and type of free vertices. Note that elements which
     ! have been marked for refinement may be modified.
@@ -1298,7 +1298,7 @@ contains
         ! Get local edge number [3,5,9,17] -> [1,2,3,4]
         ive = min(4, ishft(p_Imarker(iel), -2)+1)
 
-        ! The current element is a quadrilateral which is 
+        ! The current element is a quadrilateral which is
         ! marker for green refinement along one single edge.
         jel    = rhadapt%p_IneighboursAtElement(ive, iel)
         jelmid = rhadapt%p_ImidneighboursAtElement(ive, iel)
@@ -1417,7 +1417,7 @@ contains
           
           
         case(STATE_TRIA_REDINNER)
-          ! If all vertices of the element are free, then the inner red 
+          ! If all vertices of the element are free, then the inner red
           ! triangle can be combined with its three neighboring red triangles.
           ! If one vertex of the inner triangle is locked, then the inner
           ! red tiangle together with its three neighboring elements can
@@ -1461,7 +1461,7 @@ contains
           
         case(STATE_QUAD_RED4)
           ! This is one of four quadrilaterals which result from a 1-quad : 4-quad
-          ! refinement. Here, the situation is slightly more difficult because 
+          ! refinement. Here, the situation is slightly more difficult because
           ! multiple rotationally-symmetric situations have to be considered. The
           ! four elements forming the macro element can be collected by visiting the
           ! neighboring element along the second edge starting at element IEL.
@@ -1495,7 +1495,7 @@ contains
           ! How many vertices are locked?
           select case(nlocked)
           case(0)
-            ! Mark element IEL for re-coarsening into macro 
+            ! Mark element IEL for re-coarsening into macro
             ! element and  keep all remaining elements 'as is'.
             p_Imarker(ImacroElement(1)) = MARK_CRS_4QUAD1QUAD
             p_Imarker(ImacroElement(2)) = MARK_ASIS_QUAD
@@ -1560,7 +1560,7 @@ contains
             
             
           case(18)
-            ! There are two vertices locked which are the second and 
+            ! There are two vertices locked which are the second and
             ! fourth vertices of the first elements. Mark the firth element
             ! for recoarsening. All other elements are kept 'as is'.
             p_Imarker(ImacroElement(1)) = MARK_CRS_4QUAD4TRIA
@@ -1590,7 +1590,7 @@ contains
             
             
           case(24)
-            ! There are two vertices locked which are the second and 
+            ! There are two vertices locked which are the second and
             ! fourth vertices of the fourth elements. Mark the fourth element
             ! for recoarsening. All other elements are kept 'as is'.
             p_Imarker(ImacroElement(1)) = MARK_ASIS_QUAD
@@ -1607,7 +1607,7 @@ contains
           
           
         case(STATE_TRIA_GREENOUTER_RIGHT)
-          ! We have to considered several situations depending on the 
+          ! We have to considered several situations depending on the
           ! state of the adjacent element that shares the second edge.
           jel = rhadapt%p_IneighboursAtElement(2, iel)
           
@@ -1621,7 +1621,7 @@ contains
           select case(jstate)
           case(STATE_TRIA_GREENOUTER_LEFT)
             ! If all vertices of element JEL are locked, then it is kept 'as is'.
-            ! Since a left green triangle shares two vertices with its macro 
+            ! Since a left green triangle shares two vertices with its macro
             ! element, it suffices to check the state of the second vertex.
             ivt = rhadapt%p_IverticesAtElement(2, jel)
             if (rhadapt%p_IvertexAge(ivt) .gt. 0) then
@@ -1656,7 +1656,7 @@ contains
             
           case(STATE_TRIA_OUTERINNER)
             ! If all vertices of element JEL are locked, then it is kept 'as is'.
-            ! Since an inner-outer green triangle shares two vertices with its 
+            ! Since an inner-outer green triangle shares two vertices with its
             ! macro element, it suffices to check the state of the first vertex.
             ivt = rhadapt%p_IverticesAtElement(2, jel)
             jvt = rhadapt%p_IverticesAtElement(3, jel)
@@ -1701,7 +1701,7 @@ contains
               
               if (rhadapt%p_IvertexAge(jvt) .gt. 0) then
                 
-                ! Mark element for re-coarsening, whereby the green 
+                ! Mark element for re-coarsening, whereby the green
                 ! outer triangle to the right is preserved.
                 p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_RIGHT ! LEFT
                 
@@ -1762,7 +1762,7 @@ contains
               p_Imarker(iel)=MARK_ASIS
               p_Imarker(jel)=MARK_ASIS
             else
-              ! Mark element IEL for re-coarsening into three triangles, 
+              ! Mark element IEL for re-coarsening into three triangles,
               ! whereby the second vertex of element IEL is preserved
               p_Imarker(iel)=MARK_CRS_2QUAD3TRIA
               p_Imarker(jel)=MARK_ASIS
@@ -1849,10 +1849,10 @@ contains
 
 !<description>
     ! This subroutine initializes the adaptive data structure for red-green
-    ! refinement. Starting from the marker array the neighbors of elements 
+    ! refinement. Starting from the marker array the neighbors of elements
     ! which are marked for refinement are recursively marked for refinement
-    ! until the resulting mesh satiesfies global conformity. 
-    ! Note that this subroutine is implemented in an iterative fashion 
+    ! until the resulting mesh satiesfies global conformity.
+    ! Note that this subroutine is implemented in an iterative fashion
     ! rather than making use of recursive subroutine calls.
 !</description>
 
@@ -1881,20 +1881,20 @@ contains
     integer, dimension(TRIA_MAXNVE) :: IvertexAge
     
     !---------------------------------------------------------------------------
-    ! At the moment, only those cells are marked for regular refinement 
+    ! At the moment, only those cells are marked for regular refinement
     ! for which the cell indicator does not satisfy some prescribed treshold.
     ! In order to globally restore the conformity of the final grid, we have
     ! to loop repeatedly over all elements and check if each of the three/four
-    ! adjacent edges satisfies conformity. 
-    ! Some care must be taken for green elements. In order to retain the 
+    ! adjacent edges satisfies conformity.
+    ! Some care must be taken for green elements. In order to retain the
     ! shape quality of the elements, green elements need to be converted into
-    ! red ones prior to performing further refinement. 
+    ! red ones prior to performing further refinement.
     !--------------------------------------------------------------------------
     !
-    ! In the course of element marking, some green elements may have to be 
+    ! In the course of element marking, some green elements may have to be
     ! converted into regularly refined ones. In the worst case, i.e.
-    ! Quad2Quad-refinement, each green element gives rise to 2.5 vertices 
-    ! and 2 new elements. Hence, the nodal arrays p_IvertexAge and 
+    ! Quad2Quad-refinement, each green element gives rise to 2.5 vertices
+    ! and 2 new elements. Hence, the nodal arrays p_IvertexAge and
     ! p_InodalProperty as well as the element arrays p_IverticesAtElement,
     ! p_IneighboursAtElement, p_ImidneighboursAtElement and p_Imarker are
     ! adjusted to the new dimensione.
@@ -1945,7 +1945,7 @@ contains
 
     else
       
-      ! No green elements have to be considered, hence use NEL0      
+      ! No green elements have to be considered, hence use NEL0
       call storage_new('hadapt_markRedgreenRefinement2D', 'p_Imodifier', rhadapt%NEL0,&
                         ST_INT, h_Imodifier, ST_NEWBLOCK_ZERO)
       call storage_getbase_int(h_Imodifier, p_Imodifier)
@@ -1956,15 +1956,15 @@ contains
     ! The task of the two arrays p_Imarker and p_Imodifier are as follows:
     !
     ! - p_Imarker stores for each element its individual state from which
-    !   the task of refinement can be uniquely determined (see above; 
+    !   the task of refinement can be uniquely determined (see above;
     !   data type t_hadapt).
     !   If the state of one element is modified, then potentionally all
     !   neighboringelements have to be checked, if conformity is violated.
     !   In order to prevent this (expensive) check to be performed for all
     !   elements again and again, only those elements are investigated for
-    !   which the modifier p_Imodifier is active, i.e. 
+    !   which the modifier p_Imodifier is active, i.e.
     !   p_Imodifier(iel) .EQ. imodifier. In order to pre-select elements
-    !   for investigation in the next loop, p_Imodifier(iel) is set to 
+    !   for investigation in the next loop, p_Imodifier(iel) is set to
     !   -imodifier and the modifier is reversed after each iteration.
     !
     !   This complicated step is necessary for the following reason:
@@ -1974,7 +1974,7 @@ contains
     !   in the same iteration and green elements will eventually converted.
     !   However, it is possible that the same element would be marked for
     !   subdivision at another edge due to an adjacent element with large
-    !   number. Hence, it is advisable to first process all elements which 
+    !   number. Hence, it is advisable to first process all elements which
     !   are activated and pre-select their neighbors for the next iteration.
     
     ! Ok, so let us start.
@@ -2059,12 +2059,12 @@ contains
 
         case(STATE_TRIA_OUTERINNER1,&
              STATE_TRIA_OUTERINNER2)
-          ! Theoretically, these states may occure and have to be treated 
+          ! Theoretically, these states may occure and have to be treated
           ! like CASE(4), see below. Due to the fact, that these states can
           ! only be generated by means of local red-green refinement and are
           ! not present in the initial grid we make use of additional know-
           ! ledge: Triangles which have too youngest vertices can either
-          ! be outer red elements resulting from a Tria4Tria refinement 
+          ! be outer red elements resulting from a Tria4Tria refinement
           ! or one of the opposite triangles resulting from Quad4Tria refinement.
           ! In all cases, the edge which connects the two nodes is opposite
           ! to the first local vertex. Hence, work must only be done for CASE(4)
@@ -2074,11 +2074,11 @@ contains
 
           
         case(STATE_TRIA_OUTERINNER)
-          ! The triangle can either be an outer red element resulting from a Tria4Tria 
-          ! refinement or one of the two opposite triangles resulting from Quad4Tria 
-          ! refinement. This can be easily checked. If the opposite element is not 
-          ! an inner red triangle (14), then the element IEL and its opposite neighbor 
-          ! make up the inner "diamond" resulting from a Quad4Tria refinement. 
+          ! The triangle can either be an outer red element resulting from a Tria4Tria
+          ! refinement or one of the two opposite triangles resulting from Quad4Tria
+          ! refinement. This can be easily checked. If the opposite element is not
+          ! an inner red triangle (14), then the element IEL and its opposite neighbor
+          ! make up the inner "diamond" resulting from a Quad4Tria refinement.
           jel = rhadapt%p_IneighboursAtElement(2, iel)
        
           ! First, we need to check a special case. If the second edge of element IEL
@@ -2095,8 +2095,8 @@ contains
             ! We know that element IEL and JEL make up the inner "diamond" resulting
             ! from a Quad4Tria refinement. It remains to find the two green triangle
             ! which make up the outer part of the macro element.
-            ! Since we do not know if they are adjacent to element IEL or JEL we 
-            ! have to perform additional checks: 
+            ! Since we do not know if they are adjacent to element IEL or JEL we
+            ! have to perform additional checks:
             !
             ! - The element along the first edge of the inner triangle
             !   must have state STATE_TRIA_GREENOUTER_LEFT
@@ -2106,7 +2106,7 @@ contains
 
             if (kstate .ne. STATE_TRIA_GREENOUTER_LEFT .or.&
                 rhadapt%p_IneighboursAtElement(2, kel) .ne. iel) then
-              ! At this stage we can be sure that element IEL is not (!) 
+              ! At this stage we can be sure that element IEL is not (!)
               ! the inner triangle, hence, it must be element JEL
               
               ! We need to find the two missing triangles KEL and LEL
@@ -2140,7 +2140,7 @@ contains
 
 
               ! The second and third edge of element KEL must be unmarked.
-              ! Moreover, the first edge of element KEL is marked for 
+              ! Moreover, the first edge of element KEL is marked for
               ! refinement if it is also marked from the adjacent element.
               iel1 = rhadapt%p_IneighboursAtElement(1, kel)
               iel2 = rhadapt%p_ImidneighboursAtElement(1, kel)
@@ -2161,7 +2161,7 @@ contains
               if (ismarked_edge(iel1, iel2, iel)) p_Imarker(iel) = ibset(p_Imarker(iel), 4)
               
               ! The first edge of element IEL is only marked if it
-              ! is also marked from the adjacent element              
+              ! is also marked from the adjacent element
               iel1 = rhadapt%p_IneighboursAtElement(1, iel)
               iel2 = rhadapt%p_ImidneighboursAtElement(1, iel)
               if (ismarked_edge(iel1, iel2, iel)) p_Imarker(iel) = ibset(p_Imarker(iel), 1)
@@ -2170,8 +2170,8 @@ contains
               ! The first, second and third edge of element LEL must be unmarked.
               p_Imarker(lel) = ibset(0,0)
               
-              ! The fourth edge of element LEL is only marked if it 
-              ! is  also marked from the adjacent element              
+              ! The fourth edge of element LEL is only marked if it
+              ! is  also marked from the adjacent element
               iel1 = rhadapt%p_IneighboursAtElement(4, lel)
               iel2 = rhadapt%p_ImidneighboursAtElement(4, lel)
               if (ismarked_edge(iel1, iel2, lel)) p_Imarker(lel) = ibset(p_Imarker(lel), 4)
@@ -2210,7 +2210,7 @@ contains
               p_Imarker(iel) = ibset(0,0)
               
               ! The second and third edge of element KEL must be unmarked.
-              ! Moreover, the first edge if element KEL is marked for 
+              ! Moreover, the first edge if element KEL is marked for
               ! refinement if it is also marked from the adjacent element
               iel1 = rhadapt%p_IneighboursAtElement(1, kel)
               iel2 = rhadapt%p_ImidneighboursAtElement(1, kel)
@@ -2221,7 +2221,7 @@ contains
               end if
 
 
-              ! The second and third edge of element JEL must be unmarked. 
+              ! The second and third edge of element JEL must be unmarked.
               p_Imarker(jel) = ibset(0,0)
 
               ! The fourth edge of element JEL is only marked if it
@@ -2230,7 +2230,7 @@ contains
               iel2 = rhadapt%p_ImidneighboursAtElement(4, jel)
               if (ismarked_edge(iel1, iel2, jel)) p_Imarker(jel) = ibset(p_Imarker(jel),4)
 
-              ! The first edge of element JEL is only marked if it 
+              ! The first edge of element JEL is only marked if it
               ! is also marked from the adjacent element
               iel1 = rhadapt%p_IneighboursAtElement(1, jel)
               iel2 = rhadapt%p_ImidneighboursAtElement(1, jel)
@@ -2249,7 +2249,7 @@ contains
             end if
 
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2273,9 +2273,9 @@ contains
                     
         case(STATE_QUAD_HALF1,&
              STATE_QUAD_HALF2)
-          ! Element is quadrilateral that results from a Quad2Quad 
-          ! refinement. Due to the orientation convention the other 
-          ! "halved" element is adjacent to the second edge. 
+          ! Element is quadrilateral that results from a Quad2Quad
+          ! refinement. Due to the orientation convention the other
+          ! "halved" element is adjacent to the second edge.
           jel = rhadapt%p_IneighboursAtElement(2, iel)
 
           ! Mark the fourth edge of elements IEL for subdivision
@@ -2309,8 +2309,8 @@ contains
           p_Imarker(kel) = ibset(0,0)
           p_Imarker(lel) = ibset(0,0)
           
-          ! In addition, we have to transfer some markers from element IEL and JEL         
-          ! to the new elements NEL0+1, NEL0+2.           
+          ! In addition, we have to transfer some markers from element IEL and JEL
+          ! to the new elements NEL0+1, NEL0+2.
           iel1 = rhadapt%p_IneighboursAtElement(1, iel)
           iel2 = rhadapt%p_ImidneighboursAtElement(1, iel)
           if (ismarked_edge(iel1, iel2, iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
@@ -2329,7 +2329,7 @@ contains
 
 
           ! If we are in the first iteration which is caused by elements
-          ! marked for refinement due to accuracy reasons, then "lock" 
+          ! marked for refinement due to accuracy reasons, then "lock"
           ! the four midpoint vertices which must not be deleted.
           if (bisFirst) then
             ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2350,7 +2350,7 @@ contains
 
          
         case(STATE_TRIA_GREENINNER)
-          ! We are processing a green triangle. Due to our refinement 
+          ! We are processing a green triangle. Due to our refinement
           ! convention, element IEL can only be the inner triangle
           ! resulting from a Quad3Tria refinement.
           jel = rhadapt%p_IneighboursAtElement(3, iel)
@@ -2383,26 +2383,26 @@ contains
           bisModified = .true.
           
 
-          ! The new element NEL0+1 has zero marker by construction 
+          ! The new element NEL0+1 has zero marker by construction
           ! but that of IEL must be nullified. The markers for the
           ! modified triangles also need to be adjusted.
           p_Imarker(iel) = ibset(0,0)
           p_Imarker(jel) = ibset(0,0)
           p_Imarker(kel) = ibset(0,0)
 
-          ! The first edge is only marked if it is also marked from the adjacent element              
+          ! The first edge is only marked if it is also marked from the adjacent element
           iel1 = rhadapt%p_IneighboursAtElement(1, jel)
           iel2 = rhadapt%p_ImidneighboursAtElement(1, jel)
           if (ismarked_edge(iel1, iel2, jel)) p_Imarker(jel) = ibset(p_Imarker(jel),1)
           
-          ! The fourth edge is only marked if it is also marked from the adjacent element              
+          ! The fourth edge is only marked if it is also marked from the adjacent element
           iel1 = rhadapt%p_IneighboursAtElement(4, kel)
           iel2 = rhadapt%p_ImidneighboursAtElement(4, kel)
           if (ismarked_edge(iel1, iel2, kel)) p_Imarker(kel) = ibset(p_Imarker(kel),4)
 
           
           ! If we are in the first iteration which is caused by elements
-          ! marked for refinement due to accuracy reasons, then "lock" 
+          ! marked for refinement due to accuracy reasons, then "lock"
           ! the four midpoint vertices which must not be deleted.
           if (bisFirst) then
             ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2432,12 +2432,12 @@ contains
           select case(jstate)
           case(STATE_TRIA_GREENOUTER_RIGHT)
             ! Element IEL and JEL are the result of a Tria2Tria refinement,
-            ! whereby triangle IEL is located left to element JEL. 
+            ! whereby triangle IEL is located left to element JEL.
             ! We can safely convert both elements into the macro element
             ! and perform regular refinement afterwards.
 
-            ! We need to mark the edges of the elements adjacent 
-            ! to IEL and JEL for subdivision. 
+            ! We need to mark the edges of the elements adjacent
+            ! to IEL and JEL for subdivision.
             iel1 = rhadapt%p_IneighboursAtElement(3, iel)
             iel2 = rhadapt%p_ImidneighboursAtElement(3, iel)
             if (iel1*iel2 .ne. 0 .and. iel1 .eq. iel2) call mark_edge(iel, iel1)
@@ -2472,7 +2472,7 @@ contains
             if (ismarked_edge(iel1, iel2, jel)) p_Imarker(jel) = ibset(p_Imarker(jel),3)
 
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2501,8 +2501,8 @@ contains
             iel2 = rhadapt%p_ImidneighboursAtElement(2, jel)
             if (iel1*iel2 .ne. 0 .and. iel1 .eq. iel2) call mark_edge(jel, iel1)
             
-            ! And again, the same procedure must be applied to the first neighbor of 
-            ! element KEL which is the first neighbor of JEL, whereby KEL needs to 
+            ! And again, the same procedure must be applied to the first neighbor of
+            ! element KEL which is the first neighbor of JEL, whereby KEL needs to
             ! be found in the dynamic data structure first
             kel = rhadapt%p_IneighboursAtElement(1, jel)
             
@@ -2541,7 +2541,7 @@ contains
             if (ismarked_edge(iel1, iel2, kel)) p_Imarker(kel) = ibset(p_Imarker(kel),4)
 
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2616,7 +2616,7 @@ contains
 
             
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2656,7 +2656,7 @@ contains
             ! triangle IEL is located right to element JEL. We can safely convert both
             ! elements into one and perform regular refinement afterwards.
             
-            ! We need to mark the edges of the elements 
+            ! We need to mark the edges of the elements
             ! adjacent to IEL and JEL for subdivision.
             iel1 = rhadapt%p_IneighboursAtElement(1, iel)
             iel2 = rhadapt%p_ImidneighboursAtElement(1, iel)
@@ -2692,7 +2692,7 @@ contains
             if (ismarked_edge(iel1, iel2, iel)) p_Imarker(iel) = ibset(p_Imarker(iel),3)
             
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2721,7 +2721,7 @@ contains
             iel2 = rhadapt%p_ImidneighboursAtElement(2, jel)
             if (iel1*iel2 .ne. 0 .and. iel1 .eq. iel2) call mark_edge(jel, iel1)
 
-            ! And again, the same procedure must be applied to the third neighbor of 
+            ! And again, the same procedure must be applied to the third neighbor of
             ! element KEL which is the third neighbor of JEL.
             kel  = rhadapt%p_IneighboursAtElement(3, jel)
             iel1 = rhadapt%p_IneighboursAtElement(3, kel)
@@ -2758,7 +2758,7 @@ contains
             if (ismarked_edge(iel1, iel2, iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
 
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, jel)
@@ -2832,7 +2832,7 @@ contains
             if (ismarked_edge(iel1, iel2, iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
 
             ! If we are in the first iteration which is caused by elements
-            ! marked for refinement due to accuracy reasons, then "lock" 
+            ! marked for refinement due to accuracy reasons, then "lock"
             ! the four midpoint vertices which must not be deleted.
             if (bisFirst) then
               ivt = rhadapt%p_IverticesAtElement(2, iel)
@@ -2875,17 +2875,17 @@ contains
           ! If element IEL is adjacent to two different elements along one edge
           ! then ignore this edge. This situation can arise, if the element IEL
           ! is adjacent to a green element JEL which has been converted previously,
-          ! so that element IEL has two neighbors along the edge, i.e., IEL and one 
+          ! so that element IEL has two neighbors along the edge, i.e., IEL and one
           ! new element number >NEL0
           if (rhadapt%p_IneighboursAtElement(ive, iel) .ne. &
               rhadapt%p_ImidneighboursAtElement(ive, iel)) cycle adjacent
           
-          ! If the edge shared by element IEL and its neighbor JEL has been 
+          ! If the edge shared by element IEL and its neighbor JEL has been
           ! marked for refinement and JEL is not outside of the domain, i.e.,
           ! element IEL is located at the boundary, then proceed to element JEL.
           if (btest(p_Imarker(iel), ive)) then
             
-            ! Check if the current edge is located at the 
+            ! Check if the current edge is located at the
             ! boundary, then nothing needs to be done
             jel = rhadapt%p_IneighboursAtElement(ive, iel)
             if (jel .eq. 0) cycle adjacent
@@ -2938,15 +2938,15 @@ contains
       end do element
       
       
-      ! Note that the number of elements (and vertices) may have 
-      ! changed due to conversion of green into red elements. 
+      ! Note that the number of elements (and vertices) may have
+      ! changed due to conversion of green into red elements.
       
       ! Hence, adjust dimensions.
       rhadapt%NEL0 = rhadapt%NEL
       rhadapt%NVT0 = rhadapt%NVT
 
       !-------------------------------------------------------------------------
-      ! We do not want to have elements with two and/or three divided edges, 
+      ! We do not want to have elements with two and/or three divided edges,
       ! aka, blue refinement for triangles and quadrilaterals, respectively.
       ! Therefore, these elements are filtered and marked for red refinement.
       !-------------------------------------------------------------------------
@@ -2970,7 +2970,7 @@ contains
              MARK_REF_QUADBLUE_412,&
              MARK_REF_QUADBLUE_341,&
              MARK_REF_QUADBLUE_234)
-          ! Blue refinement for quadrilaterals is not allowed. 
+          ! Blue refinement for quadrilaterals is not allowed.
           ! Hence, mark quadrilateral for red refinement
           p_Imarker(iel)      =  MARK_REF_QUAD4QUAD
           p_Imodifier(iel)    = -imodifier
@@ -3007,7 +3007,7 @@ contains
     ! Here, the real working routines follow.
 
     !**************************************************************
-    ! For a given element IEL, mark the edge that connects IEL 
+    ! For a given element IEL, mark the edge that connects IEL
     ! to its neighbor JEL in the marker array at position JEL
     
     subroutine mark_edge(iel, jel)
@@ -3185,7 +3185,7 @@ contains
     integer, dimension(:), pointer :: p_Imarker
     integer :: iel
 
-    ! Check if dynamic data structures are o.k. and if 
+    ! Check if dynamic data structures are o.k. and if
     ! cells are marked for refinement
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA2D) .ne.&
                             HADAPT_HAS_DYNAMICDATA2D .or.&
@@ -3229,7 +3229,7 @@ contains
         
       case(MARK_REF_TRIA2TRIA_1,&
            MARK_REF_TRIA2TRIA_2,&
-           MARK_REF_TRIA2TRIA_3)   
+           MARK_REF_TRIA2TRIA_3)
 
         ! Green refinement triangle
         call refine_Tria2Tria(rhadapt, iel, p_Imarker(iel),&
@@ -3312,7 +3312,7 @@ contains
     integer,  dimension(:), pointer :: p_Imarker
     integer :: ipos,iel,jel,ivt,ivtReplace,ive
 
-    ! Check if dynamic data structures are o.k. and 
+    ! Check if dynamic data structures are o.k. and
     ! if  cells are marked for coarsening
     if (iand(rhadapt%iSpec, HADAPT_HAS_DYNAMICDATA2D) .ne.&
                             HADAPT_HAS_DYNAMICDATA2D .or.&
@@ -3460,7 +3460,7 @@ contains
           ! something is wrong and we stop the simulation
           call output_line('Unable to find replacement vertex in element',&
                            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen2D')
-          call sys_halt()            
+          call sys_halt()
         end do update
         
         ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
@@ -3916,7 +3916,7 @@ contains
                           rhadapt%p_IverticesAtElement(1,iel))-y0
         write(iunit,FMT='(A)') &
             trim(sys_siL(int(dscale*xdim),10))//','//&
-            trim(sys_siL(ysize-int(dscale*ydim),10))//'"/>'       
+            trim(sys_siL(ysize-int(dscale*ydim),10))//'"/>'
 
       end do
       
@@ -3992,13 +3992,13 @@ contains
                           rhadapt%p_IverticesAtElement(1,iel))-y0
         write(iunit,FMT='(A)') &
             trim(sys_siL(int(dscale*xdim),10))//','//&
-            trim(sys_siL(ysize-int(dscale*ydim),10))//'"/>'       
+            trim(sys_siL(ysize-int(dscale*ydim),10))//'"/>'
         
       end do
     end if
          
     ! Loop over all vertices
-    do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)     
+    do ivt = 1, qtree_getsize(rhadapt%rVertexCoordinates2D)
       xdim = qtree_getX(rhadapt%rVertexCoordinates2D,ivt)-x0
       ydim = qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
       
@@ -4123,7 +4123,7 @@ contains
                                          rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine adds a new vertex at the midpoint of a given egde. 
+    ! This subroutine adds a new vertex at the midpoint of a given egde.
     ! First, the coordinates of the new vertex are computed and added to
     ! the quadtree. If the new vertex is located at the boundary then its
     ! parametrization is computed and its normal vector is stored in
@@ -4172,7 +4172,7 @@ contains
     x2 = qtree_getX(rhadapt%rVertexCoordinates2D, i2)
     y2 = qtree_getY(rhadapt%rVertexCoordinates2D, i2)
 
-    ! Compute coordinates of new vertex 
+    ! Compute coordinates of new vertex
     Dcoord = 0.5_DP * (/x1+x2, y1+y2/)
 
     ! Search for vertex coordinates in quadtree: If the vertex already
@@ -4559,7 +4559,7 @@ contains
     ! Replace triangular element
     rhadapt%p_IverticesAtElement(:,ipos)      = (/i1,i2,i3,0/)
     rhadapt%p_IneighboursAtElement(:,ipos)    = (/e1,e2,e3,0/)
-    rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e4,e5,e6,0/)    
+    rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e4,e5,e6,0/)
 
   end subroutine replace_elementTria
 
@@ -4609,7 +4609,7 @@ contains
   subroutine add_elementTria(rhadapt, i1, i2, i3, e1, e2, e3, e4, e5, e6)
 
 !<description>
-    ! This subroutine adds a new element connected to three vertices 
+    ! This subroutine adds a new element connected to three vertices
     ! and surrounded by three adjacent elements
 !</description>
 
@@ -4648,7 +4648,7 @@ contains
                              e1, e2, e3, e4, e5, e6, e7, e8)
 
 !<description>
-    ! This subroutine adds a new element connected to four vertices 
+    ! This subroutine adds a new element connected to four vertices
     ! and surrounded by four adjacent elements
 !</description>
 
@@ -4688,7 +4688,7 @@ contains
 !<description>
     ! This subroutine removes an existing element and moves the last
     ! element of the adaptation data structure to its position.
-    ! The routine returns the former number ielReplace of the last 
+    ! The routine returns the former number ielReplace of the last
     ! element. If iel is the last element, then ielReplace=0 is returned.
 !</description>
 
@@ -4766,7 +4766,7 @@ contains
         end do elements
 
                 
-        ! Get element number of element JEL and JELMID which 
+        ! Get element number of element JEL and JELMID which
         ! are (mid-)adjacent to element ielReplace
         jel    = rhadapt%p_IneighboursAtElement(ive, ielReplace)
         jelmid = rhadapt%p_ImidneighboursAtElement(ive, ielReplace)
@@ -4775,14 +4775,14 @@ contains
         ! Do we have different neighbours along the first part and the
         ! second part of the common edge?
         if (jel .ne. jelmid) then
-          ! There are two elements sharing the common edge with ielReplace. 
+          ! There are two elements sharing the common edge with ielReplace.
           ! We have to find the position of element ielReplace in the lists
           ! of (mid-)adjacent elements for both element JEL and JELMID
-          ! seperately. If we are at the boundary of ir element IEL to be 
+          ! seperately. If we are at the boundary of ir element IEL to be
           ! removed is adjacent to element ielReplace, the skip this edge.
           bfound = .false.
           
-          ! Find position of replacement element in adjacency list of 
+          ! Find position of replacement element in adjacency list of
           ! element JEL and update the entry to new element number IEL
           if (jel .eq. 0 .or. jel .eq. iel) then
             bfound = .true.
@@ -4845,7 +4845,7 @@ contains
         ! If the element could not be found, something is wrong
         if (.not.bfound) then
           call output_line('Unable to update element neighbor!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')         
+                           OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
           call sys_halt()
         end if
         
@@ -4878,7 +4878,7 @@ contains
                                       iel0, iel, ielmid)
 
 !<description>
-    ! This subroutine updates the list of elements adjacent to another 
+    ! This subroutine updates the list of elements adjacent to another
     ! element and the list of elements mid-adjacent to another element.
     !
     ! The situation is as follows:
@@ -4906,7 +4906,7 @@ contains
     !    JEL = JELMID then it suffices to update its adjacency
     !    list for the entry IEL0 adopting the values IEL and IELMID.
     ! 3) If the adjacent element has been subdivided, that is,
-    !    JEL != JELMID then the adjacency list if each of these two 
+    !    JEL != JELMID then the adjacency list if each of these two
     !    elements is updated by the value IEL and IELMID, respectively.
 !</description>
 
@@ -4950,7 +4950,7 @@ contains
       nve = hadapt_getNVE(rhadapt, jel)
       
       ! Loop over all entries in the list of adjacent and/or mid-adjacent
-      ! elements for element JEL and check if the value IEL0 is present. 
+      ! elements for element JEL and check if the value IEL0 is present.
       ! The situation may occur that element IEL0 is only adjacent to one
       ! "half" of the edge of element JEL. This may be the case, if element
       ! IEL0 was a green triangle which has already been subdivided in the
@@ -4969,7 +4969,7 @@ contains
           bfound2 = .true.
         end if
         
-        ! Exit if IEL0 has been found in the either the adjacency or the 
+        ! Exit if IEL0 has been found in the either the adjacency or the
         ! mid-adjacency list of element JEL.
         bfound = bfound1 .or. bfound2
         if (bfound) exit
@@ -4980,12 +4980,12 @@ contains
       ! Case 2: Adjacent element has already been subdivided.
       bfound1 = .false.; bfound2 = .false.
       
-      ! What kind of element is neighboring element 
+      ! What kind of element is neighboring element
       nve = hadapt_getNVE(rhadapt, jel)
 
       ! Loop over all entries in the list of adjacent elements for element
-      ! JEL and check if the value IEL0 is present. 
-      ! If this is the case,  then update the corrseponding entries in the 
+      ! JEL and check if the value IEL0 is present.
+      ! If this is the case,  then update the corrseponding entries in the
       ! lists of (mid-)adjacent element neighbors.
       do ive = 1, nve
         if (rhadapt%p_IneighboursAtElement(ive, jel) .eq. iel0) then
@@ -4996,12 +4996,12 @@ contains
         end if
       end do
       
-      ! What kind of element is neighboring element 
+      ! What kind of element is neighboring element
       nve = hadapt_getNVE(rhadapt, jelmid)
       
       ! Loop over all entries in the list of adjacent elements for element
       ! JELMID and check if the value IEL0 is present.
-      ! If this is the case, then update the corrseponding entries in the 
+      ! If this is the case, then update the corrseponding entries in the
       ! lists of (mid-)adjacent element neighbors.
       do ive = 1, nve
         if (rhadapt%p_IneighboursAtElement(ive, jelmid) .eq. iel0) then
@@ -5033,7 +5033,7 @@ contains
                                       iel0, ielmid0, iel, ielmid)
 
 !<description>
-    ! This subroutine updates the list of elements adjacent to another 
+    ! This subroutine updates the list of elements adjacent to another
     ! element and the list of elements mid-adjacent to another element.
     !
     ! The situation is as follows:
@@ -5088,7 +5088,7 @@ contains
     integer :: ive,nve
     logical :: bfound1,bfound2,bfound
     
-    ! Check if IEL0 and IELMID0 are the same. 
+    ! Check if IEL0 and IELMID0 are the same.
     ! In this case call the corresponding subroutine
     if (iel0 .eq. ielmid0) then
       call update_ElemNeighb2D_1to2(rhadapt, jel, jelmid,&
@@ -5102,16 +5102,16 @@ contains
     ! Check if adjacent and mid-adjacent elements are the same.
     if (jel .eq. jelmid) then
 
-      ! Case 1: Adjacent element has not been subdivided, that is, the 
+      ! Case 1: Adjacent element has not been subdivided, that is, the
       !         current edge contains a hanging node for the adjacent element.
       bfound = .false.
 
       ! What kind of element is neighboring element?
       nve = hadapt_getNVE(rhadapt, jel)
       
-      ! Loop over all entries in the list of adjacent elements for element 
-      ! JEL and check if the value IEL0 or IELMID0 is present. 
-      ! If this is the case, then update the corrseponding entries in the 
+      ! Loop over all entries in the list of adjacent elements for element
+      ! JEL and check if the value IEL0 or IELMID0 is present.
+      ! If this is the case, then update the corrseponding entries in the
       ! lists of (mid-)adjacent element neighbors.
       do ive = 1, nve
         if (rhadapt%p_IneighboursAtElement(ive, jel)    .eq. iel0 .and.&
@@ -5128,12 +5128,12 @@ contains
       ! Case 2: Adjacent element has already been subdivided.
       bfound1 = .false.; bfound2 = .false.
       
-      ! What kind of element is neighboring element 
+      ! What kind of element is neighboring element
       nve = hadapt_getNVE(rhadapt, jel)
 
       ! Loop over all entries in the list of adjacent elements for element
-      ! JEL and check if the value IELMID0 is present. 
-      ! If this is the case,  then update the corrseponding entries in the 
+      ! JEL and check if the value IELMID0 is present.
+      ! If this is the case,  then update the corrseponding entries in the
       ! lists of (mid-)adjacent element neighbors.
       do ive = 1, nve
         if (rhadapt%p_IneighboursAtElement(ive, jel) .eq. ielmid0 .and.&
@@ -5145,12 +5145,12 @@ contains
         end if
       end do
       
-      ! What kind of element is neighboring element 
+      ! What kind of element is neighboring element
       nve = hadapt_getNVE(rhadapt, jelmid)
       
       ! Loop over all entries in the list of adjacent elements for element
       ! JELMID and check if the value IEL0 is present.
-      ! If this is the case, then update the corrseponding entries in the 
+      ! If this is the case, then update the corrseponding entries in the
       ! lists of (mid-)adjacent element neighbors.
       do ive = 1, nve
         if (rhadapt%p_IneighboursAtElement(ive, jelmid) .eq. iel0 .and.&
@@ -5181,7 +5181,7 @@ contains
 
 !<description>
     ! This subroutine updates the list of elements adjacent to another elements.
-    ! For all elements jel which are adjacent to the old element iel0 the new 
+    ! For all elements jel which are adjacent to the old element iel0 the new
     ! value iel is stored in the neighbours-at-element structure.
 !</description>
 
@@ -5254,14 +5254,14 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one triangular element into two triangular 
+    ! This subroutine subdivides one triangular element into two triangular
     ! elements by subdividing one edge. The local number of the edge that is
     ! subdivided can be uniquely determined from the element marker.
     !
-    ! In the illustration, i1,i2,i3 and i4 denote the vertices whereby i4 
+    ! In the illustration, i1,i2,i3 and i4 denote the vertices whereby i4
     ! is the new vertex. Moreover, (e1)-(e6) stand for the element numbers
     ! which are adjecent and mid-adjacent to the current element.
-    ! The new element is assigned the total number of elements currently 
+    ! The new element is assigned the total number of elements currently
     ! present in the triangulation increased by one.
     !
     ! <verb>
@@ -5309,7 +5309,7 @@ contains
     integer :: i1,i2,i3,i4
     integer :: loc1,loc2,loc3
     
-    ! Determine the local position of edge to 
+    ! Determine the local position of edge to
     ! be subdivided from the element marker
     select case(imarker)
     case(MARK_REF_TRIA2TRIA_1)
@@ -5391,8 +5391,8 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one triangular element into three triangular 
-    ! elements by subdividing the longest edge and connecting the new vertex 
+    ! This subroutine subdivides one triangular element into three triangular
+    ! elements by subdividing the longest edge and connecting the new vertex
     ! with the opposite midpoint. The local numbers of the two edges that are
     ! subdivided can be uniquely determined from the element marker.
     !
@@ -5420,7 +5420,7 @@ contains
     !
 !</description>
 
-!<input> 
+!<input>
     ! Number of element to be refined
     integer, intent(in) :: iel
     
@@ -5594,10 +5594,10 @@ contains
   subroutine refine_Tria4Tria(rhadapt, iel, rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one triangular element into four similar 
+    ! This subroutine subdivides one triangular element into four similar
     ! triangular elements by connecting the three edge midpoints.
     !
-    ! In the illustration, i1-i6 denote the vertices whereby i4-i6 are the 
+    ! In the illustration, i1-i6 denote the vertices whereby i4-i6 are the
     ! new vertices. Moreover, (e1)-(e6) stand for the element numbers which
     ! are adjecent and mid-adjacent to the current element.
     ! The new elements are assigned the total number of elements currently present
@@ -5661,8 +5661,8 @@ contains
     nel0 = rhadapt%NEL
 
 
-    ! Add three new vertices I4,I5 and I6 at the midpoint of 
-    ! edges (I1,I2), (I2,I3) and (I1,I3), respectively. 
+    ! Add three new vertices I4,I5 and I6 at the midpoint of
+    ! edges (I1,I2), (I2,I3) and (I1,I3), respectively.
     call add_vertex2D(rhadapt, i1, i2, e1, i4,&
                       rcollection, fcb_hadaptCallback)
     call add_vertex2D(rhadapt, i2, i3, e2, i5,&
@@ -5761,7 +5761,7 @@ contains
     !      +---------------+            +-------+-------+
     !     i1 (e1)     (e5) i2          i1 (e1)  i5 (e5) i2
     ! </verb>
-    ! 
+    !
 !</description>
 
 !<input>
@@ -5783,7 +5783,7 @@ contains
     ! OPTIONAL: Collection
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
-!</subroutine>    
+!</subroutine>
 
     ! local variables
     integer :: ipos
@@ -5888,10 +5888,10 @@ contains
     ! elements. The local number of the edge that is
     ! subdivided can be uniquely determined from the element marker.
     !
-    ! In the illustration, i1-i5 denote the vertices whereby i5 is the new 
-    ! vertex. Moreover, (e1)-(e8) stand for the element numbers which are 
+    ! In the illustration, i1-i5 denote the vertices whereby i5 is the new
+    ! vertex. Moreover, (e1)-(e8) stand for the element numbers which are
     ! adjecent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently 
+    ! The new elements are assigned the total number of elements currently
     ! present in the triangulation increased by one and two, respectively.
     !
     ! <verb>
@@ -5905,7 +5905,7 @@ contains
     !      |      iel       |     ->     |   \       /   |
     !      |                |            |    \     /    |
     ! (e8) |                | (e2)  (e8) |     \   / nel | (e2)
-    !      |*               |            |* iel \X/  +1 *| 
+    !      |*               |            |* iel \X/  +1 *|
     !      +----------------+            +-------+-------+
     !     i1 (e1)      (e5) i2          i1 (e1)  i5 (e5) i2
     ! </verb>
@@ -5992,7 +5992,7 @@ contains
     call add_element2D(rhadapt, i2, i3, i5,&
                        e2, nel0+2, e5, e6, nel0+2, e5)
     call add_element2D(rhadapt, i5, i3, i4,&
-                       nel0+1, e3, iel, nel0+1, e7, iel)    
+                       nel0+1, e3, iel, nel0+1, e7, iel)
     
 
     ! Update list of neighboring elements
@@ -6007,7 +6007,7 @@ contains
       call output_line('Unable to delete element from vertex list!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       call sys_halt()
-    end if   
+    end if
     if (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,&
                                    i3, iel) .eq. ARRAYLIST_NOT_FOUND) then
       call output_line('Unable to delete element from vertex list!',&
@@ -6047,13 +6047,13 @@ contains
 
 !<description>
     ! This subroutine subdivides one quadrilateral element into four triangular
-    ! elements. The local numbers of the edges that are subdivided can be 
+    ! elements. The local numbers of the edges that are subdivided can be
     ! uniquely determined from the element marker.
     !
-    ! In the illustration, i1-i6 denote the vertices whereby i5 and i6 are the 
+    ! In the illustration, i1-i6 denote the vertices whereby i5 and i6 are the
     ! new vertices. Moreover, (e1)-(e8) stand for the element numbers which are
     ! adjecent and mid-adjacent to the current element.
-    ! The new elements are assigned the total number of elements currently 
+    ! The new elements are assigned the total number of elements currently
     ! present in the triangulation increased by one, two an three, respectively.
     !
     ! <verb>
@@ -6063,7 +6063,7 @@ contains
     !      +----------------+            +---------------+
     !      |                |            |\\\\          *|
     ! (e4) |                | (e6)  (e4) | \*  \\\ nel+2 | (e6)
-    !      |                |            |  \      \\\   | 
+    !      |                |            |  \      \\\   |
     !      |      iel       |     ->     |   \         \\+i6
     !      |                |            |    \ nel+3  / |
     ! (e8) |                | (e2)  (e8) | iel \     /nel| (e2)
@@ -6214,11 +6214,11 @@ contains
                               rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine subdivides one quadrilateral element four similar 
+    ! This subroutine subdivides one quadrilateral element four similar
     ! quadrilateral elements.
     !
-    ! In the illustration, i1-i9 denote the vertices whereby i5-i9 are the new 
-    ! vertices. Moreover, (e1)-(e8) stand for the element numbers which are 
+    ! In the illustration, i1-i9 denote the vertices whereby i5-i9 are the new
+    ! vertices. Moreover, (e1)-(e8) stand for the element numbers which are
     ! adjacent and mid-adjacent to the current element.
     ! The new elements are assigned the total number of elements currently present
     ! in the triangulation increased by one, two and three, respectively.
@@ -6370,7 +6370,7 @@ contains
                                rcollection, fcb_hadaptCallback)
 
 !<description>
-    ! This subroutine combines two neighboring triangles into one triangle 
+    ! This subroutine combines two neighboring triangles into one triangle
     ! and performs regular refinement into four similar triangles afterwards.
     ! The local orientation of both elements can be uniquely determined
     ! from the elemental states so that the first node of each triangle
@@ -6527,7 +6527,7 @@ contains
     !      +-------+-------+            +-------+-------+
     !     i1(e1,e5)i5(f3,f7)i2         i1(e1,e5)i5(f3,f7)i2
     ! </verb>
-    ! 
+    !
 !</description>
 
 !<input>
@@ -6567,7 +6567,7 @@ contains
     e1 = rhadapt%p_IneighboursAtElement(1, iel)
     e3 = rhadapt%p_IneighboursAtElement(3, iel)
     e4 = rhadapt%p_IneighboursAtElement(4, iel)
-    f1 = rhadapt%p_IneighboursAtElement(1, jel)   
+    f1 = rhadapt%p_IneighboursAtElement(1, jel)
     f3 = rhadapt%p_IneighboursAtElement(3, jel)
     f4 = rhadapt%p_IneighboursAtElement(4, jel)
     
@@ -6671,7 +6671,7 @@ contains
     ! from a Quad4Tria refinement into one quadrilateral and performs
     ! regular refinement into four quadrilaterals afterwards.
     ! This subroutine is based on the convention that IEL1 denotes the
-    ! left element, IEL2 denots the right element and IEL3 stands for 
+    ! left element, IEL2 denots the right element and IEL3 stands for
     ! the triangle which connects IEL1 and IEL2.
     !
     ! <verb>
@@ -6744,7 +6744,7 @@ contains
     nel0 = rhadapt%NEL
 
     
-    ! Add four new vertices I6,I7,I8 and I9 at the midpoint of edges 
+    ! Add four new vertices I6,I7,I8 and I9 at the midpoint of edges
     ! (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
     call add_vertex2D(rhadapt, i2, i3, e2, i6,&
                       rcollection, fcb_hadaptCallback)
@@ -6805,7 +6805,7 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, iel3,   ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i7, nel0+1, ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, nel0+1, ipos)
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel1,   ipos)    
+    call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i8, iel1,   ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel1,   ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel2,   ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i9, iel3,   ipos)
@@ -6848,7 +6848,7 @@ contains
     !      +---------------+             +-------+-------+
     !      |\\\\    iel3  *| (e12)       |*      |      *| (e12)
     ! (e4) | \*  \\\       | (e6)   (e4) | iel4  | iel3  | (e6)
-    !      |  \      \\\   |             |       |       | 
+    !      |  \      \\\   |             |       |       |
     !      |   \  iel4   \\+i6    ->   i8+-------+-------+i6
     !      |    \        / |             |       |i9     |
     ! (e8) | iel1\     /   | (e11)  (e8) | iel1  | iel2  | (e11)
@@ -6998,7 +6998,7 @@ contains
 
 !<description>
     ! This subroutine combines two triangles resulting from a 1-tria : 2-tria
-    ! green refinement into the original macro triangle. Note that element IEL 
+    ! green refinement into the original macro triangle. Note that element IEL
     ! must(!) be the left triangle which is combined with its right neighbour.
     ! This is not checked in the routine since this check is already performed
     ! in the marking routine.
@@ -7046,7 +7046,7 @@ contains
     integer, dimension(:), intent(inout) :: Imarker
 
     ! OPTIONAL: Collection
-    type(t_collection), intent(inout), optional :: rcollection    
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -7279,9 +7279,9 @@ contains
 
     
     ! The resulting triangle will posses one of the states STATE_TRIA_REDINNER or
-    ! STATE_TRIA_OUTERINNERx, whereby x can be blank, 1 or 2. Due to our refinement 
+    ! STATE_TRIA_OUTERINNERx, whereby x can be blank, 1 or 2. Due to our refinement
     ! convention, the two states x=1 and x=2 should not appear, that is, local
-    ! numbering of the resulting triangle starts at the vertex which is opposite 
+    ! numbering of the resulting triangle starts at the vertex which is opposite
     ! to the inner red triangle. To this end, we check the state of the provisional
     ! triangle (I1,I2,I3) and transform the orientation accordingly.
     ImacroVertices = (/i1,i2,i3/)
@@ -7313,7 +7313,7 @@ contains
     end select
 
 
-    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
     ! element corresponds to element with minimum number JEL
     call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
     if (ielReplace .ne. 0) then
@@ -7389,16 +7389,16 @@ contains
 !<description>
     ! This subroutine combines four triangles resulting from a
     ! 1-tria : 4-tria refinement into two green triangle.
-    ! The local position (node 1,2,3 of the interior element) of the midpoint 
-    ! vertex that should be kept is identified by the marker. 
+    ! The local position (node 1,2,3 of the interior element) of the midpoint
+    ! vertex that should be kept is identified by the marker.
     ! By definition, iel is the number of the inner red triangle.
     ! Be warned, this numbering convention is not checked since the
     ! routine is only called internally and cannot be used from outside.
     !
     ! Due to the numbering convention used in the refinement procedure
     ! the "third" element neighbor of the inner triangle has the number
-    ! of the original macro element which will be used for the first resulting 
-    ! triangle. The number of the second triangle will be the number of the 
+    ! of the original macro element which will be used for the first resulting
+    ! triangle. The number of the second triangle will be the number of the
     ! "first" element neighbor of the inner triangle.
     !
     ! <verb>
@@ -7478,7 +7478,7 @@ contains
 
     ! Which midpoint vertex should be kept?
     select case(Imarker(iel))
-    case(MARK_CRS_4TRIA2TRIA_1)     
+    case(MARK_CRS_4TRIA2TRIA_1)
       ! Update list of neighboring elements
       call update_ElementNeighbors2D(rhadapt, e1, e4, iel2, iel1, jel2, jel1)
       call update_ElementNeighbors2D(rhadapt, e2, e5, iel3, iel2, jel2, jel2)
@@ -7492,9 +7492,9 @@ contains
                              e2, jel1, e4, e5, jel1, e4)
       
 
-      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
       ! elements correspond to the two elements with smallest numbers
-      call remove_element2D(rhadapt, IsortedElements(4), ielReplace)      
+      call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
       if (ielReplace .ne. 0) then
         call update_AllElementNeighbors2D(rhadapt, ielReplace, IsortedElements(4))
         if (ielReplace .lt. iel) then
@@ -7585,7 +7585,7 @@ contains
                              e3, jel1, e5, e6, jel1, e5)
 
 
-      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
       if (ielReplace .ne. 0) then
@@ -7676,7 +7676,7 @@ contains
                              e1, jel1, e6, e4, jel1, e6)
 
 
-      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt, IsortedElements(4), ielReplace)
       if (ielReplace .ne. 0) then
@@ -7843,7 +7843,7 @@ contains
 
     ! Store values of the elements adjacent to the resulting macro element
     e1 = rhadapt%p_IneighboursAtElement(1, iel)
-    e8 = rhadapt%p_IneighboursAtElement(4, iel)   
+    e8 = rhadapt%p_IneighboursAtElement(4, iel)
     e2 = rhadapt%p_IneighboursAtElement(1, iel1)
     e5 = rhadapt%p_IneighboursAtElement(4, iel1)
     e3 = rhadapt%p_IneighboursAtElement(1, iel2)
@@ -7869,7 +7869,7 @@ contains
     ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
     ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
     ! should not appear, that is, local numbering of the resulting quadrilateral
-    ! starts at the oldest vertex. to this end, we check the state of the 
+    ! starts at the oldest vertex. to this end, we check the state of the
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices = (/i1,i2,i3,i4/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
@@ -7904,7 +7904,7 @@ contains
     end select
 
 
-    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
     ! element corresponds to element with minimum number JEL
     call remove_element2D(rhadapt,IsortedElements(4), ielReplace)
     if (ielReplace .ne. 0) then
@@ -7988,7 +7988,7 @@ contains
     ! 1-quad : 4-quad refinement into two green quadrilaterals.
     ! The remaining elements JEL1 and JEL2 are labeled by the  two smallest
     ! element numbers of the four neighboring elements. Due to the numbering
-    ! convention all elements can be determined by visiting neighbors along 
+    ! convention all elements can be determined by visiting neighbors along
     ! the second edge starting at the given element IEL. The resulting elements
     ! JEL1 and JEL2 are oriented such that local numbering starts at the vertices
     ! of the macro element, that is, such that the first vertex is the oldest one.
@@ -8032,7 +8032,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(4) :: IsortedElements    
+    integer, dimension(4) :: IsortedElements
     integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel1,jel2,ielReplace
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -8055,7 +8055,7 @@ contains
 
     ! Store values of the elements adjacent to the resulting macro element
     e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e8 = rhadapt%p_IneighboursAtElement(4,iel)   
+    e8 = rhadapt%p_IneighboursAtElement(4,iel)
     e2 = rhadapt%p_IneighboursAtElement(1,iel1)
     e5 = rhadapt%p_IneighboursAtElement(4,iel1)
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
@@ -8084,7 +8084,7 @@ contains
     call replace_element2D(rhadapt,jel2,i3,i7,i5,i2,e3,jel1,e5,e2,e3,jel1,e5,e6)
 
     
-    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
     ! elements corresponds to elements with minimum numbers JEL1 and JEL2
     call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
     if (ielReplace.ne.0) then
@@ -8255,7 +8255,7 @@ contains
 
     ! Store values of the elements adjacent to the resulting macro element
     e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e8 = rhadapt%p_IneighboursAtElement(4,iel)   
+    e8 = rhadapt%p_IneighboursAtElement(4,iel)
     e2 = rhadapt%p_IneighboursAtElement(1,iel1)
     e5 = rhadapt%p_IneighboursAtElement(4,iel1)
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
@@ -8441,7 +8441,7 @@ contains
 
     ! Store values of the elements adjacent to the resulting macro element
     e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e8 = rhadapt%p_IneighboursAtElement(4,iel)   
+    e8 = rhadapt%p_IneighboursAtElement(4,iel)
     e2 = rhadapt%p_IneighboursAtElement(1,iel1)
     e5 = rhadapt%p_IneighboursAtElement(4,iel1)
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
@@ -8557,7 +8557,7 @@ contains
     ! Store values of the elements adjacent to the resulting macro element
     e1 = rhadapt%p_IneighboursAtElement(1,iel)
     e7 = rhadapt%p_IneighboursAtElement(3,iel)
-    e4 = rhadapt%p_IneighboursAtElement(4,iel)    
+    e4 = rhadapt%p_IneighboursAtElement(4,iel)
     e3 = rhadapt%p_IneighboursAtElement(1,iel1)
     e5 = rhadapt%p_IneighboursAtElement(3,iel1)
     e2 = rhadapt%p_IneighboursAtElement(4,iel1)
@@ -8578,7 +8578,7 @@ contains
       ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
       ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
       ! should not appear, that is, local numbering of the resulting quadrilateral
-      ! starts at the oldest vertex. to this end, we check the state of the 
+      ! starts at the oldest vertex. to this end, we check the state of the
       ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
       ImacroVertices = (/i1,i2,i3,i4/)
       IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
@@ -8646,7 +8646,7 @@ contains
       ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
       ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
       ! should not appear, that is, local numbering of the resulting quadrilateral
-      ! starts at the oldest vertex. to this end, we check the state of the 
+      ! starts at the oldest vertex. to this end, we check the state of the
       ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
       ImacroVertices = (/i1,i2,i3,i4/)
       IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
@@ -8905,7 +8905,7 @@ contains
     e2 = rhadapt%p_IneighboursAtElement(1,iel2)
     e5 = rhadapt%p_IneighboursAtElement(3,iel2)
 
-    e7 = rhadapt%p_ImidneighboursAtElement(2,iel)    
+    e7 = rhadapt%p_ImidneighboursAtElement(2,iel)
     e8 = rhadapt%p_ImidneighboursAtElement(3,iel1)
     e6 = rhadapt%p_ImidneighboursAtElement(1,iel2)
 
@@ -8925,7 +8925,7 @@ contains
     ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
     ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
     ! should not appear, that is, local numbering of the resulting quadrilateral
-    ! starts at the oldest vertex. to this end, we check the state of the 
+    ! starts at the oldest vertex. to this end, we check the state of the
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices = (/i1,i2,i3,i4/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
@@ -9015,7 +9015,7 @@ contains
       call sys_halt()
     end if
     
-    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel,ipos)      
+    call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,jel,ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel,ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel,ipos)
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel,ipos)
@@ -9105,7 +9105,7 @@ contains
     i4 = rhadapt%p_IverticesAtElement(1,iel3)
 
     ! Store values of the elements adjacent to the resulting macro element
-    e2 = rhadapt%p_IneighboursAtElement(1,iel1)  
+    e2 = rhadapt%p_IneighboursAtElement(1,iel1)
     e1 = rhadapt%p_IneighboursAtElement(3,iel1)
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
     e6 = rhadapt%p_IneighboursAtElement(3,iel2)
@@ -9133,7 +9133,7 @@ contains
     ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
     ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
     ! should not appear, that is, local numbering of the resulting quadrilateral
-    ! starts at the oldest vertex. to this end, we check the state of the 
+    ! starts at the oldest vertex. to this end, we check the state of the
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices = (/i1,i2,i3,i4/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
@@ -9163,7 +9163,7 @@ contains
     end select
 
     
-    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+    ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
     ! element corresponds to element with minimum number JEL
     call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
     if (ielReplace.ne.0) then
@@ -9261,9 +9261,9 @@ contains
 
 !<description>
     ! This subroutine combines four triangles resulting from a
-    ! 1-quad : 4-tria refinement into three green triangles. The remaining 
+    ! 1-quad : 4-tria refinement into three green triangles. The remaining
     ! elements JEL1, JEL2 and JEL3 are the ones with the smallest element number.
-    ! The numbering convention follows the strategy used for refinement. 
+    ! The numbering convention follows the strategy used for refinement.
     ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
@@ -9323,7 +9323,7 @@ contains
     i4 = rhadapt%p_IverticesAtElement(1,iel3)
 
     ! Store values of the elements adjacent to the resulting macro element
-    e2 = rhadapt%p_IneighboursAtElement(1,iel1)  
+    e2 = rhadapt%p_IneighboursAtElement(1,iel1)
     e1 = rhadapt%p_IneighboursAtElement(3,iel1)
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
     e6 = rhadapt%p_IneighboursAtElement(3,iel2)
@@ -9358,7 +9358,7 @@ contains
       call replace_element2D(rhadapt,jel3,i6,i4,i1,jel2,e4,jel1,jel2,e8,jel1)
 
       
-      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
       if (ielReplace.ne.0) then
@@ -9461,7 +9461,7 @@ contains
       call replace_element2D(rhadapt,jel3,i7,i1,i2,jel2,e1,jel1,jel2,e5,jel1)
 
       
-      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which 
+      ! Delete elements IEL, IEL1, IEL2 and IEL3 depending on which
       ! elements correspond to the two elements with smallest numbers
       call remove_element2D(rhadapt,IsortedElements(4),ielReplace)
       if (ielReplace.ne.0) then
@@ -9565,7 +9565,7 @@ contains
 
 !<description>
     ! This function encodes the state of an element iel in 2D.
-    ! Note: The state of an element is solely determined from the 
+    ! Note: The state of an element is solely determined from the
     ! age information of its surrounding vertices.
 !</description>
 
@@ -9597,15 +9597,15 @@ contains
       
       ! There are quadrilaterals and possible also triangles in
       ! the current triangulation. If the last entry of the vertices
-      ! at element list is nonzero then the current element is a 
+      ! at element list is nonzero then the current element is a
       ! quadrilateral. Otherwise, we are dealing with  a triangle
       if (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D,iel) .eq. 0) then
         IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
-            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)) 
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel))
         istate = redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
       else
         IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
-            rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel)) 
+            rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel))
         istate = redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
       end if
       

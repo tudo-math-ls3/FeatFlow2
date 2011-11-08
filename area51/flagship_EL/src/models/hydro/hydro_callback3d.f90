@@ -156,7 +156,7 @@
 !#
 !# 38.) hydro_trafoDiffDenPreVel3d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 39.) hydro_calcBoundaryvalues3d
@@ -1548,7 +1548,7 @@ contains
                               DmatrixCoeffsAtEdge(2,1,idx))**2+&
                              (DmatrixCoeffsAtEdge(3,2,idx)-&
                               DmatrixCoeffsAtEdge(3,1,idx))**2)*ci )
-#else      
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
                       DmatrixCoeffsAtEdge(2,1,idx)*vj+&
@@ -1905,7 +1905,7 @@ contains
       wi = Z_VELOCITY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
       Ei = SPECIFIC_TOTAL_ENERGY_1T_FROM_CONSVAR(DdataAtNode,NVAR3D,inode)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       MATRIX_HYDRO_2T_3D(DcoefficientsAtNode,1,inode,\
       dscale,DmatrixCoeffsAtNode(1,inode),DmatrixCoeffsAtNode(2,inode),\
@@ -1980,7 +1980,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_3D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),\
@@ -2155,7 +2155,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_3D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),\
@@ -2429,7 +2429,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_3D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),\
@@ -3140,7 +3140,7 @@ contains
       ! Nullify dissipation tensor
       DcoefficientsAtEdge(:,1,idx) = 0.0
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ij = diag(A_j)*C_{ji}$
       MATRIXDIAG_HYDRO_2T_3D(DcoefficientsAtEdge,2,idx,\
         dscale,DmatrixCoeffsAtEdge(1,2,idx),DmatrixCoeffsAtEdge(2,2,idx),\

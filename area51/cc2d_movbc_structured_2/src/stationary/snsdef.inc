@@ -16,7 +16,7 @@
 *
 * The structures themselves are realized as integer/double precision
 * arrays:
-*   IPARAM = array [1..SZNSDI] of integer 
+*   IPARAM = array [1..SZNSDI] of integer
 *          = TNSDefIParams
 *   DPARAM = array [1..SZNSDD] of double
 *          = TNSDefDParams
@@ -32,7 +32,7 @@
 * Attached to that there is a couple of solver specific variables
 * for NSDEF as well as a definition block for the enclosed
 * multigrid solver for the linear sub-problems. Therefore, the
-* include files SLINSOL.INC, SLINSOL2DNS.INC and STRIA.INC have to be 
+* include files SLINSOL.INC, SLINSOL2DNS.INC and STRIA.INC have to be
 * included prior to this file.
 * The structure contains timing information, therefore the include
 * file STIMING.INC has to be included before.
@@ -43,7 +43,7 @@
 * The whole structure can be initializes with the INISTS subroutine
 * in NSDEF.F.
 *
-* TNSDIParams = record 
+* TNSDIParams = record
 *   // The first part of TNSDIParams is the whole TSolverIParams-
 *   // structure, i.e. TNSDIParams is a direct extension of
 *   // TSolverIParams:
@@ -89,7 +89,7 @@
 *   // Nonlinear solver, Input:
 *
 *   MSGLIN : Message level for solver of linear equations (multigrid)
-*   
+*
 *   IAUSAV : Whether or not to save the intermediate solution of the
 *            nonlinear iteration to disc.
 *            = 0: Don't save the solution.
@@ -103,7 +103,7 @@
 *
 * end
 *
-* TNSDDParams = record 
+* TNSDDParams = record
 *   // The first part of TNSDDParams is the whole TSolverDParams-
 *   // structure, i.e. TNSDDParams is a direct extension of
 *   // TSolverDParams:
@@ -158,7 +158,7 @@
 *   OMGMIN : minimum OMEGA parameter for optimal defect correction
 *   OMGMAX : maximum OMEGA parameter for optimal defect correction
 *
-*   // The next block of parameters defines a couple of "specialized" 
+*   // The next block of parameters defines a couple of "specialized"
 *   // stopping criteria for the nonlinear iteration. They replace the
 *   // standard stopping criteria above!
 *
@@ -167,7 +167,7 @@
 *   EPSUR  : limit for relative U-changes
 *   EPSPR  : limit for relative P-changes
 *   DMPD   : limit for defect improvement
-* 
+*
 *   // Nonlinear solver, Status:
 *
 * end
@@ -191,7 +191,7 @@
       INTEGER OTNLTIM
       INTEGER OOMGINI,OOMGMIN,OOMGMAX
       
-      INTEGER OEPSD  ,OEPSDIV,OEPSUR ,OEPSPR ,ODMPD 
+      INTEGER OEPSD  ,OEPSDIV,OEPSUR ,OEPSPR ,ODMPD
       
       PARAMETER (OTNLTIM = SZSLVD +  1)
       PARAMETER (OOMGINI = SZSLVD + SZTIMG +  1)

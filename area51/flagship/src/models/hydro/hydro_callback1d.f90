@@ -169,7 +169,7 @@
 !#
 !# 42.) hydro_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 43.) hydro_trafoNodalDenPreVel1d_sim
@@ -363,7 +363,7 @@ contains
 #else
       ! Compute flux difference for x-direction
       F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
-                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
                 INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
@@ -708,7 +708,7 @@ contains
 #else
       ! Compute flux difference for x-direction
       F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
-                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
                 INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
@@ -751,7 +751,7 @@ contains
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -821,7 +821,7 @@ contains
             (IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)*Fj-&
              IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*Fi + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -IDX3(DfluxesAtEdge,:,1,idx,0,0,0)
-#else        
+#else
         IDX3(DfluxesAtEdge,:,1,idx,0,0,0) = dscale *&
             (IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*F_ij + Diff)
         IDX3(DfluxesAtEdge,:,2,idx,0,0,0) = -dscale *&
@@ -933,7 +933,7 @@ contains
 #else
       ! Compute flux difference for x-direction
       F_ij(1) = INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
-                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)                
+                INVISCIDFLUX1_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(2) = INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
                 INVISCIDFLUX2_XDIR3(DdataAtEdge,IDX3,2,idx,0,0,0,uj,pj)
       F_ij(3) = INVISCIDFLUX3_XDIR3(DdataAtEdge,IDX3,1,idx,0,0,0,ui,pi)-&
@@ -965,7 +965,7 @@ contains
                                    IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
                  RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))**2)*ci )
-#else   
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
@@ -1047,7 +1047,7 @@ contains
       ! Compute velocity
       ui = XVELOCITY2(DdataAtNode,IDX2,inode,0,0)
       
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = diag(A_i)*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,_)
@@ -1121,7 +1121,7 @@ contains
       ui = XVELOCITY2(DdataAtNode,IDX2,inode,0,0)
       Ei = SPECIFICTOTALENERGY2(DdataAtNode,IDX2,inode,0,0)
 
-#ifdef HYDRO_USE_IBP      
+#ifdef HYDRO_USE_IBP
       ! Compute Galerkin coefficient $K_ii = A_i*C_{ii}$
       IDX3(DmatrixAtNode,1,1,inode,0,0,0) =&
           FLUXJACOBIMATRIX11(dscale,IDX2(DcoeffsAtNode,1,inode,0,0),ui,Ei)
@@ -1797,7 +1797,7 @@ contains
     integer :: idx
 #if defined(HYDRO_USE_ENTROPYFIX) && (HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX)
     real(DP) :: dtol,ci,cj
-#endif 
+#endif
 
     do idx = 1, nedges
 
@@ -1882,11 +1882,11 @@ contains
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
 
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
-        ! Entropy-fix by Harten and Hyman  
+        ! Entropy-fix by Harten and Hyman
         ci = SOUNDSPEED3_1D(DdataAtEdge,IDX3,1,idx,0,0,0)
         cj = SOUNDSPEED3_1D(DdataAtEdge,IDX3,2,idx,0,0,0)
 
@@ -2162,7 +2162,7 @@ contains
         l2 = abs(u_ij)
         l3 = abs(u_ij+c_ij)
         
-#if defined(HYDRO_USE_ENTROPYFIX) 
+#if defined(HYDRO_USE_ENTROPYFIX)
 
 #if HYDRO_USE_ENTROPYFIX == HARTEN_HYMAN_ENTROPYFIX
 
@@ -3111,7 +3111,7 @@ contains
                                    IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*ui)+&
                  RCONST(0.5)*sqrt((IDX3(DcoeffsAtEdge,1,2,idx,0,0,0)-&
                                    IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))**2)*ci )
-#else  
+#else
       ! Compute scalar dissipation
       d_ij = max( abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0)*uj)+&
                   abs(IDX3(DcoeffsAtEdge,1,1,idx,0,0,0))*cj,&
@@ -4974,7 +4974,7 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic fields based on 
+        ! the Riemman invariant for each characteristic fields based on
         ! the sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
@@ -5336,7 +5336,7 @@ contains
         !
         ! Compute the Riemann invariants based on the computed (internal)
         ! state vector and the given freestream state vector and select
-        ! the Riemman invariant for each characteristic fields based on 
+        ! the Riemman invariant for each characteristic fields based on
         ! the sign of the corresponding eigenvalue.
         
         ! Initialize values for function parser
@@ -5753,7 +5753,7 @@ contains
                                           b2*Diff(3) )
             
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-      Diff(1) = w1 + w2 + w3 
+      Diff(1) = w1 + w2 + w3
       Diff(2) = (u_IM-c_IM*dnx)*w1 + u_IM*w2 +&
                 (u_IM+c_IM*dnx)*w3
       Diff(3) = (H_IM-c_IM*dveln)*w1 + q_IM*w2 +&

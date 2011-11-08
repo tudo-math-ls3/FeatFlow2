@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module realises a fully coupled time dependent solver for the 
+!# This module realises a fully coupled time dependent solver for the
 !# coupled Navier-Stokes optimal control problem.
 !#
 !# The following routines can be found here:
@@ -93,7 +93,7 @@ contains
   
 !</subroutine>
 
-    ! Fetch the parameters. Initialise with standard settings if they don't 
+    ! Fetch the parameters. Initialise with standard settings if they don't
     ! exist.
     call parlst_getvalue_int (rparams,ssection,'itimedependence',  &
         rproblem%itimedependence, 0)
@@ -108,7 +108,7 @@ contains
     call parlst_getvalue_double (rparams,ssection,'dtimeStepTheta',    &
         rproblem%rtimedependence%dtimeStepTheta, 1.0_DP)
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -151,7 +151,7 @@ contains
 
     call output_lbrk()
 
-    ! Get the minimum and maximum time level from the parameter list    
+    ! Get the minimum and maximum time level from the parameter list
     call parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMIN',TIMENLMIN,1)
     call parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
@@ -205,7 +205,7 @@ contains
     call cc_initConstraints (rproblem,rproblem%roptcontrol)
 
     ! Figure out which type of solver we should use to solve
-    ! the problem. 
+    ! the problem.
     call parlst_getvalue_int (rproblem%rparamList,'TIME-SOLVER',&
                               'cspaceTimeSolverType',cspaceTimeSolverType,0)
                               
@@ -224,9 +224,9 @@ contains
 
     case (1)
       ! 1-level (in time) defect correction solver with a preconditioner
-      ! in space. 
+      ! in space.
       !
-      ! Call the defect correction solver      
+      ! Call the defect correction solver
       call output_line ('Invoking defect correction solver...')
       call cc_solveSupersystemDefCorr (rproblem, &
           RspaceTimeDiscr(TIMENLMAX), rx, rb, rd, ctypePreconditioner)
@@ -261,7 +261,7 @@ contains
               rproblem%NLMAX,RspaceTimeDiscr(i))
         end do
         
-      case (1) 
+      case (1)
         ! Space level NLMAX-i = Time level TIMENLMAX-i.
         !
         ! But this is modified by nmaxSimulRefLevel and dspacetimeRefFactor!
@@ -435,7 +435,7 @@ contains
       !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
       call tmevl_evaluate(rvector,dtime,rvectorTmp)
     
-      call cc_postprocessingNonstat (rproblem,i,dtime,rvectorTmp)  
+      call cc_postprocessingNonstat (rproblem,i,dtime,rvectorTmp)
       
     end do
     

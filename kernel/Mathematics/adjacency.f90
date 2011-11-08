@@ -29,7 +29,7 @@
 !#        This is an interface for two versions, one for undirected and one
 !#        for directed graphs. The 'directed' version allows the two adjacency
 !#        arrays to be permuted differently, while the 'undirected' version
-!#        applies the same permutation on both adjacency arrays. 
+!#        applies the same permutation on both adjacency arrays.
 !#
 !# 2.) adj_sortAdjacencies
 !#     -> Sorts the the indices of the adjacent nodes for each node to be
@@ -41,7 +41,7 @@
 !#
 !# 4.) adj_calcCuthillMcKee
 !#     -> Calculates a (reverse) Cuthill-McKee ordering for the nodes of
-!#        the adjacency graph. 
+!#        the adjacency graph.
 !# </purpose>
 !##############################################################################
 

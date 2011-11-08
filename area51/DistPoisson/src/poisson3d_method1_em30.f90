@@ -101,10 +101,10 @@ contains
     type(t_matrixBlock) :: rmatrixBlock
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -135,12 +135,12 @@ contains
     type(t_blockDiscretisation) :: rprjDiscretisation
     type(t_discreteBC), target :: rdiscreteBC_Q1
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 4
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -188,9 +188,9 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
-    rform%Dcoefficients(3)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
+    rform%Dcoefficients(3)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -291,7 +291,7 @@ contains
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -321,7 +321,7 @@ contains
     ! -------------------------------------------------------------------------
 
     ! Now, Our vector block is off the way GMV`s style. We need to convert the vector
-    ! to Q1 as that is the format, GMV`s understands. So the task is to 
+    ! to Q1 as that is the format, GMV`s understands. So the task is to
     ! create a Q1 solution from rvectorBlock.
     !
     ! Step 1: Create a discretisation structure for Q1, based on our
@@ -354,7 +354,7 @@ contains
     rprjVector%p_rdiscreteBC => rdiscreteBC_Q1
 
     ! Step 5: Set up a boundary condition filter for Dirichtley boundary conditions
-    ! and pass the vetor through it. This finally implement the Dirichtley 
+    ! and pass the vetor through it. This finally implement the Dirichtley
     ! boundary conditions into the output vector
     RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
     call filter_applyFilterChainVec (rprjVector, RfilterChain)
@@ -362,8 +362,8 @@ contains
     ! Now we have a Q1 solution in rprjVector.
     !
     ! Step 6: Write the GMV file.
-    ! That is it, rvectorBlock now contains our solution in GMV`s style. 
-    ! We can now start the postprocessing. 
+    ! That is it, rvectorBlock now contains our solution in GMV`s style.
+    ! We can now start the postprocessing.
       
     ! Call the GMV library to write out a GMV file for our solution.
     !
@@ -434,7 +434,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
   end subroutine

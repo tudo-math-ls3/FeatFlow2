@@ -7,7 +7,7 @@
 !# This module is a demonstration program how to solve a simple Poisson
 !# problem with constant coefficients on a simple domain.
 !#
-!# The routine splits up the tasks of reading the domain, creating 
+!# The routine splits up the tasks of reading the domain, creating
 !# triangulations, discretisation, solving, postprocessing and creanup into
 !# different subroutines. The communication between these subroutines
 !# is done using a collection structure that saves problem-dependent data.
@@ -62,7 +62,7 @@ contains
   ! If the number is too large, ilv is reduced to the maximum allowed value.
   integer, intent(inout) :: ilv
 
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -80,7 +80,7 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -122,7 +122,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -180,7 +180,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -211,7 +211,7 @@ contains
     
     ! Initialise the block matrix with default values based on
     ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+    call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)
     
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -235,8 +235,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -252,7 +252,7 @@ contains
     ! to create it by using our matrix as template:
     call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
     
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is done but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -260,14 +260,14 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     call linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
               p_rrhs%RvectorBlock(1),coeff_RHS_2D)
     
     ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution. 
+    ! need additionally is a block vector for the solution.
     ! Create them using the RHS as template.
     ! Fill the solution vector with 0:
     call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
@@ -291,7 +291,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -300,7 +300,7 @@ contains
 
   ! local variables
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -344,7 +344,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -353,7 +353,7 @@ contains
         rboundaryRegion,p_rdiscreteBC,&
         getBoundaryValues_2D,rcollection)
                              
-    ! Now to the edge 2 of boundary component 1 the domain. 
+    ! Now to the edge 2 of boundary component 1 the domain.
     call boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,p_rdiscreteBC,&
@@ -395,7 +395,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -404,7 +404,7 @@ contains
 
   ! local variables
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -437,7 +437,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -450,13 +450,13 @@ contains
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -464,7 +464,7 @@ contains
     type(t_matrixBlock), dimension(1) :: Rmatrices
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
 
     ! Get our matrix and right hand side from the collection.
     p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
@@ -476,9 +476,9 @@ contains
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
@@ -495,7 +495,7 @@ contains
 
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -542,7 +542,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -573,7 +573,7 @@ contains
       p_rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -612,7 +612,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -621,7 +621,7 @@ contains
 
     ! local variables
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -657,7 +657,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -695,7 +695,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -730,7 +730,7 @@ contains
 !</description>
 
 !<inputoutput>
-  ! A collection object for saving structural data and some problem-dependent 
+  ! A collection object for saving structural data and some problem-dependent
   ! information.
   type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -773,7 +773,7 @@ contains
   ! problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a collection structure for the communication:
   ! All subroutines add their generated information to the collection, so that
-  ! the other subroutines can work with them. 
+  ! the other subroutines can work with them.
   !
   ! The following tasks are performed by the subroutines:
   !
@@ -795,7 +795,7 @@ contains
     ! A collection structure for our problem
     type(t_collection) :: rcollection
     
-    ! Ok, let us start. 
+    ! Ok, let us start.
     ! We want to solve our Poisson problem on level...
 
     NLMAX = 7
@@ -807,8 +807,8 @@ contains
     !
     ! Initialisation
     call pm2_initParamTriang (NLMAX,rcollection)
-    call pm2_initDiscretisation (rcollection)    
-    call pm2_initMatVec (rcollection)    
+    call pm2_initDiscretisation (rcollection)
+    call pm2_initMatVec (rcollection)
     call pm2_initDiscreteBC (rcollection)
     
     ! Implementation of boundary conditions

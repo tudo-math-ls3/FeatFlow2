@@ -18,9 +18,9 @@
 !#      for this case CHI should be defined in the underlying callback file chemotaxis_callback.f90
 !#
 !# The equation is discretised in time by an implicit Euler Method, providing the
-!# following discrete equation:									
-!#												
-!#	
+!# following discrete equation:
+!#
+!#
 !#	!!!! imlicit Euler !!!!!
 !#
 !#	1/dt * ( u_{n+1}-u{n} ) = Laplace u_{n+1} - grad (CHI*u_{n+1} * grad c_{n+1})	/ multiplying with test func and dt, take int
@@ -32,7 +32,7 @@
 !#      (c_{n+1},phi) 		=  dt*( Laplace c_{n+1},phi ) - dt*( c_{n+1} +u_{n},phi ) + ( c_{n},phi )
 !#	__________________
 !#
-!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi ) 
+!#	(u_{n+1},phi) 		= - dt*( grad u_{n+1},grad phi ) + dt*( CHI * u_{n+1}* grad_c, grad_phi ) + ( u_{n},phi )
 !#
 !#      (c_{n+1},phi) 		= - dt*( grad c_{n+1},grad phi ) - dt*( u_{n} + c_{n+1},phi ) + ( c_{n},phi )
 !#	__________________
@@ -40,15 +40,15 @@
 !#	[M + dt*L - dt*M_2] u_{n+1} 	= [ M ] u_{n}
 !#
 !#      [M + dt*L + dt*M] c_{n+1} 		= [ M ] c_{n} - dt* M u_n
-!#	
 !#
-!# The whole solution process is divided into serveral subroutines, using 
+!#
+!# The whole solution process is divided into serveral subroutines, using
 !# the BiCG-solver (defect correction ) for the linear (nonlinear) subproblems in every
 !# timestep
 !#
 !# The module bases on the standard heatconduction example and shows which
 !# modifications are necessary to create a chemotaxis solver from a heatconduction
-!# solver. Boundary conditions, matrices and vectors are not all reassembled in 
+!# solver. Boundary conditions, matrices and vectors are not all reassembled in
 !# every timestep, in contrast to the heatcond_method1.f90
 !# </purpose>
 !##############################################################################
@@ -94,16 +94,16 @@ module chemotaxis_blowup
     contains
 
     !##################################################################################
-    !<function>        
+    !<function>
     function Fsol(x,y,a,b) result (f_result1)					!----> fct for the initial condition
 	    implicit none								!	of the solutionvector
 	    real(DP) :: f_result1, x, y, a, b					!	(centered)
 
 	    f_result1 = a*dexp(-b*((x-0.5_DP)*(x-0.5_DP)+(y-0.5_DP)*(y-0.5_DP)))
     end function Fsol
-    !</function>        
+    !</function>
 
-   !<function>        
+   !<function>
     function Fchemo(x,y,a,b) result (f_result2)					!----> fct for the initial condition
 	    implicit none								!	of the chemoattractant
 	    real(DP) :: f_result2, x, y, a, b					!	(centered)
@@ -129,7 +129,7 @@ module chemotaxis_blowup
     ! 4.) Set up matrix
     ! 5.) Create solver structure
     ! 6.) Solve the problem
-    ! 7.) Write solution to GMV file if desired 
+    ! 7.) Write solution to GMV file if desired
     ! 8.) Release all variables, finish
     !</description>
 
@@ -149,7 +149,7 @@ module chemotaxis_blowup
         ! This contains also information about trial/test functions,...
         type(t_blockDiscretisation) :: rdiscretisation
 
-        ! A trilinear , bilinear and linear form describing the analytic problem to solve		
+        ! A trilinear , bilinear and linear form describing the analytic problem to solve
         type(t_trilinearForm) :: rtriform
         type(t_bilinearForm) :: rform
         type(t_linearForm) :: rlinform
@@ -157,7 +157,7 @@ module chemotaxis_blowup
         ! A scalar matrix and vector. The vector accepts the RHS of the problem in scalar form.
         type(t_matrixScalar)  :: rmatrix, rmatrixchemo, rsysmatrix , rlaplace, rtemp, rtempLump
         type(t_matrixScalar)  :: rmassmatrix
-        type(t_matrixScalar)  :: rmatrGradX, rmatrGradY, rmatrGradZ 
+        type(t_matrixScalar)  :: rmatrGradX, rmatrGradY, rmatrGradZ
         type(t_vectorScalar)  :: rrhscell,rcell
         type(t_vectorScalar)  :: rrhschemo,rchemoattract,cbvector_temp, &
                                     rinitcells, rinitchemo, rdef, rfc, rfu
@@ -173,11 +173,11 @@ module chemotaxis_blowup
         type(t_matrixBlock) :: rmatrixBlock, rmatrixBlockchemo
         type(t_vectorBlock) :: rcellBlock,rvectorBlockchemo,rrhsBlock,rrhsBlockchemo,rtempBlock, rdefBlock, rfuBlock
 
-        ! A set of variables describing the analytic and discrete boundary conditions.    
+        ! A set of variables describing the analytic and discrete boundary conditions.
         type(t_boundaryRegion) :: rboundaryRegion
         type(t_discreteBC), target :: rdiscreteBC, rdiscreteBCchemo
 
-        ! A solver node that accepts parameters for the linear solver    
+        ! A solver node that accepts parameters for the linear solver
         type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rsolverNode_cells,p_rpreconditioner_cells
 
         ! An array for the system matrix(matrices) during the initialisation of the linear solver.
@@ -324,7 +324,7 @@ module chemotaxis_blowup
         call parlst_readfromfile(rparams, 'data/chemotaxis.dat')
 
         ! Getting some general params for the pb
-        call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7) 
+        call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
         call parlst_getvalue_int (rparams, 'GENERAL' , 'INFO_LEVEL' , INFO_LEVEL , 1)
         call parlst_getvalue_int (rparams, 'GENERAL' , 'OUTPUT' , OUTPUT , 0)
         call parlst_getvalue_int (rparams, 'GENERAL' , 'ISTEP_GMV' , ISTEP_GMV , 1)
@@ -417,16 +417,16 @@ module chemotaxis_blowup
         call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                         EL_Q1_3D,CUB_G3_3D,rtriangulation)
 
-        ! Now as the discretisation is set up, we can start to generate the structure of the system matrix. 
+        ! Now as the discretisation is set up, we can start to generate the structure of the system matrix.
         ! Get some pointers  for the errorctrl
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
-        call lsyssc_getbase_double(rcold,p_cold) 
+        call lsyssc_getbase_double(rcold,p_cold)
         call lsyssc_getbase_double(ruold,p_uold)
 
         ! allocate and create structure of some important matrices and vectors
         call chemo_creatematvec (rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rmatrGradX, rmatrGradY, rmatrGradZ, &
-                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhscell, & 
+                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhscell, &
                                     rdef, rdiscretisation, rfc, rfu, ranalytChemo, ranalytCell, rtempAnalyt, rvector_momentum, INFO_LEVEL)
 
         ! initialize some matrices to be used later (optimization step)
@@ -439,7 +439,7 @@ module chemotaxis_blowup
         !call lsyssc_copyVector(rchemoattract, ranalytChemo)
         !call lsyssc_copyVector(rcell, ranalytCell)
                 
-        ! Setting the boundary conditions for chemoattractant (filtering technique to be used later)     
+        ! Setting the boundary conditions for chemoattractant (filtering technique to be used later)
          call chemo_initBC ( rdiscreteBCchemo , rboundary, rdiscretisation, rtriangulation, C_0 , U_0 , INITSOL,1, INFO_LEVEL)
 
         ! Setting the Blockvectors
@@ -592,14 +592,14 @@ module chemotaxis_blowup
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        if(steps /= 0) then 
+        if(steps /= 0) then
             ntimesteps = steps
         end if
 
         ! Compute the digits of ntimesteps via the auxiliary variables
 
         auxStepsDigits = 5
-        if(ntimesteps+istartIteration > 99999) then 
+        if(ntimesteps+istartIteration > 99999) then
             auxStepsDigitsReal = Real( ntimesteps+istartIteration )
             auxStepsDigitsReal = log10( auxStepsDigitsReal )
             auxStepsDigits = 1+Int( auxStepsDigitsReal )
@@ -627,7 +627,7 @@ module chemotaxis_blowup
             ! We calculate some iteratives to suit the residual tolerance
             print*,"----------------"
             print*,"computing rel-timestep : ", itimestep
-            if ( iResume ==1 ) then 
+            if ( iResume ==1 ) then
                 print*,"corresponding to abs-timestep : ", itimestep+istartIteration
             end if
             print*,"----------------"
@@ -649,19 +649,19 @@ module chemotaxis_blowup
 
             !********** we calculate the rhs of u^n = M u^n + \Delta t f_u ******!
             ! Now form the actual RHS by matrix vector multiplication: rrhscell = rmatrix_lumped * u_{old}
-            ! The massmatrix has already been built outside the loop 
+            ! The massmatrix has already been built outside the loop
 !             call lsyssc_scalarMatVec(rmassmatrix,rcell,rrhscell,1.0_DP,0.0_DP)
             call lsyssc_scalarMatVec(rtempLump,rcell,rrhscell,1.0_DP,0.0_DP)
             ! Here I embed (analytical) term F_u!
 !             call collct_init (rcollection)
 !             rcollection%DquickAccess(1) = dtstep
 !             rcollection%DquickAccess(2) = ALPHA
-! 
+!
 !             rlinform%itermCount = 1
 !             rlinform%Idescriptors(1) = DER_FUNC3D
 !             call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
 !                                             rlinform, .false., rrhscell, coeff_hillenX_RHS_rfu, rcollection)
-! 
+!
 !             ! Release the collection/tempmatrix structure
 !             call collct_done(rcollection)
 
@@ -694,9 +694,9 @@ module chemotaxis_blowup
                 rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
 !                 rvectorBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
 
-                ! Next step is to implement boundary conditions into the RHS, solution and matrix. 
+                ! Next step is to implement boundary conditions into the RHS, solution and matrix.
                 !This is done using a vector/matrix filter for discrete boundary conditions.
-                ! The discrete boundary conditions are already attached to the vectors/matrix. 
+                ! The discrete boundary conditions are already attached to the vectors/matrix.
                 call matfil_discreteBC (rmatrixBlockchemo)
                 call vecfil_discreteBCrhs (rrhsBlockchemo)
                 call vecfil_discreteBCsol (rvectorBlockchemo)
@@ -707,7 +707,7 @@ module chemotaxis_blowup
                 call lsysbl_blockMatVec( rmatrixBlockchemo, rvectorBlockchemo, rdefBlock, -1.0_DP, 1.0_DP )
                 defect = lsysbl_vectorNorm ( rdefBlock , LINALG_NORML2 )
 
-                !!!!!! seems everything to be ready for solving c !!!!!! 
+                !!!!!! seems everything to be ready for solving c !!!!!!
 
                 ! Setting some resolver issues
                 ! During the linear solver, the boundary conditions are also
@@ -726,7 +726,7 @@ module chemotaxis_blowup
 
                 ! Attach the system matrix to the solver.
                 ! First create an array with the matrix data (on all levels, but we
-                ! only have one level here), then call the initialisation 
+                ! only have one level here), then call the initialisation
                 ! routine to attach all these matrices.
 
                 Rmatrices = (/rmatrixBlockchemo/)
@@ -757,7 +757,7 @@ module chemotaxis_blowup
                 else
                     if(INFO_LEVEL .GT. 1) then
                         p_rsolverNode%ioutputLevel = 1
-                    else 
+                    else
                         p_rsolverNode%ioutputLevel = 0
                     end if
                 end if
@@ -778,7 +778,7 @@ module chemotaxis_blowup
                     iteration_c_average = iteration_c_average + p_rsolverNode%iiterations
                 end if
 
-!                 ! We  compute the norm of the difference between two successive timesteps. 
+!                 ! We  compute the norm of the difference between two successive timesteps.
 !                 ! (a basic error control below...)
 !                 cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)
 
@@ -799,13 +799,13 @@ module chemotaxis_blowup
                                     rrhscell, rdiscretisation, rdiscreteBC, dtstep, D_1, CHI, ALPHA, r, GAMMA, N, maxiterationdef, defectTol ,&
                                     iteration_u_max, iteration_u_min, iteration_u_average, iteration_defcorr_max, &
                                     iteration_defcorr_min, iteration_defcorr_average, rfu, rfuBlock, itimestep, convecRelaxation, INFO_LEVEL)
-        end do coupledloop 
+        end do coupledloop
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!! end of the coupledloop  !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             ! STEP 2.7: Postprocessing
-            ! That's it, rcellBlock now contains our solution. We can now start the postprocessing.     
+            ! That's it, rcellBlock now contains our solution. We can now start the postprocessing.
             if(OUTPUT .eq. 1) then
                 ! Start UCD export to GMV file:
                 select case (gmvfolder)
@@ -822,7 +822,7 @@ module chemotaxis_blowup
                 end  select
                     call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
-                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
+                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
 
                     ! Write the file to disc, that's it.
@@ -849,7 +849,7 @@ module chemotaxis_blowup
                     call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
                     !for test call lsyssc_getbase_double (rfu,p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
-                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)		
+                    call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
                     !for test call lsyssc_getbase_double (rfc,p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
                     !analytical part
@@ -863,17 +863,17 @@ module chemotaxis_blowup
                 end if
             end if
 
-            ! We  compute the norm of the difference between two successive timesteps. 
+            ! We  compute the norm of the difference between two successive timesteps.
             ! (a basic error control below...)
-            cerror = lalg_errorNormDble (p_cold,p_chemodata, LINALG_NORML2 ) 
+            cerror = lalg_errorNormDble (p_cold,p_chemodata, LINALG_NORML2 )
             cerror=cerror/dtstep
-            uerror = lalg_errorNormDble (p_uold,p_vectordata, LINALG_NORML2 ) 
+            uerror = lalg_errorNormDble (p_uold,p_vectordata, LINALG_NORML2 )
             uerror=uerror/dtstep
             steady_state_array(1,itimestep) = uerror
             steady_state_array(2,itimestep) = cerror
             if (INFO_LEVEL .GT. 1) then
-                print *,' ############  Rel_chemo_diff=', cerror 
-                print *,' ############  Rel_cells_diff=', uerror 
+                print *,' ############  Rel_chemo_diff=', cerror
+                print *,' ############  Rel_cells_diff=', uerror
             end if
             !!!!!!! calculate the norm of |analyt - numerical
             ! calculate the difference: (c_analyt - c_numeric)
@@ -881,14 +881,14 @@ module chemotaxis_blowup
             dnorm = lsyssc_vectorNorm (rchemoattract, CTRLNORM)
             if (INFO_LEVEL .GT. 1) then
                 print*,''
-                print *,' >>>>>>>>>>  (CTRL)-Norm_chemo=', dnorm 
+                print *,' >>>>>>>>>>  (CTRL)-Norm_chemo=', dnorm
             end if
             absolute_error(2,itimestep) = dnorm
             ! calculate the difference: (u_analyt - u_numeric)
 !             call lsyssc_vectorLinearComb (ranalytCell,rcell,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)
             dnorm = lsyssc_vectorNorm (rcell, CTRLNORM)
             if (INFO_LEVEL .GT. 1) then
-                print *,' >>>>>>>>>>  (CTRL)-Norm_cells=', dnorm 
+                print *,' >>>>>>>>>>  (CTRL)-Norm_cells=', dnorm
                 print*,''
             end if
             absolute_error(1,itimestep) = dnorm
@@ -950,7 +950,7 @@ module chemotaxis_blowup
                             call ucd_write (rexport)
                             call ucd_release (rexport)
                     quit = .true.
-                    end if 
+                    end if
             end do checkneg_loop
             end if
 
@@ -987,7 +987,7 @@ module chemotaxis_blowup
         end if
  ! write the steady_state_array in a file
     call io_openFileForWriting(stat_output, iunit, SYS_REPLACE)
-        if (iunit .eq. -1) then 
+        if (iunit .eq. -1) then
             call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
         else
             write (iunit, '(A)' ) "steady_state_array"
@@ -1001,7 +1001,7 @@ module chemotaxis_blowup
             do iwrite=1,itimestep
                 write (iunit, '(E20.10)') steady_state_array(1,iwrite )
             end do
-!             if (steps ==0 .AND. quit) then 
+!             if (steps ==0 .AND. quit) then
 ! !                 print *, steady_state_array(1,itimestep )
 !                 write (iunit, '(E20.10)') steady_state_array(1,itimestep )
 !             end if
@@ -1009,14 +1009,14 @@ module chemotaxis_blowup
             do iwrite=1,itimestep
                 write (iunit, '(E20.10)') steady_state_array(2,iwrite )
             end do
-!             if (steps ==0 .AND. quit) then 
+!             if (steps ==0 .AND. quit) then
 !                 write (iunit, '(E20.10)') steady_state_array(2,itimestep )
 !             end if
 
         end if
 
     call io_openFileForWriting(stat_output//"_abs_error", iunit, SYS_REPLACE)
-        if (iunit .eq. -1) then 
+        if (iunit .eq. -1) then
             call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
         else
             write (iunit, '(A)' ) "absolute_error"
@@ -1033,14 +1033,14 @@ module chemotaxis_blowup
             do iwrite=1,itimestep
                 write (iunit, '(E20.10)') absolute_error(1,iwrite )
             end do
-!             if (steps ==0 .AND. quit) then 
+!             if (steps ==0 .AND. quit) then
 !                 write (iunit, '(E20.10)') absolute_error(1,itimestep )
 !             end if
             write (iunit, '(A)') "|| c_n - c^* || : "
             do iwrite=1,itimestep
                 write (iunit, '(E20.10)') absolute_error(2,iwrite )
             end do
-!             if (steps ==0 .AND. quit) then 
+!             if (steps ==0 .AND. quit) then
 !                 write (iunit, '(E20.10)') absolute_error(2,itimestep )
 !             end if
 
@@ -1114,7 +1114,7 @@ module chemotaxis_blowup
 
 !         if ( quit ) then
             print *, "stopped @  rel-timestep = ", itimestep," out of ",ntimesteps
-            if ( iResume == 1 ) then 
+            if ( iResume == 1 ) then
                 print *, "stopped @  abs-timestep = ", itimestep+istartIteration,&
                                                                 " out of ",ntimesteps+istartIteration
             end if
@@ -1150,7 +1150,7 @@ module chemotaxis_blowup
             print *,"min iteration needed :", iteration_defcorr_min
     !         if ( quit ) then
                 print*, "average iterations needed :", iteration_defcorr_average / itimestep
-    !         else 
+    !         else
     !             print*, "average iterations needed :", iteration_defcorr_average / (itimestep-1)
     !         end if
     
@@ -1226,7 +1226,7 @@ module chemotaxis_blowup
         ! Release the discretisation structure and all spatial discretisation structures in it.
         call spdiscr_releaseBlockDiscr(rdiscretisation)
 
-        ! Release the triangulation. 
+        ! Release the triangulation.
         call tria_done (rtriangulation)
 
         ! Finally release the domain, that's it.
@@ -1257,7 +1257,7 @@ module chemotaxis_blowup
         type(t_matrixScalar), intent(INOUT):: rmassmatrix , rlaplace , rsysmatrix
         type(t_matrixScalar) :: rtempmatrix
 
-        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY, rmatrGradZ 
+        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY, rmatrGradZ
         
         real(DP) , intent (INOUT) :: dtstep , D_1 , D_2
         ! local bilinearform to construct the matrices
@@ -1272,7 +1272,7 @@ module chemotaxis_blowup
         rform%Idescriptors(2,1) = DER_FUNC3D
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff = .true.
-        rform%Dcoefficients(1)  = 1.0 
+        rform%Dcoefficients(1)  = 1.0
         call bilf_buildMatrixScalar (rform,.true.,rmassmatrix)
 
         rform%itermCount = 3
@@ -1347,7 +1347,7 @@ module chemotaxis_blowup
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! In thie routine the basic matrices and vectors are initialized
     subroutine chemo_creatematvec (rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rmatrGradX, rmatrGradY, rmatrGradZ, &
-                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhs, rdef, & 
+                                    rchemoattract, rrhschemo, rrhschemo_notCoupled, rcell, rrhs, rdef, &
                                     rdiscretisation, rfc, rfu, ranalytChemo, ranalytCell, rtempAnalyt, rvector_momentum, INFO_LEVEL)
 
         ! The underlying info_level
@@ -1359,7 +1359,7 @@ module chemotaxis_blowup
         ! This are the vectors
         type(t_vectorScalar), intent(INOUT) :: rchemoattract, rcell, rdef, rrhschemo, rrhs, rfc, rfu
         type(t_vectorScalar), intent(INOUT) :: rrhschemo_notCoupled
-        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY, rmatrGradZ 
+        type(t_matrixScalar), intent(INOUT) :: rmatrGradX, rmatrGradY, rmatrGradZ
         type(t_vectorScalar), intent(INOUT) :: ranalytChemo, ranalytCell, rtempAnalyt
         type(t_vectorScalar), intent(INOUT) :: rvector_momentum
         
@@ -1394,11 +1394,11 @@ module chemotaxis_blowup
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rrhschemo_notCoupled, .true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rfc, .true.)
         call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rfu, .true.)
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.) 
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhs,.true.)
         ! comparision with analytical solution
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytChemo,.true.) 
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytCell,.true.) 
-        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rtempAnalyt,.true.) 
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytChemo,.true.)
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ranalytCell,.true.)
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rtempAnalyt,.true.)
 
         if (INFO_LEVEL .GT. 0) then
             print *,">>end of the subroutine chemo_creatematvec ... "
@@ -1431,7 +1431,7 @@ module chemotaxis_blowup
 
         ! Should we initialise IC via analytic given fcts or should we use a gmv instead
         !=0 if the IC should be calculated via the callback functions
-        !=1 if the IC correspond to data of a gmv-file, e.g. we continue 
+        !=1 if the IC correspond to data of a gmv-file, e.g. we continue
         ! a simulation
         integer, intent(IN) :: iResume
 
@@ -1456,8 +1456,8 @@ module chemotaxis_blowup
             call anprj_discrDirect ( rchemoattract , coeff_anprj_ic_const )
         end if
 
-        ! now we set the analytical solution 
-        call anprj_discrDirect ( ranalytCell, analyt_u_pattern ) 
+        ! now we set the analytical solution
+        call anprj_discrDirect ( ranalytCell, analyt_u_pattern )
         call anprj_discrDirect ( ranalytChemo, analyt_c_pattern )
 
         call anprj_discrDirect ( rvector_momentum, analyt_momentum )
@@ -1515,7 +1515,7 @@ module chemotaxis_blowup
             print *,">>start of the subroutine chemo_initBC ... "
         end if
 
-        call bcasm_initDiscreteBC(rdiscreteBC) 
+        call bcasm_initDiscreteBC(rdiscreteBC)
 
         ! Create a mesh region describing the mesh`s boundary based on the
         ! nodal-property-array of the current triangulation.
@@ -1532,7 +1532,7 @@ module chemotaxis_blowup
 
 !         inat => rmeshregion%NAT
 !         iarray => rmeshRegion%h_IfaceIdx
-! 
+!
 ! print*,"inat = ", inat
 
         ! Free the mesh region structure as we will not need it anymore
@@ -1571,7 +1571,7 @@ module chemotaxis_blowup
         type(t_vectorScalar) , intent(INOUT) :: rhschemo_notCoupled
         type(t_vectorScalar) , intent(INOUT) :: rfc
 
-        type(t_matrixScalar) :: rlumpedmass 
+        type(t_matrixScalar) :: rlumpedmass
         ! local linform
         type(t_linearForm) :: rlinform
         ! local collection
@@ -1609,7 +1609,7 @@ module chemotaxis_blowup
 !                                     rlinform, .true., rfc, coeff_hillenX_RHS_rfc, rcollection)
 !         ! f_c -> rhschemo
 !         call lsyssc_vectorLinearComb (rfc, rhschemo_notCoupled, dtstep, 1.0_DP)
-! 
+!
 !         ! Release the collection structure
 !         call collct_done(rcollection)
         ! Now we should have the correct RHS = rhs like its mentioned above.
@@ -1651,7 +1651,7 @@ module chemotaxis_blowup
         real(DP) , intent(IN) ::defectTol
 
         ! sol vectors
-        type(t_vectorScalar) ,  intent(INOUT) :: rcell , rchemoattract 
+        type(t_vectorScalar) ,  intent(INOUT) :: rcell , rchemoattract
         ! The solution block - vector
         type(t_vectorBlock) , intent(INOUT) :: rcellBlock
         ! Some matrices for computing the LHS
@@ -1692,7 +1692,7 @@ module chemotaxis_blowup
         real(DP), dimension(:), allocatable ::dedge, aedge_mass
         integer, dimension(:,:), allocatable ::kedge
         ! a local average iterationcounter for  iteration_u_average
-        real(DP) :: u_average_local 
+        real(DP) :: u_average_local
         ! auxz vector for the evaluation of the gradient c (chemoattract)
         type(t_vectorScalar) :: rtempVecX, rtempVecY, rtempVecZ
         real(DP) :: dnorm_x, dnorm_y, dnorm_z
@@ -1736,20 +1736,20 @@ module chemotaxis_blowup
             call lsyssc_scalarMatVec(rmatrGradX,rchemoattract,rtempVecX,1.0_DP,0.0_DP)
             call multInvLumpedVector(rtempLump, rtempVecX)
             ! Calculate (for test purposes) the l2_norm of c_x
-!             dnorm_x = lsyssc_vectorNorm (rtempVecX, LINALG_NORML2 ) 
+!             dnorm_x = lsyssc_vectorNorm (rtempVecX, LINALG_NORML2 )
 !             print *,'!!!!!!!!!!!!!!!!!! c_x=',dnorm_x
 
             call lsyssc_scalarMatVec(rmatrGradY,rchemoattract,rtempVecY,1.0_DP,0.0_DP)
             !call testPrintVector(rtempVec)
             call multInvLumpedVector(rtempLump, rtempVecY)
             ! Calculate (for test purposes) the l2_norm of c_y
-!             dnorm_y = lsyssc_vectorNorm (rtempVecY, LINALG_NORML2 ) 
+!             dnorm_y = lsyssc_vectorNorm (rtempVecY, LINALG_NORML2 )
 !             print *,'!!!!!!!!!!!!!!!!!! c_y=',dnorm_y
 
             call lsyssc_scalarMatVec(rmatrGradZ,rchemoattract,rtempVecZ,1.0_DP,0.0_DP)
             call multInvLumpedVector(rtempLump, rtempVecZ)
             ! Calculate (for test purposes) the l2_norm of c_z
-!             dnorm_z = lsyssc_vectorNorm (rtempVecZ, LINALG_NORML2 ) 
+!             dnorm_z = lsyssc_vectorNorm (rtempVecZ, LINALG_NORML2 )
 !             print *,'!!!!!!!!!!!!!!!!!! c_z=',dnorm_z
             !!!!!!!!!!!!!!!!!!!!!! finish to evaluate the gradient of c (in rtempVect) !!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1792,7 +1792,7 @@ module chemotaxis_blowup
 !             call chemo_artdiff( rtempLump, rK, dedge, kedge, nedge, aedge_mass, INFO_LEVEL )
             !**********************
 
-            ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the 
+            ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the
             ! lumped massmatrix to the existing matrix
             call lsyssc_matrixLinearComb(rK, -dtstep, rmatrix, 1.0_DP, rtempmatrix,.true.,.true.,.true.,.true.)
             call lsyssc_copymatrix ( rtempmatrix, rmatrix )
@@ -1839,7 +1839,7 @@ module chemotaxis_blowup
             ! Calculate the l2_norm of the defect
             defect = lsysbl_vectorNorm ( rdefBlock , LINALG_NORML2 )
 
-            ! Here is the time to CHECK SOME RESIDUAL CONVERGENCE 
+            ! Here is the time to CHECK SOME RESIDUAL CONVERGENCE
             ! Certain defect error control should be implemented here
             if ( k .gt. 1 ) then
                 if ( defect .le. defectTol) then
@@ -1869,7 +1869,7 @@ module chemotaxis_blowup
 
             ! Attach the system matrix to the solver.
             ! First create an array with the matrix data (on all levels, but we
-            ! only have one level here), then call the initialisation 
+            ! only have one level here), then call the initialisation
             ! routine to attach all these matrices.
             ! Remark: Don't make a call like
             !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -1899,7 +1899,7 @@ module chemotaxis_blowup
             else
                 if(INFO_LEVEL .GT. 1) then
                     p_rsolverNode_cells%ioutputLevel = 1
-                else 
+                else
                     p_rsolverNode_cells%ioutputLevel = 0
                 end if
             end if
@@ -1938,7 +1938,7 @@ module chemotaxis_blowup
             ! test block for the linearity
 !             if(k.eq.3) then
 !                 print *,' problem is seems to be nonlinear!!! '
-!                 stop    
+!                 stop
 !             end if
 
         end do def_correction
@@ -1973,7 +1973,7 @@ module chemotaxis_blowup
 
         deallocate ( kedge )
         deallocate ( dedge )
-        deallocate ( aedge_mass ) 
+        deallocate ( aedge_mass )
 
         call lsyssc_releaseMatrix (rK)
 !         call lsyssc_releaseMatrix (rlumpedmass)
@@ -2008,7 +2008,7 @@ module chemotaxis_blowup
         real(DP), dimension (:), intent(OUT) :: dedge
         integer, dimension(:,:), intent(OUT) :: kedge
         integer, intent(INOUT) :: nedge
-        real(DP), dimension (:), intent(OUT) :: aedge_mass 
+        real(DP), dimension (:), intent(OUT) :: aedge_mass
 
         ! some local variables
         integer :: i , j , k, nvt ,counter, iedge
@@ -2068,7 +2068,7 @@ module chemotaxis_blowup
             aedge_mass( iedge ) =  p_Da_mass( ij_loc )
 
             END DO
-        END DO 
+        END DO
 
         nedge = iedge
 
@@ -2145,7 +2145,7 @@ module chemotaxis_blowup
         call lsyssc_matrixLinearComb(rK, 1.0_DP, rlaplace, -1.0_DP, rtemp, .true. , .true. , .true.)
         call lsyssc_scalarMatVec(rtemp, rvector, rvector_temp, 1.0_DP, 0.0_DP)
         call lsyssc_invertedDiagMatVec ( rlumpedmatrix, rvector_temp, 1.0_DP, ru_dot)
-        !get ru_dot data  
+        !get ru_dot data
         call lsyssc_getbase_double( ru_dot, p_udot )
 
         !Constructing fluxes
@@ -2165,7 +2165,7 @@ module chemotaxis_blowup
             j = kedge ( 2, iedge )
 
             ! Antidiffusive fluxes to be limeted
-            du = p_vectorentries ( j ) - p_vectorentries ( i ) 
+            du = p_vectorentries ( j ) - p_vectorentries ( i )
             f_ij = flux ( iedge )
 
             ! Prelimiting of antidiffusive fluxes
@@ -2174,19 +2174,19 @@ module chemotaxis_blowup
             end if
 
             ! Positive/negative edge contributions
-            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij ) 
+            pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij )
             pp ( j ) = pp ( j ) + MAX ( 0.0_DP , -f_ij )
-            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij ) 
+            pm ( i ) = pm ( i ) + MIN ( 0.0_DP , f_ij )
             pm ( j ) = pm ( j ) + MIN ( 0.0_DP , -f_ij )
 
             ! Maximum / minimum solution increments
-            qp ( i ) = MAX ( qp ( i ) , du ) 
+            qp ( i ) = MAX ( qp ( i ) , du )
             qp ( j ) = MAX ( qp ( j ) , -du )
-            qm ( i ) = MIN ( qm ( i ) , du ) 
+            qm ( i ) = MIN ( qm ( i ) , du )
             qm ( j ) = MIN ( qm ( j ) , -du )
         END DO
 
-        ! Computation of nodal correction factors     
+        ! Computation of nodal correction factors
         WHERE ( pp > eps )  rp = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qp / (dtstep*pp ) )
         WHERE ( pm < -eps ) rm = MIN ( 1.0_DP, p_Da ( p_Kdiagonal ( : ) ) * qm / (dtstep*pm ) )
 
@@ -2208,7 +2208,7 @@ module chemotaxis_blowup
             END IF
 
             ! Insertion into the global vector
-            f ( i ) = f ( i ) + f_ij 
+            f ( i ) = f ( i ) + f_ij
             f ( j ) = f ( j ) - f_ij
         END DO
 
@@ -2331,13 +2331,13 @@ module chemotaxis_blowup
         found = 0
         ientry = 1
     
-            do while (ios .eq. 0) 
+            do while (ios .eq. 0)
         
                 ! Read a line from the file into sbuf
                 call chemo_readlinefromfile (iunit, sdata, isbuflen, ios)
                 ilinenum = ilinenum + 1
     
-    !             if (sdata .eq.'') then 
+    !             if (sdata .eq.'') then
     !                 print*,"NO DATA IN FILE"
     !                 return
     !             end if
@@ -2347,9 +2347,9 @@ module chemotaxis_blowup
                 if ( len(sbuf) >= 5 .AND. sbuf(1:5) .eq. "nodes" ) then
                     sbuf = adjustl(sbuf(6:len(sbuf)))
                     read(sbuf,*) iNODES
-                    if (iNODES /= iNEQ) then 
+                    if (iNODES /= iNEQ) then
                         ! vector and gmvFile doesn't correspond
-                        ! vector does not have the same amount of entries than 
+                        ! vector does not have the same amount of entries than
                         ! the gmv-file has data
                         call output_line ('Error writing vector : ', &
                                     OU_CLASS_ERROR,OU_MODE_STD,'chemo_readGMV')
@@ -2377,13 +2377,13 @@ module chemotaxis_blowup
                 ! data, we know the structure of the data in the gmv file
                 call chemo_readlinefromfile (iunit, sdata, isbuflen, ios)
                 ilinenum = ilinenum + 1
-                do while (ios .eq. 0) 
+                do while (ios .eq. 0)
         
                     ! Read a line from the file into sbuf
                     call chemo_readlinefromfile (iunit, sdata, isbuflen, ios)
                     ilinenum = ilinenum + 1
         
-                    if (sdata .eq.'') then 
+                    if (sdata .eq.'') then
                         print*,"NO DATA IN FILE"
                         return
                     end if
@@ -2417,13 +2417,13 @@ module chemotaxis_blowup
                             found = 0
                             ios = 0
                             ientry = 1
-                            do while (ios .eq. 0) 
+                            do while (ios .eq. 0)
                     
                                 ! Read a line from the file into sbuf
                                 call chemo_readlinefromfile (iunit, sdata, isbuflen, ios)
                                 ilinenum = ilinenum + 1
                     
-                                if (sdata .eq.'') then 
+                                if (sdata .eq.'') then
                                     print*,"NO DATA IN FILE"
                                     return
                                 end if
@@ -2498,7 +2498,7 @@ module chemotaxis_blowup
             goto 30
             
         10  continue
-            ! End of file. 
+            ! End of file.
             ios = -1
             goto 30
             
@@ -2509,7 +2509,7 @@ module chemotaxis_blowup
             ! Set error flag back to 0.
             ios = 0
             
-        30  continue    
+        30  continue
             ! Do not do anything in case of an error
             if ((ios .eq. 0) .and. (isize .ge. 1)) then
             
@@ -2525,7 +2525,7 @@ module chemotaxis_blowup
 	! multiplication of the inverse lumped matrix by vector
 	subroutine multInvLumpedVector (rmatrix, rvector)
 	
-	type(t_matrixScalar) , intent(IN) :: rmatrix    
+	type(t_matrixScalar) , intent(IN) :: rmatrix
 	type(t_vectorScalar) , intent(INOUT) :: rvector
 	real(DP), dimension(:), pointer :: p_vector
 	
@@ -2536,14 +2536,14 @@ module chemotaxis_blowup
 	real(DP), dimension(:), pointer :: p_Da_mass, p_Da
 	
 	!matrix initialization things
-	!call lsyssc_getbase_Kld (rmatrix,p_Kld)    
+	!call lsyssc_getbase_Kld (rmatrix,p_Kld)
 	!call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
 	call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
 	call lsyssc_getbase_double (rmatrix,p_Da)
 	nvt = rmatrix%NEQ
 	
 	!vector initialization things
-	call lsyssc_getbase_double (rvector,p_vector)		
+	call lsyssc_getbase_double (rvector,p_vector)
 	nvt = rvector%NEQ
 	
 	DO i = 1,nvt

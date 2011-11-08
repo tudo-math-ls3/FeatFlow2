@@ -54,9 +54,9 @@
 !# This variant approximates <tex>$A^{-1}$</tex> by the inverse of the lumped diagonal
 !# matrix of A, i.e. a diagonal matrix L with
 !#
-!#                                  
+!#
 !#          <tex>$$       L_{ii} :=  \sum_{j=1}^n  a_ij      $$</tex>
-!#                                 
+!#
 !#
 !# This variant calculates the L_ii 'on the fly' without modifying the original
 !# matrix A. This variant should only be used if A is (mostly) a mass matrix.

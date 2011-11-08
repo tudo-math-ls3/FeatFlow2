@@ -34,11 +34,11 @@ module CalcLS
   type t_level
   
     
-    ! A system matrix for that specific level. The matrix will receive the 
+    ! A system matrix for that specific level. The matrix will receive the
     ! discrete Laplace operator.
     type(t_matrixBlock) :: rmatrix
 
-    ! A variable describing the discrete boundary conditions.    
+    ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
 
     type(t_blockDiscretisation) :: rdiscretisationStabil
@@ -82,7 +82,7 @@ contains
     ! A variable that is used to specify a region on the boundary.
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -108,7 +108,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -122,7 +122,7 @@ contains
     ! Some temporary variables
     integer :: i
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = rproblem%NLMIN
@@ -146,7 +146,7 @@ contains
       ! Initialise the block matrix with default values based on
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (&
-          p_rdiscretisation,Rlevels(i)%rmatrix)    
+          p_rdiscretisation,Rlevels(i)%rmatrix)
 
       CALL lsyssc_duplicateMatrix (rproblem%rlevelinfo(i)%rmatrixLS,&
               Rlevels(i)%rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_copy)
@@ -168,7 +168,7 @@ contains
      rtriform%Idescriptors(2,1)=DER_DERIV_Y
         
      CALL trilf_buildMatrixScalar (rtriform,.FALSE.,Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                              rvectortemp%rvectorBlock(2))  
+                              rvectortemp%rvectorBlock(2))
 
 
      rjumpstabil%dnu = 0.0_DP
@@ -178,10 +178,10 @@ contains
     
      !call conv_JumpStabilisation2d ( &
      !  rjumpstabil, conv_modmatrix, rlevels(i)%rmatrix%rmatrixBlock(1,1),&
-     !    rdiscretisation=rlevels(i)%rdiscretisationStabil%RspatialDiscr(1))   
+     !    rdiscretisation=rlevels(i)%rdiscretisationStabil%RspatialDiscr(1))
 
     IF(i.GT.rproblem%NLMIN) &
-        CALL prjF2C(rvectorTemp,rproblem%rlevelinfo(i-1)%rdiscretisationLS)  
+        CALL prjF2C(rvectorTemp,rproblem%rlevelinfo(i-1)%rdiscretisationLS)
     
     end do
       
@@ -198,10 +198,10 @@ contains
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
      
-     CALL boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)    
+     CALL boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
      CALL bcasm_newDirichletBConRealBD (rproblem%rlevelinfo(i)%rdiscretisationLS,1,&
                                        rboundaryRegion,Rlevels(i)%rdiscreteBC,&
-                                      getBoundaryValues_trace)                              
+                                      getBoundaryValues_trace)
     
       
       ! Hang the pointer into the matrix. That way, these
@@ -346,7 +346,7 @@ contains
     !  call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
     !end do
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     !do i = NLMAX, NLMIN, -1
     !  call tria_done (Rlevels(i)%rtriangulation)
     !end do
@@ -365,7 +365,7 @@ contains
   type(t_problem), intent(in),target :: rproblem
   type(t_vectorBlock), intent(in), target :: rvectorvelocity_new,rvectorvelocity_old
   type(t_explicitTimeStepping),intent(in)  :: rtimestepping
-  type(t_vectorBlock), intent(inout) :: rvector    
+  type(t_vectorBlock), intent(inout) :: rvector
      
   type(t_vectorBlock),target :: rrhsblock,rtempBlock
   type(t_matrixBlock) :: rmatrix,rmatrix2
@@ -412,7 +412,7 @@ contains
      
      rtriform%Idescriptors(2,1)=DER_DERIV_Y
      call trilf_buildMatrixScalar (rtriform,.FALSE.,&
-         rmatrix%RmatrixBlock(1,1), rvectorvelocity_new%rvectorBlock(2))  
+         rmatrix%RmatrixBlock(1,1), rvectorvelocity_new%rvectorBlock(2))
              
     
      call spdiscr_deriveBlockDiscr (p_rdiscretisation,rdiscretisationStabil)
@@ -440,21 +440,21 @@ contains
      !           rrhsBlock%rvectorBlock(1),1.0_DP, rtimestepping%dtstep)
       
      call lsyssc_scalarMatVec (rmatrix2%rmatrixblock(1,1),rvector%rvectorBlock(1),&
-                rrhsBlock%rvectorBlock(1),1.0_DP, rtimestepping%dtstep) 
+                rrhsBlock%rvectorBlock(1),1.0_DP, rtimestepping%dtstep)
      
                   
  ! BC
-     CALL bcasm_initDiscreteBC(rdiscreteBC)                 
+     CALL bcasm_initDiscreteBC(rdiscreteBC)
      
-     CALL boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)    
+     CALL boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
      CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
-                                      getBoundaryValues_trace)                              
+                                      getBoundaryValues_trace)
                                     
                                        
      rmatrix%p_rdiscreteBC =>  rdiscreteBC
-     rrhsblock%p_rdiscreteBC => rdiscreteBC 
-     rvector%p_rdiscreteBC =>  rdiscreteBC                                
+     rrhsblock%p_rdiscreteBC => rdiscreteBC
+     rvector%p_rdiscreteBC =>  rdiscreteBC
                                        
      call vecfil_discreteBCrhs (rrhsblock)
      call vecfil_discreteBCsol (rvector)
@@ -469,14 +469,14 @@ contains
      Rmatrices = (/rmatrix/)
      call linsol_setMatrices(p_rsolverNode, Rmatrices)
      call linsol_initStructure(p_rsolverNode, ierror)
-     call linsol_initData (p_rsolverNode,ierror) 
+     call linsol_initData (p_rsolverNode,ierror)
       
      if (ierror .NE. LINSOL_ERR_NOERROR) stop
         call linsol_initData (p_rsolverNode, ierror)
      if (ierror .NE. LINSOL_ERR_NOERROR) stop
      
      call lsysbl_duplicateVector (rvector,rtempblock,&
-                            LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)  
+                            LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
     
      call linsol_solveAdaptively (p_rsolverNode,rvector,rrhsblock,rtempBlock)
       
@@ -495,6 +495,6 @@ contains
   
   END SUBROUTINE
                                  
-  ! *********************************************************************   
+  ! *********************************************************************
 
 end module

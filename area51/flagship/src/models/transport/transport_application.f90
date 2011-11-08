@@ -1630,7 +1630,7 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       end if
 
-    end subroutine initMatrixStructure  
+    end subroutine initMatrixStructure
     
     !**************************************************************
     ! Initialize the diffusion matrix in 1D
@@ -1834,7 +1834,7 @@ contains
 
     !**************************************************************
     ! Initialize the group finite element set for evaluating the
-    ! bilinear and linear forms on the boundary node-by-node. 
+    ! bilinear and linear forms on the boundary node-by-node.
 
     subroutine initGroupFEMSetBoundary(rregion, rmatrix, nmatrices, rgroupFEMSet)
 
@@ -2517,7 +2517,7 @@ contains
         
         ! We assume that both primal and dual solutions are based on
         ! the same triangulation, thus both vectors can be exported
-        ! using the same triangulation.       
+        ! using the same triangulation.
         call flagship_initUCDexport(rproblemLevel, sucdsolution,&
             iformatUCD, rexport, ifilenumber, rtriangulationPrimal)
 
@@ -5879,35 +5879,35 @@ contains
         call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
         
       elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--timestep')) then 
+              (trim(adjustl(cbuffer)) .eq. '--timestep')) then
         
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--solver')) then 
+              (trim(adjustl(cbuffer)) .eq. '--solver')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--output')) then 
+              (trim(adjustl(cbuffer)) .eq. '--output')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then 
+              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
 
       elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then 
+              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then
 
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)

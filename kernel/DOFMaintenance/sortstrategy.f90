@@ -7,7 +7,7 @@
 !# This module contains different routines to calculate resorting
 !# strategies for scalar vectors.
 !# A sorting strategy is simply a permutation of the numbers 1..NEQ
-!# how to permute a scalar vector and its inverse permutation. 
+!# how to permute a scalar vector and its inverse permutation.
 !# Both permutations are usually assigned as one large array
 !# to a (scalar) vector to indicate how it is resorted.
 !#
@@ -106,17 +106,17 @@ module sortstrategy
   ! Reverse Cuthill-McKee sort strategy
   integer, parameter, public :: SSTRAT_RCM          = 2
   
-  ! Row-wise sorting for point coordinate. 
+  ! Row-wise sorting for point coordinate.
   ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
-  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where 
+  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where
   ! the DOF`s can be identified with X/Y/Z coordinates.
   ! Coincides with the sorting strategy of FEAST for simple-type domains
   ! like the unit square.
   integer, parameter, public :: SSTRAT_XYZCOORD     = 3
   
-  ! Column-wise sorting for point coordinate. 
+  ! Column-wise sorting for point coordinate.
   ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
-  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where 
+  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where
   ! the DOF`s can be identified with X/Y/Z coordinates.
   integer, parameter, public :: SSTRAT_ZYXCOORD     = 4
   
@@ -202,7 +202,7 @@ contains
     ! DEPRECATED: use sstrat_calcRandom instead.
     !
     ! The used algorithm is Knuth shuffle.
-    ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed., 
+    ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed.,
     !  145–146. ISBN 0-201-89684-2] or http://en.wikipedia.org/wiki/Knuth_shuffle])
   !</description>
     
@@ -212,7 +212,7 @@ contains
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
     integer, dimension(:), intent(out) :: Ipermutation
-  !</output>    
+  !</output>
 
   !</subroutine>
   
@@ -326,7 +326,7 @@ contains
 !<output>
   ! A storage handle to the permutation array.
   integer, intent(out) :: h_Ipermutation
-!</output>    
+!</output>
 
 !</subroutine>
   
@@ -356,7 +356,7 @@ contains
 
     call storage_free(h_Iaux)
     
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
 
@@ -379,7 +379,7 @@ contains
 !<output>
   ! A storage handle to the permutation array.
   integer, intent(out) :: h_Ipermutation
-!</output>    
+!</output>
 
 !</subroutine>
 
@@ -394,7 +394,7 @@ contains
     ! Call the algorithm itself
     call sstrat_calcCuthillMcKee_p(rmatrix, p_Ipermutation)
   
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
 
@@ -420,7 +420,7 @@ contains
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
     integer, dimension(2*rmatrix%neq), intent(out) :: Ipermutation
-  !</output>    
+  !</output>
 
   !</subroutine>
   
@@ -460,7 +460,7 @@ contains
 
     ! Release temp data.
     call storage_free (h_Ideg)
-    call storage_free (h_IcolTmp)    
+    call storage_free (h_IcolTmp)
 
   case (LSYSSC_MATRIX7)
     ! At first, duplicate KCOL and also get a temporary Ideg array
@@ -485,7 +485,7 @@ contains
 
     ! Release temp data.
     call storage_free (h_Ideg)
-    call storage_free (h_IcolTmp)    
+    call storage_free (h_IcolTmp)
   
   case DEFAULT
     print *,'sstrat_calcCuthillMcKee: Unsupported matrix format'
@@ -493,7 +493,7 @@ contains
   end select
     
 
-  end subroutine     
+  end subroutine
 
   ! ***************************************************************************
 
@@ -520,7 +520,7 @@ contains
     integer,intent(in)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    integer, intent(in)                   :: ndeg    
+    integer, intent(in)                   :: ndeg
    
     ! Row description of matrix
     integer, dimension(neq+1), intent(in) :: Ild
@@ -662,10 +662,10 @@ contains
         Ideg(idegIdx) = 0
       end do
       
-    ! Process next line:  
-    end do 
+    ! Process next line:
+    end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -693,7 +693,7 @@ contains
     integer,intent(in)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    integer, intent(in)                   :: ndeg    
+    integer, intent(in)                   :: ndeg
    
     ! Row description of matrix
     integer, dimension(neq+1), intent(in) :: Ild
@@ -751,7 +751,7 @@ contains
         Ideg(ildIdx-Ild(ieq)+1) = Icol(ildIdx)
       end do
 
-      ! Set Ideg of the diagonal entry to 0 to prevent it from being 
+      ! Set Ideg of the diagonal entry to 0 to prevent it from being
       ! processed later.
       Ideg(Idiag(ieq)-Ild(ieq)+1) = 0
       
@@ -846,10 +846,10 @@ contains
         Ideg(idegIdx) = 0
       end do
       
-    ! Process next line:  
-    end do 
+    ! Process next line:
+    end do
   
-  end subroutine 
+  end subroutine
 
   ! ***************************************************************************
 
@@ -889,10 +889,10 @@ contains
     ! has to be restored
     integer, dimension(neq), intent(out) :: Itr1
     
-    ! Describes how a resorted vector can be sorted back 
+    ! Describes how a resorted vector can be sorted back
     integer, dimension(neq), intent(out) :: Itr2
 
-    !</output>    
+    !</output>
 
   !</subroutine>
     
@@ -916,7 +916,7 @@ contains
     ! numbers, and so on.
     !
     ! For this purpose the permutation vectors Itr1 and Itr2 are build
-    ! subsequently, depending on which nodes have already been processed.        
+    ! subsequently, depending on which nodes have already been processed.
 
     ! We fix the first node (=first line of the matrix), i.e. we set
     ! Itr1(1)=1. This of course implies that the inverse permutation
@@ -963,10 +963,10 @@ contains
       if (Itr1(icount) .eq. 0) then
 
         ! New block. all previous blocks are contained in line 1..icount-1.
-        ! The next line number to fix is therefore icount.          
+        ! The next line number to fix is therefore icount.
         Itr1(icount) = icount
 
-        ! Now the block structure of the matrix (representing the connected 
+        ! Now the block structure of the matrix (representing the connected
         ! components in the graph of the matrix) and the structure of the
         ! loop implies:
         !    Itr1(icount) = icount = ineqIdx + 1   !!!
@@ -982,7 +982,7 @@ contains
       end if
 
       ! Now loop about the elements in the line and collect the neighbours
-      ! of the corresponding node in the graph:        
+      ! of the corresponding node in the graph:
       do ildIdx=Ild(Itr1(icount)), Ild(Itr1(icount)+1)-1
 
         ! Collect the column numbers in the current line in the order of
@@ -1012,13 +1012,13 @@ contains
           ! accessed.
           Itr1(ineqIdx) = icolIdx
 
-        end if  
+        end if
 
       end do
           
     end do
 
-  end subroutine     
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1031,15 +1031,15 @@ contains
     ! triangulation, the Z-coordinate is ignored.
     !
     ! idirection specifies the sorting direction.
-    ! The standard sorting direction is idirection=0. In this case, 
+    ! The standard sorting direction is idirection=0. In this case,
     ! the DOF`s are sorted rowwise, i.e. first for the X-coordinate,
-    ! then for the Y-coordinate. This sorting strategy coincides with the 
+    ! then for the Y-coordinate. This sorting strategy coincides with the
     ! FEAST sorting strategy in simple situations like a unit square.
     !
     ! This sorting strategy can only applied for special type discretisations
     ! where the DOF`s of the finite elements coincides with some sort of
     ! point coordinates in the domain (like <tex>$Q_1$</tex>, edge midpoint based
-    ! <tex>$\tilde Q_1$</tex>). If this is not the case, the routine will stop the 
+    ! <tex>$\tilde Q_1$</tex>). If this is not the case, the routine will stop the
     ! program.
     !
     ! The algorithm acceps a scalar discretisation structure rdiscretisation and
@@ -1067,7 +1067,7 @@ contains
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
     integer, dimension(:), intent(out) :: Ipermutation
-  !</output>    
+  !</output>
 
   !</subroutine>
   
@@ -1140,7 +1140,7 @@ contains
         do imt = 1,nmt
           p_Dcoords(:,nvt+imt) = &
               0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(1,imt)) + &
-              0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(2,imt)) 
+              0.5_DP*p_Dcoords2(:,p_IverticesAtEdge(2,imt))
         end do
         
         ! Calculate element midpoint coordinates
@@ -1150,7 +1150,7 @@ contains
             ivt = p_IverticesAtElement (ivtlocal,iel)
             p_Dcoords(:,nvt+nmt+iel) = &
                 p_Dcoords(:,nvt+nmt+iel) &
-                + 0.25_DP*p_Dcoords2(:,ivt) 
+                + 0.25_DP*p_Dcoords2(:,ivt)
           end do
         end do
         
@@ -1206,9 +1206,9 @@ contains
     ! array of point coordinates. In Ipermutation, the routine returns
     ! the permutation of these points.
     ! idirection specifies the sorting direction.
-    ! =0: points are first ordered for X-, then for Y- and at 
+    ! =0: points are first ordered for X-, then for Y- and at
     !     the end for the Z-coordinate (in 3D).
-    ! =1: points are first ordered for Z- (in 3D), then for Y- and at 
+    ! =1: points are first ordered for Z- (in 3D), then for Y- and at
     !     the end for the X-coordinate.
     
     real(DP), dimension(:,:), intent(in) :: Dcoords
@@ -1267,7 +1267,7 @@ contains
       
     end subroutine
 
-  end subroutine     
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1281,7 +1281,7 @@ contains
     ! of the domain. From here, a geometrical search is started to find
     ! all DOF`s.
     !
-    ! The renumbering strategy is only applicable to special-type 
+    ! The renumbering strategy is only applicable to special-type
     ! discretisations (like <tex>$Q_1$</tex>) and tensor product meshes (FEAST macros).
     ! If this is not the case, the routine will stop the program.
     !
@@ -1306,7 +1306,7 @@ contains
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
     integer, dimension(:), intent(out) :: Ipermutation
-  !</output>    
+  !</output>
 
   !</subroutine>
   
@@ -1379,8 +1379,8 @@ contains
     subroutine sortForFeastQ1 (IelementsAtEdge,IverticesAtElement,IedgesAtElement,&
                                Ipermutation,ivt,iel,NVT)
 
-    ! Calculates the rowwise sorting in a FEAST like style. 
-    ! IelementsAtEdge, IverticesAtElement and IedgesAtElement specify the 
+    ! Calculates the rowwise sorting in a FEAST like style.
+    ! IelementsAtEdge, IverticesAtElement and IedgesAtElement specify the
     ! adjacencies in the macro.
     ! In Ipermutation, the routine returns the permutation of these points.
     ! ivt specifies the lower left corner of the macro. iel specifies
@@ -1434,7 +1434,7 @@ contains
         
         ! Get the edges to the neighbour elements
         !
-        !    |   |     
+        !    |   |
         !    +---+---
         !    |   X iedgeright
         !  IVT---+---
@@ -1442,13 +1442,13 @@ contains
         iedgeright = IedgesAtElement(mod(ilocalvertex,NVE)+1,icurrentElement)
       
         ! Loop through the macro row until we find the right border of the macro
-        do while (IelementsAtEdge(2,iedgeright) .ne. 0) 
+        do while (IelementsAtEdge(2,iedgeright) .ne. 0)
         
-          ! Step right to the next element 
+          ! Step right to the next element
           !
-          !    |   |     
+          !    |   |
           !    +---+---+
-          !    |   |   |           
+          !    |   |   |
           !    +--IVT--+
           
           icurrentvertex = IverticesAtElement(mod(ilocalvertex,NVE)+1,icurrentElement)
@@ -1471,7 +1471,7 @@ contains
         
           ! Get the edges to the neighbour elements
           !
-          !    |   |   |  
+          !    |   |   |
           !    +---+---+--
           !    |   |   X iedgeright
           !    +--IVT--+--
@@ -1520,7 +1520,7 @@ contains
         ! Get the vertex and the element there. Note: If there is no neighbour
         ! element, the current element number gets =0 which is the terminal criterion.
         !
-        !    |IEL|     
+        !    |IEL|
         !  IVT---+---
         !    |   |
         !    +---+---
@@ -1551,14 +1551,14 @@ contains
       !
       !   |   |   |   |   |
       !   +---+---+---+---+
-      !   |   |   |   |   |           
+      !   |   |   |   |   |
       !   +---+---+---+---+
       !
       ! What is still missing is the final edge-row on top! This is another loop.
-      ! Switch the element number back to the last remembered one, then we have: 
+      ! Switch the element number back to the last remembered one, then we have:
       !
       !  IVT--+---+---+---+
-      !   |IEL|   |   |   |           
+      !   |IEL|   |   |   |
       !   +---+---+---+---+
       !   |   |   |   |   |
       
@@ -1568,12 +1568,12 @@ contains
       ipermidx = ipermidx+1
       Ipermutation(ipermidx) = icurrentvertex
       
-      ! Local number and edge to the right? 
+      ! Local number and edge to the right?
       !
-      !  IVT--+--           
-      !   |   X iedgeright             
-      !   +---+-            
-      !   |   |            
+      !  IVT--+--
+      !   |   X iedgeright
+      !   +---+-
+      !   |   |
 
       do ilocalvertex = 1,NVE
         if (IverticesAtElement(ilocalvertex,icurrentelement) .eq. icurrentvertex) exit
@@ -1582,14 +1582,14 @@ contains
       iedgeright = IedgesAtElement(mod(ilocalvertex+1,NVE)+1,icurrentElement)
     
       ! Loop through the macro row until we find the right border of the macro
-      do while (IelementsAtEdge(2,iedgeright) .ne. 0) 
+      do while (IelementsAtEdge(2,iedgeright) .ne. 0)
       
-        ! Step right to the next element 
+        ! Step right to the next element
         !
         !    +--IVT--+
-        !    |   |IEL|           
+        !    |   |IEL|
         !    +---+---+
-        !    |   |     
+        !    |   |
         
         icurrentvertex = IverticesAtElement(mod(ilocalvertex+2,NVE)+1,icurrentElement)
         
@@ -1614,18 +1614,18 @@ contains
         !    +--IVT--+--
         !    |   |   X iedgeright
         !    +---+---+--
-        !    |   |   |  
+        !    |   |   |
         
         iedgeright = IedgesAtElement(mod(ilocalvertex+1,NVE)+1,icurrentElement)
         
-      end do    
+      end do
       
       ! Remember the last vertex IVT2 in the row
       !
       !     --IVT--IVT2
-      !        |   |           
-      !     ---+---+  
-      !        |   |  
+      !        |   |
+      !     ---+---+
+      !        |   |
       
       icurrentvertex = IverticesAtElement(mod(ilocalvertex+2,NVE)+1,icurrentelement)
       ipermidx = ipermidx+1
@@ -1633,7 +1633,7 @@ contains
 
     end subroutine
 
-  end subroutine     
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1665,7 +1665,7 @@ contains
   !   Ipermutation(1:NEQ)       = permutation,
   !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
   integer, dimension(:), intent(out) :: Ipermutation
-!</output>    
+!</output>
 
 !</subroutine>
   
@@ -1677,7 +1677,7 @@ contains
     
     if (N .ne. dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation)))) then
       call output_line ('Permutation target vector has the wrong size!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')        
+          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')
       call sys_halt()
     end if
   
@@ -1688,7 +1688,7 @@ contains
     
     case DEFAULT
       call output_line ('Invalid dimension.', &
-          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')        
+          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')
       call sys_halt()
     end select
 
@@ -1712,7 +1712,7 @@ contains
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
     integer, dimension(:), intent(out) :: Ipermutation
 
-      ! local variables      
+      ! local variables
       integer, dimension(:), pointer :: p_IrefinementPatch
       integer, dimension(:), pointer :: p_IrefinementPatchIdx
       type(t_triangulation), pointer :: p_rtriaCoarse,p_rtria
@@ -1763,7 +1763,7 @@ contains
       p_rtriaCoarse => Rdiscretisation(1)%p_rtriangulation
 
       ! Get the number of DOF`s on the finest level. This is the
-      ! size of the permutation.          
+      ! size of the permutation.
       NEQ = dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation)))
 
       ! Set up a marker array where we remember whether we processed
@@ -1852,7 +1852,7 @@ contains
             
               ! All elements of the patch completed. Go down one level
               ! and proceed there to the next element patch.
-              ilev = ilev - 1  
+              ilev = ilev - 1
               IpatchIndex(ilev) = IpatchIndex(ilev) + 1
             
             end do
@@ -1902,7 +1902,7 @@ contains
     ! An array of the same size as IpermutationSource. Receives the inverse
     ! permutation.
     integer, dimension(:), intent(out) :: IpermutationDest
-  !</output>    
+  !</output>
 
   !</subroutine>
   

@@ -10,7 +10,7 @@
 !# Routines in this module:
 !#
 !# 1.) init_initStandardSolver
-!#     -> Read in all parameters, create mesh and FEM hierarchies, create a 
+!#     -> Read in all parameters, create mesh and FEM hierarchies, create a
 !#        nonlinear solver structure ready to use.
 !#
 !# 2.) init_doneStandardSolver
@@ -30,7 +30,7 @@
 !#     -> Reads space discretisation settings from the DAT file.
 !#
 !# 7.) init_initDiscreteAnalytFunction
-!#     -> Creates a analytical-function structure that resembles a discrete 
+!#     -> Creates a analytical-function structure that resembles a discrete
 !#        function.
 !#
 !# Auxiliary routines:
@@ -134,7 +134,7 @@ contains
   ! Nonlinear space-time solver structure configuring the solver.
   type(t_nlstsolver), intent(out) :: rnlstsolver
   
-  ! Postprocessing data.    
+  ! Postprocessing data.
   type(t_optcPostprocessing), intent(out) :: rpostproc
 
   ! Analytic solution defining the RHS of the equation.
@@ -238,7 +238,7 @@ contains
         rsettingsSolver%rrefinementSpace,rsettingsSolver%rrefinementTime,&
         rsettingsSolver%rfeHierPrimal,rsettingsSolver%rfeHierPrimalDual,&
         rsettingsSolver%rtimeHierarchy,&
-        rsettingsSolver%rspaceTimeHierPrimal,rsettingsSolver%rspaceTimeHierPrimalDual)    
+        rsettingsSolver%rspaceTimeHierPrimal,rsettingsSolver%rspaceTimeHierPrimalDual)
     if (ioutputLevel .ge. 2) then
       call output_lbrk()
       call output_line("Space-time hierarchy statistics:")
@@ -260,7 +260,7 @@ contains
         rsettingsSolver%rprjHierSpacePrimalDual,rsettingsSolver%rphysicsPrimal,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
-    ! Init+Allocate memory for the matrices on all levels and create all 
+    ! Init+Allocate memory for the matrices on all levels and create all
     ! static matrices.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -313,7 +313,7 @@ contains
     call init_initBoundaryConditions (rparlist,sstr,sstr2,&
         rsettingsSolver%rphysicsPrimal,rsettingsSolver%roptcBDC)
 
-    ! Initialise the physics parameter that describe the 
+    ! Initialise the physics parameter that describe the
     ! physical equation
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -467,7 +467,7 @@ contains
   ! to be cleaned up.
   type(t_nlstsolver), intent(inout) :: rnlstsolver
 
-  ! Postprocessing data.    
+  ! Postprocessing data.
   type(t_optcPostprocessing), intent(inout) :: rpostproc
 !</inputoutput>
 
@@ -593,8 +593,8 @@ contains
     ! containing the BDC's.
     roptcBDC%p_rparamListBDC => rparlist
     roptcBDC%p_rphysics => rphysics
-    roptcBDC%ssectionBdExpressions = ssectionExpr 
-    roptcBDC%ssectionBdConditions = ssectionBDC   
+    roptcBDC%ssectionBdExpressions = ssectionExpr
+    roptcBDC%ssectionBdConditions = ssectionBDC
 
   end subroutine
   
@@ -605,7 +605,7 @@ contains
   subroutine init_initStabil (rparlist,rstabilPrimal,rstabilDual,ssection)
   
 !<description>
-  ! Reads information about stabilisation from the DAT file and saves them 
+  ! Reads information about stabilisation from the DAT file and saves them
   ! to rstabilPrimal/rstabilDual.
 !</description>
   
@@ -658,7 +658,7 @@ contains
   subroutine init_initForwardSimPostproc (rparlist,ssection,rpostprocessing)
   
 !<description>
-  ! Reads information about postprocessing in a forward simulation from the DAT 
+  ! Reads information about postprocessing in a forward simulation from the DAT
   ! file and saves them to rpostprocessing.
 !</description>
   
@@ -729,7 +729,7 @@ contains
   ! local variables
   integer :: imeshType,ncellsX
   
-    ! Variable for a filename:  
+    ! Variable for a filename:
     character(LEN=60) :: sPRMFile, sTRIFile
     
     integer :: niterations
@@ -1103,7 +1103,7 @@ contains
           rmeshHierarchy%nlevels,rmeshHierarchy,&
           fget1LevelDiscretisationNavSt2D,rcollection,rboundary)
           
-      ! Extract the data of the primal space (Block 1..3) and create a new FE 
+      ! Extract the data of the primal space (Block 1..3) and create a new FE
       ! space hierarchy based on that.
       call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
           rsettings%rfeHierPrimal,1,3)
@@ -1254,7 +1254,7 @@ contains
       ! Check that there is a section called sname - otherwise we
       ! cannot create anything!
       
-      call parlst_querysection(rparamList, sname, p_rsection) 
+      call parlst_querysection(rparamList, sname, p_rsection)
 
       if (.not. associated(p_rsection)) then
         ! We use the default configuration; stop here.
@@ -1464,7 +1464,7 @@ contains
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
   
   ! Underlying hierarchy of the time discretisation
-  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy 
+  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy
 !</input>
 
 !<inputoutput>
@@ -1528,7 +1528,7 @@ contains
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
   
   ! Underlying hierarchy of the time discretisation
-  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy 
+  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy
 !</input>
 
 !<inputoutput>
@@ -1627,7 +1627,7 @@ contains
       deallocate (roptcontrol%rconstraints%p_rumax1)
       deallocate (roptcontrol%rconstraints%p_rumin2)
       deallocate (roptcontrol%rconstraints%p_rumax2)
-    end if    
+    end if
 
     ! Release the target function.
     call ansol_done(roptcontrol%rtargetFunction)
@@ -1852,14 +1852,14 @@ contains
     type(t_parlstSection), pointer :: p_rsection
     
     ! Is the section available?
-    call parlst_querysection(rparlist, ssection, p_rsection) 
+    call parlst_querysection(rparlist, ssection, p_rsection)
     if (.not. associated(p_rsection)) then
       call output_line ("Section does not exist: "//trim(ssection), &
           OU_CLASS_ERROR,OU_MODE_STD,"init_initFunction")
       call sys_halt()
     end if
     
-    ! Type of the function?    
+    ! Type of the function?
     call parlst_getvalue_int (rparlist,ssection,"ctype",ctype,-1)
         
     ierror = 0
@@ -1952,9 +1952,9 @@ contains
     ! Create an analytical function that resembles a discrete function.
     call init_initDiscreteAnalytFunc2D (ielementType,rboundary,&
         smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierarchy,&
-        ilevel,rfunction)  
+        ilevel,rfunction)
         
-    rfunction%iid = iid  
+    rfunction%iid = iid
     
     ! Finally, set up the function.
     select case (ctype)
@@ -1992,7 +1992,7 @@ contains
 !
 !  recursive subroutine init_initFunctionBySimulation (rparlist,ssectionFlow,rflow,&
 !      rsettingsSpaceDiscr,rsettingsSolver)
-!  
+!
 !!<description>
 !  ! Sets up a flow by performing a forward simulation.
 !!</description>
@@ -2000,7 +2000,7 @@ contains
 !!<input>
 !  ! Parameter list
 !  type(t_parlist), intent(in) :: rparlist
-!  
+!
 !  ! Section where the parameters can be found that specify the target flow.
 !  character(len=*), intent(in) :: ssectionFlow
 !
@@ -2027,9 +2027,9 @@ contains
 !    integer :: ilevel,ielementType,idelta,ieltype
 !    integer :: ntimesteps,ctimeStepScheme
 !    type(t_anSolution) :: rinitcondflow
-!    
+!
 !    ! Read some parameters, we may need them.
-!    
+!
 !    ! Id, level, element type
 !
 !    call parlst_getvalue_int (rparlist,ssectionFlow,&
@@ -2056,7 +2056,7 @@ contains
 !
 !    call parlst_getvalue_double (rparlist,ssectionFlow,&
 !        'dtimeMax',dtimeMax)
-!    
+!
 !    call parlst_getvalue_int (rparlist,ssectionFlow,&
 !        'ntimesteps',ntimesteps)
 !
@@ -2072,24 +2072,24 @@ contains
 !        rsettingsSolver%rfeHierarchy,ilevel,rflow)
 !
 !    rflow%iid = iid
-!    
-!    ! What is with the initial condition?  
+!
+!    ! What is with the initial condition?
 !    call init_initFunction (rparlist,ssectionInitSol,rinitcondflow,&
 !        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rsettingsSolver%rfeHierarchy,
 !        rboundary,isuccess)
-!    
+!
 !    if (isuccess .eq. 1) then
 !      ! Oops, that one must be calculated by simulation.
 !      call init_initFunctionBySimulation (rparlist,ssectionInitSol,rinitcondflow,&
 !          rsettingsSpaceDiscr,rsettingsSolver)
 !    end if
-!    
+!
 !    ! Solution at the start time in rinitcondflow is our initial condition.
-!    
-!    
-!    
-!    
-!    
+!
+!
+!
+!
+!
 !    ! Release the initial condition
 !    call ansol_done (rinitcondflow)
 !
@@ -2129,7 +2129,7 @@ contains
   type(t_feHierarchy), intent(in) :: rfeHierPrimalDual
 
   ! A hierarchy of time levels
-  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy 
+  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy
 !</input>
 
 !<inputoutput>
@@ -2276,7 +2276,7 @@ contains
       p_Idata2D(4,iel+1) = 2*iel+2
     end do
     
-    ! Allocate memory for InodalProperty 
+    ! Allocate memory for InodalProperty
     call storage_new ('tria_read_tri2D', 'KNPR', &
         rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
@@ -2446,7 +2446,7 @@ contains
     integer :: cpreconditioner
 
     ! Figure out which type of solver we should use to solve
-    ! the problem. 
+    ! the problem.
     call parlst_getvalue_int (rparlist,ssection,&
         'cpreconditioner',cpreconditioner,0)
         
@@ -2775,7 +2775,7 @@ contains
   subroutine init_getParamsPrec_sgrprec (rparlist,ssection,rparams)
   
 !<description>
-  ! Reads parameters that configure the linear space-time single grid 
+  ! Reads parameters that configure the linear space-time single grid
   ! preconditioner.
   !
   ! Note: This method does not read parameters of linear subsolvers
@@ -2859,7 +2859,7 @@ contains
   ! Settings structure.
   type(t_settings_optflow), intent(inout) :: rsettings
   
-  ! Structure with space discretisation settings. Defines how the space 
+  ! Structure with space discretisation settings. Defines how the space
   ! discretisation hierarchy in rsettings is set up.
   type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
 
@@ -3089,7 +3089,7 @@ contains
             
         call sptivec_setTimestepData (rvector, 1, rvectorSpace)
 
-        ! Get the discretisation data of the current level.        
+        ! Get the discretisation data of the current level.
         call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
             rdiscrData)
             
@@ -3120,7 +3120,7 @@ contains
         call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
             1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
 
-        ! Attach the matrix to the solver.            
+        ! Attach the matrix to the solver.
         call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
         
         ! Get settings about postprocessing
@@ -3328,7 +3328,7 @@ contains
             
         call sptivec_setTimestepData (rvector, 1, rvectorSpace)
 
-        ! Get the discretisation data of the current level.        
+        ! Get the discretisation data of the current level.
         call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
             rdiscrData)
             
@@ -3359,7 +3359,7 @@ contains
         call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
             1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
 
-        ! Attach the matrix to the solver.            
+        ! Attach the matrix to the solver.
         call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
         
         ! Get settings about postprocessing
@@ -3415,7 +3415,7 @@ contains
         call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
             1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARDFULL, rsimsolver)
 
-        ! Attach the matrix to the solver.            
+        ! Attach the matrix to the solver.
         call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
         
         ! Get settings about postprocessing
@@ -3558,7 +3558,7 @@ contains
         call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
             1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARDFULL, rsimsolver)
 
-        ! Attach the matrix to the solver.            
+        ! Attach the matrix to the solver.
         call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
         
         ! Get settings about postprocessing
@@ -3840,7 +3840,7 @@ contains
 
 !</subroutine>
 
-    ! Release the reference solution    
+    ! Release the reference solution
     if (rpostproc%icalcError .ne. 0) then
       call ansol_done(rpostproc%ranalyticRefFunction)
     end if
@@ -3929,11 +3929,11 @@ contains
   !    ! If the following constant is set from 1.0 to 0.0, the primal system is
   !    ! decoupled from the dual system!
   !    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
-  !    
+  !
   !    ! If the following constant is set from 1.0 to 0.0, the dual system is
   !    ! decoupled from the primal system!
   !    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
-  !    
+  !
   !    ! If the following parameter is set from 1.0 to 0.0, the time coupling
   !    ! is disabled, resulting in a stationary simulation in every timestep.
   !    real(DP), parameter :: dtimeCoupling = 1.0_DP
@@ -4143,7 +4143,7 @@ contains
           'icubM',icub,int(SPDISC_CUB_AUTOMATIC))
     else
       icub = cub_igetID(sstr)
-    end if    
+    end if
     rsettingsSpaceDiscr%icubMass = icub
 
   end subroutine
@@ -4154,7 +4154,7 @@ contains
 !
 !  subroutine cc_initSpacePrec_mg (rparlist,ssection,nequations,&
 !      nlevels,RfilterChain,p_rsolverNode)
-!  
+!
 !!<description>
 !  ! Creates a node for the space multigrid solver and initialises it with
 !  ! parameters from a DAT file.
@@ -4163,15 +4163,15 @@ contains
 !!<input>
 !  ! Parameter list
 !  type(t_parlist), intent(in) :: rparlist
-!  
+!
 !  ! Section that contains the solver parameters.
 !  character(len=*), intent(in) :: ssection
-!  
+!
 !  ! Type of equation. =3 for primal or dual equation. =6 for primal+dual equation
-!  
+!
 !  ! Number of levels
 !  integer, intent(in) :: nlevels
-!  
+!
 !  ! Filter chain to be applied during the application
 !  type(t_filterChain), dimension(:), intent(in), target :: RfilterChain
 !!</input>
@@ -4185,8 +4185,8 @@ contains
 !
 !    ! Create the solver
 !    call linsol_initMultigrid2 (p_rsolverNode,nlevels,RfilterChain)
-!    
-!    ! Manually trim the coarse grid correction in Multigrid to multiply the 
+!
+!    ! Manually trim the coarse grid correction in Multigrid to multiply the
 !    ! pressure equation with -1. This (un)symmetrises the operator and gives
 !    ! much better convergence rates.
 !    call cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)

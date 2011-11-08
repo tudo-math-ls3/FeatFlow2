@@ -1491,7 +1491,7 @@ contains
 
 
   ! This routine returns the HLL flux for the 2d compressible euler
-  ! equations of gas dynamics 
+  ! equations of gas dynamics
   function Euler_buildFlux_HLL2D(Qii,Qaa,a,b) result(Flux)
 
     ! The flux vector in direction d at Q
@@ -1606,7 +1606,7 @@ contains
 
 
   ! This routine returns the HLLC flux for the 2d compressible euler
-  ! equations of gas dynamics 
+  ! equations of gas dynamics
   function Euler_buildFlux_HLLC2D(Qii,Qaa,a,b) result(Flux)
 
     ! The flux vector in direction d at Q
@@ -1700,21 +1700,21 @@ contains
 
 
     !    !!! Type 1
-    !    
+    !
     !    ! Compute estimate wave speeds
     !    SL = min(ui - ci,ua-ca)
     !    SR = max(ua + ca,ui+ci)
     !    SS = 0.5_dp*(ui+ua) + (pi-pa)/(0.25_dp*(rhoi+rhoa)*(ci+ca))
-    !    
+    !
     !!    SS = max(SS,SL)
     !!    SS = min(SS,SR)
-    !!    
+    !!
     !!    SS = 0.5_dp*(SL+SR)
     !
     !
     !
     !
-    !    
+    !
     !    if(SL>SR) then
     !    write(*,*) 'Warning**************'
     !    end if
@@ -1724,9 +1724,9 @@ contains
     !    if (SS>SR) then
     !      write(*,*) 'Warning'
     !    end if
-    !    
+    !
     !    FX = Euler_buildFlux(Qa+Qi,1)
-    !    
+    !
     !    if (SL.ge.0.0_dp) then
     !      FX = Euler_buildFlux(Qi,1)
     !    elseif ((SL<0.0_dp).and.(SS.ge.0.0_dp)) then
@@ -1743,36 +1743,36 @@ contains
 
 
     !    !!! Type 2 !!!
-    !    
-    !    
+    !
+    !
     !    ps = 0.5_dp*(pi+pa)+0.5_dp*(ui-ua)*0.5_dp*(rhoi+rhoa)*0.5_dp*(ci+ca)
     !    us = 0.5_dp*(ui+ua)+0.5_dp*(pi-pa)/(0.5_dp*(rhoi+rhoa)*0.5_dp*(ci+ca))
-    !    
+    !
     !    if (ps>pi) then
     !      ql = sqrt(max(1.0_dp+(gamma+1.0_dp)/(2.0_dp*gamma)*(ps/pi-1.0_dp),0.0_dp))
     !    else
     !      ql = 1.0_dp
     !    end if
-    !    
+    !
     !    if (ps>pa) then
     !      qr = sqrt(max(1.0_dp+(gamma+1.0_dp)/(2.0_dp*gamma)*(ps/pa-1.0_dp),0.0_dp))
     !    else
     !      qr = 1.0_dp
     !    end if
-    !    
     !
-    !    
-    !    
+    !
+    !
+    !
     !    ! Compute estimate wave speeds
     !    SL = ui-ci*ql
     !    SR = ua+ca*qr
     !    SS = us
-    !    
+    !
     !!    SS = max(SS,SL)
     !!    SS = min(SS,SR)
-    !    
     !
-    !    
+    !
+    !
     !    if (SL.ge.0.0_dp) then
     !      FX = Euler_buildFlux(Qi,1)
     !    elseif ((SL<0.0_dp).and.(SS.ge.0.0_dp)) then
@@ -1784,8 +1784,8 @@ contains
     !    else
     !      FX = 0.5_dp*Euler_buildFlux(0.5_dp*(Qi+Qa),1)
     !    end if
-    !    
-    !    
+    !
+    !
     !    if(SL>SR) then
     !      write(*,*) 'Warning**************'
     !    end if
@@ -1794,7 +1794,7 @@ contains
     !    end if
     !    if (SS>SR) then
     !      write(*,*) 'Warning'
-    !    end if    
+    !    end if
 
 
 
@@ -1835,7 +1835,7 @@ contains
   !*
   !* P. L. Roe, Approximate Riemann Solvers, Parameter Vectors and Difference
   !* Schemes, Journal of Computational Physics, 43, pp. 357-372.
-  !* 
+  !*
   !* Katate Masatsuka, February 2009. http://www.cfdbooks.com
   !*****************************************************************************
   function Roe(uL, uR, nx, ny)
@@ -1865,7 +1865,7 @@ contains
     one = 1.0_dp
     two = 2.0_dp
 
-    !Tangent vector (Do you like it? Actually, Roe flux can be implemented 
+    !Tangent vector (Do you like it? Actually, Roe flux can be implemented
     ! without any tangent vector. See "I do like CFD, VOL.1" for details.)
     tx = -ny
     ty = nx
@@ -1901,7 +1901,7 @@ contains
     vt = vx*tx+vy*ty
 
     !Wave Strengths
-    drho = rhoR - rhoL 
+    drho = rhoR - rhoL
     dpp = pR - pL
     dvn = vnR - vnL
     dvt = vtR - vtL
@@ -1925,7 +1925,7 @@ contains
     if ( ws(4) < dws(4) ) ws(4) = half * ( ws(4)*ws(4)/dws(4)+dws(4) )
 
     !Right Eigenvectors
-    Rv(1,1) = one    
+    Rv(1,1) = one
     Rv(2,1) = vx - a*nx
     Rv(3,1) = vy - a*ny
     Rv(4,1) =  H - vn*a
@@ -1937,7 +1937,7 @@ contains
 
     Rv(1,3) = one
     Rv(2,3) = vx
-    Rv(3,3) = vy 
+    Rv(3,3) = vy
     Rv(4,3) = half*(vx*vx+vy*vy)
 
     Rv(1,4) = one
@@ -2024,7 +2024,7 @@ contains
     !Local constants
     real(dp) :: gamma                          ! Ratio of specific heat.
     real(dp) :: zero, fifth, half, one, two    ! Numbers
-    real(dp) :: eps                            ! 
+    real(dp) :: eps                            !
     !Local variables
     real(dp) :: nx1, ny1, nx2, ny2             ! Rotated normals, n1 and n2
     real(dp) :: tx, ty                         ! Tangent vector (taken as n1)
@@ -2085,8 +2085,8 @@ contains
     fR(4) = rhoR*vnR *  HR
 
     !Define n1 and n2, and compute alpha1 and alpha2: (4.2) in the original paper.
-    !(NB: n1 and n2 may need to be frozen at some point during 
-    !     a steady calculation to fully make it converge. For time-accurate 
+    !(NB: n1 and n2 may need to be frozen at some point during
+    !     a steady calculation to fully make it converge. For time-accurate
     !     calculation, this is fine.)
     ! NB: For a boundary face, set (nx2,ny2)=(nx,ny), (nx1,ny1)=(-ny,nx).
 
@@ -2095,10 +2095,10 @@ contains
        nx1 = (vxR-vxL)/abs_dq
        ny1 = (vyR-vyL)/abs_dq
     else
-       nx1 = -ny 
+       nx1 = -ny
        ny1 =  nx
     endif
-    alpha1 = nx * nx1 + ny * ny1 
+    alpha1 = nx * nx1 + ny * ny1
     !   To make alpha1 always positive.
     temp = sign(one,alpha1)
     nx1 = temp * nx1
@@ -2134,7 +2134,7 @@ contains
     vtL = vxL*nx1 + vyL*ny1
     vtR = vxR*nx1 + vyR*ny1
 
-    drho = rhoR - rhoL 
+    drho = rhoR - rhoL
     dpp =   pR - pL
     dvn =  vnR - vnL
     dvt =  vtR - vtL
@@ -2171,7 +2171,7 @@ contains
     tx = nx1
     ty = ny1
 
-    Rv(1,1) = one    
+    Rv(1,1) = one
     Rv(2,1) = vx - a*nx2
     Rv(3,1) = vy - a*ny2
     Rv(4,1) =  H - vn*a
@@ -2183,7 +2183,7 @@ contains
 
     Rv(1,3) = one
     Rv(2,3) = vx
-    Rv(3,3) = vy 
+    Rv(3,3) = vy
     Rv(4,3) = half*(vx*vx+vy*vy)
 
     Rv(1,4) = one

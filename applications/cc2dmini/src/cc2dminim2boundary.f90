@@ -79,7 +79,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_boundaryRegion) :: rboundaryRegion    
+    type(t_boundaryRegion) :: rboundaryRegion
     type(t_boundary), pointer :: p_rboundary
     
     p_rboundary => rdiscretisation%p_rboundary
@@ -105,7 +105,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   Dirichlet BC's for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC's can be applied
     !   to matrices and vectors
@@ -202,7 +202,7 @@ contains
   ! local variables
   integer :: i
 
-  ! A pointer to the system matrix and the RHS vector as well as 
+  ! A pointer to the system matrix and the RHS vector as well as
   ! the discretisation
   type(t_matrixBlock), pointer :: p_rmatrix
   type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -251,7 +251,7 @@ contains
     ! to the matrix on the finest level.
     p_rdiscreteBC => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscreteBC
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
@@ -279,7 +279,7 @@ contains
   ! local variables
   integer :: i,ilvmax
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -287,10 +287,10 @@ contains
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
     ilvmax = rproblem%NLMAX
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
-    ! Implement discrete boundary conditions into RHS vector by 
+    ! Implement discrete boundary conditions into RHS vector by
     ! filtering the vector.
     call vecfil_discreteBCrhs (p_rrhs)
 
@@ -298,7 +298,7 @@ contains
     ! filtering the vector.
     call vecfil_discreteBCsol (p_rvector)
     
-    ! Implement discrete boundary conditions into the matrices on all 
+    ! Implement discrete boundary conditions into the matrices on all
     ! levels, too.
     ! In fact, this modifies the B-matrices. The A-matrices are overwritten
     ! later and must then be modified again!

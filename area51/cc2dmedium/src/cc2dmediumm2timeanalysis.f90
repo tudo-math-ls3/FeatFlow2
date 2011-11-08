@@ -6,8 +6,8 @@
 !# <purpose>
 !# This module contains routines to calculate the time error and time
 !# derivative of a solution. The time error is the value
-!# of a functional $||u_{n}-u*_{n}||$ in time for a solution 
-!# $u_{n} = u(t_{n})$, and the norm of the time derivatice of a solution. 
+!# of a functional $||u_{n}-u*_{n}||$ in time for a solution
+!# $u_{n} = u(t_{n})$, and the norm of the time derivatice of a solution.
 !# The value of this (unknown) error is approximated
 !# by a time error functional $J(.)$ which can be evaluated by different
 !# means, depending on the actual problem to solve.
@@ -34,7 +34,7 @@ module cc2dmediumm2timeanalysis
 
 !<typeblock>
   
-  ! Time error analysis block. Contains values of different time 
+  ! Time error analysis block. Contains values of different time
   ! error functionals.
   type t_timeError
   
@@ -56,7 +56,7 @@ module cc2dmediumm2timeanalysis
 
 !<typeblock>
   
-  ! Block for norms of the time derivative 
+  ! Block for norms of the time derivative
   type t_timeDerivatives
   
     ! $||rel. change in U||_{L2}$
@@ -83,7 +83,7 @@ module cc2dmediumm2timeanalysis
 !<constantblock description="Identifiers for norms of time-dependent solutions.">
 
   ! $ ||u||_{l2} $
-  integer, parameter :: TNRM_L2U    = 1  
+  integer, parameter :: TNRM_L2U    = 1
 
   ! $ ||u||_{\max} $
   integer, parameter :: TNRM_LMAX   = 2
@@ -100,11 +100,11 @@ module cc2dmediumm2timeanalysis
   ! $ \max ( ||u||_{\max} , ||p||_{\max} ) $
   integer, parameter :: TNRM_L2MAXPMAX  = 6
 
-  ! $ \max ( ||u||_{l2}   , ||p||_{l2} , 
+  ! $ \max ( ||u||_{l2}   , ||p||_{l2} ,
   !          ||u||_{\max} , ||p||_{\max} ) $
   integer, parameter :: TNRM_MAX        = 7
 
-  ! $ \min ( ||u||_{l2}   , ||p||_{l2} , 
+  ! $ \min ( ||u||_{l2}   , ||p||_{l2} ,
   !          ||u||_{\max} , ||p||_{\max} ) $
   integer, parameter :: TNRM_MIN        = 8
 
@@ -149,7 +149,7 @@ contains
   ! =TNRM_L2UP2U   : Calculate dtimeerror=max(drelUL2,drelPL2)
   ! =TNRM_L2MAXPMAX: Calculate dtimeerror=max(drelUmax,drelPmax)
   ! =TNRM_MAX      : Calculate dtimeerror=max(drelUL2,drelPL2,drelUmax,drelPmax)
-  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)  
+  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)
   integer                        :: ctimeErrorControl
   
   ! Solution vector u2.
@@ -266,7 +266,7 @@ contains
   ! =TNRM_L2UP2U   : Calculate dtimeerror=max(drelUL2,drelPL2)
   ! =TNRM_L2MAXPMAX: Calculate dtimeerror=max(drelUmax,drelPmax)
   ! =TNRM_MAX      : Calculate dtimeerror=max(drelUL2,drelPL2,drelUmax,drelPmax)
-  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)  
+  ! =TNRM_MIN      : Calculate dtimeerror=min(drelUL2,drelPL2,drelUmax,drelPmax)
   integer                        :: ctimeErrorControl
   
   ! Solution vector $u_{n+1}$ at the end of the time step.
@@ -285,7 +285,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! OPTIONAL: Time norm analysis block. Returns different norms of the 
+  ! OPTIONAL: Time norm analysis block. Returns different norms of the
   ! time derivative.
   type(t_timeDerivatives), intent(INOUT), target, optional :: rtimeDerivNorms
 !</output>

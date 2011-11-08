@@ -43,7 +43,7 @@ contains
 !<description>
     ! This subroutine computes the second-difference indicator proposed
     ! by R. Loehner. It is restricted to linear and multilinear finite
-    ! elements in arbitrary space dimensions. 
+    ! elements in arbitrary space dimensions.
 !</description>
 
 !<input>

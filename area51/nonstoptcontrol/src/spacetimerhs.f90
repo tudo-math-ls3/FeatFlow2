@@ -265,7 +265,7 @@ contains
         case (0,2)
 
           ! ###############################################################################
-          ! Heat equation. 
+          ! Heat equation.
           ! ###############################################################################
 
           ! Do some final modifications to the vector, depending on
@@ -663,7 +663,7 @@ contains
     ! Time discretisation
     type(t_timeDiscretisation), intent(in) :: rtimediscr
 
-    ! Vector pool    
+    ! Vector pool
     type(t_spaceTimeVectorAccess), intent(inout) :: raccesspool
     
     ! Timestep

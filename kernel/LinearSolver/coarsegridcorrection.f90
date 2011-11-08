@@ -17,7 +17,7 @@
 !# 2.) cgcor_release
 !#     -> Releases a coarse grid correction structure
 !#
-!# 3.) cgcor_calcOptimalCorrection  
+!# 3.) cgcor_calcOptimalCorrection
 !#     -> Calculate the optimal alpha for the correction.
 !#
 !#  FAQ - Frequently asked Questions  \\
@@ -38,7 +38,7 @@
 !#
 !#   Now imagine that you set the array p_DequationWeights to (1,1,-1); then,
 !#   residuals are calculated of the following system:
-!# 
+!#
 !# <verb>
 !#    (r1)     ( f1)   ( A11    A12  B1)  (x1)
 !#    (r2)  =  ( f2) - ( A21    A22  B2)  (x2)
@@ -52,7 +52,7 @@
 !#
 !# 2.) How to use that array?
 !#
-!#   Set up a coarse grid correction structure with 
+!#   Set up a coarse grid correction structure with
 !#
 !#    call cgcor_init (rcoarseGridCorrection,3)
 !#
@@ -78,7 +78,7 @@ module coarsegridcorrection
 
 !<constantblock description="Method identifier for coarse grid correction">
 
-  ! Standard constant damping. A correction factor of 1.0 is used for 
+  ! Standard constant damping. A correction factor of 1.0 is used for
   ! the coarse grid correction if dalphaMin < 1.0 < dalphaMax.
   ! Otherwise, the constant dalphaMin is chosen.
   ! Remark: This is the optimal setting for a scalar equation with conformal
@@ -104,7 +104,7 @@ module coarsegridcorrection
 
 !<typeblock>
 
-  ! Coarse grid correction structure; defines the behaviour of 
+  ! Coarse grid correction structure; defines the behaviour of
   ! how to calculate the optimal coarse grid correction.
   type t_coarseGridCorrection
     
@@ -140,7 +140,7 @@ module coarsegridcorrection
 
   public :: cgcor_init
   public :: cgcor_release
-  public :: cgcor_calcOptimalCorrection  
+  public :: cgcor_calcOptimalCorrection
 
   ! ***************************************************************************
 
@@ -210,8 +210,8 @@ contains
                                           
 !<description>
   ! This routine calculates the optimal coarse grid correction parameter
-  ! alpha adaptively. The parameter ccorrectionType in the 
-  ! rcoarseGridCorrection structure defines the method how to calculate this 
+  ! alpha adaptively. The parameter ccorrectionType in the
+  ! rcoarseGridCorrection structure defines the method how to calculate this
   ! parameter.
 !</description>
 
@@ -375,7 +375,7 @@ contains
       dalpha = 1.0_DP
     end if
     
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
 
@@ -484,7 +484,7 @@ contains
       dalpha = 1.0_DP
     end if
     
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
 
@@ -548,7 +548,7 @@ contains
     !             ( A_k corr_k     ,  A_k corr_k )
     !
     ! For this purpose, we need the temporary vector.
-    !    
+    !
     ! Calculate nominator of the fraction
       
     call lsysbl_copyVector(rrhs,rtempVecBlock)
@@ -585,6 +585,6 @@ contains
     ! Release the 2nd temp vector
     call lsysbl_releaseVector (rtempBlock2)
     
-  end subroutine  
+  end subroutine
 
 end module

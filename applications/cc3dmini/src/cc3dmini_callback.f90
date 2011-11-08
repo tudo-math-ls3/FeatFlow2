@@ -136,8 +136,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -221,8 +221,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -299,8 +299,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -376,8 +376,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -453,8 +453,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -479,23 +479,23 @@ contains
 !
 !    SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
 !                                   cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-!    
+!
 !    USE collection
 !    USE spatialdiscretisation
 !    USE discretebc
-!    
+!
 !  !<description>
 !    ! This subroutine is called during the discretisation of boundary
 !    ! conditions. It calculates a special quantity on the boundary, which is
 !    ! then used by the discretisation routines to generate a discrete
 !    ! 'snapshot' of the (actually analytic) boundary conditions.
 !  !</description>
-!    
+!
 !  !<input>
 !    ! Component specifier.
-!    ! For Dirichlet boundary: 
+!    ! For Dirichlet boundary:
 !    !   Icomponents(1) defines the number of the solution component, the value
-!    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+!    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
 !    !   2=2nd solution component, e.g. Y-velocity,...,
 !    !   3=3rd solution component, e.g. pressure)
 !    ! For pressure drop boundary / normal stress:
@@ -503,64 +503,64 @@ contains
 !    !   (usually "1 2" for x- and y-velocity while returned value musr specify
 !    !   the pressure at the boundary)
 !    INTEGER, DIMENSION(:), INTENT(in)                           :: Icomponents
-!  
+!
 !    ! The discretisation structure that defines the basic shape of the
 !    ! triangulation with references to the underlying triangulation,
 !    ! analytic boundary boundary description etc.
 !    TYPE(t_spatialDiscretisation), INTENT(in)                   :: rdiscretisation
-!    
+!
 !    ! Boundary region that is currently being processed.
 !    TYPE(t_boundaryRegion), INTENT(in)                          :: rboundaryRegion
-!    
+!
 !    ! The element number on the boundary which is currently being processed
 !    integer, intent(in)                                         :: ielement
-!    
+!
 !    ! The type of information, the routine should calculate. One of the
 !    ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
 !    ! to return one or multiple information value in the result array.
 !    INTEGER, INTENT(in)                                         :: cinfoNeeded
-!    
+!
 !    ! A reference to a geometric object where information should be computed.
-!    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+!    ! cinfoNeeded=DISCBC_NEEDFUNC :
 !    !   iwhere = number of the point in the triangulation or
 !    !          = 0, if only the parameter value of the point is known; this
 !    !               can be found in dwhere,
-!    ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+!    ! cinfoNeeded=DISCBC_NEEDFUNCMID :
 !    !   iwhere = number of the edge in which midpoint the value
 !    !            should be computed
-!    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+!    ! cinfoNeeded=DISCBC_NEEDDERIV :
 !    !   iwhere = number of the point in the triangulation or
 !    !          = 0, if only the parameter value of the point is known; this
 !    !               can be found in dwhere,
-!    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+!    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
 !    !   iwhere = number of the edge where the value integral mean value
 !    !            should be computed
-!    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+!    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
 !    !   iwhere = Number of the edge where the normal stress should be computed.
 !    INTEGER(I32), INTENT(in)                                    :: iwhere
 !
 !    ! A reference to a geometric object where information should be computed.
-!    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+!    ! cinfoNeeded=DISCBC_NEEDFUNC :
 !    !   dwhere = parameter value of the point where the value should be computed,
-!    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+!    ! cinfoNeeded=DISCBC_NEEDDERIV :
 !    !   dwhere = parameter value of the point where the value should be computed,
-!    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+!    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
 !    !   dwhere = 0 (not used)
-!    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+!    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS :
 !    !   dwhere = parameter value of the point on edge iwhere where the normal
 !    !            stress should be computed.
 !    REAL(DP), INTENT(in)                                        :: dwhere
-!     
-!    ! Optional: A collection structure to provide additional 
-!    ! information to the coefficient routine. 
+!
+!    ! Optional: A collection structure to provide additional
+!    ! information to the coefficient routine.
 !    TYPE(t_collection), INTENT(inout), OPTIONAL      :: rcollection
 !
 !  !</input>
-!  
+!
 !  !<output>
 !    ! This array receives the calculated information. If the caller
-!    ! only needs one value, the computed quantity is put into Dvalues(1). 
-!    ! If multiple values are needed, they are collected here (e.g. for 
+!    ! only needs one value, the computed quantity is put into Dvalues(1).
+!    ! If multiple values are needed, they are collected here (e.g. for
 !    ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
 !    !
 !    ! The function may return SYS_INFINITY_DP as a value. This indicates the
@@ -568,21 +568,21 @@ contains
 !    ! node.
 !    REAL(DP), DIMENSION(:), INTENT(out)                         :: Dvalues
 !  !</output>
-!    
+!
 !  !</subroutine>
 !
 !    INTEGER :: icomponent
 !    REAL(DP) :: x,y
-!    
+!
 !    REAL(DP), PARAMETER :: dinflowSpeed = 0.3_DP
-!    
+!
 !    SELECT CASE (cinfoNeeded)
 !    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDDERIV,DISCBC_NEEDINTMEAN)
 !      ! Get from the current component of the PDE we are discretising:
 !      icomponent = Icomponents(1)
-!      
+!
 !      ! -> 1=X-velocity, 2=Y-velocity.
-!      
+!
 !      ! Return zero Dirichlet boundary values for all situations by default.
 !      Dvalues(1) = 0.0_DP
 !
@@ -601,14 +601,14 @@ contains
 !          ! Nothing to do here.
 !        END SELECT
 !      END IF
-!    
+!
 !    CASE (DISCBC_NEEDNORMALSTRESS)
-!      
+!
 !      ! Normal stress on inflow is 0.025, let's say.
 !      Dvalues(1) = -0.025_DP
-!    
+!
 !    END SELECT
-!    
+!
 !  END SUBROUTINE
 !
 
@@ -631,9 +631,9 @@ contains
   
 !<input>
   ! Component specifier.
-  ! For Dirichlet boundary: 
+  ! For Dirichlet boundary:
   !   Icomponents(1) defines the number of the solution component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry,
   !   2=2nd solution component, e.g. Y-velocity,...,
   !   3=3rd solution component, e.g. pressure)
   ! For pressure drop boundary / normal stress:
@@ -674,16 +674,16 @@ contains
   ! calculated.
   real(DP), dimension(:), intent(in)                          :: Dcoords
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional                 :: rcollection
 
 !</input>
 
 !<output>
   ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
+  ! only needs one value, the computed quantity is put into Dvalues(1).
+  ! If multiple values are needed, they are collected here (e.g. for
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the

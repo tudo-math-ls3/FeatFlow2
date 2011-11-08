@@ -50,7 +50,7 @@ public :: t_ufciData
   ! Data structure for callback functions
   type t_ufciData
 
-    ! IN: The task that is to be performed by the callback function; one of 
+    ! IN: The task that is to be performed by the callback function; one of
     !     the UFCI_TASK_XXXX constants which specifies what information is
     !     desired from the callback function by the caller.
     integer :: ctask = UFCI_TASK_NONE

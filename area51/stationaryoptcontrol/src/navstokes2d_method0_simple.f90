@@ -24,7 +24,7 @@
 !#   z = target velocity
 !#
 !# The boundary conditions for the dual solution are =0 on the
-!# Dirichlet boundary. 
+!# Dirichlet boundary.
 !# The projection operator
 !#
 !#   P(g) = P(g)g = P[a,b](g)g = max(a,min(b,g))
@@ -86,7 +86,7 @@ module navstokes2d_method0_simple
     ! =1: Precalculated solution
     integer :: itype
     
-    ! Triangulation of the target flow. Underlying domain is the 
+    ! Triangulation of the target flow. Underlying domain is the
     ! same as in the main problem.
     type(t_triangulation) :: rtriangulation
     
@@ -369,7 +369,7 @@ contains
       !call vecio_writeBlockVectorHR (rdefectblock, 'vector', .false.,&
       !                               0, 'vector.txt', '(E12.5)')
       
-    else    
+    else
       ! DEBUG!!!
       call lsyssc_getbase_double (rdefectBlock%RvectorBlock(1),p_DdataX)
       call lsyssc_getbase_double (rdefectBlock%RvectorBlock(2),p_DdataY)
@@ -392,8 +392,8 @@ contains
 
       ! *************************************************************
       ! Create the nonlinear defect
-      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y ) 
-      !  (d2)    ( -z )   ( -M    A                 ) ( p ) 
+      !  (d1) =  (  f ) - (  A    -P(u)(-1/alpha .) ) ( y )
+      !  (d2)    ( -z )   ( -M    A                 ) ( p )
       ! We do this manually...
       
       call lsysbl_copyVector (rvectorBlock,rdefectBlock)
@@ -503,7 +503,7 @@ contains
         call conv_streamlineDiffusionBlk2d ( &
                             rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
                             rstreamlineDiffPrimalDef, CONV_MODDEFECT, &
-                            rtempmatrix, rtempVectorSol, rtempVectorB)        
+                            rtempmatrix, rtempVectorSol, rtempVectorB)
 
         ! Dual equation.
         ! Assemble b = b + y grad lambda - (grad lambda)^t y
@@ -513,7 +513,7 @@ contains
         call conv_streamlineDiffusionBlk2d ( &
                             rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
                             rstreamlineDiffDualDef, CONV_MODDEFECT, &
-                            rtempmatrix, rtempVectorX, rtempVectorB)        
+                            rtempmatrix, rtempVectorX, rtempVectorB)
       
         call lsysbl_releaseVector (rtempVectorSol)
         call lsysbl_releaseVector (rtempVectorB)
@@ -1009,7 +1009,7 @@ contains
       rstreamlineDiffDual%dupsam = rparams%dupsamDual
       rstreamlineDiffDual%dnu = rparams%dnu
       rstreamlineDiffDual%ddelta = -1.0_DP
-      !if (rparams%bnewton) 
+      !if (rparams%bnewton)
       rstreamlineDiffDual%dnewtonTransposed = 1.0_DP
 
       ! Dual preconditioner, reactive mass matrix block
@@ -1049,7 +1049,7 @@ contains
         call lsyssc_matrixLinearComb (rlevel%rmatrixMass,1.0_DP/rparams%dt,&
             rmatrixBlock%RmatrixBlock(2,2),1.0_DP,rmatrixBlock%RmatrixBlock(2,2),&
             .false.,.false.,.true.,.true.)
-      end if      
+      end if
 
       call lsyssc_duplicateMatrix (rlevel%rmatrixB1,rmatrixBlock%RmatrixBlock(1,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -1254,7 +1254,7 @@ contains
         call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 1,2,.true.)
         call conv_streamlineDiffusionBlk2d ( &
                             rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                            rstreamlineDiffDual, CONV_MODMATRIX,rtempmatrix)  
+                            rstreamlineDiffDual, CONV_MODMATRIX,rtempmatrix)
 
         ! Newton?
         if (rparams%bnewton .and. rparams%bdualcoupledtoprimal) then
@@ -1265,14 +1265,14 @@ contains
           call lsysbl_deriveSubvector(rvectorBlock,rtempVectorSol, 4,5,.true.)
           call conv_streamlineDiffusionBlk2d ( &
                             rtempVectorSol, rtempVectorSol, 1.0_DP, 0.0_DP,&
-                            rstreamlineDiffDualR, CONV_MODMATRIX,rtempmatrix)  
+                            rstreamlineDiffDualR, CONV_MODMATRIX,rtempmatrix)
                             
         end if
         
         call lsysbl_releaseVector (rtempVectorSol)
         call lsysbl_releaseMatrix (rtempmatrix)
       
-      end if    
+      end if
       
       !call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
       !    .true., 0, 'matrix1.txt', '(E12.5)', 1E-10_DP)
@@ -1421,7 +1421,7 @@ contains
 
     ! local variables
   
-    ! A set of variables describing the discrete boundary conditions.    
+    ! A set of variables describing the discrete boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     logical :: binflowBC
 
@@ -1774,7 +1774,7 @@ contains
     
     deallocate(p_Idofs)
 
-  end subroutine    
+  end subroutine
 
   ! ***************************************************************************
   
@@ -1814,7 +1814,7 @@ contains
       p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
     end do
 
-  end subroutine 
+  end subroutine
   
   ! ***************************************************************************
 
@@ -1859,7 +1859,7 @@ contains
     type(t_vectorScalar), target :: rvectorOutputX,rvectorOutputY,rvectorTmp
     type(t_vectorBlock) :: rdefectBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode, p_rprecSolver
     type(t_filterChain), dimension(3), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
@@ -1896,16 +1896,16 @@ contains
     type(t_matrixConfig) :: rparams
     
     integer :: icurrentmaxre,icurrentre,icurrentalpha,icurrentupsam
-    integer, dimension(4), parameter :: imaxre = (/1000,500,250,100/) 
-    integer, dimension(9), parameter :: ire = (/1000,500,250,100,50,25,10,5,1/) 
+    integer, dimension(4), parameter :: imaxre = (/1000,500,250,100/)
+    integer, dimension(9), parameter :: ire = (/1000,500,250,100,50,25,10,5,1/)
     real(dp), dimension(3), parameter :: Dalpha = (/0.01_DP,0.1_DP,0.001_DP/)
     real(dp), dimension(6), parameter :: Dupsam = (/0.0_DP,0.2_DP,0.4_DP,0.6_DP,0.8_DP,1.0_DP/)
     !integer, dimension(1), parameter :: ire = (/100/)
     !real(dp), dimension(1), parameter :: Dalpha = (/0.01_DP/)
 
-    ! Ok, let's start. 
+    ! Ok, let's start.
     !
-    ! We want to solve our Poisson problem on level... 
+    ! We want to solve our Poisson problem on level...
     NLMAX = 5
     
     ! Minimum level in the MG solver
@@ -1934,7 +1934,7 @@ contains
     ! Discretisation. 1=EM30, 2=Q2
     idiscretisation = 1
     
-    ! TRUE emulates a timestep with implicit Euler, timestep length dt, 
+    ! TRUE emulates a timestep with implicit Euler, timestep length dt,
     ! starting from a zero solution
     rparams%bemulateTimestep = .false.
     
@@ -2235,7 +2235,7 @@ contains
               
               ! Attach the system matrix to the solver.
               ! First create an array with the matrix data (on all levels, but we
-              ! only have one level here), then call the initialisation 
+              ! only have one level here), then call the initialisation
               ! routine to attach all these matrices.
               ! Remark: Don't make a call like
               !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
@@ -2276,7 +2276,7 @@ contains
               
             end do
 
-            ! Clean up the linear solver    
+            ! Clean up the linear solver
             if (ite .ge. 1) then
               call linsol_doneStructure (p_rsolverNode)
             end if
@@ -2337,7 +2337,7 @@ contains
             end if
 
             ! That's it, rvectorBlock now contains our solution. We can now
-            ! start the postprocessing. 
+            ! start the postprocessing.
             ! Start UCD export to GMV file:
             call ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevel(NLMAX)%rtriangulation,&
                               'gmv/unst2d_'//trim(sys_siL(imaxre(icurrentmaxre),10))//&
@@ -2500,7 +2500,7 @@ contains
         call lsyssc_releaseMatrix (Rlevel(ilevel)%rmatrixDiagP)
         call spdiscr_releaseBlockDiscr(Rlevel(ilevel)%rdiscretisation)
       
-        ! Release the triangulation. 
+        ! Release the triangulation.
         call tria_done (Rlevel(ilevel)%rtriangulation)
       
       end do

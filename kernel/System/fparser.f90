@@ -5,22 +5,22 @@
 !#
 !# <purpose>
 !#
-!# This public domain function parser module is intended for applications 
-!# where a set of mathematical expressions is specified at runtime and is 
+!# This public domain function parser module is intended for applications
+!# where a set of mathematical expressions is specified at runtime and is
 !# then evaluated for a large number of variable values. This is done by
 !# compiling the set of function strings into byte code, which is interpreted
-!# very efficiently for the various variable values. The evaluation is 
+!# very efficiently for the various variable values. The evaluation is
 !# straightforward and no recursions are done (uses stack arithmetic).
 !#
 !# ------------------------------------------------------------------------ \\
 !# Copyright notice \\
 !# ------------------------------------------------------------------------ \\
-!# (a) This module is based on the "Fortran 90 function parser V1.1" 
+!# (a) This module is based on the "Fortran 90 function parser V1.1"
 !#     written by Roland Schmehl < Roland.Schmehl@mach.uni-karlsruhe.de >
 !#     The original Fortran90 source code is available from:
 !#     http://itsextern.its.uni-karlsruhe.de/~schmehl/functionparser.html
 !#
-!#     However the "Fortran 90 function parser V1.1" only recognizes the 
+!#     However the "Fortran 90 function parser V1.1" only recognizes the
 !#     (single argument) Fortran 90 intrinsic functions abs, exp, log10,
 !#     log, sqrt, sinh, cosh, tanh, sin, cos, tan, asin, acos, atan.
 !#
@@ -40,81 +40,81 @@
 !#
 !# Step 0 - Module Import \\
 !# ---------------------- \\
-!# In all program units where you want to use the function parser procedures 
+!# In all program units where you want to use the function parser procedures
 !# and variables you must import the module by:
 !#
 !# <code>
 !#  use fparser
 !# </code>
 !#
-!# This command imports only 6 public names: fparser_create, fparser_release, 
+!# This command imports only 6 public names: fparser_create, fparser_release,
 !# fparser_parseFunction, fparser_evalFunction, fparser_ErrorMsg and EvalErrType
-!# which are explained in the following. The remainder of the 
+!# which are explained in the following. The remainder of the
 !# module is hidden to the calling program.
 !#
 !# Step 1 - Initialization \\
 !# ----------------------- \\
-!# The parser module has to be initialized for the simultaneous evaluation of 
-!# n functions by calling the module subroutine initp one time in your Fortran 
+!# The parser module has to be initialized for the simultaneous evaluation of
+!# n functions by calling the module subroutine initp one time in your Fortran
 !# code:
-!# 
+!#
 !# <code>
 !#  call fparser_create (Parser, n)
 !# </code>
-!# 
-!# This allocates i=1,...,n internal data structures used by the byte-compiler 
+!#
+!# This allocates i=1,...,n internal data structures used by the byte-compiler
 !# and subsequently by the bytecode-interpreter in the bytecode object Comp.
 !#
 !# Step 2 - Function parsing \\
 !# ------------------------- \\
-!# The i-th function string FuncStr is parsed (checked and compiled) into the 
+!# The i-th function string FuncStr is parsed (checked and compiled) into the
 !# i-th bytecode by calling the module subroutine parsef:
 !#
 !# <code>
 !#  call fparser_parseFunction (Parser, i, FuncStr, Var)
 !# </code>
 !#
-!# The variable names as they appear in the string FuncStr have to be passed 
-!# in the one-dimensional string array Var (zero size of Var is acceptable). 
-!# The number of variables is implicitly passed by the dimension of this array. 
+!# The variable names as they appear in the string FuncStr have to be passed
+!# in the one-dimensional string array Var (zero size of Var is acceptable).
+!# The number of variables is implicitly passed by the dimension of this array.
 !# For some notes on the syntax of the function string see below.
 !#
 !# Step 3 - Function evaluation \\
 !# ---------------------------- \\
-!# The i-th function value is evaluated for a specific set of variable values 
+!# The i-th function value is evaluated for a specific set of variable values
 !# by calling the module function evalf:
 !#
 !# <code>
 !#  a = fparser_evalFunction (Parser, i, Val)
 !# </code>
 !#
-!# The variable values are passed in the one-dimensional array Val which must 
-!# have the same dimension as array Var. 
+!# The variable values are passed in the one-dimensional array Val which must
+!# have the same dimension as array Var.
 !#
 !# ------------------------------------------------------------------------ \\
 !# Error handling \\
 !# ------------------------------------------------------------------------ \\
-!# 
-!# An error in the function parsing step leads to a detailed error message 
+!#
+!# An error in the function parsing step leads to a detailed error message
 !# (Type and position of error) and program termination.
 !#
 !# An error during function evaluation returns a function value of 0.0 and
-!# sets the error flag EvalErrType (part of the t_fparser derived type) to 
-!# a value > 0 (EvalErrType = 0 indicates no error). An error message from the 
-!# bytecode-interpreter can be obtained by calling the character function 
+!# sets the error flag EvalErrType (part of the t_fparser derived type) to
+!# a value > 0 (EvalErrType = 0 indicates no error). An error message from the
+!# bytecode-interpreter can be obtained by calling the character function
 !# fparser_ErrorMsg (Parser) with the parser object as an argument.
 !#
 !# ------------------------------------------------------------------------ \\
 !# Function string syntax \\
 !# ------------------------------------------------------------------------ \\
 !#
-!# Although they have to be passed as array elements of the same declared 
-!# length (Fortran 90 restriction), the variable names can be of arbitrary 
-!# actual length for the parser. Parsing for variables is case sensitive. 
+!# Although they have to be passed as array elements of the same declared
+!# length (Fortran 90 restriction), the variable names can be of arbitrary
+!# actual length for the parser. Parsing for variables is case sensitive.
 !#
-!# The syntax of the function string is similar to the Fortran convention. 
+!# The syntax of the function string is similar to the Fortran convention.
 !# Mathematical Operators recognized are +, -, *, /, %, ** or alternatively
-!# ^, whereas symbols for brackets must be (), [] or {}. Note that the 
+!# ^, whereas symbols for brackets must be (), [] or {}. Note that the
 !# parser does not check if, e.g. ( is closed by ) or ]. At the moment,
 !# different brackets may be used only to improve readability of the function
 !# string.
@@ -141,8 +141,8 @@
 !# </verb>
 !#
 !# where nnn means any number of digits. The mantissa must contain at least
-!# one digit before or following an optional decimal point. Valid exponent 
-!# identifiers are 'e', 'E', 'd' or 'D'. If they appear they must be followed 
+!# one digit before or following an optional decimal point. Valid exponent
+!# identifiers are 'e', 'E', 'd' or 'D'. If they appear they must be followed
 !# by a valid exponent!
 !#
 !# Note that the function parser is case insensitive.
@@ -394,7 +394,7 @@ module fparser
   interface fparser_evalFunction
     module procedure fparser_evalFuncScalarByName
     module procedure fparser_evalFuncScalarByNumber
-    module procedure fparser_evalFuncBlockByName   
+    module procedure fparser_evalFuncBlockByName
     module procedure fparser_evalFuncBlockByNumber
   end interface
 
@@ -478,9 +478,9 @@ module fparser
   integer(is), parameter :: cPow         = 11, &
                             cNEqual      = 12, & ! NOTE: != must be prior to =
                             cEqual       = 13, &
-                            cLessOrEq    = 14, & ! NOTE: <= must be prior to < 
+                            cLessOrEq    = 14, & ! NOTE: <= must be prior to <
                             cLess        = 15, &
-                            cGreaterOrEq = 16, & ! NOTE: >= must be prior to > 
+                            cGreaterOrEq = 16, & ! NOTE: >= must be prior to >
                             cGreater     = 17, &
                             cNot         = 18, &
                             cAnd         = 19, &
@@ -502,7 +502,7 @@ module fparser
                             cTanh        = 35, &
                             cSin         = 36, &
                             cCos         = 37, &
-                            cTan         = 38, & 
+                            cTan         = 38, &
                             cCot         = 39, &
                             cAsinh       = 40, &
                             cAsin        = 41
@@ -616,7 +616,7 @@ module fparser
 !<publicvars>
 
   ! Global number of predefined/user-defined constants
-  integer, save :: nconstants = 0 
+  integer, save :: nconstants = 0
 
   ! Global number of predefined/user-defined expressions
   integer, save :: nexpressions = 0
@@ -647,7 +647,7 @@ module fparser
   type t_fparser
     private
     
-    ! Array of function parser components. 
+    ! Array of function parser components.
     ! Each component is used to handle one function string at a time
     type(t_fparserComponent), dimension(:), pointer :: Rcomp => null()
 
@@ -1319,11 +1319,11 @@ contains
                                           Dresult, DvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in 
-    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working 
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! Evaluate bytecode of component icomp for the array of values passed in
+    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
     ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of 
+    ! such as nodal coordinates, which are different for each component of
     ! the resulting vector and those which are the same, e.g., time variable.
     ! The latter ones can be passed to the ValScalar argument which is used
     ! uniformly for each component of Res.
@@ -1392,11 +1392,11 @@ contains
                                            n3, Dresult, DvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in 
-    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working 
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! Evaluate bytecode of component icomp for the array of values passed in
+    ! array DvalueBlock(:,:). Note that this function is a wrapper for the working
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
     ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of 
+    ! such as nodal coordinates, which are different for each component of
     ! the resulting vector and those which are the same, e.g., time variable.
     ! The latter ones can be passed to the ValScalar argument which is used
     ! uniformly for each component of Res.
@@ -1471,7 +1471,7 @@ contains
   subroutine fparser_evalFuncScalarByNumber (rfparser, icomp, Dvalue, dresult)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the values passed in array 
+    ! Evaluate bytecode of component icomp for the values passed in array
     ! Dvalue(:). Note that this function is a wrapper for the working routine
     ! evalFunctionScalar. It is used to adjust the dimensions of the global
     ! stack memory if required.
@@ -1532,11 +1532,11 @@ contains
                                             Dresult, DvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in 
-    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working 
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! Evaluate bytecode of component icomp for the array of values passed in
+    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
     ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of 
+    ! such as nodal coordinates, which are different for each component of
     ! the resulting vector and those which are the same, e.g., time variable.
     ! The latter ones can be passed to the ValScalar argument which is used
     ! uniformly for each component of Res.
@@ -1751,11 +1751,11 @@ contains
                                              n3, Dresult, DvalueScalar, rperfconfig)
 
 !<description>
-    ! Evaluate bytecode of component icomp for the array of values passed in 
-    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working 
-    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! Evaluate bytecode of component icomp for the array of values passed in
+    ! array DvaluelBlock(:,:). Note that this function is a wrapper for the working
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the
     ! global stack memory if required. In some situations, there a variables,
-    ! such as nodal coordinates, which are different for each component of 
+    ! such as nodal coordinates, which are different for each component of
     ! the resulting vector and those which are the same, e.g., time variable.
     ! The latter ones can be passed to the ValScalar argument which is used
     ! uniformly for each component of Res.
@@ -1838,7 +1838,7 @@ contains
 !<input>
     ! Error identifier
     integer, intent(in) :: EvalErrType
-!</input>   
+!</input>
     
 !<result>
     ! Error messages
@@ -2033,7 +2033,7 @@ contains
       ! Check for valid operand (must appear)
 
       ! Check for leading - or !
-      if (c .eq. '-' .or. c .eq. '!') then                      
+      if (c .eq. '-' .or. c .eq. '!') then
         ifunctionIndex = ifunctionIndex+1
         if (ifunctionIndex .gt. ifunctionLength) then
           call output_line('Premature end of string!',&
@@ -2189,7 +2189,7 @@ contains
         call sys_halt()
       end if
       
-      ! Now, we have an operand and an operator: the next loop will check for another 
+      ! Now, we have an operand and an operator: the next loop will check for another
       ! operand (must appear)
       ifunctionIndex = ifunctionIndex+iopSize
     end do
@@ -2436,7 +2436,7 @@ contains
 !</result>
 !</function>
 
-    ! local variables    
+    ! local variables
     integer :: j,ib,in,istringlen
     
     n = 0
@@ -2650,7 +2650,7 @@ contains
     integer, dimension(:), allocatable :: p_Irandom1,p_Irandom2
     integer :: iaux
 
-    rcomp%ibytecodeSize = rcomp%ibytecodeSize + 1    
+    rcomp%ibytecodeSize = rcomp%ibytecodeSize + 1
     rcomp%IbyteCode(rcomp%ibytecodeSize) = ibyte
 
     ! Try to optimize the compiled bytecode. Check the bytecode instruction and
@@ -3112,7 +3112,7 @@ contains
       if (rcomp%IbyteCode(rcomp%ibytecodeSize-1) .eq. cImmed) then
         rcomp%Dimmed(rcomp%iimmedSize) = DegToRad(rcomp%Dimmed(rcomp%iimmedSize))
         call RemoveCompiledByte(rcomp)
-      end if      
+      end if
     end select
 
   end subroutine AddCompiledByte
@@ -3275,17 +3275,17 @@ contains
         ib = ib+1
         if (InMan .or. Eflag .or. InExp) exit
       case ('+','-') ! Permitted only
-        if     (Bflag) then           
+        if     (Bflag) then
           InMan=.true.; Bflag=.false. ! - at beginning of mantissa
-        elseif (Eflag) then               
+        elseif (Eflag) then
           InExp=.true.; Eflag=.false. ! - at beginning of exponent
         else
           exit ! - otherwise CALL sys_halt()
         endif
       case ('0':'9') ! Mark
-        if     (Bflag) then           
+        if     (Bflag) then
           InMan=.true.; Bflag=.false. ! - beginning of mantissa
-        elseif (Eflag) then               
+        elseif (Eflag) then
           InExp=.true.; Eflag=.false. ! - beginning of exponent
         endif
         if (InMan) DInMan=.true. ! Mantissa contains digit
@@ -3886,10 +3886,10 @@ contains
           ind2 = CompileIf(rcomp, sfunctionString, ind2+1, Svariables)
           ! IF-THEN-ELSE cannot be vectorized, note that!
           rcomp%bisVectorizable = .false.
-          return        
+          return
         end if
 
-        nparams = MathFunctionParameters(n)        
+        nparams = MathFunctionParameters(n)
         ind2 = CompileFunctionParameters(rcomp, sfunctionString, ind2+1, Svariables, nparams)
         call AddFunctionOpcode(rcomp, n)
         return
@@ -4301,14 +4301,14 @@ contains
         Dstack(istackPtr) = ceiling(Dstack(istackPtr))
         
       case (cCos)
-        Dstack(istackPtr) = cos(Dstack(istackPtr)) 
+        Dstack(istackPtr) = cos(Dstack(istackPtr))
         
       case (cCosh)
         Dstack(istackPtr) = cosh(Dstack(istackPtr))
 
       case (cCot)
         daux = tan(Dstack(istackPtr))
-        if (daux .eq. 0._DP) then 
+        if (daux .eq. 0._DP) then
           EvalErrType = 1
           dresult     = 0._DP
           return
@@ -4345,7 +4345,7 @@ contains
           dresult     = 0._DP
           return
         endif
-        Dstack(istackPtr) = log(Dstack(istackPtr)) 
+        Dstack(istackPtr) = log(Dstack(istackPtr))
         
       case (cLog10)
         if (Dstack(istackPtr) .le. 0._DP) then
@@ -4695,7 +4695,7 @@ contains
 
       case (cCos)
         do iblock = 1, iblockSize
-           Dstack(iblock, istackPtr) = cos(Dstack(iblock, istackPtr)) 
+           Dstack(iblock, istackPtr) = cos(Dstack(iblock, istackPtr))
         end do
         
 
@@ -4708,7 +4708,7 @@ contains
       case (cCot)
         do iblock = 1, iblockSize
           daux=tan(Dstack(iblock, istackPtr))
-          if (daux .eq. 0) then 
+          if (daux .eq. 0) then
             EvalErrType = 1
             Dresult(iblock) = 0._DP
           else
@@ -4756,7 +4756,7 @@ contains
             EvalErrType = 3
             Dresult(iblock) = 0._DP
           else
-            Dstack(iblock, istackPtr) = log(Dstack(iblock, istackPtr)) 
+            Dstack(iblock, istackPtr) = log(Dstack(iblock, istackPtr))
           end if
         end do
 

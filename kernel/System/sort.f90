@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# 
+!#
 !# This module contains a couple of standard sorting algorithms that can be
 !# used to sort integer, real and double-precision memory blocks.
 !# as well as arrays.
@@ -124,8 +124,8 @@ contains
     ! sort algorithm: SORT_HEAP, SORT_QUICK, SORT_INSERT
     integer, optional :: csortMethod
 
-    ! OPTIONAL: Temporary 2D array containing n nodes 
-    ! Ielem(1..inode). If not specified, the array is 
+    ! OPTIONAL: Temporary 2D array containing n nodes
+    ! Ielem(1..inode). If not specified, the array is
     ! automatically allocated if necessary.
     integer, dimension(:), intent(inout), target, optional :: Itemp
 
@@ -180,7 +180,7 @@ contains
 
       case default
         call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
-            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
+            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')
         call sys_halt()
       end select
     else
@@ -551,7 +551,7 @@ contains
             Itemp(idest) = Iarray(ilo)
             ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          else        
+          else
             Itemp(idest) = Iarray(istart_hi)
             ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
@@ -559,16 +559,16 @@ contains
           idest = idest+1
         end do
         
-        ! Copy the rest of the array. Only one of them may still 
+        ! Copy the rest of the array. Only one of them may still
         ! contain data!
-        do while (ilo .le. imid) 
+        do while (ilo .le. imid)
           Itemp(idest) = Iarray(ilo)
           ImappingTemp(idest) = Imapping(ilo)
           ilo = ilo+1
           idest = idest+1
-        end do  
+        end do
         
-        do while (istart_hi .le. ilen) 
+        do while (istart_hi .le. ilen)
           Itemp(idest) = Iarray(istart_hi)
           ImappingTemp(idest) = Imapping(istart_hi)
           istart_hi = istart_hi+1
@@ -587,22 +587,22 @@ contains
           if (Iarray(ilo) .le. Iarray(istart_hi)) then
             Itemp(idest) = Iarray(ilo)
             ilo = ilo+1
-          else        
+          else
             Itemp(idest) = Iarray(istart_hi)
             istart_hi = istart_hi+1
           end if
           idest = idest+1
         end do
         
-        ! Copy the rest of the array. Only one of them may still 
+        ! Copy the rest of the array. Only one of them may still
         ! contain data!
-        do while (ilo .le. imid) 
+        do while (ilo .le. imid)
           Itemp(idest) = Iarray(ilo)
           ilo = ilo+1
           idest = idest+1
-        end do  
+        end do
         
-        do while (istart_hi .le. ilen) 
+        do while (istart_hi .le. ilen)
           Itemp(idest) = Iarray(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
@@ -642,8 +642,8 @@ contains
     ! sort algorithm: SORT_HEAP, SORT_QUICK, SORT_INSERT
     integer, optional :: csortMethod
 
-    ! OPTIONAL: Temporary 2D array containing n nodes 
-    ! Ielem(1..inode). If not specified, the array is 
+    ! OPTIONAL: Temporary 2D array containing n nodes
+    ! Ielem(1..inode). If not specified, the array is
     ! automatically allocated if necessary.
     integer, dimension(:), intent(inout), target, optional :: Itemp
 
@@ -702,7 +702,7 @@ contains
 
       case default
         call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
-            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
+            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')
       end select
     else
       call heapsort(Iarray, Imapping)
@@ -1029,7 +1029,7 @@ contains
             Itemp(idest) = Iarray(ilo)
             ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          else        
+          else
             Itemp(idest) = Iarray(istart_hi)
             ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
@@ -1037,16 +1037,16 @@ contains
           idest = idest+1
         end do
         
-        ! Copy the rest of the array. Only one of them may still 
+        ! Copy the rest of the array. Only one of them may still
         ! contain data!
-        do while (ilo .le. imid) 
+        do while (ilo .le. imid)
           Itemp(idest) = Iarray(ilo)
           ImappingTemp(idest) = Imapping(ilo)
           ilo = ilo+1
           idest = idest+1
-        end do  
+        end do
         
-        do while (istart_hi .le. ilen) 
+        do while (istart_hi .le. ilen)
           Itemp(idest) = Iarray(istart_hi)
           ImappingTemp(idest) = Imapping(istart_hi)
           istart_hi = istart_hi+1
@@ -1065,22 +1065,22 @@ contains
           if (Iarray(ilo) .le. Iarray(istart_hi)) then
             Itemp(idest) = Iarray(ilo)
             ilo = ilo+1
-          else        
+          else
             Itemp(idest) = Iarray(istart_hi)
             istart_hi = istart_hi+1
           end if
           idest = idest+1
         end do
         
-        ! Copy the rest of the array. Only one of them may still 
+        ! Copy the rest of the array. Only one of them may still
         ! contain data!
-        do while (ilo .le. imid) 
+        do while (ilo .le. imid)
           Itemp(idest) = Iarray(ilo)
           ilo = ilo+1
           idest = idest+1
-        end do  
+        end do
         
-        do while (istart_hi .le. ilen) 
+        do while (istart_hi .le. ilen)
           Itemp(idest) = Iarray(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
@@ -1140,7 +1140,7 @@ contains
 
        case default
         call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
-            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
+            OU_CLASS_ERROR,OU_MODE_STD,'sort_int')
       end select
     else
        call heapsort(Darray)
@@ -1348,8 +1348,8 @@ contains
     !optional mapping vector (if more than 1 vector may be sorted)
     integer, dimension(:), intent(inout), optional :: Imapping
 
-    ! OPTIONAL: Temporary 2D array containing n nodes 
-    ! Ielem(1..inode). If not specified, the array is 
+    ! OPTIONAL: Temporary 2D array containing n nodes
+    ! Ielem(1..inode). If not specified, the array is
     ! automatically allocated if necessary.
     real(DP), dimension(:), intent(inout), target, optional :: Dtemp
 
@@ -1402,7 +1402,7 @@ contains
 
       case default
         call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
-            OU_CLASS_ERROR,OU_MODE_STD,'sort_dp')        
+            OU_CLASS_ERROR,OU_MODE_STD,'sort_dp')
       end select
     else
 
@@ -1731,7 +1731,7 @@ contains
             Dtemp(idest) = Darray(ilo)
             ImappingTemp(idest) = Imapping(ilo)
             ilo = ilo+1
-          else        
+          else
             Dtemp(idest) = Darray(istart_hi)
             ImappingTemp(idest) = Imapping(istart_hi)
             istart_hi = istart_hi+1
@@ -1739,16 +1739,16 @@ contains
           idest = idest+1
         end do
         
-        ! Copy the rest of the array. Only one of them may still 
+        ! Copy the rest of the array. Only one of them may still
         ! contain data!
-        do while (ilo .le. imid) 
+        do while (ilo .le. imid)
           Dtemp(idest) = Darray(ilo)
           ImappingTemp(idest) = Imapping(ilo)
           ilo = ilo+1
           idest = idest+1
-        end do  
+        end do
         
-        do while (istart_hi .le. ilen) 
+        do while (istart_hi .le. ilen)
           Dtemp(idest) = Darray(istart_hi)
           ImappingTemp(idest) = Imapping(istart_hi)
           istart_hi = istart_hi+1
@@ -1767,22 +1767,22 @@ contains
           if (Darray(ilo) .le. Darray(istart_hi)) then
             Dtemp(idest) = Darray(ilo)
             ilo = ilo+1
-          else        
+          else
             Dtemp(idest) = Darray(istart_hi)
             istart_hi = istart_hi+1
           end if
           idest = idest+1
         end do
         
-        ! Copy the rest of the array. Only one of them may still 
+        ! Copy the rest of the array. Only one of them may still
         ! contain data!
-        do while (ilo .le. imid) 
+        do while (ilo .le. imid)
           Dtemp(idest) = Darray(ilo)
           ilo = ilo+1
           idest = idest+1
-        end do  
+        end do
         
-        do while (istart_hi .le. ilen) 
+        do while (istart_hi .le. ilen)
           Dtemp(idest) = Darray(istart_hi)
           istart_hi = istart_hi+1
           idest = idest+1
@@ -1843,8 +1843,8 @@ contains
     ! Method to use for sorting (optional). Defaults to Heapsort
     integer, optional, intent(in) :: cmethod
     
-    ! OPTIONAL: Temporary 2D array containing n nodes 
-    ! Ielem(1..nindex,inode). If not specified, the array is 
+    ! OPTIONAL: Temporary 2D array containing n nodes
+    ! Ielem(1..nindex,inode). If not specified, the array is
     ! automatically allocated if necessary.
     integer, dimension(:,:), intent(inout), target, optional :: Itemp
   !</input>
@@ -1884,13 +1884,13 @@ contains
                 'Itemp', Isize, ST_INT, hhandle, &
                 ST_NEWBLOCK_NOINIT)
             call storage_getbase_int2d (hhandle,p_Itemp)
-            call mergeSort(1,nnode) 
+            call mergeSort(1,nnode)
             call storage_free (hhandle)
           end if
         case DEFAULT
           call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          call sys_halt() 
+          call sys_halt()
       end select
     else
       call heapSort
@@ -2057,7 +2057,7 @@ contains
             p_Itemp(idx,idest) = Ielem(idx,ilo)
           end do
           ilo = ilo+1
-        else        
+        else
           do idx = 1,ubound(Ielem,1)
             p_Itemp(idx,idest) = Ielem(idx,istart_hi)
           end do
@@ -2066,17 +2066,17 @@ contains
         idest = idest+1
       end do
       
-      ! Copy the rest of the array. Only one of them may still 
+      ! Copy the rest of the array. Only one of them may still
       ! contain data!
-      do while (ilo .le. imid) 
+      do while (ilo .le. imid)
         do idx = 1,ubound(Ielem,1)
           p_Itemp(idx,idest) = Ielem(idx,ilo)
         end do
         ilo = ilo+1
         idest = idest+1
-      end do  
+      end do
       
-      do while (istart_hi .le. ihigh) 
+      do while (istart_hi .le. ihigh)
         do idx = 1,ubound(Ielem,1)
           p_Itemp(idx,idest) = Ielem(idx,istart_hi)
         end do
@@ -2120,7 +2120,7 @@ contains
           Ielem(idx,k) = Ielem(idx,k-1)
         end do
         Ielem(idx,j) = t
-      end do 
+      end do
       
     end subroutine circShiftRight
 
@@ -2147,8 +2147,8 @@ contains
     ! Method to use for sorting (optional). Defaults to Heapsort
     integer, optional, intent(in) :: cmethod
     
-    ! OPTIONAL: Temporary 2D array containing n nodes 
-    ! Delem(1..nindex,inode). If not specified, the array is 
+    ! OPTIONAL: Temporary 2D array containing n nodes
+    ! Delem(1..nindex,inode). If not specified, the array is
     ! automatically allocated if necessary.
     real(DP), dimension(:,:), intent(inout), target, optional :: Dtemp
   !</input>
@@ -2188,14 +2188,14 @@ contains
                 'Dtemp', Isize, ST_DOUBLE, hhandle, &
                 ST_NEWBLOCK_NOINIT)
             call storage_getbase_double2d (hhandle,p_Dtemp)
-            call mergeSort(1,nnode) 
+            call mergeSort(1,nnode)
             call storage_free (hhandle)
           end if
             
         case DEFAULT
           call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          call sys_halt() 
+          call sys_halt()
       end select
     else
       call heapSort
@@ -2364,7 +2364,7 @@ contains
             p_Dtemp(idx,idest) = Delem(idx,ilo)
           end do
           ilo = ilo+1
-        else        
+        else
           do idx = 1,ubound(Delem,1)
             p_Dtemp(idx,idest) = Delem(idx,istart_hi)
           end do
@@ -2373,17 +2373,17 @@ contains
         idest = idest+1
       end do
       
-      ! Copy the rest of the array. Only one of them may still 
+      ! Copy the rest of the array. Only one of them may still
       ! contain data!
-      do while (ilo .le. imid) 
+      do while (ilo .le. imid)
         do idx = 1,ubound(Delem,1)
           p_Dtemp(idx,idest) = Delem(idx,ilo)
         end do
         ilo = ilo+1
         idest = idest+1
-      end do  
+      end do
       
-      do while (istart_hi .le. ihigh) 
+      do while (istart_hi .le. ihigh)
         do idx = 1,ubound(Delem,1)
           p_Dtemp(idx,idest) = Delem(idx,istart_hi)
         end do
@@ -2429,7 +2429,7 @@ contains
           Delem(idx,k) = Delem(idx,k-1)
         end do
         Delem(idx,j) = t
-      end do 
+      end do
       
     end subroutine circShiftRight
 
@@ -2456,8 +2456,8 @@ contains
     ! Method to use for sorting (optional). Defaults to Heapsort
     integer, optional, intent(in) :: cmethod
     
-    ! OPTIONAL: Temporary 2D array containing n nodes 
-    ! Delem(1..nindex,inode). If not specified, the array is 
+    ! OPTIONAL: Temporary 2D array containing n nodes
+    ! Delem(1..nindex,inode). If not specified, the array is
     ! automatically allocated if necessary.
     real(SP), dimension(:,:), intent(inout), target, optional :: Stemp
   !</input>
@@ -2497,13 +2497,13 @@ contains
                 'Stemp', Isize, ST_SINGLE, hhandle, &
                 ST_NEWBLOCK_NOINIT)
             call storage_getbase_single2d (hhandle,p_Stemp)
-            call mergeSort(1,nnode) 
+            call mergeSort(1,nnode)
             call storage_free (hhandle)
           end if
         case DEFAULT
           call output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          call sys_halt() 
+          call sys_halt()
       end select
     else
       call heapSort
@@ -2672,7 +2672,7 @@ contains
             p_Stemp(idx,idest) = Selem(idx,ilo)
           end do
           ilo = ilo+1
-        else        
+        else
           do idx = 1,ubound(Selem,1)
             p_Stemp(idx,idest) = Selem(idx,istart_hi)
           end do
@@ -2681,17 +2681,17 @@ contains
         idest = idest+1
       end do
       
-      ! Copy the rest of the array. Only one of them may still 
+      ! Copy the rest of the array. Only one of them may still
       ! contain data!
-      do while (ilo .le. imid) 
+      do while (ilo .le. imid)
         do idx = 1,ubound(Selem,1)
           p_Stemp(idx,idest) = Selem(idx,ilo)
         end do
         ilo = ilo+1
         idest = idest+1
-      end do  
+      end do
       
-      do while (istart_hi .le. ihigh) 
+      do while (istart_hi .le. ihigh)
         do idx = 1,ubound(Selem,1)
           p_Stemp(idx,idest) = Selem(idx,istart_hi)
         end do
@@ -2737,7 +2737,7 @@ contains
           Selem(idx,k) = Selem(idx,k-1)
         end do
         Selem(idx,j) = t
-      end do 
+      end do
       
     end subroutine circShiftRight
 

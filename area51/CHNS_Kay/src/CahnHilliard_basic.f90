@@ -26,7 +26,7 @@ module CahnHilliard_basic
   use multilevelprojection
   use filtersupport
   
-! Take care of this ...how to use adaptive time stepping? 
+! Take care of this ...how to use adaptive time stepping?
   use timestepping
   use adaptivetimestep
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,7 +52,7 @@ module CahnHilliard_basic
 !MCai, add a rdiscretisation
     type(t_blockDiscretisation) :: rdiscretisation
     
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the velocity FEM space. Take care.
     type(t_spatialDiscretisation) ::rdiscretisationLaplace
     type(t_spatialDiscretisation) ::rdiscretisationMass
@@ -61,19 +61,19 @@ module CahnHilliard_basic
     ! matrices. The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateFEM
 
-   ! A-matrix for that specific level. 
+   ! A-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixA
 
-   ! B-matrix for that specific level. 
+   ! B-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB
 
-    ! C-matrix for that specific level. 
+    ! C-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixC
     
     ! D-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD
 
-    ! System matrix. May change during the time iteration    
+    ! System matrix. May change during the time iteration
     type(t_matrixBlock) :: rmatrix
     
     ! The mass matrix for phase variable (also chem potential)
@@ -85,7 +85,7 @@ module CahnHilliard_basic
     ! The convection matrix (velocity \cdot grad \phi)
 	type(t_matrixScalar) :: rmatrixConv
 
-    ! We may need temp vector in nonlinear iteration. 
+    ! We may need temp vector in nonlinear iteration.
     type(t_vectorBlock) :: rtempVector
     
     ! A variable describing the discrete boundary conditions.
@@ -101,13 +101,13 @@ module CahnHilliard_basic
 
   type t_CHproblem_nonst
 
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Configuration block of the time stepping scheme.
     type(t_explicitTimeStepping)        :: rtimestepping
     
     ! Configuration block for the adaptive time stepping.
     type(t_adaptimeTimeStepping) :: radaptiveTimeStepping
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ! Number of current time step
     integer                             :: iiteration
@@ -128,8 +128,8 @@ module CahnHilliard_basic
 
 !</typeblock>
 
-! Do we need adaptive time step? if yes, please add a t_CHproblem_explTimeStepping, 
-! similar to cc2d. 
+! Do we need adaptive time step? if yes, please add a t_CHproblem_explTimeStepping,
+! similar to cc2d.
 
 !<typeblock description="Application-specific type block for CahnHilliard problem">
 
@@ -147,7 +147,7 @@ module CahnHilliard_basic
     ! A RHS vector on the finest level used for solving linear systems
     type(t_vectorBlock) :: rrhs
     
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), POINTER :: p_rsolverNode
     
     ! An interlevel projection structure for changing levels
@@ -169,8 +169,8 @@ module CahnHilliard_basic
     ! A param list that saves all parameters from the DAT/INI file(s).
     type(t_parlist)                       :: rparamList
 
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
+    ! A collection object that saves structural data and some
+    ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
     

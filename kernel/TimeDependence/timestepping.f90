@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains a realisation of 1D time-stepping schemes used 
+!# This module contains a realisation of 1D time-stepping schemes used
 !# for the time discretisation of PDE`s. Examples for this are Explicit Euler,
 !# Crank Nicolson or the Fractional Step Theta scheme.
 !#
@@ -41,11 +41,11 @@
 !# <code>
 !#    TYPE(t_explicitTimeStepping) :: tstepping
 !#
-!#    ! Initialise time stepping  
+!#    ! Initialise time stepping
 !#    CALL timstp_init (tstepping,...)
 !#
 !#    DO istep = 1,#max number of time steps
-!# 
+!#
 !#      ... (do some work at the current time tstepping%dcurrentTime)
 !#
 !#      ! Proceed to next time step
@@ -59,7 +59,7 @@
 !# to time dcurrentTime+dtstep. That is all.
 !#
 !# The time stepping structure contains definitions for various constants that
-!# are to be used in front of the different terms in the PDE. See the 
+!# are to be used in front of the different terms in the PDE. See the
 !# documentation of t_explicitTimeStepping which constants are to be used
 !# for what.
 !#
@@ -67,17 +67,17 @@
 !#   updates the weights in one step. In some simulations, this has to be
 !#   decoupled, e.g. when some things on the right hand side of a system
 !#   must be assembled at timestep $t^n$ and some on timestep $t^{n+1}$.
-!#   In this case, one can use timstp_nextSubstepTime and 
+!#   In this case, one can use timstp_nextSubstepTime and
 !#   timstp_nextSubstepWeights. The usage is as follows:
 !#
 !# <code>
 !#    TYPE(t_explicitTimeStepping) :: tstepping
 !#
-!#    ! Initialise time stepping  
+!#    ! Initialise time stepping
 !#    CALL timstp_init (tstepping,...)
 !#
 !#    DO istep = 1,#max number of time steps
-!# 
+!#
 !#      ... (do some assembly at the timestep $t^n$)
 !#
 !#      ! Increase the simulation time
@@ -129,7 +129,7 @@ module timestepping
   !
   !               <tex> $$ u_t(x,t) + N(u(x,t)) = f(x,t) $$ </tex>
   !
-  ! Given a time step $k$ and a time stepping scheme parameter $\theta$, 
+  ! Given a time step $k$ and a time stepping scheme parameter $\theta$,
   ! this is discretised in as:
   ! <tex>
   !
@@ -143,7 +143,7 @@ module timestepping
   ! name. Then the time stepping scheme realised by this structure yields:
   ! <tex>
   !
-  ! $$ u_{n+1} + dweightMatrixLHS*N(u_n+1) 
+  ! $$ u_{n+1} + dweightMatrixLHS*N(u_n+1)
   !
   ! =  u_n + dweightMatrixRHS*N(u_n)  +  dweightNewRHS*f_{n+1}  +  dweightOldRHS*f_n $$
   !
@@ -178,8 +178,8 @@ module timestepping
     
     ! Current simulation time of the macrostep. For standard $\theta$-schemes,
     ! there is dcurrentTime=dtimeMacrostep. For schemes with multiple substeps
-    ! like Fractional-Step, dcurrentTime is the current time of the substep, 
-    ! while dtimeMacrostep saves the 'last' simulation time stamp with 
+    ! like Fractional-Step, dcurrentTime is the current time of the substep,
+    ! while dtimeMacrostep saves the 'last' simulation time stamp with
     ! "isubstep=1", i.e. the beginning of the 'macrostep'.
     real(DP)                 :: dtimeMacrostep
     
@@ -310,7 +310,7 @@ contains
   ! or TSCHM_FRACTIONALSTEP for Fractional Step.
   integer, intent(in)    :: ctimestepType
   
-  ! The initial simulational time. 
+  ! The initial simulational time.
   real(DP), intent(in)   :: dtime
     
   ! (Theoretical) Time step length of the simulation / 'base' step length of the
@@ -319,7 +319,7 @@ contains
   ! scheme. The real time step size is found in rtstepScheme%dtstep.
   real(DP), intent(in)   :: dtstep
 
-  ! OPTIONAL: Theta scheme identifier. 
+  ! OPTIONAL: Theta scheme identifier.
   ! Only used for ctimestepType=TSCHM_ONESTEP.
   !  =0.0: Forward Euler
   !  =1.0: Backward Euler
@@ -352,7 +352,7 @@ contains
       
       rtstepScheme%ctimestepType    = TSCHM_ONESTEP
       
-      ! Standard time stepping. Here the parameters are a little bit  
+      ! Standard time stepping. Here the parameters are a little bit
       ! easier to initialise.
       rtstepScheme%nsubsteps        = 1
       
@@ -367,18 +367,18 @@ contains
       ! The FS-scheme has 3 substeps.
       rtstepScheme%nsubsteps        = 3
       
-      ! The FS Theta-Scheme uses by theory 4 parameters:           
-      !                                                            
-      !   Theta   = 1 - sqrt(2) / 2                                
-      !   Theta`  = 1 - 2 * Theta                                  
-      !   alpha   = ( 1 - 2 * Theta ) / ( 1 - Theta )              
-      !   beta    = 1 - alpha                                      
-      !                                                            
+      ! The FS Theta-Scheme uses by theory 4 parameters:
+      !
+      !   Theta   = 1 - sqrt(2) / 2
+      !   Theta`  = 1 - 2 * Theta
+      !   alpha   = ( 1 - 2 * Theta ) / ( 1 - Theta )
+      !   beta    = 1 - alpha
+      !
       ! The parameter THETA in the DAT-file is ignored and replaced
-      ! by a hard-coded setting.                                   
+      ! by a hard-coded setting.
       
-      dtheta1 = 1.0_DP-sqrt(0.5_DP)      
-      dthetp1 = 1.0_DP-2.0_DP*dtheta1       
+      dtheta1 = 1.0_DP-sqrt(0.5_DP)
+      dthetp1 = 1.0_DP-2.0_DP*dtheta1
       dalpha  = dthetp1 / (1.0_DP-dtheta1)
       dbeta   = dtheta1 / (1.0_DP-dtheta1)
 
@@ -440,7 +440,7 @@ contains
       rtstepScheme%dtstep           = dtstep
       rtstepScheme%dthStep          = dtstep * dtheta1
       
-      ! Initialise weights for matrices and RHS:   
+      ! Initialise weights for matrices and RHS:
       rtstepScheme%dweightMatrixLHS = dtstep * dtheta1
       rtstepScheme%dweightMatrixRHS = - dtstep * (1.0_DP - dtheta1)
       rtstepScheme%dweightNewRHS    = dtstep * dtheta1
@@ -453,19 +453,19 @@ contains
       ! current time step according to the substep:
       !
       ! For fractional step the handling of the time step size dtstep
-      ! is slightly different than for a 1-step scheme.                                   
-      ! There we are orienting on the length of the macrostep of    
-      ! step length 3*dtstep and break up that into three different  
-      ! substeps at different points in time, not corresponding to  
-      ! dtstep. Depending on the number of the current substep, we   
-      ! have two settings for the weights and time length:          
+      ! is slightly different than for a 1-step scheme.
+      ! There we are orienting on the length of the macrostep of
+      ! step length 3*dtstep and break up that into three different
+      ! substeps at different points in time, not corresponding to
+      ! dtstep. Depending on the number of the current substep, we
+      ! have two settings for the weights and time length:
       
-      dtheta1 = rtstepScheme%dtheta           
-      dthetp1 = rtstepScheme%dthetaPrime      
-      dalpha  = rtstepScheme%dalpha           
-      dbeta   = rtstepScheme%dbeta    
+      dtheta1 = rtstepScheme%dtheta
+      dthetp1 = rtstepScheme%dthetaPrime
+      dalpha  = rtstepScheme%dalpha
+      dbeta   = rtstepScheme%dbeta
       
-      if (rtstepScheme%isubstep .ne. 2) then     
+      if (rtstepScheme%isubstep .ne. 2) then
 
         ! 1st and 3rd substep
         
@@ -532,7 +532,7 @@ contains
 !<description>
   ! Advances in time. In rtstepScheme, the current simulation time is increased
   ! to the next point in time.
-  ! Note that the weights and the number of the current (sub)step are not 
+  ! Note that the weights and the number of the current (sub)step are not
   ! changed! These have to be updated with an additional call to
   ! timstp_nextSubstepWeights!
 !</description>
@@ -560,9 +560,9 @@ contains
   subroutine timstp_nextSubstepWeights (rtstepScheme)
   
 !<description>
-  ! Advances the weights of the time step scheme in time. The number of the 
-  ! current time (sub)step in increased and the weights for the terms in the 
-  ! differential equation are updated according to the next substep in 
+  ! Advances the weights of the time step scheme in time. The number of the
+  ! current time (sub)step in increased and the weights for the terms in the
+  ! differential equation are updated according to the next substep in
   ! the time stepping scheme.
 !</description>
   

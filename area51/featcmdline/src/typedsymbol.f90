@@ -435,11 +435,11 @@ contains
   
     ! Type conversion if possible
     select case (rdest%ctype)
-    case (STYPE_INTEGER) 
+    case (STYPE_INTEGER)
       rdest%ivalue = isource
-    case (STYPE_DOUBLE) 
+    case (STYPE_DOUBLE)
       rdest%dvalue = real(isource,DP)
-    case (STYPE_INVALID) 
+    case (STYPE_INVALID)
       ! Invalid and no variable associated? Will be an int.
       if (rdest%svarname .eq. "") then
         rdest%ctype = STYPE_INTEGER
@@ -460,11 +460,11 @@ contains
   
     ! Type conversion if possible
     select case (rdest%ctype)
-    case (STYPE_INTEGER) 
+    case (STYPE_INTEGER)
       rdest%ivalue = int(dsource)
-    case (STYPE_DOUBLE) 
+    case (STYPE_DOUBLE)
       rdest%dvalue = dsource
-    case (STYPE_INVALID) 
+    case (STYPE_INVALID)
       ! Invalid and no variable associated? Will be a double.
       if (rdest%svarname .eq. "") then
         rdest%ctype = STYPE_DOUBLE
@@ -485,10 +485,10 @@ contains
   
     ! Type conversion if possible
     select case (rdest%ctype)
-    case (STYPE_STRING) 
+    case (STYPE_STRING)
       rdest%svalue = ssource
       rdest%ilength = len_trim(ssource)
-    case (STYPE_INVALID) 
+    case (STYPE_INVALID)
       ! Invalid and no variable associated? Will be a double.
       if (rdest%svarname .eq. "") then
         rdest%ctype = STYPE_STRING

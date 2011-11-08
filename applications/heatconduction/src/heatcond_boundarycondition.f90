@@ -73,7 +73,7 @@ contains
     ! local variables
     integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs
@@ -82,7 +82,7 @@ contains
     ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     
-    ! A set of variables describing the analytic boundary conditions.    
+    ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! A pointer to the domain
@@ -94,7 +94,7 @@ contains
     ! Put the current simulation time as parameter "TIME" into the collection.
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
-    rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime 
+    rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime
     call collct_setvalue_real(rproblem%rcollection,'TIME',&
          rproblem%rtimedependence%dtime,.true.)
     
@@ -136,7 +136,7 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC`s for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
@@ -180,7 +180,7 @@ contains
     ! to the matrix on the finest level.
     p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscreteBC
     
-    p_rrhs    => rproblem%rrhs   
+    p_rrhs    => rproblem%rrhs
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
                 
   end subroutine
@@ -217,7 +217,7 @@ contains
   ! local variables
   integer :: i,ilvmax
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     
@@ -238,7 +238,7 @@ contains
     call vecfil_discreteBCrhs (rrhs,p_rdiscreteBC)
     call vecfil_discreteBCsol (rvector,p_rdiscreteBC)
 
-    ! Implement discrete boundary conditions into the matrices on all 
+    ! Implement discrete boundary conditions into the matrices on all
     ! levels, too. Call the appropriate matrix filter to modify
     ! all matrices according to the attached discrete boundary conditions.
     do i=rproblem%ilvmin,rproblem%ilvmax

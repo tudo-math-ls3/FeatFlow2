@@ -1875,7 +1875,7 @@ contains
     ! collection
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
-!</subroutine>  
+!</subroutine>
 
     print *, "Subroutine tstep_performRKStepBlCpl is not implemented"
     stop

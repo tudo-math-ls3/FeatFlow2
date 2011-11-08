@@ -18,7 +18,7 @@
 !#     -> Callback routine. Preconditioning of nonlinear defect
 !#
 !# 4.) c2d2_getProlRest
-!#     -> Auxiliary routine: Set up iterlevel projection structure 
+!#     -> Auxiliary routine: Set up iterlevel projection structure
 !#        with information from INI/DAT files
 !#
 !# 5.) c2d2_preparePreconditioner
@@ -28,7 +28,7 @@
 !#     -> Auxiliary routine: Clean up preconditioner of nonlinear iteration
 !#
 !# 7.) c2d2_getNonlinearSolver
-!#     -> Auxiliary routine: Initialise nonlinear solver configuration 
+!#     -> Auxiliary routine: Initialise nonlinear solver configuration
 !#        with information from INI/DAT files
 !#
 !# 8.) c2d2_solve
@@ -75,7 +75,7 @@ module cc2dminim2stationary
 !<typeblock>
 
   ! Preconditioner structure for CCxD. This structure saves the configuration of the
-  ! preconditioner that is used during the nonlinear iteration. 
+  ! preconditioner that is used during the nonlinear iteration.
   
   type t_ccPreconditioner
   
@@ -122,9 +122,9 @@ contains
     
   !<description>
     ! FOR NONLINEAR ITERATION:
-    ! Defect vector calculation callback routine. Based on the current iteration 
-    ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
+    ! Defect vector calculation callback routine. Based on the current iteration
+    ! vector rx and the right hand side vector rb, this routine has to compute the
+    ! defect vector rd. The routine accepts a pointer to a collection structure
     ! p_rcollection, which allows the routine to access information from the
     ! main application (e.g. system matrices).
   !</description>
@@ -169,7 +169,7 @@ contains
       p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
       p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,'LAPLACE',ilvmax)
       
-      ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace 
+      ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace
       ! on the main diagonal:
       !
       ! (  L    0   B1 )
@@ -234,7 +234,7 @@ contains
           ! As we calculate only the defect, the matrix is ignored!
           call conv_upwind2d (rx, rx, 1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
-                              p_rmatrix%RmatrixBlock(1,1), rx, rd)      
+                              p_rmatrix%RmatrixBlock(1,1), rx, rd)
                   
         case DEFAULT
           print *,'Don''t know how to set up nonlinearity!?!'
@@ -270,11 +270,11 @@ contains
     !
     ! with $d_n$ the nonlinear defect and $C^{-1}$ a preconditioner (usually
     ! the linearised system).
-    ! Based on the current solution $u_n$, the defect vector $d_n$, the RHS 
-    ! vector $f_n$ and the previous parameter OMEGA, a new 
+    ! Based on the current solution $u_n$, the defect vector $d_n$, the RHS
+    ! vector $f_n$ and the previous parameter OMEGA, a new
     ! OMEGA=domega value is calculated.
     !
-    ! The nonlinear system matrix on the finest level in the collection is 
+    ! The nonlinear system matrix on the finest level in the collection is
     ! overwritten by $A(u_n+domega_{old}*C^{-1}d_n)$.
   !</description>
 
@@ -285,7 +285,7 @@ contains
     ! Current RHS vector of the nonlinear equation
     type(t_vectorBlock), intent(in)               :: rb
 
-    ! Defect vector b-A(x)x. 
+    ! Defect vector b-A(x)x.
     type(t_vectorBlock), intent(in)               :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
@@ -375,7 +375,7 @@ contains
       !                                        = Y = (y1,y2,yp) = rd
       !
       ! with KST1=KST1(u1,u2,p) and Y=rd being the solution from
-      ! the Oseen equation with 
+      ! the Oseen equation with
       !
       !                  [ A         B1 ]
       !    C = T(u_n) =  [      A    B2 ]
@@ -393,7 +393,7 @@ contains
       ! when choosing omegaold=previous omega, which is a good choice
       ! as one can see by linearization (see p. 170, Turek's book).
       !
-      ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian 
+      ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian
       ! scalar product <.,.>.
       
       ! ==================================================================
@@ -421,7 +421,7 @@ contains
         case (1)
       
           ! Construct the linear part of the nonlinear matrix on the maximum
-          ! level. 
+          ! level.
           !
           ! The system matrix looks like:
           !   (  A    0   B1 )
@@ -448,7 +448,7 @@ contains
           ! in the point rtemp1.
           call conv_upwind2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
-                              p_rmatrix%RmatrixBlock(1,1))      
+                              p_rmatrix%RmatrixBlock(1,1))
                                     
         case DEFAULT
           print *,'Don''t know how to set up nonlinearity!?!'
@@ -483,7 +483,7 @@ contains
 
       call lsysbl_blockMatVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
       
-      ! This is a defect vector against 0 - filter it! This e.g. 
+      ! This is a defect vector against 0 - filter it! This e.g.
       ! implements boundary conditions.
       call filter_applyFilterChainVec (rtemp1, RfilterChain)
       
@@ -528,15 +528,15 @@ contains
     
   !<description>
     ! FOR NONLINEAR ITERATION:
-    ! Defect vector calculation callback routine. Based on the current iteration 
-    ! vector rx and the right hand side vector rb, this routine has to compute the 
-    ! defect vector rd. The routine accepts a pointer to a collection structure 
+    ! Defect vector calculation callback routine. Based on the current iteration
+    ! vector rx and the right hand side vector rb, this routine has to compute the
+    ! defect vector rd. The routine accepts a pointer to a collection structure
     ! p_rcollection, which allows the routine to access information from the
     ! main application (e.g. system matrices).
   !</description>
 
   !<inputoutput>
-    ! Number of current iteration. 
+    ! Number of current iteration.
     integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
@@ -665,7 +665,7 @@ contains
           p_rvectorCoarse => rx
         else
           ! Get the temporary vector on level i. Will receive the solution
-          ! vector on that level. 
+          ! vector on that level.
           p_rvectorCoarse => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev)
           
           ! Get the solution vector on level i+1. This is either the temporary
@@ -713,7 +713,7 @@ contains
             ! Call the upwind method to calculate the nonlinear matrix.
             call conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
-                                p_rmatrix%RmatrixBlock(1,1))      
+                                p_rmatrix%RmatrixBlock(1,1))
                                          
           case DEFAULT
             print *,'Don''t know how to set up nonlinearity!?!'
@@ -848,7 +848,7 @@ contains
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       ! We use the default configuration; stop here.
@@ -941,9 +941,9 @@ contains
     type(t_spatialDiscretisation), pointer :: p_rdiscr
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
@@ -952,7 +952,7 @@ contains
     ! the linear solver.
     type(t_matrixBlock), dimension(NNLEV) :: Rmatrices
     
-    ! At first, ask the parameters in the INI/DAT file which type of 
+    ! At first, ask the parameters in the INI/DAT file which type of
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
     call parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
@@ -970,15 +970,15 @@ contains
     
       ! Get our right hand side / solution / matrix on the finest
       ! level from the problem structure.
-      p_rrhs    => rproblem%rrhs   
+      p_rrhs    => rproblem%rrhs
       p_rvector => rproblem%rvector
       p_rmatrix => rproblem%RlevelInfo(NLMAX)%rmatrix
       
       ! During the linear solver, the boundary conditions must
       ! frequently be imposed to the vectors. This is done using
-      ! a filter chain. As the linear solver does not work with 
+      ! a filter chain. As the linear solver does not work with
       ! the actual solution vectors but with defect vectors instead,
-      ! a filter for implementing the real boundary conditions 
+      ! a filter for implementing the real boundary conditions
       ! would be wrong.
       ! Therefore, create a filter chain with one filter only,
       ! which implements Dirichlet-conditions into a defect vector.
@@ -1028,7 +1028,7 @@ contains
 
       imaxmem = 0
       do i=NLMIN+1,NLMAX
-        ! Pass the system metrices on the coarse/fine grid to 
+        ! Pass the system metrices on the coarse/fine grid to
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryMat (rpreconditioner%rprojection,&
@@ -1076,7 +1076,7 @@ contains
       call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                 'iAdaptiveMatrix', i, 0)
                                 
-      ! Switch off adaptive matrix generation if our discretisation is not a 
+      ! Switch off adaptive matrix generation if our discretisation is not a
       ! uniform Q1~ discretisation - the matrix restriction does not support
       ! other cases.
       p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscr(1)
@@ -1122,13 +1122,13 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! The preconditioner structure for the CCxD problem. 
+  ! The preconditioner structure for the CCxD problem.
   type(t_ccPreconditioner), intent(inout), target :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>
 
-    ! Which preconditioner do we have?    
+    ! Which preconditioner do we have?
     select case (rpreconditioner%itypePreconditioning)
     case (1)
       ! Preconditioner was a linear solver structure.
@@ -1205,7 +1205,7 @@ contains
     ! Check that there is a section called sname - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       print *,'Cannot create nonlinear solver; no section '''&
@@ -1264,7 +1264,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_ccPreconditioner) :: rpreconditioner    
+    type(t_ccPreconditioner) :: rpreconditioner
     type(t_vectorBlock), target :: rtempBlock
     real(DP) :: d1
 

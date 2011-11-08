@@ -53,23 +53,23 @@ MODULE levelset
       
       !p_rsolverNode%depsRel = SYS_EPSREAL_DP * 100.0_DP
       !p_rsolverNode%nmaxiterations = 1000
-      !p_rsolverNode%ioutputLevel = 1  
+      !p_rsolverNode%ioutputLevel = 1
      
       
       
       RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
       p_RfilterChain => RfilterChain
       NULLIFY(p_rpreconditioner)
-      CALL linsol_initUMFPACK4 (p_rsolverNode)  
+      CALL linsol_initUMFPACK4 (p_rsolverNode)
       p_rsolverNode%ioutputLevel = 2
       call lsysbl_createMatFromScalar(rproblem%rlevelinfo(rproblem%NLMAX)%rmatrixLS,Rmatrices(1))
       
       call linsol_setMatrices (p_rsolverNode,Rmatrices)
       call linsol_initStructure (p_rsolverNode,ierror)
-      call linsol_initData (p_rsolverNode,ierror) 
+      call linsol_initData (p_rsolverNode,ierror)
       
       call lsysbl_duplicateVector (rvector,rvector2,&
-          LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)    
+          LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
        
       call linsol_solveAdaptively (p_rsolverNode,rvector,rvectortmp,rvector2)
       
@@ -138,8 +138,8 @@ MODULE levelset
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(INOUT), optional      :: rcollection
     
   !</input>
@@ -164,7 +164,7 @@ MODULE levelset
          Dcoefficients(:,j,i) = 0.05_DP-dr
          
      end do
-   end do  
+   end do
 
   end subroutine
 
@@ -177,7 +177,7 @@ MODULE levelset
     !TYPE(t_problem_lvl), INTENT(IN),TARGET :: rlevelInfo
     type(t_blockDiscretisation),intent(in):: rdiscretisation
     
-    !local 
+    !local
     TYPE(t_interlevelProjectionBlock) :: rprojection
     TYPE(t_vectorBlock):: rtmpvector
     TYPE(t_vectorScalar) :: rvectorTemp
@@ -197,12 +197,12 @@ MODULE levelset
     CALL mlprj_performInterpolation (rprojection,rtmpvector,rvector, &
                                        rvectorTemp)
        
-    IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp) 
+    IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp)
     CALL lsysbl_swapVectors (rvector,rtmpvector)
-    CALL lsysbl_releaseVector (rtmpvector)  
-    CALL mlprj_doneProjection (rprojection) 
+    CALL lsysbl_releaseVector (rtmpvector)
+    CALL mlprj_doneProjection (rprojection)
   
-  END SUBROUTINE         
+  END SUBROUTINE
   
    
 

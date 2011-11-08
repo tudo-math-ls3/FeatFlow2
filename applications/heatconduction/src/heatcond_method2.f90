@@ -120,11 +120,11 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock,rtimeRhsBlock
 
     ! A set of variables describing the analytic and discrete boundary
-    ! conditions.    
+    ! conditions.
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_discreteBC), target :: rdiscreteBC
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
@@ -144,7 +144,7 @@ contains
     integer :: ntimesteps
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Time and time step counter
     real(DP) :: dtime
@@ -155,7 +155,7 @@ contains
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
 
-    ! Ok, let us start. 
+    ! Ok, let us start.
     !
     ! We want to solve our heat equation problem on level...
     NLMAX = 6
@@ -167,7 +167,7 @@ contains
     ! We start at time 0.0.
     dtime = 0.0_DP
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
@@ -227,7 +227,7 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC`s for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
@@ -289,8 +289,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Now we can build the matrix entries.
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
@@ -308,13 +308,13 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
 
     ! Build the entries.
     call bilf_buildMatrixScalar (rform,.true.,rmatrixMass)
 
-    ! Allocate memory for a temporary matrix. 
+    ! Allocate memory for a temporary matrix.
     call lsyssc_allocEmptyMatrix(rmatrix,LSYSSC_SETM_ZERO)
     
     ! From the temp matrix and from the mass matrix, we derive 'block' versions.
@@ -420,16 +420,16 @@ contains
         .false.,.false.,.true.,.true., rmatrix)
         
     ! Next step is to implement boundary conditions into the matrix.
-    ! This is done using a vector/matrix filter for discrete boundary 
+    ! This is done using a vector/matrix filter for discrete boundary
     ! conditions.
     ! The discrete boundary conditions are already attached to the
-    ! matrix. Call the appropriate matrix filter that modifies the 
+    ! matrix. Call the appropriate matrix filter that modifies the
     ! matrix according to the boundary conditions.
     call matfil_discreteBC (rmatrixBlock)
 
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
+    ! only have one level here), then call the initialisation
     ! routine to attach all these matrices.
     ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/rmatrixBlock/))
@@ -475,9 +475,9 @@ contains
       !    ^^^^^^^^^^       ^^^^^^^^^^^^^^^^
       !   rmatrixBlock       rtimeRhsBlock
       !
-      ! <=>         A x  = b    
+      ! <=>         A x  = b
       !
-      ! As we want to solve Ax=b with b being the real RHS and 
+      ! As we want to solve Ax=b with b being the real RHS and
       ! x being the real solution vector,
       ! we use linsol_solveAdaptively. If b is a defect
       ! RHS and x a defect update to be added to a solution vector,
@@ -485,7 +485,7 @@ contains
       call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rtimeRhsBlock,rtempBlock)
       
       ! That is it, rvectorBlock now contains our solution. We can now
-      ! start the postprocessing. 
+      ! start the postprocessing.
       !
       ! Get the path for writing postprocessing files from the environment variable
       ! $UCDDIR. If that does not exist, write to the directory "./gmv".
@@ -523,8 +523,8 @@ contains
     call lsysbl_releaseMatrix (rmatrixMassBlock)
 
     ! Release the matrices -- after releasing the block matrices!
-    ! These must exist as long as the block matrices exist, as the block 
-    ! matrices/vectors are only 'copies' of the scalar ones, sharing the 
+    ! These must exist as long as the block matrices exist, as the block
+    ! matrices/vectors are only 'copies' of the scalar ones, sharing the
     ! same handles!
     call lsyssc_releaseVector (rrhs)
     call lsyssc_releaseMatrix (rmatrix)
@@ -538,7 +538,7 @@ contains
     ! structures in it.
     call spdiscr_releaseBlockDiscr(rdiscretisation)
     
-    ! Release the triangulation. 
+    ! Release the triangulation.
     call tria_done (rtriangulation)
     
     ! Finally release the domain, that is it.

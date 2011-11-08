@@ -2074,7 +2074,7 @@ contains
       ssectionName, rcollection, rsource,&
       fcb_coeffVecBdrPrimal1d_sim, fcb_coeffVecBdrDual1d_sim,&
       fcb_coeffVecBdrPrimal2d_sim, fcb_coeffVecBdrDual2d_sim,&
-      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)    
+      fcb_coeffVecBdrPrimal3d_sim, fcb_coeffVecBdrDual3d_sim)
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -2215,7 +2215,7 @@ contains
         call lsysbl_vectorLinearComb(rsolution, p_rpredictor,&
             1.0_DP/rtimestep%dStep, -1.0_DP/rtimeStep%dStep)
 
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
             p_rpredictor, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
@@ -2331,7 +2331,7 @@ contains
             call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
             rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
         
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
@@ -2374,7 +2374,7 @@ contains
             call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
@@ -2574,7 +2574,7 @@ contains
                 call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
                 rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
 
-            ! Build the raw antidiffusive fluxes 
+            ! Build the raw antidiffusive fluxes
             call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
                 rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
 
@@ -2667,7 +2667,7 @@ contains
                 call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
                 rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
             
-            ! Build the raw antidiffusive fluxes 
+            ! Build the raw antidiffusive fluxes
             call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
                 rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
 
@@ -2756,7 +2756,7 @@ contains
       !
       !   $$ rhs = 0 $$
       !
-      ! Note that there is no explicit part from algebraic flux corretion 
+      ! Note that there is no explicit part from algebraic flux corretion
       !-------------------------------------------------------------------------
 
       ! Clear right-hand side vector
@@ -3004,7 +3004,7 @@ contains
         call lsysbl_vectorLinearComb(rsolution, p_rpredictor,&
             1.0_DP/rtimestep%dStep, -1.0_DP/rtimeStep%dStep)
 
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(massAFC),&
             p_rpredictor, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
@@ -3161,7 +3161,7 @@ contains
             call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
             rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
         
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
@@ -3204,7 +3204,7 @@ contains
             call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
@@ -3402,7 +3402,7 @@ contains
     integer :: ivelocitytype, velocityfield
     integer :: ibdc
 
-    ! Evaluate bilinear form for boundary integral and 
+    ! Evaluate bilinear form for boundary integral and
     ! return if there are no weak boundary conditions
     if (.not.rboundaryCondition%bWeakBdrCond) return
 
@@ -3564,7 +3564,7 @@ contains
     integer :: ivelocitytype, velocityfield, ccubTypeBdr
     integer :: ibdc, isegment
 
-    ! Evaluate bilinear form for boundary integral and 
+    ! Evaluate bilinear form for boundary integral and
     ! return if there are no weak boundary conditions
     if (.not.rboundaryCondition%bWeakBdrCond) return
 
@@ -4143,7 +4143,7 @@ contains
 
         ! Assemble the linear form
         call linf_buildVectorScalarBdr1d(rform, .false., rvector,&
-            fcoeff_buildVectorScBdr1D_sim, ibdc, rcollectionTmp)     
+            fcoeff_buildVectorScBdr1D_sim, ibdc, rcollectionTmp)
 
       case default
         call output_line('Unsupported type of boundary copnditions !',&
@@ -4353,7 +4353,7 @@ contains
             
             ! Prepare quick access array of temporal collection structure
             rcollectionTmp%DquickAccess(5) = rregion%dminParam
-            rcollectionTmp%DquickAccess(6) = rregion%dmaxParam          
+            rcollectionTmp%DquickAccess(6) = rregion%dmaxParam
           end if
           
           ! Assemble the linear form
@@ -4808,7 +4808,7 @@ contains
       end do
 
     case default
-      return      
+      return
     end select
     
   end subroutine transp_calcVelocityField
@@ -4883,7 +4883,7 @@ contains
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
-        'rparlist', ssectionName=ssectionName)   
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'convectionAFC', convectionAFC, 0)
     
@@ -4940,7 +4940,7 @@ contains
           
         else
           
-          ! Build the raw antidiffusive fluxes without including 
+          ! Build the raw antidiffusive fluxes without including
           ! the contribution from consistent mass matrix
           call afcsc_buildFluxFCT(&
               rproblemLevel%Rafcstab(convectionAFC),&
@@ -5064,7 +5064,7 @@ contains
             call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
             rproblemLevel, rproblemLevel%Rafcstab(convectionAFC))
         
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
@@ -5095,7 +5095,7 @@ contains
             call trans_calcBoundsAtEdgesLPT(p_rparlist, ssectionName,&
             rproblemLevel, rproblemLevel%Rafcstab(diffusionAFC))
         
-        ! Build the raw antidiffusive fluxes 
+        ! Build the raw antidiffusive fluxes
         call afcsc_buildFluxLPT(rproblemLevel%Rafcstab(diffusionAFC),&
             rsolution, 1.0_DP, .true., AFCSTAB_LPTFLUX+AFCSTAB_LPTFLUX_BOUNDS)
         
@@ -5558,7 +5558,7 @@ contains
     ! Get number of the analytic reference function
     icomp = rcollection%IquickAccess(2)
 
-    ! Evaluate all values by the function parser    
+    ! Evaluate all values by the function parser
     !$omp parallel do
     do iel = 1, nelements
       call fparser_evalFunction(p_rfparser, icomp, 2,&
@@ -6187,7 +6187,7 @@ contains
     ! the primal and dual problem, respectively. The resulting
     ! operator includes convective and diffusive terms as well as
     ! contributions from boundary terms due to weakly imposed boundary
-    ! condition. 
+    ! condition.
 
 !</description>
 
@@ -6403,7 +6403,7 @@ contains
     ! (2) with integration by parts:
     !     $$ \int_\Omega \nabla w \cdot {\bf f}(u) {\rm d}{\bf x} $$
     !
-    !     with weakly imposed boundary conditions 
+    !     with weakly imposed boundary conditions
     !
     !     $$ -\int_{\Gamma_-} w {\bf f}(u_0) \cdot {\bf n} {\rm d}{\bf s} $$
     !

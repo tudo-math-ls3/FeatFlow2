@@ -61,7 +61,7 @@ module structuresspacetimelinsol
     integer :: cspaceTimeSmoother = 1
 
     ! Damping parameter
-    real(dp) :: domega = 0.9 
+    real(dp) :: domega = 0.9
     
     ! Relaxation parameter (e.g. in SOR)
     real(dp) :: drelax = 1.0
@@ -134,30 +134,30 @@ module structuresspacetimelinsol
     ! =7: Pure block FBSOR solver
     ! =8: Defect correction with UMFPACK preconditioning
     ! =9: Defect correction with simple forward-backward solver.
-    integer :: ctypeSolver = 5 
+    integer :: ctypeSolver = 5
 
     ! Minimum number of time-iterations on the coarsest time-mesh
-    integer :: nminIterations = 1 
+    integer :: nminIterations = 1
 
     ! Maximum number of time-iterations on the coarsest time-mesh
-    integer :: nmaxIterations = 100 
+    integer :: nmaxIterations = 100
 
     ! Damping parameter
-    real(dp) :: domega = 1.0 
+    real(dp) :: domega = 1.0
 
     ! Relaxation parameter (e.g. in SOR)
     real(dp) :: drelax = 1.0
 
-    ! Damping of residuals, i.e. reduction of relative error 
+    ! Damping of residuals, i.e. reduction of relative error
     ! on finest grid; smaller -> more iterations
     ! Not used if inexact Newton is used as nonlinear solver.
-    real(dp) :: depsRel = 1E-2 
+    real(dp) :: depsRel = 1E-2
 
-    ! Limit for residuals, i.e. absolute error on finest grid; 
-    ! The linear solver stops if both, absolute error < depsAbs and 
+    ! Limit for residuals, i.e. absolute error on finest grid;
+    ! The linear solver stops if both, absolute error < depsAbs and
     ! rel. error < depsRel
     ! Not used if inexact Newton is used as nonlinear solver.
-    real(dp) :: depsAbs = 1E-0 
+    real(dp) :: depsAbs = 1E-0
 
     ! Limit for differences in the residuals
     real(dp) :: depsDiff = 1E-5
@@ -166,7 +166,7 @@ module structuresspacetimelinsol
     real(dp) :: ddivRel = 1E20
 
     ! Output level of the solver.
-    integer :: ioutputLevel = 2 
+    integer :: ioutputLevel = 2
      
     ! Type of stopping criterion.
     ! =0: Relative AND absolute stopping criterion must hold.
@@ -190,23 +190,23 @@ module structuresspacetimelinsol
   type t_nlstprec_sgrprec
   
     ! Minimum number of time-iterations on the coarsest time-mesh
-    integer :: nminIterations = 1 
+    integer :: nminIterations = 1
 
     ! Maximum number of time-iterations on the coarsest time-mesh
-    integer :: nmaxIterations = 1 
+    integer :: nmaxIterations = 1
 
     ! Damping parameter
-    real(dp) :: domega = 1.0 
+    real(dp) :: domega = 1.0
 
     ! Relaxation parameter (e.g. in SOR)
     real(dp) :: drelax = 1.0
 
-    ! Damping of residuals, i.e. reduction of relative error 
+    ! Damping of residuals, i.e. reduction of relative error
     ! on finest grid; smaller -> more iterations
     real(dp) :: depsRel = 1E-13
 
-    ! Limit for residuals, i.e. absolute error on finest grid; 
-    ! The linear solver stops if both, absolute error < depsAbs and 
+    ! Limit for residuals, i.e. absolute error on finest grid;
+    ! The linear solver stops if both, absolute error < depsAbs and
     ! rel. error < depsRel
     real(dp) :: depsAbs = 1E-0
 
@@ -219,7 +219,7 @@ module structuresspacetimelinsol
     ! Output level of the solver.
     ! If a subsolver is embedded in the solver, it receives the output level
     ! ioutputLevel-2.
-    integer :: ioutputLevel = 0 
+    integer :: ioutputLevel = 0
 
     ! Type of stopping criterion.
     ! =0: Relative AND absolute stopping criterion must hold.
@@ -259,13 +259,13 @@ module structuresspacetimelinsol
     ! Maximum number of time-MG sweeps per nonlinear time-iteration
     integer :: nmaxIterations = 10
 
-    ! Damping of residuals, i.e. reduction of relative error 
+    ! Damping of residuals, i.e. reduction of relative error
     ! on finest grid; smaller -> more iterations
     ! Not used if inexact Newton is used as nonlinear solver.
     real(dp) :: depsRel = 1E-2
 
-    ! Limit for residuals, i.e. absolute error on finest grid; 
-    ! The linear solver stops if both, absolute error < depsAbs and 
+    ! Limit for residuals, i.e. absolute error on finest grid;
+    ! The linear solver stops if both, absolute error < depsAbs and
     ! rel. error < depsRel
     ! Not used if inexact Newton is used as nonlinear solver.
     real(dp) :: depsAbs = 1E-0
@@ -279,7 +279,7 @@ module structuresspacetimelinsol
     integer :: istoppingCriterion = 0
 
     ! Output level of the solver
-    integer :: ioutputLevel = 2 
+    integer :: ioutputLevel = 2
 
     ! Cycle. 0=F-cycle, 1=V-cycle, 2=W-cycle
     integer :: icycle = 1
@@ -287,12 +287,12 @@ module structuresspacetimelinsol
     ! Minimum value for the adaptive coarse grid correction.
     ! Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
     ! Standard = 1.0
-    real(dp) :: dalphamin = 1.0 
+    real(dp) :: dalphamin = 1.0
 
     ! Minimum value for the adaptive coarse grid correction.
     ! Note: dalphamin=dalphamax deactivates adaptive coarse grid correction!
     ! Standard = 1.0
-    real(dp) :: dalphamax = 1.0 
+    real(dp) :: dalphamax = 1.0
   
   end type
   
@@ -341,22 +341,22 @@ module structuresspacetimelinsol
 !
 !  ! Simple nonlinear one-level defect correction solver in space/time.
 !  type t_settings_nlstprec_defcorr
-!    
+!
 !    ! Minimum number of iterations
 !    integer :: nminIterations = 1
 !
 !    ! Maximum number of iterations
 !    integer :: nmaxIterations = 100
 !
-!    ! Damping of residuals, i.e. reduction of relative error 
+!    ! Damping of residuals, i.e. reduction of relative error
 !    ! on finest grid; smaller -> more iterations
 !    real(dp) :: depsRel        = 1E-5
 !
-!    ! Limit for residuals, i.e. absolute error on finest grid; 
-!    ! The solver stops if both, absolute error < depsAbs and 
+!    ! Limit for residuals, i.e. absolute error on finest grid;
+!    ! The solver stops if both, absolute error < depsAbs and
 !    ! rel. error < depsRel
 !    real(dp) :: depsAbs        = 1E-5
-!    
+!
 !    ! Limit for differences in the residuals
 !    real(dp) :: depsDiff           = 1E-5
 !
@@ -432,7 +432,7 @@ contains
       
     end select
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -457,7 +457,7 @@ contains
   ! rsettings).
   integer, intent(in) :: ispaceTimeLevel
 
-  ! Absolute level of the coarse grid solver (relative to the global 
+  ! Absolute level of the coarse grid solver (relative to the global
   ! hierarchies in rsettings).
   integer, intent(in) :: ispaceTimeLevelCoarse
   
@@ -545,7 +545,7 @@ contains
               
           p_rpostsmoother => p_rpresmoother
           
-        else 
+        else
         
           ! Create the pre- and/or postsmoother.
           if (rsmootherSettings%nsmpre .gt. 0) then
@@ -577,7 +577,7 @@ contains
     
     end do ! ilev
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -785,7 +785,7 @@ contains
     p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
     p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
 
-  end subroutine  
+  end subroutine
 
   ! ***************************************************************************
   
@@ -1036,6 +1036,6 @@ contains
     p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
     p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
 
-  end subroutine  
+  end subroutine
 
 end module

@@ -1008,7 +1008,7 @@ contains
             +p_DvelocityY(IedgeList(1,iedge))*DcoeffsAtEdge(2,2,iedge))
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(-DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -1039,7 +1039,7 @@ do iedge = 1, nedges
             +p_DvelocityY(IedgeList(1,iedge))*DcoeffsAtEdge(2,2,iedge))
 #endif
         
-        ! Compute artificial diffusion coefficient 
+        ! Compute artificial diffusion coefficient
         !   $d_{ij} = \max\{k_{ij},0,k_{ji}\}$
         DmatrixAtEdge(1,iedge) =&
             max(DmatrixAtEdge(2,iedge), 0.0_DP,&
@@ -1509,7 +1509,7 @@ do iedge = 1, nedges
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -1518,7 +1518,7 @@ do iedge = 1, nedges
 
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
-    end if    
+    end if
 #else
     ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
@@ -1669,7 +1669,7 @@ do iedge = 1, nedges
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -({\bf v}u-d\nabla u)\cdot{\bf n} = -({\bf v}g)\cdot{\bf n} $$
       !
@@ -1685,7 +1685,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -1817,7 +1817,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
         
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -1858,7 +1858,7 @@ do iedge = 1, nedges
 
         ! Get the normal vectors in the cubature points on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif     
+#endif
    
         ! Initialize values
         Dvalue = 0.0_DP
@@ -1967,7 +1967,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -1995,7 +1995,7 @@ do iedge = 1, nedges
 
         ! Calculate the normal vectors in DOFs on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else  
+#else
         ! Evaluate the velocity field (if any) in the cubature points on
         ! the boundary and store the result in Daux(:,:,1:2)
         call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
@@ -2325,7 +2325,7 @@ do iedge = 1, nedges
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -2334,7 +2334,7 @@ do iedge = 1, nedges
 
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
-    end if    
+    end if
 #else
     ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
@@ -2483,7 +2483,7 @@ do iedge = 1, nedges
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ ({\bf v}u-d\nabla u)\cdot{\bf n}=({\bf v}g)\cdot{\bf n} $$
       !
@@ -2499,7 +2499,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -2631,7 +2631,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
         
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -2672,7 +2672,7 @@ do iedge = 1, nedges
 
         ! Get the normal vectors in the cubature points on the boundary
         call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif     
+#endif
    
         ! Initialize values
         Dvalue = 0.0_DP
@@ -2781,7 +2781,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -3121,7 +3121,7 @@ do iedge = 1, nedges
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -3130,7 +3130,7 @@ do iedge = 1, nedges
 
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
-    end if    
+    end if
 #else
     ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
@@ -3154,7 +3154,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -3206,7 +3206,7 @@ do iedge = 1, nedges
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
                   Dny(ipoint,iel) * Daux(ipoint,iel,2)
       
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY      
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Scale normal velocity by scaling parameter
             DcoeffAtDOF(ipoint) = -dscale * dnv
 #else
@@ -3293,7 +3293,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -3572,7 +3572,7 @@ do iedge = 1, nedges
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -3581,7 +3581,7 @@ do iedge = 1, nedges
 
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
-    end if    
+    end if
 #else
     ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
@@ -3605,7 +3605,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -3657,7 +3657,7 @@ do iedge = 1, nedges
             dnv = Dnx(ipoint,iel) * Daux(ipoint,iel,1) +&
                   Dny(ipoint,iel) * Daux(ipoint,iel,2)
       
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY      
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
             ! Scale normal velocity by scaling parameter
             DcoeffAtDOF(ipoint) = dscale * dnv
 #else
@@ -3744,7 +3744,7 @@ do iedge = 1, nedges
         ! Allocate temporal memory
         allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
 
-        ! We need the solution values and the physical coordinates of the DOFs 
+        ! We need the solution values and the physical coordinates of the DOFs
         ! on the boundary, so compute them and store the result in Daux
         do iel = 1, nelements
           ! Get global DOF of first endpoints
@@ -4066,7 +4066,7 @@ do iedge = 1, nedges
 
       ! Compute artificial diffusion coefficient
       !   $d_{ij} = abs(v_{ij}*0.5*(cx_{ij}-cx_{ji}) + max\{cy_{ij}, cy_{ji}\}$,
-      ! where 
+      ! where
       !   $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
       DmatrixAtEdge(1,iedge) = dscale*&
           abs(0.25_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
@@ -4298,7 +4298,7 @@ do iedge = 1, nedges
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -([0.5*u,1]*u-d\nabla u)\cdot{\bf n} = -([0.5*g,1]*g)\cdot{\bf n} $$
       !
@@ -4586,7 +4586,7 @@ do iedge = 1, nedges
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form      
+      ! Do nothing since the boundary values are build into the linear form
       Dcoefficients = 0.0_DP
       
       ! This routine should not be called at all for homogeneous Neumann boundary
@@ -4765,7 +4765,7 @@ do iedge = 1, nedges
 
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
 
-#ifdef TRANSP_USE_IBP      
+#ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = [a_j,1]*C_{ji}$
       ! where $a_j=u_j/(u_^2+0.5*(1-u_j)^2)$
       DmatrixAtEdge(1,iedge) = dscale*&
@@ -4848,7 +4848,7 @@ do iedge = 1, nedges
 
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
 
-#ifdef TRANSP_USE_IBP      
+#ifdef TRANSP_USE_IBP
       ! Compute convective coefficient $k_{ij} = [a_j,1]*C_{ji}$
       ! where $a_j=u_j/(u_^2+0.5*(1-u_j)^2)$
       DmatrixAtEdge(2,iedge) = dscale*&
@@ -4882,7 +4882,7 @@ do iedge = 1, nedges
         vij = ui*(1.0_DP-ui)/(ui*ui-0.5_DP*(1.0_DP-ui)*(1.0_DP-ui))**2
       end if
 
-      ! Compute artificial diffusion coefficient 
+      ! Compute artificial diffusion coefficient
       ! $d_{ij} = abs(0.5*v_{ij}*(c_{ij}-c_{ji}) + max\{cy_{ij}, cy_{ji}\}$
       DmatrixAtEdge(1,iedge) = dscale*&
           abs(0.5_DP*vij*(DcoeffsAtEdge(1,1,iedge)-&
@@ -5116,7 +5116,7 @@ do iedge = 1, nedges
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -([a,1]*u-d\nabla u)\cdot{\bf n} = -([a,1]*g)\cdot{\bf n} $$
       !
@@ -5413,7 +5413,7 @@ do iedge = 1, nedges
     case (BDRC_ROBIN)
       !-------------------------------------------------------------------------
       ! Robin boundary conditions:
-      ! Do nothing since the boundary values are build into the linear form      
+      ! Do nothing since the boundary values are build into the linear form
       Dcoefficients = 0.0_DP
       
       ! This routine should not be called at all for homogeneous Neumann boundary
@@ -5664,7 +5664,7 @@ do iedge = 1, nedges
           (DcoeffsAtEdge(1,2,iedge)+DcoeffsAtEdge(2,2,iedge))
 #endif
 
-      ! Compute artificial diffusion coefficient 
+      ! Compute artificial diffusion coefficient
       ! $d_{ij} = abs(v_{ij}*I*0.5*(c_{ij}-c_{ji})$,
       ! where $v_{ij} = 0.5*(f(u_j)-f(u_i))/(u_j-u_i) = 0.5*(u_i+u_j)$
       DmatrixAtEdge(1,iedge) = dscale*&
@@ -5843,7 +5843,7 @@ do iedge = 1, nedges
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -5852,7 +5852,7 @@ do iedge = 1, nedges
 
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
-    end if    
+    end if
 #else
     ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
@@ -6001,7 +6001,7 @@ do iedge = 1, nedges
       ! Robin boundary conditions:
       !
       ! Evaluate coefficients for both the convective and the diffusive
-      ! part of the linear form 
+      ! part of the linear form
       !
       ! $$ -([0.5*u*I]*u-d\nabla u)\cdot{\bf n} = -([0.5*g*I]*g)\cdot{\bf n} $$
       !
@@ -6116,7 +6116,7 @@ do iedge = 1, nedges
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
-      ! We need the solution values and the physical coordinates of the DOFs 
+      ! We need the solution values and the physical coordinates of the DOFs
       ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
@@ -6151,7 +6151,7 @@ do iedge = 1, nedges
       
       ! Get the normal vectors in the cubature points on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dpoints, Dnx, Dny, 1)
-#endif     
+#endif
       
       ! Initialize values
       Dvalue = 0.0_DP
@@ -6251,7 +6251,7 @@ do iedge = 1, nedges
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
-      ! We need the solution values and the physical coordinates of the DOFs 
+      ! We need the solution values and the physical coordinates of the DOFs
       ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
@@ -6277,7 +6277,7 @@ do iedge = 1, nedges
       
       ! Calculate the normal vectors in DOFs on the boundary
       call boundary_calcNormalVec2D(Dpoints, Dcoords, Dnx, Dny, 1)
-#else  
+#else
       ! Evaluate the solution vector in the cubature points on
       ! the boundary and store the result in Daux(:,:,1)
       call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
@@ -6585,7 +6585,7 @@ do iedge = 1, nedges
       ! corresponding weights for the given cubature rule
       call cub_getCubature(ccubType, DcubPtsRef, Domega)
       
-      ! Evaluate the one-dimensional basis functions 
+      ! Evaluate the one-dimensional basis functions
       ! in the cubature points on the boundary
       do icubp = 1, npointsPerElement
         Dbas(1,icubp) = 0.5_DP*(1.0_DP-DcubPtsRef(1,icubp))
@@ -6594,7 +6594,7 @@ do iedge = 1, nedges
 
       ! Deallocate temporal memory which is no longer required
       deallocate(DcubPtsRef,Domega)
-    end if    
+    end if
 #else
     ! Boundary values are evaluated directly at the cubature points
     npoints = npointsPerElement
@@ -6616,7 +6616,7 @@ do iedge = 1, nedges
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
       
-      ! We need the solution values and the physical coordinates of the DOFs 
+      ! We need the solution values and the physical coordinates of the DOFs
       ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints
@@ -6661,7 +6661,7 @@ do iedge = 1, nedges
           ! Compute the normal velocity
           dnv = 0.5_DP * (Dnx(ipoint,iel) + Dny(ipoint,iel)) * Daux(ipoint,iel)
       
-#ifdef TRANSP_USE_GFEM_AT_BOUNDARY      
+#ifdef TRANSP_USE_GFEM_AT_BOUNDARY
           ! Scale normal velocity by scaling parameter
           DcoeffAtDOF(ipoint) = -dscale * dnv
 #else
@@ -6739,7 +6739,7 @@ do iedge = 1, nedges
       ! Allocate temporal memory
       allocate(Dcoords(NDIM2D,npoints,nelements), DcoeffAtDOF(npoints))
      
-      ! We need the solution values and the physical coordinates of the DOFs 
+      ! We need the solution values and the physical coordinates of the DOFs
       ! on the boundary, so compute them and store the result in Daux
       do iel = 1, nelements
         ! Get global DOF of first endpoints

@@ -19,7 +19,7 @@
 *
 * The structures themselves are realized as integer/double precision
 * arrays:
-*   IPARAM = array [1..SZ020I] of integer 
+*   IPARAM = array [1..SZ020I] of integer
 *          = TM020IParams
 *   DPARAM = array [1..SZ020D] of double
 *          = TM020DParams
@@ -51,7 +51,7 @@
 * more space, the information has to be attached to the structure
 * and the callback routines must be designed properly.
 *
-* TM020IParams = record 
+* TM020IParams = record
 *
 *   // The first part of TM020IParams is the whole TSolverIParams-
 *   // structure, i.e. TM020IParams is a direct extension of
@@ -107,7 +107,7 @@
 *           choose a smoother. The multigrid algorithm itself does
 *           not use the information stored here.
 *
-*           Identifiers 1..4 are designed for standard smoother 
+*           Identifiers 1..4 are designed for standard smoother
 *           routines, these routines are configured only by one
 *           parameter. In the TM020DParams structure there is
 *           a double precision tag OMGSM reserved to configure
@@ -121,7 +121,7 @@
 *           piece of information (e.g. matrix handles,...) need
 *           more space to store their configuration. In this
 *           case additional information has to be added to this
-*           multigrid structure. 
+*           multigrid structure.
 *           In all cases the callback routine must be written
 *           appropriately to fetch the information from the MG
 *           structure to correctly perform its task.
@@ -132,8 +132,8 @@
 *            internally.
 *            As a convention, if the number of smoothing steps is
 *            constant on each level:
-*            - if symmetrical smoothing is used, SMTHI(1) should be 
-*              initialized to the number of smoothing steps 
+*            - if symmetrical smoothing is used, SMTHI(1) should be
+*              initialized to the number of smoothing steps
 *            - if the number of pre- and postsmoothing steps differ,
 *              SMTHI(1) should be initialized to the number of pre-
 *              and SMTHI(2) to the number of postsmoothing steps.
@@ -160,26 +160,26 @@
 *   MSMTRM : Level of output to terminal for smoother
 *            =0: no output = standard
 *            =1: basic output
-*            =2: extended output 
+*            =2: extended output
 *   MSTTRM : Level of output to terminal for step length control
 *            =0: no output = standard
 *            =1: basic output
-*            =2: extended output 
+*            =2: extended output
 *   MCGTRM : Level of output to terminal for coarse grid solver
 *            =0: no output = standard
 *            =1: basic output
-*            =2: extended output 
+*            =2: extended output
 *   MBCTRM : Level of output to terminal for boundary implementation
 *            =0: no output = standard
 *            =1: basic output
-*            =2: extended output 
+*            =2: extended output
 *
 *   // Input-parameters, problem-specific:
 *   // (depending on the actual situation)
 *
 *   NLMIN  : minimum level, where the coarse grid solver should solve;
 *            >= 1.
-*   NLMAX  : maximum level, where the solution should be computed; 
+*   NLMAX  : maximum level, where the solution should be computed;
 *            <= NNLEV!
 *   KNEQ   : array [1..NNLEV] of integer
 *            Number of equations on each level.
@@ -204,10 +204,10 @@
 *
 *   KCBAUX : Starting address of a vector array [1..NEQ] of double
 *            in DD, NEQ=NEQ(finest grid). (More precisely: DD(NLMAX).)
-*            This array represents an auxiliary memory 
-*            block DX/DB/DD(KCBAUX:KCBAUX+NEQ-1) that 
-*            can be used by the callback routines DPROL, DSTEP 
-*            and DEX for intermediate calculations. 
+*            This array represents an auxiliary memory
+*            block DX/DB/DD(KCBAUX:KCBAUX+NEQ-1) that
+*            can be used by the callback routines DPROL, DSTEP
+*            and DEX for intermediate calculations.
 *            The restriction routine DREST can only use it if its fine
 *            grid is < NLMAX or after the restriction is completed.
 *            DEXS is not allowed to use it. The other routines (DFILT,
@@ -243,7 +243,7 @@
 *   // Extended structure for multigrid:
 *   // ---------------------------------
 *   // Timing output parameters; only set if IMTIM > 0:
-*   
+*
 *   TMMG   : time necessary for the multigrid algorithm internally
 *   TMPROL : time for prolongation
 *   TMREST : time for restriction
@@ -294,7 +294,7 @@
       INTEGER OUPARI,OKCBAUX
       INTEGER SZ020I
 
-C The constants 1..SZSLVI are defined in SSOLVERS.INC. 
+C The constants 1..SZSLVI are defined in SSOLVERS.INC.
 C The structure is a direct extension to the TSolverIParams structure,
 C so the first variable starts right after the SZSLVI'th element.
       
@@ -335,9 +335,9 @@ C SZ020I+1..*   : user defineable
       INTEGER OTMMG  ,OTMPROL,OSTPMIN,OSTPMAX
       INTEGER OTMREST,OTMDEF ,OTMSMTH,OTMCGSL,OTMBC,OTMCGC,OSMTHD,OOMGSM
       INTEGER OPRRSD ,OUPARD
-      INTEGER SZ020D 
+      INTEGER SZ020D
                  
-C The constants 1..SZSLVD are defined in SSOLVERS.INC. 
+C The constants 1..SZSLVD are defined in SSOLVERS.INC.
 C The structure is a direct extension to the TSolverDParams structure,
 C so the first variable starts right after the SZSLVD'th element.
 

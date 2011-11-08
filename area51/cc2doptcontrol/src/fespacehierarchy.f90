@@ -15,7 +15,7 @@
 !# possible:
 !#  - If a FE space is created by a trangulation, the triangulation is reused
 !#    and only refined if necessary. A new discretisation is created.
-!#  - If a FE space is created by an existing discretisation, the 
+!#  - If a FE space is created by an existing discretisation, the
 !#    discretisation is reused and only refined if necessary.
 !#  - If a FE space is created based on a set of existing discretisations/
 !#    triangulations, the routines try to reuse the existing structures and
@@ -37,7 +37,7 @@
 !#     -> Releases a FE space
 !#
 !# 3.) fesph_createHierarchy
-!#     -> Creates a FE space hierarchy based on a triangulation, 
+!#     -> Creates a FE space hierarchy based on a triangulation,
 !#        discretisation, TRI-file or FE space
 !#
 !# 4.) fesph_releaseHierarchy
@@ -53,7 +53,7 @@
 !#     -> Concatenates two FE spaces on every level of a hierarchy
 !#
 !# 8.) fesph_deriveFeHierarchy
-!#     -> Extracts a set of FE spaces from an FE space on every level of 
+!#     -> Extracts a set of FE spaces from an FE space on every level of
 !#        a hierarchy
 !# </purpose>
 !##############################################################################
@@ -123,7 +123,7 @@ module fespacehierarchy
     
     ! Reference to the underlying discretisation.
     ! This is either a direct reference or refers to allocated memory
-    ! on the heap if the discretisation had been created by 
+    ! on the heap if the discretisation had been created by
     ! the create routines.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
     
@@ -145,7 +145,7 @@ module fespacehierarchy
     type(t_boundary), pointer :: p_rboundary => null()
 
     ! An underlying mesh hierarchy.
-    type(t_meshHierarchy) :: rmeshHierarchy 
+    type(t_meshHierarchy) :: rmeshHierarchy
     
     ! Number of levels available in this structure.
     integer :: nlevels = 0
@@ -193,7 +193,7 @@ contains
   ! If possible, the solution vector uses a discretisation specified in
   ! the FE hierarchy rfeHierarchy.
   ! If ilevel specifies a level that does not exist in the hierarchy,
-  ! the underlying mesh is automatically refined and a suitable 
+  ! the underlying mesh is automatically refined and a suitable
   ! discretisation structure is automatically created.
 !</description>
  
@@ -274,12 +274,12 @@ contains
   ! Creates a FE space based on a mesh hierarchy.
   ! ilevel describes the refinement level of the underlying mesh.
   ! If possible, the solution vector uses a triangulation specified in
-  ! rmeshHerarchy. If ilevel specifies a level which cannot be found in 
-  ! rmeshHerarchy, the underlying mesh is automatically refined and a suitable 
+  ! rmeshHerarchy. If ilevel specifies a level which cannot be found in
+  ! rmeshHerarchy, the underlying mesh is automatically refined and a suitable
   ! discretisation structure is automatically created.
 !</description>
 
-!<input>  
+!<input>
   ! A mesh hierarchy
   type(t_meshHierarchy), intent(in) :: rmeshHierarchy
   
@@ -371,11 +371,11 @@ contains
   ! ilevel>=ilevelTri describes the refinement level of the underlying mesh.
   ! If possible, the solution vector uses a triangulation specified in
   ! rtriangulation. If ilevel specifies a level > ilevelTri
-  ! the underlying mesh is automatically refined and a suitable 
+  ! the underlying mesh is automatically refined and a suitable
   ! discretisation structure is automatically created.
 !</description>
 
-!<input>  
+!<input>
   ! A basic triangulation corresponding to level ilevelTri.
   type(t_triangulation), intent(in), target :: rtriangulation
   
@@ -464,11 +464,11 @@ contains
   ! ilevel>=ilevelTri describes the refinement level of the underlying mesh.
   ! If possible, the solution vector uses a triangulation specified in
   ! rtriangulation. If ilevel specifies a level > ilevelTri
-  ! the underlying mesh is automatically refined and a suitable 
+  ! the underlying mesh is automatically refined and a suitable
   ! discretisation structure is automatically created.
 !</description>
 
-!<input>  
+!<input>
   ! A basic triangulation corresponding to level ilevelTri.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisation
   
@@ -561,7 +561,7 @@ contains
   ! For ilevel=ilevelTemplate, the source structure is copied.
 !</description>
 
-!<input>  
+!<input>
   ! A template FE space structure used for creating rfeSpace.
   type(t_feSpaceLevel), intent(in) :: rfeSpaceTemplate
 
@@ -738,7 +738,7 @@ contains
   ! Concatenates two FE space to a common FE space (cross product).
 !</description>
 
-!<input>  
+!<input>
   ! First FE space
   type(t_feSpaceLevel), intent(in) :: rfeSpace1
 
@@ -788,7 +788,7 @@ contains
   ! Creates an FE space as a subset of another FE space.
 !</description>
 
-!<input>  
+!<input>
   ! Source FE space
   type(t_feSpaceLevel), intent(in) :: rfeSpaceSource
 
@@ -1121,7 +1121,7 @@ contains
     ! Create as many FE spaces as possible by setting pointers.
     do i=1,min(rmeshHierarchy%nlevels,nlevels)
       call fesph_createFEspace (rfeHierarchy%p_rfeSpaces(i),i,&
-        rmeshHierarchy%p_Rtriangulations(i),i,fgetDiscr,rcollection,rboundary)    
+        rmeshHierarchy%p_Rtriangulations(i),i,fgetDiscr,rcollection,rboundary)
     end do
     
     ! Initialise all the FE space levels.
@@ -1150,7 +1150,7 @@ contains
   type(t_feHierarchy), intent(out) :: rfeHierarchySource
   
   ! OPTIONAL: The minimum level from rmeshHierarchySource that should be
-  ! used as coarse mesh in rmeshHierarchyDest. 
+  ! used as coarse mesh in rmeshHierarchyDest.
   ! If not specified, this defaults to 1.
   integer, intent(in), optional :: nminLevel
 
@@ -1353,7 +1353,7 @@ contains
   ! on every level).
 !</description>
 
-!<input>  
+!<input>
   ! First FE hierarchy
   type(t_feHierarchy), intent(in) :: rfeHier1
 
@@ -1396,7 +1396,7 @@ contains
   ! Creates an FE hierarchy as a subset of another FE hierarchy.
 !</description>
 
-!<input>  
+!<input>
   ! Source FE hierarchy
   type(t_feHierarchy), intent(in) :: rfeHierSource
 
@@ -1419,7 +1419,7 @@ contains
     integer :: i
 
     ! As a basis, copy the source hierarchy
-    rfeHierDest = rfeHierSource  
+    rfeHierDest = rfeHierSource
 
     ! The mesh hierarchy must be copied.
     call mshh_initHierarchyDup (rfeHierSource%rmeshHierarchy,rfeHierDest%rmeshHierarchy)

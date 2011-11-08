@@ -56,13 +56,13 @@ module domainintegration
     ! trial and test functions.
     integer :: ielementDistribution = 0
     
-    ! Start index of the current element block in the current element 
-    ! distribution ielementDistribution of the discretisation. 
+    ! Start index of the current element block in the current element
+    ! distribution ielementDistribution of the discretisation.
     ! If this is =1, e.g., this is the very first element block
     ! that is currently being integrated.
     integer :: ielementStartIdx = 0
 
-    ! The element set that is currently in progress by the integration 
+    ! The element set that is currently in progress by the integration
     ! routine.
     integer, dimension(:), pointer :: p_Ielements => null()
     
@@ -165,11 +165,11 @@ contains
   ! on the reference element.
   integer(I32), intent(in) :: icoordSystem
   
-  ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D, 
+  ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D,
   ! respectively.
   integer, intent(in) :: ndimSpace
   
-  ! Number of vertices per element that are necessary to specify the 
+  ! Number of vertices per element that are necessary to specify the
   ! transformation from the reference to the real element
   integer, intent(in) :: nverticesPerElement
 !</input>

@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains the basic spatial discretisation related routines for 
+!# This module contains the basic spatial discretisation related routines for
 !# CC2D. Here, matrix and RHS creation routines can be found as well as
 !# routines to initialise/clean up discretisation structures.
 !#
@@ -17,9 +17,9 @@
 !# 2.) cc_allocMatVec / cc_generateBasicMat / cc_doneMatVec
 !#     -> Allocates/ Generates / Releases memory for vectors/matrices on all levels.
 !#
-!# 3.) cc_allocStaticMatrices / cc_generateStaticMatrices / 
+!# 3.) cc_allocStaticMatrices / cc_generateStaticMatrices /
 !#     cc_releaseStaticMatrices
-!#     -> Allocates/Assembles/Releases matrix entries of static matrices 
+!#     -> Allocates/Assembles/Releases matrix entries of static matrices
 !#        (Stokes, B) on one level
 !#
 !# 5.) cc_generateBasicRHS
@@ -152,13 +152,13 @@ contains
 
     select case (ielementType)
     case (0)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -171,7 +171,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -181,20 +181,20 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
           EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     case (1)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -207,7 +207,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -217,20 +217,20 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
           EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     case (2)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -243,7 +243,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -253,20 +253,20 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
           EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     case (3)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -279,7 +279,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -289,20 +289,20 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
           EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     case (4)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -315,7 +315,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -325,20 +325,20 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
           EL_QP1, icubB, rdiscretisation%RspatialDiscr(3))
                   
     case (5)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -351,7 +351,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -361,20 +361,20 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
           EL_Q0, icubB, rdiscretisation%RspatialDiscr(3))
 
     case (6)
-      ! rdiscretisation%Rdiscretisations is a list of scalar 
+      ! rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! We have a solution vector with three components:
       !  Component 1 = X-velocity
       !  Component 2 = Y-velocity
       !  Component 3 = Pressure
-      ! For simplicity, we set up one discretisation structure for the 
+      ! For simplicity, we set up one discretisation structure for the
       ! velocity...
       call spdiscr_initDiscr_simple ( &
                   rdiscretisation%RspatialDiscr(1), &
@@ -387,7 +387,7 @@ contains
         RelementDistr(1)%ccubTypeLinForm = icubF
                   
       ! ...and copy this structure also to the discretisation structure
-      ! of the 2nd component (Y-velocity). This needs no additional memory, 
+      ! of the 2nd component (Y-velocity). This needs no additional memory,
       ! as both structures will share the same dynamic information afterwards,
       ! but we have to be careful when releasing the discretisation structures
       ! at the end of the program!
@@ -397,7 +397,7 @@ contains
       call spdiscr_duplicateDiscrSc (rdiscretisation%RspatialDiscr(1), &
           rdiscretisation%RspatialDiscr(2), .true.)
   
-      ! For the pressure (3rd component), we set up a separate discretisation 
+      ! For the pressure (3rd component), we set up a separate discretisation
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
@@ -431,7 +431,7 @@ contains
   ! local variables
   integer :: I,k
   
-  ! Number of equations in our problem. 
+  ! Number of equations in our problem.
   ! velocity+velocity+pressure + dual velocity+dual velocity+dual pressure = 6
   integer, parameter :: nequations = 6
   
@@ -546,7 +546,7 @@ contains
   integer :: i
 
     do i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Remove the main block discretisation structure. 
+      ! Remove the main block discretisation structure.
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation,.true.)
       
       ! Release the block discretisation structures of the primal and dual
@@ -649,7 +649,7 @@ contains
 !<description>
   ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -720,7 +720,7 @@ contains
       rdiscretisationCoarse)
   
 !<description>
-  ! Allocates memory and generates the structure of all static matrices 
+  ! Allocates memory and generates the structure of all static matrices
   ! in rstaticInfo.
 !</description>
 
@@ -819,7 +819,7 @@ contains
     ! Connect the Stokes matrix to the template FEM matrix such that they
     ! use the same structure.
     !
-    ! Don't create a content array yet, it will be created by 
+    ! Don't create a content array yet, it will be created by
     ! the assembly routines later.
     call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
                 rstaticInfo%rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -834,7 +834,7 @@ contains
     ! Create the matrices structure of the pressure using the 3rd
     ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
     !
-    ! Don't create a content array yet, it will be created by 
+    ! Don't create a content array yet, it will be created by
     ! the assembly routines later.
     ! Allocate memory for the entries; don't initialise the memory.
     
@@ -877,11 +877,11 @@ contains
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
-  ! in the specified problem structure, i.e. the entries of all matrices 
+  ! in the specified problem structure, i.e. the entries of all matrices
   ! that do not change during the computation or which serve as a template for
   ! generating other matrices.
   !
-  ! Memory for those matrices must have been allocated before with 
+  ! Memory for those matrices must have been allocated before with
   ! allocMatVec!
 !</description>
 
@@ -979,12 +979,12 @@ contains
       ! Matrix weight
       rjumpStabil%dtheta = 1.0_DP
 
-      ! Call the jump stabilisation technique to stabilise that stuff.   
+      ! Call the jump stabilisation technique to stabilise that stuff.
       ! We can assemble the jump part any time as it's independent of any
       ! convective parts...
       call conv_jumpStabilisation2d (&
                           rjumpStabil, CONV_MODMATRIX, &
-                          rstaticInfo%rmatrixEOJ1)   
+                          rstaticInfo%rmatrixEOJ1)
     end if
 
     if ((iupwind2 .eq. CCMASM_STAB_EDGEORIENTED3)) then
@@ -1011,12 +1011,12 @@ contains
         ! Matrix weight
         rjumpStabil%dtheta = 1.0_DP
 
-        ! Call the jump stabilisation technique to stabilise that stuff.   
+        ! Call the jump stabilisation technique to stabilise that stuff.
         ! We can assemble the jump part any time as it's independent of any
         ! convective parts...
         call conv_jumpStabilisation2d (&
                             rjumpStabil, CONV_MODMATRIX, &
-                            rstaticInfo%rmatrixEOJ2)   
+                            rstaticInfo%rmatrixEOJ2)
       end if
     end if
 
@@ -1044,7 +1044,7 @@ contains
     call lsyssc_assignDiscrDirectMat (rstaticInfo%rmatrixMassPressure,&
         rstaticInfo%rdiscretisationMassPressure)
 
-    ! Call the standard matrix setup routine to build the matrix.                    
+    ! Call the standard matrix setup routine to build the matrix.
     call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixMass,DER_FUNC,DER_FUNC)
     call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
                 
@@ -1106,7 +1106,7 @@ contains
   
 !<description>
   ! Calculates the entries of the basic right-hand-side vector on the finest
-  ! level. Boundary conditions or similar things are not implemented into 
+  ! level. Boundary conditions or similar things are not implemented into
   ! the vector.
   ! Memory for the RHS vector must have been allocated in advance.
 !</description>
@@ -1151,10 +1151,10 @@ contains
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
+    ! the block vector using the discretisation structure of the
     ! first block.
     !
-    ! We pass our collection structure as well to this routine, 
+    ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
     !
@@ -1197,7 +1197,7 @@ contains
               rproblem%rcollection)
       
     ! Depending on the formulation, to get a reference dual velocity,
-    ! it might be necessary to switch the sign of the target velocity field 
+    ! it might be necessary to switch the sign of the target velocity field
     ! because the RHS of the dual equation is '-z'!
     ! Remember that it this case the signs of the mass matrices that couple
     ! primal and dual velocity must be changed, too!
@@ -1267,8 +1267,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
@@ -1292,7 +1292,7 @@ contains
     real(dp), dimension(:,:), allocatable :: p_Dval
     
     ! Get the parser object with the RHS expressions from the collection
-    p_rparser => collct_getvalue_pars (rcollection, 'SOLPARSER') 
+    p_rparser => collct_getvalue_pars (rcollection, 'SOLPARSER')
     
     ! Current time
     dtime = rcollection%DquickAccess(1)
@@ -1358,7 +1358,7 @@ contains
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     type(t_fparser) :: rsolParser
     character(LEN=SYS_STRLEN) :: sstring,ssolutionExpressionY1,ssolutionExpressionY2
     character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
@@ -1457,7 +1457,7 @@ contains
       ! Create a parser and to evaluate the expression.
       call fparser_create (rsolParser,NDIM2D)
 
-      ! Get the expressions defining the solution      
+      ! Get the expressions defining the solution
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                   'ssolutionExpressionY1',sstring,'''''')
       read(sstring,*) ssolutionExpressionY1
@@ -1476,13 +1476,13 @@ contains
       ! routine.
       call collct_init(rcollection)
       call collct_setvalue_pars (rcollection, 'SOLPARSER', &
-          rsolParser, .true.) 
+          rsolParser, .true.)
           
       ! Current time
       rcollection%DquickAccess(1) = 0.0_DP
       
       ! Call the analytic projection method and calculate the FE representation
-      ! of the analytic expression. 
+      ! of the analytic expression.
       call lsysbl_clearVector (rvector)
       
       call lsyssc_getbase_double(rvector%RvectorBlock(1),p_Ddata1)
@@ -1497,13 +1497,13 @@ contains
           ffunction_initSol,rcollection)
       
       ! Clean up
-      call collct_deletevalue (rcollection, 'SOLPARSER') 
+      call collct_deletevalue (rcollection, 'SOLPARSER')
       call collct_done(rcollection)
       
       ! Release the parser
       call fparser_release(rsolParser)
     
-    else 
+    else
     
       ! Init with zero
       call lsysbl_clearVector (rvector)
@@ -1541,7 +1541,7 @@ contains
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
     integer :: NEQ
-    type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_interlevelProjectionBlock) :: rprojection
     logical :: bformatted
 
     ! Get the parameter what to do with rvector
@@ -1692,7 +1692,7 @@ contains
   subroutine cc_doneOptControl (rproblem)
   
 !<description>
-  ! Cleans up the structure for the optimal control problem. 
+  ! Cleans up the structure for the optimal control problem.
 !</description>
 
 !<inputoutput>
@@ -1861,7 +1861,7 @@ contains
       !rproblem%roptcontrol%rtargetFlow%p_rblockDiscretisation => &
       !    rproblem%roptcontrol%p_rdiscrTargetFlow
 
-      ! How many timesteps does the target flow have?      
+      ! How many timesteps does the target flow have?
       if (rproblem%roptcontrol%itargetFlowTimesteps .eq. -1) then
         ! As many files as we have timesteps
         nactTimesteps = ntimesteps
@@ -1913,7 +1913,7 @@ contains
   subroutine cc_doneTargetFlow (rproblem)
   
 !<description>
-  ! Cleans up the structure for the optimal control problem. 
+  ! Cleans up the structure for the optimal control problem.
 !</description>
 
 !<inputoutput>
@@ -1925,7 +1925,7 @@ contains
 !</subroutine>
 
     ! Release memory
-    select case (rproblem%roptcontrol%itypeTargetFlow) 
+    select case (rproblem%roptcontrol%itypeTargetFlow)
     case (1,3)
       call lsysbl_releaseVector (rproblem%roptcontrol%rtargetFlow)
     case (2,4)

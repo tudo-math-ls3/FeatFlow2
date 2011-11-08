@@ -18,7 +18,7 @@
 !#
 !#     The calculation of the nonlinear defect is performed user defined.
 !#     The nonlinear loop itself does not know anything about the matrix.
-!#     In fact, the matrix does not have to exist - this depends on the 
+!#     In fact, the matrix does not have to exist - this depends on the
 !#     problem.
 !#
 !# 2.) Preconditioning of the nonlinear defect
@@ -51,11 +51,11 @@
 !#     -> Install a scalar matrix as preconditioner for the defect
 !#
 !# 5.) nlsol_setPrecMass
-!#     -> Install a (block) lumped mass matrix as preconditioner for 
+!#     -> Install a (block) lumped mass matrix as preconditioner for
 !#        the defect
 !#
 !# 6.) nlsol_setPrecMatrixSc
-!#     -> Install a scalar lumped mass matrix as preconditioner for 
+!#     -> Install a scalar lumped mass matrix as preconditioner for
 !#        the defect
 !#
 !# 7.) nlsol_setPrecLinsol
@@ -153,7 +153,7 @@ module nonlinearsolver
   !
   ! The caller who wants to solve a problem has to initialise
   ! such a structure with all information that is necessary
-  ! to solve the nonlinear system. 
+  ! to solve the nonlinear system.
   !
   ! The structure contains INPUT, OUTPUT and STATUS parameters. INPUT
   ! parameters can be changed by the caller prior to solving.
@@ -169,7 +169,7 @@ module nonlinearsolver
     ! OUTPUT: Result
     ! The result of the solution process.
     ! =-1: convergence criterion not reached.
-    ! =0: success. 
+    ! =0: success.
     ! =1: iteration broke down, diverging.
     ! =2: iteration broke down, preconditioner did not work.
     ! =3: error in the parameters.
@@ -177,7 +177,7 @@ module nonlinearsolver
     
     ! OUTPUT: Number of performed iterations, if the solver
     ! is of iterative nature.
-    ! Is to 1 by the solver if not used (indicating at least 1 performed 
+    ! Is to 1 by the solver if not used (indicating at least 1 performed
     ! iteration, which is always the case).
     integer                    :: iiterations
     
@@ -233,7 +233,7 @@ module nonlinearsolver
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DepsRel = 1E-5_DP
 
     ! INPUT PARAMETER:
-    ! Standard absolute stopping criterion for each subvector of a block vector. 
+    ! Standard absolute stopping criterion for each subvector of a block vector.
     ! Only valid, if there is no callback routine for the calculation of
     ! residuals passed to the nonlinear solver.
     ! Stop iteration if everywhere
@@ -263,7 +263,7 @@ module nonlinearsolver
     real(DP) :: depsAbsTotal = 0.0_DP
 
     ! INPUT PARAMETER:
-    ! Standard relative divergence criterion for each subvector of a block vector. 
+    ! Standard relative divergence criterion for each subvector of a block vector.
     ! Only valid, if there is no callback routine for the calculation of
     ! residuals passed to the nonlinear solver.
     ! Treat iteration as diverged if anywhere
@@ -273,7 +273,7 @@ module nonlinearsolver
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DdivRel = 1E3_DP
 
     ! INPUT PARAMETER:
-    ! Standard absolute divergence criterion for each subvector of a block vector. 
+    ! Standard absolute divergence criterion for each subvector of a block vector.
     ! Only valid, if there is no callback routine for the calculation of
     ! residuals passed to the nonlinear solver.
     ! Treat iteration as diverged if anywhere
@@ -282,7 +282,7 @@ module nonlinearsolver
     ! standard = SYS_INFINITY_DP
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DdivAbs = SYS_INFINITY_DP
 
-    ! INPUT PARAMETER: 
+    ! INPUT PARAMETER:
     ! Type of stopping criterion to use for standard convergence test. One of the
     ! NLSOL_STOP_xxxx constants.
     ! Note: This parameter is only evaluated in the stanard convergence test.
@@ -291,21 +291,21 @@ module nonlinearsolver
     ! logic to handle relative and absolute convrgence criteria!
     integer                    :: istoppingCriterion = NLSOL_STOP_STANDARD
 
-    ! INPUT PARAMETER: 
+    ! INPUT PARAMETER:
     ! Minimum number of iterations top perform
     integer                    :: nminIterations = 1
 
-    ! INPUT PARAMETER: 
+    ! INPUT PARAMETER:
     ! Maximum number of iterations top perform
     integer                    :: nmaxIterations = 50
     
-    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
-    ! For every subvector: Type of norm to use in the residual checking 
+    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
+    ! For every subvector: Type of norm to use in the residual checking
     ! (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
     integer, dimension(NLSOL_MAXEQUATIONSERROR) :: IresNorm = 2
 
-    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
+    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK:
     ! Type of norm to use in the residual checking of the total vector
     ! (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
@@ -317,7 +317,7 @@ module nonlinearsolver
     integer                    :: ioutputLevel = 0
     
     ! INPUT PARAMETER: Output mode. Used for printing messages.
-    ! =OU_MODE_STD: Print messages to the terminal and probably to a log 
+    ! =OU_MODE_STD: Print messages to the terminal and probably to a log
     ! file (if a log file is opened).
     integer(I32)               :: coutputmode = OU_MODE_STD
 
@@ -325,8 +325,8 @@ module nonlinearsolver
     ! Type of preconditioner to use. One of the NLSOL_PREC_xxxx constants.
     integer                    :: cpreconditioner = NLSOL_PREC_USERDEF
     
-    ! INPUT PARAMETER: 
-    ! If cpreconditioner=NLSOL_PREC_MATRIX block matrix that is multiplied 
+    ! INPUT PARAMETER:
+    ! If cpreconditioner=NLSOL_PREC_MATRIX block matrix that is multiplied
     ! to the defect vector.
     ! If cpreconditioner=NLSOL_PREC_LMASS: Lumped mass matrix. Only matrix
     ! format 7 and 9 are supported.
@@ -337,7 +337,7 @@ module nonlinearsolver
     ! defining the preconditioner
     type(t_linsolNode), pointer :: p_rlinsolNode => null()
     
-    ! STATUS: 
+    ! STATUS:
     ! Current iteration
     integer                     :: icurrentIteration
 
@@ -364,7 +364,7 @@ contains
   
 !<description>
   
-  ! Tests a defect vector rdef whether it is in a defined tolerance configured 
+  ! Tests a defect vector rdef whether it is in a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
   ! can be treated as 'converged'.
   ! The iteration is treated as 'converged' if both, the relative and the
@@ -377,13 +377,13 @@ contains
 !</description>
   
 !<result>
-  ! Boolean value. =TRUE if the convergence criterion is reached; 
+  ! Boolean value. =TRUE if the convergence criterion is reached;
   ! =FALSE otherwise.
 !</result>
   
 !<input>
   
-  ! The solver node of the nonlinear solver that contains the 
+  ! The solver node of the nonlinear solver that contains the
   ! convergence criterion
   type(t_nlsolNode), intent(in) :: rsolverNode
   
@@ -429,7 +429,7 @@ contains
     if (present(rdef)) then
       call lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm(1:nblocks),&
           DvecNorm(1:nblocks))
-      where (.not.((DvecNorm .ge. 1E-99_DP) .and. (DvecNorm .le. 1E99_DP))) 
+      where (.not.((DvecNorm .ge. 1E-99_DP) .and. (DvecNorm .le. 1E99_DP)))
         DvecNorm = 0.0_DP
       end where
       dvecNormTotal = lsysbl_vectorNorm (rdef,rsolverNode%iresNormTotal)
@@ -456,7 +456,7 @@ contains
       end if
         
       ! Relative convergence criterion? Multiply with initial residuum
-      ! and check the norm. 
+      ! and check the norm.
       ! If the initial defect is 0, this rule is not to be applied!
       ! (May happen in the first step of 'flow around cylinder'
       !  where we have only convection in the X-direction, not in the Y-direction
@@ -466,7 +466,7 @@ contains
         bok = .false.
         do i=1,nblocks
           bok = bok .or. (.not. (DvecNorm(i) .gt. &
-              rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i))) 
+              rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)))
         end do
         if (bok) then
           loutput = .true.
@@ -490,7 +490,7 @@ contains
         end if
         
         ! Relative convergence criterion? Multiply with initial residuum
-        ! and check the norm. 
+        ! and check the norm.
         ! If the initial defect is 0, this rule is not to be applied!
         ! (May happen in the first step of 'flow around cylinder'
         !  where we have only convection in the X-direction, not in the Y-direction
@@ -507,7 +507,7 @@ contains
       end do ! i
     end select
 
-    ! Absolute convergence criterion? 
+    ! Absolute convergence criterion?
     if (rsolverNode%depsAbsTotal .ne. 0.0_DP) then
       if (.not. (DvecNormTotal .gt. rsolverNode%depsAbsTotal)) then
         loutput = .true.
@@ -518,7 +518,7 @@ contains
     if ((rsolverNode%depsRelTotal .ne. 0.0_DP) .and. &
         (rsolverNode%dinitialDefectTotal .gt. SYS_EPSREAL_DP)) then
       if (.not. (dvecNormTotal .gt. &
-            rsolverNode%depsRelTotal * rsolverNode%dinitialDefectTotal)) then 
+            rsolverNode%depsRelTotal * rsolverNode%dinitialDefectTotal)) then
         loutput = .true.
       end if
       
@@ -535,7 +535,7 @@ contains
   
 !<description>
   
-  ! Tests a defect vector rx whether it is out of a defined tolerance configured 
+  ! Tests a defect vector rx whether it is out of a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
   ! can be treated as 'diverged'.
   ! The iteration is treated as 'diverged' if one criterion, the relative or the
@@ -547,13 +547,13 @@ contains
 !</description>
   
   !<result>
-  ! Boolean value. =TRUE if the divergence criterion is reached; 
+  ! Boolean value. =TRUE if the divergence criterion is reached;
   ! =FALSE otherwise.
   !</result>
   
 !<input>
   
-  ! The solver node of the nonlinear solver that contains the 
+  ! The solver node of the nonlinear solver that contains the
   ! convergence criterion
   type(t_nlsolNode), intent(in) :: rsolverNode
   
@@ -591,7 +591,7 @@ contains
   if (present(rdef)) then
     call lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm(1:nblocks),&
         DvecNorm(1:nblocks))
-    where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
+    where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99)))
       DvecNorm = 0.0_DP
     end where
   end if
@@ -612,7 +612,7 @@ contains
     end if
     
     ! Relative divergence criterion? Multiply with initial residuum
-    ! and check the norm. 
+    ! and check the norm.
     ! If the initial defect is 0, this rule is not to be applied!
     ! (May happen in the first step of 'flow around cylinder'
     !  where we have only convection in the X-direction, not in the Y-direction
@@ -649,7 +649,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The solver node of the nonlinear iteration loop where to set the 
+  ! The solver node of the nonlinear iteration loop where to set the
   ! preconditioner.
   type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
@@ -675,7 +675,7 @@ contains
 !<description>
   ! This routine installs a standard matrix preconditioner into the nonlinear
   ! subroutine. rmatrix is a scalar matrix. The matrix is added as 1x1 block
-  ! matrix preconditioner P := [rmatrix] to the solver node and is multiplied 
+  ! matrix preconditioner P := [rmatrix] to the solver node and is multiplied
   ! to the defect vector in every iteration:
   !    <tex> $$  x_{n+1}  =  x_n  +  P (b-A(x)x)  $$ </tex>
 !</description>
@@ -686,7 +686,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The solver node of the nonlinear iteration loop where to set the 
+  ! The solver node of the nonlinear iteration loop where to set the
   ! preconditioner.
   type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
@@ -711,7 +711,7 @@ contains
   
 !<description>
   ! This routine installs a lumped mass matrix preconditioner into the nonlinear
-  ! subroutine. rmatrix =: M is a block matrix which contains only diagonal 
+  ! subroutine. rmatrix =: M is a block matrix which contains only diagonal
   ! blocks with lumped mass matrices. this matrix is is multiplied to the defect
   ! vector in every iteration:
   !    <tex> $$  x_{n+1}  =  x_n  +  M^{-1} (b-A(x)x)  $$ </tex>
@@ -724,14 +724,14 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The solver node of the nonlinear iteration loop where to set the 
+  ! The solver node of the nonlinear iteration loop where to set the
   ! preconditioner.
   type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
 
-    ! Install the matrix. 
+    ! Install the matrix.
     call nlsol_setPrecMatrix (rsolverNode,rmatrix)
       
     ! Set the preconditioner type flag appropriately.
@@ -759,7 +759,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The solver node of the nonlinear iteration loop where to set the 
+  ! The solver node of the nonlinear iteration loop where to set the
   ! preconditioner.
   type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
@@ -793,7 +793,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The solver node of the nonlinear iteration loop where to set the 
+  ! The solver node of the nonlinear iteration loop where to set the
   ! preconditioner.
   type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
@@ -848,13 +848,13 @@ contains
   ! This routine can check the residuum for convergence/divergence and can print
   ! information about the norm of the residuum to screen.
   !
-  ! At the beginning of the nonlinear iteration, the callback routines 
+  ! At the beginning of the nonlinear iteration, the callback routines
   ! fcb_getResiduum and fcb_resNormCheck are called once with ite=0 to calculate
   ! the initial defect, its norm and to check if already the initial vector
   ! is the solution.
   !
   ! If a linear solver is chosen for preconditioning, the nonlinear solver
-  ! assumes that this is completely initialised by the application and ready 
+  ! assumes that this is completely initialised by the application and ready
   ! for action; it will directly call linsol_precondDefect without any further
   ! initialisation!
 !</description>
@@ -882,7 +882,7 @@ contains
   type(t_vectorBlock), intent(in)               :: rb
   
   ! Defect vector calculation routine. Based on the current iteration vector
-  ! rx and the right hand side vector rb, this routine has to compute the 
+  ! rx and the right hand side vector rb, this routine has to compute the
   ! defect vector rd.
   include 'intf_nlsolcallback.inc'
   
@@ -896,8 +896,8 @@ contains
   ! OPTIONAL: Residual norm calculation and printing routine.
   ! If not present, the standard absolute/relative stopping criteria of the
   !  solver node with the configuration of the nonlinear solver are used.
-  ! If present, this routine is called each time the norm of the residuum was 
-  !  calculated. It has to check the current residuum for convergence and/or 
+  ! If present, this routine is called each time the norm of the residuum was
+  !  calculated. It has to check the current residuum for convergence and/or
   !  divergence and can print the residuum to screen.
   optional :: fcb_resNormCheck
   
@@ -920,7 +920,7 @@ contains
     if (present(rcollection)) p_rcollection => rcollection
     
     ! In case our preconditioner is a matrix-vector multiplication,
-    ! allocate memory for another temporary vector used 
+    ! allocate memory for another temporary vector used
     ! during the MV multiplication.
     if (rsolverNode%cpreconditioner .eq. NLSOL_PREC_MATRIX) then
       call lsysbl_createVecBlockIndirect (rx,rtemp,.false.)
@@ -935,7 +935,7 @@ contains
     ite = 0
     rsolverNode%icurrentIteration = ite
 
-    ! The standard convergence/divergence test supports only up to 
+    ! The standard convergence/divergence test supports only up to
     ! NLSOL_MAXEQUATIONSERROR equations.
     nblocks = min(rb%nblocks,NLSOL_MAXEQUATIONSERROR)
     
@@ -948,7 +948,7 @@ contains
       DvecNorm = 0.0_DP
       call lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks),&
           DvecNorm(1:nblocks))
-      where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
+      where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99)))
         DvecNorm = 0.0_DP
       end where
       rsolverNode%DinitialDefect = DvecNorm
@@ -1051,7 +1051,7 @@ contains
           ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
           call fcb_getDefect (ite,rx,rb,rd,p_rcollection)
 
-          ! Check the defect for convergence        
+          ! Check the defect for convergence
           if (present(fcb_resNormCheck)) then
             ! Calculate the defect with the callback routine
             call fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
@@ -1059,7 +1059,7 @@ contains
             ! Calculate the norm of the defect:
             call lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks),&
                 DvecNorm(1:nblocks))
-            where (.not.((DvecNorm .ge. 1E-99_DP) .and. (DvecNorm .le. 1E99_DP))) 
+            where (.not.((DvecNorm .ge. 1E-99_DP) .and. (DvecNorm .le. 1E99_DP)))
               DvecNorm = 0.0_DP
             end where
             rsolverNode%DfinalDefect = DvecNorm
@@ -1108,7 +1108,7 @@ contains
     if (ite .gt. rsolverNode%nmaxIterations) &
       ite = rsolverNode%nmaxIterations
       
-    if (.not. bconvergence) then 
+    if (.not. bconvergence) then
       ! Convergence criterion not reached, but solution did not diverge.
       rsolverNode%iresult = -1
     end if
@@ -1136,7 +1136,7 @@ contains
   ! This routine performs the same task as nlsol_performSolve, but for
   ! scalar systems instead of block systems. For this purpose,
   ! the scalar vectors rx,rb and rd are converted temporarily into block
-  ! vectors; then nlsol_performSolve is called to perform the nonlinear 
+  ! vectors; then nlsol_performSolve is called to perform the nonlinear
   ! iteration.
 !</description>
 
@@ -1163,7 +1163,7 @@ contains
   type(t_vectorScalar), intent(in)               :: rb
   
   ! Defect vector calculation routine. Based on the current iteration vector
-  ! rx and the right hand side vector rb, this routine has to compute the 
+  ! rx and the right hand side vector rb, this routine has to compute the
   ! defect vector rd.
   include 'intf_nlsolcallback.inc'
   
@@ -1177,8 +1177,8 @@ contains
   ! OPTIONAL: Residual norm calculation and printing routine.
   ! If not present, the standard absolute/relative stopping criteria of the
   !  solver node with the configuration of the nonlinear solver are used.
-  ! If present, this routine is called each time the norm of the residuum was 
-  !  calculated. It has to check the current residuum for convergence and/or 
+  ! If present, this routine is called each time the norm of the residuum was
+  !  calculated. It has to check the current residuum for convergence and/or
   !  divergence and can print the residuum to screen.
   optional :: fcb_resNormCheck
   
@@ -1196,7 +1196,7 @@ contains
     call lsysbl_createVecFromScalar (rb,rbBlock)
     call lsysbl_createVecFromScalar (rd,rdBlock)
     
-    ! Invoke the solver - that is all. 
+    ! Invoke the solver - that is all.
     call nlsol_performSolve (rsolverNode,rxBlock,rbBlock,rdBlock,&
                             fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
                             rcollection)

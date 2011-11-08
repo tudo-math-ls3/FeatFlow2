@@ -64,8 +64,8 @@ contains
   subroutine hc5_timestep (rproblem,rvector,rrhs)
   
 !<description>
-  ! Performs one time step: $t^n -> t^n+1$. 
-  ! Assembles system matrix and RHS vector. 
+  ! Performs one time step: $t^n -> t^n+1$.
+  ! Assembles system matrix and RHS vector.
   ! Solves the corresponding time-step equation and returns the solution vector
   ! at the end of the time step.
   ! Solves the given problem by applying a linear solver.
@@ -89,19 +89,19 @@ contains
     integer :: i
 
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs
     type(t_vectorBlock), target :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -121,7 +121,7 @@ contains
     !
     ! Which is discretised in time with a Theta scheme, leading to
     !
-    !   $$ u_{n+1} + w_1*N(u_n+1) 
+    !   $$ u_{n+1} + w_1*N(u_n+1)
     !      =   u_n + w_2*N(u_n)  +  w_3*f_{n+1}  +  w_4*f_n $$
     !
     ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
@@ -137,7 +137,7 @@ contains
     ! Get our right hand side / solution / matrix on the finest
     ! level from the problem structure.
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
-    p_rrhs    => rproblem%rrhs 
+    p_rrhs    => rproblem%rrhs
     
     ! Create a temporary vector we need for some preparations.
     call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .false.)
@@ -233,7 +233,7 @@ contains
     ! Release solver data.
     call linsol_doneData (p_rsolverNode)
     
-    ! Unsort the vectors again in case they were resorted before calling 
+    ! Unsort the vectors again in case they were resorted before calling
     ! the solver.
     ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we only have one block.
@@ -292,7 +292,7 @@ contains
       rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
                        trim(rproblem%sucddir)//'/u5.gmv.'//trim(sys_si0L(iiteration,5)))

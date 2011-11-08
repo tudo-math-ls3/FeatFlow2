@@ -321,7 +321,7 @@ contains
     read(sstring,*) rprob%sgridFileTRI
     call output_line('TRI file: '//trim(rprob%sgridFilePRM))
        
-    ! get number of boundaries 
+    ! get number of boundaries
     call output_line('number of boundaries: ' // &
                      trim(sys_siL(boundary_igetNBoundComp(rprob%rboundary),3)))
 
@@ -426,7 +426,7 @@ contains
     call output_line('simulation: '//trim(sstring))
 
 
-    ! process boundary conditions 
+    ! process boundary conditions
     ! Currently, the BCs can only be defined per boundary segment. For each boundary,
     ! the dat file must provide a number of lines corresponding to the segments.
     ! The first two entries determine the type of the boundary condition (('D' Dirichlet,
@@ -469,9 +469,9 @@ contains
         ! set type of boundary condition
         do k = 1, rprob%nblocks
           if (trim(Sbc(k)) .eq. "D") then
-            rprob%Cbc(k,j,i) = BC_DIRICHLET 
+            rprob%Cbc(k,j,i) = BC_DIRICHLET
           else if (trim(Sbc(k)) .eq. "N") then
-            rprob%Cbc(k,j,i) = BC_NEUMANN 
+            rprob%Cbc(k,j,i) = BC_NEUMANN
           else
             call output_line('invalid boundary condition:' // trim(sstring) // &
                              ', currently only D (Dirichlet) and N (Neumann) supported!',&
@@ -597,7 +597,7 @@ contains
     endif
     
     ! minimum and maximum level
-    call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)   
+    call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)
     call parlst_getvalue_int(rparams, '', 'levelMax', rprob%ilevelMax)
     if (rprob%ilevelMax .le. 0) then
       call output_line('invalid max. grid level: ' // trim(sys_siL(rprob%ilevelMax,3)))
@@ -791,7 +791,7 @@ contains
       enddo
 
       call output_line('Relative errors between FE and reference solutions:')
-      do i = 1, min(rprob%nevalPoints, rprob%nrefSols) 
+      do i = 1, min(rprob%nevalPoints, rprob%nrefSols)
         call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // &
                          ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
         call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
@@ -986,21 +986,21 @@ contains
             (elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
                                      DER_DERIV_X, rprob%CfuncID(1)) &
            + elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
-                                     DER_DERIV_Y, rprob%CfuncID(2)))  
+                                     DER_DERIV_Y, rprob%CfuncID(2)))
         else if (cderivative .eq. DER_DERIV_X) then
           ! p_x = -dlambda * (u1_xx + u2_xy)
           Dvalues(:,1:nel) = -rprob%dlambda * &
             (elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
                                      DER_DERIV_XX, rprob%CfuncID(1)) &
            + elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
-                                     DER_DERIV_XY, rprob%CfuncID(2)))  
+                                     DER_DERIV_XY, rprob%CfuncID(2)))
         else if (cderivative .eq. DER_DERIV_Y) then
           ! p_x = -dlambda * (u1_xy + u2_yy)
           Dvalues(:,1:nel) = -rprob%dlambda * &
             (elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
                                      DER_DERIV_XY, rprob%CfuncID(1)) &
            + elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
-                                     DER_DERIV_YY, rprob%CfuncID(2)))  
+                                     DER_DERIV_YY, rprob%CfuncID(2)))
         endif
       endif
     endif
@@ -1734,7 +1734,7 @@ contains
 !                                -0.5_DP*Dpts(2,:,:)**2)) + 4*daux**2*Dpts(1,:,:)*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      case (DER_DERIV_XY); Dval(:,:) =   (daux**2*Dpts(1,:,:)**2 - 2*daux**2*Dpts(1,:,:)*Dpts(2,:,:)**2)*cos(daux*(Dpts(1,:,:) &
 !                                -0.5_DP*Dpts(2,:,:)**2)) + (2*daux*Dpts(1,:,:) + daux**3*Dpts(1,:,:)**2*Dpts(2,:,:)**2)*sin(daux*(Dpts(1,:,:)&
-!                                -0.5_DP*Dpts(2,:,:)**2)) 
+!                                -0.5_DP*Dpts(2,:,:)**2))
 !      case (DER_DERIV_YY); Dval(:,:) =  -daux**3*Dpts(1,:,:)**2*Dpts(2,:,:)**3*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
 !                                - 3*daux**2*Dpts(1,:,:)**2*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      end select
@@ -1745,18 +1745,18 @@ contains
 !      case (DER_FUNC);     Dval(:,:) =   -2*Dpts(1,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
 !                                + daux*Dpts(1,:,:)**2*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      case (DER_DERIV_X);  Dval(:,:) =   (daux**2*Dpts(1,:,:)**2 - 2)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
-!                                + 4*daux*Dpts(1,:,:)*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) 
+!                                + 4*daux*Dpts(1,:,:)*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      case (DER_DERIV_Y);  Dval(:,:) =  -2*daux*Dpts(1,:,:)*Dpts(2,:,:)*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
 !                                - daux**2*Dpts(1,:,:)**2*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      case (DER_DERIV_XX); Dval(:,:) =   (6*daux - daux**3*Dpts(1,:,:)**2) * sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
 !                                + 6*daux**2*Dpts(1,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
-!      case (DER_DERIV_XY); Dval(:,:) =   (daux**3*Dpts(1,:,:)**2*Dpts(2,:,:) - 2*daux*Dpts(2,:,:))*sin(daux*(Dpts(1,:,:)& 
+!      case (DER_DERIV_XY); Dval(:,:) =   (daux**3*Dpts(1,:,:)**2*Dpts(2,:,:) - 2*daux*Dpts(2,:,:))*sin(daux*(Dpts(1,:,:)&
 !                                -0.5_DP*Dpts(2,:,:)**2)) - 4*daux**2*Dpts(1,:,:)*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      case (DER_DERIV_YY); Dval(:,:) =   (2*daux**2*Dpts(1,:,:)*Dpts(2,:,:)**2  - daux**2*Dpts(1,:,:)**2)*cos(daux*(Dpts(1,:,:)&
 !                                -0.5_DP*Dpts(2,:,:)**2)) - (daux**3*Dpts(1,:,:)**2*Dpts(2,:,:)**2 &
 !                                + 2*daux*Dpts(1,:,:))*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
 !      end select
-!      
+!
 !    case (50) ! u(x,y) = 0.05 * sin(2*PI*x)*sin(2*PI*y)
 !      select case (cderiv)
 !      case (DER_FUNC);     Dval(:,:) =  0.05_DP*sin(2.0_DP*SYS_PI*Dpts(1,:,:)) * sin(2.0_DP*SYS_PI*Dpts(2,:,:))
@@ -1771,7 +1771,7 @@ contains
 !      case (DER_DERIV_YY); Dval(:,:) =  -0.2_DP * SYS_PI*SYS_PI &
 !                              * sin(2.0_DP*SYS_PI*Dpts(1,:,:)) * sin(2.0_DP*SYS_PI*Dpts(2,:,:))
 !      end select
-!      
+!
 !    case (51) ! u(x,y) = sin(PI/2 (x-1)) sin(PI/2 (y-1))
 !      select case (cderiv)
 !      case (DER_FUNC);     Dval(:,:) =  sin(0.5_DP*SYS_PI*(Dpts(1,:,:)-1)) * sin(0.5_DP*SYS_PI*(Dpts(2,:,:)-1))
@@ -1823,7 +1823,7 @@ contains
 !      case (DER_DERIV_XY); Dval(:,:) =  0.0_DP
 !      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
 !      end select
-!      
+!
     end select
 
   end function elast_danalyticFunction

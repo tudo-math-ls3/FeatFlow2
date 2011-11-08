@@ -129,18 +129,18 @@ contains
 !  !   $$ J(y,u) = 1/2||y-z||_{L^2}^2  + \alpha/2||u||^2 $$
 !  ! over a spatial domain $\Omega$.
 !  !
-!  ! For this purpose, the routine evaluates the user-defined callback functions 
+!  ! For this purpose, the routine evaluates the user-defined callback functions
 !  ! user_ffunction_TargetX and user_ffunction_TargetY. The collection must be initialised
 !  ! for postprocessing before calling his routine!
 !!</description>
-!  
+!
 !!<input>
 !  ! Global settings for callback routines.
 !  type(t_globalData), intent(inout), target :: rglobalData
 !
 !  ! Solution vector to compute the norm/error from.
 !  type(t_vectorBlock), intent(IN) :: rsolution
-!  
+!
 !  ! Analytic solution defining the reference function z.
 !  type(t_anSolution), intent(inout) :: rreference
 !
@@ -156,13 +156,13 @@ contains
 !  ! Norm of the error functional.
 !  real(DP), dimension(:), intent(OUT) :: Derror
 !!</output>
-!  
+!
 !!</subroutine>
-!    
+!
 !    ! local variables
 !    real(DP),dimension(2) :: Derr
 !    type(t_collection) :: rcollection
-!    
+!
 !    ! Initialise the collection for the assembly process with callback routines.
 !    ! This stores the simulation time in the collection and sets the
 !    ! current subvector z for the callback routines.
@@ -170,7 +170,7 @@ contains
 !
 !    ! Perform error analysis to calculate and add 1/2||y-z||_{L^2}.
 !    if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-!      
+!
 !      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
 !      call user_initCollectForAssembly (rglobalData,0.0_DP,rcollection)
 !
@@ -179,11 +179,11 @@ contains
 !
 !      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
 !                        user_ffunction_TargetY,rcollection)
-!          
+!
 !      call user_doneCollectForAssembly (rglobalData,rcollection)
-!      
+!
 !    else
-!    
+!
 !      ! Use our standard implementation to evaluate the functional.
 !      call ansol_prepareEval (rreference,rcollection,"SOL",0.0_DP)
 !
@@ -196,33 +196,33 @@ contains
 !      rcollection%IquickAccess(1) = 2
 !      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
 !          optcana_evalFunction,rcollection)
-!          
+!
 !      call ansol_doneEval (rcollection,"SOL")
-!      
+!
 !    end if
-!                       
+!
 !    Derror(1) = (0.5_DP*(Derr(1)**2+Derr(2)**2))
 !    Derror(2) = 0.0_DP
-!    
+!
 !    ! Calculate \alpha/2||u||^2.
 !    if (dalpha .ne. 0.0_DP) then
 !      call pperr_scalar (rsolution%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
 !
 !      call pperr_scalar (rsolution%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
-!                         
+!
 !      Derror(2) = (0.5_DP*(Derr(1)**2+Derr(2)**2))
-!      
+!
 !      ! Because of u=-lambda/alpha we have:
 !      !    alpha/2 ||u||^2 = alpha/2 ||lambda/alpha||^2 = 1/(2*alpha) ||lambda||^2
 !    end if
-!    
+!
 !    Derror(3) = 0.5_DP * Derror(1)+(0.5_DP/dalpha) * Derror(2)
 !    Derror(1) = sqrt(Derror(1))
 !    Derror(2) = sqrt(Derror(2))
-!    
-!    ! Clean up    
+!
+!    ! Clean up
 !    call collct_done(rcollection)
-!    
+!
 !  end subroutine
 
 !******************************************************************************
@@ -239,7 +239,7 @@ contains
   !   $$ J(y,u) = 1/2||y-z||^2_{L^2} + \alpha/2||u||^2_{L^2} + gamma/2||y(T)-z(T)||^2_{L^2}$$
   ! over a spatial domain $\Omega$.
   !
-  ! For this purpose, the routine evaluates the user-defined callback functions 
+  ! For this purpose, the routine evaluates the user-defined callback functions
   ! user_ffunction_TargetX and user_ffunction_TargetY. The collection must be initialised
   ! for postprocessing before calling his routine!
   !
@@ -402,7 +402,7 @@ contains
                 rconstrSpace%p_rvectorumin%RvectorBlock(2),&
                 rconstrSpace%p_rvectorumax%RvectorBlock(2))
             
-            ! Done.    
+            ! Done.
             call stlin_doneSpaceConstraints (rconstrSpace)
           end select
         end if
@@ -411,7 +411,7 @@ contains
         call pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
         call pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
               
-        ! We use the summed trapezoidal rule.             
+        ! We use the summed trapezoidal rule.
         if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
           Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
         else
@@ -833,7 +833,7 @@ contains
           
     end do
 
-    ! Get the error return values.    
+    ! Get the error return values.
     DerrorU = sqrt(DerrorU*dtstep)
     DerrorP = sqrt(DerrorP*dtstep)
     DerrorLambda = sqrt(DerrorLambda*dtstep)

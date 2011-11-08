@@ -17,10 +17,10 @@
 !# a cubature formula ID.
 !#
 !# The module supports standard cubature formulas and summed cubature formulas
-!# which stem from a regular refinement of the reference element. The cubature 
+!# which stem from a regular refinement of the reference element. The cubature
 !# points of an underlying standard cubature formula are transferred to all
 !# subelements of the refined reference element, thus realising a higher
-!# order cubature also for nonsmooth functions. For a summed formula, the 
+!# order cubature also for nonsmooth functions. For a summed formula, the
 !# ID contains additional information about the element refinement.
 !#
 !# The following routines can be found in this module:
@@ -65,7 +65,7 @@
 !#
 !#
 !# A note on cub_getCubPoints and cub_getCubature
-!# ---------------------------------------------- 
+!# ----------------------------------------------
 !# The old routine 'cub_getCubPoints' and the parameter 'CUB_MAXCUBP' have
 !# been marked as deprecated for several reasons:
 !# 1. The CUB_MAXCUBP constant leads to a kind of 'sloppy' programming style,
@@ -100,7 +100,7 @@
 !#   ! Cubature points
 !#   real(DP), dimension(CUB_MAXCUBP,4) :: Dxi
 !#   real(DP), dimension(4,CUB_MAXCUBP) :: Dpoints
-!# 
+!#
 !#   ! Cubature weights
 !#   real(DP), dimension(CUB_MAXCUBP) :: Domega
 !#
@@ -112,15 +112,15 @@
 !#
 !#     ! Transpose points
 !#     Dpoints = transpose(Dxi)
-!# 
+!#
 !# </code>
-!# 
+!#
 !# The new recommended style is:
 !# <code>
 !#
 !#   ! Cubature points
 !#   real(DP), dimension(:,:), allocatable :: Dpoints
-!# 
+!#
 !#   ! Cubature weights
 !#   real(DP), dimension(:), allocatable :: Domega
 !#
@@ -142,8 +142,8 @@
 !#
 !# </code>
 !#
-!# About the cubature ID 
-!# --------------------- 
+!# About the cubature ID
+!# ---------------------
 !# The cubature ID is interpreted as a bitfield that codes the necessary
 !# information about the cubature rule. The following bits are used:
 !#
@@ -173,7 +173,7 @@ module cubature
   
 !<constants>
 
-!<constantblock variable="ccubType" description="1D formulas">  
+!<constantblock variable="ccubType" description="1D formulas">
 
   ! 1-point Gauss formula, 1D, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1_1D = 101
@@ -213,7 +213,7 @@ module cubature
 
 !</constantblock>
 
-!<constantblock variable="ccubType" description="2D formulas, quad">  
+!<constantblock variable="ccubType" description="2D formulas, quad">
 
   ! 1x1 Gauss formula, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1X1 = 201
@@ -231,7 +231,7 @@ module cubature
   integer(I32), parameter, public :: CUB_G2X2 = 204
   integer(I32), parameter, public :: CUB_G2_2D = CUB_G2X2
 
-  ! Newton formula 1, degree = 4, ncubp = 4 
+  ! Newton formula 1, degree = 4, ncubp = 4
   integer(I32), parameter, public :: CUB_NS1 = 205
 
   ! Newton formula 2, degree = 5, ncubp = 6
@@ -261,7 +261,7 @@ module cubature
   ! piecewise trapezoidal rule, degree = 2, ncubp = 9
   integer(I32), parameter, public :: CUB_PTRZ = 213
 
-  ! piecewise 2x2 Gauss formula, degree = 4, ncubp = 16 
+  ! piecewise 2x2 Gauss formula, degree = 4, ncubp = 16
   integer(I32), parameter, public :: CUB_PG2X2 = 214
 
   ! piecewise 3x3 Gauss formula, degree = 6, ncubp = 36
@@ -285,7 +285,7 @@ module cubature
   ! 1-point Gauss formula, triangle, degree = 2, ncubp = 1
   integer(I32), parameter, public :: CUB_G1_T = 250
 
-  ! trapezoidal rule, triangle, degree = 2, ncubp = 3 
+  ! trapezoidal rule, triangle, degree = 2, ncubp = 3
   integer(I32), parameter, public :: CUB_TRZ_T = 251
 
   ! 3-point Gauss formula, triangle, degree = 3, ncubp = 3
@@ -294,7 +294,7 @@ module cubature
   ! Collatz formula, degree = 3, ncubp = 3
   integer(I32), parameter, public :: CUB_Collatz = 253
 
-  ! vertices, midpoints, center, degree = 4, ncubp = 7 
+  ! vertices, midpoints, center, degree = 4, ncubp = 7
   integer(I32), parameter, public :: CUB_VMC = 254
 !</constantblock>
 
@@ -404,8 +404,8 @@ contains
   integer(I32) function cub_igetID(scubName, bcheck)
   
 !<description>
-  ! This routine returns the cubature id to a given cubature formula name. It is 
-  ! case-insensitive. 
+  ! This routine returns the cubature id to a given cubature formula name. It is
+  ! case-insensitive.
 !</description>
 
 !<result>
@@ -576,7 +576,7 @@ contains
   ! This function returns a string which represents the cubature formula name.
   !
   ! This function is constructed in a way such that for any valid cubature
-  ! rule identifier ccubature, the equation 
+  ! rule identifier ccubature, the equation
   ! <verb>
   !   cub_igetID(cub_getName(ccubature)) = ccubature
   ! </verb>
@@ -591,7 +591,7 @@ contains
   ! valid names, e.g. G2_2D and G2X2.
 !</description>
 
-!<input> 
+!<input>
   ! The cubature formula whose name is to be returned.
   integer(I32), intent(in) :: ccubature
 !</input>
@@ -821,7 +821,7 @@ contains
   integer function cub_getRefElements(ccubType) result(n)
   
 !<description>
-  ! Auxiliary. Returns for a given summed cubature formula the number of 
+  ! Auxiliary. Returns for a given summed cubature formula the number of
   ! elements into which the reference element is subdivided in every refinement
   ! step.
 !</description>
@@ -839,7 +839,7 @@ contains
 
     integer(I32) :: ccubStd
 
-    ! Get the underlying cubature formula   
+    ! Get the underlying cubature formula
     ccubStd = cub_getStdCubType(ccubType)
 
     ! Get the shape of the element
@@ -863,10 +863,10 @@ contains
     end select
 
 !!$    integer :: nreflevels
-!!$  
+!!$
 !!$    ! Get the underlying cubature formula an number of refinement levels.
 !!$    nreflevels = cub_getRefLevels(ccubType)
-!!$    
+!!$
 !!$    ! Based on this information, calculate the number of cubature points.
 !!$    n = 0
 !!$    select case (cub_getStdCubType(ccubType))
@@ -1255,7 +1255,7 @@ contains
   real(DP), dimension(6) :: Dv, Dw
   integer :: ndim, npts
 
-  ! Variables needed for summed cubature formulas.  
+  ! Variables needed for summed cubature formulas.
   integer(I32) :: cstdCubType
   integer :: nreflevels,icubp,ncubpts,nrefcubpts,icubpStart
   integer :: isubelement, nsubelements, isubx, isuby, isubz
@@ -1610,7 +1610,7 @@ contains
             end do
           end do
           
-        case (CUB_TRZ_2D)     
+        case (CUB_TRZ_2D)
           ! Points are in the corners of the (sub-)elements.
           !
           ! How many subelements do we have?
@@ -1692,7 +1692,7 @@ contains
             end do
           end do
 
-        case (CUB_TRZ_3D)     
+        case (CUB_TRZ_3D)
           ! Points are in the corners of the (sub-)elements.
           !
           ! How many subelements do we have?
@@ -2208,10 +2208,10 @@ contains
   subroutine cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
 
 !<description>
-  ! This routine initializes the coordinates and weight fields according 
+  ! This routine initializes the coordinates and weight fields according
   ! to the selected cubature formula. The integration domain is <tex>$[-1,1]^n$</tex>.
-  ! In the case of one-dimensional integration, only cub_dxi(i,1) is used. 
-  ! The coordinates of the cubature points on triangles are given in 
+  ! In the case of one-dimensional integration, only cub_dxi(i,1) is used.
+  ! The coordinates of the cubature points on triangles are given in
   ! barycentric coordinates.
 !</description>
 
@@ -2227,20 +2227,20 @@ contains
   ! Coordinates of the cubature points.
   ! 1D: Dxi(1..ncubp,1)=coordinates,
   ! 2D: Quadrilaterals:
-  !        Dxi(1..ncubp,1)=x-coord, 
+  !        Dxi(1..ncubp,1)=x-coord,
   !        Dxi(1..ncubp,2)=y-coord
   !     Triangles:
-  !        Dxi(1..ncubp,1)=1st barycentric coordinate, 
-  !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
+  !        Dxi(1..ncubp,1)=1st barycentric coordinate,
+  !        Dxi(1..ncubp,2)=2nd barycentric coordinate,
   !        Dxi(1..ncubp,3)=3rd barycentric coordinate
   ! 3D: Hexahedra:
-  !       Dxi(1..ncubp,1)=x-coord, 
-  !       Dxi(1..ncubp,2)=y-coord, 
+  !       Dxi(1..ncubp,1)=x-coord,
+  !       Dxi(1..ncubp,2)=y-coord,
   !       Dxi(1..ncubp,3)=z-coord
   !     Tetrahedra:
-  !        Dxi(1..ncubp,1)=1st barycentric coordinate, 
-  !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
-  !        Dxi(1..ncubp,3)=3rd barycentric coordinate, 
+  !        Dxi(1..ncubp,1)=1st barycentric coordinate,
+  !        Dxi(1..ncubp,2)=2nd barycentric coordinate,
+  !        Dxi(1..ncubp,3)=3rd barycentric coordinate,
   !        Dxi(1..ncubp,4)=4th barycentric coordinate
   real(DP), dimension(:,:), intent(out) :: Dxi
   
@@ -2249,10 +2249,10 @@ contains
   
 !</output>
 
-!</subroutine>    
+!</subroutine>
 
   ! local variables
-  integer :: i 
+  integer :: i
   
   select case (ccubType)
 
@@ -2310,7 +2310,7 @@ contains
     Dxi(1,1)  = -0.906179845938664_DP
     Dxi(2,1)  = -0.538469310105683_DP
     Dxi(3,1)  =  0.0_DP
-    Dxi(4,1)  =  0.538469310105683_DP 
+    Dxi(4,1)  =  0.538469310105683_DP
     Dxi(5,1)  =  0.906179845938664_DP
     
     Domega(1) =  0.236926885056189_DP
@@ -2321,7 +2321,7 @@ contains
     
     ncubp = 5
     
-  case(CUB_SIMPSON_1D) 
+  case(CUB_SIMPSON_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  =  0.0_DP
     Dxi(3,1)  =  1.0_DP
@@ -2332,7 +2332,7 @@ contains
     
     ncubp     =  3
     
-  case(CUB_PULCHERIMA_1D) 
+  case(CUB_PULCHERIMA_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  = -0.333333333333333_DP
     Dxi(3,1)  =  0.333333333333333_DP
@@ -2345,7 +2345,7 @@ contains
     
     ncubp     =  4
 
-  case(CUB_MILNE_1D) 
+  case(CUB_MILNE_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  = -0.5_DP
     Dxi(3,1)  =  0.0_DP
@@ -2360,7 +2360,7 @@ contains
     
     ncubp     =  5
 
-  case(CUB_6POINT_1D) 
+  case(CUB_6POINT_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  = -0.6_DP
     Dxi(3,1)  = -0.2_DP
@@ -2377,7 +2377,7 @@ contains
     
     ncubp     =  6
 
-  case(CUB_WEDDLE_1D) 
+  case(CUB_WEDDLE_1D)
     Dxi(1,1)  = -1.0_DP
     Dxi(2,1)  = -0.666666666666666_DP
     Dxi(3,1)  = -0.333333333333333_DP
@@ -2569,7 +2569,7 @@ contains
     Domega(8) =  0.493827160493827_DP
     Domega(9) =  0.790123456790123_DP
     
-    ncubp     =  9 
+    ncubp     =  9
     
   case (CUB_G)
     Dxi(1,1)  =  0.92582009977255146_DP
@@ -3203,7 +3203,7 @@ contains
 
     Dxi(6,1)  =  0.0_DP
     Dxi(6,2)  =  0.0_DP
-    Dxi(6,3)  =  1.0_DP 
+    Dxi(6,3)  =  1.0_DP
 
     Domega(1) =  1.333333333333333_DP
     Domega(2) =  1.333333333333333_DP
@@ -3212,7 +3212,7 @@ contains
     Domega(5) =  1.333333333333333_DP
     Domega(6) =  1.333333333333333_DP
 
-    ncubp     =  6      
+    ncubp     =  6
 
   case(CUB_TRZ_3D)
     Dxi(1,1)  = -1.0_DP
@@ -3331,7 +3331,7 @@ contains
     
     Dxi(7,1)  =  0.0_DP
     Dxi(7,2)  =  0.774596669241483_DP
-    Dxi(7,3)  = -0.774596669241483_DP         
+    Dxi(7,3)  = -0.774596669241483_DP
     
     Dxi(8,1)  =  0.0_DP
     Dxi(8,2)  = -0.774596669241483_DP
@@ -3368,7 +3368,7 @@ contains
     
     Dxi(16,1) =  0.0_DP
     Dxi(16,2) =  0.774596669241483_DP
-    Dxi(16,3) =  0.0_DP        
+    Dxi(16,3) =  0.0_DP
     
     Dxi(17,1) =  0.0_DP
     Dxi(17,2) = -0.774596669241483_DP
@@ -3380,7 +3380,7 @@ contains
     
     Dxi(19,1) =  0.774596669241483_DP
     Dxi(19,2) =  0.774596669241483_DP
-    Dxi(19,3) =  0.774596669241483_DP         
+    Dxi(19,3) =  0.774596669241483_DP
     
     Dxi(20,1) = -0.774596669241483_DP
     Dxi(20,2) =  0.774596669241483_DP
@@ -3404,7 +3404,7 @@ contains
     
     Dxi(25,1) =  0.0_DP
     Dxi(25,2) =  0.774596669241483_DP
-    Dxi(25,3) =  0.774596669241483_DP         
+    Dxi(25,3) =  0.774596669241483_DP
     
     Dxi(26,1) =  0.0_DP
     Dxi(26,2) = -0.774596669241483_DP
@@ -3743,7 +3743,7 @@ contains
     
     ncubp = 6
 
-  case default 
+  case default
     call output_line('Unknown cubature type!',&
                      OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubPoints')
     call sys_halt()

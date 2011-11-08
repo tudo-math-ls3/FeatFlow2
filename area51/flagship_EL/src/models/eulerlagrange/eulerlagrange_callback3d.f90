@@ -151,7 +151,7 @@
 !#
 !# 37.) eulerlagrange_trafoDiffDenPreVel3d_sim
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the density, the pressure 
+!#         differences to differences for the density, the pressure
 !#         and the velocity
 !#
 !# 38.) eulerlagrange_calcBoundaryvalues3d

@@ -135,7 +135,7 @@ contains
   
 !</subroutine>
 
-    ! Fetch the parameters. Initialise with standard settings if they do not 
+    ! Fetch the parameters. Initialise with standard settings if they do not
     ! exist.
     call parlst_getvalue_int (rparams,ssection,'itimedependence',  &
         rproblem%itimedependence, 0)
@@ -152,12 +152,12 @@ contains
     rproblem%rtimedependence%itimeStep = 0
     rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit
 
-    ! Call the initialisation routine for the adaptive time stepping to 
+    ! Call the initialisation routine for the adaptive time stepping to
     ! initialise the rest of the parameters.
     call adtstp_init (rparams,ssection,&
         rproblem%rtimedependence%radaptiveTimeStepping)
 
-  end subroutine  
+  end subroutine
   
   ! ***************************************************************************
 
@@ -237,11 +237,11 @@ contains
 !</subroutine>
 
     ! Restore all data from rsnapshot.
-    rproblem%rtimedependence%dtime = rsnapshot%dtime 
+    rproblem%rtimedependence%dtime = rsnapshot%dtime
     rproblem%rtimedependence%itimestep = rsnapshot%itimestep
     
     if (present(rtimeStepping)) &
-      rtimeStepping = rsnapshot%rtimeStepping 
+      rtimeStepping = rsnapshot%rtimeStepping
     
     if (present(rrhs)) &
       call lsysbl_copyVector (rsnapshot%rrhs,rrhs)
@@ -335,8 +335,8 @@ contains
       rtempVector,rtempVectorRhs)
 
 !<description>
-  ! Performs one time step: $t^n -> t^n+1$. 
-  ! Assembles system matrix and RHS vector. 
+  ! Performs one time step: $t^n -> t^n+1$.
+  ! Assembles system matrix and RHS vector.
   ! Solves the corresponding time-step equation and returns the solution vector
   ! at the end of the time step.
   ! Solves the given problem by applying a nonlinear solver.
@@ -409,7 +409,7 @@ contains
          rtimestepping%dweightOldRHS,0.0_DP)
     
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
-    ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds 
+    ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
     ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
     ! Switch off the B-matrices as we do not need them for this defect.
     !
@@ -440,17 +440,17 @@ contains
     ! Calculate   rtempVectorRhs := -rnonlinearCCMatrix rvector + rtempVectorRhs
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP,rproblem)
 
-    ! -------------------------------------------    
+    ! -------------------------------------------
     ! Switch to the next point in time.
     rproblem%rtimedependence%dtime = rtimestepping%dcurrenttime + rtimestepping%dtstep
           
-    ! Discretise the boundary conditions at the new point in time -- 
+    ! Discretise the boundary conditions at the new point in time --
     ! if the boundary conditions are nonconstant in time!
     if (rproblem%iboundary .ne. 0) then
       call cc_updateDiscreteBC (rproblem)
     end if
 
-    ! -------------------------------------------    
+    ! -------------------------------------------
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
     ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
@@ -463,7 +463,7 @@ contains
     rproblem%rstatistics%dtimeRHSAssembly = &
         rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
     
-    ! Add w_3*f_{n+1} to the current RHS.     
+    ! Add w_3*f_{n+1} to the current RHS.
     call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
          rtimestepping%dweightNewRHS,1.0_DP)
 
@@ -472,9 +472,9 @@ contains
     call cc_implementBC (rproblem,rvector,rtempVectorRhs,.true.,.true.)
 
     ! That is it for the RHS and solution vector.
-    !    
+    !
     ! The LHS is "u_{n+1} + w_1*N(u_n+1)" which results in the system matrix
-    ! "M + w_1 N(.)" for the next linear system to solve. 
+    ! "M + w_1 N(.)" for the next linear system to solve.
     ! Set up the corresponding core equation in a temporary core-equation
     ! structure.
 
@@ -513,9 +513,9 @@ contains
     ! Call the solver of the core equation to solve it using a nonlinear
     ! iteration.
     call cc_solveCoreEquation (rproblem,rnonlinearIterationTmp,rnlSolver,&
-        rvector,rtempVectorRhs,rtempVector)             
+        rvector,rtempVectorRhs,rtempVector)
 
-    ! rvector is the solution vector u^{n+1}.    
+    ! rvector is the solution vector u^{n+1}.
   
     ! Finally tell the time stepping scheme that we completed the time step.
     call timstp_nextSubstep (rtimestepping)
@@ -563,7 +563,7 @@ contains
 !</subroutine>
 
     ! For the implicit Euler scheme, just take the solution.
-    ! The same for the FS-Theta scheme (has probably to be changed in 
+    ! The same for the FS-Theta scheme (has probably to be changed in
     ! the future!)
     call lsysbl_copyVector (rvectorNew,rvectorInt)
     
@@ -627,7 +627,7 @@ contains
     type(t_vectorBlock) :: rtempBlock1,rtempBlock2
     type(t_ccNonlinearIteration) :: rnonlinearIteration
     
-    ! Configuration block of the time stepping scheme 
+    ! Configuration block of the time stepping scheme
     type(t_explicitTimeStepping)        :: rtimestepping,rtimesteppingPredictor
 
     ! The nonlinear solver configuration
@@ -729,7 +729,7 @@ contains
       call stat_startTimer(rtimerTimestep)
 
       ! The babortTimestep is normally FALSE. If set to TRUE, the computation
-      ! of the next time step is aborted because of an error. 
+      ! of the next time step is aborted because of an error.
       
       babortTimestep = .false.
       
@@ -742,7 +742,7 @@ contains
       ! 2.) Calculate three small time substeps with step size dtstepFixed
       ! 3.) Compare the solutions, calculate a new step size and/or repeat
       !     the time step.
-      ! The '3*dtstepFixed' step size just 'coincidentally' coincides with the 
+      ! The '3*dtstepFixed' step size just 'coincidentally' coincides with the
       ! step size of three steps in the Fractional Step Theta scheme :-)
       ! So after each three substeps, the simulation time of the small
       ! substeps will always coincide with the simulation time after the
@@ -753,14 +753,14 @@ contains
       case (TADTS_USERDEF)
         ! Nothing to be done
         
-      case (TADTS_FIXED) 
+      case (TADTS_FIXED)
         ! Nothing to be done
         
       case (TADTS_PREDICTION,TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
         ! Adaptive time stepping. Is this the first substep?
         if (mod(rproblem%rtimedependence%itimeStep,3) .eq. 1) then
         
-          ! If this is not a repetition of a (macro-) timestep, 
+          ! If this is not a repetition of a (macro-) timestep,
           ! create a backup of the current flow situation, so we can repeat the time
           ! step if necessary.
           if (irepetition .eq. 0) then
@@ -793,8 +793,8 @@ contains
           !  '      Step size '//TRIM(sys_sdL(rtimesteppingPredictor%dtstep,5)))
           !CALL output_lbrk ()
           
-          ! Proceed in time, calculate the predicted solution. 
-          call lsysbl_copyVector (rvector,rpredictedSolution)              
+          ! Proceed in time, calculate the predicted solution.
+          call lsysbl_copyVector (rvector,rpredictedSolution)
           call cc_performTimestep (rproblem,rpredictedSolution,rrhs,&
               rtimesteppingPredictor,ipressureFullyImplicit,rnonlinearIteration,rnlSol,&
               rtempBlock1,rtempBlock2)
@@ -807,11 +807,11 @@ contains
           
           ! Did the nonlinear solver break down?
           if (rnlSol%iresult .gt. 0) then
-            ! Oops, not really good. 
+            ! Oops, not really good.
             babortTimestep = .true.
           
             ! Calculate a new time step size.
-            ! Set bit 0 and not bit 2/3 in isolverStatus as we want to compute the 
+            ! Set bit 0 and not bit 2/3 in isolverStatus as we want to compute the
             ! new time step based on the solver status of the last computation and
             ! not on a combined analysis of predictor step and actual solution!
             isolverStatus = 0
@@ -839,7 +839,7 @@ contains
                 rproblem%rtimedependence%dtime, &
                 rtimeStepping%dtstepFixed, &
                 timstp_getOrder(rtimeStepping), &
-                isolverStatus,irepetition) 
+                isolverStatus,irepetition)
                 
             ! Tell the user that we have a new time step size.
             call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
@@ -913,7 +913,7 @@ contains
         ! Respecting this, i is assigned the number of the substep in the
         ! macrostep.
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
-        case (TADTS_FIXED,TADTS_USERDEF) 
+        case (TADTS_FIXED,TADTS_USERDEF)
           i = 1
           j = 1
         case (TADTS_PREDICTION,TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
@@ -984,7 +984,7 @@ contains
                               'the convergence criterion!',&
                               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           else if (rnlSol%iresult .gt. 0) then
-            ! Oops, not really good. 
+            ! Oops, not really good.
             babortTimestep = .true.
 
             ! Do we have a time stepping algorithm that allows recomputation?
@@ -992,13 +992,13 @@ contains
             case (TADTS_FIXED,TADTS_PREDICTION)
               ! That is bad. Our solution is garbage!
               ! We do not do anything in this case. The repetition technique will
-              ! later decide on whether to repeat the step or to stop the 
+              ! later decide on whether to repeat the step or to stop the
               ! computation.
               call output_line ('Nonlinear solver broke down. Solution probably garbage!',&
                   coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
               
             case (TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
-              ! Yes, we have. 
+              ! Yes, we have.
               call output_line ('Nonlinear solver broke down. '// &
                                 'Calculating new time step size...',&
                                 coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
@@ -1029,7 +1029,7 @@ contains
                   rproblem%rtimedependence%dtime, &
                   rtimeStepping%dtstepFixed, &
                   timstp_getOrder(rtimeStepping), &
-                  isolverStatus,irepetition) 
+                  isolverStatus,irepetition)
 
               ! Tell the user that we have a new time step size.
               !CALL output_line ('Timestepping by '&
@@ -1054,7 +1054,7 @@ contains
             
           end if
           
-        end if  
+        end if
             
       end if
       
@@ -1064,15 +1064,15 @@ contains
       if (.not. babortTimestep) then
       
         ! Ok, everything worked fine, we have a valid solution!
-        !        
+        !
         ! Time step control. Do we have a time stepping algorithm that
-        ! adapts the time step size and probably wants to repeat the 
+        ! adapts the time step size and probably wants to repeat the
         ! calculation?
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
         case (TADTS_USERDEF)
           ! No, continue as usual.
           
-        case (TADTS_FIXED) 
+        case (TADTS_FIXED)
           ! No, continue as usual.
          
         case (TADTS_PREDICTION,TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
@@ -1094,7 +1094,7 @@ contains
             ! At first, calculate the time error.
             dtmperror =  cc_timeErrorByPredictor (&
                 rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl,&
-                rvector,rpredictedSolution,rtempBlock1,rtimeError)            
+                rvector,rpredictedSolution,rtempBlock1,rtimeError)
 
             ! Evaluate everything that went wrong in the solvers
             isolverStatus = 0
@@ -1141,7 +1141,7 @@ contains
                 rproblem%rtimedependence%dtime, &
                 rtimeStepping%dtstepFixed, &
                 timstp_getOrder(rtimeStepping), &
-                isolverStatus,irepetition) 
+                isolverStatus,irepetition)
 
             ! Calculate the relation of the previous and new step size
             dtimeratio = dtmp / rtimeStepping%dtstepFixed
@@ -1150,7 +1150,7 @@ contains
             if (rproblem%rtimedependence%radaptiveTimeStepping%ctype .eq. &
                 TADTS_PREDREPTIMECONTROL) then
 
-              ! When the new time step is much smaller than the old one, 
+              ! When the new time step is much smaller than the old one,
               ! set babortTimestep to TRUE to indicate that
               ! the time-step has to be repeated.
                 
@@ -1205,7 +1205,7 @@ contains
       !----------------------------------------------------
       if (.not. babortTimestep) then
       
-        ! Ok, everything worked fine, we have a valid solution of 
+        ! Ok, everything worked fine, we have a valid solution of
         ! our current substep.
         
         call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
@@ -1295,7 +1295,7 @@ contains
         
         ! Do we have a time stepping algorithm that allows recomputation?
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
-        case (TADTS_FIXED,TADTS_USERDEF) 
+        case (TADTS_FIXED,TADTS_USERDEF)
           ! That is bad. Our solution is most probably garbage!
           ! We cancel the timeloop, it does not make any sense to continue.
           call output_line ('Solution garbage! Stopping simulation.',&
@@ -1329,7 +1329,7 @@ contains
                 coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             
-            ! Repeat the time step            
+            ! Repeat the time step
             cycle
               
           else

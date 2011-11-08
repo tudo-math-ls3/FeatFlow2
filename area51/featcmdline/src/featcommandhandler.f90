@@ -18,7 +18,7 @@ module featcommandhandler
   use fespacehierarchybase
   use fespacehierarchy
   use spatialdiscretisation
-  use multilevelprojection  
+  use multilevelprojection
   use linearsystemscalar
   use linearsystemblock
   
@@ -1654,7 +1654,7 @@ contains
           deallocate(p_rvectorScalar)
 
         case default
-          call output_line ("Unknown type, variable cannot be destroyed!")         
+          call output_line ("Unknown type, variable cannot be destroyed!")
           bdelete = .false.
         end select
       end if
@@ -1745,7 +1745,7 @@ contains
       return
     end if
 
-    ! Get the identifier and file name 
+    ! Get the identifier and file name
     sname = Rvalues(1)%svarname
     call cmdprs_dequoteStd(Rvalues(2)%svalue,sfilename)
     
@@ -1877,7 +1877,7 @@ contains
       return
     end if
     
-    ! Get the identifier and file name 
+    ! Get the identifier and file name
     sname = Rvalues(1)%svarname
     call cmdprs_dequoteStd(Rvalues(2)%svalue,sfilename)
     nullify(p_rboundary)
@@ -2025,7 +2025,7 @@ contains
       return
     end if
 
-    ! Get the identifier and file name 
+    ! Get the identifier and file name
     nullify(p_rboundary)
     nullify(p_rtriangulation)
     ilevels = 1
@@ -2193,7 +2193,7 @@ contains
       return
     end if
 
-    ! Get the identifier and file name 
+    ! Get the identifier and file name
     nullify(p_rboundary)
     nullify(p_rtriangulation)
     sname = Rvalues(1)%svarname
@@ -2648,7 +2648,7 @@ contains
             ! Shift the spaces.
             p_rfeSpace1 => p_rfeSpace
 
-            ! Get the next one.            
+            ! Get the next one.
             call cmdprs_nexttoken (sconcat,istart,iend,ilength,cseparator=" ")
             sname = sconcat(istart:iend)
             p_rfeSpace2 => collct_getvalue_fesp(rcmdStatus%rcollection,sname,bexists=bexists)
@@ -2716,7 +2716,7 @@ contains
         end do
       end if
 
-      if ((.not. berror) .and. (squadelements .ne. "")) then 
+      if ((.not. berror) .and. (squadelements .ne. "")) then
         if (cmdprs_counttokens(squadelements," ") .eq. ncomponents) then
           allocate (p_IelementIdsQuad(ncomponents))
           istart = 0
@@ -2751,7 +2751,7 @@ contains
         end if
       end if
 
-      if ((.not. berror) .and. (stricub .ne. "")) then 
+      if ((.not. berror) .and. (stricub .ne. "")) then
         if (cmdprs_counttokens(stricub," ") .eq. ncomponents) then
           allocate (p_IcubIdsTri(ncomponents))
           istart = 0
@@ -2774,7 +2774,7 @@ contains
         end if
       end if
 
-      if ((.not. berror) .and. (squadcub .ne. "")) then 
+      if ((.not. berror) .and. (squadcub .ne. "")) then
         if (cmdprs_counttokens(squadcub," ") .eq. ncomponents) then
           allocate (p_IcubIdsquad(ncomponents))
           istart = 0
@@ -3069,7 +3069,7 @@ contains
             ! Shift the spaces.
             p_rfeSpHier1 => p_rfeSpHier
 
-            ! Get the next one.            
+            ! Get the next one.
             call cmdprs_nexttoken (sconcat,istart,iend,ilength,cseparator=" ")
             sname = sconcat(istart:iend)
             p_rfeSpHier2 => collct_getvalue_feh(rcmdStatus%rcollection,sname,bexists=bexists)
@@ -3127,7 +3127,7 @@ contains
         end do
       end if
 
-      if ((.not. berror) .and. (squadelements .ne. "")) then 
+      if ((.not. berror) .and. (squadelements .ne. "")) then
         if (cmdprs_counttokens(squadelements," ") .eq. ncomponents) then
           allocate (p_IelementIdsQuad(ncomponents))
           istart = 0
@@ -3162,7 +3162,7 @@ contains
         end if
       end if
 
-      if ((.not. berror) .and. (stricub .ne. "")) then 
+      if ((.not. berror) .and. (stricub .ne. "")) then
         if (cmdprs_counttokens(stricub," ") .eq. ncomponents) then
           allocate (p_IcubIdsTri(ncomponents))
           istart = 0
@@ -3185,7 +3185,7 @@ contains
         end if
       end if
 
-      if ((.not. berror) .and. (squadcub .ne. "")) then 
+      if ((.not. berror) .and. (squadcub .ne. "")) then
         if (cmdprs_counttokens(squadcub," ") .eq. ncomponents) then
           allocate (p_IcubIdsquad(ncomponents))
           istart = 0
@@ -4410,7 +4410,7 @@ contains
     integer, intent(in) :: npointsPerElement
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
     integer, dimension(:,:), intent(in) :: IdofsTest
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
     type(t_collection), intent(inout), optional :: rcollection
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
@@ -4422,7 +4422,7 @@ contains
       p_rvectorBlock => rcollection%p_rvectorQuickAccess1
       icomponent = rcollection%IquickAccess(1)
 
-      ! Evaluate the FE function      
+      ! Evaluate the FE function
       call fevl_evaluate_sim (p_rvectorBlock%RvectorBlock(icomponent), &
           rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
   
@@ -4619,7 +4619,7 @@ contains
       end if
           
       ! Release the mass matrix
-      call lsyssc_releaseMatrix (rmatrixMass)      
+      call lsyssc_releaseMatrix (rmatrixMass)
       
     else
       ! Block projection. All blocks separately.

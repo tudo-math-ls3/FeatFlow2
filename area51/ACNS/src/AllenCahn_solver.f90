@@ -69,13 +69,13 @@ CONTAINS
     INTEGER :: i
 
     ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
+    INTEGER :: ierror
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rsmoother
     TYPE(t_linsolNode), POINTER :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -91,9 +91,9 @@ CONTAINS
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with 
+    ! a filter chain. As the linear solver does not work with
     ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions 
+    ! a filter for implementing the real boundary conditions
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.

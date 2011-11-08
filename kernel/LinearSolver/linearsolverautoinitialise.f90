@@ -58,7 +58,7 @@ contains
   ! This routine builds a solver node for the linear solver for CC2D-like
   ! applications. The following combinations are supported:
   ! 1.) Multigrid solver, VANKA smoother, VANKA coarse grid solver
-  ! 2.) BiCGStab-solver, Multigrid preconditioner, 
+  ! 2.) BiCGStab-solver, Multigrid preconditioner,
   !     VANKA smoother, VANKA coarse grid solver
   ! The caller must attach the matrices of all levels to the solver manually
   ! by calling linsol_setMatrices. Afterwards the linear solver can be started.
@@ -130,7 +130,7 @@ contains
   type(t_linsolNode),pointer :: p_rpostSmoother
   type(t_linsolNode),pointer :: p_rcoarseGridSolver
   type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
-  type(t_interlevelProjectionBlock) :: rprojection 
+  type(t_interlevelProjectionBlock) :: rprojection
   
   ! Create the solver node - either BiCGStab or Multigrid.
   ! If we create BiCGStab, attach multigrid as preconditioner.
@@ -189,7 +189,7 @@ contains
     call linsol_convertToSmoother (p_rpreSmoother,nsmoothingSteps)
     call linsol_convertToSmoother (p_rpostSmoother,nsmoothingSteps)
     
-    ! Create the level, attrach it to the solver and proceed to the 
+    ! Create the level, attrach it to the solver and proceed to the
     ! next level
     call linsol_addMultigridLevel (p_rlevelInfo,p_rmgSolver, rprojection,&
                     p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver)
@@ -229,7 +229,7 @@ contains
   integer, intent(in) :: nlevels
 
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
-  ! structures) if filtering should be applied to the vector during the 
+  ! structures) if filtering should be applied to the vector during the
   ! iteration. If not, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
@@ -279,7 +279,7 @@ contains
     ! Check that there is a section called ssolverName - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, ssolverName, p_rsection) 
+    call parlst_querysection(rparamList, ssolverName, p_rsection)
     
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create linear solver; no section ''' &
@@ -507,12 +507,12 @@ contains
           ! Is there a postsmoother?
           if (spostsmoother .ne. '') then
             ! Check if pre- and postsmoother are identical.
-            call sys_toupper (spresmoother) 
-            call sys_toupper (spostsmoother) 
+            call sys_toupper (spresmoother)
+            call sys_toupper (spostsmoother)
             if (spresmoother .ne. spostsmoother) then
               call linsolinit_initFromFile (p_rpostsmoother,rparamList,&
                                             spostsmoother,nlevels,RfilterChain)
-            else 
+            else
               ! Let the pointer point to the presmoother
               p_rpostsmoother => p_rpresmoother
             end if
@@ -613,13 +613,13 @@ contains
         ! Is there a postsmoother?
         if (spostsmoother .ne. '') then
           ! Check if pre- and postsmoother are identical.
-          call sys_toupper (spresmoother) 
-          call sys_toupper (spostsmoother) 
+          call sys_toupper (spresmoother)
+          call sys_toupper (spostsmoother)
           if (spresmoother .ne. spostsmoother) then
             ! they are not identical, so read in the post smoother
             call linsolinit_initFromFile(p_rlevelInfo2%p_rpostsmoother, rparamList, &
                                          spostsmoother, nlevels, RfilterChain)
-          else 
+          else
             ! otherwise, let the pointer point to the presmoother
             p_rlevelInfo2%p_rpostsmoother => p_rlevelInfo2%p_rpresmoother
           end if
@@ -730,7 +730,7 @@ contains
     ! Check that there is a section called ssolverName - otherwise we
     ! cannot create anything!
     
-    call parlst_querysection(rparamList, ssection, p_rsection) 
+    call parlst_querysection(rparamList, ssection, p_rsection)
     
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create linear solver; no section ''' &
@@ -858,7 +858,7 @@ contains
                                 rsolverNode%nmaxIterations, rsolverNode%nmaxIterations)
 
       call parlst_getvalue_string (p_rsection, 'iresCheck', sstring, 'YES')
-      call sys_toUpper(sstring) 
+      call sys_toUpper(sstring)
       if (sstring .eq. 'NO') then
         ! if the string is exactly 'NO' then disable checking of residual norm
         rsolverNode%iresCheck = NO

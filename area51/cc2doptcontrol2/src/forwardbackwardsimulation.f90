@@ -152,7 +152,7 @@ module forwardbackwardsimulation
 
     integer :: nmaxFixPointIterations = 999
 
-    ! Norm of absolute residuum before applying Newton. 
+    ! Norm of absolute residuum before applying Newton.
     ! Newton is only applied
     ! if   ||absolute residuum|| < depsAbsNewton
     ! and  ||relative residuum|| < depsRelNewton.
@@ -161,7 +161,7 @@ module forwardbackwardsimulation
 
     real(DP) :: depsAbsNewton = 1.0E-5_DP
 
-    ! Norm of relative residuum before applying Newton. 
+    ! Norm of relative residuum before applying Newton.
     ! Newton is only applied
     ! if   ||absolute residuum|| < depsAbsNewton
     ! and  ||relative residuum|| < depsRelNewton.
@@ -244,7 +244,7 @@ module forwardbackwardsimulation
     ! Auxiliary variable: Saves the last defect in the nonlinear iteration
     real(DP), dimension(2) :: DresidualOld = 0.0_DP
 
-    ! Auxiliary variable: Norm of the relative change = norm of the 
+    ! Auxiliary variable: Norm of the relative change = norm of the
     ! preconditioned residual in the nonlinear iteration
     real(DP), dimension(3) :: DresidualCorr = 0.0_DP
     
@@ -267,7 +267,7 @@ module forwardbackwardsimulation
     integer :: ctypeIteration = -1
     
     ! Output mode. Used for printing messages.
-    ! =OU_MODE_STD: Print messages to the terminal and probably to a log 
+    ! =OU_MODE_STD: Print messages to the terminal and probably to a log
     ! file (if a log file is opened).
     integer(I32) :: coutputmode = OU_MODE_STD
 
@@ -308,7 +308,7 @@ module forwardbackwardsimulation
 
 !<typeblock>
   ! This type is used to save the preconditioner configuration and parameters
-  ! Here it's noted, if and whose matrices exist and/or must be assmebled 
+  ! Here it's noted, if and whose matrices exist and/or must be assmebled
   ! transposed to be compatible with the preconditioner and more. It's more or less
   ! a collection if different flags plus the matrices/structures of the
   ! preconditioner which is used in space.
@@ -359,7 +359,7 @@ module forwardbackwardsimulation
     integer :: ismootherType = 3
     
     ! If the preconditioner is the linear multigrid solver:
-    ! Type of coarse grid solver.    
+    ! Type of coarse grid solver.
     ! =0: Gauss elimination (UMFPACK)
     ! =1: Defect correction with diagonal VANKA preconditioning.
     ! =2: BiCGStab with diagonal VANKA preconditioning
@@ -393,7 +393,7 @@ module forwardbackwardsimulation
     ! A pointer to a hierarchy of space assembly template structures.
     type(t_staticSpaceAsmHierarchyOptC), pointer :: p_rspaceAsmTemplHierOptC => null()
     
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode => null()
 
     ! If the linear solver contains a multigrid subsolver, this is a reference
@@ -449,7 +449,7 @@ module forwardbackwardsimulation
     
     !<!-- Statistical data -->
     
-    ! Returns the number of iterations, a linear subsolver needed 
+    ! Returns the number of iterations, a linear subsolver needed
     ! for preconditioning
     integer :: nlinearIterations = 0
     
@@ -529,10 +529,10 @@ module forwardbackwardsimulation
     !     The dual solution influences the forward simulation; to prevent
     !     influence of the dual solution, it should be set to zero.
     ! =1: Oseen forward solver on the primal solution vector.
-    !     The vector roseenSolution specifies the evaluation point of the 
+    !     The vector roseenSolution specifies the evaluation point of the
     !     nonlinearity.
     ! =2: Oseen backward solver on the dual solution vector.
-    !     The vector roseenSolution specifies the evaluation point of the 
+    !     The vector roseenSolution specifies the evaluation point of the
     !     nonlinearity in the primal space.
     integer :: csimtype = FBSIM_SOLVER_NLFORWARD
 
@@ -716,7 +716,7 @@ contains
     rnonlinearIteration%DresidualInit = 0.0_DP
     rnonlinearIteration%DresidualOld  = 0.0_DP
     
-    call parlst_querysection(rparamList, sname, p_rsection) 
+    call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
       call output_line ('Cannot create nonlinear solver; no section '''//&
@@ -756,7 +756,7 @@ contains
 
     ! Get information about the iteration.
       
-    ! At first, ask the parameters in the INI/DAT file which type of 
+    ! At first, ask the parameters in the INI/DAT file which type of
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
     call parlst_getvalue_int (rparamList, sname, &
@@ -857,7 +857,7 @@ contains
 
 !<output>
   ! A t_simSolver node with parameters for the iteration.
-  type(t_simSolver), intent(out) :: rsimsolver 
+  type(t_simSolver), intent(out) :: rsimsolver
 !</output>
 
 !</subroutine>
@@ -883,7 +883,7 @@ contains
     case (FBSIM_SOLVER_NLFORWARD,FBSIM_SOLVER_NLFORWARDFULL)
       cspace = CCSPACE_PRIMAL
       
-      ! Get the parameters of the nonlinear solver 
+      ! Get the parameters of the nonlinear solver
       call fbsim_getNLsimParameters (rparlist,ssection, &  !"CC-NONLINEAR",&
           rsimsolver%rnonlinearIteration)
 
@@ -953,7 +953,7 @@ contains
   
 !<inputoutput>
   ! A t_simSolver node with parameters for the iteration.
-  type(t_simSolver), intent(inout) :: rsimsolver 
+  type(t_simSolver), intent(inout) :: rsimsolver
 !</inputoutput>
 
 !</subroutine>
@@ -986,7 +986,7 @@ contains
 
 !<inputoutput>
   ! A t_simSolver node with parameters for the iteration.
-  type(t_simSolver), intent(inout) :: rsimsolver 
+  type(t_simSolver), intent(inout) :: rsimsolver
 !</inputoutput>
 
 !</subroutine>
@@ -1050,7 +1050,7 @@ contains
       nlmin, nlmax, cspace, rtimeDiscr, rboundaryConditions, rparamlist, ssection)
   
 !<description>
-  ! Initialises the preconditioner for each timestep based on the parameters 
+  ! Initialises the preconditioner for each timestep based on the parameters
   ! in rparamlist.
 !</description>
   
@@ -1061,7 +1061,7 @@ contains
   ! Minimum available space refinement level.
   integer, intent(in) :: nlmin
   
-  ! Maximum space refinement level; corresponds to the level where to do the 
+  ! Maximum space refinement level; corresponds to the level where to do the
   ! preconditioning.
   integer, intent(in) :: nlmax
   
@@ -1082,12 +1082,12 @@ contains
   type(t_optcBDC), intent(in), optional, target :: rboundaryConditions
 
   ! OPTIONAL: Parameter list with the solver parameters.
-  ! Of not specified, no solver is created. The structure rpreconditioner 
+  ! Of not specified, no solver is created. The structure rpreconditioner
   ! can then only be used to create matrices but not to solve systems.
   type(t_parlist), intent(in), optional :: rparamlist
   
   ! OPTIONAL: Name of the section configuring the linear solver.
-  ! Of not specified, no solver is created. The structure rpreconditioner 
+  ! Of not specified, no solver is created. The structure rpreconditioner
   ! can then only be used to create matrices but not to solve systems.
   character(len=*), intent(in), optional :: ssection
   
@@ -1095,7 +1095,7 @@ contains
 
 !<inputoutput>
   ! Configuration block of the preconditioner.
-  type(t_fbsimPreconditioner), intent(out) :: rpreconditioner 
+  type(t_fbsimPreconditioner), intent(out) :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>
@@ -1192,7 +1192,7 @@ contains
         ! Get the interlevel projection structure for space prolongation/restriction
         rpreconditioner%p_rprjHierarchy => rsettings%rprjHierSpacePrimal
 
-      case (CCSPACE_PRIMALDUAL) 
+      case (CCSPACE_PRIMALDUAL)
         ! Full primal/dual space
         rpreconditioner%p_rfeHierarchy => rsettings%rfeHierPrimalDual
 
@@ -1236,7 +1236,7 @@ contains
       ! Check that there is a section called ssolverName - otherwise we
       ! cannot create anything!
       
-      call parlst_querysection(rparamList, ssection, p_rsection) 
+      call parlst_querysection(rparamList, ssection, p_rsection)
       
       if (.not. associated(p_rsection)) then
         call output_line ('Cannot create linear solver; no section '''//trim(ssection)//&
@@ -1282,7 +1282,7 @@ contains
         call linsol_initMultigrid2 (p_rsolverNode,nlevels,&
             rpreconditioner%RfilterChain)
         
-        ! Manually trim the coarse grid correction in Multigrid to multiply the 
+        ! Manually trim the coarse grid correction in Multigrid to multiply the
         ! pressure equation with -1. This (un)symmetrises the operator and gives
         ! much better convergence rates.
         call cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
@@ -1508,7 +1508,7 @@ contains
         
         ! Now after the coarse grid solver is done, we turn to the smoothers
         ! on all levels. Their initialisation is similar to the coarse grid
-        ! solver. Note that we use the same smoother on all levels, for 
+        ! solver. Note that we use the same smoother on all levels, for
         ! presmoothing as well as for postsmoothing.
         
         do ilev = 2,nlevels
@@ -1825,7 +1825,7 @@ contains
         call linsolinit_initParams (p_rsolverNode,rparamList,&
             ssolverSection,p_rsolverNode%calgorithm)
       
-      end select    
+      end select
 
       ! Put the final solver node to the preconditioner structure.
       rpreconditioner%p_rsolverNode => p_rsolverNode
@@ -1925,7 +1925,7 @@ contains
   
 !<inputoutput>
   ! Configuration block of the preconditioner.
-  type(t_fbsimPreconditioner), intent(inout) :: rpreconditioner 
+  type(t_fbsimPreconditioner), intent(inout) :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>
@@ -2002,7 +2002,7 @@ contains
   
 !<inputoutput>
   ! Configuration block of the preconditioner.
-  type(t_fbsimPreconditioner), intent(inout) :: rpreconditioner 
+  type(t_fbsimPreconditioner), intent(inout) :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>
@@ -2080,7 +2080,7 @@ contains
 !!<input>
 !  ! Current assembly level.
 !  integer, intent(in) :: ilev
-!  
+!
 !  ! Structure with assembly-specific parameters of the preconditioner.
 !  type(t_fbsimPreconditioner), intent(in) :: rpreconditioner
 !
@@ -2093,22 +2093,22 @@ contains
 !  ! Assembly-specific parameters are added.
 !  type(t_nonlinearSpatialMatrix), intent(out) :: rnonlinearSpatialMatrix
 !!</inputoutput>
-!              
+!
 !!</subroutine>
 !
 !    ! Copy the template structure.
 !    rnonlinearSpatialMatrix = rnonlinearSpatialMatrixTemplate
-!    
+!
 !    ! Parameters for adaptive matrices for Q1~ with anisotropic elements
 !    rnonlinearSpatialMatrix%iadaptiveMatrices = rpreconditioner%iadaptiveMatrices
 !    rnonlinearSpatialMatrix%dadmatthreshold = rpreconditioner%dadmatthreshold
-!    
+!
 !    ! Pointers for that level.
 !    rnonlinearSpatialMatrix%p_rdiscretisation => &
 !        rpreconditioner%p_rspaceAsmTempl(ilev)%rdiscretisation
 !    rnonlinearSpatialMatrix%p_rstaticInfo => &
 !        rpreconditioner%p_rspaceAsmTempl(ilev)%rstaticInfo
-!    
+!
 !    ! Depending on the level, we have to set up information about
 !    ! transposing B-matrices.
 !    if (ilev .eq. rpreconditioner%nlmin) then
@@ -2116,7 +2116,7 @@ contains
 !    else
 !      rnonlinearSpatialMatrix%bvirtualTransposedD = rpreconditioner%bneedVirtTransposedD
 !    end if
-!    
+!
 !  end subroutine
 
   ! ***************************************************************************
@@ -2212,7 +2212,7 @@ contains
         ! We have to discretise a level hierarchy and are on a level < NLMAX.
 
         ! Get the temporary vector on level i. Will receive the solution
-        ! vector on that level. 
+        ! vector on that level.
         p_rvectorCoarse1 => rpreconditioner%p_rtempVec(1,ilev)
         p_rvectorCoarse2 => rpreconditioner%p_rtempVec(2,ilev)
         p_rvectorCoarse3 => rpreconditioner%p_rtempVec(3,ilev)
@@ -2303,7 +2303,7 @@ contains
         
         ! Include a unit vector to the matrix part of the pressure in
         ! the primal equation -- as long as there is not a full identity
-        ! matrix in the pressure matrix (what would be the case for 
+        ! matrix in the pressure matrix (what would be the case for
         ! the initial condition).
         if (rnonlinearSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
           ! Switch the pressure matrix on and clear it; we don't know what is inside.
@@ -2321,7 +2321,7 @@ contains
 
       if (rpreconditioner%isolverType .eq. 1) then
       
-        ! If we have a MG solver, We also check the coarse grid solver for 
+        ! If we have a MG solver, We also check the coarse grid solver for
         ! the same thing!
         ! What we don't check is the smoother, thus we assume that smoothers
         ! are always solvers that allow the applicance of a filter chain.
@@ -2330,7 +2330,7 @@ contains
           
           ! Include a unit vector to the matrix part of the pressure in
           ! the primal equation -- as long as there is not a full identity
-          ! matrix in the pressure matrix (what would be the case for 
+          ! matrix in the pressure matrix (what would be the case for
           ! the initial condition).
           if (rnonlinearSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
             ! Switch the pressure matrix on and clear it; we don't know what is inside.
@@ -2363,7 +2363,7 @@ contains
         
         ! Include a unit vector to the matrix part of the pressure in
         ! the dual equation -- as long as there is not a full identity
-        ! matrix in the pressure matrix (what would be the case for 
+        ! matrix in the pressure matrix (what would be the case for
         ! the initial condition).
         if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
           ! Switch the pressure matrix on and clear it; we don't know what is inside.
@@ -2381,7 +2381,7 @@ contains
       
       if (rpreconditioner%isolverType .eq. 1) then
       
-        ! If we have a MG solver, We also check the coarse grid solver for 
+        ! If we have a MG solver, We also check the coarse grid solver for
         ! the same thing!
         ! What we don't check is the smoother, thus we assume that smoothers
         ! are always solvers that allow the applicance of a filter chain.
@@ -2390,7 +2390,7 @@ contains
           
           ! Include a unit vector to the matrix part of the pressure in
           ! the dual equation -- as long as there is not a full identity
-          ! matrix in the pressure matrix (what would be the case for 
+          ! matrix in the pressure matrix (what would be the case for
           ! the initial condition).
           if (rnonlinearSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
             ! Switch the pressure matrix on and clear it; we don't know what is inside.
@@ -2408,7 +2408,7 @@ contains
         
       end if
         
-    end if        
+    end if
     
     ! Extract the correct submatrices for the preconiditioner from the full matrix.
     ! The extracted submatrix identifies either the diagonal of the primal
@@ -2679,7 +2679,7 @@ contains
     call lsysbl_vectorNormBlock (rdefect,Cnorms,DresTmp)
     Dresiduals(1) = sqrt(DresTmp(1)**2+DresTmp(2)**2)/dresF
 
-    ! DNORMU = || (U1,U2) ||_l2 
+    ! DNORMU = || (U1,U2) ||_l2
 
     call lsysbl_vectorNormBlock (rvector,Cnorms,DresTmp)
     dnormU = sqrt(DresTmp(1)**2+DresTmp(2)**2)
@@ -2760,12 +2760,12 @@ contains
       call output_line (' IT  RELU     RELP     DEF-U    DEF-DIV'// &
                         '  DEF-TOT  RHONL    OMEGNL   RHOMG',&
                         coutputMode=rnonlinearIteration%coutputMode)
-      call output_separator (OU_SEP_MINUS,coutputMode=rnonlinearIteration%coutputMode)     
+      call output_separator (OU_SEP_MINUS,coutputMode=rnonlinearIteration%coutputMode)
       call output_line ('  0                   '// &
           trim(sys_sdEP(Dresiduals(1),9,2))//&
           trim(sys_sdEP(Dresiduals(2),9,2))//&
           trim(sys_sdEP(Dresiduals(3),9,2)),coutputMode=rnonlinearIteration%coutputMode)
-      call output_separator (OU_SEP_MINUS,coutputMode=rnonlinearIteration%coutputMode)     
+      call output_separator (OU_SEP_MINUS,coutputMode=rnonlinearIteration%coutputMode)
 
       rnonlinearIteration%DresidualInit (1:2) = Dresiduals(1:2)
       rnonlinearIteration%DresidualOld (1:2) = Dresiduals(1:2)
@@ -2804,7 +2804,7 @@ contains
       dresDIV = Dresiduals(2)
       dres    = sqrt(dresU**2 + dresDIV**2)
       
-      ! Calculate relative maximum changes 
+      ! Calculate relative maximum changes
       ! This simply calculates some postprocessing values of the relative
       ! change in the solution.
       !
@@ -2818,7 +2818,7 @@ contains
       ! Relative change of solution vector:
       !
       !            || (Y1,Y2) ||_max    || Unew - Uold ||_max
-      !   DELU := ------------------- = --------------------- 
+      !   DELU := ------------------- = ---------------------
       !           || (KU1,KU2) ||_max       || Unew ||_max
       !
       ! The norms || YP ||_max, || Yi ||_max are saved in the nonlinear
@@ -2838,7 +2838,7 @@ contains
       ddelP = rnonlinearIteration%DresidualCorr(3)/dtmp
       
       ! Check if the nonlinear iteration can prematurely terminate.
-      !        
+      !
       ! Get the stopping criteria from the parameters.
       ! Use the DepsNL data according to the initialisation above.
       depsD   = rnonlinearIteration%DepsNL(1)
@@ -2906,7 +2906,7 @@ contains
   ! Number of the time solution whose nonlinear defect should be calculated.
   integer, intent(in) :: ieqTime
 
-  ! Assembly data 
+  ! Assembly data
   type(t_spatialMatrixDiscrData), intent(in) :: rdiscrData
   
   ! Nonlinearity
@@ -2936,7 +2936,7 @@ contains
   ! Nonlinear matrix
   type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
 
-    ! Prepare subtraction of A*primal/dual solution from the rhs to 
+    ! Prepare subtraction of A*primal/dual solution from the rhs to
     ! create the primal defect.
     call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rdiscrData,rnonlinearData)
     call stlin_setupMatrixWeights (rspaceTimeMatrix,&
@@ -3086,7 +3086,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_fbsimPostprocessing), intent(inout) :: rpostprocessing  
+  type(t_fbsimPostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -3121,7 +3121,7 @@ contains
     ! create a Q1/P1 solution from rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
-    ! structure based on Q1/P1 by copying the main guiding block 
+    ! structure based on Q1/P1 by copying the main guiding block
     ! discretisation structure and modifying the discretisation
     ! structures of the two velocity subvectors:
     
@@ -3167,7 +3167,7 @@ contains
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
 
-    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0
     ! discretisation for implementing them into a solution vector.
     call sbc_assembleBDconditions (rpostprocessing%p_rboundaryConditions,dtimePrimal,dtimeDual,&
         rpostprocessing%cspace,rsettings%rglobalData,SBC_BDC,&
@@ -3348,7 +3348,7 @@ contains
         end if
       end if
 
-    end select    
+    end select
 
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -3387,7 +3387,7 @@ contains
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_fbsimPostprocessing), intent(inout) :: rpostprocessing  
+  type(t_fbsimPostprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -3400,7 +3400,7 @@ contains
     sfilename = trim(rpostprocessing%swriteSolutionFilename)//sys_si0L(istep,5)
     
     ! Write out the file.
-    select case (rpostprocessing%cwriteSolution) 
+    select case (rpostprocessing%cwriteSolution)
     case (1)
       ! Formatted
       call vecio_writeBlockVectorHR (rvector, "vector", .true.,&
@@ -3486,7 +3486,7 @@ contains
   ! Boundary conditions to use.
   type(t_optcBDC), intent(in), target :: rboundaryConditions
   
-  ! First time interval to simulate. 
+  ! First time interval to simulate.
   integer, intent(in) :: ifirstinterval
 
   ! Last time interval to simulate
@@ -3515,7 +3515,7 @@ contains
     type(t_vectorBlock) :: rrhs
     type(t_vectorBlock) :: rdefect
     type(t_vectorBlock) :: rdefectPrimal,rdefectDual,rdefectBackup
-    type(t_staticSpaceAsmTemplates), pointer :: p_rspaceAsmTempl 
+    type(t_staticSpaceAsmTemplates), pointer :: p_rspaceAsmTempl
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rspaceTimeMatrix
     type(t_spatialMatrixNonlinearData) :: rnonlinearData
@@ -3628,7 +3628,7 @@ contains
     ! What to do?
     select case (rsimsolver%csimtype)
     case (FBSIM_SOLVER_NLFORWARD,FBSIM_SOLVER_NLFORWARDFULL)
-      ! (Navier-)Stokes forward simulation. This iteration type is nonlinear 
+      ! (Navier-)Stokes forward simulation. This iteration type is nonlinear
       ! in each timestep.
 
       ! Create a RHS vector.
@@ -3661,7 +3661,7 @@ contains
       call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
           rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
 
-      ! Get the start vector      
+      ! Get the start vector
       call sptivec_getVectorFromPool(rsolAccess, ifirstinterval, p_rcurrentsol)
      
       ! Initial postprocessing
@@ -3766,10 +3766,10 @@ contains
             rsimSolver%csimType .eq. FBSIM_SOLVER_NLFORWARDFULL)
         call stat_stopTimer(rtimerDefectCalc)
 
-        ! Implement the boundary conditions        
+        ! Implement the boundary conditions
         call vecfil_discreteBCdef(rdefectPrimal)
 
-        ! Initial check for convergence/divergence        
+        ! Initial check for convergence/divergence
         call fbsim_resNormCheck (rsimSolver%rnonlinearIteration,&
             ite,p_rcurrentsol,p_rcurrentrhs,rdefect,bconvergence,bdivergence)
 
@@ -3788,7 +3788,7 @@ contains
             ! Preconditioning to the defect
             ! ---------------------------------
             ! Create a space-time matrix that suits our simulation.
-            !        
+            !
             ! Newton or standard matrix?
             select case (rsimsolver%rnonlinearIteration%ctypeIteration)
             case (0,1)
@@ -3811,7 +3811,7 @@ contains
                 rspaceTimeMatrixPrecond%cmatrixType = 1
               else
                 if (ite .gt. p_radaptiveNewton%nminFixPointIterations) then
-                  ! In this case, the residuum of the last iterate decides on 
+                  ! In this case, the residuum of the last iterate decides on
                   ! whether to use Newton or not.
                   dresInit = rsimsolver%rnonlinearIteration%dinitialDefectTotal
                   dres = rsimsolver%rnonlinearIteration%dfinalDefectTotal
@@ -3841,7 +3841,7 @@ contains
                   ! If Newton is not active, we taje the formula
                   !
                   !   |b-Ax_{i+1}|             ( |b-Ax_i| )
-                  !   ------------ = depsrel * ( -------- ) 
+                  !   ------------ = depsrel * ( -------- )
                   !     |b-Ax_0|               ( |b-Ax_0| )
                   !
                   ! to always gain depsrel.
@@ -3862,7 +3862,7 @@ contains
                     rsimSolver%rpreconditioner%p_rsolverNode%depsAbs = &
                         MIN(dtempDef**p_radaptiveNewton%dinexactNewtonExponent, &
                             p_radaptiveNewton%dinexactNewtonEpsRel*dtempdef) * dresInit
-                  else      
+                  else
                     rsimSolver%rpreconditioner%p_rsolverNode%depsAbs = &
                         p_radaptiveNewton%dinexactNewtonEpsRel*dtempdef*dresInit
                   end if
@@ -3991,10 +3991,10 @@ contains
                 rsimSolver%csimType .eq. FBSIM_SOLVER_NLFORWARDFULL)
             call stat_stopTimer(rtimerDefectCalc)
 
-            ! Implement the boundary conditions        
+            ! Implement the boundary conditions
             call vecfil_discreteBCdef(rdefectPrimal)
 
-            ! Check for convergence/divergence        
+            ! Check for convergence/divergence
             call fbsim_resNormCheck (rsimSolver%rnonlinearIteration,&
                 ite,p_rcurrentsol,p_rcurrentrhs,rdefect,bconvergence,bdivergence)
           
@@ -4041,13 +4041,13 @@ contains
           call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,iiterate,&
               dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
           call stat_stopTimer (rtimerPostProc)
-        else  
+        else
           exit
         end if
       
       end do ! iiterate
   
-      ! Release the temporary RHS.    
+      ! Release the temporary RHS.
       call lsysbl_releaseVector (rrhs)
       
     case (FBSIM_SOLVER_LINFORWARD)
@@ -4093,7 +4093,7 @@ contains
           call sptivec_getVectorFromPool(rrhsAccess, iiterate-1, p_rprevrhs)
           call sptivec_getVectorFromPool(rrhsAccess, iiterate, p_rcurrentrhs)
           
-          ! Get the Oseen solutions for the assembly of the nonlinearity -- 
+          ! Get the Oseen solutions for the assembly of the nonlinearity --
           ! if there is any.
           call sptivec_getVectorFromPool(roseenAccess, iiterate-1, p_roseensol1)
           call sptivec_getVectorFromPool(roseenAccess, iiterate, p_roseensol2)
@@ -4158,7 +4158,7 @@ contains
         call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
           rdefect,1.0_DP)
 
-        ! Implement the boundary conditions        
+        ! Implement the boundary conditions
         call vecfil_discreteBCdef(rdefectPrimal)
         call stat_stopTimer(rtimerDefectCalc)
         
@@ -4258,7 +4258,7 @@ contains
           ! p_rcurrentsol is connected to the pool vector with index iiterate.
           call sptivec_commitVecInPool (rsolAccess,iiterate)
 
-          ! Postprocessing          
+          ! Postprocessing
           call stat_startTimer (rtimerPostProc)
           call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,iiterate,&
               dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
@@ -4304,7 +4304,7 @@ contains
         call stat_startTimer(rtimerDefectCalc)
         if (iiterate .lt. NEQtime) then
 
-          ! Initialise the previous and current timestep. 
+          ! Initialise the previous and current timestep.
           ! Solution.
           call sptivec_getVectorFromPool(rsolAccess, iiterate+1, p_rprevsol)
           call sptivec_getVectorFromPool(rsolAccess, iiterate, p_rcurrentsol)
@@ -4313,7 +4313,7 @@ contains
           call sptivec_getVectorFromPool(rrhsAccess, iiterate+1, p_rprevrhs)
           call sptivec_getVectorFromPool(rrhsAccess, iiterate, p_rcurrentrhs)
           
-          ! Get the Oseen solutions for the assembly of the nonlinearity -- 
+          ! Get the Oseen solutions for the assembly of the nonlinearity --
           ! if there is any.
           call sptivec_getVectorFromPool(roseenAccess, iiterate+1, p_roseensol3)
           call sptivec_getVectorFromPool(roseenAccess, iiterate, p_roseensol2)
@@ -4342,7 +4342,7 @@ contains
           call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
           call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
   
-          ! DEBUG!!!        
+          ! DEBUG!!!
           call lsysbl_getbase_double (p_rprevsol,p_Dsol)
           
           call smva_assembleDefect (rnonlinearSpatialMatrix,p_rprevsol,&
@@ -4399,7 +4399,7 @@ contains
 
         call stat_stopTimer(rtimerDefectCalc)
         
-        ! Implement the boundary conditions        
+        ! Implement the boundary conditions
         call vecfil_discreteBCdef(rdefectDual)
 
         ! Assemble the preconditioner matrices on all levels.
@@ -4498,7 +4498,7 @@ contains
           ! p_rcurrentsol is connected to the pool vector with index iiterate.
           call sptivec_commitVecInPool (rsolAccess,iiterate)
 
-          ! Postprocessing          
+          ! Postprocessing
           call stat_startTimer (rtimerPostProc)
           call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,iiterate,&
               dtimePrimal,dtimeDual,rsimsolver%p_rsettings)

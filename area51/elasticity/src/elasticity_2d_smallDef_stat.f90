@@ -203,7 +203,7 @@ contains
       call lsysbl_createMatBlockByDiscr(Rlevels(ilev)%rdiscretisation, &
                                         Rlevels(ilev)%rmatrix)
       
-      if (rprob%cequation .eq. EQ_POISSON) then 
+      if (rprob%cequation .eq. EQ_POISSON) then
         ! in case of the Poisson equation only one block has to be set up
   
         ! generate the structure of the system matrix
@@ -250,7 +250,7 @@ contains
           do jcol = 1, rprob%nblocks
             call bilf_createMatrixStructure(&
                    ! discretisation of the trial function space
-                   Rlevels(ilev)%rdiscretisation%RspatialDiscr(jcol), & 
+                   Rlevels(ilev)%rdiscretisation%RspatialDiscr(jcol), &
                    LSYSSC_MATRIX9, Rlevels(ilev)%rmatrix%RmatrixBlock(irow,jcol), &
                    ! discretisation of the test function space
                    Rlevels(ilev)%rdiscretisation%RspatialDiscr(irow))
@@ -421,7 +421,7 @@ contains
 
     ! build the RHS entries on the finest level using callback functions to compute
     ! the coefficients
-    if (rprob%cequation .eq. EQ_POISSON) then 
+    if (rprob%cequation .eq. EQ_POISSON) then
       ! Poisson equation
       
       ! use the callback function elast_RHS_Poisson_2D_vol
@@ -432,7 +432,7 @@ contains
       ! elasticity equation
       
       ! compute volume forces using the callback routine elast_RHS_2D_vol
-      ! (x-direction: rcollection%IquickAccess(1) = 1, 
+      ! (x-direction: rcollection%IquickAccess(1) = 1,
       !  y-direction: rcollection%IquickAccess(1) = 2)
       do irow = 1, rprob%ndim
         rcollection%IquickAccess(1) = irow
@@ -479,14 +479,14 @@ contains
               ! - Add the calculated discrete BCs to rdiscreteBC for later use.
               call bcasm_newDirichletBConRealBD(Rlevels(ilev)%rdiscretisation, k, &
                      rboundaryRegion, Rlevels(ilev)%rdiscreteBC, elast_boundValue_2D)
-            end do  
+            end do
           else if (rprob%Cbc(k,j,i) .eq. BC_NEUMANN) then
             ! store the current segment number in rcollection%IquickAccess(2) to make it
             ! accessible in the callback routine
             rcollection%IquickAccess(2) = j
             ! The non-zero Neumann contributations on the current boundary region are
             ! added to the RHS vector which already contains the volumetric contributions.
-            if (rprob%cequation .eq. EQ_POISSON) then 
+            if (rprob%cequation .eq. EQ_POISSON) then
               call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
                      rrhs%RvectorBlock(1), elast_RHS_Poisson_2D_bound, rboundaryRegion, &
                      rcollection)

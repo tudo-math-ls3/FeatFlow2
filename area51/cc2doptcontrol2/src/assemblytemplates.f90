@@ -30,7 +30,7 @@ module assemblytemplates
   use timediscretisation
   use timescalehierarchy
 
-  use meshhierarchy  
+  use meshhierarchy
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
@@ -62,12 +62,12 @@ module assemblytemplates
     ! A scalar discretisation structure for the pressure space.
     type(t_spatialDiscretisation), pointer :: p_rdiscrPressure
 
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the velocity FEM space.
     ! May use a different cubature rule that the velocity discretisation
     type(t_spatialDiscretisation), pointer :: p_rdiscrMassVelocity
 
-    ! A scalar discretisation structure that specifies how to generate 
+    ! A scalar discretisation structure that specifies how to generate
     ! the mass matrix in the pressure FEM space.
     type(t_spatialDiscretisation), pointer :: p_rdiscrMassPressure
 
@@ -96,24 +96,24 @@ module assemblytemplates
     ! Precalculated Laplace matrix for that specific level
     type(t_matrixScalar) :: rmatrixLaplace
     
-    ! Precalculated B1-matrix for that specific level. 
+    ! Precalculated B1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB1
 
-    ! Precalculated B2-matrix for that specific level. 
+    ! Precalculated B2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixB2
     
-    ! Precalculated D1-matrix for that specific level. 
+    ! Precalculated D1-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD1
 
-    ! Precalculated D2-matrix for that specific level. 
+    ! Precalculated D2-matrix for that specific level.
     type(t_matrixScalar) :: rmatrixD2
 
-    ! Precalculated D1^T-matrix for that specific level. 
+    ! Precalculated D1^T-matrix for that specific level.
     ! This matrix either coincides with rmatrixB1 (in case D1=B1^T)
     ! or describes an independent D1 matrix.
     type(t_matrixScalar) :: rmatrixD1T
 
-    ! Precalculated D2-matrix for that specific level. 
+    ! Precalculated D2-matrix for that specific level.
     ! This matrix either coincides with rmatrixB1 (in case D2=B2^T)
     ! or describes an independent D2 matrix.
     type(t_matrixScalar) :: rmatrixD2T

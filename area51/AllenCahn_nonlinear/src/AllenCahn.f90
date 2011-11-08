@@ -61,8 +61,8 @@ CONTAINS
   subroutine AC5_timestep (rACproblem,rACvector,rACrhs,rNSproblem,rNSvector,rNSrhs)
 
 !<description>
-  ! Performs one time step: $t^n -> t^n+1$. 
-  ! Assembles system matrix and RHS vector. 
+  ! Performs one time step: $t^n -> t^n+1$.
+  ! Assembles system matrix and RHS vector.
   ! Solves the corresponding time-step equation and returns the solution vector
   ! at the end of the time step.
   ! Solves the given problem by applying a linear solver.
@@ -101,13 +101,13 @@ CONTAINS
     type(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
     type(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
-    ! A pointer to the system matrix and the RHS vector as well as 
+    ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), POINTER :: p_rmatrix
     type(t_vectorBlock), POINTER :: p_rrhs
     type(t_vectorBlock)  :: rtempBlock
 
-    ! A solver node that accepts parameters for the linear solver    
+    ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), POINTER :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), POINTER :: p_rcoarseGridSolver,p_rpreconditioner
 
@@ -134,12 +134,12 @@ CONTAINS
     real(DP), dimension(:), pointer ::  p_vectordata
 
 ! Mcai
-	! A parameter to determine, whether we use implicit scheme or explicit scheme for 
+	! A parameter to determine, whether we use implicit scheme or explicit scheme for
 	! Allen-Cahn problem, if it is 0, we treat convective term explictly. Otherwise,implicitly
 	integer :: Implicit_Convective=0
 
 !~~~~~~~~~~~~~~If we only have Allen-Cahn problem, activate the following one~~~~~~~~
-    !MCai, For testing the Allen-Cahn solver only, we set rNSvector = 0 vector	
+    !MCai, For testing the Allen-Cahn solver only, we set rNSvector = 0 vector
 	call lsysbl_clearVector(rNSvector)
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,7 +149,7 @@ CONTAINS
     !
     ! Which is discretised in time with a Theta scheme, leading to
     !
-    !   $$ u_{n+1} + w_1*N(u_n+1) 
+    !   $$ u_{n+1} + w_1*N(u_n+1)
     !      =   u_n + w_2*N(u_n)  +  w_3*f_{n+1}  +  w_4*f_n $$
     !
     ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
@@ -168,8 +168,8 @@ CONTAINS
 
 !~~~~~~~~~MCai, implicitly treat convection term?~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !~~think about how to implement this	*)*)*)*)*)*)*)**)*)*)*)*)*)*)*)*)*)*)
-! we may also need to update the system matrix of AC problem by using new obtained 
-! velocity field in NS problem. 
+! we may also need to update the system matrix of AC problem by using new obtained
+! velocity field in NS problem.
 
     ! We can also generate convetive matrix here
     call AC_assembleMatConv(rACproblem, rACvector, rNSproblem, rNSvector)
@@ -184,7 +184,7 @@ CONTAINS
         rACvector,rACrhs,rACnonlinearIteration)
 
 !~~~~~~~~~~~~~~~call nonlinear solver here~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-! Set up both RHS and preconditioner for core equation: 
+! Set up both RHS and preconditioner for core equation:
 
     ! First, p_rrhs is to save RHS for core equation
     p_rrhs => rACproblem%rrhs
@@ -206,7 +206,7 @@ CONTAINS
     rACnonlinearIteration%dtheta=-rACproblem%rtimedependence%rtimestepping%dweightMatrixRHS
 	! dconv is for the convetive term
     rACnonlinearIteration%dconv=-rACproblem%rtimedependence%rtimestepping%dweightMatrixRHS
-	! dgamma is for nonlinear term 
+	! dgamma is for nonlinear term
     rACnonlinearIteration%dgamma=-rACproblem%rtimedependence%rtimestepping%dweightMatrixRHS
 
     call AC_nonlinearMatMul (rACproblem,rACvector,rACnonlinearIteration, &
@@ -225,7 +225,7 @@ CONTAINS
 !     print *, p_vectordata(1)
 !     print *, p_vectordata(10)
 !     print *, p_vectordata(100)
-!     stop 
+!     stop
     ! Add w_3*f_{n+1} to the p_rrhs
     call lsysbl_vectorLinearComb(rACrhs,p_rrhs,&
          rACproblem%rtimedependence%rtimestepping%dweightOldRHS,1.0_DP)
@@ -233,9 +233,9 @@ CONTAINS
 
 !     call AC5_calcRHS (rACproblem, rACvector, rACrhs,&
 !                           rNSproblem, rNSvector, rNSrhs)
-! 
+!
 !    !print *, rACproblem%rtimedependence%rtimestepping%dweightOldRHS
-! 
+!
 !     call lsysbl_vectorLinearComb(rACrhs,p_rrhs,&
 !          rACproblem%rtimedependence%rtimestepping%dweightOldRHS,1.0_DP)
 
@@ -252,7 +252,7 @@ CONTAINS
     ! "M + w_1 N(.)" for the next linear system to solve. Set up that system
     ! on every level of the discretisation.
 
-    ! we can use rnonlinearIterationTmp for assembling the matrix of LHS, or we directly 
+    ! we can use rnonlinearIterationTmp for assembling the matrix of LHS, or we directly
 	! assemble system matrix for all levels and save them in rACproblem%RlevelInfo(i)%rmatrix
 !    rnonlinearIterationTmp = rACnonlinearIteration
 !	! A = \alpha M + \theta Laplace + \conv Conv + \gamma Nonlinear
@@ -272,9 +272,9 @@ CONTAINS
 
 ! We have different ways to define p_rsolverNode, one is using the following
 !    p_rsolverNode => rACproblem%p_rsolverNode
-! The other is to use 
+! The other is to use
 !    p_rsolverNode => rACnonlinearIteration%p_rsolverNode
-! remember to call 
+! remember to call
 !    call linsol_doneData (p_rsolverNode)
 
     !print *, 'before core eqn, we have assembled system matrices and p_rsolverNode, saved in rnonlinearIterationTmp'
@@ -284,7 +284,7 @@ CONTAINS
     ! We need to clear system matrix
 	do i= NLMIN, NLMAX
            call lsysbl_clearMatrix(rACproblem%RlevelInfo(i)%rmatrix)
-	end do 
+	end do
 
     ! Release the temporary vector
     call lsysbl_clearVector(p_rrhs)
@@ -387,7 +387,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-     ! file name for output 
+     ! file name for output
      character(SYS_STRLEN) :: sfile,sfilename
 
     ! We need some more variables for postprocessing
@@ -419,7 +419,7 @@ CONTAINS
       rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
 
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. 
+    ! start the postprocessing.
     ! Start UCD export to GMV file:
 
 !    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&

@@ -69,7 +69,7 @@ contains
   type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
-!<output>  
+!<output>
   ! Value of the integral.
   real(DP), intent(out) :: dvalue
 !</output>
@@ -128,7 +128,7 @@ contains
     call tsrch_getElementsByRaytrace (rtriangulation,DpointsReal,Ielements,&
         ifirstUnknownPoint,ilastUnknownPoint)
         
-    ! Sometimes, some elements may not be found (e.g. if the point is outside 
+    ! Sometimes, some elements may not be found (e.g. if the point is outside
     ! of the domain). We replace the correspoding function value by zero
     ! in this case and throw a warning. This is done by deleting the points
     ! and elements from the list.

@@ -71,7 +71,7 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                      :: p_rcollection
     
@@ -146,7 +146,7 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                      :: p_rcollection
     
@@ -204,29 +204,29 @@ contains
     integer, intent(IN)                                         :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
     integer, intent(IN)                                         :: iwhere
 
     ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! cinfoNeeded=DISCBC_NEEDFUNC :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    ! cinfoNeeded=DISCBC_NEEDDERIV :
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN :
     !   dwhere = 0 (not used)
     real(DP), intent(IN)                                        :: dwhere
      
-    ! A pointer to a collection structure to provide additional 
+    ! A pointer to a collection structure to provide additional
     ! information to the coefficient routine. May point to NULL() if not defined.
     type(t_collection), pointer                  :: p_rcollection
 
@@ -234,8 +234,8 @@ contains
   
   !<output>
     ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
+    ! only needs one value, the computed quantity is put into Dvalues(1).
+    ! If multiple values are needed, they are collected here (e.g. for
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
     real(DP), dimension(:), intent(OUT)                         :: Dvalues
   !</output>
@@ -280,7 +280,7 @@ contains
     
     integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
     external E011,COEAGS,EM30,FEATRHS,NDFGX
-    double precision FEATRHS 
+    double precision FEATRHS
     integer :: NDFGX
     integer, dimension(2,2) :: KAB
     real(DP) :: TTT0,TTT1,TTT2
@@ -329,8 +329,8 @@ contains
     rform%Idescriptors(2,1) = DER_DERIV_X
     rform%Idescriptors(1,2) = DER_DERIV_Y
     rform%Idescriptors(2,2) = DER_DERIV_Y
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     !BILF_NELEMSIM = 100
@@ -383,7 +383,7 @@ contains
     
     integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
     external E011,COEAGS,EM30,FEATRHS,NDFGX
-    double precision FEATRHS 
+    double precision FEATRHS
     integer :: NDFGX
     integer, dimension(2,2) :: KAB
     real(DP) :: TTT0,TTT1,TTT2
@@ -432,8 +432,8 @@ contains
     rform%Idescriptors(2,1) = DER_DERIV_X
     rform%Idescriptors(1,2) = DER_DERIV_Y
     rform%Idescriptors(2,2) = DER_DERIV_Y
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     !BILF_NELEMSIM = 100
@@ -486,7 +486,7 @@ contains
     
     integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
     external E011,COEAGS,EM30,FEATRHS,NDFGX
-    double precision FEATRHS 
+    double precision FEATRHS
     integer :: NDFGX
     integer, dimension(2,2) :: KAB
     real(DP) :: TTT0,TTT1,TTT2
@@ -515,7 +515,7 @@ contains
     NEQ = NDFGX(30,TRIAS(:,lv))
     call XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
                        1,LB,NEQ,1,E011,.false.,&
-                       FEATRHS,1,1,.true.,2,'RHS   ') 
+                       FEATRHS,1,1,.true.,2,'RHS   ')
     call ZTIME(TTT1)
     
     ! set up linear form
@@ -574,7 +574,7 @@ contains
     
     integer :: lv, LCOL,LLD,NA,NEQ,LA,LB
     external E011,COEAGS,EM30,FEATRHS,NDFGX
-    double precision FEATRHS 
+    double precision FEATRHS
     integer :: NDFGX
     integer, dimension(2,2) :: KAB
     real(DP) :: TTT0,TTT1,TTT2
@@ -603,7 +603,7 @@ contains
     NEQ = NDFGX(30,TRIAS(:,lv))
     call XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
                        1,LB,NEQ,1,EM30,.true.,&
-                       FEATRHS,1,1,.true.,2,'RHS   ') 
+                       FEATRHS,1,1,.true.,2,'RHS   ')
     call ZTIME(TTT1)
     
     ! set up linear form
@@ -664,7 +664,7 @@ contains
     
     integer :: lv, LCOL,LLD,NA,NEQ,LA,LB,ierror
     external E011,COEAGS,EM30,FEATRHS,NDFGX
-    double precision FEATRHS 
+    double precision FEATRHS
     integer :: NDFGX
     integer, dimension(2,2) :: KAB
     real(DP) :: TTT0,TTT1,TTT2
@@ -728,8 +728,8 @@ contains
     rform%Idescriptors(2,1) = DER_DERIV_X
     rform%Idescriptors(1,2) = DER_DERIV_Y
     rform%Idescriptors(2,2) = DER_DERIV_Y
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+    rform%Dcoefficients(1)  = 1.0
+    rform%Dcoefficients(2)  = 1.0
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     !BILF_NELEMSIM = 100
@@ -746,7 +746,7 @@ contains
     NEQ = NDFGX(30,TRIAS(:,lv))
     call XVB0X(TRIAS(:,lv), 0, 0.0,0,0.0,&
                        1,LB,NEQ,1,E011,.false.,&
-                       FEATRHS,1,1,.true.,2,'RHS   ') 
+                       FEATRHS,1,1,.true.,2,'RHS   ')
     call ZTIME(TTT1)
     
     ! set up linear form
@@ -808,7 +808,7 @@ contains
     call filter_applyFilterChainVec (rvectorBlock, RfilterChain)
     call filter_applyFilterChainMat (rmatrixBlock, RfilterChain)
     
-    ! Change the filter to work with defect vectors during the 
+    ! Change the filter to work with defect vectors during the
     ! solution process
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
@@ -876,6 +876,6 @@ program testf90
   implicit none
   include 'cmem.inc'
   call ZINIT(NNWORK,'feat.msg','data/cc2d.err','data/cc2d.prt',&
-             'data/cc2d.sys','data/cc2d.trc') 
+             'data/cc2d.sys','data/cc2d.trc')
   call test_MatrixEM30
 end program

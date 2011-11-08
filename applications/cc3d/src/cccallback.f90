@@ -73,17 +73,17 @@
 !#
 !# 12.) cc_doneCollectForAssembly
 !#      -> Is called after the assembly process.
-!#      -> Releases information stored in the collection by 
+!#      -> Releases information stored in the collection by
 !#         cc_initCollectForAssembly.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
-!# framework calls cc_initCollectForAssembly to stores the current point 
+!# framework calls cc_initCollectForAssembly to stores the current point
 !# in time (and probably other necessary information) to the quickaccess-array
 !# in the collection which is passed to the callback routines. The callback
 !# routines can access this as follows:
 !#
-!# -> rcollection%IquickAccess(1)   = 0: stationary, 
+!# -> rcollection%IquickAccess(1)   = 0: stationary,
 !#                                    1: nonstationary with explicit time stepping
 !# -> rcollection%DquickAccess(1)   = current simulation time
 !# -> rcollection%DquickAccess(2)   = minimum simulation time
@@ -175,7 +175,7 @@ contains
   ! and has usually not to be changed by the user.
   !
   ! After the assembly process, this subroutine is called to release temporary
-  ! information from the collection which was stored there by 
+  ! information from the collection which was stored there by
   ! cc_initCollectForAssembly.
 !</description>
   
@@ -193,7 +193,7 @@ contains
 
     ! Currently, this subroutine is empty as all information stored in
     ! the collection in cc_initCollectForAssembly is put to the quick-access
-    ! arrays -- which do not have to be cleaned up. 
+    ! arrays -- which do not have to be cleaned up.
     ! This might change in future...
 
   end subroutine
@@ -257,8 +257,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -337,8 +337,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -415,8 +415,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -502,8 +502,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -589,8 +589,8 @@ contains
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional      :: rcollection
     
   !</input>
@@ -635,7 +635,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
@@ -676,8 +676,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -732,7 +732,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the Y-velocity.
@@ -773,8 +773,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -829,7 +829,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the Z-velocity.
@@ -870,8 +870,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -926,7 +926,7 @@ contains
   use domainintegration
   
 !<description>
-  ! This subroutine is called during the postprocessing. 
+  ! This subroutine is called during the postprocessing.
   ! It should return values of the analytical solution (if it is known).
   ! These are compared with the calculated solution to calculate the
   ! error in the pressure
@@ -967,8 +967,8 @@ contains
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
-  ! A pointer to a collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
@@ -1039,7 +1039,7 @@ contains
   ! DAT file for the boundary conditions.
   character(LEN=*), intent(in)                   :: sexpressionName
   
-  ! Solution component that is currently being processed. 
+  ! Solution component that is currently being processed.
   ! 1 = X-velocity, 2 = y-velocity,...
   integer, intent(in)                            :: icomponent
   
@@ -1053,8 +1053,8 @@ contains
   ! The coordinates of the point
   real(DP), dimension(:), intent(in)             :: Dcoords
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional    :: rcollection
 !</input>
 

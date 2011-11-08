@@ -198,7 +198,7 @@ module elementbase
     logical :: bforeignPointsReal = .false.
   
     ! .TRUE., if the array p_Dcoords is maintained by the caller; prevents
-    ! release of memory in cleanup routines. 
+    ! release of memory in cleanup routines.
     logical :: bforeignCoords = .false.
   
     ! Pointer to a performance pointer

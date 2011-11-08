@@ -21,7 +21,7 @@ program elasticity
   ! local variables
   character(len=SYS_STRLEN) :: slogdir,slogfile
   
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   call system_init()
   
@@ -38,8 +38,8 @@ program elasticity
     call output_init('./log/output.txt')
   end if
 
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
 
   ! Call the problem to solve.

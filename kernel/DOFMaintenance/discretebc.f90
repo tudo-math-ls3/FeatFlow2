@@ -8,9 +8,9 @@
 !# conditions are an element-dependent way to represent analytical boundary
 !# conditions. After "discretising", the boundary condition can quickly
 !# be implemented into a vector. Therefore, one can see discrete boundary
-!# conditions also as a kind of 'precalculated' boundary conditions. This is 
-!# exploited e.g. in the filter approach, where a filter routine 'applies' a 
-!# discrete BC to a vector. 
+!# conditions also as a kind of 'precalculated' boundary conditions. This is
+!# exploited e.g. in the filter approach, where a filter routine 'applies' a
+!# discrete BC to a vector.
 !#
 !# The following types of discrete boundary conditions are available:
 !#
@@ -27,7 +27,7 @@
 !#   In case of a linear system, the corresponding DOF`s are treated
 !#   as Dirichlet. The actual BC is implemented during a nonlinear
 !#   loop by modifying the appearing defect vector.
-!#   
+!#
 !# </purpose>
 !##############################################################################
 
@@ -135,13 +135,13 @@ module discretebc
   ! conditions in case of a Navier-Stokes solver.
   ! Slip boundary conditions are handled the same way as Dirichlet-
   ! zero boundary conditions, but have a different treatment due the nonlinear
-  ! loop. We have one array is a list of all DOF`s that refer do slip boundary 
-  ! nodes. 
+  ! loop. We have one array is a list of all DOF`s that refer do slip boundary
+  ! nodes.
   ! The variable ncomponent describes the number ov velocity components/
   ! equations in the PDE. Icomponents(1..ncomponents) on the other hand
   ! is a list of numbers of the velocity equations in the PDE.
   ! Normally there is Icomponents(1)=1=X-velocity, Icomponents(1)=2=Y-velocity,
-  ! probably Icomponents(3)=3=Z-velocity, 
+  ! probably Icomponents(3)=3=Z-velocity,
   
   type t_discreteBCSlip
     
@@ -193,15 +193,15 @@ module discretebc
     ! The components of the solutions/RHS vectors that should be modified
     ! by pressure drop boundary conditions.
     ! Each of the 1..ncomponents entries in the vector specifies a component
-    ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity 
+    ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity
     ! or similar)
     integer, dimension(:), pointer :: Icomponents => null()
     
-    ! Number of DOF`s in the arrays below; may be different from the length of 
+    ! Number of DOF`s in the arrays below; may be different from the length of
     ! the array!
     integer :: nDOF = 0
     
-    ! Handle to array with all velocity DOF`s on the boundary that must be 
+    ! Handle to array with all velocity DOF`s on the boundary that must be
     ! modified.
     !   array [1..*] of integer
     integer :: h_IpressureDropDOFs = ST_NOHANDLE
@@ -220,7 +220,7 @@ module discretebc
 !<typeblock>
   
   ! This structure describes the way, FEAST mirror boundary conditions
-  ! can be discretised. 
+  ! can be discretised.
   ! The variable icomponent describes the number of the component/equation
   ! in the PDE that must be treated that way.
   ! h_ImirrorBCs specifies a bitfield that defines for every DOF if it is
@@ -232,7 +232,7 @@ module discretebc
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
     integer  :: icomponent        = 0
     
-    ! Coarsening level. Used when adding additional contributions to the 
+    ! Coarsening level. Used when adding additional contributions to the
     ! matrix/vector. Usually = 0. Must be increased for every level coarser
     ! than the maximum one in a mesh hierarchy.
     real(DP) :: icoarseningLevel  = 0

@@ -180,7 +180,7 @@ contains
   ! Maximum allowed time level
   integer, intent(in) :: nmaxTime
 
-  ! OPTIONAL: Factor that specifies the number of refinement levels in 
+  ! OPTIONAL: Factor that specifies the number of refinement levels in
   ! time before refining in space.
   ! Values e.g.:
   !   SYS_INFINITY_DP = refinement only in time, always use maximum space level.
@@ -247,7 +247,7 @@ contains
         rhierarchy%p_IlevelDef(1,i) = icurrent
         rhierarchy%p_IlevelDef(2,i) = ntime2-(rhierarchy%nlevels-i)
 
-        ! If the current factor overflows, coarsen in space.        
+        ! If the current factor overflows, coarsen in space.
         dcurrentfactor = dcurrentfactor + 1.0_DP/dspacetimeRefFactor
         if (dcurrentfactor .ge. 1.0_DP) then
           ! Coarsening in space

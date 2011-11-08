@@ -26,8 +26,8 @@
 !#   </tex>
 !#
 !# 3.) pperr_scalarBoundary2d
-!#     -> On a 2D boundary segment, calculate <tex>$ L_1 $</tex>-error, $L_2$-error 
-!#        or $H_1$-error to an analytic reference function or the 
+!#     -> On a 2D boundary segment, calculate <tex>$ L_1 $</tex>-error, $L_2$-error
+!#        or $H_1$-error to an analytic reference function or the
 !#        <tex>$ L_1 $</tex>-norm, $L_2$-norm or $H_1$-norm of a FE function.
 !#   <tex>
 !#   $$ \int_\Gamma u-cu_h dx , \qquad \int_\Gamma \nabla u-c\nabla u_h dx $$
@@ -38,8 +38,8 @@
 !#   <tex>
 !#   $$ \int_\Omega u_h-u_ref dx $$
 !#   </tex>
-!#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
-!#        some reference solution vector which is supposed to be a 
+!#        where $u_h$ denotes the FE solution vector and $u_ref$ is
+!#        some reference solution vector which is supposed to be a
 !#        better approximation of the true solution.
 !#
 !# 5.) pperr_blockErrorEstimate
@@ -48,7 +48,7 @@
 !#   $$ \int_\Omega u_h-u_ref dx $$
 !#   </tex>
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
-!#        some reference solution vector which is supposed to be a 
+!#        some reference solution vector which is supposed to be a
 !#        better approximation of the true solution.
 !#
 !# 6.) pperr_scalarStandardDeviation
@@ -252,14 +252,14 @@ contains
 !</description>
 
 !<input>
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionScVec.inc'
   optional :: frefFunction
   
   ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
+  ! callback function to provide additional information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
   ! OPTIONAL: local performance configuration. If not given, the
@@ -877,7 +877,7 @@ contains
   ! calculation of the H1-error is not available.
 !</description>
 
-!<input> 
+!<input>
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
@@ -887,7 +887,7 @@ contains
   ! If omitted, the function is assumed to be constantly =0.
   type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
@@ -899,7 +899,7 @@ contains
   optional :: ffunctionWeight
   
   ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
+  ! callback function to provide additional information.
   type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
@@ -992,7 +992,7 @@ contains
   
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (p_rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+        (p_rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then
     
       select case(cdataType)
 
@@ -1073,14 +1073,14 @@ contains
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
   integer, intent(in) :: cerrortype
   
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
   optional :: ffunctionReference
     
   ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
+  ! callback function to provide additional information.
   type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
@@ -1144,7 +1144,7 @@ contains
   ! If omitted, the function is assumed to be constantly =0.
   type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
   
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
@@ -1161,8 +1161,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: A collection structure to provide additional 
-  ! information to the coefficient routine. 
+  ! OPTIONAL: A collection structure to provide additional
+  ! information to the coefficient routine.
   type(t_collection), intent(inout), optional :: rcollection
 
   ! OPTIONAL: A scalar vector which holds the calculated error per element
@@ -1225,7 +1225,7 @@ contains
     type(t_domainIntSubset) :: rintSubset
     type(t_evalElementSet) :: revalElementSet
     
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -1253,10 +1253,10 @@ contains
 
     Bder = .false.
     select case (cerrortype)
-    case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR) 
+    case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR)
       Bder(DER_FUNC1D) = .true.
       NCOEFF = 3
-    case (PPERR_H1ERROR) 
+    case (PPERR_H1ERROR)
       Bder(DER_DERIV1D_X) = .true.
       NCOEFF = 3
     case default
@@ -1323,7 +1323,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       if (present(ffunctionReference) .or.&
@@ -1360,7 +1360,7 @@ contains
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
-        ! Prepare the call to the evaluation routine of the analytic function.    
+        ! Prepare the call to the evaluation routine of the analytic function.
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = ielementDistr
         rintSubset%ielementStartIdx = IELset
@@ -1429,7 +1429,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h,u-u_h) dx
@@ -1458,7 +1458,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1483,7 +1483,7 @@ contains
                 derror = derror + &
                          OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1533,7 +1533,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*abs(u-u_h) dx
@@ -1562,7 +1562,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1587,7 +1587,7 @@ contains
                 derror = derror + &
                          OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -1597,7 +1597,7 @@ contains
 
           ! H1-error uses only 1st derivative of the function.
 
-          if (present(ffunctionReference)) then          
+          if (present(ffunctionReference)) then
             ! It is time to call our coefficient function to calculate the
             ! X-derivative values in the cubature points:  u(x,y)
             ! The result is saved in Dcoefficients(:,:,1)
@@ -1638,7 +1638,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[grad(u-u_h)](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
@@ -1667,7 +1667,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1692,7 +1692,7 @@ contains
                 derror = derror + OM * &
                          (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1771,7 +1771,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -1795,7 +1795,7 @@ contains
                          OM * ( Dcoefficients(icubp,IEL,1) - &
                                 Dcoefficients(icubp,IEL,2) )
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1806,7 +1806,7 @@ contains
           ! This case realises
           !
           !  int (w u) dx
-          !  
+          !
           ! with w being the weight and u the analytical function given by
           ! ffunctionReference. This function must be present such that it can
           ! be evaluated -- otherwise the user made a mistake in calling
@@ -1870,7 +1870,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -1892,7 +1892,7 @@ contains
                 
                 derror = derror + OM * Dcoefficients(icubp,IEL,1)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -1943,7 +1943,7 @@ contains
   ! 2D version for double-precision vectors.
 !</description>
 
-!<input> 
+!<input>
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
@@ -1956,7 +1956,7 @@ contains
   ! If omitted, the function is assumed to be constantly =0.
   type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
@@ -1973,7 +1973,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: A collection structure to provide additional 
+  ! OPTIONAL: A collection structure to provide additional
   ! information for callback routines.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -2040,7 +2040,7 @@ contains
     ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -2068,7 +2068,7 @@ contains
     case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR)
       Bder(DER_FUNC) = .true.
       NCOEFF = 3
-    case (PPERR_H1ERROR) 
+    case (PPERR_H1ERROR)
       Bder(DER_DERIV_X) = .true.
       Bder(DER_DERIV_Y) = .true.
       NCOEFF = 5
@@ -2136,7 +2136,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       if (present(ffunctionReference) .or.&
@@ -2173,7 +2173,7 @@ contains
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
-        ! Prepare the call to the evaluation routine of the analytic function.    
+        ! Prepare the call to the evaluation routine of the analytic function.
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = ielementDistr
         rintSubset%ielementStartIdx = IELset
@@ -2242,7 +2242,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h,u-u_h) dx
@@ -2271,7 +2271,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2296,7 +2296,7 @@ contains
                 derror = derror + &
                          OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2346,7 +2346,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*abs(u-u_h) dx
@@ -2371,7 +2371,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2392,7 +2392,7 @@ contains
                 derror = derror + &
                          OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2402,7 +2402,7 @@ contains
 
           ! H1-error uses only 1st derivative of the function.
 
-          if (present(ffunctionReference)) then          
+          if (present(ffunctionReference)) then
             ! It is time to call our coefficient function to calculate the
             ! X-derivative values in the cubature points:  u(x,y)
             ! The result is saved in Dcoefficients(:,:,1)
@@ -2450,10 +2450,10 @@ contains
             Dcoefficients(:,1:IELmax-IELset+1,5) = 1.0_DP
           end if
 
-          ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) 
+          ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4)
           ! and multiplication by Dcoefficients(:,:,5) yields
           ! the error "w*grad(u-u_h)(cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
@@ -2483,7 +2483,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2509,7 +2509,7 @@ contains
                          ((Dcoefficients(icubp,IEL,3)-Dcoefficients(icubp,IEL,1))**2 + &
                           (Dcoefficients(icubp,IEL,4)-Dcoefficients(icubp,IEL,2))**2)
 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2559,7 +2559,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,2) from Dcoefficients(:,:,1)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h] (cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h) dx
@@ -2587,7 +2587,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -2611,7 +2611,7 @@ contains
                          OM * ( Dcoefficients(icubp,IEL,1) - &
                                 Dcoefficients(icubp,IEL,2) )
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2622,7 +2622,7 @@ contains
           ! This case realises
           !
           !  int (w u) dx
-          !  
+          !
           ! with w being the weight and u the analytical function given by
           ! ffunctionReference. This function must be present such that it can
           ! be evaluated -- otherwise the user made a mistake in calling
@@ -2686,7 +2686,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -2708,7 +2708,7 @@ contains
                 
                 derror = derror + OM * Dcoefficients(icubp,IEL,1)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -2759,7 +2759,7 @@ contains
   ! 3D version for double-precision vectors.
 !</description>
 
-!<input>  
+!<input>
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
@@ -2772,7 +2772,7 @@ contains
   ! If omitted, the function is assumed to be constantly =0.
   type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
@@ -2789,7 +2789,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: A collection structure to provide additional 
+  ! OPTIONAL: A collection structure to provide additional
   ! information for callback routines.
   type(t_collection), intent(inout), optional :: rcollection
 
@@ -2799,7 +2799,7 @@ contains
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(out) :: derror 
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -2832,7 +2832,7 @@ contains
     ! the reference element for all elements in a set.
     real(DP), dimension(:,:), pointer :: p_DcubPtsRef
 
-    ! Arrays for saving Jacobian determinants 
+    ! Arrays for saving Jacobian determinants
     real(DP), dimension(:,:), pointer :: p_Ddetj
     
     ! Current element distribution
@@ -2856,7 +2856,7 @@ contains
     ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -2881,10 +2881,10 @@ contains
 
     Bder = .false.
     select case (cerrortype)
-    case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR) 
+    case (PPERR_L1ERROR, PPERR_L2ERROR, PPERR_MEANERROR)
       Bder(DER_FUNC3D) = .true.
       NCOEFF = 3
-    case (PPERR_H1ERROR) 
+    case (PPERR_H1ERROR)
       Bder(DER_DERIV3D_X) = .true.
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
@@ -2953,7 +2953,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
                       
       if (present(ffunctionReference) .or.&
@@ -2990,7 +2990,7 @@ contains
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
-        ! Prepare the call to the evaluation routine of the analytic function.    
+        ! Prepare the call to the evaluation routine of the analytic function.
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
         rintSubset%ielementDistribution = ielementDistr
         rintSubset%ielementStartIdx = IELset
@@ -3059,7 +3059,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h,u-u_h) dx
@@ -3088,7 +3088,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3113,7 +3113,7 @@ contains
                 derror = derror + &
                          OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))**2
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3163,7 +3163,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2)
           ! and multiplication by Dcoefficients(:,:,3) yields
           ! the error "w*[u-u_h](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*abs(u-u_h) dx
@@ -3192,7 +3192,7 @@ contains
                 
                 derror = derror + p_Derror(IELGlobal)
 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3217,7 +3217,7 @@ contains
                 derror = derror + &
                          OM * abs(Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -3227,7 +3227,7 @@ contains
 
           ! H1-error uses only 1st derivative of the function.
 
-          if (present(ffunctionReference)) then          
+          if (present(ffunctionReference)) then
             ! It is time to call our coefficient function to calculate the
             ! X-derivative values in the cubature points:  u(x,y,z)
             ! The result is saved in Dcoefficients(:,:,1)
@@ -3289,7 +3289,7 @@ contains
           ! Subtraction of Dcoefficients(:,:,1..3) from Dcoefficients(:,:,4..6)
           ! and multiplication by Dcoefficients(:,:,7) yields
           ! the error "w*[grad(u-u_h)](cubature pt.)"!
-          !        
+          !
           ! Loop through elements in the set and for each element,
           ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
@@ -3319,7 +3319,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3346,7 +3346,7 @@ contains
                           (Dcoefficients(icubp,IEL,5)-Dcoefficients(icubp,IEL,2))**2 + &
                           (Dcoefficients(icubp,IEL,6)-Dcoefficients(icubp,IEL,3))**2)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3425,7 +3425,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -3449,7 +3449,7 @@ contains
                          OM * ( Dcoefficients(icubp,IEL,1) - &
                                 Dcoefficients(icubp,IEL,2) )
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3460,7 +3460,7 @@ contains
           ! This case realises
           !
           !  int (w u) dx
-          !  
+          !
           ! with w being the weight and u the analytical function given by
           ! ffunctionReference. This function must be present such that it can
           ! be evaluated -- otherwise the user made a mistake in calling
@@ -3524,7 +3524,7 @@ contains
 
                 derror = derror + p_Derror(IELGlobal)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
             
@@ -3546,7 +3546,7 @@ contains
                 
                 derror = derror + OM * Dcoefficients(icubp,IEL,1)
                 
-              end do ! ICUBP 
+              end do ! ICUBP
               
             end do ! IEL
 
@@ -3587,8 +3587,8 @@ contains
                                      rdiscretisation, ffunctionWeight)
 
 !<description>
-  ! This routine calculates the error or the norm, respectively, of a given 
-  ! finite element function in rvector to a given analytical 
+  ! This routine calculates the error or the norm, respectively, of a given
+  ! finite element function in rvector to a given analytical
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
@@ -3627,7 +3627,7 @@ contains
   ! If omitted, the function is assumed to be constantly =1.
   type(t_vectorScalar), intent(in), optional, target :: rvectorScalar
   
-  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionScBdr2D.inc'
@@ -3639,7 +3639,7 @@ contains
   optional :: ffunctionWeight
   
   ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
+  ! callback function to provide additional information.
   type(t_collection), intent(inout), target, optional :: rcollection
 
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
@@ -3769,7 +3769,7 @@ contains
   integer(I32), intent(in) :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
-  ! to calculate. 
+  ! to calculate.
   type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! A discretisation structure specifying how to compute the error.
@@ -3791,7 +3791,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: A collection structure to provide additional 
+  ! OPTIONAL: A collection structure to provide additional
   ! information for callback routines.
   type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
@@ -3937,7 +3937,7 @@ contains
             ! Calculate the parameter values of the points on the boundary
             ! Dxi1D is in [-1,1] while the current edge has parmeter values
             ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-            ! transformation to transform Dxi1D into that interval, this 
+            ! transformation to transform Dxi1D into that interval, this
             ! gives the parameter values in length parametrisation
             call mprim_linearRescale(Dxi1D(ipoint,1), -1.0_DP, 1.0_DP,&
                 DedgePosition(1,iel), DedgePosition(2,iel), DpointPar(ipoint,iel))
@@ -4011,11 +4011,11 @@ contains
           
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
           
@@ -4085,11 +4085,11 @@ contains
       
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-        ! in the cubature, so we have to divide it by 2 as an edge on 
+        ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
           
@@ -4157,7 +4157,7 @@ contains
           do ipoint = 1,ncubp
             Dcoefficients(ipoint,iel,1) =&
                 (Dcoefficients(ipoint,iel,1)-Dcoefficients(ipoint,iel,3))**2 + &
-                (Dcoefficients(ipoint,iel,2)-Dcoefficients(ipoint,iel,4))**2 
+                (Dcoefficients(ipoint,iel,2)-Dcoefficients(ipoint,iel,4))**2
           end do
         end do
         
@@ -4171,11 +4171,11 @@ contains
           
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
           
@@ -4185,7 +4185,7 @@ contains
           end do
         end do
         
-        deallocate(Dcoefficients)  
+        deallocate(Dcoefficients)
         
       case (PPERR_MEANERROR)
         
@@ -4245,11 +4245,11 @@ contains
           
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
           
@@ -4266,7 +4266,7 @@ contains
         ! This case realises
         !
         !  int (w u) dx
-        !  
+        !
         ! with w being the weight and u the analytical function given by
         ! ffunctionReference. This function must be present such that it can
         ! be evaluated -- otherwise the user made a mistake in calling
@@ -4309,11 +4309,11 @@ contains
       
           ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
-          ! implementation than using simple lines as it will later 
+          ! implementation than using simple lines as it will later
           ! support isoparametric elements.
           !
           ! The length of the current edge serves as a "determinant"
-          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! in the cubature, so we have to divide it by 2 as an edge on
           ! the unit interval [-1,1] has length 2.
           dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
           
@@ -4355,7 +4355,7 @@ contains
   ! reference gradient, c.f. ZZ-technique.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the 
+  ! element distributions in the discretisation structure specifies the
   ! cubature formula to use for each element distribution.
 !</description>
 
@@ -4371,10 +4371,10 @@ contains
     integer, intent(in) :: ctype
             
     ! OPTIONAL: A discretisation structure specifying how to compute the error.
-    ! If not specified, the discretisation structure in the reference gradient 
+    ! If not specified, the discretisation structure in the reference gradient
     ! is used. If specified, the discretisation structure must be 'compatible'
     ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
-    ! cubature formula specifier of the linear form in rdiscretisation to 
+    ! cubature formula specifier of the linear form in rdiscretisation to
     ! compute the integrals for the error.
     type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationRef
 
@@ -4390,7 +4390,7 @@ contains
 
 !<output>
     ! The calculated error.
-    real(DP), intent(out) :: derror 
+    real(DP), intent(out) :: derror
 !</output>
 !</subroutine>
 
@@ -4448,7 +4448,7 @@ contains
   ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the 
+  ! element distributions in the discretisation structure specifies the
   ! cubature formula to use for each element distribution.
 !</description>
 
@@ -4466,10 +4466,10 @@ contains
     integer, intent(in) :: ctype
 
     ! OPTIONAL: A discretisation structure specifying how to compute the error.
-    ! If not specified, the discretisation structure in the reference gradient 
+    ! If not specified, the discretisation structure in the reference gradient
     ! is used. If specified, the discretisation structure must be 'compatible'
     ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
-    ! cubature formula specifier of the linear form in rdiscretisation to 
+    ! cubature formula specifier of the linear form in rdiscretisation to
     ! compute the integrals for the error.
     type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationRef
 
@@ -4485,7 +4485,7 @@ contains
 
 !<output>
     ! The calculated error.
-    real(DP), intent(out) :: derror 
+    real(DP), intent(out) :: derror
 !</output>
 !</subroutine>
 
@@ -4537,7 +4537,7 @@ contains
     ! Pointer to the values of the function that are computed by the callback routine.
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -4570,7 +4570,7 @@ contains
       call lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock), p_rdiscretisation)
     end do
 
-    ! Get the correct discretisation structure for the reference 
+    ! Get the correct discretisation structure for the reference
     ! vector and check if we can use it.
     if (present(rdiscretisationRef)) then
       p_rdiscretisationRef => rdiscretisationRef
@@ -4693,7 +4693,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
       cevaluationTag = ior(cevaluationTag,&
                       elem_getEvaluationTag(p_relementDistributionRef%celement))
@@ -4746,9 +4746,9 @@ contains
 
           ! L1-error uses only the values of the function.
 
-          ! Calculate the values of the FE solution vector and the reference solution 
+          ! Calculate the values of the FE solution vector and the reference solution
           ! vector in the cubature points: u_h(x,y) and u_ref(x,y)
-          ! Save the result to Dcoefficients(:,:,2*iblock-1) and 
+          ! Save the result to Dcoefficients(:,:,2*iblock-1) and
           ! Dcoefficients(:,:,2*iblock)
 
           do iblock=1,rvector%nblocks
@@ -4766,7 +4766,7 @@ contains
           end do
 
           ! Subtraction of Dcoefficients(:,:,2*iblock-1) from Dcoefficients(:,:,2*iblock)
-          ! and summing over all iblock=1,..,nblocks gives the error 
+          ! and summing over all iblock=1,..,nblocks gives the error
           ! $u_h(cubature pt.) - u_ref(cubature pt.)$
           
           ! Loop through elements in the set and for each element,
@@ -4798,7 +4798,7 @@ contains
                             Dcoefficients(icubp,IEL,2*iblock))
               end do
 
-            end do ! ICUBP 
+            end do ! ICUBP
 
             ! Apply to global error
             derror = derror + delementError
@@ -4815,9 +4815,9 @@ contains
         
           ! L2-error uses only the values of the function.
 
-          ! Calculate the values of the FE solution vector and the reference solution 
+          ! Calculate the values of the FE solution vector and the reference solution
           ! vector in the cubature points: u_h(x,y) and u_ref(x,y)
-          ! Save the result to Dcoefficients(:,:,2*iblock-1) and 
+          ! Save the result to Dcoefficients(:,:,2*iblock-1) and
           ! Dcoefficients(:,:,2*iblock)
 
           do iblock=1,rvector%nblocks
@@ -4835,7 +4835,7 @@ contains
           end do
 
           ! Subtraction of Dcoefficients(:,:,2*iblock-1) from Dcoefficients(:,:,2*iblock)
-          ! and summing over all iblock=1,..,nblocks gives the error 
+          ! and summing over all iblock=1,..,nblocks gives the error
           ! $u_h(cubature pt.) - u_ref(cubature pt.)$
           
           ! Loop through elements in the set and for each element,
@@ -4867,7 +4867,7 @@ contains
                           Dcoefficients(icubp,IEL,2*iblock))**2
               end do
 
-            end do ! ICUBP 
+            end do ! ICUBP
             
             ! Apply to global error
             derror = derror + delementError
@@ -4915,7 +4915,7 @@ contains
 
 !<description>
   ! This routine calculates the standard deviation
-  ! 
+  !
   ! <tex> $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$ </tex>
   !
   ! of a given FE function $u$ in rvector, whereby
@@ -4927,7 +4927,7 @@ contains
   ! <tex> $$ \hat x=\int_\Omega x u dx $$ </tex>
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the 
+  ! element distributions in the discretisation structure specifies the
   ! cubature formula to use for each element distribution.
 !</description>
 
@@ -4988,7 +4988,7 @@ contains
 
 !<description>
   ! This routine calculates the standard deviation
-  ! 
+  !
   ! <tex> $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$ </tex>
   !
   ! of a given FE function $u$ in rvector, whereby
@@ -5000,7 +5000,7 @@ contains
   ! <tex> $$ \hat x=\int_\Omega x u dx $$ </tex>
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
-  ! element distributions in the discretisation structure specifies the 
+  ! element distributions in the discretisation structure specifies the
   ! cubature formula to use for each element distribution.
 !</description>
 
@@ -5078,7 +5078,7 @@ contains
     ! Mathematical expectation of the center of mass
     real(DP), dimension(NDIM3D) :: DmassCenter
     
-    ! Type of transformation from the reference to the real element 
+    ! Type of transformation from the reference to the real element
     integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
@@ -5189,7 +5189,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
       ! Make sure that we have determinants.
@@ -5236,7 +5236,7 @@ contains
 
         ! Standard deviation uses only the values of the function.
 
-        ! Calculate the values of the FE solution vector in the cubature 
+        ! Calculate the values of the FE solution vector in the cubature
         ! points u_h(x,y) and save the result to Dcoefficients(:,:,iblock)
 
         do iblock=1,rvector%nblocks
@@ -5280,7 +5280,7 @@ contains
               end do
             end do
 
-          end do ! ICUBP 
+          end do ! ICUBP
         
         end do ! IEL
         
@@ -5289,7 +5289,7 @@ contains
       ! Release memory
       call elprep_releaseElementSet(revalElementSet)
 
-      deallocate(p_DcubPtsRef)      
+      deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
       
@@ -5308,7 +5308,7 @@ contains
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
-    ! a combined evaluation tag. 
+    ! a combined evaluation tag.
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
     ! Make sure that we have determinants.
@@ -5361,7 +5361,7 @@ contains
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
-      ! a combined evaluation tag. 
+      ! a combined evaluation tag.
       cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
       ! Make sure that we have determinants.
@@ -5408,7 +5408,7 @@ contains
 
         ! Standard deviation uses only the values of the function.
 
-        ! Calculate the values of the FE solution vector in the cubature 
+        ! Calculate the values of the FE solution vector in the cubature
         ! points u_h(x,y) and save the result to Dcoefficients(:,:,iblock)
 
         do iblock=1,rvector%nblocks
@@ -5456,7 +5456,7 @@ contains
               end do
             end do
 
-          end do ! ICUBP 
+          end do ! ICUBP
         
           ! Apply to global deviation
           ddeviation = ddeviation + delementDeviation
@@ -5474,7 +5474,7 @@ contains
       ! Release memory
       call elprep_releaseElementSet(revalElementSet)
 
-      deallocate(p_DcubPtsRef)      
+      deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
       

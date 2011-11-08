@@ -82,7 +82,7 @@ module triasearch
   end interface
   
   public :: tsrch_getElem_raytrace3D
-  public :: tsrch_getElementsByRaytrace  
+  public :: tsrch_getElementsByRaytrace
 
   interface tsrch_getElem_midpoint2D
     module procedure tsrch_getElem_midpoint2d_dir
@@ -152,7 +152,7 @@ contains
         end if
       end do
       
-    case (NDIM2D) 
+    case (NDIM2D)
       
       ! Loop through all elements. Check if the element contains the point.
       ! If yes, quit.
@@ -295,11 +295,11 @@ contains
     real(DP) :: ddist,dmindist
   
     select case (ubound(Dpoint,1))
-    case (NDIM2D) 
+    case (NDIM2D)
       
       dmindist = -1.0_DP
       
-      ! Loop through all elements. 
+      ! Loop through all elements.
       do ielcur=1,ubound(IverticesAtElement,2)
       
         ! Get the element midpoint
@@ -316,7 +316,7 @@ contains
                      (Dmidpoint(2)-Dpoint(2))**2)
         
         ! Chech if the distance is smaller than the current one.
-        if ((dmindist .lt. 0.0_DP) .or. (ddist .lt. dmindist)) then 
+        if ((dmindist .lt. 0.0_DP) .or. (ddist .lt. dmindist)) then
           dmindist = ddist
           iel = ielcur
         end if
@@ -416,7 +416,7 @@ contains
 !<output>
   ! OPTIONAL: Result of the search.
   ! =1 : The element was found successfully.
-  ! =0 : The raytracing search broke down inside of the domain. 
+  ! =0 : The raytracing search broke down inside of the domain.
   ! =-1: The search broke down because the domain was left.
   ! =-2: The maximum number of iterations was exceeded
   integer, intent(out), optional :: iresult
@@ -426,7 +426,7 @@ contains
   ! If iresult= 0: Number of the last analysed element before the search
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
-  !                domain was left. 
+  !                domain was left.
   ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(out), optional :: ilastElement
 
@@ -434,8 +434,8 @@ contains
   ! If iresult= 1: ilastEdge=0
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
-  ! If iresult=-1: Number of the edge through which the domain was left. 
-  ! If iresult=-2: Number of the last edge 
+  ! If iresult=-1: Number of the edge through which the domain was left.
+  ! If iresult=-2: Number of the last edge
   integer, intent(out), optional :: ilastEdge
 !</output>
   
@@ -465,7 +465,7 @@ contains
     ! call geoout_writeGnuplotPoint (Dpoint,0,'overview.dat')
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
-    ! let us hope a point is not moved more than imaxIter elements in 
+    ! let us hope a point is not moved more than imaxIter elements in
     ! one step...
     ieliteration: do ite = 1,imaxIter
     
@@ -557,7 +557,7 @@ contains
           
         end if
         
-      end do 
+      end do
     
     
     end do ieliteration
@@ -609,7 +609,7 @@ contains
 !<output>
   ! OPTIONAL: Result of the search.
   ! =1 : The element was found successfully.
-  ! =0 : The raytracing search broke down inside of the domain. 
+  ! =0 : The raytracing search broke down inside of the domain.
   ! =-1: The search broke down because the domain was left.
   ! =-2: The maximum number of iterations was exceeded
   integer, intent(out), optional :: iresult
@@ -619,7 +619,7 @@ contains
   ! If iresult= 0: Number of the last analysed element before the search
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
-  !                domain was left. 
+  !                domain was left.
   ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(out), optional :: ilastElement
 
@@ -627,7 +627,7 @@ contains
   ! If iresult= 1: ilastEdge=0
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
-  ! If iresult=-1: Number of the edge through which the domain was left. 
+  ! If iresult=-1: Number of the edge through which the domain was left.
   ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(out), optional :: ilastEdge
 !</output>
@@ -651,7 +651,7 @@ contains
 
     call tsrch_getElem_raytrace2D_dir (Dpoint,iel,p_DvertexCoords,&
         p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
-        iresult,ilastElement,ilastEdge,imaxIterations)    
+        iresult,ilastElement,ilastEdge,imaxIterations)
     
   end subroutine
 
@@ -675,7 +675,7 @@ contains
   real(DP), dimension(:), intent(in) :: Dpoint
   
   ! A sequence of triangulation structures that should stem from starndard
-  ! 2-level-ordered refinement. 
+  ! 2-level-ordered refinement.
   type(t_triangulation), dimension(:), intent(in) :: Rtriangulation
 !</input>
 
@@ -705,8 +705,8 @@ contains
         ! Then start an exhaustive search through all elements.
         call tsrch_getElem_BruteForce_ind (Dpoint,Rtriangulation(ilev),iel)
         
-        ! iel may be zero after that, as in "circle" domains it 
-        ! may happen that the point on the higher level is in the domain 
+        ! iel may be zero after that, as in "circle" domains it
+        ! may happen that the point on the higher level is in the domain
         ! while the point on the lower level is not!
         ! Let us hope that the domain is somehow convex so that
         ! raytracing works in the next sweep...
@@ -718,7 +718,7 @@ contains
       ! the element with number iel on the fine grid is one subelement
       ! of element iel on the coarse grid, so the search should be quick!
       !
-      ! If other refinement strategies are used, let us hope element iel on 
+      ! If other refinement strategies are used, let us hope element iel on
       ! the fine grid is nearby Dpoint, so raytracing is not too expensive...
     
     end do
@@ -770,7 +770,7 @@ contains
 !<output>
   ! OPTIONAL: Result of the search.
   ! =1 : The element was found successfully.
-  ! =0 : The raytracing search broke down inside of the domain. 
+  ! =0 : The raytracing search broke down inside of the domain.
   ! =-1: The search broke down because the domain was left.
   ! =-2: The maximum number of iterations was exceeded
   integer, intent(out), optional :: iresult
@@ -780,7 +780,7 @@ contains
   ! If iresult= 0: Number of the last analysed element before the search
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
-  !                domain was left. 
+  !                domain was left.
   ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(out), optional :: ilastElement
 
@@ -788,8 +788,8 @@ contains
   ! If iresult= 1: ilastFace=0
   ! If iresult= 0: Number of the last analysed face before the search
   !                was stopped.
-  ! If iresult=-1: Number of the face through which the domain was left. 
-  ! If iresult=-2: Number of the last face 
+  ! If iresult=-1: Number of the face through which the domain was left.
+  ! If iresult=-2: Number of the last face
   integer, intent(out), optional :: ilastFace
 !</output>
   
@@ -797,9 +797,9 @@ contains
     
 !  if (rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) &
 !      call tria_genFacesAtElement3D (rtriangulation)
-!  
+!
 !  if (rtriangulation%h_IverticesAtFace .eq. ST_NOHANDLE) &
-!      call tria_genVerticesAtFace3D (rtriangulation)          
+!      call tria_genVerticesAtFace3D (rtriangulation)
 
 
     
@@ -831,7 +831,7 @@ contains
     ! call geoout_writeGnuplotPoint (Dpoint,0,'overview.dat')
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
-    ! let us hope a point is not moved more than imaxIter elements in 
+    ! let us hope a point is not moved more than imaxIter elements in
     ! one step...
     ieliteration: do ite = 1,imaxIter
     
@@ -863,7 +863,7 @@ contains
                   DvertexCoords(1:3,IverticesAtElement(7,iel)) + &
                   DvertexCoords(1:3,IverticesAtElement(8,iel))
                   
-      Dmid(:) = Dmid(:) * 0.125_dp                  
+      Dmid(:) = Dmid(:) * 0.125_dp
                         
       ! Check all faces to find an intersection point:
       do iae = 1,nnae
@@ -959,7 +959,7 @@ contains
 !<output>
   ! OPTIONAL: Result of the search.
   ! =1 : The element was found successfully.
-  ! =0 : The raytracing search broke down inside of the domain. 
+  ! =0 : The raytracing search broke down inside of the domain.
   ! =-1: The search broke down because the domain was left.
   integer, intent(out), optional :: iresult
   
@@ -968,14 +968,14 @@ contains
   ! If iresult= 0: Number of the last analysed element before the search
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
-  !                domain was left. 
+  !                domain was left.
   integer, intent(out), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed Face. Range 1..NMT.
   ! If iresult= 1: ilastFace=0
   ! If iresult= 0: Number of the last analysed Face before the search
   !                was stopped.
-  ! If iresult=-1: Number of the Face through which the domain was left. 
+  ! If iresult=-1: Number of the Face through which the domain was left.
   integer, intent(out), optional :: ilastFace
 !</output>
   
@@ -998,7 +998,7 @@ contains
 
     call tsrch_getElem_raytrace3d_dir (Dpoint,iel,p_DvertexCoords,&
         p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
-        iresult,ilastElement,ilastFace,imaxIterations)    
+        iresult,ilastElement,ilastFace,imaxIterations)
     
   end subroutine
 
@@ -1022,7 +1022,7 @@ contains
   real(DP), dimension(:,:), intent(in) :: Dpoints
 !</input>
 
-!<output>  
+!<output>
   ! List of elements containing the points in Dpoints.
   ! If there was no element found for a point, the correpsonding element number
   ! is set to 0.
@@ -1152,7 +1152,7 @@ contains
 !<output>
   ! OPTIONAL: Result of the search.
   ! =1 : The element was found successfully.
-  ! =0 : The midpoint-distance search broke down inside of the domain. 
+  ! =0 : The midpoint-distance search broke down inside of the domain.
   ! =-1: The maximum number of iterations was exceeded
   integer, intent(out), optional :: iresult
   
@@ -1297,7 +1297,7 @@ contains
 !<output>
   ! OPTIONAL: Result of the search.
   ! =1 : The element was found successfully.
-  ! =0 : The midpoint-distance search broke down inside of the domain. 
+  ! =0 : The midpoint-distance search broke down inside of the domain.
   ! =-1: The maximum number of iterations was exceeded
   integer, intent(out), optional :: iresult
   

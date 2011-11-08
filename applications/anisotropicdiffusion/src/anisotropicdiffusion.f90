@@ -16,11 +16,11 @@
 !# a11,...,a22 are configured with a .dat file. The matrix may be
 !# rotated according to
 !#
-!#   A~ =  ( cos(t) -sin(t) )  ( a11 a12 )  (  cos(t) sin(t) ) 
-!#         ( sin(t)  cos(t) )  ( a21 a22 )  ( -sin(t) cos(t) ) 
+!#   A~ =  ( cos(t) -sin(t) )  ( a11 a12 )  (  cos(t) sin(t) )
+!#         ( sin(t)  cos(t) )  ( a21 a22 )  ( -sin(t) cos(t) )
 !#
-!# The example (module anisotropicdiffusion_method1) discretises and 
-!# solves this equation in a direct way, just listing all commands necessary 
+!# The example (module anisotropicdiffusion_method1) discretises and
+!# solves this equation in a direct way, just listing all commands necessary
 !# for initialisation, discretisation, solving and cleanup.
 !##############################################################################
 
@@ -34,14 +34,14 @@ program anisotropicdiffusion
   ! local variables
   character(len=SYS_STRLEN) :: slogdir,slogfile
 
-  ! The very first thing in every application: 
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
   
   call system_init()
   
   ! Initialise the output system.
   !
-  ! Normally, we write all the output to the screen and to a file 
+  ! Normally, we write all the output to the screen and to a file
   ! './log/output.txt'.
   ! In the case that environment variables "$logdir"/"$resultsfile" exists,
   ! we write all the output to that file. This can be used e.g. in
@@ -53,17 +53,17 @@ program anisotropicdiffusion
     call output_init ('./log/output.txt')
   end if
 
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-  ! Call the problem to solve. 
+  ! Call the problem to solve.
   call output_lbrk ()
   call output_line ('Calculating anisotropic diffusion problem with method 1')
   call output_line ('-------------------------------------------------------')
   call anisotropicdiffusion1
 
-  ! Call the problem to solve. 
+  ! Call the problem to solve.
   call output_lbrk ()
   call output_line ('Calculating anisotropic diffusion problem with method 2')
   call output_line ('-------------------------------------------------------')

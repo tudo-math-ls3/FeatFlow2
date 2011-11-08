@@ -167,7 +167,7 @@ contains
       ! for later use.
       rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
 
-      ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+      ! p_rdiscretisation%Rdiscretisations is a list of scalar
       ! discretisation structures for every component of the solution vector.
       ! Initialise the first element of the list to specify the element
       ! and cubature rule for this solution component:
