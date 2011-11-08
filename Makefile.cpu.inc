@@ -2757,25 +2757,25 @@ endif
 	    echo '  FEAT2 preprocessor : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F77))"; then \
-	    echo '  Fortran 77 compiler:' $(shell (which 2>/dev/null $(F77) || \
+	    echo '  Fortran 77 compiler:' $(PREF77) $(shell (which 2>/dev/null $(F77) || \
 		echo "\*\*\* $(F77) not found ! \*\*\*")); \
 	else \
 	    echo '  Fortran 77 compiler: *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(F90))"; then \
-	    echo '  Fortran 90 compiler:' $(shell (which 2>/dev/null $(F90) || \
+	    echo '  Fortran 90 compiler:' $(PREF90) $(shell (which 2>/dev/null $(F90) || \
 		echo "\*\*\* $(F90) not found ! \*\*\*")); \
 	else \
 	    echo '  Fortran 90 compiler: *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(CC))"; then \
-	    echo '  C compiler         :' $(shell (which 2>/dev/null $(CC)  || \
+	    echo '  C compiler         :' $(PRECC) $(shell (which 2>/dev/null $(CC)  || \
 		echo "\*\*\* $(CC) not found ! \*\*\*")); \
 	else \
 	    echo '  C compiler         : *** not set ! ***'; \
 	fi
 	@if test -z "$(findstring exit 1, $(CXX))"; then \
-	    echo '  C++ compiler       :' $(shell (which 2>/dev/null $(CXX) || \
+	    echo '  C++ compiler       :' $(PRECXX) $(shell (which 2>/dev/null $(CXX) || \
 		echo "\*\*\* $(CXX) not found ! \*\*\*")); \
 	else \
 	    echo '  C++ compiler       : *** not set ! ***'; \
@@ -2784,7 +2784,7 @@ endif
         # show CUDA compiler
 ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)))
 	@if test -z "$(findstring exit 1, $(CUDA))"; then \
-	    echo '  CUDA compiler      :' $(shell (which 2>/dev/null $(CUDA) || \
+	    echo '  CUDA compiler      :' $(PRECUDA) $(shell (which 2>/dev/null $(CUDA) || \
 		echo "\*\*\* $(CUDA) not found ! \*\*\*")); \
 	else \
 	    echo '  CUDA compiler      : *** not set ! ***'; \
@@ -2793,7 +2793,7 @@ endif
 	@echo
 	@echo 'Linker to be used:'
 	@if test -z "$(findstring exit 1, $(LD))"; then \
-	    echo '  Linker             :' $(shell (which 2>/dev/null $(LD)  || \
+	    echo '  Linker             :' $(PRELD) $(shell (which 2>/dev/null $(LD)  || \
 		echo "\*\*\* $(LD) not found ! \*\*\*")); \
 	else \
 	    echo '  Linker             : *** not set ! ***'; \
