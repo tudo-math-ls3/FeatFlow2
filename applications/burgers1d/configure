@@ -8,4 +8,4 @@
 	--appname=burgers1d \
 	--programfile=src/burgers1d.f90 \
         --srclist_app="`ls src/*.f90`" \
-	$@
+	"$@"

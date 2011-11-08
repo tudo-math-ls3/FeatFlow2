@@ -8,4 +8,4 @@
 	--appname=triatest \
 	--programfile=src/triatest.f90 \
 	--srclist_app="`ls src/*.f90`" \
-	$@
+	"$@"

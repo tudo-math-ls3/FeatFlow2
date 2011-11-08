@@ -68,4 +68,4 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 	--appname=elasticity \
   --objdir-prefix=${OBJDIRPREFIX} \
   --objdir-lib-prefix=${OBJDIRLIBPREFIX} \
-	$@
+	"$@"

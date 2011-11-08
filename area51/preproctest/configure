@@ -41,4 +41,4 @@ APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
         --apponlyflags="$APPONLYFLAGS"\
 	--buildlib=""\
 	--libs=""\
-        $@
+        "$@"

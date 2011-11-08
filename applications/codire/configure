@@ -8,4 +8,4 @@
 	--appname=codire \
 	--programfile=src/codire.f90 \
         --srclist_app="`ls src/*.f90`" \
-	$@
+	"$@"

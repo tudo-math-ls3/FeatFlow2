@@ -6,4 +6,4 @@
 
 ../../bin/configure \
 	--appname=nonstoptcontrol \
-	$@
+	"$@"

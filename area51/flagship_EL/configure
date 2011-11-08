@@ -15,7 +15,7 @@
     --header-files-to-copy=src/models/hydro/hydro.h \
     --header-files-to-copy=src/kernel/thermodynamics.h \
     --apponlyflags="$APPONLYFLAGS"\
-    $@
+    "$@"
 
 printf "Application will be compiled with the following flags:\n"
 printf "$MESSAGE\n\n"

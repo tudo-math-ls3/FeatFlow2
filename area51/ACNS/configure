@@ -8,4 +8,4 @@
 	--appname=ACNS2d \
 	--programfile=src/ACNS2d.f90 \
         --srclist_app="`ls src/*.f90`" \
-	$@
+	"$@"

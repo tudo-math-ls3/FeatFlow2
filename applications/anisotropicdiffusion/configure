@@ -8,4 +8,4 @@
 	--appname=anisotropicdiffusion \
 	--programfile=src/anisotropicdiffusion.f90 \
         --srclist_app="`ls src/*.f90`" \
-	$@
+	"$@"

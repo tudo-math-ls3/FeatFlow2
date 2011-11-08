@@ -8,4 +8,4 @@
 	--appname=interpdbg \
 	--programfile=src/interpdbg.f90 \
 	--srclist_app="src/interpdbg.f90 src/interp_callback.f90" \
-	$@
+	"$@"

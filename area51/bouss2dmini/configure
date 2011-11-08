@@ -8,4 +8,4 @@
 	--appname=bouss2dmini \
 	--programfile=src/bouss2dmini.f90 \
         --srclist_app="`ls src/*.f90`" \
-	$@
+	"$@"
