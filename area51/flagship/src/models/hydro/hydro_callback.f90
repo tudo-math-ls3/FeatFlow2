@@ -115,6 +115,8 @@ module hydro_callback
 #endif
 #define _HYDRO_TOTALENERGY_ nvar
 
+#include "hydro_callback.h"
+
   use afcstabbase
   use afcstabsystem
   use basicgeometry
@@ -5499,23 +5501,18 @@ contains
                 hydro_calcFluxScDiss1d_sim, dscale, bclear , rvector, rcollection)
             
           case (NDIM2D)
-#ifdef ENABLE_COPROCESSOR_SUPPORT
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxScDiss2d_sim, dscale, bclear, rvector, rcollection,&
-                fcb_calcVectorEdgeSys=hydro_calcDivVecScDiss2d_cuda)
-#else
-            call gfsys_buildVectorEdge(&
-                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-                rsolution,&
-                hydro_calcFluxScDiss2d_sim, dscale, bclear, rvector, rcollection)
-#endif
+                hydro_calcFluxScDiss2d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecScDiss2d_cuda))
+
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxScDiss3d_sim, dscale, bclear, rvector, rcollection)
+                hydro_calcFluxScDiss3d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecScDiss3d_cuda))
           end select
 
           !---------------------------------------------------------------------
@@ -5533,23 +5530,18 @@ contains
                 hydro_calcFluxScDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-#ifdef ENABLE_COPROCESSOR_SUPPORT
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxScDissDiSp2d_sim, dscale, bclear, rvector, rcollection,&
-                fcb_calcVectorEdgeSys=hydro_calcDivVecScDissDiSp2d_cuda)
-#else
-            call gfsys_buildVectorEdge(&
-                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-                rsolution,&
-                hydro_calcFluxScDissDiSp2d_sim, dscale, bclear, rvector, rcollection)
-#endif
+                hydro_calcFluxScDissDiSp2d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecScDissDiSp2d_cuda))
+
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxScDissDiSp3d_sim, dscale, bclear, rvector, rcollection)
+                hydro_calcFluxScDissDiSp3d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecScDissDiSp3d_cuda))
           end select
           
           !---------------------------------------------------------------------
@@ -5566,23 +5558,18 @@ contains
                 hydro_calcFluxRoeDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-#ifdef ENABLE_COPROCESSOR_SUPPORT
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRoeDiss2d_sim, dscale, bclear, rvector, rcollection,&
-                fcb_calcVectorEdgeSys=hydro_calcDivVecRoeDiss2d_cuda)
-#else
-            call gfsys_buildVectorEdge(&
-                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-                rsolution,&
-                hydro_calcFluxRoeDiss2d_sim, dscale, bclear, rvector, rcollection)
-#endif
+                hydro_calcFluxRoeDiss2d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRoeDiss2d_cuda))
+
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRoeDiss3d_sim, dscale, bclear, rvector, rcollection)
+                hydro_calcFluxRoeDiss3d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRoeDiss3d_cuda))
           end select
           
           !---------------------------------------------------------------------
@@ -5600,23 +5587,18 @@ contains
                 hydro_calcFluxRoeDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-#ifdef ENABLE_COPROCESSOR_SUPPORT
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRoeDissDiSp2d_sim, dscale, bclear, rvector, rcollection,&
-                fcb_calcVectorEdgeSys=hydro_calcDivVecRoeDissDiSp2d_cuda)
-#else
-            call gfsys_buildVectorEdge(&
-                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-                rsolution,&
-                hydro_calcFluxRoeDissDiSp2d_sim, dscale, bclear, rvector, rcollection)
-#endif
+                hydro_calcFluxRoeDissDiSp2d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRoeDissDiSp2d_cuda))
+
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRoeDissDiSp3d_sim, dscale, bclear, rvector, rcollection)
+                hydro_calcFluxRoeDissDiSp3d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRoeDissDiSp3d_cuda))
           end select
           
           !---------------------------------------------------------------------
@@ -5633,23 +5615,18 @@ contains
                 hydro_calcFluxRusDiss1d_sim, dscale, bclear, rvector, rcollection)
 
           case (NDIM2D)
-#ifdef ENABLE_COPROCESSOR_SUPPORT
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRusDiss2d_sim, dscale, bclear, rvector, rcollection,&
-                fcb_calcVectorEdgeSys=hydro_calcDivVecRusDiss2d_cuda)
-#else
-            call gfsys_buildVectorEdge(&
-                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-                rsolution,&
-                hydro_calcFluxRusDiss2d_sim, dscale, bclear, rvector, rcollection)
-#endif
+                hydro_calcFluxRusDiss2d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRusDiss2d_cuda))
+
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRusDiss3d_sim, dscale, bclear, rvector, rcollection)
+                hydro_calcFluxRusDiss3d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRusDiss3d_cuda))
           end select
 
           !---------------------------------------------------------------------
@@ -5667,23 +5644,18 @@ contains
                 hydro_calcFluxRusDiss1d_sim, dscale, bclear, rvector, rcollection)
             
           case (NDIM2D)
-#ifdef ENABLE_COPROCESSOR_SUPPORT
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRusDissDiSp2d_sim, dscale, bclear, rvector, rcollection,&
-                fcb_calcVectorEdgeSys=hydro_calcDivVecRusDissDiSp2d_cuda)
-#else
-            call gfsys_buildVectorEdge(&
-                rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-                rsolution,&
-                hydro_calcFluxRusDissDiSp2d_sim, dscale, bclear, rvector, rcollection)
-#endif
+                hydro_calcFluxRusDissDiSp2d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRusDissDiSp2d_cuda))
+
           case (NDIM3D)
             call gfsys_buildVectorEdge(&
                 rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
                 rsolution,&
-                hydro_calcFluxRusDissDiSp3d_sim, dscale, bclear, rvector, rcollection)
+                hydro_calcFluxRusDissDiSp3d_sim, dscale, bclear, rvector, rcollection&
+                __fcb_calcVectorEdgeSys__(hydro_calcDivVecRusDissDiSp3d_cuda))
           end select
           
         case default

@@ -277,6 +277,13 @@ module hydro_callback3d
   public :: hydro_hadaptCallbackScalar3d
   public :: hydro_hadaptCallbackBlock3d
 
+  public :: hydro_calcDivVecScDiss3d_cuda
+  public :: hydro_calcDivVecScDissDiSp3d_cuda
+  public :: hydro_calcDivVecRoeDiss3d_cuda
+  public :: hydro_calcDivVecRoeDissDiSp3d_cuda
+  public :: hydro_calcDivVecRusDiss3d_cuda
+  public :: hydro_calcDivVecRusDissDiSp3d_cuda
+
 contains
 
   !*****************************************************************************
@@ -808,6 +815,128 @@ contains
 
   end subroutine hydro_calcFluxScDiss3d_sim
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecScDiss3d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities proportional to the
+    ! spectral radius (largest eigenvalue) of the Roe-matrix.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DcoeffsAtEdge
+    integer(I64) :: p_IedgeList
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxScDiss3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDiss3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecScDiss3d_cuda
+
   !*****************************************************************************
 
 !<subroutine>
@@ -1034,6 +1163,129 @@ contains
     end do
 
   end subroutine hydro_calcFluxScDissDiSp3d_sim
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecScDissDiSp3d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities proportional to the
+    ! spectral radius (largest eigenvalue) of the Roe-matrix, whereby
+    ! dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DcoeffsAtEdge
+    integer(I64) :: p_IedgeList
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxScDissDiSp3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecScDissDiSp3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecScDissDiSp3d_cuda
 
   !*****************************************************************************
 
@@ -1433,6 +1685,127 @@ contains
     end do
 
   end subroutine hydro_calcFluxRoeDiss3d_sim
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecRoeDiss3d_cuda(rgroupFEMSet, rx, ry, dscale, bclear,&
+      fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities of Roe-type.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DcoeffsAtEdge
+    integer(I64) :: p_IedgeList
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxRoeDiss3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecRoeDiss3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecRoeDiss3d_cuda
 
   !*****************************************************************************
 
@@ -1917,6 +2290,128 @@ contains
 
   end subroutine hydro_calcFluxRoeDissDiSp3d_sim
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecRoeDissDiSp3d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities of Roe-type, whereby
+    ! dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DcoeffsAtEdge
+    integer(I64) :: p_IedgeList
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxRoeDissDiSp3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecRoeDissDiSp3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecRoeDissDiSp3d_cuda
+
   !*****************************************************************************
 
 !<subroutine>
@@ -2161,6 +2656,127 @@ contains
     end do
 
   end subroutine hydro_calcFluxRusDiss3d_sim
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecRusDiss3d_cuda(rgroupFEMSet, rx, ry, dscale, bclear,&
+      fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities of Rusanov-type.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DcoeffsAtEdge
+    integer(I64) :: p_IedgeList
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxRusDiss3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecRusDiss3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecRusDiss3d_cuda
 
   !*****************************************************************************
 
@@ -2408,6 +3024,128 @@ contains
     end do
 
   end subroutine hydro_calcFluxRusDissDiSp3d_sim
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcDivVecRusDissDiSp3d_cuda(rgroupFEMSet, rx, ry, dscale,&
+      bclear, fcb_calcFluxSys_sim, rcollection, rafcstab)
+
+    use afcstabbase
+    use collection
+    use fsystem
+    use groupfembase
+    use linearsystemblock
+
+!<description>
+    ! This subroutine computes the fluxes for the low-order scheme in
+    ! 3D using scalar artificial viscosities of Rusanov-type, whereby
+    ! dimensional splitting is employed.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+    
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! OPTIONAL: callback function to compute local fluxes
+    include '../../../../../kernel/PDEOperators/intf_calcFluxSys_sim.inc'
+    optional :: fcb_calcFluxSys_sim
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: ry
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    
+    ! local variables
+    integer, dimension(:), pointer :: p_IedgeListIdx
+    integer :: IEDGEmax,IEDGEset,igroup
+    integer(I64) :: p_DcoeffsAtEdge
+    integer(I64) :: p_IedgeList
+    integer(I64) :: p_Dx, p_Dy
+    
+    
+    ! Check if edge structure is available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
+        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
+    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    
+    ! Check if matrix coefficients are available on device and copy it otherwise
+    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
+        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
+    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+
+    ! In the very first call to this routine, the source vector may be
+    ! uninitialised on the device. In this case, we have to do it here.
+    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    if (p_Dx .eq. 0_I64) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false.)
+      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    end if
+   
+    ! Make sure that the destination vector ry exists on the
+    ! coprocessor device and is initialised by zeros
+    call lsysbl_copyH2D_Vector(ry, .true., .false.)
+    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+   
+    ! Set pointer
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    
+    ! Loop over the edge groups and process all edges of one group
+    ! in parallel without the need to synchronize memory access
+    do igroup = 1, size(p_IedgeListIdx)-1
+      
+      ! Do nothing for empty groups
+      if (p_IedgeListIdx(igroup+1)-p_IedgeListIdx(igroup) .le. 0) cycle
+
+      ! Get position of first edge in group
+      IEDGEset = p_IedgeListIdx(igroup)
+      
+      ! Get position of last edge in group
+      IEDGEmax = p_IedgeListIdx(igroup+1)-1
+      
+      ! Use callback function to compute internodal fluxes
+      call hydro_calcFluxRusDissDiSp3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
+          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+          rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
+          IEDGEset)
+    end do
+
+    ! Transfer destination vector back to host memory. If bclear is
+    ! .TRUE. then the content of the host memory can be overwritten;
+    ! otherwise we need to copy-add the content from device memory
+    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+
+#else
+
+    call output_line('Coprocessor support is disabled!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcDivVecRusDissDiSp3d_cuda')
+    call sys_halt()
+    
+#endif
+
+  end subroutine hydro_calcDivVecRusDissDiSp3d_cuda
 
   !*****************************************************************************
 

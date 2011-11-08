@@ -7,7 +7,7 @@
 # APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
 
 # Specify header files which should be copied to the object directory
-HEADER_FILES_TO_COPY="src/flagship.h src/models/hydro/hydro.h src/models/mhd/mhd.h src/kernel/thermodynamics.h src/kernel/magnetohydrodynamics.h"
+HEADER_FILES_TO_COPY="src/flagship.h src/models/hydro/hydro.h src/models/hydro/hydro_callback.h src/models/mhd/mhd.h src/kernel/thermodynamics.h src/kernel/magnetohydrodynamics.h"
 
 # Specify list of application source files
 # (disable any ls alias setting)
