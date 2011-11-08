@@ -4319,8 +4319,10 @@ contains
 !</subroutine>
 
     ! local variables
-    !$ integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx,p_IdofsTest
+#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)
+    integer, dimension(:,:), pointer :: p_IedgeList
+#endif
 
     ! Check if edge structure is owned by the structure
     if (iand(rgroupFEMSet%iduplicationFlag, GFEM_SHARE_EDGELIST) .eq.&
@@ -4391,14 +4393,16 @@ contains
     ! OpenMP-Extension: Perform edge-coloring to find groups of
     ! edges which can be processed in parallel, that is, the
     ! vertices of the edges in the group are all distinct
-    !$ call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
-    !$ if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
-    !$   call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-    !$       rgroupFEMSet%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
-    !$ else
-    !$   call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-    !$       rgroupFEMSet%h_IedgeListIdx)
-    !$ end if
+#if defined(USE_OPENMP) || defined(ENABLE_COPROCESSOR_SUPPORT)
+    call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
+    if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
+      call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
+          rgroupFEMSet%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
+    else
+      call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
+          rgroupFEMSet%h_IedgeListIdx)
+    end if
+#endif
 
     ! Set state of structure
     rgroupFEMSet%isetSpec = ior(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST)
