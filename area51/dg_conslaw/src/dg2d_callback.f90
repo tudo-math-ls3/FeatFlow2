@@ -2277,16 +2277,16 @@ contains
     character(LEN=*), dimension(2), parameter ::&
          cvariables = (/ (/'x'/), (/'y'/) /)
 
-    integer :: iunit,i,j
+    integer :: iunit,i,j,iblock
     real(dp),dimension(400000) :: Dreference
     real(dp) :: r,n
 
 
-    ! Initialise function parser
-    call fparser_init()
-    call fparser_create(rfparser, 1)
-
-    call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
+!    ! Initialise function parser
+!    call fparser_init()
+!    call fparser_create(rfparser, 1)
+!
+!    call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
 
 
     !    iunit = sys_getFreeUnit()
@@ -2301,9 +2301,14 @@ contains
     !    close(iunit)
 
     Dcoefficients (1,:,:) = 0.0_dp
+    
+    if (present(rcollection)) then
+       iblock = rcollection%IquickAccess(1)
+    else
+       iblock = 1
+    end if
 
-
-    select case (rcollection%IquickAccess(1))
+    select case (iblock)
     case (1) ! Set density rho
 
        do iel = 1, size(Dcoefficients,3)
@@ -2344,8 +2349,12 @@ contains
              !Dcoefficients (1,ipoint,iel) = 0.0_dp
 
 
-         ! Mach 3 wall reflection
-         Dcoefficients (1,ipoint,iel) = 1.0_dp
+!         ! Mach 3 wall reflection
+!         Dcoefficients (1,ipoint,iel) = 1.0_dp
+
+          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx + 2.0_dp*dy
+!          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx*dx + 2.0_dp*dy*dy
+          
 
              !          ! For scalar problem
              !          Dcoefficients (1,ipoint,iel) = 0.5_dp
@@ -2490,8 +2499,8 @@ contains
 
     end select
 
-    ! Release the function parser
-    call fparser_release(rfparser)
+!    ! Release the function parser
+!    call fparser_release(rfparser)
 
     !Dcoefficients (1,:,:) = 0.0_dp
 

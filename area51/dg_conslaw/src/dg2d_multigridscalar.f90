@@ -39,6 +39,7 @@ module dg2d_multigridscalar
   use linearalgebra
   use paramlist
   use matrixio
+  use multilevelprojection
 
   implicit none
   
@@ -313,7 +314,7 @@ contains
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-      
+            
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
       
       ! Initialise the block matrix with default values based on
@@ -471,6 +472,15 @@ contains
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
+    
+    ! Später wieder löschen
+    type(t_vectorBlock) :: rvectorCoarse
+    character(LEN=SYS_STRLEN) :: sofile
+    type(t_linearForm) :: rlinformIC
+    type(t_bilinearForm) :: rform
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    integer :: ivar
+    
 
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
@@ -533,7 +543,18 @@ contains
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
         call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
-        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+        call linsol_convertToSmoother (p_rsmoother,4,1.0_DP)
+        
+        
+!        nullify(p_rpreconditioner)
+!        call linsol_initJacobi (p_rpreconditioner)
+!        call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+        
+!        call linsol_initJacobi (p_rsmoother)
+!        call linsol_initGMRES (p_rsmoother,4,p_rpreconditioner)
+!        call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner)!,RfilterChain)
+!        call linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+        
       end if
     
       ! And add this multi-grid level. We will use the same smoother
@@ -583,6 +604,179 @@ contains
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
+    
+    
+    
+    
+   
+!    ! Solve with MILU
+!    
+!          call linsol_doneData (p_rsolverNode)
+!          call linsol_doneStructure (p_rsolverNode)
+!
+!          ! Release the solver node and all subnodes attached to it (if at all):
+!          call linsol_releaseSolver (p_rsolverNode)
+!    
+!    
+!!       nullify(p_rpreconditioner)
+!       call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+!       CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+!       p_rsolverNode%domega = 1.0
+!       p_rsolverNode%nmaxIterations = 5000
+!       
+!       
+!       allocate(Rmatrices(1))
+!    
+!    i=rproblem%ilvmax
+!    
+!      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+!          Rmatrices(1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!    p_rsolverNode%ioutputLevel = 2
+!       call linsol_setMatrices(p_rsolverNode,Rmatrices)
+!    
+!       call linsol_initStructure (p_rsolverNode,ierror)
+!       if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!       call linsol_initData (p_rsolverNode,ierror)
+!       if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!       
+!       
+!       call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+!    ! Test Projections
+!    
+!    call linsol_doneData (p_rsolverNode)
+!          call linsol_doneStructure (p_rsolverNode)
+!
+!          ! Release the solver node and all subnodes attached to it (if at all):
+!          call linsol_releaseSolver (p_rsolverNode)
+!
+!      i=rproblem%ilvmax
+!      ! Ask the problem structure to give us the discretisation structure
+!      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+!         
+!      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+!      
+!      ! Initialise the block matrix with default values based on
+!      ! the discretisation.
+!      call lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+!
+!      ! Now as the discretisation is set up, we can start to generate
+!      ! the structure of the system matrix which is to solve.
+!      ! We create that directly in the block (1,1) of the block matrix
+!      ! using the discretisation structure of the first block.
+!      call bilf_createMatrixStructure (&
+!                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
+!                p_rmatrix%RmatrixBlock(1,1),&
+!                p_rdiscretisation%RspatialDiscr(1),&
+!                BILF_MATC_EDGEBASED)
+!                
+!       ! Build mass matrix
+!       rform%itermCount = 1
+!       rform%Idescriptors(1,1) = DER_FUNC
+!       rform%Idescriptors(2,1) = DER_FUNC
+!       rform%ballCoeffConstant = .true.
+!       rform%BconstantCoeff = .true.
+!       rform%Dcoefficients(1)  = 1.0
+!       call bilf_buildMatrixScalar (rform,.true.,p_rmatrix%RmatrixBlock(1,1))
+!    
+!    
+!    
+!    
+!    
+!       ! Now set the initial conditions via L2 projection
+!       rlinformIC%itermCount = 1
+!       rlinformIC%Idescriptors(1) = DER_FUNC2D
+!       !rcollection%SquickAccess(2) = cvariables
+!       !rcollection%SquickAccess(1) = sic
+!
+!     write(*,*) 'Projecting initial condition'
+!
+!       do ivar = 1, 1
+!
+!!          rcollection%IquickAccess(1) = ivar
+!
+!          !rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G6_2D
+!          call linf_buildVectorScalar2 (rlinformIC, .true., p_rrhs%RvectorBlock(ivar),&
+!               Euler_coeff_RHS_IC)!, rcollection)
+!          !rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G3x3
+!
+!       end do
+!       
+!       
+!       nullify(p_rpreconditioner)
+!       call linsol_initBiCGStab (p_rsolvernode,p_rpreconditioner)
+!       
+!       allocate(Rmatrices(1))
+!    
+!      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+!          Rmatrices(1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!    
+!       call linsol_setMatrices(p_rsolverNode,Rmatrices)
+!    
+!    call linsol_initStructure (p_rsolverNode,ierror)
+!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!    call linsol_initData (p_rsolverNode,ierror)
+!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!       
+!       
+!       call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
+!       !call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)  
+!    
+!    
+!    
+!    
+!    
+!    
+!    
+!    
+!    
+!    ! Create temporary empty solution vector which is needed to build the matrices
+!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(ilvmax-1)%rmatrix,rvectorCoarse,.true.)
+!    
+!!    call Test_mlprj_performInterpolation (rvectorCoarse, &
+!!                                         p_rvector)
+!    
+!    sofile = './gmv/fine' 
+!    
+!    ! Output solution to vtk file
+!    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
+!    
+!    
+!    call Test_mlprj_performRestriction (rvectorCoarse, &
+!                                         p_rvector)
+!    
+!    sofile = './gmv/coarse' 
+!    
+!    ! Output solution to vtk file
+!    call dg2vtk(rvectorCoarse%Rvectorblock(1),3,sofile,-1)
+!    
+!    
+!!    
+!!    call Test_mlprj_performProlongation (rvectorCoarse, &
+!!                                        p_rvector)
+!!                                        
+!!    sofile = './gmv/againfine' 
+!!    
+!!    ! Output solution to vtk file
+!!    call dg2vtk(p_rvector%Rvectorblock(1),3,sofile,-1)
+!    
+!    
+!    pause
+    
+    
+    
     
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
@@ -952,7 +1146,10 @@ contains
     call dgmgs_initMatVec (p_rproblem,rparlist)
     
     ! Solve
+    call cpu_time(dtime1)
     call dgmgs_solve (p_rproblem)
+    call cpu_time(dtime2)
+    write(*,*) 'Solver took: ', dtime2-dtime1
     
     ! Write solution to file
     call dgmgs_postprocessing (p_rproblem)

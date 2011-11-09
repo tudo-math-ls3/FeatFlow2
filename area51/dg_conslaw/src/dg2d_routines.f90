@@ -14055,6 +14055,8 @@ contains
     integer :: NEL
     integer :: iside
     logical :: bisLinearTrafo
+    
+    real(dp) :: dh1, dh2, dh3
 
     !    ! Boundary component?
     !    ibdc = rboundaryRegion%iboundCompIdx
@@ -14695,6 +14697,10 @@ contains
                       ! Testfunction on the 'first' (i) side
                       p_Dentryii(jdofe,idofe,iel) = &
                            p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(1,ialbet)
+                           
+                           
+                      if (IelementList(2,IELset+iel-1).ne.0) then
+                           
                       p_Dentryai(jdofe,idofe,iel) = &
                            p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)*daux1*p_Dside(2,ialbet)
 
@@ -14729,6 +14735,8 @@ contains
                       !                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
                       !                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
                       !                pause
+                      
+                      end if
 
 
                    end do
