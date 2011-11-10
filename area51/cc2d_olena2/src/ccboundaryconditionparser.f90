@@ -758,7 +758,7 @@ contains
             case (1)
               ! Simple Dirichlet boundary
               ! Read the line again, get the expressions for X- and Y-velocity
-              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex4
               
               ! If the type is a double precision value, set the DquickAccess(4)
               ! to that value so it can quickly be accessed.
