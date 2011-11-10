@@ -109,12 +109,10 @@
 
 module hydro_callback
 
-#include "hydro.h"
-#ifdef _HYDRO_TOTALENERGY_
-#undef _HYDRO_TOTALENERGY_
+#ifdef HYDRO_NDIM
+#undef HYDRO_NDIM
 #endif
-#define _HYDRO_TOTALENERGY_ nvar
-
+#include "hydro.h"
 #include "hydro_callback.h"
 
   use afcstabbase

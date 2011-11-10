@@ -88,43 +88,6 @@ module mhd_basic
 !</constantblock>
 
 
-!<constantblock description="Global type of system coupling approach">
-
-  ! time-dependent flow
-  integer, parameter, public :: SYSTEM_SEGREGATED = 0
-
-  ! steady-state flow
-  integer, parameter, public :: SYSTEM_ALLCOUPLED = 1
-
-!</constantblock>
-
-
-!<constantblock description="Global type of dissipation">
-
-  ! Zero dissipation
-  integer, parameter, public :: DISSIPATION_ZERO           = 0
-
-  ! Scalar dissipation
-  integer, parameter, public :: DISSIPATION_SCALAR         = 1
-
-  ! Tensorial dissipation
-  integer, parameter, public :: DISSIPATION_ROE            = 2
-
-  ! Rusanov flux
-  integer, parameter, public :: DISSIPATION_RUSANOV        = 3
-
-  ! Scalar dissipation adopting dimensional splitting
-  integer, parameter, public :: DISSIPATION_SCALAR_DSPLIT  = -DISSIPATION_SCALAR
-
-  ! Tensorial dissipation adopting dimensional splitting
-  integer, parameter, public :: DISSIPATION_ROE_DSPLIT     = -DISSIPATION_ROE
-
-  ! Rusanov flux adopting dimensional splitting
-  integer, parameter, public :: DISSIPATION_RUSANOV_DSPLIT = -DISSIPATION_RUSANOV
-
-!</constantblock>
-
-
 !<constantblock description="Global type of recovery-based error estimation">
 
   ! L2-projection

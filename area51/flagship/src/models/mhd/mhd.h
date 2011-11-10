@@ -33,6 +33,31 @@
 
 #if 0
 !##############################################################################
+! Global type of system coupling approach
+!##############################################################################
+#endif
+
+#define SYSTEM_SEGREGATED 0
+#define SYSTEM_ALLCOUPLED 1
+
+
+#if 0
+!##############################################################################
+! Global type of dissipation
+!##############################################################################
+#endif
+
+#define DISSIPATION_ZERO            0
+#define DISSIPATION_SCALAR          1
+#define DISSIPATION_ROE             2
+#define DISSIPATION_RUSANOV         3
+#define DISSIPATION_SCALAR_DSPLIT  -DISSIPATION_SCALAR
+#define DISSIPATION_ROE_DSPLIT     -DISSIPATION_ROE
+#define DISSIPATION_RUSANOV_DSPLIT -DISSIPATION_RUSANOV
+
+
+#if 0
+!##############################################################################
 ! Position of variables in vector of conservative variables
 !
 ! By setting MHD_VARPOS_EXTERNAL it is possible to define the position of

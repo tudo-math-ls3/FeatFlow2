@@ -108,6 +108,11 @@
 
 module mhd_callback
 
+#ifdef MHD_NDIM
+#undef MHD_NDIM
+#endif
+#include "mhd.h"
+
   use afcstabbase
   use afcstabsystem
   use basicgeometry
