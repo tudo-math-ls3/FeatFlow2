@@ -111,6 +111,7 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 	--srclist_app="`ls ../../area51/flagship/src/*.f90 ../../area51/flagship/src/models/*/*.f90 ../../area51/flagship/src/kernel/*.f90`" \
         --header-files-to-copy=../../area51/flagship/src/flagship.h \
         --header-files-to-copy=../../area51/flagship/src/models/hydro/hydro.h \
+        --header-files-to-copy=../../area51/flagship/src/models/hydro/hydro_callback.h \
         --header-files-to-copy=../../area51/flagship/src/models/mhd/mhd.h \
         --header-files-to-copy=../../area51/flagship/src/kernel/thermodynamics.h \
         --header-files-to-copy=../../area51/flagship/src/kernel/magnetohydrodynamics.h \
