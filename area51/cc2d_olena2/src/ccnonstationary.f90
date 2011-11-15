@@ -586,6 +586,9 @@ contains
       call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(2),&
           rvectorInt%RvectorBlock(2),&
           1.0_DP-rtimestepping%dtheta,rtimestepping%dtheta)
+      call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(4),&
+          rvectorInt%RvectorBlock(4),&
+          1.0_DP-rtimestepping%dtheta,rtimestepping%dtheta)
           
     end if
 
