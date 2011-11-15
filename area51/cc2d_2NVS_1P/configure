@@ -5,5 +5,5 @@
 #
 
 ../../bin/configure \
-	--appname=cc2d \
+	--appname=cc2d_2NVS_1P \
 	"$@"
