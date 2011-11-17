@@ -208,7 +208,10 @@ contains
           call linf_initAssembly(rvectorAssembly(1), rform,&
                rvectorScalarSol%p_rspatialDiscr%RelementDistr(1)%celement,&
                ccubType, LINF_NELEMSIM)
-          call linf_initAssembly(rvectorAssembly(2), rform,&
+!          call linf_initAssembly(rvectorAssembly(2), rform,&
+!               rvectorScalarSol%p_rspatialDiscr%RelementDistr(1)%celement,&
+!               ccubType, LINF_NELEMSIM)
+          call dg_initAssembly_reverseCubPoints(rvectorAssembly(2), rform,&
                rvectorScalarSol%p_rspatialDiscr%RelementDistr(1)%celement,&
                ccubType, LINF_NELEMSIM)
 
