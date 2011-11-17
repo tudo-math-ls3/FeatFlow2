@@ -366,7 +366,7 @@ contains
     real(DP), dimension(2,EL_MAXNBAS) :: DlocalData
 
     ! Arrays for cubature points 1D->2D
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D_1, Dxi1D_2
     real(DP), dimension(:,:,:,:), allocatable :: Dxi2D,DpointsRef
 
     ! Element list, where to assemble the form
@@ -519,7 +519,8 @@ contains
     ! can work with in the mapping between 1D and 2D.
     do k = 1, ubound(rlocalVectorAssembly(1)%p_DcubPtsRef,1)
        do icubp = 1,ncubp
-          Dxi1D(icubp,k) = rlocalVectorAssembly(1)%p_DcubPtsRef(k,icubp)
+          Dxi1D_1(icubp,k) = rlocalVectorAssembly(1)%p_DcubPtsRef(k,icubp)
+          Dxi1D_2(icubp,k) = rlocalVectorAssembly(2)%p_DcubPtsRef(k,icubp)
        end do
     end do
 
@@ -558,9 +559,9 @@ contains
        ! Map the 1D cubature points to the edges in 2D.
        do iel = 1,IELmax-IELset+1
           call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(1,Iedgelist(IELset+iel-1)), &
-               ncubp, Dxi1D, Dxi2D(:,:,1,iel))
+               ncubp, Dxi1D_1, Dxi2D(:,:,1,iel))
           call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(2,Iedgelist(IELset+iel-1)), &
-               ncubp, Dxi1D, Dxi2D(:,:,2,iel))
+               ncubp, Dxi1D_2, Dxi2D(:,:,2,iel))
        end do
 
        ! Transpose the coordinate array such that we get coordinates we
@@ -807,7 +808,7 @@ contains
              ! formula in that cubature point.
 
              domega1 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
-             domega2 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+             domega2 = dlen * rlocalVectorAssembly(2)%p_Domega(icubp)
 
 
              ! Loop over the additive factors in the bilinear form.
