@@ -3017,7 +3017,7 @@ sub create_feastAppMakefile {
         "\t    fi; \\\n" .
         "\tfi; \\\n" .
         "\tif test -n \"\$\${message}\"; then \\\n" .
-        "\t    echo \$\${message} | perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
+        "\t    echo \$\${message} | LC_ALL=C perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
         "\t    echo \"#\";  \\\n" .
         "\t    echo \"# FEAT2 application should be recompiled.\"; \\\n" .
         "\t    echo \"# Please issue a\"; \\\n" .
@@ -3094,7 +3094,7 @@ sub create_feastAppMakefile {
         "\t    fi; \\\n" .
         "\tfi; \\\n" .
         "\tif test -n \"\$\${message}\"; then \\\n" .
-        "\t    echo \$\${message} | perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
+        "\t    echo \$\${message} | LC_ALL=C perl -pe 's/NEWLINE /\\n/g; s/NEWLINE//g;'; \\\n" .
         "\t    echo \"#\";  \\\n" .
         "\t    echo \"# Libraries FEAT2 relies on should be recompiled.\"; \\\n" .
         "\t    echo \"# Please issue at least a\"; \\\n" .
@@ -3403,7 +3403,7 @@ sub create_feastAppMakefile {
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
 # orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
-	"\t\@perl -ne '(my \$\$id_1st3tokens = \"\$(REALID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(REALID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
+	"\t\@LC_ALL=C perl -ne '(my \$\$id_1st3tokens = \"\$(REALID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(REALID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
@@ -3422,7 +3422,7 @@ sub create_feastAppMakefile {
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
-        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t\@LC_ALL=C perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
@@ -3969,7 +3969,7 @@ sub create_feastBenchmarkMakefile {
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
 # orig  "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } elsif (\$\$string =~ m/^\$(REALID)/) { print \"* \$\$string\\n\"; }   }' \\\n" .
-	"\t\@perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
+	"\t\@LC_ALL=C perl -ne '(my \$\$id_1st3tokens = \"\$(ID)\") =~ s/^([\\w\\.]+-[\\w\\.]+-[\\w\\.]+)-.*/\$\$1/; if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),([^-]+-[^-]+-[^-]+)(-.*)\\),yes\\)\\s*\$\$/) { my \$\$completematch = \$\$1 . \$\$2; my \$\$match_1st3tokens = \$\$1; if (\$\$completematch =~ m/\$(ID)/) { print \"* \$\$completematch (default)\\n\"; } elsif (\$\$id_1st3tokens =~ m/\$\$match_1st3tokens/) { print \"* \$\$completematch\\n\"; } }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .
@@ -3988,7 +3988,7 @@ sub create_feastBenchmarkMakefile {
         "# It would be a lot nicer if we could distribute the following perl\n" .
         "# command over several lines, but this breaks with GNU Make 3.81\n" .
         "# (though it works with GNU Make 3.80).\n" .
-        "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
+        "\t\@LC_ALL=C perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n" .
         "\t\@echo;\n" .
         "\t\@echo \"Default build ID for current host: \$(REALID)\";\n" .

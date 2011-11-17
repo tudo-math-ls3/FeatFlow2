@@ -4,6 +4,14 @@
 # for the application.
 #
 
+################################################################
+# Don't let the perl configure script be confused by non-english
+# messages from system information programs.
+# (LC_ALL overrides the value of the LANG environment variable
+# and the values of any other LC_* environment variables.)
+LC_ALL=C
+export LC_ALL
+
 ../../bin/configure \
 	--appname=solidmech \
 	"$@"

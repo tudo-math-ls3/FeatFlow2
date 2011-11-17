@@ -311,7 +311,7 @@ perlscript="${perlscript} s|call error_print[ ]*\(|call error_print_aux\(__LINE_
 # 6) map '#' at beginning of a line to '!#':
 #    Hide the preprocessor directives for the C/C++ compiler (see previous
 #    point) from the Fortran compiler.
-perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
+LC_ALL=C perl -pe "${perlscript}" ${sourcefile} > ${preprocessedfile}
 ${cppcmd} ${cppflags} -I${objdir} ${addcppflags} ${preprocessedfile} > ${preprocessedfile}".$$"
 rc=$?
 # in order to catch all errors raised by the preprocessor one
@@ -338,7 +338,7 @@ fi
 # Postprocess preprocessor output
 # (particularly remove the absolute path to the source file as it likely
 #  blows the 132 character limit the Fortran 90/95 standard imposes)
-perl -pe "s/MYNEWLINE/&\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|\. FALSE \.|.FALSE.|g; s|\/=%\/~|//|g; s|\/=%\*~|/*|g; s|\\\\=%/~~$|\\\\|; s/= >/=>/g;" < ${preprocessedfile}".$$" | \
+LC_ALL=C perl -pe "s/MYNEWLINE/&\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|\. FALSE \.|.FALSE.|g; s|\/=%\/~|//|g; s|\/=%\*~|/*|g; s|\\\\=%/~~$|\\\\|; s/= >/=>/g;" < ${preprocessedfile}".$$" | \
     awk -f ${AWK_SCRIPT} | \
     sed 's/^\#/\!\#/g;' > ${preprocessedfile}
 
