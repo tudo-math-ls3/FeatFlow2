@@ -488,7 +488,7 @@ contains
     rnonlinearIterationTmp = rnonlinearIteration
     
     rnonlinearIterationTmp%dalpha1 = 1.0_DP
-    rnonlinearIterationTmp%dalpha1 = 1.0_DP
+    rnonlinearIterationTmp%dalpha2 = 1.0_DP
 !
     rnonlinearIterationTmp%dtheta1 = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dtheta2 = rtimestepping%dweightMatrixLHS

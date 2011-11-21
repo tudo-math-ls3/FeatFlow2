@@ -132,4 +132,7 @@ ineumannBoundary = -1
 #   4.0  0  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
 bdComponent1(1)=
-   4.0  3  1  'AnalyticBC'  'AnalyticBC'  'AnalyticBC'  'AnalyticBC'   # Complete boundary component Dirichlet-0 boundary
+   4.0  3  1  'AnalyticBC'  'AnalyticBC'  'AnalyticBC'  'AnalyticBC'
+
+bdComponent2(1)=
+   4.0  3  1  'AnalyticBC'  'AnalyticBC'  'AnalyticBC'  'AnalyticBC'

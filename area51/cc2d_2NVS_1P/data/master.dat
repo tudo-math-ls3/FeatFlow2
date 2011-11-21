@@ -64,12 +64,13 @@ simportdatafiles(8) =
 iequation1    = 0
 iequation2    = 0
 NLMIN = 1
-NLMAX = 5
+NLMAX = 2
 dmu1 = 0.5
 dmu2 = 0.5
 RE1 = 10
 RE2 = 1
 ielementType = 4
+ctypeInitialSolution = 3
 
 [CC-LINEARSOLVER]
 isolverType = 1
@@ -88,13 +89,28 @@ sfilenameUCD2 = '%{spostdirectory}/v.gmv'
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 0                       # ISTAT
+itimedependence = 1                       # ISTAT
+# Time-stepping scheme (IFRSTP);
+# 0=one step scheme, 1=fractional step
+
+itimeStepScheme = 0                       # IFRSTP
+
+# parameter for one step scheme (THETA) if itimeStepScheme=0;
+# =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
+
+dtimeStepTheta = 0.5                     # THETA
+
+dtimeMax = 0.1                           # TIMEMX
+
+# Initial time step size
+
+dtimeStep = 0.1       
 
 [CC-LINEARSOLVER]
 isolverType = 1
 
-nmaxIterations     = 100
-depsRel            = 1E-13
+nmaxIterations     = 1000
+depsRel            = 1E-12
 
 [CC-COARSEGRIDSOLVER]
-depsRel            = 1E-13
+depsRel            = 1E-12

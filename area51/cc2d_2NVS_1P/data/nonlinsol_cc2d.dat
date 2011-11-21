@@ -24,7 +24,7 @@ nmaxIterations     = 100
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 
-depsD_u              = 1.0E-13
+depsD_u              = 1.0E-12
 
 # (absolute) limit for V-defects, standard = 1.0E-5
 
@@ -36,7 +36,7 @@ depsDiv            = 1.0E-13
 
 # limit for U-changes, standard = 1.0E-5
 
-depsUR             = 1.0E-13
+depsUR             = 1.0E-11
 
 # limit for V-changes, standard = 1.0E-5
 
