@@ -2014,7 +2014,7 @@ contains
     !
     !     D. Kuzmin and M. Moeller, Algebraic flux correction II. Compressible
     !     Euler equations, In: D. Kuzmin et al. (eds), Flux-Corrected
-    !     Transport: Principles,  Algorithms, and Applications,
+    !     Transport: Principles, Algorithms, and Applications,
     !     Springer, 2005, 207-250.
     !
     ! Note that this routine is designed for block matrices/vectors.
@@ -2783,7 +2783,7 @@ contains
     !
     !     D. Kuzmin and M. Moeller, Algebraic flux correction II. Compressible
     !     Euler equations, In: D. Kuzmin et al. (eds), Flux-Corrected
-    !     Transport: Principles,  Algorithms, and Applications,
+    !     Transport: Principles, Algorithms, and Applications,
     !     Springer, 2005, 207-250.
     !
     ! Note that this routine is designed for block matrices/vectors.
@@ -2889,7 +2889,7 @@ contains
     !
     !     D. Kuzmin and M. Moeller, Algebraic flux correction II. Compressible
     !     Euler equations, In: D. Kuzmin et al. (eds), Flux-Corrected
-    !     Transport: Principles,  Algorithms, and Applications,
+    !     Transport: Principles, Algorithms, and Applications,
     !     Springer, 2005, 207-250.
     !
     ! Note that this routine is designed for block matrices/vectors.
@@ -2993,7 +2993,7 @@ contains
     !
     !     D. Kuzmin and M. Moeller, Algebraic flux correction II. Compressible
     !     Euler equations, In: D. Kuzmin et al. (eds), Flux-Corrected
-    !     Transport: Principles,  Algorithms, and Applications,
+    !     Transport: Principles, Algorithms, and Applications,
     !     Springer, 2005, 207-250.
     !
     ! Note that this routine requires the scalar matrices/vectors
@@ -4454,7 +4454,7 @@ contains
 
   subroutine gfsys_buildVectorEdgeBlock(rgroupFEMSet, rx,&
       fcb_calcFluxSys_sim, dscale, bclear, rvector,&
-      rcollection, rafcstab,  fcb_calcVectorEdgeSys, rperfconfig)
+      rcollection, rafcstab, fcb_calcVectorEdgeSys, rperfconfig)
 
 !<description>
     ! This subroutine assembles a vector operator by the group
