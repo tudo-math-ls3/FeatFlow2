@@ -29,6 +29,7 @@
 
 module bcassemblybase
 
+  use basicgeometry
   use boundary
   use dofmapping
   use element
@@ -570,7 +571,7 @@ contains
   
 !<subroutine>
 
-  subroutine bcasm_getElementsInBdRegion (rtriangulation,rregion, ncount, &
+  subroutine bcasm_getElementsInBdRegion (rtriangulation,rregion,ncount, &
                                           IelList,IelListIdx,IvtLocal,IedgeLocal)
   
 !<description>
@@ -581,8 +582,8 @@ contains
   ! The routine will search all elements that touch (with a vertex or an edge)
   ! the boundary region. All these elements are written to IelList.
   ! If a vertex of the element touches it, the corresponding entry in IvtLocal
-  ! is set to the local vertex number of that vertex, otherwise it is set to to 0.
-  ! If an edge of the element touches it, the corresponding entry in IvtLocal
+  ! is set to the local vertex number of that vertex, otherwise it is set to 0.
+  ! If an edge of the element touches it, the corresponding entry in IedgeLocal
   ! is set to the local edge number of that edge, otherwise it is set to to 0.
   !
   ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
@@ -644,113 +645,209 @@ contains
     integer :: i,iidx,iel,ivt,iedge
     logical :: bvertexInside, bedgeInside,bcheckall
     
-    ! Get the parameter value array from the triangulation
-    call storage_getbase_double (rtriangulation%h_DedgeParameterValue, &
-                                p_DedgeParameterValue)
-    call storage_getbase_double (rtriangulation%h_DvertexParameterValue, &
-                                p_DvertexParameterValue)
-    call storage_getbase_int (rtriangulation%h_IelementsAtBoundary, &
-                                p_IelementsAtBoundary)
-    call storage_getbase_int (rtriangulation%h_IverticesAtBoundary, &
-                                p_IverticesAtBoundary)
-    call storage_getbase_int (rtriangulation%h_IedgesAtBoundary, &
-                                p_IedgesAtBoundary)
-    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement, &
-                                p_IverticesAtElement)
-    call storage_getbase_int2d (rtriangulation%h_IedgesAtElement, &
-                                p_IedgesAtElement)
-                                 
-    ! Get the array describing the start/end of each boundary component
-    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
-    
-    ncount = 0
-    
-    ! Cancel if this region does not exist.
-    if ((rregion%iboundCompIdx .lt. 1) .or. &
-        (rregion%iboundCompIdx .gt. rtriangulation%nbct)) then
-      return
-    end if
-
-    bvertexInside = .false.
-    bedgeInside = .false.
-    
     ! If both destination arrays are missing, calculate the maximum number
     ! of elements in the region.
     bcheckall = .false.
     if (.not. present(IvtLocal) .and. .not. present(IedgeLocal)) &
         bcheckall = .true.
     
-    ! Loop through all elements on the boundary. If we find any in the boundary
-    ! region, take it!
-    elementloop: do i=p_IboundaryCpIdx(rregion%iboundCompIdx),p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
-    
-      ! Check if the vertex or edge touches the boundary region
-      if (present(IvtLocal) .or. bcheckall) &
-        bvertexInside = boundary_isInRegion (rregion,rregion%iboundCompIdx,p_DvertexParameterValue(i))
-        
-      if (present(IedgeLocal) .or. bcheckall) &
-        bedgeInside = boundary_isInRegion (rregion,rregion%iboundCompIdx,p_DedgeParameterValue(i))
+    ! Get the parameter value array from the triangulation    
+    call storage_getbase_int (rtriangulation%h_IelementsAtBoundary, &
+                              p_IelementsAtBoundary)
+
+    ! What spatial dimension are we?
+    select case(rtriangulation%ndim)
+    case (NDIM1D)
+      ! Get the parameter value array from the triangulation    
+      if (present(IvtLocal) .or. bcheckall) then
+        call storage_getbase_int (rtriangulation%h_IverticesAtBoundary, &
+                                  p_IverticesAtBoundary)
+        call storage_getbase_int2d (rtriangulation%h_IverticesAtElement, &
+                                    p_IverticesAtElement)
+      else
+        nullify(p_IverticesAtBoundary)
+        nullify(p_IverticesAtElement)
+      end if
       
-      if (bvertexInside .or. bedgeInside) then
+      ! Get the array describing the start/end of each boundary component
+      call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       
+      ncount = 0
+      if (present(IedgeLocal)) IedgeLocal = 0
+      
+      ! Cancel if this region does not exist.
+      if ((rregion%iboundCompIdx .lt. 1) .or. &
+          (rregion%iboundCompIdx .gt. rtriangulation%nbct)) then
+        return
+      end if
+      
+      bvertexInside = .false.
+
+      ! Loop through all elements on the boundary. If we find any in the boundary
+      ! region, take it!
+      elementloop1d: do i = p_IboundaryCpIdx(rregion%iboundCompIdx),&
+                            p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
+
         ! Got one. Add the element
         ncount = ncount + 1
-        iel = p_IelementsAtBoundary(i)
-        ivt = p_IverticesAtBoundary(i)
-        iedge = p_IedgesAtBoundary(i)
-        if (present(IelList))    IelList(ncount) = iel
+        iel    = p_IelementsAtBoundary(i)
+        
+        if (present(IelList))    IelList(ncount)    = iel
         if (present(IelListIdx)) IelListIdx(ncount) = i
-        if (present(IvtLocal))   IvtLocal(ncount) = 0
-        if (present(IedgeLocal)) IedgeLocal(ncount) = 0
+        if (present(IvtLocal))   IvtLocal(ncount)   = 0
         
-        ! Remember the vertex and/or edge
-        if (bvertexInside .and. present(IvtLocal)) then
-        
+        ! Remember the vertex
+        if (present(IvtLocal)) then
+          
+          ivt = p_IverticesAtBoundary(i)          
+          
           ! Search the local number of the vertex that we found
           do iidx = 1,ubound(p_IverticesAtElement,1)
             if (p_IverticesAtElement(iidx,iel) .eq. ivt) then
-          
+              
               IvtLocal(ncount) = iidx
               
-              if (bedgeInside) then
-                ! The edge is also inside -- and has the same local number.
-                IedgeLocal(ncount) = iidx
-              end if
-              
               ! Next element
-              cycle elementloop
+              cycle elementloop1d
             end if
           end do
           
           ! Oops, the triangulation is destroyed!
           call output_line ('Local vertex number not found!', &
               OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
-          call sys_halt()
-          
+          call sys_halt()            
         end if
 
-        ! This point is only reached, if the vertex is not inside.
-        ! Check the edge.
-        if (bedgeInside .and. present(IedgeLocal)) then
-          ! Search the local number of the edge that we found
-          do iidx = 1,ubound(p_IedgesAtElement,1)
-            if (p_IedgesAtElement(iidx,iel) .eq. iedge) then
-            
-              IedgeLocal(ncount) = iidx
-              
-              ! Next element
-              cycle elementloop
-            end if
-          end do
-          
-          ! Oops, the triangulation is destroyed!
-          call output_line ('Local edge number not found!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
-          call sys_halt()
-        end if
-        
+      end do elementloop1d
+      
+
+    case (NDIM2D)
+      ! Get the parameter value array from the triangulation    
+      if (present(IvtLocal) .or. bcheckall) then
+        call storage_getbase_double (rtriangulation%h_DvertexParameterValue, &
+                                     p_DvertexParameterValue)
+        call storage_getbase_int (rtriangulation%h_IverticesAtBoundary, &
+                                  p_IverticesAtBoundary)
+        call storage_getbase_int2d (rtriangulation%h_IverticesAtElement, &
+                                    p_IverticesAtElement)
+      else
+        nullify(p_DvertexParameterValue)
+        nullify(p_IverticesAtBoundary)
+        nullify(p_IverticesAtElement)
       end if
-    end do elementloop
+      
+      ! Get the parameter value array from the triangulation    
+      if (present(IedgeLocal) .or. bcheckall) then
+        call storage_getbase_double (rtriangulation%h_DedgeParameterValue, &
+                                     p_DedgeParameterValue)
+        call storage_getbase_int (rtriangulation%h_IedgesAtBoundary, &
+                                  p_IedgesAtBoundary)
+        call storage_getbase_int2d (rtriangulation%h_IedgesAtElement, &
+                                    p_IedgesAtElement)
+      else
+        nullify(p_DedgeParameterValue)
+        nullify(p_IedgesAtBoundary)
+        nullify(p_IedgesAtElement)
+      end if
+                                 
+      ! Get the array describing the start/end of each boundary component
+      call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
+      
+      ncount = 0
+      
+      ! Cancel if this region does not exist.
+      if ((rregion%iboundCompIdx .lt. 1) .or. &
+          (rregion%iboundCompIdx .gt. rtriangulation%nbct)) then
+        return
+      end if
+      
+      bvertexInside = .false.
+      bedgeInside = .false.
+      
+      ! Loop through all elements on the boundary. If we find any in the boundary
+      ! region, take it!
+      elementloop2d: do i = p_IboundaryCpIdx(rregion%iboundCompIdx),&
+                            p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
+        
+        ! Check if the vertex or edge touches the boundary region
+        if (present(IvtLocal) .or. bcheckall) &
+            bvertexInside = boundary_isInRegion (rregion, rregion%iboundCompIdx,&
+                                                 p_DvertexParameterValue(i))
+        
+        if (present(IedgeLocal) .or. bcheckall) &
+            bedgeInside = boundary_isInRegion (rregion, rregion%iboundCompIdx,&
+                                               p_DedgeParameterValue(i))
+      
+        if (bvertexInside .or. bedgeInside) then
+          
+          ! Got one. Add the element
+          ncount = ncount + 1
+          iel    = p_IelementsAtBoundary(i)
+          
+          if (present(IelList))    IelList(ncount)    = iel
+          if (present(IelListIdx)) IelListIdx(ncount) = i
+          if (present(IvtLocal))   IvtLocal(ncount)   = 0
+          if (present(IedgeLocal)) IedgeLocal(ncount) = 0
+          
+          ! Remember the vertex and/or edge
+          if (bvertexInside .and. present(IvtLocal)) then
+            
+            ivt = p_IverticesAtBoundary(i)          
+            
+            ! Search the local number of the vertex that we found
+            do iidx = 1,ubound(p_IverticesAtElement,1)
+              if (p_IverticesAtElement(iidx,iel) .eq. ivt) then
+                
+                IvtLocal(ncount) = iidx
+                
+                if (bedgeInside .and. present(IedgeLocal)) then
+                  ! The edge is also inside -- and has the same local number.
+                  IedgeLocal(ncount) = iidx
+                end if
+                
+                ! Next element
+                cycle elementloop2d
+              end if
+            end do
+            
+            ! Oops, the triangulation is destroyed!
+            call output_line ('Local vertex number not found!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
+            call sys_halt()
+            
+          end if
+          
+          ! This point is only reached, if the vertex is not inside.
+          ! Check the edge.
+          if (bedgeInside .and. present(IedgeLocal)) then
+            
+            iedge = p_IedgesAtBoundary(i)
+            
+            ! Search the local number of the edge that we found
+            do iidx = 1,ubound(p_IedgesAtElement,1)
+              if (p_IedgesAtElement(iidx,iel) .eq. iedge) then
+                
+                IedgeLocal(ncount) = iidx
+                
+                ! Next element
+                cycle elementloop2d
+              end if
+            end do
+            
+            ! Oops, the triangulation is destroyed!
+            call output_line ('Local edge number not found!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
+            call sys_halt()
+          end if
+          
+        end if
+      end do elementloop2d
+
+    case default
+      call output_line ('Unsupported spatial dimension!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
+      call sys_halt()
+    end select
   
   end subroutine
 
@@ -800,7 +897,6 @@ contains
         ! Calculate the number of DOF's there.
         call boundary_createRegion (rspatialDiscr%p_rboundary, &
             ibc, iseg, rboundaryRegion)
-            
         call bcasm_getDOFsInBDRegion (rspatialDiscr, &
             rboundaryRegion, ndofs=icount)
             
@@ -836,7 +932,6 @@ contains
     do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
     
       do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
-      
         ! Calculate the DOF's there.
         call boundary_createRegion (rspatialDiscr%p_rboundary, &
             ibc, iseg, rboundaryRegion)
@@ -903,18 +998,20 @@ contains
     integer(I32) :: celement
     integer :: ielement
     integer :: iedge,ipoint1,ipoint2,NVT
-    type(t_triangulation), pointer              :: p_rtriangulation
-    integer, dimension(:), pointer              :: p_IelementDistr
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:), pointer :: p_IelementDistr
     integer, dimension(:,:), allocatable :: Idofs
     integer, dimension(:), pointer :: p_Idofs
-    real(DP), dimension(:), pointer             :: p_DedgeParameterValue,p_DvertexParameterValue
-    integer, dimension(:,:), pointer            :: p_IedgesAtElement
-    integer, dimension(:,:), pointer            :: p_IverticesAtElement
-    integer, dimension(:), pointer              :: p_IboundaryCpIdx
-    integer, dimension(:), allocatable          :: IverticesAtBoundaryIdx
-    integer, dimension(:), allocatable          :: IedgesAtBoundaryIdx
-    integer, dimension(:), allocatable          :: IelementsAtBoundary
-    integer, dimension(:), allocatable          :: IelementsAtBoundaryIdx
+    real(DP), dimension(:), pointer :: p_DedgeParameterValue
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), allocatable :: IverticesAtBoundaryIdx
+    integer, dimension(:), allocatable :: IedgesAtBoundaryIdx
+    integer, dimension(:), allocatable :: IelementsAtBoundary
+    integer, dimension(:), allocatable :: IelementsAtBoundaryIdx
     
     integer :: nve,nnve
     real(DP) :: Dpar
@@ -929,11 +1026,19 @@ contains
 
     ! For easier access:
     p_rtriangulation => rspatialDiscr%p_rtriangulation
-    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
-    call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
-
     p_RelementDistribution => rspatialDiscr%RelementDistr
+    
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
+    call storage_getbase_int (p_rtriangulation%h_InodalProperty, p_InodalProperty)
+    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    
+    ! The edge-at-element array may not be initialised.
+    if (p_rtriangulation%h_IedgesAtElement .ne. ST_NOHANDLE) then
+      call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,&
+          p_IedgesAtElement)
+    else
+      nullify(p_IedgesAtElement)
+    end if
     
     ! The parameter value arrays may not be initialised.
     if (p_rtriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) then
@@ -977,9 +1082,19 @@ contains
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundaryIdx(p_rtriangulation%NVBD))
     
-    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
-        icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
-        IverticesAtBoundaryIdx,IedgesAtBoundaryIdx)
+    IelementsAtBoundary = 0
+    IelementsAtBoundaryIdx = 0
+
+    if (associated(p_IedgesAtElement) .and. associated(p_DedgeParameterValue)) then
+      call bcasm_getElementsInBdRegion (p_rtriangulation, rboundaryRegion, &
+          icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
+          IverticesAtBoundaryIdx, IedgesAtBoundaryIdx)
+    else
+      call bcasm_getElementsInBdRegion (p_rtriangulation, rboundaryRegion, &
+          icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
+          IverticesAtBoundaryIdx)
+      IedgesAtBoundaryIdx = 0
+    end if
                                    
     if (icount .eq. 0) then
       deallocate(IverticesAtBoundaryIdx)
@@ -1015,7 +1130,7 @@ contains
             Idofs(:,ielement))
       end do
     end if
-                   
+
     ! Loop through the elements
     do ielidx = 1,icount
 
@@ -1045,7 +1160,7 @@ contains
         ipoint2 = 0
       end if
 
-      if (IedgesAtBoundaryIdx(ielidx) .ne. 0) then
+      if (associated(p_IedgesAtElement) .and. (IedgesAtBoundaryIdx(ielidx) .ne. 0)) then
         ! Get the local index of the edge -- it coincides with the local index
         ! of the vertex.
         ilocaledge = IedgesAtBoundaryIdx(ielidx)
@@ -1067,11 +1182,27 @@ contains
       ! All DOF values are collected later.
       select case (elem_getPrimaryElement(celement))
       
-      case (EL_P0,EL_Q0)
+      case (EL_P0_1D,EL_P0_2D,EL_P0_3D,EL_Q0_2D,EL_Q0_3D)
 
         ! This element has no DOF's associated to boundary edges.
         
-      case (EL_P1,EL_Q1)
+      case (EL_P1_1D)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        ! if it is lokcated at the boundary
+        if ( (ipoint1 .ne. 0) .and. (p_InodalProperty(ipoint1) .ne. 0) ) then
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+        end if
+
+        ! Right point inside? -> Corresponding DOF must be computed
+        ! if it is lokcated at the boundary
+        if ( (ipoint2 .ne. 0) .and. (p_InodalProperty(ipoint2) .ne. 0) ) then
+          ! Set the DOF number < 0 to indicate that this DOF is in the region.
+          Idofs(mod(ilocalEdge,2)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,2)+1,ielidx))
+        end if
+        
+      case (EL_P1_2D,EL_Q1_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
