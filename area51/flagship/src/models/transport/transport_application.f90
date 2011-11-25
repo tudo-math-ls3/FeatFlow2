@@ -886,7 +886,6 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_groupFEMSet), pointer :: p_rgroupFEMSet
-    type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_matrixScalar) :: rmatrixSX,rmatrixSY,rmatrixSZ
@@ -961,8 +960,6 @@ contains
 
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation => rproblemLevel%rtriangulation
-    p_rboundary      => rproblemLevel%p_rproblem%rboundary
-
     !---------------------------------------------------------------------------
     ! Create discretisation structure
     !---------------------------------------------------------------------------
@@ -992,26 +989,26 @@ contains
         call spdiscr_initDiscr_simple(&
             p_rdiscretisation%RspatialDiscr(1),&
             Celement(1), SPDISC_CUB_AUTOMATIC,&
-            p_rtriangulation, p_rboundary)
+            p_rtriangulation)
 
       case (NDIM2D)
         if (size(Celement) .eq. 1) then
           call spdiscr_initDiscr_simple(&
               p_rdiscretisation%RspatialDiscr(1),&
               Celement(1), SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
+              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         else
           call spdiscr_initDiscr_triquad(&
               p_rdiscretisation%RspatialDiscr(1), Celement(1), Celement(2),&
               SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
-              p_rtriangulation, p_rboundary)
+              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
         end if
 
       case (NDIM3D)
         call spdiscr_initDiscr_simple(&
             p_rdiscretisation%RspatialDiscr(1),&
             Celement(1), SPDISC_CUB_AUTOMATIC,&
-            p_rtriangulation, p_rboundary)
+            p_rtriangulation)
       
       case default
         call output_line('Invalid number of spatial dimensions',&
