@@ -555,7 +555,7 @@ contains
     rarraylist%NNA     = nna
     rarraylist%NRESIZE = rarraylist%NRESIZE+1
 
-    call storage_realloc('arrlst_resizeArrayList',ARRLST_FREE,nna,&
+    call storage_realloc('arrlst_resizeArrayList',nna+1,&
         rarraylist%h_Knext,ST_NEWBLOCK_NOINIT,.true.)
     call storage_realloc('arrlst_resizeArrayList',nna,&
         rarraylist%h_Data,ST_NEWBLOCK_NOINIT,.true.)
@@ -607,11 +607,6 @@ contains
         rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT,.true.)
     call storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%p_Ktable)
 
-!!$    It should not be necessary to clear all arrays
-!!$    rarraylist%p_Ktable(ARRLST_HEAD,rarraylist%NTABLE+1:) = ARRLST_NULL
-!!$    rarraylist%p_Ktable(ARRLST_TAIL,rarraylist%NTABLE+1:) = ARRLST_NULL
-!!$    rarraylist%p_Ktable(ARRLST_ITEM,rarraylist%NTABLE+1:) = ARRLST_HEAD
-!!$    rarraylist%p_Ktable(ARRLST_NA,  rarraylist%NTABLE+1:) = ARRLST_NULL
   end subroutine arrlst_resizeArrayListTbl
 
   ! ***************************************************************************

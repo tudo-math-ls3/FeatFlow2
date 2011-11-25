@@ -6179,7 +6179,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_IedgeListIdx(rafcstab, btranspose)
+  subroutine afcstab_copyH2D_IedgeListIdx(rafcstab, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge index structure from the
@@ -6191,14 +6191,19 @@ contains
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IedgeListIdx,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rafcstab%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine afcstab_copyH2D_IedgeListIdx
 
@@ -6206,7 +6211,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyD2H_IedgeListIdx(rafcstab, btranspose)
+  subroutine afcstab_copyD2H_IedgeListIdx(rafcstab, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge index structure from the
@@ -6218,14 +6223,19 @@ contains
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rafcstab%h_IedgeListIdx .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IedgeListIdx,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rafcstab%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine afcstab_copyD2H_IedgeListIdx
 
@@ -6233,7 +6243,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_IedgeList(rafcstab, btranspose)
+  subroutine afcstab_copyH2D_IedgeList(rafcstab, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge structure from the
@@ -6245,14 +6255,19 @@ contains
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rafcstab%h_IedgeList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine afcstab_copyH2D_IedgeList
 
@@ -6260,7 +6275,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyD2H_IedgeList(rafcstab, btranspose)
+  subroutine afcstab_copyD2H_IedgeList(rafcstab, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge structure from the
@@ -6272,14 +6287,19 @@ contains
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rafcstab%h_IedgeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rafcstab%h_IedgeList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine afcstab_copyD2H_IedgeList
 
@@ -6287,7 +6307,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyH2D_CoeffsAtEdge(rafcstab, btranspose)
+  subroutine afcstab_copyH2D_CoeffsAtEdge(rafcstab, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge data from the host memory to the
@@ -6299,14 +6319,19 @@ contains
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_CoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rafcstab%h_CoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine afcstab_copyH2D_CoeffsAtEdge
 
@@ -6314,7 +6339,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_copyD2H_CoeffsAtEdge(rafcstab, btranspose)
+  subroutine afcstab_copyD2H_CoeffsAtEdge(rafcstab, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge data from the memory of the
@@ -6326,14 +6351,19 @@ contains
     ! Stabilisation structure
     type(t_afcstab), intent(in) :: rafcstab
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rafcstab%h_CoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rafcstab%h_CoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine afcstab_copyD2H_CoeffsAtEdge
   

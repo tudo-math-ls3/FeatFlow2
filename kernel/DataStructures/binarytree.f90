@@ -510,7 +510,7 @@ contains
     rtree%NNA = nna
     rtree%NRESIZE = rtree%NRESIZE+1
 
-    call storage_realloc('btree_resizeTree', TROOT, nna,&
+    call storage_realloc('btree_resizeTree', nna+1,&
                          rtree%h_Kchild, ST_NEWBLOCK_ZERO, .true.)
     call storage_getbase_int2D(rtree%h_Kchild, rtree%p_Kchild)
 

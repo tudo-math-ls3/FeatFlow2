@@ -270,6 +270,14 @@
 !# 78.) lsyssc_createMatrixAsymmPart
 !#      -> Create the antisymmetric part of the matrix
 !#
+!# 79.) lsyssc_copyH2D_Matrix
+!#      -> Copies the data of a matrix from the host memory
+!#         to the memory of the coprocessor device.
+!#
+!# 80.) lsyssc_copyD2H_Matrix
+!#      -> Copies the data of a matrix from the memory of the
+!#         coprocessor device to the host memory
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -960,6 +968,8 @@ module linearsystemscalar
   public :: lsyssc_getbase_KrowIdx
   public :: lsyssc_copyH2D_Vector
   public :: lsyssc_copyD2H_Vector
+  public :: lsyssc_copyH2D_Matrix
+  public :: lsyssc_copyD2H_Matrix
   public :: lsyssc_createMatrixSymmPart
   public :: lsyssc_createMatrixAsymmPart
 
@@ -10452,7 +10462,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_copyH2D_Vector(rvector, bclear, btranspose)
+  subroutine lsyssc_copyH2D_Vector(rvector, bclear, btranspose, istream)
 
 !<description>
     ! This subroutine copies the data of a vector from the host memory
@@ -10469,18 +10479,24 @@ contains
     ! the content from the host memory is transferred.
     logical :: bclear
 
-    ! Switch: If TRUE then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 
 !</subroutine>
 
     ! Clear the vector?
     if (bclear) then
-      call storage_clearMemory(rvector%h_Ddata)
+      call storage_clearMemoryOnDevice(rvector%h_Ddata)
     else
       ! No, we have to copy the content from host to device memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_H2D, btranspose)
+      call storage_syncMemoryHostDevice(rvector%h_Ddata,&
+          ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
     end if
     
   end subroutine lsyssc_copyH2D_Vector
@@ -10489,7 +10505,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_copyD2H_Vector(rvector, bclear, btranspose)
+  subroutine lsyssc_copyD2H_Vector(rvector, bclear, btranspose, istream)
 
 !<description>
     ! This subroutine copies the data of a vector from the memory of
@@ -10506,8 +10522,13 @@ contains
     ! the content from the host memory is transferred.
     logical :: bclear
 
-    ! Switch: If TRUE then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 
 !</subroutine>
@@ -10515,13 +10536,103 @@ contains
     ! Clear the vector?
     if (bclear) then
       ! Yes, we can simply overwrite the content in host memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_D2H)
+      call storage_syncMemoryHostDevice(rvector%h_Ddata,&
+          ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
     else
       ! No, we have to copy-add the content from device to host memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose)
+      call storage_syncMemoryHostDevice(rvector%h_Ddata,&
+          ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose, istream)
     end if
 
   end subroutine lsyssc_copyD2H_Vector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_copyH2D_Matrix(rmatrix, bclear, btranspose, istream)
+
+!<description>
+    ! This subroutine copies the data of a matrix from the host memory
+    ! to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
+!</input>
+
+!</subroutine>
+
+    ! Clear the matrix?
+    if (bclear) then
+      call storage_clearMemoryOnDevice(rmatrix%h_Da)
+    else
+      ! No, we have to copy the content from host to device memory
+      call storage_syncMemoryHostDevice(rmatrix%h_Da,&
+          ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
+    end if
+    
+  end subroutine lsyssc_copyH2D_Matrix
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_copyD2H_Matrix(rmatrix, bclear, btranspose, istream)
+
+!<description>
+    ! This subroutine copies the data of a matrix from the memory of
+    ! the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
+!</input>
+
+!</subroutine>
+
+    ! Clear the vector?
+    if (bclear) then
+      ! Yes, we can simply overwrite the content in host memory
+      call storage_syncMemoryHostDevice(rmatrix%h_Da,&
+          ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
+    else
+      ! No, we have to copy-add the content from device to host memory
+      call storage_syncMemoryHostDevice(rmatrix%h_Da,&
+          ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose, istream)
+    end if
+
+  end subroutine lsyssc_copyD2H_Matrix
 
   !****************************************************************************
 

@@ -242,11 +242,11 @@
 !#         to the memory of the coprocessor device.
 !#
 !# 72.) lsysbl_copyD2H_Vector
-!#      -> Copies the data of a vector from the memory of the
+!#      -> Copies the data of a matrix from the memory of the
 !#         coprocessor device to the host memory
 !#
 !# 73.) lsysbl_copyH2D_Matrix
-!#      -> Copies the data of a vector from the host memory
+!#      -> Copies the data of a matrix from the host memory
 !#         to the memory of the coprocessor device.
 !#
 !# 74.) lsysbl_copyD2H_Matrix
@@ -8632,7 +8632,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_copyH2D_Vector(rvector, bclear, btranspose)
+  subroutine lsysbl_copyH2D_Vector(rvector, bclear, btranspose, istream)
 
 !<description>
     ! This subroutine copies the data of a vector from the host memory
@@ -8649,18 +8649,24 @@ contains
     ! the content from the host memory is transferred.
     logical :: bclear
 
-    ! Switch: If TRUE then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 
 !</subroutine>
 
     ! Clear the vector?
     if (bclear) then
-      call storage_clearMemory(rvector%h_Ddata)
+      call storage_clearMemoryOnDevice(rvector%h_Ddata)
     else
       ! No, we have to copy the content from host to device memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_H2D, btranspose)
+      call storage_syncMemoryHostDevice(rvector%h_Ddata,&
+          ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
     end if
   
   end subroutine lsysbl_copyH2D_Vector
@@ -8669,7 +8675,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_copyD2H_Vector(rvector, bclear, btranspose)
+  subroutine lsysbl_copyD2H_Vector(rvector, bclear, btranspose, istream)
 
 !<description>
     ! This subroutine copies the data of a vector from the memory of
@@ -8686,8 +8692,13 @@ contains
     ! the content from the host memory is transferred.
     logical :: bclear
 
-    ! Switch: If TRUE then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 
 !</subroutine>
@@ -8695,10 +8706,12 @@ contains
     ! Clear the vector?
     if (bclear) then
       ! Yes, we can simply overwrite the content in host memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_COPY_D2H)
+      call storage_syncMemoryHostDevice(rvector%h_Ddata,&
+          ST_SYNCBLOCK_COPY_D2H,btranspose, istream)
     else
       ! No, we have to copy-add the content from device to host memory
-      call storage_syncMemory(rvector%h_Ddata, ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose)
+      call storage_syncMemoryHostDevice(rvector%h_Ddata,&
+          ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose, istream)
     end if
   
   end subroutine lsysbl_copyD2H_Vector
@@ -8707,7 +8720,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_copyH2D_Matrix(rmatrix, bclear, btranspose, p_MemPtr)
+  subroutine lsysbl_copyH2D_Matrix(rmatrix, bclear, btranspose, istream, p_MemPtr)
 
 !<description>
     ! This subroutine copies the data of a matrix from the host memory
@@ -8724,8 +8737,13 @@ contains
     ! the content from the host memory is transferred.
     logical :: bclear
 
-    ! Switch: If TRUE then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 
 !<output>
@@ -8741,13 +8759,12 @@ contains
     if (present(p_MemPtr))&
         allocate(p_MemPtr(rmatrix%nblocksPerRow,rmatrix%nblocksPerCol))
     
-
     ! Clear the matrix?
     if (bclear) then
       do j = 1, rmatrix%nblocksPerRow
         do i = 1, rmatrix%nblocksPerCol
           if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE) then
-            call storage_clearMemory(rmatrix%RmatrixBlock(i,j)%h_Da)
+            call storage_clearMemoryOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
             if (present(p_MemPtr))&
                 p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
           elseif (present(p_MemPtr)) then
@@ -8760,8 +8777,8 @@ contains
       do j = 1, rmatrix%nblocksPerRow
         do i = 1, rmatrix%nblocksPerCol
           if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE) then
-            call storage_syncMemory(rmatrix%RmatrixBlock(i,j)%h_Da,&
-                ST_SYNCBLOCK_COPY_H2D, btranspose)
+            call storage_syncMemoryHostDevice(rmatrix%RmatrixBlock(i,j)%h_Da,&
+                ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
             if (present(p_MemPtr))&
                 p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
           elseif (present(p_MemPtr)) then
@@ -8777,7 +8794,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_copyD2H_Matrix(rmatrix, bclear, btranspose)
+  subroutine lsysbl_copyD2H_Matrix(rmatrix, bclear, btranspose, istream)
 
 !<description>
     ! This subroutine copies the data of a matrix from the memory of
@@ -8794,8 +8811,13 @@ contains
     ! the content from the host memory is transferred.
     logical :: bclear
 
-    ! Switch: If TRUE then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if TRUE then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 
 !</subroutine>
@@ -8809,8 +8831,8 @@ contains
       do j = 1, rmatrix%nblocksPerRow
         do i = 1, rmatrix%nblocksPerCol
           if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE)&
-              call storage_syncMemory(rmatrix%RmatrixBlock(i,j)%h_Da,&
-              ST_SYNCBLOCK_COPY_D2H)
+              call storage_syncMemoryHostDevice(rmatrix%RmatrixBlock(i,j)%h_Da,&
+              ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
         end do
       end do
     else
@@ -8818,8 +8840,8 @@ contains
       do j = 1, rmatrix%nblocksPerRow
         do i = 1, rmatrix%nblocksPerCol
           if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE)&
-              call storage_syncMemory(rmatrix%RmatrixBlock(i,j)%h_Da,&
-              ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose)
+              call storage_syncMemoryHostDevice(rmatrix%RmatrixBlock(i,j)%h_Da,&
+              ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose, istream)
         end do
       end do
     end if

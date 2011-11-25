@@ -3926,7 +3926,7 @@ contains
           call storage_getsize(rgroupFEMSet%h_InodeList, isize)
           if (isize .ne. rgroupFEMSet%NA) then
             call storage_realloc('gfem_genNodeList',&
-                rgroupFEMSet%NA, ST_INT, rgroupFEMSet%h_InodeList,&
+                rgroupFEMSet%NA, rgroupFEMSet%h_InodeList,&
                 ST_NEWBLOCK_NOINIT, .false.)
           end if
         end if
@@ -3940,7 +3940,7 @@ contains
           call storage_getsize(rgroupFEMSet%h_InodeListIdx, isize)
           if (isize .ne. rgroupFEMSet%NEQ+1) then
             call storage_realloc('gfem_genNodeList',&
-                rgroupFEMSet%NEQ+1, ST_INT, rgroupFEMSet%h_InodeListIdx,&
+                rgroupFEMSet%NEQ+1, rgroupFEMSet%h_InodeListIdx,&
                 ST_NEWBLOCK_NOINIT)
           end if
         end if
@@ -4470,7 +4470,7 @@ contains
         call storage_getsize(rgroupFEMSet%h_IdiagList, Isize)
         if (Isize(2) .ne. rgroupFEMSet%NEQ) then
           call storage_realloc('gfem_genDiagList',&
-              rgroupFEMSet%NEQ, ST_INT, rgroupFEMSet%h_IdiagList,&
+              rgroupFEMSet%NEQ, rgroupFEMSet%h_IdiagList,&
               ST_NEWBLOCK_NOINIT, .false.)
         end if
       end if
@@ -4538,7 +4538,7 @@ contains
         call storage_getsize(rgroupFEMSet%h_IdiagList, Isize)
         if (Isize(2) .ne. rgroupFEMSet%NEQ) then
           call storage_realloc('gfem_genDiagList',&
-              rgroupFEMSet%NEQ, ST_INT, rgroupFEMSet%h_IdiagList,&
+              rgroupFEMSet%NEQ, rgroupFEMSet%h_IdiagList,&
               ST_NEWBLOCK_NOINIT, .false.)
         end if
       end if
@@ -5077,7 +5077,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_IdofsList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_IdofsList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the list of DOFs from the host memory
@@ -5089,20 +5089,25 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IdofsTest,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTest,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
     if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE .and.&
         .not.rgroupFEMSet%bidenticalTrialAndTest)&
-        call storage_syncMemory(rgroupFEMSet%h_IdofsTrial,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTrial,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_IdofsList
 
@@ -5110,7 +5115,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_IdofsList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_IdofsList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the list of DOFs from the memory of the
@@ -5122,19 +5127,24 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_IdofsTest .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IdofsTest,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTest,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
     if (rgroupFEMSet%h_IdofsTrial .ne. ST_NOHANDLE .and.&
         .not.rgroupFEMSet%bidenticalTrialAndTest)&
-        call storage_syncMemory(rgroupFEMSet%h_IdofsTrial,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdofsTrial,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_IdofsList
 
@@ -5142,7 +5152,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_IdiagList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_IdiagList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the diagonal structure from the host
@@ -5154,15 +5164,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_IdiagList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IdiagList,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdiagList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_IdiagList
 
@@ -5170,7 +5185,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_IdiagList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_IdiagList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the diagonal structure from the memory of
@@ -5182,14 +5197,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: iIf true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_IdiagList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IdiagList,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IdiagList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_IdiagList
 
@@ -5197,7 +5217,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_IedgeListIdx(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_IedgeListIdx(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge index structure from the host
@@ -5209,15 +5229,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IedgeListIdx,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_IedgeListIdx
 
@@ -5225,7 +5250,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_IedgeListIdx(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_IedgeListIdx(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge index structure from the memory
@@ -5237,14 +5262,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_IedgeListIdx .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IedgeListIdx,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeListIdx,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_IedgeListIdx
 
@@ -5252,7 +5282,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_IedgeList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_IedgeList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge structure from the host memory
@@ -5264,15 +5294,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: iIf true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_IedgeList
 
@@ -5280,7 +5315,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_IedgeList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_IedgeList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the edge structure from the memory of the
@@ -5292,14 +5327,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: iIf true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_IedgeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_IedgeList,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_IedgeList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_IedgeList
 
@@ -5307,7 +5347,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_InodeListIdx(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_InodeListIdx(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the node index structure from the host
@@ -5319,15 +5359,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: iIf true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_InodeListIdx,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeListIdx,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_InodeListIdx
 
@@ -5335,7 +5380,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_InodeListIdx(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_InodeListIdx(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the node index structure from the memory
@@ -5347,14 +5392,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_InodeListIdx .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_InodeListIdx,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeListIdx,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_InodeListIdx
 
@@ -5362,7 +5412,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_InodeList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_InodeList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the node structure from the host memory
@@ -5374,15 +5424,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_InodeList,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeList,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_InodeList
 
@@ -5390,7 +5445,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_InodeList(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_InodeList(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the node structure from the memory of the
@@ -5402,14 +5457,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIOANL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_InodeList .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_InodeList,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_InodeList,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_InodeList
   
@@ -5417,7 +5477,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_CoeffsAtNode(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_CoeffsAtNode(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the coefficients at nodes from the host
@@ -5429,15 +5489,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_CoeffsAtNode,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtNode,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
 
   end subroutine gfem_copyH2D_CoeffsAtNode
 
@@ -5445,7 +5510,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_CoeffsAtNode(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_CoeffsAtNode(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the coefficients at nodes from the memory
@@ -5457,14 +5522,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+    
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_CoeffsAtNode,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtNode,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_CoeffsAtNode
 
@@ -5472,7 +5542,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the coefficients at edges from the host
@@ -5484,15 +5554,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_CoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
     
   end subroutine gfem_copyH2D_CoeffsAtEdge
 
@@ -5500,7 +5575,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_CoeffsAtEdge(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_CoeffsAtEdge(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the coefficients at edges from the memory
@@ -5512,14 +5587,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_CoeffsAtEdge,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtEdge,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_CoeffsAtEdge
 
@@ -5527,7 +5607,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, btranspose)
+  subroutine gfem_copyH2D_CoeffsAtDiag(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the coefficients at matrix diagonals from
@@ -5539,15 +5619,20 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
 
     if (rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_CoeffsAtDiag,&
-        ST_SYNCBLOCK_COPY_H2D, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtDiag,&
+        ST_SYNCBLOCK_COPY_H2D, btranspose, istream)
     
   end subroutine gfem_copyH2D_CoeffsAtDiag
 
@@ -5555,7 +5640,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfem_copyD2H_CoeffsAtDiag(rgroupFEMSet, btranspose)
+  subroutine gfem_copyD2H_CoeffsAtDiag(rgroupFEMSet, btranspose, istream)
 
 !<description>
     ! This subroutine copies the coefficients at matrix diagonals from
@@ -5567,14 +5652,19 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! If true then the memory is transposed.
-    logical, intent(in) :: btranspose
+    ! OPTIONAL: if true then the memory is transposed.
+    logical, intent(in), optional :: btranspose
+
+    ! OPTIONAL: stream for asynchronious transfer.
+    ! If istream is present and if asynchroneous transfer is supported
+    ! then all memory transfers are carried out asynchroneously
+    integer(I64), intent(in), optional :: istream
 !</input>
 !</subroutine>
 
     if (rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE)&
-        call storage_syncMemory(rgroupFEMSet%h_CoeffsAtDiag,&
-        ST_SYNCBLOCK_COPY_D2H, btranspose)
+        call storage_syncMemoryHostDevice(rgroupFEMSet%h_CoeffsAtDiag,&
+        ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine gfem_copyD2H_CoeffsAtDiag
 

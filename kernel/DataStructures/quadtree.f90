@@ -2138,7 +2138,7 @@ contains
 
     call storage_realloc('resizeNNODE', nnnode, rquadtree%h_Dbbox,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_realloc('resizeNNODE', 1, nnnode, rquadtree%h_Knode,&
+    call storage_realloc('resizeNNODE', nnnode, rquadtree%h_Knode,&
                          ST_NEWBLOCK_ZERO, .true.)
     call storage_getbase_double2D(rquadtree%h_Dbbox, rquadtree%p_Dbbox)
     call storage_getbase_int2D(rquadtree%h_Knode,    rquadtree%p_Knode)

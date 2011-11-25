@@ -1977,13 +1977,13 @@ contains
 
     call storage_realloc('resizeNNODE', nnnode, roctree%h_Dbbox,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_realloc('resizeNNODE', 1, nnnode, roctree%h_Knode,&
+    call storage_realloc('resizeNNODE', nnnode, roctree%h_Knode,&
                          ST_NEWBLOCK_ZERO, .true.)
     call storage_getbase_double2D(roctree%h_Dbbox, roctree%p_Dbbox)
     call storage_getbase_int2D(roctree%h_Knode,    roctree%p_Knode)
     
     roctree%NNNODE  = nnnode
-    roctree%NRESIZE =roctree%NRESIZE+1
+    roctree%NRESIZE = roctree%NRESIZE+1
 
   end subroutine resizeNNODE
 

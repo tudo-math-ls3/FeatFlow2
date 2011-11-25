@@ -530,7 +530,7 @@ contains
     rlist%nna=nna
 
     ! Reallocate structures
-    call storage_realloc('list_resizeList',LHEAD,nna,rlist%h_Knext,&
+    call storage_realloc('list_resizeList',nna+3,rlist%h_Knext,&
         ST_NEWBLOCK_NOINIT,.true.)
     call storage_getbase_int(rlist%h_Knext,rlist%Knext)
 
