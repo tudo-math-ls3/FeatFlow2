@@ -2781,60 +2781,39 @@ contains
     ncubp     =  4
 
   case (CUB_PTRZ)
+    ! vertices
     Dxi (1,1) = -1.0_DP
     Dxi (1,2) = -1.0_DP
-    Dxi (2,1) =  0.0_DP
+    Dxi (2,1) =  1.0_DP
     Dxi (2,2) = -1.0_DP
-    Dxi (3,1) =  0.0_DP
-    Dxi (3,2) =  0.0_DP
+    Dxi (3,1) =  1.0_DP
+    Dxi (3,2) =  1.0_DP
     Dxi (4,1) = -1.0_DP
-    Dxi (4,2) =  0.0_DP
-    
-    Dxi (5,1) =  1.0_DP
+    Dxi (4,2) =  1.0_DP
+    ! edge midpoints
+    Dxi (5,1) =  0.0_DP
     Dxi (5,2) = -1.0_DP
     Dxi (6,1) =  1.0_DP
     Dxi (6,2) =  0.0_DP
     Dxi (7,1) =  0.0_DP
-    Dxi (7,2) =  0.0_DP
-    Dxi (8,1) =  0.0_DP
-    Dxi (8,2) = -1.0_DP
-    
-    Dxi (9,1) =  1.0_DP
-    Dxi (9,2) =  1.0_DP
-    Dxi(10,1) =  0.0_DP
-    Dxi(10,2) =  1.0_DP
-    Dxi(11,1) =  0.0_DP
-    Dxi(11,2) =  0.0_DP
-    Dxi(12,1) =  1.0_DP
-    Dxi(12,2) =  0.0_DP
-    
-    Dxi(13,1) = -1.0_DP
-    Dxi(13,2) =  1.0_DP
-    Dxi(14,1) = -1.0_DP
-    Dxi(14,2) =  0.0_DP
-    Dxi(15,1) =  0.0_DP
-    Dxi(15,2) =  0.0_DP
-    Dxi(16,1) =  0.0_DP
-    Dxi(16,2) =  1.0_DP
-    
+    Dxi (7,2) =  1.0_DP
+    Dxi (8,1) = -1.0_DP
+    Dxi (8,2) =  0.0_DP
+    ! quad mipoint
+    Dxi (9,1) =  0.0_DP
+    Dxi (9,2) =  0.0_DP
+
     Domega(1) =  0.25_DP
     Domega(2) =  0.25_DP
     Domega(3) =  0.25_DP
     Domega(4) =  0.25_DP
-    Domega(5) =  0.25_DP
-    Domega(6) =  0.25_DP
-    Domega(7) =  0.25_DP
-    Domega(8) =  0.25_DP
-    Domega(9) =  0.25_DP
-    Domega(10)=  0.25_DP
-    Domega(11)=  0.25_DP
-    Domega(12)=  0.25_DP
-    Domega(13)=  0.25_DP
-    Domega(14)=  0.25_DP
-    Domega(15)=  0.25_DP
-    Domega(16)=  0.25_DP
-    
-    ncubp     =  16
+    Domega(5) =  0.5_DP
+    Domega(6) =  0.5_DP
+    Domega(7) =  0.5_DP
+    Domega(8) =  0.5_DP
+    Domega(9) =  1.0_DP
+
+    ncubp     =  9
 
   case (CUB_PG2X2)
     Dxi(1,1)  =  0.7886751345948130_DP
