@@ -261,9 +261,9 @@ contains
     ! Copy solution vector to coprocessor device; in the first
     ! nonlinear step, the solution vector from the previous time step
     ! is also required on the device. Thus, we need to transfer it
-    call lsysbl_copyH2D_Vector(rsolution, .false., .false.)
+    call lsysbl_copyH2D_Vector(rsolution, .false., .false., 0_I64)
     if (istep .eq. 0)&
-        call lsysbl_copyH2D_Vector(rsolution0, .false., .false.)
+        call lsysbl_copyH2D_Vector(rsolution0, .false., .false., 0_I64)
 #endif
 
     ! Get section name
@@ -573,7 +573,7 @@ contains
               hydro_calcMatDiagMatD2d_sim, hydro_calcMatScDissMatD2d_sim,&
               dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
               rcollection, rproblemLevel%Rafcstab(inviscidAFC))
-
+          
         case (NDIM3D)
           call gfsys_buildOperator(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&

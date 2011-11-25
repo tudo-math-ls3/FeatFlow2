@@ -871,33 +871,40 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DcoeffsAtEdge
-    integer(I64) :: p_IedgeList
-    integer(I64) :: p_Dx, p_Dy
-    
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
-        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
-    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
-        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
-    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
-    if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false., .false.)
-      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true., .false.)
-    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -916,16 +923,20 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDiss3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+      call hydro_calcFluxScDiss3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
-          IEDGEset)
+          IEDGEset, istream)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
 
@@ -1221,33 +1232,40 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DcoeffsAtEdge
-    integer(I64) :: p_IedgeList
-    integer(I64) :: p_Dx, p_Dy
-    
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
-        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
-    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
-        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
-    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
-    if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false., .false.)
-      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true., .false.)
-    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -1266,16 +1284,20 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxScDissDiSp3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+      call hydro_calcFluxScDissDiSp3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
-          IEDGEset)
+          IEDGEset, istream)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
 
@@ -1741,33 +1763,40 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DcoeffsAtEdge
-    integer(I64) :: p_IedgeList
-    integer(I64) :: p_Dx, p_Dy
-    
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
-        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
-    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
-        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
-    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
-    if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false., .false.)
-      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true., .false.)
-    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -1786,16 +1815,20 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRoeDiss3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+      call hydro_calcFluxRoeDiss3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
-          IEDGEset)
+          IEDGEset, istream)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
 
@@ -2346,33 +2379,40 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DcoeffsAtEdge
-    integer(I64) :: p_IedgeList
-    integer(I64) :: p_Dx, p_Dy
-    
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
-        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
-    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
-        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
-    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
-    if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false., .false.)
-      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true., .false.)
-    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -2391,16 +2431,20 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRoeDissDiSp3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+      call hydro_calcFluxRoeDissDiSp3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
-          IEDGEset)
+          IEDGEset, istream)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
 
@@ -2712,33 +2756,40 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DcoeffsAtEdge
-    integer(I64) :: p_IedgeList
-    integer(I64) :: p_Dx, p_Dy
-    
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
-        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
-    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
-        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
-    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
-    if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false., .false.)
-      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true., .false.)
-    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -2757,16 +2808,20 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRusDiss3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+      call hydro_calcFluxRusDiss3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
-          IEDGEset)
+          IEDGEset, istream)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
 
@@ -3081,33 +3136,40 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: IEDGEmax,IEDGEset,igroup
-    integer(I64) :: p_DcoeffsAtEdge
-    integer(I64) :: p_IedgeList
-    integer(I64) :: p_Dx, p_Dy
-    
+    type(C_PTR) :: cptr_DcoeffsAtEdge
+    type(C_PTR) :: cptr_IedgeList
+    type(C_PTR) :: cptr_Dx, cptr_Dy
+    integer(I64) :: istream
+
+    ! Create CUDA stream
+    call coproc_createStream(istream)
     
     ! Check if edge structure is available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_IedgeList) .eq. 0_I64)&
-        call gfem_copyH2D_IedgeList(rgroupFEMSet, .true.)
-    p_IedgeList = storage_getMemoryAddress(rgroupFEMSet%h_IedgeList)
+    cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    if (.not.storage_isAssociated(cptr_IedgeList)) then
+      call gfem_copyH2D_IedgeList(rgroupFEMSet, .false., istream)
+      cptr_IedgeList = storage_getMemPtrOnDevice(rgroupFEMSet%h_IedgeList)
+    end if
     
     ! Check if matrix coefficients are available on device and copy it otherwise
-    if (storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge) .eq. 0_I64)&
-        call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true.)
-    p_DcoeffsAtEdge = storage_getMemoryAddress(rgroupFEMSet%h_CoeffsAtEdge)
+    cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    if (.not.storage_isAssociated(cptr_DcoeffsAtEdge)) then
+      call gfem_copyH2D_CoeffsAtEdge(rgroupFEMSet, .true., istream)
+      cptr_DcoeffsAtEdge = storage_getMemPtrOnDevice(rgroupFEMSet%h_CoeffsAtEdge)
+    end if
 
     ! In the very first call to this routine, the source vector may be
     ! uninitialised on the device. In this case, we have to do it here.
-    p_Dx = storage_getMemoryAddress(rx%h_Ddata)
-    if (p_Dx .eq. 0_I64) then
-      call lsysbl_copyH2D_Vector(rx, .false., .false.)
-      p_Dx = storage_getMemoryAddress(rx%h_Ddata)
+    cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
+    if (.not.storage_isAssociated(cptr_Dx)) then
+      call lsysbl_copyH2D_Vector(rx, .false., .false., istream)
+      cptr_Dx = storage_getMemPtrOnDevice(rx%h_Ddata)
     end if
    
     ! Make sure that the destination vector ry exists on the
     ! coprocessor device and is initialised by zeros
-    call lsysbl_copyH2D_Vector(ry, .true., .false.)
-    p_Dy = storage_getMemoryAddress(ry%h_Ddata)
+    call lsysbl_copyH2D_Vector(ry, .true., .false., istream)
+    cptr_Dy = storage_getMemPtrOnDevice(ry%h_Ddata)
    
     ! Set pointer
     call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
@@ -3126,16 +3188,20 @@ contains
       IEDGEmax = p_IedgeListIdx(igroup+1)-1
       
       ! Use callback function to compute internodal fluxes
-      call hydro_calcFluxRusDissDiSp3d_cuda(p_DcoeffsAtEdge, p_IedgeList,&
-          p_Dx, p_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
+      call hydro_calcFluxRusDissDiSp3d_cuda(cptr_DcoeffsAtEdge, cptr_IedgeList,&
+          cptr_Dx, cptr_Dy, dscale, rx%nblocks, rgroupFEMSet%NEQ, rgroupFEMSet%NVAR,&
           rgroupFEMSet%NEDGE, rgroupFEMSet%ncoeffsAtEdge, IEDGEmax-IEDGEset+1,&
-          IEDGEset)
+          IEDGEset, istream)
     end do
 
     ! Transfer destination vector back to host memory. If bclear is
     ! .TRUE. then the content of the host memory can be overwritten;
     ! otherwise we need to copy-add the content from device memory
-    call lsysbl_copyD2H_Vector(ry, bclear, .false.)
+    call lsysbl_copyD2H_Vector(ry, bclear, .false., istream)
+
+    ! Ensure data consistency
+    call coproc_synchronizeStream(istream)
+    call coproc_destroyStream(istream)
 
 #else
 
