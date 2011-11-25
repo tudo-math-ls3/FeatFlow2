@@ -5090,9 +5090,7 @@ contains
           rdestTriangulation%h_InodalProperty, p_InodalPropertyDest)
       call storage_getbase_int(&
           rsourceTriangulation%h_InodalProperty, p_InodalPropertySource)
-
-p_InodalPropertyDest = -4711
-
+      
       ! Copy the nodal information of vertices and edges from the
       ! coarse mesh to the nodal information about the new vertices
       ! on the fine mesh!
@@ -10236,7 +10234,6 @@ p_InodalPropertyDest = -4711
 !</subroutine>
   
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer, dimension(:), pointer :: p_IverticesAtBoundary
     integer, dimension(:), pointer :: p_InodalProperty
@@ -10264,9 +10261,6 @@ p_InodalPropertyDest = -4711
     ! Get pointers to the arrays
     call storage_getbase_int (&
         rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
-        
-    call storage_getbase_double2D (&
-        rtriangulation%h_DvertexCoords,p_DvertexCoords)
         
     call storage_getbase_int (&
         rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
