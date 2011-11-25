@@ -15,83 +15,97 @@
 
 extern "C"
 {
-  int coproc_newMemoryOnHost(unsigned long * p_MemoryBlock,
-			     unsigned long * imemBytes);
-  int FNAME(coproc_newmemoryonhost)(unsigned long * p_MemoryBlock,
-				    unsigned long * imemBytes);
+  int coproc_malloc(void **ptr, size_t size);
 
-  int coproc_freeMemoryOnHost(unsigned long * p_MemoryBlock);
-  int FNAME(coproc_freememoryonhost)(unsigned long * p_MemoryBlock);
+  int coproc_free(void *ptr);  
 
-  int coproc_newMemoryOnDevice(unsigned long * p_MemoryBlock,
-			       unsigned long * imemBytes);
-  int FNAME(coproc_newmemoryondevice)(unsigned long * p_MemoryBlock,
-				      unsigned long * imemBytes);
+  int coproc_newMemoryOnHost(void **h_ptr,
+			     size_t size);
 
-  int coproc_freeMemoryOnDevice(unsigned long * p_MemoryBlock);
-  int FNAME(coproc_freememoryondevice)(unsigned long * p_MemoryBlock);
+  int coproc_freeMemoryOnHost(void *h_ptr);
 
-  int coproc_clearMemoryOnDevice(unsigned long * p_MemoryBlock,
-				 unsigned long * imemBytes);
-  int FNAME(coproc_clearmemoryondevice)(unsigned long * p_MemoryBlock,
-					unsigned long * imemBytes);
+  int coproc_clearMemoryOnHost(void *h_ptr,
+			       size_t size);
+  
+  int coproc_newMemoryOnDevice(void **d_ptr,
+			       size_t size);
+  
+  int coproc_freeMemoryOnDevice(void *d_ptr);
+  
+  int coproc_clearMemoryOnDevice(void *d_ptr,
+				 size_t size);
 
-  int coproc_copyMemoryHostToDevice(unsigned long * p_MemoryBlockOnHost, 
-				    unsigned long * p_MemoryBlockOnDevice,
-				    unsigned long * imemBytes);
-  int FNAME(coproc_copymemoryhosttodevice)(unsigned long * p_MemoryBlockOnHost, 
-					   unsigned long * p_MemoryBlockOnDevice,
-					   unsigned long * imemBytes);
+  int coproc_memcpyHostToDevice(void *h_ptrSrc, 
+				void *d_ptrDest,
+				size_t size);
 
-  int coproc_copyMemoryDeviceToHost(unsigned long * p_MemoryBlockOnDevice,
-				    unsigned long * p_MemoryBlockOnHost,
-				    unsigned long * imemBytes);
-  int FNAME(coproc_copymemorydevicetohost)(unsigned long * p_MemoryBlockOnDevice,
-					   unsigned long * p_MemoryBlockOnHost,
-					   unsigned long * imemBytes);
+  int coproc_memcpyHostToDeviceAsync(void *h_ptrSrc, 
+				     void *d_ptrDest,
+				     size_t size,
+				     cudaStream_t stream=0);
+  
+  int coproc_memcpyDeviceToHost(void *d_ptrSrc,
+				void *h_ptrDest,
+				size_t size);
+  
+  int coproc_memcpyDeviceToHostAsync(void *d_ptrSrc,
+				     void *h_ptrDest,
+				     size_t size,
+				     cudaStream_t stream=0);
+  
+  int coproc_memcpyDeviceToDevice(void *d_ptrSrc,
+				  void *d_ptrDest,
+				  size_t size);
 
-  int coproc_copyMemoryDeviceToDevice(unsigned long * p_MemoryBlockSrc,
-				      unsigned long * p_MemoryBlockDest,
-				      unsigned long * imemBytes);
-  int FNAME(coproc_copymemorydevicetodevice)(unsigned long * p_MemoryBlockSrc,
-					     unsigned long * p_MemoryBlockDest,
-					     unsigned long * imemBytes);
+  int coproc_memcpyDeviceToDeviceAsync(void *d_ptrSrc,
+				       void *d_ptrDest,
+				       size_t size,
+				       cudaStream_t stream=0);
+  
+  int coproc_combinesingleOnDevice(void *d_ptrSrc1,
+				   void *d_ptrSrc2,
+				   void *d_ptrDest,
+				   size_t size);
+  
+  int coproc_combineDoubleOnDevice(void *d_ptrSrc1,
+				   void *d_ptrSrc2,
+				   void *d_ptrDest,
+				   size_t size);
+  
+  int coproc_combineQuadOnDevice(void *d_ptrSrc1,
+				 void *d_ptrSrc2,
+				 void *d_ptrDest,
+				 size_t size);
 
-  int coproc_addsingleOnDevice(unsigned long * p_MemoryBlock1,
-			       unsigned long * p_MemoryBlock2,
-			       unsigned long * p_MemoryBlockDest,
-			       unsigned long * imemBytes);
-  int FNAME(coproc_addsingleondevice)(unsigned long * p_MemoryBlock1,
-				      unsigned long * p_MemoryBlock2,
-				      unsigned long * p_MemoryBlockDest,
-				      unsigned long * imemBytes);
+  int coproc_combineIntegerOnDevice(void *d_ptrSrc1,
+				    void *d_ptrSrc2,
+				    void *d_ptrDest,
+				    size_t size);
+  
+  int coproc_combineInt8OnDevice(void *d_ptrSrc1,
+				 void *d_ptrSrc2,
+				 void *d_ptrDest,
+				 size_t size);
 
-  int coproc_addDoubleOnDevice(unsigned long * p_MemoryBlock1,
-			       unsigned long * p_MemoryBlock2,
-			       unsigned long * p_MemoryBlockDest,
-			       unsigned long * imemBytes);
-  int FNAME(coproc_adddoubleondevice)(unsigned long * p_MemoryBlock1,
-				      unsigned long * p_MemoryBlock2,
-				      unsigned long * p_MemoryBlockDest,
-				      unsigned long * imemBytes);
-
-  int coproc_addIntegerOnDevice(unsigned long * p_MemoryBlock1,
-				unsigned long * p_MemoryBlock2,
-				unsigned long * p_MemoryBlockDest,
-				unsigned long * imemBytes);
-  int FNAME(coproc_addintegerondevice)(unsigned long * p_MemoryBlock1,
-				       unsigned long * p_MemoryBlock2,
-				       unsigned long * p_MemoryBlockDest,
-				       unsigned long * imemBytes);
-
-  int coproc_addLogicalOnDevice(unsigned long * p_MemoryBlock1,
-				unsigned long * p_MemoryBlock2,
-				unsigned long * p_MemoryBlockDest,
-				unsigned long * imemBytes);
-  int FNAME(coproc_addlogicalondevice)(unsigned long * p_MemoryBlock1,
-				       unsigned long * p_MemoryBlock2,
-				       unsigned long * p_MemoryBlockDest,
-				       unsigned long * imemBytes);
+  int coproc_combineInt16OnDevice(void *d_ptrSrc1,
+				  void *d_ptrSrc2,
+				  void *d_ptrDest,
+				  size_t size);
+  
+  int coproc_combineInt32OnDevice(void *d_ptrSrc1,
+				  void *d_ptrSrc2,
+				  void *d_ptrDest,
+				  size_t size);
+  
+  int coproc_combineInt64OnDevice(void *d_ptrSrc1,
+				  void *d_ptrSrc2,
+				  void *d_ptrDest,
+				  size_t size);
+  
+  int coproc_combineLogicalOnDevice(void *d_ptrSrc1,
+				    void *d_ptrSrc2,
+				    void *d_ptrDest,
+				    size_t size);
 }
 
 #endif

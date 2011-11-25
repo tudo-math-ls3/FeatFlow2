@@ -107,19 +107,19 @@
 !#      -> Get the type of the data type from a given string
 !#         representation or return ST_NOHANDLE if data type is not supported
 !#
-!# 21.) storage_allocMemory
+!# 21.) storage_allocMemoryOnDevice
 !#      -> Allocates a memory block in the device memory
 !#
-!# 22.) storage_deallocMemory
+!# 22.) storage_deallocOnDevice
 !#      -> Deallocates a memory block in the device memory
 !#
-!# 23.) storage_syncMemory
+!# 23.) storage_syncMemoryHostDevice
 !#      -> Synchronises memory blocks between host and device memory.
 !#
-!# 24.) storage_clearMemory
+!# 24.) storage_clearMemoryOnDevice
 !#      -> Clears a memory block in the device memory
 !#
-!# 25.) storage_getMemoryAddress
+!# 25.) storage_getMemPtrOnDevice
 !#      -> Get the memory address in the device memory
 !# </purpose>
 !##############################################################################
@@ -131,10 +131,64 @@ module storage
   use genoutput
   use linearalgebra
   use uuid
+#undef USE_C_PTR_STORAGE
+  ! By default memory is allocated and deallocated using the Fortran
+  ! intrinsics ALLOCATE/DEALLOCATE. If the Fortran compiler support
+  ! ISO_C_BINDING, then any C-type malloc/free can be used to allocate
+  ! and deallocate memory and associated it with the memory block
+#define C_PTR_STORAGE_MALLOC 1
+#define C_PTR_STORAGE_COPROC 2
+
+  !*****************************************************************************
+  ! Check for ISO_C_BINDING support
+  !*****************************************************************************
+
+#ifdef HAS_ISO_C_BINDING
+  ! The external module file iso_c_binding cannot be included by the
+  ! standard use statement since the configure script would generate a
+  ! rule for building iso_c_binding.mod from iso_c_binfing.f90 which,
+  ! of cource, does not exists. Thus, the module is hidden from configure.
+#define __external_use__(module) use module
+  __external_use__(iso_c_binding)
+
+#else
+
+#ifdef USE_C_PTR_STORAGE
+  ! If the compiler does not support iso_c_binding but use of
+  ! C_PTR_STORAGE has been defined then throw an error and stop
+#error "Compiler does not support ISO_C_BINGING!"
+#endif
+ 
+#endif
 
   implicit none
   
   private
+
+#ifndef HAS_ISO_C_BINDING
+  ! If the compiler does not provice ISO_C_BINDING we need to define
+  ! C_PTR and C_NULL_PTR by hand so that they can be exported below
+  type C_PTR
+    private
+#if defined(_WIN64) || defined(_LP64) || defined(__LP64__)
+    ! LP64 machine, OS X or Linux or Unix or
+    ! LLP64 machine, Windows
+    integer(I64) :: imemAddress = 0_I64
+#elif defined(_WIN32) || defined(_ILD32)
+    ! 32-bit machine, Windows or Linux or OS X or Unix
+    integer(I32) :: imemAddress = 0_I32
+#else
+    ! Machine not detected uniquely. Since most machines are 64-bit
+    ! nowadays, C_PTR is defined as 64-bit pointer
+    integer(I64) :: imemAddress = 0_I64
+#endif
+  end type C_PTR
+
+  ! Null pointer
+  type(C_PTR), parameter :: C_NULL_PTR = C_PTR(0)
+#endif
+  
+  public :: C_PTR, C_NULL_PTR
 
 !<constants>
 
@@ -217,7 +271,10 @@ module storage
   integer(I64), public :: ST_INT64_BYTES = int(I64,I64)
 
   ! How many bytes has a logical?
-  integer(I64), public :: ST_LOGICAL_BYTES = int(I32,I64)
+  ! The FORTRAN standard requires logical variables to be the same size
+  ! as INTEGER variables. Thus, their size may change if the size of
+  ! default INTEGER variables changes, e.g. by specifying compiled switches.
+  integer(I64), public :: ST_LOGICAL_BYTES = int((bit_size(1) / 8),I64)
 
   ! How many bytes has a character?
   ! Note: We are not 100% sure, but this may differ on other architectures... O_o
@@ -252,6 +309,8 @@ module storage
   ! location etc.
   type t_storageNode
 
+    private
+
     ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
     ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
     integer :: idataType = ST_NOHANDLE
@@ -265,9 +324,6 @@ module storage
 
     ! Amount of memory (in bytes) associated to this block.
     integer(I64) :: imemBytes = 0_I64
-
-    ! Pointer to memory address or 0 if not assigned
-    integer(I64) :: p_memAddress = 0_I64
 
     ! Pointer to 1D real array or NULL() if not assigned
     real(SP), dimension(:), pointer       :: p_Fsingle1D    => null()
@@ -342,22 +398,36 @@ module storage
     integer, dimension(:,:,:), pointer    :: p_Iinteger3D   => null()
     
     ! Pointer to 3D integer(I8) array or NULL() if not assigned
-    integer(I8), dimension(:,:,:), pointer :: p_Iint8_3D     => null()
+    integer(I8), dimension(:,:,:), pointer :: p_Iint8_3D    => null()
     
     ! Pointer to 3D integer(I12) array or NULL() if not assigned
-    integer(I16), dimension(:,:,:), pointer :: p_Iint16_3D    => null()
+    integer(I16), dimension(:,:,:), pointer :: p_Iint16_3D  => null()
     
     ! Pointer to 3D integer(I32) array or NULL() if not assigned
-    integer(I32), dimension(:,:,:), pointer :: p_Iint32_3D    => null()
+    integer(I32), dimension(:,:,:), pointer :: p_Iint32_3D  => null()
 
     ! Pointer to 3D integer(I64) array or NULL() if not assigned
-    integer(I64), dimension(:,:,:), pointer :: p_Iint64_3D    => null()
+    integer(I64), dimension(:,:,:), pointer :: p_Iint64_3D  => null()
 
     ! Pointer to 3D logical array or NULL() if not assigned
     logical, dimension(:,:,:), pointer    :: p_Blogical3D   => null()
 
     ! Pointer to 3D character array or NULL() if not assigned
     character, dimension(:,:,:), pointer  :: p_Schar3D      => null()
+    
+#ifdef USE_C_PTR_STORAGE
+    ! If the code is compiled with coprocessor support and
+    ! iso_c_binding enabled, then memory allocation on host and device
+    ! is done by the coproc-library which supports page-locked memory.
+    
+    ! Pointer of type C_PTR to memory block on host
+    type(C_PTR) :: chostMemPtr = C_NULL_PTR
+#endif
+    
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Starting memory address on coprocessor device (=0 if not assigned)
+    type(C_PTR) :: cdeviceMemPtr = C_NULL_PTR
+#endif
 
   end type t_storageNode
   
@@ -429,21 +499,14 @@ module storage
 !</publicvars>
 
   interface storage_new
-    module procedure storage_newWrap
-    module procedure storage_newWrapFixed
+    module procedure storage_newDefault
+    module procedure storage_newDefaultFixed
     module procedure storage_new1D
     module procedure storage_new1DFixed
     module procedure storage_newIndirect
   end interface storage_new
 
   public :: storage_new
-
-  interface storage_realloc
-    module procedure storage_reallocDefault
-    module procedure storage_reallocFixed
-  end interface
-  
-  public :: storage_realloc
   
   interface storage_getbase_int
     module procedure storage_getbase_intDefault
@@ -686,10 +749,6 @@ module storage
   public :: storage_getbase_char3D
 
   interface storage_getbase
-!!$    module procedure storage_getbase_intDefault
-!!$    module procedure storage_getbase_intUBnd
-!!$    module procedure storage_getbase_intLUBnd
-
     module procedure storage_getbase_int8Default
     module procedure storage_getbase_int8UBnd
     module procedure storage_getbase_int8LUBnd
@@ -728,10 +787,6 @@ module storage
     module procedure storage_getbase_charUBnd
     module procedure storage_getbase_charLUBnd
 
-!!$    module procedure storage_getbase_int2DDef
-!!$    module procedure storage_getbase_int2DUBnd
-!!$    module procedure storage_getbase_int2DLUBnd
-
     module procedure storage_getbase_int8_2DDef
     module procedure storage_getbase_int8_2DUBnd
     module procedure storage_getbase_int8_2DLUBnd
@@ -769,10 +824,6 @@ module storage
     module procedure storage_getbase_char2DDef
     module procedure storage_getbase_char2DUBnd
     module procedure storage_getbase_char2DLUBnd
-
-!!$    module procedure storage_getbase_int3DDef
-!!$    module procedure storage_getbase_int3DUBnd
-!!$    module procedure storage_getbase_int3DLUBnd
 
     module procedure storage_getbase_int8_3DDef
     module procedure storage_getbase_int8_3DUBnd
@@ -816,7 +867,7 @@ module storage
   public :: storage_getbase
 
   interface storage_getsize
-    module procedure storage_getsizeWrap
+    module procedure storage_getsizeDefault
     module procedure storage_getsize1D
   end interface
   
@@ -829,7 +880,8 @@ module storage
   end interface
 
   public :: storage_copy
-
+  
+  public :: storage_realloc
   public :: storage_init
   public :: storage_done
   public :: storage_free
@@ -843,11 +895,63 @@ module storage
   public :: storage_restoreFpdbObject
   public :: storage_setdatatype
   public :: storage_getblocktype
-  public :: storage_allocMemory
-  public :: storage_deallocMemory
-  public :: storage_syncMemory
-  public :: storage_clearMemory
-  public :: storage_getMemoryAddress
+  public :: storage_allocMemoryOnDevice
+  public :: storage_deallocMemoryOnDevice
+  public :: storage_syncMemoryHostDevice
+  public :: storage_clearMemoryOnDevice
+  public :: storage_getMemPtrOnDevice
+  public :: storage_isAssociated
+
+  !************************************************************************
+
+#ifdef USE_C_PTR_STORAGE
+
+#if USE_C_PTR_STORAGE == C_PTR_STORAGE_MALLOC
+
+  interface
+    ! Define iso_c_binding Fortran: c_allocate -> C: storageHostAlloc
+    integer(C_INT) function c_allocate(buffer, size) bind(C,name="storage_malloc") 
+      __external_use__(iso_c_binding)
+      implicit none 
+      type (C_PTR) :: buffer 
+      integer (C_SIZE_T), value :: size
+    end function c_allocate
+  end interface
+  
+  interface
+    ! Define iso_c_binding Fortran: c_deallocate -> C: storageFreeHost
+    integer(C_INT) function c_deallocate(buffer) bind(C,name="storage_free") 
+      __external_use__(iso_c_binding)
+      implicit none 
+      type (C_PTR), value :: buffer
+    end function c_deallocate
+  end interface
+
+#elif USE_C_PTR_STORAGE == C_PTR_STORAGE_COPROC
+
+  interface
+    ! Define iso_c_binding Fortran: c_allocate -> C: coproc_newMemoryOnHost
+    integer(C_INT) function c_allocate(buffer, size) bind(C,name="coproc_malloc") 
+      __external_use__(iso_c_binding)
+      implicit none 
+      type (C_PTR) :: buffer 
+      integer (C_SIZE_T), value :: size
+    end function c_allocate
+  end interface
+  
+  interface
+    ! Define iso_c_binding Fortran: c_deallocate -> C: coproc_FreeMemoryOnHost
+    integer(C_INT) function c_deallocate(buffer) bind(C,name="coproc_free") 
+      __external_use__(iso_c_binding)
+      implicit none 
+      type (C_PTR), value :: buffer
+    end function c_deallocate
+  end interface
+
+#else
+#error "Unsupported type of USE_C_PTR_STORAGE!"
+#endif
+#endif
 
 contains
 
@@ -899,6 +1003,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   
   integer :: i
+  integer(I64) :: isize
     
     ! Initialise ihDelta and p_rheap and work with these - as the other
     ! parameters are optional.
@@ -931,6 +1036,72 @@ contains
     do i=1,ihandles
       p_rheap%p_IfreeHandles(i) = i
     end do
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Check consistency between host and device storage managers
+    call coproc_getSizeOf(ST_SINGLE, isize)
+    if (isize .ne. ST_SINGLE_BYTES) then
+      call output_line ('Number if bytes for ST_SINGLE mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_DOUBLE, isize)
+    if (isize .ne. ST_DOUBLE_BYTES) then
+      call output_line ('Number if bytes for ST_DOUBLE mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_QUAD, isize)
+    if (isize .ne. ST_QUAD_BYTES) then
+      call output_line ('Number if bytes for ST_QUAD mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_INT, isize)
+    if (isize .ne. ST_INT_BYTES) then
+      call output_line ('Number if bytes for ST_INT mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_INT8, isize)
+    if (isize .ne. ST_INT8_BYTES) then
+      call output_line ('Number if bytes for ST_INT8 mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_INT16, isize)
+    if (isize .ne. ST_INT16_BYTES) then
+      call output_line ('Number if bytes for ST_INT16 mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_INT32, isize)
+    if (isize .ne. ST_INT32_BYTES) then
+      call output_line ('Number if bytes for ST_INT32 mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_INT64, isize)
+    if (isize .ne. ST_INT64_BYTES) then
+      call output_line ('Number if bytes for ST_INT64 mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+
+    call coproc_getSizeOf(ST_LOGICAL, isize)
+    if (isize .ne. ST_LOGICAL_BYTES) then
+      call output_line ('Number if bytes for ST_LOGICAL mismatch!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_init')
+      call sys_halt()
+    end if
+#endif
     
   end subroutine storage_init
 
@@ -1121,9 +1292,9 @@ contains
     rheap%itotalMem = rheap%itotalMem - p_rnode%imemBytes
     
     ! Clear the descriptor structure
-    p_rnode%idataType = ST_NOHANDLE
+    p_rnode%idataType  = ST_NOHANDLE
     p_rnode%idimension = 0
-    p_rnode%imemBytes = 0_I64
+    p_rnode%imemBytes  = 0_I64
     nullify(p_rnode%p_Fsingle1D)
     nullify(p_rnode%p_Ddouble1D)
     nullify(p_rnode%p_Qquad1D)
@@ -1538,8 +1709,8 @@ contains
 
 !<subroutine>
 
-  subroutine storage_newWrap (scall, sname, Isize, ctype, ihandle, &
-                          cinitNewBlock, rheap)
+  subroutine storage_newDefault (scall, sname, Isize, ctype, ihandle, &
+                                 cinitNewBlock, rheap)
 
 !<description>
   !This routine reserves a  memory block of desired size and type.
@@ -1594,18 +1765,18 @@ contains
                           cinitNewBlock, rheap)
     case default
       call output_line ('Memory blocks of dimension larger than 3 is not supported', &
-                        OU_CLASS_WARNING,OU_MODE_STD,'storage_new')
+                        OU_CLASS_MSG,OU_MODE_STD,'storage_newDefault')
       ihandle = 0
     end select
 
-  end subroutine storage_newWrap
+  end subroutine storage_newDefault
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine storage_newWrapFixed (scall, sname, Ilbound, Iubound, ctype,&
-                               ihandle, cinitNewBlock, rheap)
+  subroutine storage_newDefaultFixed (scall, sname, Ilbound, Iubound, ctype,&
+                                      ihandle, cinitNewBlock, rheap)
 
 !<description>
   !This routine reserves a memory block of desired bounds and type.
@@ -1653,7 +1824,7 @@ contains
 
     if (size(Ilbound) .ne. size(Iubound)) then
       call output_line ('dim(Ilbound) /= dim(Iubound)!', &
-                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newfixed')
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newDefaultFixed')
       ihandle = 0
       return
     end if
@@ -1670,11 +1841,11 @@ contains
                                ctype, ihandle, cinitNewBlock, rheap)
     case default
       call output_line ('Memory blocks of dimensions larger than 3 are not supported', &
-                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newfixed')
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newDefaultFixed')
       ihandle = 0
     end select
 
-  end subroutine storage_newWrapfixed
+  end subroutine storage_newDefaultFixed
 
 !************************************************************************
 
@@ -1727,7 +1898,8 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   character(LEN=SYS_NAMELEN) :: snameBackup
-    
+  integer :: ier
+
     if (isize .eq. 0) then
       call output_line ('isize=0!', &
                         OU_CLASS_WARNING,OU_MODE_STD,'storage_new1D')
@@ -1762,8 +1934,59 @@ contains
     p_rnode%idimension = 1
     p_rnode%sname = snameBackup
     
+#ifdef USE_C_PTR_STORAGE
+
     ! Allocate memory according to isize:
-    
+    select case (ctype)
+    case (ST_SINGLE)
+      p_rnode%imemBytes = int(isize,I64)*ST_SINGLE_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Fsingle1D, (/isize/))
+    case (ST_DOUBLE)
+      p_rnode%imemBytes = int(isize,I64)*ST_DOUBLE_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Ddouble1D, (/isize/))
+    case (ST_QUAD)
+      p_rnode%imemBytes = int(isize,I64)*ST_QUAD_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Qquad1D, (/isize/))
+    case (ST_INT)
+      p_rnode%imemBytes = int(isize,I64)*ST_INT_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iinteger1D, (/isize/))
+    case (ST_INT8)
+      p_rnode%imemBytes = int(isize,I64)*ST_INT8_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint8_1D, (/isize/))
+    case (ST_INT16)
+      p_rnode%imemBytes = int(isize,I64)*ST_INT16_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint16_1D, (/isize/))
+    case (ST_INT32)
+      p_rnode%imemBytes = int(isize,I64)*ST_INT32_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint32_1D, (/isize/))
+    case (ST_INT64)
+      p_rnode%imemBytes = int(isize,I64)*ST_INT64_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint64_1D, (/isize/))
+    case (ST_LOGICAL)
+      p_rnode%imemBytes = int(isize,I64)*ST_LOGICAL_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Blogical1D, (/isize/))
+    case (ST_CHAR)
+      p_rnode%imemBytes = int(isize,I64)*ST_CHAR_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Schar1D, (/isize/))
+    case default
+      call output_line ('Unsupported memory type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_new1D')
+      call sys_halt()
+    end select
+
+#else 
+   
+    ! Allocate memory according to isize:
     select case (ctype)
     case (ST_SINGLE)
       allocate(p_rnode%p_Fsingle1D(isize))
@@ -1800,6 +2023,8 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_new1D')
       call sys_halt()
     end select
+
+#endif
 
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
@@ -1867,6 +2092,13 @@ contains
   type(t_storageNode), pointer :: p_rnode
   integer :: isize
   character(LEN=SYS_NAMELEN) :: snameBackup
+
+    ! Can we use the standard routine?
+    if (ilbound .eq. 1) then
+      call storage_new1D(scall, sname, iubound, ctype, ihandle,&
+                         cinitNewBlock, rheap)
+      return
+    end if
     
     isize=iubound-ilbound+1
     if (isize .eq. 0) then
@@ -1902,6 +2134,11 @@ contains
     p_rnode%idimension = 1
     p_rnode%sname = snameBackup
     
+#ifdef USE_C_PTR_STORAGE
+    call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
+                      OU_CLASS_MSG,OU_MODE_STD,'storage_new1Dfixed')
+#endif
+
     ! Allocate memory according to isize:
     select case (ctype)
     case (ST_SINGLE)
@@ -2002,6 +2239,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   character(LEN=SYS_NAMELEN) :: snameBackup
+  integer :: ier
     
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0)) then
       call output_line ('Isize=0!', &
@@ -2037,8 +2275,59 @@ contains
     p_rnode%idimension = 2
     p_rnode%sname = snameBackup
     
+#ifdef USE_C_PTR_STORAGE
+
     ! Allocate memory according to Isize:
-    
+    select case (ctype)
+    case (ST_SINGLE)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_SINGLE_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Fsingle2D, Isize)
+    case (ST_DOUBLE)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_DOUBLE_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Ddouble2D, Isize)     
+    case (ST_QUAD)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_QUAD_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Qquad2D, Isize)
+    case (ST_INT)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_INT_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iinteger2D, Isize)
+    case (ST_INT8)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_INT8_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint8_2D, Isize)
+    case (ST_INT16)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_INT16_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint16_2D, Isize)
+    case (ST_INT32)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_INT32_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint32_2D, Isize)
+    case (ST_INT64)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_INT64_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint64_2D, Isize)
+    case (ST_LOGICAL)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_LOGICAL_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Blogical2D, Isize)
+    case (ST_CHAR)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*ST_CHAR_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Schar2D, Isize)
+    case default
+      call output_line ('Unsupported memory type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_new2D')
+      call sys_halt()
+    end select
+
+#else
+
+    ! Allocate memory according to Isize:
     select case (ctype)
     case (ST_SINGLE)
       allocate(p_rnode%p_Fsingle2D(Isize(1),Isize(2)))
@@ -2075,6 +2364,8 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_new2D')
       call sys_halt()
     end select
+
+#endif
     
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
@@ -2143,6 +2434,13 @@ contains
     integer, dimension(2) :: Isize
     character(LEN=SYS_NAMELEN) :: snameBackup
     
+    ! Can we use the standard routine?
+    if (all(Ilbound .eq. 1)) then
+      call storage_new2D(scall, sname, Iubound, ctype, ihandle,&
+                         cinitNewBlock, rheap)
+      return
+    end if
+
     Isize=Iubound-Ilbound+1
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0)) then
       call output_line ('Isize=0!', &
@@ -2177,9 +2475,13 @@ contains
     p_rnode%idataType = ctype
     p_rnode%idimension = 2
     p_rnode%sname = snameBackup
-    
+        
+#ifdef USE_C_PTR_STORAGE
+    call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
+                      OU_CLASS_MSG,OU_MODE_STD,'storage_new2Dfixed')
+#endif
+
     ! Allocate memory according to Isize:
-    
     select case (ctype)
     case (ST_SINGLE)
       allocate(p_rnode%p_Fsingle2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
@@ -2279,6 +2581,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   character(LEN=SYS_NAMELEN) :: snameBackup
+  integer :: ier
 
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0) .or. (Isize(3) .eq. 0)) then
       call output_line ('Isize=0!', &
@@ -2314,8 +2617,69 @@ contains
     p_rnode%idimension = 3
     p_rnode%sname = snameBackup
     
+#ifdef USE_C_PTR_STORAGE
+
     ! Allocate memory according to Isize:
-    
+    select case (ctype)
+    case (ST_SINGLE)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_SINGLE_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Fsingle3D, Isize)
+    case (ST_DOUBLE)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_DOUBLE_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Ddouble3D, Isize)
+    case (ST_QUAD)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_QUAD_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Qquad3D, Isize)
+    case (ST_INT)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iinteger3D, Isize)
+    case (ST_INT8)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT8_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint8_3D, Isize)
+    case (ST_INT16)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT16_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint16_3D, Isize)
+    case (ST_INT32)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT32_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint32_3D, Isize)
+    case (ST_INT64)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_INT64_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Iint64_3D, Isize)
+    case (ST_LOGICAL)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_LOGICAL_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Blogical3D, Isize)
+    case (ST_CHAR)
+      p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
+                          int(Isize(3),I64)*ST_CHAR_BYTES
+      ier = c_allocate(p_rnode%chostMemPtr, p_rnode%imemBytes)
+      call c_f_pointer(p_rnode%chostMemPtr, p_rnode%p_Schar3D, Isize)
+    case default
+      call output_line ('Unsupported memory type!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_new3D')
+      call sys_halt()
+    end select
+
+#else
+
+    ! Allocate memory according to Isize:
     select case (ctype)
     case (ST_SINGLE)
       allocate(p_rnode%p_Fsingle3D(Isize(1),Isize(2),Isize(3)))
@@ -2362,6 +2726,8 @@ contains
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_new3D')
       call sys_halt()
     end select
+
+#endif
     
     !$omp critical(storage_global_heap_modify)
     p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
@@ -2430,6 +2796,13 @@ contains
     integer, dimension(3) :: Isize
     character(LEN=SYS_NAMELEN) :: snameBackup
     
+    ! Can we use the standard routine?
+    if (all(Ilbound .eq. 1)) then
+      call storage_new3D(scall, sname, Iubound, ctype, ihandle,&
+                         cinitNewBlock, rheap)
+      return
+    end if
+
     Isize=Iubound-Ilbound+1
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0) .or. (Isize(3) .eq. 0)) then
       call output_line ('Isize=0!', &
@@ -2465,8 +2838,12 @@ contains
     p_rnode%idimension = 3
     p_rnode%sname = snameBackup
     
+#ifdef USE_C_PTR_STORAGE
+    call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
+                      OU_CLASS_MSG,OU_MODE_STD,'storage_new3Dfixed')
+#endif    
+
     ! Allocate memory according to Isize:
-    
     select case (ctype)
     case (ST_SINGLE)
       allocate(p_rnode%p_Fsingle3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
@@ -2480,17 +2857,17 @@ contains
                           int(Isize(3),I64)*ST_DOUBLE_BYTES
     case (ST_QUAD)
       allocate(p_rnode%p_Qquad3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
-                                   Ilbound(3):Iubound(3)))
+                                 Ilbound(3):Iubound(3)))
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
                           int(Isize(3),I64)*ST_QUAD_BYTES
     case (ST_INT)
       allocate(p_rnode%p_Iinteger3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
-                                   Ilbound(3):Iubound(3)))
+                                    Ilbound(3):Iubound(3)))
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
                           int(Isize(3),I64)*ST_INT_BYTES
     case (ST_INT8)
       allocate(p_rnode%p_Iint8_3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
-                                   Ilbound(3):Iubound(3)))
+                                  Ilbound(3):Iubound(3)))
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
                           int(Isize(3),I64)*ST_INT8_BYTES
     case (ST_INT16)
@@ -2510,12 +2887,12 @@ contains
                           int(Isize(3),I64)*ST_INT64_BYTES
     case (ST_LOGICAL)
       allocate(p_rnode%p_Blogical3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
-                                   Ilbound(3):Iubound(3)))
+                                    Ilbound(3):Iubound(3)))
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
                           int(Isize(3),I64)*ST_LOGICAL_BYTES
     case (ST_CHAR)
       allocate(p_rnode%p_Schar3D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2),&
-                                   Ilbound(3):Iubound(3)))
+                                 Ilbound(3):Iubound(3)))
       p_rnode%imemBytes = int(Isize(1),I64)*int(Isize(2),I64)*&
                           int(Isize(3),I64)*ST_CHAR_BYTES
     case default
@@ -2579,7 +2956,6 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-
   
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -2588,7 +2964,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandleTemplate .eq. ST_NOHANDLE) then
+    if (ihandleTemplate .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_newIndirect')
       call sys_halt()
@@ -2608,52 +2984,52 @@ contains
       
       select case (p_rnode%idataType)
       case (ST_SINGLE)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Fsingle1D,1),&
                           ubound(p_rnode%p_Fsingle1D,1),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_DOUBLE)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Ddouble1D,1),&
                           ubound(p_rnode%p_Ddouble1D,1),&
                           ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Qquad1D,1),&
                           ubound(p_rnode%p_Qquad1D,1),&
                           ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Iinteger1D,1),&
                           ubound(p_rnode%p_Iinteger1D,1),&
                           ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Iint8_1D,1),&
                           ubound(p_rnode%p_Iint8_1D,1),&
                           ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Iint16_1D,1),&
                           ubound(p_rnode%p_Iint16_1D,1),&
                           ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Iint32_1D,1),&
                           ubound(p_rnode%p_Iint32_1D,1),&
                           ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Iint64_1D,1),&
                           ubound(p_rnode%p_Iint64_1D,1),&
                           ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Blogical1D,1),&
                           ubound(p_rnode%p_Blogical1D,1),&
                           ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_newIndirect',p_rnode%sname,&
+        call storage_new ('storage_newIndirect',sname,&
                           lbound(p_rnode%p_Schar1D,1),&
                           ubound(p_rnode%p_Schar1D,1),&
                           ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -2663,52 +3039,52 @@ contains
       
       select case (p_rnode%IdataType)
       case (ST_SINGLE)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Fsingle2D),&
                           ubound(p_rnode%p_Fsingle2D),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_DOUBLE)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Ddouble2D),&
                           ubound(p_rnode%p_Ddouble2D),&
                           ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Qquad2D),&
                           ubound(p_rnode%p_Qquad2D),&
                           ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iinteger2D),&
                           ubound(p_rnode%p_Iinteger2D),&
                           ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint8_2D),&
                           ubound(p_rnode%p_Iint8_2D),&
                           ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint16_2D),&
                           ubound(p_rnode%p_Iint16_2D),&
                           ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint32_2D),&
                           ubound(p_rnode%p_Iint32_2D),&
                           ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint64_2D),&
                           ubound(p_rnode%p_Iint64_2D),&
                           ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Blogical2D),&
                           ubound(p_rnode%p_Blogical2D),&
                           ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Schar2D),&
                           ubound(p_rnode%p_Schar2D),&
                           ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -2718,52 +3094,52 @@ contains
 
       select case (p_rnode%IdataType)
       case (ST_SINGLE)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Fsingle3D),&
                           ubound(p_rnode%p_Fsingle3D),&
                           ST_SINGLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
-      case (ST_DOUBLE)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+      case (ST_DOUBLE)       
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Ddouble3D),&
                           ubound(p_rnode%p_Ddouble3D),&
                           ST_DOUBLE, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_QUAD)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Qquad3D),&
                           ubound(p_rnode%p_Qquad3D),&
                           ST_QUAD, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iinteger3D),&
                           ubound(p_rnode%p_Iinteger3D),&
                           ST_INT, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT8)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint8_3D),&
                           ubound(p_rnode%p_Iint8_3D),&
                           ST_INT8, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT16)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint16_3D),&
                           ubound(p_rnode%p_Iint16_3D),&
                           ST_INT16, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT32)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint32_3D),&
                           ubound(p_rnode%p_Iint32_3D),&
                           ST_INT32, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_INT64)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Iint64_3D),&
                           ubound(p_rnode%p_Iint64_3D),&
                           ST_INT64, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_LOGICAL)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Blogical3D),&
                           ubound(p_rnode%p_Blogical3D),&
                           ST_LOGICAL, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
       case (ST_CHAR)
-        call storage_new ('storage_newIndirect', p_rnode%sname,&
+        call storage_new ('storage_newIndirect', sname,&
                           lbound(p_rnode%p_Schar3D),&
                           ubound(p_rnode%p_Schar3D),&
                           ST_CHAR, ihandle, ST_NEWBLOCK_NOINIT, p_rheap)
@@ -2822,7 +3198,7 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     
     ! Is the node associated at all?
-    if (p_rnode%idataType .eq. ST_NOHANDLE) then
+    if (p_rnode%idataType .le. ST_NOHANDLE) then
       call output_line ('Trying to release nonexistent handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_free')
       call output_line ('Handle number: '//trim(sys_siL(ihandle,11)), &
@@ -2830,16 +3206,55 @@ contains
       call sys_halt()
     end if
 
-
-    ! Release the memory assigned to that handle
-    if (p_rnode%p_memAddress .ne. 0) then
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-      call coproc_freeMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
-#else
-      call output_line ('Unable to free memory address!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_free')
-#endif
+#ifdef USE_C_PTR_STORAGE
+    ! Release host memory physically
+    if (storage_isAssociated(p_rnode%chostMemPtr)) then
+      if (c_deallocate(p_rnode%chostMemPtr) .gt. 0) then
+        call output_line ('Error in freeing memory with c_deallocate!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_free')
+        call sys_halt()
+      end if
     end if
+
+    ! Nullify pointers
+    nullify(p_rnode%p_Fsingle1D)
+    nullify(p_rnode%p_Ddouble1D)
+    nullify(p_rnode%p_Qquad1D)
+    nullify(p_rnode%p_Iinteger1D)
+    nullify(p_rnode%p_Iint8_1D)
+    nullify(p_rnode%p_Iint16_1D)
+    nullify(p_rnode%p_Iint32_1D)
+    nullify(p_rnode%p_Iint64_1D)
+    nullify(p_rnode%p_Blogical1D)
+    nullify(p_rnode%p_Schar1D)
+
+    nullify(p_rnode%p_Fsingle2D)
+    nullify(p_rnode%p_Ddouble2D)
+    nullify(p_rnode%p_Qquad2D)
+    nullify(p_rnode%p_Iinteger2D)
+    nullify(p_rnode%p_Iint8_2D)
+    nullify(p_rnode%p_Iint16_2D)
+    nullify(p_rnode%p_Iint32_2D)
+    nullify(p_rnode%p_Iint64_2D)
+    nullify(p_rnode%p_Blogical2D)
+    nullify(p_rnode%p_Schar2D)
+
+    nullify(p_rnode%p_Fsingle3D)
+    nullify(p_rnode%p_Ddouble3D)
+    nullify(p_rnode%p_Qquad3D)
+    nullify(p_rnode%p_Iinteger3D)
+    nullify(p_rnode%p_Iint8_3D)
+    nullify(p_rnode%p_Iint16_3D)
+    nullify(p_rnode%p_Iint32_3D)
+    nullify(p_rnode%p_Iint64_3D)
+    nullify(p_rnode%p_Blogical3D)
+    nullify(p_rnode%p_Schar3D)
+#endif
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
+        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+#endif
 
     ! Release the memory assigned to that
     if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
@@ -2932,7 +3347,7 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     
     ! Is the node associated at all?
-    if (p_rnode%idataType .eq. ST_NOHANDLE) then
+    if (p_rnode%idataType .le. ST_NOHANDLE) then
       call output_line ('Trying to clear nonexistent handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_clear')
       call output_line ('Handle number: '//trim(sys_siL(ihandle,11)), &
@@ -3069,7 +3484,7 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     
     ! Is the node associated at all?
-    if (p_rnode%idataType .eq. ST_NOHANDLE) then
+    if (p_rnode%idataType .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize1D')
       call output_line ('Handle number: '//trim(sys_siL(ihandle,11)), &
@@ -3117,7 +3532,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getsizeWrap (ihandle, Isize, rheap)
+  subroutine storage_getsizeDefault (ihandle, Isize, rheap)
 
 !<description>
   ! Returns the length of a multidimensional array identified by ihandle.
@@ -3154,7 +3569,7 @@ contains
     
     if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
       call sys_halt()
     end if
     
@@ -3162,11 +3577,11 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     
     ! Is the node associated at all?
-    if (p_rnode%idataType .eq. ST_NOHANDLE) then
+    if (p_rnode%idataType .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
       call output_line ('Handle number: '//trim(sys_siL(ihandle,11)), &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
       call sys_halt()
     end if
     
@@ -3175,7 +3590,7 @@ contains
     case (1)
       if (size(Isize) .ne. 1) then
         call output_line ('dim(Isize) /= 1!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
         call sys_halt()
       end if
 
@@ -3202,14 +3617,14 @@ contains
         Isize = shape(p_rnode%p_Schar1D)
       case default
         call output_line ('Invalid data type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
         call sys_halt()
       end select
       
     case (2)
       if (size(Isize) .ne. 2) then
         call output_line ('dim(Isize) /= 2!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
         call sys_halt()
       end if
 
@@ -3236,14 +3651,14 @@ contains
         Isize = shape(p_rnode%p_Schar2D)
       case default
         call output_line ('Invalid data type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
         call sys_halt()
       end select
       
     case (3)
       if (size(Isize) .ne. 3) then
         call output_line ('dim(Isize) /= 3!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
         call sys_halt()
       end if
 
@@ -3270,17 +3685,17 @@ contains
         Isize = shape(p_rnode%p_Schar3D)
       case default
         call output_line ('Invalid data type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
         call sys_halt()
       end select
 
     case default
       call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is not a valid handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsizeDefault')
       call sys_halt()
     end select
         
-  end subroutine storage_getsizeWrap
+  end subroutine storage_getsizeDefault
 
 !************************************************************************
 
@@ -3325,7 +3740,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int')
       call sys_halt()
@@ -3389,7 +3804,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_intUBnd')
       call sys_halt()
@@ -3462,7 +3877,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_intLUBnd')
       call sys_halt()
@@ -3532,7 +3947,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                          OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase__singleDefault')
       call sys_halt()
@@ -3595,7 +4010,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_singleUBnd')
       call sys_halt()
@@ -3668,7 +4083,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_singleLUBnd')
       call sys_halt()
@@ -3738,7 +4153,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_doubleDefault')
       call sys_halt()
@@ -3801,7 +4216,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_doubleUBnd')
       call sys_halt()
@@ -3874,7 +4289,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_doubleLUBnd')
       call sys_halt()
@@ -3944,7 +4359,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quadDefault')
       call sys_halt()
@@ -4007,7 +4422,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quadUBnd')
       call sys_halt()
@@ -4080,7 +4495,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quadLUBnd')
       call sys_halt()
@@ -4150,7 +4565,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalDefault')
       call sys_halt()
@@ -4213,7 +4628,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalUBnd')
       call sys_halt()
@@ -4286,7 +4701,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logicalLUBnd')
       call sys_halt()
@@ -4356,7 +4771,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charDefault')
       call sys_halt()
@@ -4419,7 +4834,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charUBnd')
       call sys_halt()
@@ -4492,7 +4907,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_charLUBnd')
       call sys_halt()
@@ -4562,7 +4977,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8Default')
       call sys_halt()
@@ -4625,7 +5040,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8UBnd')
       call sys_halt()
@@ -4698,7 +5113,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8LUBnd')
       call sys_halt()
@@ -4768,7 +5183,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16Default')
       call sys_halt()
@@ -4831,7 +5246,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16UBnd')
       call sys_halt()
@@ -4904,7 +5319,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16LUBnd')
       call sys_halt()
@@ -4974,7 +5389,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32Default')
       call sys_halt()
@@ -5037,7 +5452,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32UBnd')
       call sys_halt()
@@ -5110,7 +5525,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32LUBnd')
       call sys_halt()
@@ -5180,7 +5595,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64Default')
       call sys_halt()
@@ -5243,7 +5658,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64UBnd')
       call sys_halt()
@@ -5316,7 +5731,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64LUBnd')
       call sys_halt()
@@ -5386,7 +5801,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DDef')
       call sys_halt()
@@ -5449,7 +5864,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DUBnd')
       call sys_halt()
@@ -5523,7 +5938,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DLUBnd')
       call sys_halt()
@@ -5593,7 +6008,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DDef')
       call sys_halt()
@@ -5656,7 +6071,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DUBnd')
       call sys_halt()
@@ -5730,7 +6145,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DLUBnd')
       call sys_halt()
@@ -5796,7 +6211,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DDef')
       call sys_halt()
@@ -5855,7 +6270,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DUBnd')
       call sys_halt()
@@ -5925,7 +6340,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DLUBnd')
       call sys_halt()
@@ -5991,7 +6406,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DDef')
       call sys_halt()
@@ -6050,7 +6465,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DUBnd')
       call sys_halt()
@@ -6120,7 +6535,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DLUBnd')
       call sys_halt()
@@ -6190,7 +6605,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DDef')
       call sys_halt()
@@ -6253,7 +6668,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DUBnd')
       call sys_halt()
@@ -6327,7 +6742,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DLUBnd')
       call sys_halt()
@@ -6397,7 +6812,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DDef')
       call sys_halt()
@@ -6460,7 +6875,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DUBnd')
       call sys_halt()
@@ -6534,7 +6949,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DLUBnd')
       call sys_halt()
@@ -6604,7 +7019,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DDef')
       call sys_halt()
@@ -6667,7 +7082,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DUBnd')
       call sys_halt()
@@ -6741,7 +7156,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DLUBnd')
       call sys_halt()
@@ -6811,7 +7226,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DDef')
       call sys_halt()
@@ -6874,7 +7289,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DUBnd')
       call sys_halt()
@@ -6948,7 +7363,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DLUBnd')
       call sys_halt()
@@ -7018,7 +7433,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DDef')
       call sys_halt()
@@ -7081,7 +7496,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DUBnd')
       call sys_halt()
@@ -7155,7 +7570,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DLUBnd')
       call sys_halt()
@@ -7225,7 +7640,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DDef')
       call sys_halt()
@@ -7288,7 +7703,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DUBnd')
       call sys_halt()
@@ -7362,7 +7777,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DLUBnd')
       call sys_halt()
@@ -7432,7 +7847,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DDef')
       call sys_halt()
@@ -7495,7 +7910,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DUBnd')
       call sys_halt()
@@ -7569,7 +7984,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int3DLUBnd')
       call sys_halt()
@@ -7639,7 +8054,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DDef')
       call sys_halt()
@@ -7702,7 +8117,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DUBnd')
       call sys_halt()
@@ -7776,7 +8191,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single3DLUBnd')
       call sys_halt()
@@ -7842,7 +8257,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DDef')
       call sys_halt()
@@ -7901,7 +8316,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DUBnd')
       call sys_halt()
@@ -7971,7 +8386,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double3DLUBnd')
       call sys_halt()
@@ -8037,7 +8452,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DDef')
       call sys_halt()
@@ -8096,7 +8511,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DUBnd')
       call sys_halt()
@@ -8166,7 +8581,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad3DLUBnd')
       call sys_halt()
@@ -8236,7 +8651,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DDef')
       call sys_halt()
@@ -8299,7 +8714,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DUBnd')
       call sys_halt()
@@ -8373,7 +8788,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical3DLUBnd')
       call sys_halt()
@@ -8443,7 +8858,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DDef')
       call sys_halt()
@@ -8506,7 +8921,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DUBnd')
       call sys_halt()
@@ -8580,7 +8995,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char3DLUBnd')
       call sys_halt()
@@ -8650,7 +9065,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DDef')
       call sys_halt()
@@ -8713,7 +9128,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DUBnd')
       call sys_halt()
@@ -8787,7 +9202,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_3DLUBnd')
       call sys_halt()
@@ -8857,7 +9272,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DDef')
       call sys_halt()
@@ -8920,7 +9335,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DUBnd')
       call sys_halt()
@@ -8994,7 +9409,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_3DLUBnd')
       call sys_halt()
@@ -9064,7 +9479,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DDef')
       call sys_halt()
@@ -9127,7 +9542,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DUBnd')
       call sys_halt()
@@ -9201,7 +9616,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_3DLUBnd')
       call sys_halt()
@@ -9271,7 +9686,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DDef')
       call sys_halt()
@@ -9334,7 +9749,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DUBnd')
       call sys_halt()
@@ -9408,7 +9823,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_3DLUBnd')
       call sys_halt()
@@ -9483,7 +9898,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (h_source .eq. ST_NOHANDLE) then
+    if (h_source .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
       call sys_halt()
@@ -9497,7 +9912,7 @@ contains
     p_rsource => p_rheap%p_Rdescriptors(h_source)
     
     ! Create a new array?
-    if (h_dest .eq. ST_NOHANDLE) then
+    if (h_dest .le. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
       ! as h_source.
       select case (p_rsource%idimension)
@@ -10344,7 +10759,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (h_source .eq. ST_NOHANDLE) then
+    if (h_source .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit1d')
       call sys_halt()
@@ -10358,7 +10773,7 @@ contains
     p_rsource => p_rheap%p_Rdescriptors(h_source)
 
     ! Create a new array?
-    if (h_dest .eq. ST_NOHANDLE) then
+    if (h_dest .le. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
       ! as h_source.
       if (p_rsource%idimension .ne. 1) then
@@ -11129,7 +11544,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (h_source .eq. ST_NOHANDLE) then
+    if (h_source .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit2D')
       call sys_halt()
@@ -11143,7 +11558,7 @@ contains
     p_rsource => p_rheap%p_Rdescriptors(h_source)
 
     ! Create a new array?
-    if (h_dest .eq. ST_NOHANDLE) then
+    if (h_dest .le. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
       ! as h_source.
       if (p_rsource%idimension .ne. 2) then
@@ -12452,7 +12867,7 @@ contains
       p_rheap => rbase
     end if
 
-    if (h_source .eq. ST_NOHANDLE) then
+    if (h_source .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_copy_explicit3D')
       call sys_halt()
@@ -12466,7 +12881,7 @@ contains
     p_rsource => p_rheap%p_Rdescriptors(h_source)
 
     ! Create a new array?
-    if (h_dest .eq. ST_NOHANDLE) then
+    if (h_dest .le. ST_NOHANDLE) then
       ! Create a new array in the same size and structure
       ! as h_source.
       if (p_rsource%idimension .ne. 3) then
@@ -14229,7 +14644,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_reallocDefault (scall, isize, ihandle, cinitNewBlock, bcopy, rheap)
+  subroutine storage_realloc (scall, isize, ihandle, cinitNewBlock, bcopy, rheap)
 
 !<description>
   ! This routine reallocates an existing memory block with a new desired
@@ -14283,23 +14698,21 @@ contains
   ! New storage node
   type(t_storageNode) :: rstorageNode
 
-  ! size of the old 1-dimensional array
-  integer :: isizeOld
-
-  ! size of the 1-dimensional array to be copied
-  integer :: isizeCopy
+  ! size and bounds of the old 1-dimensional array
+  integer :: isizeOld,ilbound,iubound
 
   ! size of the old 2-dimensional array
-  integer, dimension(2) :: Isize2Dold
+  integer, dimension(2) :: Isize2Dold,Ilbound2D,Iubound2D
 
   ! size of the old 3-dimensional array
-  integer, dimension(3) :: Isize3Dold
+  integer, dimension(3) :: Isize3Dold,Ilbound3D,Iubound3D
 
+  integer :: ier
   logical :: bcopyData
 
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
       call sys_halt()
     end if
 
@@ -14332,777 +14745,190 @@ contains
 
     ! Are we 1D or 2D?
     select case(p_rnode%idimension)
-    case (1)
-
-      ! Get the size of the old storage node.
-      select case (p_rnode%idataType)
-      case (ST_SINGLE)
-        isizeOld = size(p_rnode%p_Fsingle1D)
-      case (ST_DOUBLE)
-        isizeOld = size(p_rnode%p_Ddouble1D)
-      case (ST_QUAD)
-        isizeOld = size(p_rnode%p_Qquad1D)
-      case (ST_INT)
-        isizeOld = size(p_rnode%p_Iinteger1D)
-      case (ST_INT8)
-        isizeOld = size(p_rnode%p_Iint8_1D)
-      case (ST_INT16)
-        isizeOld = size(p_rnode%p_Iint16_1D)
-      case (ST_INT32)
-        isizeOld = size(p_rnode%p_Iint32_1D)
-      case (ST_INT64)
-        isizeOld = size(p_rnode%p_Iint64_1D)
-      case (ST_LOGICAL)
-        isizeOld = size(p_rnode%p_Blogical1D)
-      case (ST_CHAR)
-        isizeOld = size(p_rnode%p_Schar1D)
-      end select
-
-      ! Do we really have to change anything?
-      if (isize .eq. isizeOld) return
-
-      ! Allocate new memory and initialise it - if it is larger than the old
-      ! memory block.
-      select case (rstorageNode%idataType)
-      case (ST_SINGLE)
-        allocate(rstorageNode%p_Fsingle1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_SINGLE_BYTES
-      case (ST_DOUBLE)
-        allocate(rstorageNode%p_Ddouble1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_DOUBLE_BYTES
-      case (ST_QUAD)
-        allocate(rstorageNode%p_Qquad1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_QUAD_BYTES
-      case (ST_INT)
-        allocate(rstorageNode%p_Iinteger1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_INT_BYTES
-      case (ST_INT8)
-        allocate(rstorageNode%p_Iint8_1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_INT8_BYTES
-      case (ST_INT16)
-        allocate(rstorageNode%p_Iint16_1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_INT16_BYTES
-      case (ST_INT32)
-        allocate(rstorageNode%p_Iint32_1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_INT32_BYTES
-      case (ST_INT64)
-        allocate(rstorageNode%p_Iint64_1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_INT64_BYTES
-      case (ST_LOGICAL)
-        allocate(rstorageNode%p_Blogical1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_LOGICAL_BYTES
-      case (ST_CHAR)
-        allocate(rstorageNode%p_Schar1D(isize))
-        rstorageNode%imemBytes = int(isize,I64)*ST_CHAR_BYTES
-      case default
-        call output_line ('Unsupported memory type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
-        call sys_halt()
-      end select
-
-      if (isize > isizeOld) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,isizeOld+1_I32)
-
-      ! Copy old data?
-      if (bcopyData) then
-        isizeCopy=min(isize,isizeOld)
-        select case (rstorageNode%idataType)
-        case (ST_SINGLE)
-          call lalg_copyVectorSngl (p_rnode%p_Fsingle1D,&
-                                    rstorageNode%p_Fsingle1D, isizeCopy)
-        case (ST_DOUBLE)
-          call lalg_copyVectorDble (p_rnode%p_Ddouble1D,&
-                                    rstorageNode%p_Ddouble1D, isizeCopy)
-        case (ST_QUAD)
-          call lalg_copyVectorQuad (p_rnode%p_Qquad1D,&
-                                    rstorageNode%p_Qquad1D, isizeCopy)
-        case (ST_INT)
-          call lalg_copyVectorInt (p_rnode%p_Iinteger1D,&
-                                   rstorageNode%p_Iinteger1D, isizeCopy)
-        case (ST_INT8)
-          call lalg_copyVectorInt (p_rnode%p_Iint8_1D,&
-                                   rstorageNode%p_Iint8_1D, isizeCopy)
-        case (ST_INT16)
-          call lalg_copyVectorInt (p_rnode%p_Iint16_1D,&
-                                   rstorageNode%p_Iint16_1D, isizeCopy)
-        case (ST_INT32)
-          call lalg_copyVectorInt (p_rnode%p_Iint32_1D,&
-                                   rstorageNode%p_Iint32_1D, isizeCopy)
-        case (ST_INT64)
-          call lalg_copyVectorInt (p_rnode%p_Iint64_1D,&
-                                   rstorageNode%p_Iint64_1D, isizeCopy)
-        case (ST_LOGICAL)
-          call lalg_copyVectorLogical (p_rnode%p_Blogical1D,&
-                                       rstorageNode%p_Blogical1D, isizeCopy)
-        case (ST_CHAR)
-          call lalg_copyVectorChar (p_rnode%p_Schar1D,&
-                                    rstorageNode%p_Schar1D, isizeCopy)
-        end select
-      end if
-
-    case (2)
-
-      ! Get the size of the old storage node.
-      select case (p_rnode%idataType)
-      case (ST_SINGLE)
-        Isize2Dold = shape(p_rnode%p_Fsingle2D)
-      case (ST_DOUBLE)
-        Isize2Dold = shape(p_rnode%p_Ddouble2D)
-      case (ST_QUAD)
-        Isize2Dold = shape(p_rnode%p_Qquad2D)
-      case (ST_INT)
-        Isize2Dold = shape(p_rnode%p_Iinteger2D)
-      case (ST_INT8)
-        Isize2Dold = shape(p_rnode%p_Iint8_2D)
-      case (ST_INT16)
-        Isize2Dold = shape(p_rnode%p_Iint16_2D)
-      case (ST_INT32)
-        Isize2Dold = shape(p_rnode%p_Iint32_2D)
-      case (ST_INT64)
-        Isize2Dold = shape(p_rnode%p_Iint64_2D)
-      case (ST_LOGICAL)
-        Isize2Dold = shape(p_rnode%p_Blogical2D)
-      case (ST_CHAR)
-        Isize2Dold = shape(p_rnode%p_Schar2D)
-      end select
-
-      ! Do we really have to change anything?
-      if (isize .eq. Isize2Dold(2)) return
-
-      ! Allocate new memory and initialise it - if it is larger than the old
-      ! memory block.
-      select case (rstorageNode%idataType)
-      case (ST_SINGLE)
-        allocate(rstorageNode%p_Fsingle2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_SINGLE_BYTES
-      case (ST_DOUBLE)
-        allocate(rstorageNode%p_Ddouble2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_DOUBLE_BYTES
-      case (ST_QUAD)
-        allocate(rstorageNode%p_Qquad2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_QUAD_BYTES
-      case (ST_INT)
-        allocate(rstorageNode%p_Iinteger2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT_BYTES
-      case (ST_INT8)
-        allocate(rstorageNode%p_Iint8_2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT8_BYTES
-      case (ST_INT16)
-        allocate(rstorageNode%p_Iint16_2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT16_BYTES
-      case (ST_INT32)
-        allocate(rstorageNode%p_Iint32_2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT32_BYTES
-      case (ST_INT64)
-        allocate(rstorageNode%p_Iint64_2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT64_BYTES
-      case (ST_LOGICAL)
-        allocate(rstorageNode%p_Blogical2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_LOGICAL_BYTES
-      case (ST_CHAR)
-        allocate(rstorageNode%p_Schar2D(Isize2Dold(1),isize))
-        rstorageNode%imemBytes = &
-             int(Isize2Dold(1),I64)*int(isize,I64)*ST_CHAR_BYTES
-      case default
-        call output_line ('Unsupported memory type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
-        call sys_halt()
-      end select
-
-      if (isize > Isize2Dold(2)) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
-                                     Isize2Dold(2)+1_I32)
-
-      ! Copy old data?
-      if (bcopyData) then
-
-        ! Here it is easier than in storage_copy as we can be sure, source and
-        ! destination array have the same type!
-        select case (rstorageNode%idataType)
-        case (ST_SINGLE)
-          isizeCopy = min(size(rstorageNode%p_Fsingle2D,2),Isize2DOld(2))
-          call lalg_copyVectorSngl2D(p_rnode%p_Fsingle2D,&
-                                     rstorageNode%p_Fsingle2D,&
-                                     size(rstorageNode%p_Fsingle2D,1), isizeCopy)
-
-        case (ST_DOUBLE)
-          isizeCopy = min(size(rstorageNode%p_Ddouble2D,2),Isize2DOld(2))
-          call lalg_copyVectorDble2D(p_rnode%p_Ddouble2D,&
-                                     rstorageNode%p_Ddouble2D,&
-                                     size(rstorageNode%p_Ddouble2D,1), isizeCopy)
-
-        case (ST_QUAD)
-          isizeCopy = min(size(rstorageNode%p_Qquad2D,2),Isize2DOld(2))
-          call lalg_copyVectorQuad2D(p_rnode%p_Qquad2D,&
-                                     rstorageNode%p_Qquad2D,&
-                                     size(rstorageNode%p_Qquad2D,1), isizeCopy)
-
-        case (ST_INT)
-          isizeCopy = min(size(rstorageNode%p_Iinteger2D,2),Isize2DOld(2))
-          call lalg_copyVectorInt2D(p_rnode%p_Iinteger2D,&
-                                     rstorageNode%p_Iinteger2D,&
-                                     size(rstorageNode%p_Iinteger2D,1), isizeCopy)
-
-        case (ST_INT8)
-          isizeCopy = min(size(rstorageNode%p_Iint8_2D,2),Isize2DOld(2))
-          call lalg_copyVectorInt2D(p_rnode%p_Iint8_2D,&
-                                     rstorageNode%p_Iint8_2D,&
-                                     size(rstorageNode%p_Iint8_2D,1), isizeCopy)
-
-        case (ST_INT16)
-          isizeCopy = min(size(rstorageNode%p_Iint16_2D,2),Isize2DOld(2))
-          call lalg_copyVectorInt2D(p_rnode%p_Iint16_2D,&
-                                     rstorageNode%p_Iint16_2D,&
-                                     size(rstorageNode%p_Iint16_2D,1), isizeCopy)
-
-        case (ST_INT32)
-          isizeCopy = min(size(rstorageNode%p_Iint32_2D,2),Isize2DOld(2))
-          call lalg_copyVectorInt2D(p_rnode%p_Iint32_2D,&
-                                     rstorageNode%p_Iint32_2D,&
-                                     size(rstorageNode%p_Iint32_2D,1), isizeCopy)
-
-        case (ST_INT64)
-          isizeCopy = min(size(rstorageNode%p_Iint64_2D,2),Isize2DOld(2))
-          call lalg_copyVectorInt2D(p_rnode%p_Iint64_2D,&
-                                     rstorageNode%p_Iint64_2D,&
-                                     size(rstorageNode%p_Iint64_2D,1), isizeCopy)
-
-        case (ST_LOGICAL)
-          isizeCopy = min(size(rstorageNode%p_Blogical2D,2),Isize2DOld(2))
-          call lalg_copyVectorLogical2D(p_rnode%p_Blogical2D,&
-                                        rstorageNode%p_Blogical2D,&
-                                        size(rstorageNode%p_Blogical2D,1), isizeCopy)
-
-        case (ST_CHAR)
-          isizeCopy = min(size(rstorageNode%p_Schar2D,2),Isize2DOld(2))
-          call lalg_copyVectorChar2D(p_rnode%p_Schar2D,&
-                                     rstorageNode%p_Schar2D,&
-                                     size(rstorageNode%p_Schar2D,1), isizeCopy)
-        end select
-
-      end if
-
-    case (3)
-
-      ! Get the size of the old storage node.
-      select case (p_rnode%idataType)
-      case (ST_SINGLE)
-        Isize3Dold = shape(p_rnode%p_Fsingle3D)
-      case (ST_DOUBLE)
-        Isize3Dold = shape(p_rnode%p_Ddouble3D)
-      case (ST_QUAD)
-        Isize3Dold = shape(p_rnode%p_Qquad3D)
-      case (ST_INT)
-        Isize3Dold = shape(p_rnode%p_Iinteger3D)
-      case (ST_INT8)
-        Isize3Dold = shape(p_rnode%p_Iint8_3D)
-      case (ST_INT16)
-        Isize3Dold = shape(p_rnode%p_Iint16_3D)
-      case (ST_INT32)
-        Isize3Dold = shape(p_rnode%p_Iint32_3D)
-      case (ST_INT64)
-        Isize3Dold = shape(p_rnode%p_Iint64_3D)
-      case (ST_LOGICAL)
-        Isize3Dold = shape(p_rnode%p_Blogical3D)
-      case (ST_CHAR)
-        Isize3Dold = shape(p_rnode%p_Schar3D)
-      end select
-
-      ! Do we really have to change anything?
-      if (isize .eq. Isize3Dold(3)) return
-      
-      ! Allocate new memory and initialise it - if it is larger than the old
-      ! memory block.
-      select case (rstorageNode%idataType)
-      case (ST_SINGLE)
-        allocate(rstorageNode%p_Fsingle3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_SINGLE_BYTES
-      case (ST_DOUBLE)
-        allocate(rstorageNode%p_Ddouble3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_DOUBLE_BYTES
-      case (ST_QUAD)
-        allocate(rstorageNode%p_Qquad3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_QUAD_BYTES
-      case (ST_INT)
-        allocate(rstorageNode%p_Iinteger3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_INT_BYTES
-      case (ST_INT8)
-        allocate(rstorageNode%p_Iint8_3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_INT8_BYTES
-      case (ST_INT16)
-        allocate(rstorageNode%p_Iint16_3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_INT16_BYTES
-      case (ST_INT32)
-        allocate(rstorageNode%p_Iint32_3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_INT32_BYTES
-      case (ST_INT64)
-        allocate(rstorageNode%p_Iint64_3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_INT64_BYTES
-      case (ST_LOGICAL)
-        allocate(rstorageNode%p_Blogical3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_LOGICAL_BYTES
-      case (ST_CHAR)
-        allocate(rstorageNode%p_Schar3D(Isize3Dold(1),Isize3Dold(2),isize))
-        rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
-             int(isize,I64)*ST_CHAR_BYTES
-      case default
-        call output_line ('Unsupported memory type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
-        call sys_halt()
-      end select
-
-      if (isize > Isize3Dold(3)) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
-                                     Isize3Dold(3)+1_I32)
-
-      ! Copy old data?
-      if (bcopyData) then
-
-        ! Here it is easier than in storage_copy as we can be sure, source and
-        ! destination array have the same type!
-        select case (rstorageNode%idataType)
-        case (ST_SINGLE)
-          isizeCopy = min(size(rstorageNode%p_Fsingle3D,3),Isize3DOld(3))
-          call lalg_copyVectorSngl3D(p_rnode%p_Fsingle3D,&
-                                     rstorageNode%p_Fsingle3D,&
-                                     size(rstorageNode%p_Fsingle3D,1),&
-                                     size(rstorageNode%p_Fsingle3D,2), isizeCopy)
-
-        case (ST_DOUBLE)
-          isizeCopy = min(size(rstorageNode%p_Ddouble3D,3),Isize3DOld(3))
-          call lalg_copyVectorDble3D(p_rnode%p_Ddouble3D,&
-                                     rstorageNode%p_Ddouble3D,&
-                                     size(rstorageNode%p_Ddouble3D,1),&
-                                     size(rstorageNode%p_Ddouble3D,2), isizeCopy)
-
-        case (ST_QUAD)
-          isizeCopy = min(size(rstorageNode%p_Qquad3D,3),Isize3DOld(3))
-          call lalg_copyVectorQuad3D(p_rnode%p_Qquad3D,&
-                                     rstorageNode%p_Qquad3D,&
-                                     size(rstorageNode%p_Qquad3D,1),&
-                                     size(rstorageNode%p_Qquad3D,2), isizeCopy)
-
-        case (ST_INT)
-          isizeCopy = min(size(rstorageNode%p_Iinteger3D,3),Isize3DOld(3))
-          call lalg_copyVectorInt3D(p_rnode%p_Iinteger3D,&
-                                     rstorageNode%p_Iinteger3D,&
-                                     size(rstorageNode%p_Iinteger3D,1),&
-                                     size(rstorageNode%p_Iinteger3D,2), isizeCopy)
-
-        case (ST_INT8)
-          isizeCopy = min(size(rstorageNode%p_Iint8_3D,3),Isize3DOld(3))
-          call lalg_copyVectorInt3D(p_rnode%p_Iint8_3D,&
-                                     rstorageNode%p_Iint8_3D,&
-                                     size(rstorageNode%p_Iint8_3D,1),&
-                                     size(rstorageNode%p_Iint8_3D,2), isizeCopy)
-
-        case (ST_INT16)
-          isizeCopy = min(size(rstorageNode%p_Iint16_3D,3),Isize3DOld(3))
-          call lalg_copyVectorInt3D(p_rnode%p_Iint16_3D,&
-                                     rstorageNode%p_Iint16_3D,&
-                                     size(rstorageNode%p_Iint16_3D,1),&
-                                     size(rstorageNode%p_Iint16_3D,2), isizeCopy)
-
-        case (ST_INT32)
-          isizeCopy = min(size(rstorageNode%p_Iint32_3D,3),Isize3DOld(3))
-          call lalg_copyVectorInt3D(p_rnode%p_Iint32_3D,&
-                                     rstorageNode%p_Iint32_3D,&
-                                     size(rstorageNode%p_Iint32_3D,1),&
-                                     size(rstorageNode%p_Iint32_3D,3), isizeCopy)
-
-        case (ST_INT64)
-          isizeCopy = min(size(rstorageNode%p_Iint64_3D,3),Isize3DOld(3))
-          call lalg_copyVectorInt3D(p_rnode%p_Iint64_3D,&
-                                     rstorageNode%p_Iint64_3D,&
-                                     size(rstorageNode%p_Iint64_3D,1),&
-                                     size(rstorageNode%p_Iint64_3D,2), isizeCopy)
-
-        case (ST_LOGICAL)
-          isizeCopy = min(size(rstorageNode%p_Blogical3D,3),Isize3DOld(3))
-          call lalg_copyVectorLogical3D(p_rnode%p_Blogical3D,&
-                                        rstorageNode%p_Blogical3D,&
-                                        size(rstorageNode%p_Blogical3D,1),&
-                                        size(rstorageNode%p_Blogical3D,2), isizeCopy)
-
-        case (ST_CHAR)
-          isizeCopy = min(size(rstorageNode%p_Schar3D,3),Isize3DOld(3))
-          call lalg_copyVectorChar3D(p_rnode%p_Schar3D,&
-                                     rstorageNode%p_Schar3D,&
-                                     size(rstorageNode%p_Schar3D,1),&
-                                     size(rstorageNode%p_Schar3D,2), isizeCopy)
-        end select
-
-      end if
-
-    case default
-      call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1-, 2- nor 3-dimensional!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
-      call sys_halt()
-
-    end select
-
-    ! Respect also the temporary memory in the total amount of memory used.
-    !$omp critical(storage_global_heap_modify)
-    if ((p_rheap%itotalMem + rstorageNode%imemBytes) .gt. p_rheap%itotalMemMax) &
-      p_rheap%itotalMemMax = p_rheap%itotalMem + rstorageNode%imemBytes
-    !$omp end critical(storage_global_heap_modify)
-
-    ! Release old data
-    if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
-    if (associated(p_rnode%p_Ddouble1D))  deallocate(p_rnode%p_Ddouble1D)
-    if (associated(p_rnode%p_Qquad1D))    deallocate(p_rnode%p_Qquad1D)
-    if (associated(p_rnode%p_Iinteger1D)) deallocate(p_rnode%p_Iinteger1D)
-    if (associated(p_rnode%p_Iint8_1D))   deallocate(p_rnode%p_Iint8_1D)
-    if (associated(p_rnode%p_Iint16_1D))  deallocate(p_rnode%p_Iint16_1D)
-    if (associated(p_rnode%p_Iint32_1D))  deallocate(p_rnode%p_Iint32_1D)
-    if (associated(p_rnode%p_Iint64_1D))  deallocate(p_rnode%p_Iint64_1D)
-    if (associated(p_rnode%p_Blogical1D)) deallocate(p_rnode%p_Blogical1D)
-    if (associated(p_rnode%p_Schar1D))    deallocate(p_rnode%p_Schar1D)
-
-    if (associated(p_rnode%p_Fsingle2D))  deallocate(p_rnode%p_Fsingle2D)
-    if (associated(p_rnode%p_Ddouble2D))  deallocate(p_rnode%p_Ddouble2D)
-    if (associated(p_rnode%p_Qquad2D))    deallocate(p_rnode%p_Qquad2D)
-    if (associated(p_rnode%p_Iinteger2D)) deallocate(p_rnode%p_Iinteger2D)
-    if (associated(p_rnode%p_Iint8_2D))   deallocate(p_rnode%p_Iint8_2D)
-    if (associated(p_rnode%p_Iint16_2D))  deallocate(p_rnode%p_Iint16_2D)
-    if (associated(p_rnode%p_Iint32_2D))  deallocate(p_rnode%p_Iint32_2D)
-    if (associated(p_rnode%p_Iint64_2D))  deallocate(p_rnode%p_Iint64_2D)
-    if (associated(p_rnode%p_Blogical2D)) deallocate(p_rnode%p_Blogical2D)
-    if (associated(p_rnode%p_Schar2D))    deallocate(p_rnode%p_Schar2D)
-
-    if (associated(p_rnode%p_Fsingle3D))  deallocate(p_rnode%p_Fsingle3D)
-    if (associated(p_rnode%p_Ddouble3D))  deallocate(p_rnode%p_Ddouble3D)
-    if (associated(p_rnode%p_Qquad3D))    deallocate(p_rnode%p_Qquad3D)
-    if (associated(p_rnode%p_Iinteger3D)) deallocate(p_rnode%p_Iinteger3D)
-    if (associated(p_rnode%p_Iint8_3D))   deallocate(p_rnode%p_Iint8_3D)
-    if (associated(p_rnode%p_Iint16_3D))  deallocate(p_rnode%p_Iint16_3D)
-    if (associated(p_rnode%p_Iint32_3D))  deallocate(p_rnode%p_Iint32_3D)
-    if (associated(p_rnode%p_Iint64_3D))  deallocate(p_rnode%p_Iint64_3D)
-    if (associated(p_rnode%p_Blogical3D)) deallocate(p_rnode%p_Blogical3D)
-    if (associated(p_rnode%p_Schar3D))    deallocate(p_rnode%p_Schar3D)
-
-    ! Correct the memory statistics
-    !$omp critical(storage_global_heap_modify)
-    p_rheap%itotalMem = p_rheap%itotalMem &
-                      - p_rnode%imemBytes + rstorageNode%imemBytes
-    if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
-      p_rheap%itotalMemMax = p_rheap%itotalMem
-    !$omp end critical(storage_global_heap_modify)
-
-    ! Replace the old node by the new one, finish
-    p_rnode = rstorageNode
-
-    ! Release the memory assigned to that handle
-    if (p_rnode%p_memAddress .ne. 0) then
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-      call coproc_freeMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
-#else
-      call output_line ('Unable to free memory address!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocDefault')
-#endif
-    end if
-
-  end subroutine storage_reallocDefault
-
-!************************************************************************
-
-!<subroutine>
-
-  subroutine storage_reallocFixed (scall, ilbound, iubound, ihandle, &
-                                   cinitNewBlock, bcopy, rheap)
-
-!<description>
-  ! This routine reallocates an existing memory block with a new desired
-  ! size. In case of a multiple-dimension block, the last dimension
-  ! is changed. isize is the size of the new memory block / the new size
-  ! of the last dimension.
-  !
-  ! Warning: Reallocation of an array destroys all pointers associated with
-  ! the corresponding handle!
-!</description>
-
-!<input>
-
-  ! Name of the calling routine
-  character(LEN=*), intent(in) :: scall
-
-  ! Requested lower bound for the memory block / the new lower bound of the last
-  ! dimension in the memory block identified by ihandle
-  integer, intent(in) :: ilbound
-
-  ! Requested upper bound for the memory block / the new upper bound of the last
-  ! dimension in the memory block identified by ihandle
-  integer, intent(in) :: iubound
-
-  ! Init new storage block identifier (ST_NEWBLOCK_Zero,
-  ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
-  ! Specifies how to initialise memory if isize > original array size.
-  integer, intent(in) :: cinitNewBlock
-
-  ! OPTIONAL: Copy old data.
-  ! =TRUE: Copy data of old array to the new one.
-  ! =FALSE: Reallocate memory, do not copy old data.
-  ! If not specified, TRUE is assumed.
-  logical, intent(in), optional :: bcopy
-
-!</input>
-
-!<inputoutput>
-
-  ! OPTIONAL: local heap structure to initialise. If not given, the
-  ! global heap is used.
-  type(t_storageBlock), intent(inout), target, optional :: rheap
-
-  ! Handle of the memory block.
-  integer, intent(inout) :: ihandle
-
-!</inputoutput>
-
-!</subroutine>
-
-  ! Pointer to the heap
-  type(t_storageBlock), pointer :: p_rheap
-  type(t_storageNode), pointer :: p_rnode
-
-  ! New storage node
-  type(t_storageNode) :: rstorageNode
-
-  ! size of the new 1-dimensional array
-  integer :: isize
-
-  ! size of the old 1-dimensional array
-  integer :: isizeOld
-
-  ! lower bound of the old 1-dimensional array
-  integer :: ilboundOld
-
-  ! upper bound of the old 1-dimensional array
-  integer :: iuboundOld
-
-  ! lower bound of the 1-dimensional array to be copied
-  integer :: ilboundCopy
-
-  ! upper bound of the 1-dimensional array to be copied
-  integer :: iuboundCopy
-
-  ! size of the old 2-dimensional array
-  integer, dimension(2) :: Isize2Dold
-
-  ! lower bound of the old 2-dimensional array
-  integer, dimension(2) :: ilbound2Dold
-
-  ! upper bound of the old 2-dimensional array
-  integer, dimension(2) :: iubound2Dold
-
-  ! size of the old 3-dimensional array
-  integer, dimension(3) :: Isize3Dold
-
-  ! lower bound of the old 3-dimensional array
-  integer, dimension(3) :: ilbound3Dold
-
-  ! upper bound of the old 3-dimensional array
-  integer, dimension(3) :: iubound3Dold
-
-  integer :: i,j,k
-
-  logical :: bcopyData
-
-    if (ihandle .eq. ST_NOHANDLE) then
-      call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
-      call sys_halt()
-    end if
-
-    isize=iubound-ilbound+1
-    if (isize .eq. 0) then
-      ! Ok, not much to do...
-      call storage_free(ihandle,rheap)
-      return
-    end if
-
-    ! Get the heap to use - local or global one.
-    if(present(rheap)) then
-      p_rheap => rheap
-    else
-      p_rheap => rbase
-    end if
-
-    ! Copy old data?
-
-    if (present(bcopy)) then
-      bcopyData = bcopy
-    else
-      bcopyData = .true.
-    end if
-
-    ! Where is the descriptor of the handle?
-    p_rnode => p_rheap%p_Rdescriptors(ihandle)
-
-    ! Copy the data of the old storage node to rstorageNode. That way
-    ! we prepare a new storage node and will replace the old.
-    rstorageNode = p_rnode
-
-    ! Are we 1D or 2D?
-    select case(p_rnode%idimension)
-
     case (1)
 
       ! Get the size and bounds of the old storage node.
       select case (p_rnode%idataType)
       case (ST_SINGLE)
-        isizeOld   = size(p_rnode%p_Fsingle1D)
-        ilboundOld = lbound(p_rnode%p_Fsingle1D,1)
-        iuboundOld = ubound(p_rnode%p_Fsingle1D,1)
+        isizeOld = size(p_rnode%p_Fsingle1D)
+        ilbound  = lbound(p_rnode%p_Fsingle1D,1)
+        iubound  = ubound(p_rnode%p_Fsingle1D,1)
       case (ST_DOUBLE)
-        isizeOld   = size(p_rnode%p_Ddouble1D)
-        ilboundOld = lbound(p_rnode%p_Ddouble1D,1)
-        iuboundOld = ubound(p_rnode%p_Ddouble1D,1)
+        isizeOld = size(p_rnode%p_Ddouble1D)
+        ilbound  = lbound(p_rnode%p_Ddouble1D,1)
+        iubound  = ubound(p_rnode%p_Ddouble1D,1)
       case (ST_QUAD)
-        isizeOld   = size(p_rnode%p_Qquad1D)
-        ilboundOld = lbound(p_rnode%p_Qquad1D,1)
-        iuboundOld = ubound(p_rnode%p_Qquad1D,1)
+        isizeOld = size(p_rnode%p_Qquad1D)
+        ilbound  = lbound(p_rnode%p_Qquad1D,1)
+        iubound  = ubound(p_rnode%p_Qquad1D,1)
       case (ST_INT)
-        isizeOld   = size(p_rnode%p_Iinteger1D)
-        ilboundOld = lbound(p_rnode%p_Iinteger1D,1)
-        iuboundOld = ubound(p_rnode%p_Iinteger1D,1)
+        isizeOld = size(p_rnode%p_Iinteger1D)
+        ilbound  = lbound(p_rnode%p_Iinteger1D,1)
+        iubound  = ubound(p_rnode%p_Iinteger1D,1)
       case (ST_INT8)
-        isizeOld   = size(p_rnode%p_Iint8_1D)
-        ilboundOld = lbound(p_rnode%p_Iint8_1D,1)
-        iuboundOld = ubound(p_rnode%p_Iint8_1D,1)
+        isizeOld = size(p_rnode%p_Iint8_1D)
+        ilbound  = lbound(p_rnode%p_Iint8_1D,1)
+        iubound  = ubound(p_rnode%p_Iint8_1D,1)
       case (ST_INT16)
-        isizeOld   = size(p_rnode%p_Iint16_1D)
-        ilboundOld = lbound(p_rnode%p_Iint16_1D,1)
-        iuboundOld = ubound(p_rnode%p_Iint16_1D,1)
+        isizeOld = size(p_rnode%p_Iint16_1D)
+        ilbound  = lbound(p_rnode%p_Iint16_1D,1)
+        iubound  = ubound(p_rnode%p_Iint16_1D,1)
       case (ST_INT32)
-        isizeOld   = size(p_rnode%p_Iint32_1D)
-        ilboundOld = lbound(p_rnode%p_Iint32_1D,1)
-        iuboundOld = ubound(p_rnode%p_Iint32_1D,1)
+        isizeOld = size(p_rnode%p_Iint32_1D)
+        ilbound  = lbound(p_rnode%p_Iint32_1D,1)
+        iubound  = ubound(p_rnode%p_Iint32_1D,1)
       case (ST_INT64)
-        isizeOld   = size(p_rnode%p_Iint64_1D)
-        ilboundOld = lbound(p_rnode%p_Iint64_1D,1)
-        iuboundOld = ubound(p_rnode%p_Iint64_1D,1)
+        isizeOld = size(p_rnode%p_Iint64_1D)
+        ilbound  = lbound(p_rnode%p_Iint64_1D,1)
+        iubound  = ubound(p_rnode%p_Iint64_1D,1)
       case (ST_LOGICAL)
-        isizeOld   = size(p_rnode%p_Blogical1D)
-        ilboundOld = lbound(p_rnode%p_Blogical1D,1)
-        iuboundOld = ubound(p_rnode%p_Blogical1D,1)
+        isizeOld = size(p_rnode%p_Blogical1D)
+        ilbound  = lbound(p_rnode%p_Blogical1D,1)
+        iubound  = ubound(p_rnode%p_Blogical1D,1)
       case (ST_CHAR)
-        isizeOld   = size(p_rnode%p_Schar1D)
-        ilboundOld = lbound(p_rnode%p_Schar1D,1)
-        iuboundOld = ubound(p_rnode%p_Schar1D,1)
+        isizeOld = size(p_rnode%p_Schar1D)
+        ilbound  = lbound(p_rnode%p_Schar1D,1)
+        iubound  = ubound(p_rnode%p_Schar1D,1)
       end select
 
       ! Do we really have to change anything?
-      if ((ilbound .eq. ilboundOld) .and. &
-          (iubound .eq. iuboundOld)) return
+      if (isize .eq. isizeOld) return
+
+#ifdef USE_C_PTR_STORAGE    
+      if (ilbound .eq. 1) then
+        ! Allocate new memory and initialise it - if it is larger than the old
+        ! memory block.
+        select case (rstorageNode%idataType)
+        case (ST_SINGLE)
+          rstorageNode%imemBytes = int(isize,I64)*ST_SINGLE_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Fsingle1D, (/isize/))
+        case (ST_DOUBLE)
+          rstorageNode%imemBytes = int(isize,I64)*ST_DOUBLE_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Ddouble1D, (/isize/))
+        case (ST_QUAD)
+          rstorageNode%imemBytes = int(isize,I64)*ST_QUAD_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Qquad1D, (/isize/))
+        case (ST_INT)
+          rstorageNode%imemBytes = int(isize,I64)*ST_INT_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iinteger1D, (/isize/))
+        case (ST_INT8)
+          rstorageNode%imemBytes = int(isize,I64)*ST_INT8_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint8_1D, (/isize/))
+        case (ST_INT16)
+          rstorageNode%imemBytes = int(isize,I64)*ST_INT16_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint16_1D, (/isize/))
+        case (ST_INT32)
+          rstorageNode%imemBytes = int(isize,I64)*ST_INT32_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint32_1D, (/isize/))
+        case (ST_INT64)
+          rstorageNode%imemBytes = int(isize,I64)*ST_INT64_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint64_1D, (/isize/))
+        case (ST_LOGICAL)
+          rstorageNode%imemBytes = int(isize,I64)*ST_LOGICAL_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Blogical1D, (/isize/))
+        case (ST_CHAR)
+          rstorageNode%imemBytes = int(isize,I64)*ST_CHAR_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Schar1D, (/isize/))
+        case default
+          call output_line ('Unsupported memory type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
+          call sys_halt()
+        end select
+        
+        ! Nasty trick but quick!
+        goto 100
+      else
+        call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
+                          OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
+      end if
+#endif
 
       ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
-
       select case (rstorageNode%idataType)
       case (ST_SINGLE)
-        allocate(rstorageNode%p_Fsingle1D(ilbound:iubound))
+        allocate(rstorageNode%p_Fsingle1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_SINGLE_BYTES
       case (ST_DOUBLE)
-        allocate(rstorageNode%p_Ddouble1D(ilbound:iubound))
+        allocate(rstorageNode%p_Ddouble1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_DOUBLE_BYTES
       case (ST_QUAD)
-        allocate(rstorageNode%p_Qquad1D(ilbound:iubound))
+        allocate(rstorageNode%p_Qquad1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_QUAD_BYTES
       case (ST_INT)
-        allocate(rstorageNode%p_Iinteger1D(ilbound:iubound))
+        allocate(rstorageNode%p_Iinteger1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_INT_BYTES
       case (ST_INT8)
-        allocate(rstorageNode%p_Iint8_1D(ilbound:iubound))
+        allocate(rstorageNode%p_Iint8_1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_INT8_BYTES
       case (ST_INT16)
-        allocate(rstorageNode%p_Iint16_1D(ilbound:iubound))
+        allocate(rstorageNode%p_Iint16_1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_INT16_BYTES
       case (ST_INT32)
-        allocate(rstorageNode%p_Iint32_1D(ilbound:iubound))
+        allocate(rstorageNode%p_Iint32_1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_INT32_BYTES
       case (ST_INT64)
-        allocate(rstorageNode%p_Iint64_1D(ilbound:iubound))
+        allocate(rstorageNode%p_Iint64_1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_INT64_BYTES
       case (ST_LOGICAL)
-        allocate(rstorageNode%p_Blogical1D(ilbound:iubound))
+        allocate(rstorageNode%p_Blogical1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_LOGICAL_BYTES
       case (ST_CHAR)
-        allocate(rstorageNode%p_Schar1D(ilbound:iubound))
+        allocate(rstorageNode%p_Schar1D(ilbound:ilbound+isize-1))
         rstorageNode%imemBytes = int(isize,I64)*ST_CHAR_BYTES
       case default
         call output_line ('Unsupported memory type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
         call sys_halt()
       end select
 
-      if (iubound > iuboundOld) &
-          call storage_initialiseNode (rstorageNode,cinitNewBlock,iuboundOld+1_I32)
-      if (ilbound < ilboundOld) &
-          call storage_initialiseNode (rstorageNode,cinitNewBlock,ilbound,ilboundOld-1_I32)
+100   iubound=min(ilbound+isize-1,iubound)
+      if (isize > isizeOld) &
+        call storage_initialiseNode (rstorageNode,cinitNewBlock,iubound+1_I32)
 
       ! Copy old data?
       if (bcopyData) then
-        ilboundCopy=max(ilbound,ilboundOld)
-        iuboundCopy=min(iubound,iuboundOld)
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl (p_rnode%p_Fsingle1D(ilboundCopy:iuboundCopy),&
-                                    rstorageNode%p_Fsingle1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorSngl (p_rnode%p_Fsingle1D(ilbound:iubound),&
+                                    rstorageNode%p_Fsingle1D(ilbound:iubound))
         case (ST_DOUBLE)
-          call lalg_copyVectorDble (p_rnode%p_Ddouble1D(ilboundCopy:iuboundCopy),&
-                                    rstorageNode%p_Ddouble1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorDble (p_rnode%p_Ddouble1D(ilbound:iubound),&
+                                    rstorageNode%p_Ddouble1D(ilbound:iubound))
         case (ST_QUAD)
-          call lalg_copyVectorQuad (p_rnode%p_Qquad1D(ilboundCopy:iuboundCopy),&
-                                    rstorageNode%p_Qquad1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorQuad (p_rnode%p_Qquad1D(ilbound:iubound),&
+                                    rstorageNode%p_Qquad1D(ilbound:iubound))
         case (ST_INT)
-          call lalg_copyVectorInt (p_rnode%p_Iinteger1D(ilboundCopy:iuboundCopy),&
-                                   rstorageNode%p_Iinteger1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorInt (p_rnode%p_Iinteger1D(ilbound:iubound),&
+                                   rstorageNode%p_Iinteger1D(ilbound:iubound))
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rnode%p_Iint8_1D(ilboundCopy:iuboundCopy),&
-                                   rstorageNode%p_Iint8_1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorInt (p_rnode%p_Iint8_1D(ilbound:iubound),&
+                                   rstorageNode%p_Iint8_1D(ilbound:iubound))
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rnode%p_Iint16_1D(ilboundCopy:iuboundCopy),&
-                                   rstorageNode%p_Iint16_1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorInt (p_rnode%p_Iint16_1D(ilbound:iubound),&
+                                   rstorageNode%p_Iint16_1D(ilbound:iubound))
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rnode%p_Iint32_1D(ilboundCopy:iuboundCopy),&
-                                   rstorageNode%p_Iint32_1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorInt (p_rnode%p_Iint32_1D(ilbound:iubound),&
+                                   rstorageNode%p_Iint32_1D(ilbound:iubound))
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rnode%p_Iint64_1D(ilboundCopy:iuboundCopy),&
-                                   rstorageNode%p_Iint64_1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorInt (p_rnode%p_Iint64_1D(ilbound:iubound),&
+                                   rstorageNode%p_Iint64_1D(ilbound:iubound))
         case (ST_LOGICAL)
-          call lalg_copyVectorLogical (p_rnode%p_Blogical1D(ilboundCopy:iuboundCopy),&
-                                       rstorageNode%p_Blogical1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorLogical (p_rnode%p_Blogical1D(ilbound:iubound),&
+                                       rstorageNode%p_Blogical1D(ilbound:iubound))
         case (ST_CHAR)
-          call lalg_copyVectorChar (p_rnode%p_Schar1D(ilboundCopy:iuboundCopy),&
-                                    rstorageNode%p_Schar1D(ilboundCopy:iuboundCopy))
+          call lalg_copyVectorChar (p_rnode%p_Schar1D(ilbound:iubound),&
+                                    rstorageNode%p_Schar1D(ilbound:iubound))
         end select
       end if
 
@@ -15112,211 +14938,226 @@ contains
       select case (p_rnode%idataType)
       case (ST_SINGLE)
         Isize2Dold = shape(p_rnode%p_Fsingle2D)
-        ilbound2Dold = lbound(p_rnode%p_Fsingle2D)
-        iubound2Dold = ubound(p_rnode%p_Fsingle2D)
+        Ilbound2D  = lbound(p_rnode%p_Fsingle2D)
+        Iubound2D  = ubound(p_rnode%p_Fsingle2D)
       case (ST_DOUBLE)
         Isize2Dold = shape(p_rnode%p_Ddouble2D)
-        ilbound2Dold = lbound(p_rnode%p_Ddouble2D)
-        iubound2Dold = ubound(p_rnode%p_Ddouble2D)
+        Ilbound2D  = lbound(p_rnode%p_Ddouble2D)
+        Iubound2D  = ubound(p_rnode%p_Ddouble2D)
       case (ST_QUAD)
         Isize2Dold = shape(p_rnode%p_Qquad2D)
-        ilbound2Dold = lbound(p_rnode%p_Qquad2D)
-        iubound2Dold = ubound(p_rnode%p_Qquad2D)
+        Ilbound2D  = lbound(p_rnode%p_Qquad2D)
+        Iubound2D  = ubound(p_rnode%p_Qquad2D)
       case (ST_INT)
         Isize2Dold = shape(p_rnode%p_Iinteger2D)
-        ilbound2Dold = lbound(p_rnode%p_Iinteger2D)
-        iubound2Dold = ubound(p_rnode%p_Iinteger2D)
+        Ilbound2D  = lbound(p_rnode%p_Iinteger2D)
+        Iubound2D  = ubound(p_rnode%p_Iinteger2D)
       case (ST_INT8)
         Isize2Dold = shape(p_rnode%p_Iint8_2D)
-        ilbound2Dold = lbound(p_rnode%p_Iint8_2D)
-        iubound2Dold = ubound(p_rnode%p_Iint8_2D)
+        Ilbound2D  = lbound(p_rnode%p_Iint8_2D)
+        Iubound2D  = ubound(p_rnode%p_Iint8_2D)
       case (ST_INT16)
         Isize2Dold = shape(p_rnode%p_Iint16_2D)
-        ilbound2Dold = lbound(p_rnode%p_Iint16_2D)
-        iubound2Dold = ubound(p_rnode%p_Iint16_2D)
+        Ilbound2D  = lbound(p_rnode%p_Iint16_2D)
+        Iubound2D  = ubound(p_rnode%p_Iint16_2D)
       case (ST_INT32)
         Isize2Dold = shape(p_rnode%p_Iint32_2D)
-        ilbound2Dold = lbound(p_rnode%p_Iint32_2D)
-        iubound2Dold = ubound(p_rnode%p_Iint32_2D)
+        Ilbound2D  = lbound(p_rnode%p_Iint32_2D)
+        Iubound2D  = ubound(p_rnode%p_Iint32_2D)
       case (ST_INT64)
         Isize2Dold = shape(p_rnode%p_Iint64_2D)
-        ilbound2Dold = lbound(p_rnode%p_Iint64_2D)
-        iubound2Dold = ubound(p_rnode%p_Iint64_2D)
+        Ilbound2D  = lbound(p_rnode%p_Iint64_2D)
+        Iubound2D  = ubound(p_rnode%p_Iint64_2D)
       case (ST_LOGICAL)
         Isize2Dold = shape(p_rnode%p_Blogical2D)
-        ilbound2Dold = lbound(p_rnode%p_Blogical2D)
-        iubound2Dold = ubound(p_rnode%p_Blogical2D)
+        Ilbound2D  = lbound(p_rnode%p_Blogical2D)
+        Iubound2D  = ubound(p_rnode%p_Blogical2D)
       case (ST_CHAR)
         Isize2Dold = shape(p_rnode%p_Schar2D)
-        ilbound2Dold = lbound(p_rnode%p_Schar2D)
-        iubound2Dold = ubound(p_rnode%p_Schar2D)
+        Ilbound2D  = lbound(p_rnode%p_Schar2D)
+        Iubound2D  = ubound(p_rnode%p_Schar2D)
       end select
 
       ! Do we really have to change anything?
-      if ((ilbound .eq. ilbound2Dold(2)) .and. &
-          (iubound .eq. iubound2Dold(2))) return
+      if (isize .eq. Isize2Dold(2)) return
+
+#ifdef USE_C_PTR_STORAGE
+      if (all(Ilbound2D .eq. 1)) then
+        ! Allocate new memory and initialise it - if it is larger than the old
+        ! memory block.
+        select case (rstorageNode%idataType)
+        case (ST_SINGLE)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_SINGLE_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Fsingle2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_DOUBLE)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_DOUBLE_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Ddouble2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_QUAD)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_QUAD_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Qquad2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_INT)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iinteger2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_INT8)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT8_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint8_2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_INT16)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT16_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint16_2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_INT32)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT32_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint32_2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_INT64)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT64_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint64_2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_LOGICAL)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_LOGICAL_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Blogical2D,&
+                           (/Isize2Dold(1),isize/))
+        case (ST_CHAR)
+          rstorageNode%imemBytes = int(Isize2Dold(1),I64)*int(isize,I64)*ST_CHAR_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Schar2D,&
+                           (/Isize2Dold(1),isize/))
+        case default
+          call output_line ('Unsupported memory type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
+          call sys_halt()
+        end select
+        
+        ! Nasty trick but quick
+        goto 200
+      else
+        call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
+                          OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
+      end if
+#endif
 
       ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
       select case (rstorageNode%idataType)
       case (ST_SINGLE)
-        allocate(rstorageNode%p_Fsingle2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Fsingle2D(Ilbound2D(1):Iubound2D(1),&
+                                          Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_SINGLE_BYTES
       case (ST_DOUBLE)
-        allocate(rstorageNode%p_Ddouble2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Ddouble2D(Ilbound2D(1):Iubound2D(1),&
+                                          Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_DOUBLE_BYTES
       case (ST_QUAD)
-        allocate(rstorageNode%p_Qquad2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Qquad2D(Ilbound2D(1):Iubound2D(1),&
+                                        Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_QUAD_BYTES
       case (ST_INT)
-        allocate(rstorageNode%p_Iinteger2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iinteger2D(Ilbound2D(1):Iubound2D(1),&
+                                           Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT_BYTES
       case (ST_INT8)
-        allocate(rstorageNode%p_Iint8_2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint8_2D(Ilbound2D(1):Iubound2D(1),&
+                                         Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT8_BYTES
       case (ST_INT16)
-        allocate(rstorageNode%p_Iint16_2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint16_2D(Ilbound2D(1):Iubound2D(1),&
+                                          Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT16_BYTES
       case (ST_INT32)
-        allocate(rstorageNode%p_Iint32_2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint32_2D(Ilbound2D(1):Iubound2D(1),&
+                                          Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT32_BYTES
       case (ST_INT64)
-        allocate(rstorageNode%p_Iint64_2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint64_2D(Ilbound2D(1):Iubound2D(1),&
+                                          Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_INT64_BYTES
       case (ST_LOGICAL)
-        allocate(rstorageNode%p_Blogical2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Blogical2D(Ilbound2D(1):Iubound2D(1),&
+                                           Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_LOGICAL_BYTES
       case (ST_CHAR)
-        allocate(rstorageNode%p_Schar2D(&
-            Ilbound2Dold(1):Iubound2Dold(1),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Schar2D(Ilbound2D(1):Iubound2D(1),&
+                                        Ilbound2D(2):Ilbound2D(2)+isize-1))
         rstorageNode%imemBytes = &
              int(Isize2Dold(1),I64)*int(isize,I64)*ST_CHAR_BYTES
       case default
         call output_line ('Unsupported memory type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
         call sys_halt()
       end select
 
-      if (iubound > Iubound2Dold(2)) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
-                                     Iubound2Dold(2)+1_I32)
-      if (ilbound < Ilbound2Dold(2)) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
-                                     ilbound,Ilbound2Dold(2)-1_I32)
+200   Iubound2D(2)=min(Ilbound2D(2)+isize-1,Iubound2D(2))
+      if (isize > Isize2Dold(2)) &
+          call storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                       Iubound2D(2)+1_I32)
 
       ! Copy old data?
       if (bcopyData) then
-
         ! Here it is easier than in storage_copy as we can be sure, source and
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorSngl2D(p_rnode%p_Fsingle2D(:,:Iubound2D(2)),&
+                                     rstorageNode%p_Fsingle2D(:,:Iubound2D(2)))
 
         case (ST_DOUBLE)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorDble2D(p_rnode%p_Ddouble2D(:,:Iubound2D(2)),&
+                                     rstorageNode%p_Ddouble2D(:,:Iubound2D(2)))
 
         case (ST_QUAD)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Qquad2D(i,j) = p_rnode%p_Qquad2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorQuad2D(p_rnode%p_Qquad2D(:,:Iubound2D(2)),&
+                                     rstorageNode%p_Qquad2D(:,:Iubound2D(2)))
 
         case (ST_INT)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorInt2D(p_rnode%p_Iinteger2D(:,:Iubound2D(2)),&
+                                    rstorageNode%p_Iinteger2D(:,:Iubound2D(2)))
 
         case (ST_INT8)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Iint8_2D(i,j) = p_rnode%p_Iint8_2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorInt2D(p_rnode%p_Iint8_2D(:,:Iubound2D(2)),&
+                                    rstorageNode%p_Iint8_2D(:,:Iubound2D(2)))
 
         case (ST_INT16)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Iint16_2D(i,j) = p_rnode%p_Iint16_2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorInt2D(p_rnode%p_Iint16_2D(:,:Iubound2D(2)),&
+                                    rstorageNode%p_Iint16_2D(:,:Iubound2D(2)))
 
         case (ST_INT32)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Iint32_2D(i,j) = p_rnode%p_Iint32_2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorInt2D(p_rnode%p_Iint32_2D(:,:Iubound2D(2)),&
+                                    rstorageNode%p_Iint32_2D(:,:Iubound2D(2)))
 
         case (ST_INT64)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Iint64_2D(i,j) = p_rnode%p_Iint64_2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorInt2D(p_rnode%p_Iint64_2D(:,:Iubound2D(2)),&
+                                    rstorageNode%p_Iint64_2D(:,:Iubound2D(2)))
 
         case (ST_LOGICAL)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Blogical2D(i,j) = p_rnode%p_Blogical2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorLogical2D(p_rnode%p_Blogical2D(:,:Iubound2D(2)),&
+                                        rstorageNode%p_Blogical2D(:,:Iubound2D(2)))
 
         case (ST_CHAR)
-          ! Copy by hand
-          do j=max(ilbound,Ilbound2Dold(2)),min(iubound,Iubound2Dold(2))
-            do i=Ilbound2DOld(1),Iubound2Dold(1)
-              rstorageNode%p_Schar2D(i,j) = p_rnode%p_Schar2D(i,j)
-            end do
-          end do
+          call lalg_copyVectorChar2D(p_rnode%p_Schar2D(:,:Iubound2D(2)),&
+                                     rstorageNode%p_Schar2D(:,:Iubound2D(2)))
         end select
 
       end if
@@ -15327,248 +15168,263 @@ contains
       select case (p_rnode%idataType)
       case (ST_SINGLE)
         Isize3Dold = shape(p_rnode%p_Fsingle3D)
-        ilbound3Dold = lbound(p_rnode%p_Fsingle3D)
-        iubound3Dold = ubound(p_rnode%p_Fsingle3D)
+        ilbound3D  = lbound(p_rnode%p_Fsingle3D)
+        Iubound3D  = ubound(p_rnode%p_Fsingle3D)
       case (ST_DOUBLE)
         Isize3Dold = shape(p_rnode%p_Ddouble3D)
-        ilbound3Dold = lbound(p_rnode%p_Ddouble3D)
-        iubound3Dold = ubound(p_rnode%p_Ddouble3D)
+        ilbound3D  = lbound(p_rnode%p_Ddouble3D)
+        Iubound3D  = ubound(p_rnode%p_Ddouble3D)
       case (ST_QUAD)
         Isize3Dold = shape(p_rnode%p_Qquad3D)
-        ilbound3Dold = lbound(p_rnode%p_Qquad3D)
-        iubound3Dold = ubound(p_rnode%p_Qquad3D)
+        ilbound3D  = lbound(p_rnode%p_Qquad3D)
+        Iubound3D  = ubound(p_rnode%p_Qquad3D)
       case (ST_INT)
         Isize3Dold = shape(p_rnode%p_Iinteger3D)
-        ilbound3Dold = lbound(p_rnode%p_Iinteger3D)
-        iubound3Dold = ubound(p_rnode%p_Iinteger3D)
+        ilbound3D  = lbound(p_rnode%p_Iinteger3D)
+        Iubound3D  = ubound(p_rnode%p_Iinteger3D)
       case (ST_INT8)
         Isize3Dold = shape(p_rnode%p_Iint8_3D)
-        ilbound3Dold = lbound(p_rnode%p_Iint8_3D)
-        iubound3Dold = ubound(p_rnode%p_Iint8_3D)
+        ilbound3D  = lbound(p_rnode%p_Iint8_3D)
+        Iubound3D  = ubound(p_rnode%p_Iint8_3D)
       case (ST_INT16)
         Isize3Dold = shape(p_rnode%p_Iint16_3D)
-        ilbound3Dold = lbound(p_rnode%p_Iint16_3D)
-        iubound3Dold = ubound(p_rnode%p_Iint16_3D)
+        ilbound3D  = lbound(p_rnode%p_Iint16_3D)
+        Iubound3D  = ubound(p_rnode%p_Iint16_3D)
       case (ST_INT32)
         Isize3Dold = shape(p_rnode%p_Iint32_3D)
-        ilbound3Dold = lbound(p_rnode%p_Iint32_3D)
-        iubound3Dold = ubound(p_rnode%p_Iint32_3D)
+        ilbound3D  = lbound(p_rnode%p_Iint32_3D)
+        Iubound3D  = ubound(p_rnode%p_Iint32_3D)
       case (ST_INT64)
         Isize3Dold = shape(p_rnode%p_Iint64_3D)
-        ilbound3Dold = lbound(p_rnode%p_Iint64_3D)
-        iubound3Dold = ubound(p_rnode%p_Iint64_3D)
+        ilbound3D  = lbound(p_rnode%p_Iint64_3D)
+        Iubound3D  = ubound(p_rnode%p_Iint64_3D)
       case (ST_LOGICAL)
         Isize3Dold = shape(p_rnode%p_Blogical3D)
-        ilbound3Dold = lbound(p_rnode%p_Blogical3D)
-        iubound3Dold = ubound(p_rnode%p_Blogical3D)
+        ilbound3D  = lbound(p_rnode%p_Blogical3D)
+        Iubound3D  = ubound(p_rnode%p_Blogical3D)
       case (ST_CHAR)
         Isize3Dold = shape(p_rnode%p_Schar3D)
-        ilbound3Dold = lbound(p_rnode%p_Schar3D)
-        iubound3Dold = ubound(p_rnode%p_Schar3D)
+        ilbound3D  = lbound(p_rnode%p_Schar3D)
+        Iubound3D  = ubound(p_rnode%p_Schar3D)
       end select
 
       ! Do we really have to change anything?
-      if ((ilbound .eq. ilbound3Dold(3)) .and. &
-          (iubound .eq. iubound3Dold(3))) return
+      if (isize .eq. Isize3Dold(3)) return
 
+#ifdef USE_C_PTR_STORAGE
+      if (all(Ilbound3D .eq. 1)) then
+        ! Allocate new memory and initialise it - if it is larger than the old
+        ! memory block.
+        select case (rstorageNode%idataType)
+        case (ST_SINGLE)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_SINGLE_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Fsingle3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_DOUBLE)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_DOUBLE_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Ddouble3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_QUAD)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_QUAD_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Qquad3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_INT)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_INT_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iinteger3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_INT8)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_INT8_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint8_3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_INT16)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_INT16_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint16_3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_INT32)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_INT32_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint32_3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_INT64)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_INT64_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Iint64_3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_LOGICAL)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_LOGICAL_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Blogical3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case (ST_CHAR)
+          rstorageNode%imemBytes = int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+                                   int(isize,I64)*ST_CHAR_BYTES
+          ier = c_allocate(rstorageNode%chostMemPtr, rstorageNode%imemBytes)
+          call c_f_pointer(rstorageNode%chostMemPtr, rstorageNode%p_Schar3D,&
+                           (/Isize3Dold(1),Isize3Dold(2),isize/))
+        case default
+          call output_line ('Unsupported memory type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
+          call sys_halt()
+        end select
+      
+        ! Nasty trick but quick
+        goto 300
+      else
+        call output_line ('Resorting to standard ALLOCATE for fixed-size memory!', &
+                          OU_CLASS_MSG,OU_MODE_STD,'storage_realloc')
+      end if
+#endif
+      
       ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
       select case (rstorageNode%idataType)
       case (ST_SINGLE)
-        allocate(rstorageNode%p_Fsingle3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Fsingle3D(Ilbound3D(1):Iubound3D(1),&
+                                          Ilbound3D(2):Iubound3D(2),&
+                                          Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_SINGLE_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_SINGLE_BYTES
       case (ST_DOUBLE)
-        allocate(rstorageNode%p_Ddouble3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Ddouble3D(Ilbound3D(1):Iubound3D(1),&
+                                          Ilbound3D(2):Iubound3D(2),&
+                                          Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_DOUBLE_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_DOUBLE_BYTES
       case (ST_QUAD)
-        allocate(rstorageNode%p_Qquad3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Qquad3D(Ilbound3D(1):Iubound3D(1),&
+                                        Ilbound3D(2):Iubound3D(2),&
+                                        Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_QUAD_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_QUAD_BYTES
       case (ST_INT)
-        allocate(rstorageNode%p_Iinteger3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iinteger3D(Ilbound3D(1):Iubound3D(1),&
+                                           Ilbound3D(2):Iubound3D(2),&
+                                           Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT_BYTES
       case (ST_INT8)
-        allocate(rstorageNode%p_Iint8_3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint8_3D(Ilbound3D(1):Iubound3D(1),&
+                                         Ilbound3D(2):Iubound3D(2),&
+                                         Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT8_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT8_BYTES
       case (ST_INT16)
-        allocate(rstorageNode%p_Iint16_3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint16_3D(Ilbound3D(1):Iubound3D(1),&
+                                          Ilbound3D(2):Iubound3D(2),&
+                                          Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT16_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT16_BYTES
       case (ST_INT32)
-        allocate(rstorageNode%p_Iint32_3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint32_3D(Ilbound3D(1):Iubound3D(1),&
+                                          Ilbound3D(2):Iubound3D(2),&
+                                          Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT32_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT32_BYTES
       case (ST_INT64)
-        allocate(rstorageNode%p_Iint64_3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Iint64_3D(Ilbound3D(1):Iubound3D(1),&
+                                          Ilbound3D(2):Iubound3D(2),&
+                                          Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_INT64_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_INT64_BYTES
       case (ST_LOGICAL)
-        allocate(rstorageNode%p_Blogical3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Blogical3D(Ilbound3D(1):Iubound3D(1),&
+                                           Ilbound3D(2):Iubound3D(2),&
+                                           Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_LOGICAL_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_LOGICAL_BYTES
       case (ST_CHAR)
-        allocate(rstorageNode%p_Schar3D(&
-            Ilbound3Dold(1):Iubound3Dold(1),&
-            Ilbound3Dold(2):Iubound3Dold(2),&
-            ilbound:iubound))
+        allocate(rstorageNode%p_Schar3D(Ilbound3D(1):Iubound3D(1),&
+                                        Ilbound3D(2):Iubound3D(2),&
+                                        Ilbound3D(3):Ilbound3D(3)+isize-1))
         rstorageNode%imemBytes = &
-             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*int(isize,I64)*ST_CHAR_BYTES
+             int(Isize3Dold(1),I64)*int(Isize3Dold(2),I64)*&
+             int(isize,I64)*ST_CHAR_BYTES
       case default
         call output_line ('Unsupported memory type!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
         call sys_halt()
       end select
 
-      if (iubound > Iubound3Dold(3)) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
-                                     Iubound3Dold(3)+1_I32)
-      if (ilbound < Ilbound3Dold(3)) &
-        call storage_initialiseNode (rstorageNode,cinitNewBlock,&
-                                     ilbound,Ilbound3Dold(3)-1_I32)
+300   Iubound3D(3)=min(Ilbound3D(3)+isize-1,Iubound3D(3))
+      if (isize > Isize3Dold(3)) &
+          call storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                       Iubound3D(3)+1_I32)
 
       ! Copy old data?
       if (bcopyData) then
-
         ! Here it is easier than in storage_copy as we can be sure, source and
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Fsingle3D(i,j,k) = p_rnode%p_Fsingle3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorSngl3D(p_rnode%p_Fsingle3D(:,:,:Iubound3D(3)),&
+                                     rstorageNode%p_Fsingle3D(:,:,:Iubound3D(3)))
 
         case (ST_DOUBLE)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Ddouble3D(i,j,k) = p_rnode%p_Ddouble3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorDble3D(p_rnode%p_Ddouble3D(:,:,:Iubound3D(3)),&
+                                     rstorageNode%p_Ddouble3D(:,:,:Iubound3D(3)))
 
         case (ST_QUAD)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Qquad3D(i,j,k) = p_rnode%p_Qquad3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorQuad3D(p_rnode%p_Qquad3D(:,:,:Iubound3D(3)),&
+                                     rstorageNode%p_Qquad3D(:,:,:Iubound3D(3)))
 
         case (ST_INT)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Iinteger3D(i,j,k) = p_rnode%p_Iinteger3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorInt3D(p_rnode%p_Iinteger3D(:,:,:Iubound3D(3)),&
+                                    rstorageNode%p_Iinteger3D(:,:,:Iubound3D(3)))
 
         case (ST_INT8)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Iint8_3D(i,j,k) = p_rnode%p_Iint8_3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorInt3D(p_rnode%p_Iint8_3D(:,:,:Iubound3D(3)),&
+                                    rstorageNode%p_Iint8_3D(:,:,:Iubound3D(3)))
 
         case (ST_INT16)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Iint16_3D(i,j,k) = p_rnode%p_Iint16_3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorInt3D(p_rnode%p_Iint16_3D(:,:,:Iubound3D(3)),&
+                                    rstorageNode%p_Iint16_3D(:,:,:Iubound3D(3)))
 
         case (ST_INT32)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Iint32_3D(i,j,k) = p_rnode%p_Iint32_3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorInt3D(p_rnode%p_Iint32_3D(:,:,:Iubound3D(3)),&
+                                    rstorageNode%p_Iint32_3D(:,:,:Iubound3D(3)))
 
         case (ST_INT64)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Iint64_3D(i,j,k) = p_rnode%p_Iint64_3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorInt3D(p_rnode%p_Iint64_3D(:,:,:Iubound3D(3)),&
+                                    rstorageNode%p_Iint64_3D(:,:,:Iubound3D(3)))
 
         case (ST_LOGICAL)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Blogical3D(i,j,k) = p_rnode%p_Blogical3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorLogical3D(p_rnode%p_Blogical3D(:,:,:Iubound3D(3)),&
+                                        rstorageNode%p_Blogical3D(:,:,:Iubound3D(3)))
 
         case (ST_CHAR)
-          ! Copy by hand
-          do k=max(ilbound,Ilbound3Dold(3)),min(iubound,Iubound3Dold(3))
-            do j=max(ilbound,Ilbound3Dold(2)),min(iubound,Iubound3Dold(2))
-              do i=Ilbound3DOld(1),Iubound3Dold(1)
-                rstorageNode%p_Schar3D(i,j,k) = p_rnode%p_Schar3D(i,j,k)
-              end do
-            end do
-          end do
+          call lalg_copyVectorChar3D(p_rnode%p_Schar3D(:,:,:Iubound3D(3)),&
+                                     rstorageNode%p_Schar3D(:,:,:Iubound3D(3)))
         end select
 
       end if
 
     case default
       call output_line ('Handle '//trim(sys_siL(ihandle,11))//' is neither 1-, 2- nor 3-dimensional!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
       call sys_halt()
 
     end select
@@ -15578,6 +15434,56 @@ contains
     if ((p_rheap%itotalMem + rstorageNode%imemBytes) .gt. p_rheap%itotalMemMax) &
       p_rheap%itotalMemMax = p_rheap%itotalMem + rstorageNode%imemBytes
     !$omp end critical(storage_global_heap_modify)
+
+#ifdef USE_C_PTR_STORAGE
+    ! Release host memory physically
+    if (storage_isAssociated(p_rnode%chostMemPtr)) then
+      if (c_deallocate(p_rnode%chostMemPtr) .gt. 0) then
+        call output_line ('Error in freeing memory with c_deallocate!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_realloc')
+        call sys_halt()
+      end if
+    end if
+
+    ! Nullify pointers
+    nullify(p_rnode%p_Fsingle1D)
+    nullify(p_rnode%p_Ddouble1D)
+    nullify(p_rnode%p_Qquad1D)
+    nullify(p_rnode%p_Iinteger1D)
+    nullify(p_rnode%p_Iint8_1D)
+    nullify(p_rnode%p_Iint16_1D)
+    nullify(p_rnode%p_Iint32_1D)
+    nullify(p_rnode%p_Iint64_1D)
+    nullify(p_rnode%p_Blogical1D)
+    nullify(p_rnode%p_Schar1D)
+
+    nullify(p_rnode%p_Fsingle2D)
+    nullify(p_rnode%p_Ddouble2D)
+    nullify(p_rnode%p_Qquad2D)
+    nullify(p_rnode%p_Iinteger2D)
+    nullify(p_rnode%p_Iint8_2D)
+    nullify(p_rnode%p_Iint16_2D)
+    nullify(p_rnode%p_Iint32_2D)
+    nullify(p_rnode%p_Iint64_2D)
+    nullify(p_rnode%p_Blogical2D)
+    nullify(p_rnode%p_Schar2D)
+
+    nullify(p_rnode%p_Fsingle3D)
+    nullify(p_rnode%p_Ddouble3D)
+    nullify(p_rnode%p_Qquad3D)
+    nullify(p_rnode%p_Iinteger3D)
+    nullify(p_rnode%p_Iint8_3D)
+    nullify(p_rnode%p_Iint16_3D)
+    nullify(p_rnode%p_Iint32_3D)
+    nullify(p_rnode%p_Iint64_3D)
+    nullify(p_rnode%p_Blogical3D)
+    nullify(p_rnode%p_Schar3D)
+#endif
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
+        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+#endif
 
     ! Release old data
     if (associated(p_rnode%p_Fsingle1D))  deallocate(p_rnode%p_Fsingle1D)
@@ -15624,17 +15530,7 @@ contains
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
 
-    ! Release the memory assigned to that handle
-    if (p_rnode%p_memAddress .ne. 0) then
-#ifdef ENABLE_COPROCESSOR_SUPPORT
-      call coproc_freeMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
-#else
-      call output_line ('Unable to free memory address!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_reallocFixed')
-#endif
-    end if
-
-  end subroutine storage_reallocFixed
+  end subroutine storage_realloc
 
 !************************************************************************
 
@@ -15984,7 +15880,7 @@ contains
     
   end function storage_isEqual
 
-  !************************************************************************
+!************************************************************************
 
 !<subroutine>
 
@@ -16968,7 +16864,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_allocMemory (ihandle, rheap)
+  subroutine storage_allocMemoryOnDevice (ihandle, rheap)
 
 !<description>
   ! This routine allocates a memory block in the device memory
@@ -17003,38 +16899,37 @@ contains
       p_rheap => rbase
     end if
     
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemory')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemoryOnDevice')
       call sys_halt()
     end if
 
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
-    ! Check if memory address is already in use
-    if (p_rnode%p_memAddress .ne. 0_I64)&
-        call coproc_freeMemoryOnDevice(p_rnode%p_memAddress)
+    ! Check if memory pointer is already in use
+    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
+        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr)
 
     ! Allocate memory on device with correct size
-    if (p_rnode%imemBytes .ne. 0_I64)&
-        call coproc_newMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+    call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
 
 #else
 
     call output_line ('Application must be compiled with coprocessor support enabled!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemory')
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemoryOnDevice')
     call sys_halt()
 
 #endif
 
-  end subroutine storage_allocMemory
+  end subroutine storage_allocMemoryOnDevice
 
-  !************************************************************************
+!************************************************************************
 
 !<subroutine>
 
-  subroutine storage_deallocMemory (ihandle, rheap)
+  subroutine storage_deallocMemoryOnDevice (ihandle, rheap)
 
 !<description>
   ! This routine deallocates a memory block in the device memory
@@ -17069,34 +16964,36 @@ contains
       p_rheap => rbase
     end if
     
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemory')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemoryOnDevice')
       call sys_halt()
     end if
 
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
-    ! Check if memory address is already in use
-    if (p_rnode%p_memAddress .ne. 0_I64)&
-        call coproc_freeMemoryOnDevice(p_rnode%p_memAddress)
+    ! Check if memory pointer is already in use
+    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
+        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
 
 #else
 
     call output_line ('Application must be compiled with coprocessor support enabled!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemory')
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemoryOnDevice')
     call sys_halt()
 
 #endif
 
-  end subroutine storage_deallocMemory
+  end subroutine storage_deallocMemoryOnDevice
 
 !************************************************************************
 
 !<subroutine>
 
-  recursive subroutine storage_syncMemory (ihandle, csyncBlock, btransposeMemoryOrder, rheap)
+
+  recursive subroutine storage_syncMemoryHostDevice (ihandle, csyncBlock,&
+      btransposeMemoryOrder, istream, rheap)
 
 !<description>
   ! This routine synchronises the handle of the heap between host
@@ -17116,6 +17013,11 @@ contains
   ! OPTIONAL: if .TRUE. then the memory order is transposed before
   ! transfering it from host to device memory and vice versa
   logical, intent(in), optional :: btransposeMemoryOrder
+
+  ! OPTIONAL: stream for asynchronious transfer.
+  ! If istream is present and if asynchroneous transfer is supported
+  ! then all memory transfers are carried out asynchroneously
+  integer(I64), intent(in), optional :: istream
 !</input>
 
 !<inputoutput>
@@ -17131,10 +17033,10 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode, p_rnodeTmp
-  integer(I64) :: p_memAddress
+  type(C_PTR) :: cdeviceMemPtr
   integer :: ihandleTmp
   logical :: btranspose
-
+  integer(I64) :: istreamTmp
   
     ! Do we have to transpose the memory order
     btranspose = .false.
@@ -17147,79 +17049,92 @@ contains
       p_rheap => rbase
     end if
     
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
       call sys_halt()
     end if
 
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
-    
+
     select case(csyncBlock)
     case (ST_SYNCBLOCK_COPY_H2D)
 
       ! Copy memory block associated with handle ihandle from host
       ! memory to device memory; if memory is not allocated on device
       ! then a new memory block is first allocated on the device
-      
-      ! Check if memory on device is allocated
-      if (p_rnode%p_memAddress .eq. 0_I64)&
-          call storage_allocMemory(ihandle, p_rheap)
 
+      ! Check if memory on device is allocated
+      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr))&
+          call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+      
+#ifdef USE_C_PTR_STORAGE
+      ! Check if asynchroneous transfer is applicable
+      if (present(istream) .and. .not.(btranspose)) then
+        call coproc_memcpyHostToDeviceAsync(p_rnode%chostMemPtr,&
+            p_rnode%cdeviceMemPtr, p_rnode%imemBytes, istream)
+        
+        ! That`s it
+        return
+      end if
+#endif
+      
       ! What dimension are we?
       select case(p_rnode%idimension)
         
       case (1)
-        
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Fsingle1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call  coproc_memcpyHostToDevice(p_rnode%p_Fsingle1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_DOUBLE)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Ddouble1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Ddouble1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_QUAD)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Qquad1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Qquad1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_INT)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Iinteger1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Iinteger1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_INT8)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint8_1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Iint8_1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_INT16)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint16_1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Iint16_1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_INT32)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint32_1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Iint32_1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_INT64)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Iint64_1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Iint64_1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_LOGICAL)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Blogical1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Blogical1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
         case (ST_CHAR)
-          call coproc_copyMemoryHostToDevice(p_rnode%p_Schar1D,&
-              p_rnode%p_memAddress, p_rnode%imemBytes)
+          call coproc_memcpyHostToDevice(p_rnode%p_Schar1D,&
+              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+        case default
+          call output_line ('Unsupported data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
 
       case (2)
-        
         ! Do we have to transpose the memory order?
         if (btranspose) then
           ! TODO: Once an in-place transpose has been implemented on
           ! the coprocessor device, we do not need this temporal
           ! storage but can copy the original data to the device and
           ! perform the transpose operation directly on the device. So
-          ! far, we habe to work with a temporal array since the data
+          ! far, we have to work with a temporal array since the data
           ! may be needed untranspoed in host memory.
 
           ! Create a temporal working array ...
           ihandleTmp = ST_NOHANDLE
-          call storage_new('storage_syncMemory', 'ihandleTmp',&
+          call storage_new('storage_syncMemoryHostDevice', 'ihandleTmp',&
                            ihandle, ihandleTmp, p_rheap)
           ! ... and get the associated storage node
           p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
@@ -17231,109 +17146,122 @@ contains
           if (btranspose) then
             call transposeOutOfPlace_Single2D(p_rnode%p_Fsingle2D, p_rnodeTmp%p_Fsingle2D,&
                 size(p_rnodeTmp%p_Fsingle2D,1), size(p_rnodeTmp%p_Fsingle2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Fsingle2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Fsingle2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Fsingle2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Fsingle2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_DOUBLE)
           if (btranspose) then
             call transposeOutOfPlace_Double2D(p_rnode%p_Ddouble2D, p_rnodeTmp%p_Ddouble2D,&
                 size(p_rnodeTmp%p_Ddouble2D,1), size(p_rnodeTmp%p_Ddouble2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Ddouble2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Ddouble2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Ddouble2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Ddouble2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_QUAD)
           if (btranspose) then
             call transposeOutOfPlace_Quad2D(p_rnode%p_Qquad2D, p_rnodeTmp%p_Qquad2D,&
                 size(p_rnodeTmp%p_Qquad2D,1), size(p_rnodeTmp%p_Qquad2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Qquad2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Qquad2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Qquad2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Qquad2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT)
           if (btranspose) then
             call transposeOutOfPlace_Integer2D(p_rnode%p_Iinteger2D, p_rnodeTmp%p_Iinteger2D,&
                 size(p_rnodeTmp%p_Iinteger2D,1), size(p_rnodeTmp%p_Iinteger2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iinteger2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iinteger2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iinteger2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iinteger2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT8)
           if (btranspose) then
             call transposeOutOfPlace_Int8_2D(p_rnode%p_Iint8_2D, p_rnodeTmp%p_Iint8_2D,&
                 size(p_rnodeTmp%p_Iint8_2D,1), size(p_rnodeTmp%p_Iint8_2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint8_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint8_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint8_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint8_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT16)
           if (btranspose) then
             call transposeOutOfPlace_Int16_2D(p_rnode%p_Iint16_2D, p_rnodeTmp%p_Iint16_2D,&
                 size(p_rnodeTmp%p_Iint16_2D,1), size(p_rnodeTmp%p_Iint16_2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint16_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint16_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint16_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint16_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT32)
           if (btranspose) then
             call transposeOutOfPlace_Int32_2D(p_rnode%p_Iint32_2D, p_rnodeTmp%p_Iint32_2D,&
                 size(p_rnodeTmp%p_Iint32_2D,1), size(p_rnodeTmp%p_Iint32_2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint32_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint32_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint32_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint32_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT64)
           if (btranspose) then
             call transposeOutOfPlace_Int64_2D(p_rnode%p_Iint64_2D, p_rnodeTmp%p_Iint64_2D,&
                 size(p_rnodeTmp%p_Iint64_2D,1), size(p_rnodeTmp%p_Iint64_2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint64_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint64_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint64_2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint64_2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_LOGICAL)
           if (btranspose) then
             call transposeOutOfPlace_Logical2D(p_rnode%p_Blogical2D, p_rnodeTmp%p_Blogical2D,&
                 size(p_rnodeTmp%p_Blogical2D,1), size(p_rnodeTmp%p_Blogical2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Blogical2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Blogical2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Blogical2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Blogical2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_CHAR)
           if (btranspose) then
             call transposeOutOfPlace_Char2D(p_rnode%p_SChar2D, p_rnodeTmp%p_SChar2D,&
                 size(p_rnodeTmp%p_SChar2D,1), size(p_rnodeTmp%p_SChar2D,2))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_SChar2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_SChar2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Schar2D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Schar2D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
 
         ! Free temporal working array (if created)
         if (btranspose) call storage_free(ihandleTmp)
 
       case (3)
-
         ! Do we have to transpose the memory order?
         if (btranspose) then
           ! TODO: Once an in-place transpose has been implemented on
@@ -17345,7 +17273,7 @@ contains
 
           ! Create a temporal working array ...
           ihandleTmp = ST_NOHANDLE
-          call storage_new('storage_syncMemory', 'ihandleTmp',&
+          call storage_new('storage_syncMemoryHostDevice', 'ihandleTmp',&
                            ihandle, ihandleTmp, p_rheap)
           ! ... and get the associated storage node
           p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
@@ -17358,119 +17286,133 @@ contains
             call transposeOutOfPlace_Single3D(p_rnode%p_Fsingle3D, p_rnodeTmp%p_Fsingle3D,&
                 size(p_rnodeTmp%p_Fsingle3D,1), size(p_rnodeTmp%p_Fsingle3D,2),&
                 size(p_rnodeTmp%p_Fsingle3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Fsingle3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Fsingle3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Fsingle3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Fsingle3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_DOUBLE)
           if (btranspose) then
             call transposeOutOfPlace_Double3D(p_rnode%p_Ddouble3D, p_rnodeTmp%p_Ddouble3D,&
                 size(p_rnodeTmp%p_Ddouble3D,1), size(p_rnodeTmp%p_Ddouble3D,2),&
                 size(p_rnodeTmp%p_Ddouble3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Ddouble3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Ddouble3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Ddouble3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Ddouble3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_QUAD)
           if (btranspose) then
             call transposeOutOfPlace_Quad3D(p_rnode%p_Qquad3D, p_rnodeTmp%p_Qquad3D,&
                 size(p_rnodeTmp%p_Qquad3D,1), size(p_rnodeTmp%p_Qquad3D,2),&
                 size(p_rnodeTmp%p_Qquad3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Qquad3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Qquad3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Qquad3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Qquad3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT)
           if (btranspose) then
             call transposeOutOfPlace_Integer3D(p_rnode%p_Iinteger3D, p_rnodeTmp%p_Iinteger3D,&
                 size(p_rnodeTmp%p_Iinteger3D,1), size(p_rnodeTmp%p_Iinteger3D,2),&
                 size(p_rnodeTmp%p_Iinteger3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iinteger3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iinteger3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iinteger3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iinteger3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT8)
           if (btranspose) then
             call transposeOutOfPlace_Int8_3D(p_rnode%p_Iint8_3D, p_rnodeTmp%p_Iint8_3D,&
                 size(p_rnodeTmp%p_Iint8_3D,1), size(p_rnodeTmp%p_Iint8_3D,2),&
                 size(p_rnodeTmp%p_Iint8_3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint8_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint8_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint8_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint8_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT16)
           if (btranspose) then
             call transposeOutOfPlace_Int16_3D(p_rnode%p_Iint16_3D, p_rnodeTmp%p_Iint16_3D,&
                 size(p_rnodeTmp%p_Iint16_3D,1), size(p_rnodeTmp%p_Iint16_3D,2),&
                 size(p_rnodeTmp%p_Iint16_3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint16_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint16_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint16_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint16_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT32)
           if (btranspose) then
             call transposeOutOfPlace_Int32_3D(p_rnode%p_Iint32_3D, p_rnodeTmp%p_Iint32_3D,&
                 size(p_rnodeTmp%p_Iint32_3D,1), size(p_rnodeTmp%p_Iint32_3D,2),&
                 size(p_rnodeTmp%p_Iint32_3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint32_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint32_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint32_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint32_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_INT64)
           if (btranspose) then
             call transposeOutOfPlace_Int64_3D(p_rnode%p_Iint64_3D, p_rnodeTmp%p_Iint64_3D,&
                 size(p_rnodeTmp%p_Iint64_3D,1), size(p_rnodeTmp%p_Iint64_3D,2),&
                 size(p_rnodeTmp%p_Iint64_3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Iint64_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint64_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Iint64_3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint64_3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_LOGICAL)
           if (btranspose) then
             call transposeOutOfPlace_Logical3D(p_rnode%p_Blogical3D, p_rnodeTmp%p_Blogical3D,&
                 size(p_rnodeTmp%p_Blogical3D,1), size(p_rnodeTmp%p_Blogical3D,2),&
                 size(p_rnodeTmp%p_Blogical3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_Blogical3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Blogical3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Blogical3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Blogical3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
         case (ST_CHAR)
           if (btranspose) then
             call transposeOutOfPlace_Char3D(p_rnode%p_SChar3D, p_rnodeTmp%p_SChar3D,&
                 size(p_rnodeTmp%p_SChar3D,1), size(p_rnodeTmp%p_SChar3D,2),&
                 size(p_rnodeTmp%p_SChar3D,3))
-            call coproc_copyMemoryHostToDevice(p_rnodeTmp%p_SChar3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnodeTmp%p_SChar3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           else
-            call coproc_copyMemoryHostToDevice(p_rnode%p_Schar3D,&
-                p_rnode%p_memAddress, p_rnode%imemBytes)
+            call coproc_memcpyHostToDevice(p_rnode%p_Schar3D,&
+                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
           end if
+
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
 
         ! Free temporal working array (if created)
         if (btranspose) call storage_free(ihandleTmp)
 
       case default
-        call output_line ('Unsupported simension!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+        call output_line ('Unsupported dimension!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
       end select
 
@@ -17481,176 +17423,216 @@ contains
       ! then an error is thrown and the program terminates.
 
       ! Check if memory on device is allocated
-      if (p_rnode%p_memAddress .eq. 0_I64) then
+      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
         call output_line ('Invalid memory address!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
       end if
+
+#ifdef USE_C_PTR_STORAGE
+        ! Check if asynchroneous transfer is applicable
+        if (present(istream) .and. .not.(btranspose)) then
+          call coproc_memcpyDeviceToHostAsync(p_rnode%cdeviceMemPtr,&
+              p_rnode%chostMemPtr, p_rnode%imemBytes, istream)
+          
+          ! That`s it
+          return
+        end if
+#endif
 
       ! What dimension are we?
       select case(p_rnode%idimension)
         
       case (1)
-        
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Fsingle1D, p_rnode%imemBytes)
         case (ST_DOUBLE)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Ddouble1D, p_rnode%imemBytes)
         case (ST_QUAD)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Qquad1D, p_rnode%imemBytes)
         case (ST_INT)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iinteger1D, p_rnode%imemBytes)
         case (ST_INT8)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint8_1D, p_rnode%imemBytes)
         case (ST_INT16)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint16_1D, p_rnode%imemBytes)
         case (ST_INT32)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint32_1D, p_rnode%imemBytes)
         case (ST_INT64)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint64_1D, p_rnode%imemBytes)
         case (ST_LOGICAL)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Blogical1D, p_rnode%imemBytes)
         case (ST_CHAR)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Schar1D, p_rnode%imemBytes)
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
 
       case (2)
-        
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Fsingle2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Single2D(p_rnode%p_Fsingle2D,&
               size(p_rnode%p_Fsingle2D,2), size(p_rnode%p_Fsingle2D,1))
+
         case (ST_DOUBLE)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Ddouble2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Double2D(p_rnode%p_Ddouble2D,&
               size(p_rnode%p_Ddouble2D,2), size(p_rnode%p_Ddouble2D,1))
+
         case (ST_QUAD)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Qquad2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Quad2D(p_rnode%p_Qquad2D,&
               size(p_rnode%p_Qquad2D,2), size(p_rnode%p_Qquad2D,1))
+
         case (ST_INT)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iinteger2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Integer2D(p_rnode%p_Iinteger2D,&
               size(p_rnode%p_Iinteger2D,2), size(p_rnode%p_Iinteger2D,1))
+
         case (ST_INT8)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint8_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int8_2D(p_rnode%p_Iint8_2D,&
               size(p_rnode%p_Iint8_2D,2), size(p_rnode%p_Iint8_2D,1))
+
         case (ST_INT16)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint16_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int16_2D(p_rnode%p_Iint16_2D,&
               size(p_rnode%p_Iint16_2D,2), size(p_rnode%p_Iint16_2D,1))
+
         case (ST_INT32)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint32_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int32_2D(p_rnode%p_Iint32_2D,&
               size(p_rnode%p_Iint32_2D,2), size(p_rnode%p_Iint32_2D,1))
+
         case (ST_INT64)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint64_2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int64_2D(p_rnode%p_Iint64_2D,&
               size(p_rnode%p_Iint64_2D,2), size(p_rnode%p_Iint64_2D,1))
+
         case (ST_LOGICAL)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Blogical2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Logical2D(p_rnode%p_Blogical2D,&
               size(p_rnode%p_Blogical2D,2), size(p_rnode%p_Blogical2D,1))
+
         case (ST_CHAR)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Schar2D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Char2D(p_rnode%p_Schar2D,&
               size(p_rnode%p_Schar2D,2), size(p_rnode%p_Schar2D,1))
+
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
 
       case (3)
-
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Fsingle3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Single3D(p_rnode%p_Fsingle3D,&
               size(p_rnode%p_Fsingle3D,3), size(p_rnode%p_Fsingle3D,2),&
               size(p_rnode%p_Fsingle3D,1))
+
         case (ST_DOUBLE)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Ddouble3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Double3D(p_rnode%p_Ddouble3D,&
               size(p_rnode%p_Ddouble3D,3), size(p_rnode%p_Ddouble3D,2),&
               size(p_rnode%p_Ddouble3D,1))
+
         case (ST_QUAD)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Qquad3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Quad3D(p_rnode%p_Qquad3D,&
               size(p_rnode%p_Qquad3D,3), size(p_rnode%p_Qquad3D,2),&
               size(p_rnode%p_Qquad3D,1))
+
         case (ST_INT)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iinteger3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Integer3D(p_rnode%p_Iinteger3D,&
               size(p_rnode%p_Iinteger3D,3), size(p_rnode%p_Iinteger3D,2),&
               size(p_rnode%p_Iinteger3D,1))
+
         case (ST_INT8)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint8_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int8_3D(p_rnode%p_Iint8_3D,&
               size(p_rnode%p_Iint8_3D,3), size(p_rnode%p_Iint8_3D,2),&
               size(p_rnode%p_Iint8_3D,1))
+
         case (ST_INT16)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint16_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int16_3D(p_rnode%p_Iint16_3D,&
               size(p_rnode%p_Iint16_3D,3), size(p_rnode%p_Iint16_3D,2),&
               size(p_rnode%p_Iint16_3D,1))
+
         case (ST_INT32)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint32_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int32_3D(p_rnode%p_Iint32_3D,&
               size(p_rnode%p_Iint32_3D,3), size(p_rnode%p_Iint32_3D,2),&
               size(p_rnode%p_Iint32_3D,1))
+
         case (ST_INT64)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Iint64_3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Int64_3D(p_rnode%p_Iint64_3D,&
               size(p_rnode%p_Iint64_3D,3), size(p_rnode%p_Iint64_3D,2),&
               size(p_rnode%p_Iint64_3D,1))
+
         case (ST_LOGICAL)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Blogical3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Logical3D(p_rnode%p_Blogical3D,&
               size(p_rnode%p_Blogical3D,3), size(p_rnode%p_Blogical3D,2),&
               size(p_rnode%p_Blogical3D,1))
+
         case (ST_CHAR)
-          call coproc_copyMemoryDeviceToHost(p_rnode%p_memAddress,&
+          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
               p_rnode%p_Schar3D, p_rnode%imemBytes)
           if (btranspose) call transposeInPlace_Char3D(p_rnode%p_Schar3D,&
               size(p_rnode%p_Schar3D,3), size(p_rnode%p_Schar3D,2),&
               size(p_rnode%p_Schar3D,1))
+
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
 
       case default
         call output_line ('Unsupported dimension!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
       end select
 
@@ -17661,53 +17643,76 @@ contains
       ! then a new memory block is first allocated on the device
 
       ! Check if memory on device is allocated
-      if (p_rnode%p_memAddress .eq. 0_I64) then
+      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
         ! Device memory has not been allocated so this is a simple copy
-        call storage_syncMemory(ihandle, ST_SYNCBLOCK_COPY_H2D, btranspose, p_rheap)
+        call storage_syncMemoryHostDevice(ihandle, ST_SYNCBLOCK_COPY_H2D,&
+            btranspose, istream, p_rheap)
       else
         ! This is tricky. We need to transfer the data from host memory
         ! into device memory and accumulate it into device memory. This
         ! cannot be done directly but some temporal storage is required.
       
         ! Make a backup of the memory pointer
-        p_memAddress = p_rnode%p_memAddress
+        cdeviceMemPtr = p_rnode%cdeviceMemPtr
         
         ! Allocate memory on the device by hand
-        call coproc_newMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+        call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
 
         ! Copy content of host memory associated with handle ihandle
         ! into temporal memory block on device. Note that the memory
         ! address has been modified by hand, so that data is preserved.
-        call storage_syncMemory(ihandle, ST_SYNCBLOCK_COPY_H2D, btranspose, p_rheap)
+        call storage_syncMemoryHostDevice(ihandle, ST_SYNCBLOCK_COPY_H2D,&
+            btranspose, istream, p_rheap)
 
         ! We are back from recursion and both memory blocks are
         ! available in device memory. So we can add both memory blocks
         ! and store the result at the original memory address.
 
+        istreamTmp = 0_I64
+        if (present(istream)) istreamTmp = istream
+
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_addSingleOnDevice(p_rnode%p_memAddress, p_memAddress,&
-              p_memAddress, p_rnode%imemBytes)
+          call coproc_combineSingleOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_SINGLE_BYTES, istreamTmp)
         case (ST_DOUBLE)
-          call coproc_addDoubleOnDevice(p_rnode%p_memAddress, p_memAddress,&
-              p_memAddress, p_rnode%imemBytes)
+          call coproc_combineDoubleOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_DOUBLE_BYTES, istreamTmp)
+        case (ST_QUAD)
+          call coproc_combineQuadOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_QUAD_BYTES, istreamTmp)
         case (ST_INT)
-          call coproc_addIntegerOnDevice(p_rnode%p_memAddress, p_memAddress,&
-              p_memAddress, p_rnode%imemBytes)
+          call coproc_combineIntegerOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_INT_BYTES, istreamTmp)
+        case (ST_INT8)
+          call coproc_combineInt8OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_INT8_BYTES, istreamTmp)
+        case (ST_INT16)
+          call coproc_combineInt16OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_INT16_BYTES, istreamTmp)
+        case (ST_INT32)
+          call coproc_combineInt32OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_INT32_BYTES, istreamTmp)
+        case (ST_INT64)
+          call coproc_combineInt64OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_INT64_BYTES, istreamTmp)
         case (ST_LOGICAL)
-          call coproc_addLogicalOnDevice(p_rnode%p_memAddress, p_memAddress,&
-              p_memAddress, p_rnode%imemBytes)
+          call coproc_combineLogicalOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+              cdeviceMemPtr, p_rnode%imemBytes/ST_LOGICAL_BYTES, istreamTmp)
         case default
-          call output_line ('Unsupported data type for accumulation!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+          call output_line ('Unsupported data type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         end select
+
+        ! Synchronize stream
+        call coproc_synchronizeStream(istreamTmp)
       
         ! Release temporal memory block ...
-        call coproc_freeMemoryOnDevice(p_rnode%p_memAddress)
+        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr)
 
         ! ... and restore backup of original memory address
-        p_rnode%p_memAddress = p_memAddress
+        p_rnode%cdeviceMemPtr = cdeviceMemPtr
       end if
 
     case (ST_SYNCBLOCK_ACCUMULATE_D2H)
@@ -17717,9 +17722,9 @@ contains
       ! then a new memory block is first allocated on the device
 
       ! Check if memory on device is allocated
-      if (p_rnode%p_memAddress .eq. 0_I64) then
+      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
         call output_line ('Invalid memory address!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
       end if
 
@@ -17728,22 +17733,26 @@ contains
       
       ! For this we need some temporal storage in host memory
       ihandleTmp = ST_NOHANDLE
-      call storage_new('storage_syncMemory', 'ihandleTmp',&
+      call storage_new('storage_syncMemoryHostDevice', 'ihandleTmp',&
                        ihandle, ihandleTmp, p_rheap)
 
       ! Transfer the memory address associated with handle ihandle
       ! to the temporal memory block associated with ihandleTmp
       p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
-      p_rnodeTmp%p_memAddress = p_rnode%p_memAddress
+      p_rnodeTmp%cdeviceMemPtr = p_rnode%cdeviceMemPtr
       
       ! Copy content from device memory to host memory block
-      ! associated with temporal handle ihandleTmp.
-      call storage_syncMemory(ihandleTmp, ST_SYNCBLOCK_COPY_D2H, btranspose, p_rheap)
-
+      ! associated with temporal handle ihandleTmp. Note that it does
+      ! not make sense to allow for asynchroneous transfers here,
+      ! since the memory transfer must be complete before the two
+      ! memory blocks in host memory can be combined.
+      call storage_syncMemoryHostDevice(ihandleTmp, ST_SYNCBLOCK_COPY_D2H,&
+          btranspose, rheap=p_rheap)
+      
       ! We are back from recursion and both memory blocks are
       ! available in host memory. So we can add both memory blocks
       ! and store the result at the original memory address.
-      
+            
       ! What dimension are we?
       select case(p_rnode%idimension)
         
@@ -17770,6 +17779,12 @@ contains
           p_rnode%p_Iint32_1D = p_rnode%p_Iint32_1D + p_rnodeTmp%p_Iint32_1D
         case (ST_INT64)
           p_rnode%p_Iint64_1D = p_rnode%p_Iint64_1D + p_rnodeTmp%p_Iint64_1D
+        case (ST_LOGICAL)
+          p_rnode%p_Blogical1D = p_rnode%p_Blogical1D .or. p_rnodeTmp%p_Blogical1D
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
         
       case (2)
@@ -17795,6 +17810,12 @@ contains
           p_rnode%p_Iint32_2D = p_rnode%p_Iint32_2D + p_rnodeTmp%p_Iint32_2D
         case (ST_INT64)
           p_rnode%p_Iint64_2D = p_rnode%p_Iint64_2D + p_rnodeTmp%p_Iint64_2D
+        case (ST_LOGICAL)
+          p_rnode%p_Blogical2D = p_rnode%p_Blogical2D .or. p_rnodeTmp%p_Blogical2D
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
         
       case (3)
@@ -17820,30 +17841,36 @@ contains
           p_rnode%p_Iint32_3D = p_rnode%p_Iint32_3D + p_rnodeTmp%p_Iint32_3D
         case (ST_INT64)
           p_rnode%p_Iint64_3D = p_rnode%p_Iint64_3D + p_rnodeTmp%p_Iint64_3D
+        case (ST_LOGICAL)
+          p_rnode%p_Blogical3D = p_rnode%p_Blogical3D .or. p_rnodeTmp%p_Blogical3D
+        case default
+          call output_line ('Unsupported data typee!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+          call sys_halt()
         end select
         
       case default
         call output_line ('Unsupported dimension!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                          OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
       end select
       
       ! Manually remove memory address from handle ihandleTmp
-      p_rnodeTmp%p_memAddress = 0_I64
+      p_rnodeTmp%cdeviceMemPtr = C_NULL_PTR
 
       ! Release temporal handle ihandleTmp
       call storage_free(ihandleTmp)
 
     case default
       call output_line ('Unsupported synchronisation!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
       call sys_halt()
     end select
 
 #else
 
     call output_line ('Application must be compiled with coprocessor support enabled!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemory')
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
     call sys_halt()
 
 #endif
@@ -17889,7 +17916,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Single2D(Fsingle2D,Fsingle2D_t,n1,n2)
       real(SP), intent(in), dimension(*) :: Fsingle2D
-      real(SP), intent(out), dimension(*)  :: Fsingle2D_t
+      real(SP), intent(out), dimension(*) :: Fsingle2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -17906,7 +17933,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Single3D(Fsingle3D,Fsingle3D_t,n1,n2,n3)
       real(SP), intent(in), dimension(*) :: Fsingle3D
-      real(SP), intent(out), dimension(*)  :: Fsingle3D_t
+      real(SP), intent(out), dimension(*) :: Fsingle3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -17957,7 +17984,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Double2D(Ddouble2D,Ddouble2D_t,n1,n2)
       real(DP), intent(in), dimension(*) :: Ddouble2D
-      real(DP), intent(out), dimension(*)  :: Ddouble2D_t
+      real(DP), intent(out), dimension(*) :: Ddouble2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -17974,7 +18001,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Double3D(Ddouble3D,Ddouble3D_t,n1,n2,n3)
       real(DP), intent(in), dimension(*) :: Ddouble3D
-      real(DP), intent(out), dimension(*)  :: Ddouble3D_t
+      real(DP), intent(out), dimension(*) :: Ddouble3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18025,7 +18052,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Quad2D(Qquad2D,Qquad2D_t,n1,n2)
       real(QP), intent(in), dimension(*) :: Qquad2D
-      real(QP), intent(out), dimension(*)  :: Qquad2D_t
+      real(QP), intent(out), dimension(*) :: Qquad2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18042,7 +18069,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Quad3D(Qquad3D,Qquad3D_t,n1,n2,n3)
       real(QP), intent(in), dimension(*) :: Qquad3D
-      real(QP), intent(out), dimension(*)  :: Qquad3D_t
+      real(QP), intent(out), dimension(*) :: Qquad3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18093,7 +18120,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Integer2D(Iinteger2D,Iinteger2D_t,n1,n2)
       integer, intent(in), dimension(*) :: Iinteger2D
-      integer, intent(out), dimension(*)  :: Iinteger2D_t
+      integer, intent(out), dimension(*) :: Iinteger2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18110,7 +18137,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Integer3D(Iinteger3D,Iinteger3D_t,n1,n2,n3)
       integer, intent(in), dimension(*) :: Iinteger3D
-      integer, intent(out), dimension(*)  :: Iinteger3D_t
+      integer, intent(out), dimension(*) :: Iinteger3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18161,7 +18188,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int8_2D(Iint8_2D,Iint8_2D_t,n1,n2)
       integer(I8), intent(in), dimension(*) :: Iint8_2D
-      integer(I8), intent(out), dimension(*)  :: Iint8_2D_t
+      integer(I8), intent(out), dimension(*) :: Iint8_2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18178,7 +18205,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int8_3D(Iint8_3D,Iint8_3D_t,n1,n2,n3)
       integer(I8), intent(in), dimension(*) :: Iint8_3D
-      integer(I8), intent(out), dimension(*)  :: Iint8_3D_t
+      integer(I8), intent(out), dimension(*) :: Iint8_3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18229,7 +18256,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int16_2D(Iint16_2D,Iint16_2D_t,n1,n2)
       integer(I16), intent(in), dimension(*) :: Iint16_2D
-      integer(I16), intent(out), dimension(*)  :: Iint16_2D_t
+      integer(I16), intent(out), dimension(*) :: Iint16_2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18246,7 +18273,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int16_3D(Iint16_3D,Iint16_3D_t,n1,n2,n3)
       integer(I16), intent(in), dimension(*) :: Iint16_3D
-      integer(I16), intent(out), dimension(*)  :: Iint16_3D_t
+      integer(I16), intent(out), dimension(*) :: Iint16_3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18297,7 +18324,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int32_2D(Iint32_2D,Iint32_2D_t,n1,n2)
       integer(I32), intent(in), dimension(*) :: Iint32_2D
-      integer(I32), intent(out), dimension(*)  :: Iint32_2D_t
+      integer(I32), intent(out), dimension(*) :: Iint32_2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18314,7 +18341,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int32_3D(Iint32_3D,Iint32_3D_t,n1,n2,n3)
       integer(I32), intent(in), dimension(*) :: Iint32_3D
-      integer(I32), intent(out), dimension(*)  :: Iint32_3D_t
+      integer(I32), intent(out), dimension(*) :: Iint32_3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18365,7 +18392,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int64_2D(Iint64_2D,Iint64_2D_t,n1,n2)
       integer(I64), intent(in), dimension(*) :: Iint64_2D
-      integer(I64), intent(out), dimension(*)  :: Iint64_2D_t
+      integer(I64), intent(out), dimension(*) :: Iint64_2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18382,7 +18409,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Int64_3D(Iint64_3D,Iint64_3D_t,n1,n2,n3)
       integer(I64), intent(in), dimension(*) :: Iint64_3D
-      integer(I64), intent(out), dimension(*)  :: Iint64_3D_t
+      integer(I64), intent(out), dimension(*) :: Iint64_3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18433,7 +18460,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Logical2D(Blogical2D,Blogical2D_t,n1,n2)
       logical, intent(in), dimension(*) :: Blogical2D
-      logical, intent(out), dimension(*)  :: Blogical2D_t
+      logical, intent(out), dimension(*) :: Blogical2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18450,7 +18477,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Logical3D(Blogical3D,Blogical3D_t,n1,n2,n3)
       logical, intent(in), dimension(*) :: Blogical3D
-      logical, intent(out), dimension(*)  :: Blogical3D_t
+      logical, intent(out), dimension(*) :: Blogical3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18501,7 +18528,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Char2D(Schar2D,Schar2D_t,n1,n2)
       character, intent(in), dimension(*) :: Schar2D
-      character, intent(out), dimension(*)  :: Schar2D_t
+      character, intent(out), dimension(*) :: Schar2D_t
       integer, intent(in) :: n1,n2
 
       integer :: i,j
@@ -18518,7 +18545,7 @@ contains
     ! memory
     subroutine transposeOutOfPlace_Char3D(Schar3D,Schar3D_t,n1,n2,n3)
       character, intent(in), dimension(*) :: Schar3D
-      character, intent(out), dimension(*)  :: Schar3D_t
+      character, intent(out), dimension(*) :: Schar3D_t
       integer, intent(in) :: n1,n2,n3
 
       integer :: i,j,k
@@ -18532,13 +18559,13 @@ contains
       end do
     end subroutine transposeOutOfPlace_Char3D
 
-  end subroutine storage_syncMemory
+  end subroutine storage_syncMemoryHostDevice
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine storage_clearMemory (ihandle, rheap)
+  subroutine storage_clearMemoryOnDevice (ihandle, rheap)
 
 !<description>
   ! This routine clears a memory block in the device memory
@@ -18573,9 +18600,9 @@ contains
       p_rheap => rbase
     end if
     
-    if (ihandle .eq. ST_NOHANDLE) then
+    if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_deallocMemory')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_clearMemoryOnDevice')
       call sys_halt()
     end if
 
@@ -18583,27 +18610,27 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Check if memory address is already in use
-    if (p_rnode%p_memAddress .eq. 0_I64)&
-        call coproc_newMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+    if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr))&
+        call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
 
     ! Fill memory with zeros
-    call coproc_clearMemoryOnDevice(p_rnode%p_memAddress, p_rnode%imemBytes)
+    call coproc_clearMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
 
 #else
 
     call output_line ('Application must be compiled with coprocessor support enabled!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_clearMemory')
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_clearMemoryOnDevice')
     call sys_halt()
 
 #endif
 
-  end subroutine storage_clearMemory
+  end subroutine storage_clearMemoryOnDevice
 
 !************************************************************************
 
 !<function>
 
-  function storage_getMemoryAddress (ihandle, rheap) result(p_memAddress)
+  function storage_getMemPtrOnDevice (ihandle, rheap) result(cdeviceMemPtr)
 
 !<description>
   ! Returns the memory address of the memory block associated with
@@ -18621,7 +18648,7 @@ contains
 
 !<result>
   ! Memory address of the memory block in device memory
-  integer(I64) :: p_memAddress
+  type(C_PTR) :: cdeviceMemPtr
 !</result>
 
 !</function>
@@ -18642,7 +18669,7 @@ contains
 
     if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemoryAddress')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemPtrOnDevice')
       call sys_halt()
     end if
 
@@ -18650,21 +18677,48 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
     
     ! Return memory address
-    p_memAddress = p_rnode%p_memAddress
+    cdeviceMemPtr = p_rnode%cdeviceMemPtr
 
 #else
 
     call output_line ('Application must be compiled with coprocessor support enabled!', &
-                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemoryAddress')
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_getMemPtrOnDevice')
     call sys_halt()
 
     ! Assign zero in this case; this code is not executed at runtime due to the sys_halt() call above,
     ! however, this supresses the following warning from the IFC v12 compiler:
     ! warning #6178: The return value of this FUNCTION has not been defined.   [P_MEMADDRESS]
-    p_memAddress = 0_I64
+    cdeviceMemPtr = C_NULL_PTR
 
 #endif
 
-  end function storage_getMemoryAddress
+  end function storage_getMemPtrOnDevice
+
+!************************************************************************
+
+!<function>
+
+  function storage_isAssociated(cmemPtr)
+
+!<description>
+    ! This function returns .TRUE. if the memory pointer is associated
+!</description>
+
+!<input>
+    ! Memory pointer
+    type(C_PTR), intent(in) :: cmemPtr
+!</input>
+
+!<result>
+    logical :: storage_isAssociated
+!</result>
+!</function>
+
+#ifdef HAS_ISO_C_BINDING
+    storage_isAssociated = c_associated(cmemPtr)
+#else
+    storage_isAssociated = (int(cmemPtr%imemAddress,I64) .gt. 0_I64)
+#endif
+  end function storage_isAssociated
 
 end module storage

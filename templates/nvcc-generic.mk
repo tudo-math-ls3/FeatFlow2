@@ -61,5 +61,11 @@ CFLAGSCUDA := $(CFLAGSCUDA)  -arch=compute_21 -code=compute_21 -m64  -DHAS_CUDAD
 endif
 
 
+# Set default type of integer variables explicitly
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSCUDA := $(CFLAGSCUDA) -DUSE_LARGEINT
+endif
+
+
 # Detect compiler version
 NVCCVERSION := $(shell eval $(CUDAVERSION) )

@@ -43,8 +43,8 @@ CXXVERSION = $(CXX) -V | head -n 2
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
+CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -i8
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
@@ -104,6 +104,229 @@ endif
 
 # Detect compiler version
 PGIVERSION  := $(shell eval $(F90VERSION) )
+
+# Functions to detect minimal compiler version
+pgiminversion_11_10=\
+	$(if $(findstring 11.10-,$(PGIVERSION)),yes,no)
+pgiminversion_11_9=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_10) \
+	$(if $(findstring 11.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_8=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_9) \
+	$(if $(findstring 11.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_7=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_8) \
+	$(if $(findstring 11.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_6=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_7) \
+	$(if $(findstring 11.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_5=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_6) \
+	$(if $(findstring 11.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_4=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_5) \
+	$(if $(findstring 11.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_3=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_4) \
+	$(if $(findstring 11.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_2=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_3) \
+	$(if $(findstring 11.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_1=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_2) \
+	$(if $(findstring 11.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_11_0=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_1) \
+	$(if $(findstring 11.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_9=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_11_0) \
+	$(if $(findstring 10.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_8=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_9) \
+	$(if $(findstring 10.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_7=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_8) \
+	$(if $(findstring 10.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_6=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_7) \
+	$(if $(findstring 10.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_5=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_6) \
+	$(if $(findstring 10.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_4=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_5) \
+	$(if $(findstring 10.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_3=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_4) \
+	$(if $(findstring 10.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_2=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_3) \
+	$(if $(findstring 10.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_1=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_2) \
+	$(if $(findstring 10.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_10_0=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_1) \
+	$(if $(findstring 10.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_9_0=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_10_0) \
+	$(if $(findstring 9.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_8_0=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_8_0) \
+	$(if $(findstring 8.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_7_2=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_8_0) \
+	$(if $(findstring 7.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_7_1=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_7_2) \
+	$(if $(findstring 7.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_6_2=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_7_1) \
+	$(if $(findstring 6.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_6_1=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_6_2) \
+	$(if $(findstring 6.1-,$(PGIVERSION)),yes,no)),yes,no)
+
+# Functions to detect maximal compiler version
+pgimaxversion_11_10=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_9) \
+	$(if $(findstring 11.10-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_9=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_8) \
+	$(if $(findstring 11.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_8=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_7) \
+	$(if $(findstring 11.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_7=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_6) \
+	$(if $(findstring 11.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_6=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_5) \
+	$(if $(findstring 11.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_5=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_4) \
+	$(if $(findstring 11.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_4=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_3) \
+	$(if $(findstring 11.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_3=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_2) \
+	$(if $(findstring 11.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_2=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_1) \
+	$(if $(findstring 11.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_1=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_0) \
+	$(if $(findstring 11.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_11_0=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_9) \
+	$(if $(findstring 10.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_9=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_8) \
+	$(if $(findstring 10.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_8=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_7) \
+	$(if $(findstring 10.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_7=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_6) \
+	$(if $(findstring 10.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_6=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_5) \
+	$(if $(findstring 10.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_5=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_4) \
+	$(if $(findstring 10.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_4=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_3) \
+	$(if $(findstring 10.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_3=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_2) \
+	$(if $(findstring 10.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_2=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_1) \
+	$(if $(findstring 10.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_1=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_10_0) \
+	$(if $(findstring 10.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_10_0=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_9_0) \
+	$(if $(findstring 10.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_9_0=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_8_0) \
+	$(if $(findstring 9.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_8_0=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_7_2) \
+	$(if $(findstring 8.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_7_2=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_7_1) \
+	$(if $(findstring 7.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_7_1=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_6_2) \
+	$(if $(findstring 7.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_6_2=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_6_1) \
+	$(if $(findstring 6.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_6_1=\
+	$(if $(findstring 6.1-,$(PGIVERSION)),yes,no)
+
+
+
+# The PGI compiler 7.2 and above supports ISO_C_BINDING 
+ifeq ($(call pgiminversion_7_2),yes)
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+endif
 
 # Enable workarounds for PGI 6.1 compiler
 ifneq (,$(findstring pgf90 6.1-,$(PGIVERSION)))

@@ -43,8 +43,8 @@ CXXVERSION = $(CXX) -version 2>&1 | head -n 1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
+CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -i8
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
@@ -101,6 +101,9 @@ endif
 
 # Detect compiler version
 OPEN64VERSION  := $(shell eval $(F90VERSION) )
+
+# The Open64 compiler supports ISO_C_BINDING 
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 
 
 

@@ -43,8 +43,8 @@ CXXVERSION = $(CXX) -V 2>&1 1>/dev/null | head -n 1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -xtypemap=integer:64
-CFLAGSF90     := $(CFLAGSF90) -xtypemap=integer:64
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -xtypemap=integer:64
+CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -xtypemap=integer:64
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
@@ -108,6 +108,9 @@ ifneq (,$(findstring 2010/08/13,$(SUNSTUDIOVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_SUNSTUDIO_12_2_OR_PRERELEASE $(CFLAGSF90)
 endif
 endif
+
+# The Sun fortran compiler supports ISO_C_BINDING
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 
 
 

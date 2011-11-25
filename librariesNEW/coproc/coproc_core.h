@@ -40,12 +40,59 @@
 #endif
 #endif
 
-void coproc_checkErrors(char *label);
+/*******************************************************************************
+ * The following macros should ensure the interoperability of data types
+ *******************************************************************************/
+
+#define __SP      float
+#define __DP      double
+#ifdef ENABLE_QUADPREC
+#define __QP      long double
+#else
+#define __QP      __DP
+#endif
+#define __I8      signed char
+#define __I16     short
+#define __I32     int
+#define __I64     long long int
+#ifdef ENABLE_LARGEINT
+#define __INT     __I64
+#else
+#define __INT     __I32
+#endif
+#define __LOGICAL int
+#define __CHAR    char
+
+#if defined(_WIN64) || defined(_LP64) || defined(__LP64__)
+// LP64 machine, OS X or Linux or Unix or
+// LLP64 machine, Windows
+#define __SIZET   __I64
+#elif defined(_WIN32) || defined(_ILD32)
+// 32-bit machine, Windows or Linux or OS X or Unix
+#define __SIZET   __I32
+#else
+// Machine not detected uniquely assume 64-bit
+#define __SIZET   __I64
+#endif
+
+
+/*******************************************************************************/
+
+#define __coproc__error__(label)							\
+  fprintf(stderr, "CUDA Error: %s (at %d of %s)\n", label, __LINE__, __FILE__)
+
+/*******************************************************************************/
 
 extern "C"
 {
-  int coproc_init();
-  int FNAME(coproc_init)();
+  void coproc_checkErrors(__CHAR *label);
+
+  int coproc_init(int deviceNumber=0);
+  
+  int coproc_getSizeOf(int cdatatype,
+		       size_t isize);
+
+  int coproc_createStream(cudaStream_t *pStream);
 }
 
 #endif

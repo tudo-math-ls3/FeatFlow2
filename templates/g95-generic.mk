@@ -43,8 +43,8 @@ CXXVERSION = $(CXX) --version | head -n 1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -i8
-CFLAGSF90     := $(CFLAGSF90) -i8
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
+CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -i8
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.

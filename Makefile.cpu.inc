@@ -167,7 +167,8 @@ INC           = -I$(FEAT2BASEDIR)/librariesNEW/coproc
 # List of files only needed for a specific build ID
 # (please include path information, at best using Makefile variables)
 SRCEXTRA      = $(FEAT2BASEDIR)/kernel/Postprocessing/gmvwritef.c \
-		$(FEAT2BASEDIR)/kernel/System/signal_ccode.c
+		$(FEAT2BASEDIR)/kernel/System/signal_ccode.c \
+		$(FEAT2BASEDIR)/kernel/System/storage_malloc.c
 
 # List of all libraries available (queried for purge* targets)
 ALLLIB        = amd blas lapack splib umfpack

@@ -43,8 +43,8 @@ CXXVERSION = $(CXX) -V 2>&1 | head -n 1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -integer_size 64
-CFLAGSF90     := $(CFLAGSF90) -integer_size 64
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -integer_size 64
+CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -integer_size 64
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
@@ -112,20 +112,13 @@ endif
 # Detect compiler version
 INTELVERSION  := $(shell eval $(CXXVERSION) )
 
-# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases, 
-# (not necessary for Intel 10.1.021)
-ifneq (,$(findstring 10.1.00,$(INTELVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
-endif
-ifneq (,$(findstring 10.1.01,$(INTELVERSION)))
-CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
-endif
-
-
-
 # Functions to detect minimal compiler version
+intelminversion_12_1=\
+	$(if $(findstring 12.1.,$(INTELVERSION)),yes,no)
 intelminversion_12_0=\
-	$(if $(findstring 12.0.,$(INTELVERSION)),yes,no)
+	$(if $(findstring yes,\
+	   $(call intelminversion_12_1) \
+	      $(if $(findstring 12.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelminversion_11_1=\
 	$(if $(findstring yes,\
 	   $(call intelminversion_12_0) \
@@ -172,6 +165,10 @@ intelminversion_6_0=\
 	      $(if $(findstring 6.0.,$(INTELVERSION)),yes,no)),yes,no)
 
 # Functions to detect maximal compiler version
+intelmaxversion_12_1=\
+	$(if $(findstring yes,\
+	   $(call intelmaxversion_12_0) \
+	      $(if $(findstring 12.1.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_12_0=\
 	$(if $(findstring yes,\
 	   $(call intelmaxversion_11_1) \
@@ -218,6 +215,22 @@ intelmaxversion_7_0=\
 	      $(if $(findstring 7.0.,$(INTELVERSION)),yes,no)),yes,no)
 intelmaxversion_6_0=\
 	$(if $(findstring 6.0.,$(INTELVERSION)),yes,no)
+
+
+
+# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases, 
+# (not necessary for Intel 10.1.021)
+ifneq (,$(findstring 10.1.00,$(INTELVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
+endif
+ifneq (,$(findstring 10.1.01,$(INTELVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
+endif
+
+# The Intel compiler 10.1 and above supports ISO_C_BINDING 
+ifeq ($(call intelminversion_10_1),yes)
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+endif
 
 
 

@@ -43,8 +43,8 @@ CXXVERSION = $(CXX) --version | head -n 1
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
-CFLAGSF77     := $(CFLAGSF77) -fdefault-integer-8
-CFLAGSF90     := $(CFLAGSF90) -fdefault-integer-8
+CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -fdefault-integer-8
+CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -fdefault-integer-8
 endif
 # $(CC) and $(CXX) do not have such a corresponding option, so we have to 
 # pray that they default the 'int' type properly.
@@ -101,17 +101,6 @@ endif
 # Detect compiler version
 GFORTRANVERSION  := $(shell eval $(F90VERSION) )
 
-# Command line options for gfortran 4.3.x
-ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
-CFLAGSF77LIBS := $(CFLAGSF77LIBS)
-endif
-
-# Command line options for gfortran 4.4.x
-ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
-endif
-
-
-
 # Functions to detect minimal compiler version
 gfortranminversion_4_6=\
 	$(if $(findstring 4.6.,$(GFORTRANVERSION)),yes,no)
@@ -159,6 +148,18 @@ gfortranmaxversion_4_2=\
 	$(if $(findstring 4.2.,$(GFORTRANVERSION)),yes,no)),yes,no)
 gfortranmaxversion_4_1=\
 	$(if $(findstring 4.1.,$(GFORTRANVERSION)),yes,no)
+
+
+
+# Command line options for gfortran 4.3.x
+ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
+CFLAGSF77LIBS := $(CFLAGSF77LIBS)
+endif
+
+# The gfortran compiler 4.1 and above supports ISO_C_BINDING 
+ifeq ($(call gfortranminversion_4_1),yes)
+CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
+endif
 
 
 

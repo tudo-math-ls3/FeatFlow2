@@ -4,10 +4,9 @@
  ******************************************************************************
  *
  * <purpose>
- * This file provides the basic routines for handling coprocessor
- * support in CUDA. Routines for creating and deleting storage on the
- * device and transfering data between host and device memory are
- * provided.
+ * This file provides the basic routines for creating and deleting
+ * storage on the device and transfering data between host and device
+ * memory are provided.
  * </purpose>
  *
  *#############################################################################
@@ -15,371 +14,779 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <iostream>
 #include "coproc_core.h"
 #include "coproc_storage_cuda.h"
 
+/*******************************************************************************
+ * Wrappers for malloc/free using cudaMallocHost and cudaHostFree
+ *******************************************************************************
+ */
+
+int coproc_malloc(void **ptr, size_t size)
+{
+  if (cudaMallocHost(ptr, size) != cudaSuccess) {
+    __coproc__error__("coproc_malloc");
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+/******************************************************************************/
+
+int coproc_free(void *ptr)
+{
+  if (cudaFreeHost(ptr) != cudaSuccess) {
+    __coproc__error__("coproc_free");
+    return 1;
+  } else {
+    ptr = NULL;
+    return 0;
+  }
+}
+
+/*******************************************************************************
+ ***
+ ***  HOST CODE
+ ***
+ *******************************************************************************
+ */
 
 /*******************************************************************************
  * Allocate new memory on host
  *******************************************************************************
  */
-int coproc_newMemoryOnHost(unsigned long * p_MemoryBlock,
-			   unsigned long * imemBytes)
+int coproc_newMemoryOnHost(void **h_ptr,
+			   size_t size,
+			   unsigned int flags)
 {
-  void * d_MemoryBlock = 0;
-
-  cudaHostAlloc((void**)&d_MemoryBlock, *imemBytes, cudaHostAllocDefault);
-  *p_MemoryBlock = (unsigned long) d_MemoryBlock;
-  coproc_checkErrors("coproc_newMemoryOnHost");
-  return 0;
+  if (cudaHostAlloc(h_ptr, size, flags) != cudaSuccess) {
+    __coproc__error__("coproc_newMemoryOnHost");
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
-int FNAME(coproc_newmemoryonhost)(unsigned long * p_MemoryBlock,
-				  unsigned long * imemBytes)
-{
-  return coproc_newMemoryOnHost(p_MemoryBlock, imemBytes);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_newmemoryonhost)(void **h_ptr,
+				      __SIZET *size,
+				      __INT *flags=cudaHostAllocDefault)
+  {
+    return (__INT) coproc_newMemoryOnHost(h_ptr, *size, *flags);
+  }
 }
 
 /*******************************************************************************
- * Free existing memory on host
+ * Free memory on host
  *******************************************************************************
  */
-int coproc_freeMemoryOnHost(unsigned long * p_MemoryBlock)
+int coproc_freeMemoryOnHost(void *h_ptr)
 {
-  void * d_MemoryBlock = (void*)(*p_MemoryBlock);
+  if (cudaFreeHost(h_ptr) != cudaSuccess) {
+    __coproc__error__("coproc_freeMemoryOnHost");
+    return 1;
+  } else {
+    h_ptr = NULL;
+    return 0;
+  }
+}
 
-  cudaFreeHost(d_MemoryBlock);
-  *p_MemoryBlock = 0;
-  coproc_checkErrors("coproc_freeMemoryOnHost");
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_freememoryonhost)(void **h_ptr)
+  {
+    return (__INT) coproc_freeMemoryOnHost(*h_ptr);
+  }
+}
+
+/*******************************************************************************
+ * Clear memory on host
+ *******************************************************************************
+ */
+int coproc_clearMemoryOnHost(void *h_ptr,
+			     size_t size)
+{
+  memset(h_ptr, 0, size);
   return 0;
 }
 
-int FNAME(coproc_freememoryonhost)(unsigned long * p_MemoryBlock)
-{
-  return coproc_freeMemoryOnHost(p_MemoryBlock);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_clearmemoryonhost)(void **h_ptr,
+					__SIZET *size)
+  {
+    return (__INT) coproc_clearMemoryOnHost(*h_ptr, *size);
+  }
 }
+
+/*******************************************************************************
+ ***
+ ***  DEVICE CODE
+ ***
+ *******************************************************************************
+ */
 
 /*******************************************************************************
  * Allocate new memory on device
  *******************************************************************************
  */
-int coproc_newMemoryOnDevice(unsigned long * p_MemoryBlock,
-			     unsigned long * imemBytes)
+int coproc_newMemoryOnDevice(void **d_ptr,
+			     size_t size)
 {
-  void * d_MemoryBlock = 0;
-
-  cudaMalloc((void**)&d_MemoryBlock, *imemBytes);
-  *p_MemoryBlock = (unsigned long) d_MemoryBlock;
-  coproc_checkErrors("coproc_newMemoryOnDevice");
-  return 0;
+  if (cudaMalloc(d_ptr, size) != cudaSuccess) {
+    __coproc__error__("coproc_newMemoryOnDevice");
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
-int FNAME(coproc_newmemoryondevice)(unsigned long * p_MemoryBlock,
-				    unsigned long * imemBytes)
-{
-  return coproc_newMemoryOnDevice(p_MemoryBlock, imemBytes);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_newmemoryondevice)(void **d_ptr,
+					__SIZET *size)
+  {
+    return (__INT) coproc_newMemoryOnDevice(d_ptr, *size);
+  }
 }
-
 
 /*******************************************************************************
  * Free existing memory on device
  *******************************************************************************
  */
-int coproc_freeMemoryOnDevice(unsigned long * p_MemoryBlock)
+int coproc_freeMemoryOnDevice(void *d_ptr)
 {
-  void * d_MemoryBlock = (void*)(*p_MemoryBlock);
-
-  cudaFree(d_MemoryBlock);
-  *p_MemoryBlock = 0;
-  coproc_checkErrors("coproc_freeMemoryOnDevice");
-  return 0;
+  if (cudaFree(d_ptr) != cudaSuccess) {
+    __coproc__error__("coproc_freeMemoryOnDevice");
+    return 1;
+  } else {
+    d_ptr = NULL;
+    return 0;
+  }
 }
 
-int FNAME(coproc_freememoryondevice)(unsigned long * p_MemoryBlock)
-{
-  return coproc_freeMemoryOnDevice(p_MemoryBlock);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_freememoryondevice)(void **d_ptr)
+  {
+    return (__INT) coproc_freeMemoryOnDevice(*d_ptr);
+  }
 }
-
 
 /*******************************************************************************
  * Clear memory on device
  *******************************************************************************
  */
-int coproc_clearMemoryOnDevice(unsigned long * p_MemoryBlock,
-			       unsigned long * imemBytes)
+int coproc_clearMemoryOnDevice(void *d_ptr,
+			       size_t size)
 {
-  cudaMemset((void*)(*p_MemoryBlock), 0, *imemBytes);
-  coproc_checkErrors("coproc_clearMemoryOnDevice");
+  if (cudaMemset(d_ptr, 0, size) != cudaSuccess) {
+    __coproc__error__("coproc_clearMemoryOnDevice");
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_clearmemoryondevice)(void **d_ptr,
+					  __SIZET *size)
+  {
+    return (__INT) coproc_clearMemoryOnDevice(*d_ptr, *size);
+  }
+}
+
+/*******************************************************************************
+ * Copy host memory to host memory synchroneously
+ *******************************************************************************
+ */
+int coproc_memcpyHostToHost(void *h_ptrSrc, 
+			    void *h_ptrDest,
+			    size_t size)
+{
+  if (cudaMemcpy(h_ptrDest, h_ptrSrc,
+		 size, cudaMemcpyHostToHost) != cudaSuccess) {
+    __coproc__error__("coproc_memcpyHostToHost");
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpyhosttohost)(void **h_ptrSrc,
+				       void **h_ptrDest,
+				       __SIZET *size)
+  {
+    return (__INT) coproc_memcpyHostToHost(*h_ptrSrc, *h_ptrDest, *size);
+  }
+}
+
+/*******************************************************************************
+ * Copy host memory to host memory asynchroneously
+ *******************************************************************************
+ */
+int coproc_memcpyHostToHostAsync(void *h_ptrSrc, 
+				 void *h_ptrDest,
+				 size_t size,
+				 cudaStream_t stream)
+{
+  cudaMemcpyAsync(h_ptrDest, h_ptrSrc,
+		  size, cudaMemcpyHostToHost, stream);
   return 0;
 }
 
-int FNAME(coproc_clearmemoryondevice)(unsigned long * p_MemoryBlock,
-				      unsigned long * imemBytes)
-{
-  return coproc_clearMemoryOnDevice(p_MemoryBlock, imemBytes);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpyhosttohosteasync)(void **h_ptrSrc,
+					     void **h_ptrDest,
+					     __SIZET *size,
+					     __I64 *stream=0)
+  {
+    return (__INT) coproc_memcpyHostToHostAsync(*h_ptrSrc, *h_ptrDest, *size,
+						(cudaStream_t)(*stream));
+  }
 }
 
-
 /*******************************************************************************
- * Copy host memory to device memory
+ * Copy host memory to device memory synchroneously
  *******************************************************************************
  */
-int coproc_copyMemoryHostToDevice(unsigned long * p_MemoryBlockOnHost, 
-				  unsigned long * p_MemoryBlockOnDevice,
-				  unsigned long * imemBytes)
+int coproc_memcpyHostToDevice(void *h_ptrSrc, 
+			      void *d_ptrDest,
+			      size_t size)
 {
-  void * d_MemoryBlockOnDevice = (void*)(*p_MemoryBlockOnDevice);
+  if (cudaMemcpy(d_ptrDest, h_ptrSrc,
+		 size, cudaMemcpyHostToDevice) != cudaSuccess) {
+    __coproc__error__("coproc_memcpyHostToDevice");
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
-  cudaMemcpy(d_MemoryBlockOnDevice, p_MemoryBlockOnHost,
-	     *imemBytes, cudaMemcpyHostToDevice);
-  coproc_checkErrors("coproc_copyMemoryHostToDev");
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpyhosttodevice)(void *h_ptrSrc,
+					 void **d_ptrDest,
+					 __SIZET *size)
+  {
+    return (__INT) coproc_memcpyHostToDevice(h_ptrSrc, *d_ptrDest, *size);
+  }
+}
+
+/*******************************************************************************
+ * Copy host memory to device memory asynchroneously
+ *******************************************************************************
+ */
+int coproc_memcpyHostToDeviceAsync(void *h_ptrSrc, 
+				   void *d_ptrDest,
+				   size_t size,
+				   cudaStream_t stream)
+{
+  cudaMemcpyAsync(d_ptrDest, h_ptrSrc,
+		  size, cudaMemcpyHostToDevice, stream);
   return 0;
 }
 
-int FNAME(coproc_copymemoryhosttodevice)(unsigned long * p_MemoryBlockOnHost,
-					 unsigned long * p_MemoryBlockOnDevice,
-					 unsigned long * imemBytes)
-{
-  return coproc_copyMemoryHostToDevice(p_MemoryBlockOnHost,
-				       p_MemoryBlockOnDevice, imemBytes);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpyhosttodeviceasync)(void **h_ptrSrc,
+					      void **d_ptrDest,
+					      __SIZET *size,
+					      __I64 *stream=0)
+  {
+    return (__INT) coproc_memcpyHostToDeviceAsync(*h_ptrSrc, *d_ptrDest, *size,
+						  (cudaStream_t)(*stream));
+  }
 }
 
-
 /*******************************************************************************
- * Copy device memory to host memory
+ * Copy device memory to host memory synchroneously
  *******************************************************************************
  */
-int coproc_copyMemoryDeviceToHost(unsigned long * p_MemoryBlockOnDevice,
-				  unsigned long * p_MemoryBlockOnHost,
-				  unsigned long * imemBytes)
+int coproc_memcpyDeviceToHost(void *d_ptrSrc,
+			      void *h_ptrDest,
+			      size_t size)
 {
-  void * d_MemoryBlockOnDevice = (void*)(*p_MemoryBlockOnDevice);
+  if (cudaMemcpy(h_ptrDest, d_ptrSrc,
+		 size, cudaMemcpyDeviceToHost) != cudaSuccess) {
+    __coproc__error__("coproc_memcpyDeviceToHost");
+    return 1;
+  } else {
+    return 0;
+  }
+}
 
-  cudaMemcpy(p_MemoryBlockOnHost, d_MemoryBlockOnDevice,
-	     *imemBytes, cudaMemcpyDeviceToHost);
-  cudaThreadSynchronize();
-  coproc_checkErrors("coproc_copyMemoryDeviceToHost");
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpydevicetohost)(void **d_ptrSrc,
+					 void *h_ptrDest,
+					 __SIZET *size)
+  {
+    return (__INT) coproc_memcpyDeviceToHost(*d_ptrSrc, h_ptrDest, *size);
+  }
+}
+
+/*******************************************************************************
+ * Copy device memory to host memory asynchroneously
+ *******************************************************************************
+ */
+int coproc_memcpyDeviceToHostAsync(void *d_ptrSrc,
+				   void *h_ptrDest,
+				   size_t size,
+				   cudaStream_t stream)
+{
+  cudaMemcpyAsync(h_ptrDest, d_ptrSrc,
+		  size, cudaMemcpyDeviceToHost,stream);
   return 0;
 }
 
-int FNAME(coproc_copymemorydevicetohost)(unsigned long * p_MemoryBlockOnDevice,
-					 unsigned long * p_MemoryBlockOnHost,
-					 unsigned long * imemBytes)
-{
-  return coproc_copyMemoryDeviceToHost(p_MemoryBlockOnDevice,
-				       p_MemoryBlockOnHost, imemBytes);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpydevicetohostasync)(void **d_ptrSrc,
+					      void **h_ptrDest,
+					      __SIZET *size,
+					      __I64 *stream=0)
+  {
+    return (__INT) coproc_memcpyDeviceToHostAsync(*d_ptrSrc, *h_ptrDest, *size,
+						  (cudaStream_t)*stream);
+  }
 }
 
-
 /*******************************************************************************
- * Copy device memory data to device memory
+ * Copy device memory data to device memory synchroneously
  *******************************************************************************
  */
-int coproc_copyMemoryDeviceToDevice(unsigned long * p_MemoryBlockSrc,
-				    unsigned long * p_MemoryBlockDest,
-				    unsigned long * imemBytes)
+int coproc_memcpyDeviceToDevice(void *d_ptrSrc,
+				void *d_ptrDest,
+				size_t size)
 {
-  void * d_MemoryBlockSrc  = (void*)(*p_MemoryBlockSrc);
-  void * d_MemoryBlockDest = (void*)(*p_MemoryBlockDest);
-  
-  if (d_MemoryBlockDest != d_MemoryBlockSrc) {
-    cudaMemcpy(d_MemoryBlockDest, d_MemoryBlockSrc,
-	       *imemBytes, cudaMemcpyDeviceToDevice);
-    cudaThreadSynchronize();
-    coproc_checkErrors("coproc_copyMemoryDeviceToDevice");
+  if (d_ptrDest != d_ptrSrc) {
+    if (cudaMemcpy(d_ptrDest, d_ptrSrc,
+		   size, cudaMemcpyDeviceToDevice) != cudaSuccess) {
+      __coproc__error__("coproc_memcpyDeviceToDevice");
+      return 1;
+    } else {
+      return 0;
+    }
   }
   return 0;
 }
 
-int FNAME(coproc_copymemorydevicetodevice)(unsigned long * p_MemoryBlockSrc,
-					   unsigned long * p_MemoryBlockDest,
-					   unsigned long * imemBytes)
-{
-  return coproc_copyMemoryDeviceToDevice(p_MemoryBlockSrc,
-					 p_MemoryBlockDest, imemBytes);
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpydevicetodevice)(void **d_ptrSrc,
+					   void **d_ptrDest,
+					   __SIZET *size)
+  {
+    return (__INT) coproc_memcpyDeviceToDevice(*d_ptrSrc, *d_ptrDest, *size);
+  }
 }
 
 /*******************************************************************************
- * Add two real memory blocks in device memory
+ * Copy device memory data to device memory asynchroneously
  *******************************************************************************
  */
+int coproc_memcpyDeviceToDeviceAsync(void *d_ptrSrc,
+				     void *d_ptrDest,
+				     size_t size,
+				     cudaStream_t stream)
+{
+  if (d_ptrDest != d_ptrSrc) {
+    cudaMemcpyAsync(d_ptrDest, d_ptrSrc,
+		    size, cudaMemcpyDeviceToDevice, stream);
+    return 0;
+  }
+  return 0;
+}
 
-__global__ void addSingleOnDevice_knl(float * d_MemoryBlock1,
-				      float * d_MemoryBlock2,
-				      float * d_MemoryBlockDest,
-				      int imemSize)
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_memcpydevicetodeviceasync)(void **d_ptrSrc,
+						void **d_ptrDest,
+						__SIZET *size,
+						__I64 *stream=0)
+  {
+    return (__INT) coproc_memcpyDeviceToDeviceAsync(*d_ptrSrc, *d_ptrDest, *size,
+						    (cudaStream_t)*stream);
+  }
+}
+
+/*******************************************************************************
+ * Combine two generic memory blocks in device memory
+ *******************************************************************************
+ */
+template<typename T>
+__global__ void combineOnDevice_knl(T *ptr1,
+				    T *ptrSrc2,
+				    T *ptrDest,
+				    size_t size)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx<imemSize)
-  {
-    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] + d_MemoryBlock2[idx];
-  }
+  
+  if (idx<size)
+    {
+      ptrDest[idx] = ptr1[idx] + ptrSrc2[idx];
+    }
 }
 
-int coproc_addSingleOnDevice(unsigned long * p_MemoryBlock1,
-			     unsigned long * p_MemoryBlock2,
-			     unsigned long * p_MemoryBlockDest,
-			     unsigned long * imemSize)
+template<>
+__global__ void combineOnDevice_knl(bool *ptr1,
+				    bool *ptrSrc2,
+				    bool *ptrDest,
+				    size_t size)
 {
-  float * d_MemoryBlock1    = (float*)(*p_MemoryBlock1);
-  float * d_MemoryBlock2    = (float*)(*p_MemoryBlock2);
-  float * d_MemoryBlockDest = (float*)(*p_MemoryBlockDest);
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  if (idx<size)
+    {
+      ptrDest[idx] = ptr1[idx] || ptrSrc2[idx];
+    }
+}
 
+/*******************************************************************************
+ * Combine two single memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineSingleOnDevice(void *d_ptrSrc1,
+				 void *d_ptrSrc2,
+				 void *d_ptrDest,
+				 size_t size,
+				 cudaStream_t stream)
+{
+  __SP *ptrSrc1 = (__SP*)(d_ptrSrc1);
+  __SP *ptrSrc2 = (__SP*)(d_ptrSrc2);
+  __SP *ptrDest = (__SP*)(d_ptrDest);
+  
   int blocksize = 128;
   dim3 grid;
   dim3 block;
   block.x = blocksize;
-  grid.x = (unsigned)ceil((*imemSize)/(float)(block.x));
-  addSingleOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
-					 d_MemoryBlockDest, *imemSize);
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
   return 0;
 }
 
-int FNAME(coproc_addsingleondevice)(unsigned long * p_MemoryBlock1,
-				    unsigned long * p_MemoryBlock2,
-				    unsigned long * p_MemoryBlockDest,
-				    unsigned long * imemSize)
-{
-  return coproc_addSingleOnDevice(p_MemoryBlock1, p_MemoryBlock2,
-				  p_MemoryBlockDest, imemSize);
-}
-
-/*******************************************************************************
- * Add two double memory blocks in device memory
- *******************************************************************************
- */
-
-__global__ void addDoubleOnDevice_knl(double * d_MemoryBlock1,
-				      double * d_MemoryBlock2,
-				      double * d_MemoryBlockDest,
-				      int imemSize)
-{
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx<imemSize)
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combinesingleondevice)(void **d_ptrSrc1,
+					    void **d_ptrSrc2,
+					    void **d_ptrDest,
+					    __SIZET *size,
+					    __I64 *stream=0)
   {
-    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] + d_MemoryBlock2[idx];
+    return (__INT) coproc_combineSingleOnDevice(*d_ptrSrc1, *d_ptrSrc2,
+						*d_ptrDest, *size,
+						(cudaStream_t)(*stream));
   }
 }
 
-int coproc_addDoubleOnDevice(unsigned long * p_MemoryBlock1,
-			     unsigned long * p_MemoryBlock2,
-			     unsigned long * p_MemoryBlockDest,
-			     unsigned long * imemSize)
+/*******************************************************************************
+ * Combine two double memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineDoubleOnDevice(void *d_ptrSrc1,
+				 void *d_ptrSrc2,
+				 void *d_ptrDest,
+				 size_t size,
+				 cudaStream_t stream)
 {
-  double * d_MemoryBlock1    = (double*)(*p_MemoryBlock1);
-  double * d_MemoryBlock2    = (double*)(*p_MemoryBlock2);
-  double * d_MemoryBlockDest = (double*)(*p_MemoryBlockDest);
+  __DP *ptrSrc1 = (__DP*)(d_ptrSrc1);
+  __DP *ptrSrc2 = (__DP*)(d_ptrSrc2);
+  __DP *ptrDest = (__DP*)(d_ptrDest);
   
   int blocksize = 128;
   dim3 grid;
   dim3 block;
   block.x = blocksize;
-  grid.x = (unsigned)ceil((*imemSize)/(double)(block.x));
-  addDoubleOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
-					 d_MemoryBlockDest, *imemSize); 
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size); 
   return 0;
 }
 
-int FNAME(coproc_adddoubleondevice)(unsigned long * p_MemoryBlock1,
-				    unsigned long * p_MemoryBlock2,
-				    unsigned long * p_MemoryBlockDest,
-				    unsigned long * imemSize)
-{
-  return coproc_addDoubleOnDevice(p_MemoryBlock1, p_MemoryBlock2,
-				  p_MemoryBlockDest, imemSize);
-}
-
-/*******************************************************************************
- * Add two integer memory blocks in device memory
- *******************************************************************************
- */
-
-__global__ void addIntegerOnDevice_knl(int * d_MemoryBlock1,
-				       int * d_MemoryBlock2,
-				       int * d_MemoryBlockDest,
-				       int imemSize)
-{
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx<imemSize)
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combinedoubleondevice)(void **d_ptrSrc1,
+					    void **d_ptrSrc2,
+					    void **d_ptrDest,
+					    __SIZET *size,
+					    __I64 *stream=0)
   {
-    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] + d_MemoryBlock2[idx];
+    return (__INT) coproc_combineDoubleOnDevice(*d_ptrSrc1, *d_ptrSrc2,
+						*d_ptrDest, *size,
+						(cudaStream_t)(*stream));
   }
 }
 
-int coproc_addIntegerOnDevice(unsigned long * p_MemoryBlock1,
-			      unsigned long * p_MemoryBlock2,
-			      unsigned long * p_MemoryBlockDest,
-			      unsigned long * imemSize)
+/*******************************************************************************
+ * Combine two quadrupel memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineQuadOnDevice(void *d_ptrSrc1,
+			       void *d_ptrSrc2,
+			       void *d_ptrDest,
+			       size_t size,
+			       cudaStream_t stream)
 {
-  int * d_MemoryBlock1    = (int*)(*p_MemoryBlock1);
-  int * d_MemoryBlock2    = (int*)(*p_MemoryBlock2);
-  int * d_MemoryBlockDest = (int*)(*p_MemoryBlockDest);
+  __QP *ptrSrc1 = (__QP*)(d_ptrSrc1);
+  __QP *ptrSrc2 = (__QP*)(d_ptrSrc2);
+  __QP *ptrDest = (__QP*)(d_ptrDest);
   
   int blocksize = 128;
   dim3 grid;
   dim3 block;
   block.x = blocksize;
-  grid.x = (unsigned)ceil((*imemSize)/(int)(block.x));
-  addIntegerOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
-					  d_MemoryBlockDest, *imemSize);
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size); 
   return 0;
 }
 
-int FNAME(coproc_addintegerondevice)(unsigned long * p_MemoryBlock1,
-				     unsigned long * p_MemoryBlock2,
-				     unsigned long * p_MemoryBlockDest,
-				     unsigned long * imemSize)
-{
-  return coproc_addIntegerOnDevice(p_MemoryBlock1, p_MemoryBlock2,
-				   p_MemoryBlockDest, imemSize);
-}
-
-/*******************************************************************************
- * Add two logical memory blocks in device memory
- *******************************************************************************
- */
-
-__global__ void addLogicalOnDevice_knl(int * d_MemoryBlock1,
-				       int * d_MemoryBlock2,
-				       int * d_MemoryBlockDest,
-				       int imemSize)
-{
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx<imemSize)
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combinequadondevice)(void **d_ptrSrc1,
+					  void **d_ptrSrc2,
+					  void **d_ptrDest,
+					  __SIZET *size,
+					  __I64 *stream=0)
   {
-    d_MemoryBlockDest[idx] = d_MemoryBlock1[idx] || d_MemoryBlock2[idx];
+    return (__INT) coproc_combineQuadOnDevice(*d_ptrSrc1, *d_ptrSrc2,
+					      *d_ptrDest, *size,
+					      (cudaStream_t)(*stream));
   }
 }
 
-int coproc_addLogicalOnDevice(unsigned long * p_MemoryBlock1,
-			      unsigned long * p_MemoryBlock2,
-			      unsigned long * p_MemoryBlockDest,
-			      unsigned long * imemSize)
+/*******************************************************************************
+ * Combine two integer memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineIntegerOnDevice(void *d_ptrSrc1,
+				  void *d_ptrSrc2,
+				  void *d_ptrDest,
+				  size_t size,
+				  cudaStream_t stream)
 {
-  int * d_MemoryBlock1    = (int*)(*p_MemoryBlock1);
-  int * d_MemoryBlock2    = (int*)(*p_MemoryBlock2);
-  int * d_MemoryBlockDest = (int*)(*p_MemoryBlockDest);
+  __INT *ptrSrc1 = (__INT*)(d_ptrSrc1);
+  __INT *ptrSrc2 = (__INT*)(d_ptrSrc2);
+  __INT *ptrDest = (__INT*)(d_ptrDest);
   
   int blocksize = 128;
   dim3 grid;
   dim3 block;
   block.x = blocksize;
-  grid.x = (unsigned)ceil((*imemSize)/(int)(block.x));
-  addLogicalOnDevice_knl<<<grid, block>>>(d_MemoryBlock1, d_MemoryBlock2,
-					  d_MemoryBlockDest, *imemSize);
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
   return 0;
 }
 
-int FNAME(coproc_addlogicalondevice)(unsigned long * p_MemoryBlock1,
-				     unsigned long * p_MemoryBlock2,
-				     unsigned long * p_MemoryBlockDest,
-				     unsigned long * imemSize)
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combineintegerondevice)(void **d_ptrSrc1,
+					     void **d_ptrSrc2,
+					     void **d_ptrDest,
+					     __SIZET *size,
+					     __I64 *stream=0)
+  {
+    return (__INT) coproc_combineIntegerOnDevice(*d_ptrSrc1, *d_ptrSrc2,
+						 *d_ptrDest, *size,
+						 (cudaStream_t)(*stream));
+  }
+}
+
+/*******************************************************************************
+ * Combine two int8 memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineInt8OnDevice(void *d_ptrSrc1,
+			       void *d_ptrSrc2,
+			       void *d_ptrDest,
+			       size_t size,
+			       cudaStream_t stream)
 {
-  return coproc_addLogicalOnDevice(p_MemoryBlock1, p_MemoryBlock2,
-				   p_MemoryBlockDest, imemSize);
+  __I8 *ptrSrc1 = (__I8*)(d_ptrSrc1);
+  __I8 *ptrSrc2 = (__I8*)(d_ptrSrc2);
+  __I8 *ptrDest = (__I8*)(d_ptrDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
+  return 0;
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combineint8ondevice)(void **d_ptrSrc1,
+					  void **d_ptrSrc2,
+					  void **d_ptrDest,
+					  __SIZET *size,
+					  __I64 *stream=0)
+  {
+    return (__INT) coproc_combineInt8OnDevice(*d_ptrSrc1, *d_ptrSrc2,
+					      *d_ptrDest, *size,
+					      (cudaStream_t)(*stream));
+  }
+}
+
+/*******************************************************************************
+ * Combine two int16 memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineInt16OnDevice(void *d_ptrSrc1,
+				void *d_ptrSrc2,
+				void *d_ptrDest,
+				size_t size,
+				cudaStream_t stream)
+{
+  __I16 *ptrSrc1 = (__I16*)(d_ptrSrc1);
+  __I16 *ptrSrc2 = (__I16*)(d_ptrSrc2);
+  __I16 *ptrDest = (__I16*)(d_ptrDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
+  return 0;
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combineint16ondevice)(void **d_ptrSrc1,
+					   void **d_ptrSrc2,
+					   void **d_ptrDest,
+					   __SIZET *size,
+					   __I64 *stream=0)
+  {
+    return (__INT) coproc_combineInt16OnDevice(*d_ptrSrc1, *d_ptrSrc2,
+					       *d_ptrDest, *size,
+					       (cudaStream_t)(*stream));
+  }
+}
+
+/*******************************************************************************
+ * Combine two int32 memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineInt32OnDevice(void *d_ptrSrc1,
+				void *d_ptrSrc2,
+				void *d_ptrDest,
+				size_t size,
+				cudaStream_t stream)
+{
+  __I32 *ptrSrc1 = (__I32*)(d_ptrSrc1);
+  __I32 *ptrSrc2 = (__I32*)(d_ptrSrc2);
+  __I32 *ptrDest = (__I32*)(d_ptrDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
+  return 0;
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combineint32ondevice)(void **d_ptrSrc1,
+					   void **d_ptrSrc2,
+					   void **d_ptrDest,
+					   __SIZET *size,
+					   __I64 *stream=0)
+  {
+    return (__INT) coproc_combineInt32OnDevice(*d_ptrSrc1, *d_ptrSrc2,
+					       *d_ptrDest, *size,
+					       (cudaStream_t)(*stream));
+  }
+}
+
+/*******************************************************************************
+ * Combine two int64 memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineInt64OnDevice(void *d_ptrSrc1,
+				void *d_ptrSrc2,
+				void *d_ptrDest,
+				size_t size,
+				cudaStream_t stream)
+{
+  __I64 *ptrSrc1 = (__I64*)(d_ptrSrc1);
+  __I64 *ptrSrc2 = (__I64*)(d_ptrSrc2);
+  __I64 *ptrDest = (__I64*)(d_ptrDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
+  return 0;
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combineint64ondevice)(void **d_ptrSrc1,
+					   void **d_ptrSrc2,
+					   void **d_ptrDest,
+					   __SIZET *size,
+					   __I64 *stream=0)
+  {
+    return (__INT) coproc_combineInt64OnDevice(*d_ptrSrc1, *d_ptrSrc2,
+					       *d_ptrDest, *size,
+					       (cudaStream_t)(*stream));
+  }
+}
+
+/*******************************************************************************
+ * Combine two logical memory blocks in device memory
+ *******************************************************************************
+ */
+int coproc_combineLogicalOnDevice(void *d_ptrSrc1,
+				  void *d_ptrSrc2,
+				  void *d_ptrDest,
+				  size_t size,
+				  cudaStream_t stream)
+{
+  __LOGICAL *ptrSrc1 = (__LOGICAL*)(d_ptrSrc1);
+  __LOGICAL *ptrSrc2 = (__LOGICAL*)(d_ptrSrc2);
+  __LOGICAL *ptrDest = (__LOGICAL*)(d_ptrDest);
+  
+  int blocksize = 128;
+  dim3 grid;
+  dim3 block;
+  block.x = blocksize;
+  grid.x = (unsigned)ceil(size/(double)(block.x));
+  combineOnDevice_knl<<<grid, block, 0, stream>>>(ptrSrc1, ptrSrc2,
+						  ptrDest, size);
+  return 0;
+}
+
+/******************************************************************************/
+extern "C" {
+  __INT FNAME(coproc_combinelogicalondevice)(void **d_ptrSrc1,
+					     void **d_ptrSrc2,
+					     void **d_ptrDest,
+					     __SIZET *size,
+					     __I64 *stream=0)
+  {
+    return (__INT) coproc_combineLogicalOnDevice(*d_ptrSrc1, *d_ptrSrc2,
+						 *d_ptrDest, *size,
+						 (cudaStream_t)(*stream));
+  }
 }
