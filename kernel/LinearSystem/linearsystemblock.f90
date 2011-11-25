@@ -244,6 +244,14 @@
 !# 72.) lsysbl_copyD2H_Vector
 !#      -> Copies the data of a vector from the memory of the
 !#         coprocessor device to the host memory
+!#
+!# 73.) lsysbl_copyH2D_Matrix
+!#      -> Copies the data of a vector from the host memory
+!#         to the memory of the coprocessor device.
+!#
+!# 74.) lsysbl_copyD2H_Matrix
+!#      -> Copies the data of a vector from the memory of the
+!#         coprocessor device to the host memory
 !# </purpose>
 !##############################################################################
 
@@ -588,6 +596,8 @@ module linearsystemblock
   public :: lsysbl_convertBlockScalarVector
   public :: lsysbl_copyH2D_Vector
   public :: lsysbl_copyD2H_Vector
+  public :: lsysbl_copyH2D_Matrix
+  public :: lsysbl_copyD2H_Matrix
     
 contains
 
@@ -3008,11 +3018,6 @@ contains
   integer :: i,j,mvok,nbpc,nbpr
   real(DP) :: cyact
   logical :: btrans = .false.
-  
-  ! DEBUG!!!
-  real(DP), dimension(:), pointer :: p_Dx, p_Dy
-  call lsysbl_getbase_double (rx,p_Dx)
-  call lsysbl_getbase_double (ry,p_Dy)
   
     if(present(btransposed)) btrans = btransposed
     
@@ -8697,5 +8702,128 @@ contains
     end if
   
   end subroutine lsysbl_copyD2H_Vector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_copyH2D_Matrix(rmatrix, bclear, btranspose, p_MemPtr)
+
+!<description>
+    ! This subroutine copies the data of a matrix from the host memory
+    ! to the memory of the coprocessor device. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Block matrix
+    type(t_matrixBlock), intent(in) :: rmatrix
+
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+
+    ! Switch: If TRUE then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+
+!<output>
+    ! OPTIONAL: pointer to the positions in device memory
+    type(C_PTR), dimension(:,:), pointer, intent(out), optional :: p_MemPtr
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j
+
+    if (present(p_MemPtr))&
+        allocate(p_MemPtr(rmatrix%nblocksPerRow,rmatrix%nblocksPerCol))
+    
+
+    ! Clear the matrix?
+    if (bclear) then
+      do j = 1, rmatrix%nblocksPerRow
+        do i = 1, rmatrix%nblocksPerCol
+          if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE) then
+            call storage_clearMemory(rmatrix%RmatrixBlock(i,j)%h_Da)
+            if (present(p_MemPtr))&
+                p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+          elseif (present(p_MemPtr)) then
+            p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+          end if
+        end do
+      end do
+    else
+      ! No, we have to copy the content from host to device memory
+      do j = 1, rmatrix%nblocksPerRow
+        do i = 1, rmatrix%nblocksPerCol
+          if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE) then
+            call storage_syncMemory(rmatrix%RmatrixBlock(i,j)%h_Da,&
+                ST_SYNCBLOCK_COPY_H2D, btranspose)
+            if (present(p_MemPtr))&
+                p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+          elseif (present(p_MemPtr)) then
+            p_MemPtr(i,j) = storage_getMemPtrOnDevice(rmatrix%RmatrixBlock(i,j)%h_Da)
+          end if
+        end do
+      end do
+    end if
+  
+  end subroutine lsysbl_copyH2D_Matrix
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_copyD2H_Matrix(rmatrix, bclear, btranspose)
+
+!<description>
+    ! This subroutine copies the data of a matrix from the memory of
+    ! the coprocessor device to the host memory. If no device is
+    ! available, then an error is thrown.
+!</description>
+
+!<input>
+    ! Block matrix
+    type(t_matrixBlock), intent(in) :: rmatrix
+
+    ! Switch: If TRUE, then memory is allocated on the device and
+    ! cleared. If FALSE, then memory is allocated on the device and
+    ! the content from the host memory is transferred.
+    logical :: bclear
+
+    ! Switch: If TRUE then the memory is transposed.
+    logical, intent(in) :: btranspose
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j
+
+    ! Clear the vector?
+    if (bclear) then
+      ! Yes, we can simply overwrite the content in host memory
+      do j = 1, rmatrix%nblocksPerRow
+        do i = 1, rmatrix%nblocksPerCol
+          if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE)&
+              call storage_syncMemory(rmatrix%RmatrixBlock(i,j)%h_Da,&
+              ST_SYNCBLOCK_COPY_D2H)
+        end do
+      end do
+    else
+      ! No, we have to copy-add the content from device to host memory
+      do j = 1, rmatrix%nblocksPerRow
+        do i = 1, rmatrix%nblocksPerCol
+          if (rmatrix%RmatrixBlock(i,j)%h_Da .ne. ST_NOHANDLE)&
+              call storage_syncMemory(rmatrix%RmatrixBlock(i,j)%h_Da,&
+              ST_SYNCBLOCK_ACCUMULATE_D2H, btranspose)
+        end do
+      end do
+    end if
+    
+  end subroutine lsysbl_copyD2H_Matrix
 
 end module
