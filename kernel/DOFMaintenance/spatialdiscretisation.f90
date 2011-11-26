@@ -605,8 +605,12 @@ contains
       case (EL_Q1T)
         ! Use midpoint rule
         ccubType = CUB_MID
+        
+      case (EL_Q2)
+        ! Summed trapezoidal rule
+        ccubType = CUB_PTRZ
       
-      case DEFAULT
+      case default
         ccubType = 0
       end select
       
