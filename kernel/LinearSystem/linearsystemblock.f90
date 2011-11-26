@@ -8748,7 +8748,7 @@ contains
 
 !<output>
     ! OPTIONAL: pointer to the positions in device memory
-    type(C_PTR), dimension(:,:), pointer, intent(out), optional :: p_MemPtr
+    type(C_PTR), dimension(:,:), pointer, optional :: p_MemPtr
 !</output>
 
 !</subroutine>
