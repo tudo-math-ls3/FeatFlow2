@@ -882,41 +882,194 @@ contains
 
 !</subroutine>
 
-    integer :: icount,icounttotal,ibc,iseg
+    integer :: icount,icounttotal,ibc,iseg,ielement,ielidx,nve,I,J
+    integer :: ipoint,ipoint1,ipoint2,ilocalEdge
+    integer(I32) :: celement
+    type(t_triangulation), pointer :: p_rtriangulation
     type(t_boundaryRegion) :: rboundaryRegion
+    integer, dimension(:,:), allocatable :: Idofs
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_IelementDistr
     integer, dimension(:), pointer :: p_Idofs,p_IdofsLocal
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
+    integer, dimension(:), pointer :: p_InodalProperty
 
+    ! List of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+    
     ! Initialise the output
     icounttotal = 0
     
-    ! Loop through the boundary components and segments.
-    do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
-    
-      do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
+    ! Do we have a boundary structure?
+    if (associated(rspatialDiscr%p_rboundary)) then
       
-        ! Calculate the number of DOF's there.
-        call boundary_createRegion (rspatialDiscr%p_rboundary, &
-            ibc, iseg, rboundaryRegion)
-        call bcasm_getDOFsInBDRegion (rspatialDiscr, &
-            rboundaryRegion, ndofs=icount)
-            
-        ! Sum up.
-        icounttotal = icounttotal+icount
-      
+      ! This is the default case in 2D/3D since a boundary structure
+      ! is typically attached to the spatial discretisation structure
+
+      ! Loop through the boundary components and segments.
+      do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
+        do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
+          
+          ! Calculate the number of DOF's there.
+          call boundary_createRegion (rspatialDiscr%p_rboundary, &
+              ibc, iseg, rboundaryRegion)
+          call bcasm_getDOFsInBDRegion (rspatialDiscr, &
+              rboundaryRegion, ndofs=icount)
+          
+          ! Sum up.
+          icounttotal = icounttotal+icount
+          
+        end do
       end do
     
-    end do
-    
-    if (present(ndofs)) then
-      ndofs = icounttotal
+      if (present(ndofs)) then
+        ndofs = icounttotal
+      end if
+      
+    elseif (associated(rspatialDiscr%p_rtriangulation)) then
+
+      ! This is the default case in 1D since no boundary structure is
+      ! attached to the spatial discretisation structure. It also
+      ! works in 2D/3D but there, the above approach should be more efficient
+
+      ! For easier access:
+      p_rtriangulation => rspatialDiscr%p_rtriangulation
+      p_RelementDistribution => rspatialDiscr%RelementDistr
+
+      ! Set pointers
+      call storage_getbase_int(&
+          p_rtriangulation%h_IelementsAtBoundary, p_IelementsAtBoundary)
+      call storage_getbase_int2d(&
+          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      call storage_getbase_int(&      
+          p_rtriangulation%h_InodalProperty, p_InodalProperty)
+
+      ! Set total number of DOFs at the boundary
+      icounttotal = size(p_IelementsAtBoundary)
+
+      ! Reserve some memory to save temporarily all DOF`s of all boundary
+      ! elements.
+      ! We handle all boundary elements simultaneously - let us hope that there are
+      ! never so many elements on the boundary that our memory runs out :-)
+      allocate (Idofs(EL_MAXNBAS,icounttotal))
+
+      Idofs(:,:) = 0
+
+      ! Now the elements with indices iminidx..imaxidx in the ItrialElements
+      ! of the triangulation are on the boundary. Some elements may appear
+      ! twice (on edges e.g.) but we do not care.
+      !
+      ! Ask the DOF-mapping routine to get us those DOF`s belonging to elements
+      ! on the boundary.
+      !
+      ! The 'mult' call only works on uniform discretisations. We cannot assume
+      ! that and have to call dof_locGlobMapping for every element separately.
+      if (rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+        ! All elements are of the samne type. Get it in advance.
+        celement = rspatialDiscr%RelementDistr(1)%celement
+        nve = elem_igetNVE (celement)
+        call dof_locGlobMapping_mult(rspatialDiscr, &
+            p_IelementsAtBoundary, Idofs)
+      else
+        ! Every element can be of different type.
+        call storage_getbase_int(rspatialDiscr%h_IelementDistr,&
+            p_IelementDistr)
+        do ielement = 1,icounttotal
+          call dof_locGlobMapping(rspatialDiscr,&
+              p_IelementsAtBoundary(ielement), Idofs(:,ielement))
+        end do
+      end if
+      
+      ! Loop through the elements
+      do ielidx = 1,icounttotal
+        
+        ! Get the element and information about it.
+        ielement = p_IelementsAtBoundary (ielidx)
+        
+        ! Get the element type in case we do not have a uniform triangulation.
+        ! Otherwise, celement was set to the trial element type above.
+        if (rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+          celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
+          nve = elem_igetNVE (celement)
+        end if
+        
+        ! Now the element-dependent part. For each element type, we
+        ! have to figure out which DOF`s are on the boundary!
+        !
+        ! We proceed as follows: We figure out, which DOF is on the
+        ! boundary. Then, we ask our computation routine to
+        ! calculate the necessary value and translate them into a
+        ! DOF value.  All DOF values are collected later.
+        select case (elem_getPrimaryElement(celement))
+          
+        case (EL_P0_1D,EL_P0_2D,EL_Q0_2D,EL_P0_3D,EL_Q0_3D)
+          
+          ! These elements have no DOF's associated to boundary edges.
+          
+        case (EL_P1_1D)
+          
+          ! Left point at the boundary?
+          ipoint = p_IverticesAtElement(1,ielement)
+          if (p_InodalProperty(ipoint) .ne. 0) then
+            ! Set the DOF number < 0 to indicate that this DOF is on the boundary
+            Idofs(1,ielidx) = -abs(Idofs(1,ielidx))
+          end if
+          
+          ! Right point at the boundary?
+          ipoint = p_IverticesAtElement(2,ielement) 
+          if (p_InodalProperty(ipoint) .ne. 0) then
+            ! Set the DOF number < 0 to indicate that this DOF is on the boundary
+            Idofs(2,ielidx) = -abs(Idofs(2,ielidx))
+          end if
+
+        case (EL_P1_2D,EL_Q1_2D)
+          
+          ! Loop over all vertices
+          do ilocalEdge = 1, nve
+            
+            ipoint1 = p_IverticesAtElement(ilocalEdge,ielement)
+            ipoint2 = p_IverticesAtElement(mod(ilocalEdge,nve)+1,ielement)
+            
+            if ((p_InodalProperty(ipoint1) .eq. 0) .or.&
+                (p_InodalProperty(ipoint2) .eq. 0)) then
+              ipoint1 = 0
+              ipoint2 = 0
+            end if
+
+            ! Left point inside? -> Corresponding DOF must be computed
+            if ( ipoint1 .ne. 0 ) then
+              ! Set the DOF number < 0 to indicate that this DOF is in the region.
+              Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+            end if
+            
+            ! Right point inside? -> Corresponding DOF must be computed
+            if ( ipoint2 .ne. 0 ) then
+              ! Set the DOF number < 0 to indicate that this DOF is in the region.
+              Idofs(mod(ilocalEdge,nve)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,nve)+1,ielidx))
+            end if
+          end do
+
+        case default
+          call output_line('Unsupported element!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getDOFsOnBoundary')
+          call sys_halt()
+        end select
+
+      end do
+            
+    else
+      call output_line ('Neither boundary nor triangulation available!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getDOFsOnBoundary')
+      call sys_halt()
     end if
     
+  
     ! Cancel if there are no DOF's.
     if (icounttotal .eq. 0) return
     
     ! Allocate and fetch the DOF's.
     if (h_Idofs .eq. ST_NOHANDLE) then
-      call storage_new('bcasm_getDOFsInBDRegion', 'h_Idofs', &
+      call storage_new('bcasm_getDOFsOnBoundary', 'h_Idofs', &
           icounttotal, ST_INT, h_Idofs, ST_NEWBLOCK_NOINIT)
       call storage_getbase_int (h_Idofs,p_Idofs)
     else
@@ -927,30 +1080,50 @@ contains
         call sys_halt()
       end if
     end if
-    
-    icounttotal = 0
-    do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
-    
-      do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
-        ! Calculate the DOF's there.
-        call boundary_createRegion (rspatialDiscr%p_rboundary, &
-            ibc, iseg, rboundaryRegion)
-            
-        p_IdofsLocal => p_Idofs(icounttotal+1:)
-            
-        ! Store in a subarray of p_Idofs.
-        call bcasm_getDOFsInBDRegion (rspatialDiscr, &
-            rboundaryRegion,ndofs=icount,IdofsArray=p_IdofsLocal)
-            
-        icounttotal = icounttotal+icount
-      
-      end do
-    
-    end do
-    
-    if (present(ndofs)) then
-    end if
 
+
+    ! Initialise the output
+    icounttotal = 0
+      
+    ! Do we have a boundary structure?
+    if (associated(rspatialDiscr%p_rboundary)) then
+
+      ! Loop through the boundary components and segments.
+      do ibc = 1,boundary_igetNBoundComp(rspatialDiscr%p_rboundary)
+        do iseg = 1,boundary_igetNsegments(rspatialDiscr%p_rboundary,ibc)
+          
+          ! Calculate the DOF's there.
+          call boundary_createRegion (rspatialDiscr%p_rboundary, &
+              ibc, iseg, rboundaryRegion)
+          
+          p_IdofsLocal => p_Idofs(icounttotal+1:)
+          
+          ! Store in a subarray of p_Idofs.
+          call bcasm_getDOFsInBDRegion (rspatialDiscr, &
+              rboundaryRegion,ndofs=icount,IdofsArray=p_IdofsLocal)
+          
+          icounttotal = icounttotal+icount
+      
+        end do
+      end do
+
+    else
+      
+      ! Transfer the DOF`s and their values to these arrays.
+      do J=1,size(Idofs,2)
+        do I=1,size(Idofs,1)
+          if (Idofs(I,J) < 0) then
+            icounttotal = icounttotal + 1
+            p_Idofs(icounttotal) = abs(Idofs(I,J))
+          end if
+        end do
+      end do
+
+      ! Remove temporary memory, finish.
+      deallocate (Idofs)
+
+    end if
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1028,9 +1201,12 @@ contains
     p_rtriangulation => rspatialDiscr%p_rtriangulation
     p_RelementDistribution => rspatialDiscr%RelementDistr
     
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
-    call storage_getbase_int (p_rtriangulation%h_InodalProperty, p_InodalProperty)
-    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    call storage_getbase_int (p_rtriangulation%h_InodalProperty,&
+        p_InodalProperty)
+    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
     
     ! The edge-at-element array may not be initialised.
     if (p_rtriangulation%h_IedgesAtElement .ne. ST_NOHANDLE) then
@@ -1182,7 +1358,7 @@ contains
       ! All DOF values are collected later.
       select case (elem_getPrimaryElement(celement))
       
-      case (EL_P0_1D,EL_P0_2D,EL_P0_3D,EL_Q0_2D,EL_Q0_3D)
+      case (EL_P0_1D,EL_P0_2D,EL_Q0_2D,EL_P0_3D,EL_Q0_3D)
 
         ! This element has no DOF's associated to boundary edges.
         
@@ -1222,7 +1398,6 @@ contains
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
-        
           ! Set the DOF number < 0 to indicate that this DOF is in the region.
           Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
         end if
@@ -1234,7 +1409,7 @@ contains
           Idofs(mod(ilocalEdge,3)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,3)+1,ielidx))
         end if
 
-      case (EL_P2,EL_Q2)
+      case (EL_P2_2D,EL_Q2_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed
         if ( ipoint1 .ne. 0 ) then
@@ -1260,12 +1435,12 @@ contains
           ! be on the boundary.
         end if
 
-      case (EL_QP1)
+      case (EL_QP1_2D)
         ! Three DOF`s: Function value in the element midpoint
         ! and derivatives.
         ! No DOF is on a boundary edge.
 
-      case (EL_P1T)
+      case (EL_P1T_2D)
 
         ! Edge midpoint based element.
         !
@@ -1275,7 +1450,7 @@ contains
           Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
         end if
 
-      case (EL_Q1T,EL_Q1TB)
+      case (EL_Q1T_2D,EL_Q1TB_2D)
       
         ! The Q1T-element has different variants. Check which variant we have
         ! and choose the right way to calculate boundary values.
@@ -1304,7 +1479,7 @@ contains
 
         end if
 
-      case (EL_Q2T,EL_Q2TB)
+      case (EL_Q2T_2D,EL_Q2TB_2D)
       
         ! The Q2T-element is only integral mean value based.
         ! On the one hand, we have integral mean values over the edges.
