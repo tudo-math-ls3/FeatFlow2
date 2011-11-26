@@ -741,14 +741,14 @@ contains
       
       ! local variables
       integer :: idx,IAset,IAmax
-      integer :: ij,j,ivar,jvar,ijpos
+      integer :: ij,ivar,jvar,ijpos
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j,ivar,jvar,ijpos)&
+      !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,ivar,jvar,ijpos)&
       !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -1772,14 +1772,14 @@ contains
       
       ! local variables
       integer :: idx,IAset,IAmax
-      integer :: ij,j
+      integer :: ij
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij,j)&
+      !$omp private(Dcoefficients,DdataAtNode,IAmax,idx,ij)&
       !$omp if (size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
