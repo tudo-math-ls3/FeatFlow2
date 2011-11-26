@@ -131,7 +131,7 @@ module storage
   use genoutput
   use linearalgebra
   use uuid
-#undef USE_C_PTR_STORAGE
+
   ! By default memory is allocated and deallocated using the Fortran
   ! intrinsics ALLOCATE/DEALLOCATE. If the Fortran compiler support
   ! ISO_C_BINDING, then any C-type malloc/free can be used to allocate
