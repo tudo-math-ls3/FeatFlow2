@@ -26,7 +26,9 @@ module stdoperators
   use scalarpde
   use derivatives
   use spatialdiscretisation
+  use extstdassemblyinfo
   use bilinearformevaluation
+  use perfconfig
   
   implicit none
   
@@ -41,7 +43,8 @@ contains
 
 !<subroutine>
 
-  subroutine stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha)
+  subroutine stdop_assembleLaplaceMatrix (rmatrix,bclear,dalpha, &
+      rscalarAssemblyInfo, rperfconfig)
   
 !<description>
   ! This routine assembles a Laplace matrix into rmatrix.
@@ -55,6 +58,15 @@ contains
   ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, 1.0 is assumed.
   real(DP), intent(in), optional :: dalpha
+
+  ! OPTIONAL: A scalar assembly structure that gives additional information
+  ! about how to set up the matrix (e.g. cubature formula). If not specified,
+  ! default settings are used.
+  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -124,7 +136,8 @@ contains
     rform%Dcoefficients(1:rform%itermCount)  = dalpha1
 
     ! Now we can build the matrix entries.
-    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix,&
+        rscalarAssemblyInfo=rscalarAssemblyInfo,rperfconfig=rperfconfig)
 
   end subroutine stdop_assembleLaplaceMatrix
 
@@ -133,7 +146,7 @@ contains
 !<subroutine>
 
   subroutine stdop_assembleSimpleMatrix (rmatrix,cderivTrial,cderivTest,dalpha,&
-      bclear)
+      bclear,rscalarAssemblyInfo,rperfconfig)
   
 !<description>
   ! This routine assembles a simple Finite element matrix into rmatrix.
@@ -162,6 +175,15 @@ contains
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
   logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: A scalar assembly structure that gives additional information
+  ! about how to set up the matrix (e.g. cubature formula). If not specified,
+  ! default settings are used.
+  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
@@ -200,7 +222,8 @@ contains
     rform%Dcoefficients(1)  = dalpha1
 
     ! Now we can build the matrix entries.
-    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix)
+    call bilf_buildMatrixScalar2 (rform,bclear1,rmatrix,&
+        rscalarAssemblyInfo=rscalarAssemblyInfo,rperfconfig=rperfconfig)
 
   end subroutine stdop_assembleSimpleMatrix
 
