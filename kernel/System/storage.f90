@@ -188,7 +188,7 @@ module storage
   type(C_PTR), parameter :: C_NULL_PTR = C_PTR(0)
 #endif
   
-  public :: C_PTR, C_NULL_PTR
+  public :: C_PTR
 
 !<constants>
 
