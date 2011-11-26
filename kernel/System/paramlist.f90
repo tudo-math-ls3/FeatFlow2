@@ -256,6 +256,8 @@ module paramlist
   
   type t_parlstValue
   
+    private
+
     ! Number of strings. If set to 0, the value consists of one
     ! string, to be found in svalue. If > 0, there are nsize
     ! strings to be found in p_SentryList.
@@ -309,6 +311,8 @@ module paramlist
   
   type t_parlist
   
+    private
+
     ! Actual number of sections in the parameter list. There is at least
     ! one section - the unnamed section. If this value is =0, the parameter
     ! list is not initialised.
