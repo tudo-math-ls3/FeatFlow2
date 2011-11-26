@@ -17,7 +17,7 @@ extern "C"
 {
   int coproc_malloc(void **ptr, size_t size);
 
-  int coproc_free(void *ptr);  
+  int coproc_free(void **ptr);  
 
   int coproc_newMemoryOnHost(void **h_ptr,
 			     size_t size);

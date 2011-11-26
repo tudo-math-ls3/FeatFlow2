@@ -14,9 +14,9 @@ int storage_malloc(void **ptr, size_t size)
   return 0;
 }
 
-int storage_free(void *ptr)
+int storage_free(void **ptr)
 {
-  free(ptr);
-  ptr = NULL;
+  free(*ptr);
+  *ptr = NULL;
   return 0;
 }

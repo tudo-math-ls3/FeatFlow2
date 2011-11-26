@@ -923,7 +923,7 @@ module storage
     integer(C_INT) function c_deallocate(buffer) bind(C,name="storage_free") 
       __external_use__(iso_c_binding)
       implicit none 
-      type (C_PTR), value :: buffer
+      type (C_PTR) :: buffer
     end function c_deallocate
   end interface
 
@@ -944,7 +944,7 @@ module storage
     integer(C_INT) function c_deallocate(buffer) bind(C,name="coproc_free") 
       __external_use__(iso_c_binding)
       implicit none 
-      type (C_PTR), value :: buffer
+      type (C_PTR) :: buffer
     end function c_deallocate
   end interface
 

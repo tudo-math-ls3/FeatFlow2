@@ -34,13 +34,13 @@ int coproc_malloc(void **ptr, size_t size)
 
 /******************************************************************************/
 
-int coproc_free(void *ptr)
+int coproc_free(void **ptr)
 {
-  if (cudaFreeHost(ptr) != cudaSuccess) {
+  if (cudaFreeHost(*ptr) != cudaSuccess) {
     __coproc__error__("coproc_free");
     return 1;
   } else {
-    ptr = NULL;
+    *ptr = NULL;
     return 0;
   }
 }
