@@ -1475,7 +1475,7 @@ contains
         end if
         
         if (coeffMatrix_CY > 0) then
-          call lsyssc_cuplicateMatrix(&
+          call lsyssc_duplicateMatrix(&
               rproblemLevel%Rmatrix(coeffMatrix_CY), rmatrixBdrSy,&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPYOVERWRITE)
           call lsyssc_createMatrixSymmPart(rmatrixBdrSy, 1.0_DP)
