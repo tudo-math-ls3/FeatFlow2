@@ -859,7 +859,7 @@ contains
 
   subroutine gfem_initGFEMSetByMatrixBdry(rgroupFEMSet, rmatrix,&
       ncoeffsAtDiag, ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType,&
-      rregionTest, rregionTrial, brestrictToBoundary)
+      rregionTest, rregionTrial, brestrictToBoundary, bcheckIdentical)
 
 !<description>
     ! This subroutine initialises a set of degrees of freedom for
@@ -875,6 +875,10 @@ contains
     ! If the optional argument brestrictToBoundary is true, then
     ! an unrestricted test or trial space is restricted to the
     ! whole boundary.
+    !
+    ! If the optional argument bcheckIdentical is true, then it is
+    ! checked if the same list of degrees of freedom is used to
+    ! restrict the test and trial space.
 !</description>
 
 !<input>
@@ -900,6 +904,10 @@ contains
     ! OPTIONAL: if present test and trial spaces which  are not
     ! restricted by a boundary region are restricted to the whole boundary
     logical, intent(in), optional :: brestrictToBoundary
+
+    ! OPTIONAL: if present then it is checked if the list of degrees
+    ! of freedom to restrict the test and trial space is identical
+    logical, intent(in), optional :: bcheckIdentical
 !</input>
     
 !<output>
@@ -911,10 +919,13 @@ contains
     ! local variable
     integer, dimension(:), pointer :: p_IdofsTrial,p_IdofsTest
     integer :: h_IdofsTest,h_IdofsTrial
-    logical :: bboundary
+    logical :: bboundary,bcheck,bisIdentical
     
     bboundary = .false.
     if (present(brestrictToBoundary)) bboundary=brestrictToBoundary
+
+    bcheck = .false.
+    if (present(bcheckIdentical)) bcheck = bcheckIdentical
 
     ! Initialise handles
     h_IdofsTest  = ST_NOHANDLE
@@ -948,11 +959,33 @@ contains
     
     if (h_IdofsTest .ne. ST_NOHANDLE) then
       if (h_IdofsTrial .ne. ST_NOHANDLE) then
-        ! Initialise group finite element set using different lists of
-        ! degrees of freedom for the trial and test space, respectively
-        call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
-            ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType, .false.,&
-            IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+
+        ! Sould we test for identical lists of degrees of freedom?
+        if (bcheck) then
+          bisIdentical = .true.
+          if (size(p_IdofsTest) .eq. size(p_IdofsTrial)) then
+            bisIdentical = all(p_IdofsTest .eq. p_IdofsTrial)
+          else
+            bisIdentical = .false.
+          end if
+        else
+          bisIdentical = .false.
+        end if
+        
+        if (bisIdentical) then
+          ! Initialise group finite element set using the same list of
+          ! degrees of freedom for the trial and test space, ! respectively
+          call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
+              ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType,&
+              .true., IdofsTest=p_IdofsTest)
+        else
+          ! Initialise group finite element set using different lists
+          ! of degrees of freedom for the trial and test space, respectively
+          call gfem_initGFEMSetByMatrix(rgroupFEMSet, rmatrix, ncoeffsAtDiag,&
+              ncoeffsAtNode, ncoeffsAtEdge, cassembly, cdataType,&
+              .false., IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+        end if
+
         ! Free temporal memory
         call storage_free(h_IdofsTest)
         call storage_free(h_IdofsTrial)
@@ -1658,7 +1691,7 @@ contains
 !<subroutine>
 
   subroutine gfem_resizeGFEMSetByMatrixBdry(rgroupFEMSet, rmatrix,&
-      rregionTest, rregionTrial, brestrictToBoundary)
+      rregionTest, rregionTrial, brestrictToBoundary, bcheckIdentical)
 
 !<description>
     ! This subroutine resizes a set of degrees of freedom for
@@ -1674,6 +1707,10 @@ contains
     ! If the optional argument brestrictToBoundary is true, then
     ! an unrestricted test or trial space is restricted to the
     ! whole boundary.
+    !
+    ! If the optional argument bcheckIdentical is true, then it is
+    ! checked if the same list of degrees of freedom is used to
+    ! restrict the test and trial space.
 !</description>
 
 !<input>
@@ -1687,6 +1724,10 @@ contains
     ! OPTIONAL: if present test and trial spaces which  are not
     ! restricted by a boundary region are restricted to the whole boundary
     logical, intent(in), optional :: brestrictToBoundary
+
+    ! OPTIONAL: if present then it is checked if the list of degrees
+    ! of freedom to restrict the test and trial space is identical
+    logical, intent(in), optional :: bcheckIdentical
 !</input>
     
 !<inputoutput>
@@ -1698,10 +1739,13 @@ contains
     ! local variable
     integer, dimension(:), pointer :: p_IdofsTrial,p_IdofsTest
     integer :: h_IdofsTest,h_IdofsTrial
-    logical :: bboundary
+    logical :: bboundary,bcheck,bisIdentical
     
     bboundary = .false.
     if (present(brestrictToBoundary)) bboundary=brestrictToBoundary
+
+    bcheck = .false.
+    if (present(bcheckIdentical)) bcheck = bcheckIdentical
 
     ! Initialise handles
     h_IdofsTest  = ST_NOHANDLE
@@ -1735,10 +1779,31 @@ contains
     
     if (h_IdofsTest .ne. ST_NOHANDLE) then
       if (h_IdofsTrial .ne. ST_NOHANDLE) then
-        ! Resize group finite element set using different lists of
-        ! degrees of freedom for the trial and test space, respectively
-        call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix, .false.,&
-            IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+
+        ! Sould we test for identical lists of degrees of freedom?
+        if (bcheck) then
+          bisIdentical = .true.
+          if (size(p_IdofsTest) .eq. size(p_IdofsTrial)) then
+            bisIdentical = all(p_IdofsTest .eq. p_IdofsTrial)
+          else
+            bisIdentical = .false.
+          end if
+        else
+          bisIdentical = .false.
+        end if
+
+        if (bisIdentical) then
+          ! Resize group finite element set using the same lists of
+          ! degrees of freedom for the trial and test space, respectively
+          call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix,&
+              .true., IdofsTest=p_IdofsTest)
+        else
+          ! Resize group finite element set using identical/different lists of
+          ! degrees of freedom for the trial and test space, respectively
+          call gfem_resizeGFEMSetByMatrix(rgroupFEMSet, rmatrix,&
+              .false., IdofsTest=p_IdofsTest, IdofsTrial=p_IdofsTrial)
+        end if
+
         ! Free temporal memory
         call storage_free(h_IdofsTest)
         call storage_free(h_IdofsTrial)

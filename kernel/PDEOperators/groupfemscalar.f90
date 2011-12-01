@@ -22,33 +22,36 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) gfsc_buildOperator = gfsc_buildOperatorConst /
-!#                          gfsc_buildOperatorNodeScalar /
-!#                          gfsc_buildOperatorNodeBlock1 /
-!#                          gfsc_buildOperatorNodeBlock2 /
-!#                          gfsc_buildOperatorNodeBlock3 /
-!#                          gfsc_buildOperatorEdgeScalar /
-!#                          gfsc_buildOperatorEdgeBlock1 /
-!#                          gfsc_buildOperatorEdgeBlock2 /
-!#                          gfsc_buildOperatorEdgeBlock3
-!#     -> Assembles a discrete operator node-by-node or
-!#        edge-by-edge by the group finite element formulation
+!# 1.) gfsc_buildOperatorNode = gfsc_buildOperatorConst /
+!#                              gfsc_buildOperatorNodeScalar /
+!#                              gfsc_buildOperatorNodeBlock1 /
+!#                              gfsc_buildOperatorNodeBlock2 /
+!#                              gfsc_buildOperatorNodeBlock3
+!#     -> Assembles a discrete operator node-by-node by the
+!#        group finite element formulation
 !#
-!# 2.) gfsc_buildVectorNode = gfsc_buildVectorNodeScalar /
+!# 2.) gfsc_buildOperatorEdge = gfsc_buildOperatorEdgeScalar /
+!#                              gfsc_buildOperatorEdgeBlock1 /
+!#                              gfsc_buildOperatorEdgeBlock2 /
+!#                              gfsc_buildOperatorEdgeBlock3
+!#     -> Assembles a discrete operator edge-by-edge by the
+!#        group finite element formulation
+!#
+!# 3.) gfsc_buildVectorNode = gfsc_buildVectorNodeScalar /
 !#                            gfsc_buildVectorNodeBlock
 !#     -> Assembles a discrete vector node-by-node by the
 !#        group finite element formulation
 !#
-!# 3.) gfsc_buildVectorEdge = gfsc_buildVectorEdgeScalar /
+!# 4.) gfsc_buildVectorEdge = gfsc_buildVectorEdgeScalar /
 !#                            gfsc_buildVectorEdgeBlock
 !#     -> Assembles a discrete vector edge-by-edge by the
 !#        group finite element formulation
 !#
-!# 3.) gfsc_buildJacobian = gfsc_buildJacobianScalar /
+!# 5.) gfsc_buildJacobian = gfsc_buildJacobianScalar /
 !#                          gfsc_buildJacobianBlock
 !#      -> Assembles the Jacobian matrix for the group finite element formulation
 !#
-!# 4.) gfsc_initPerfConfig
+!# 6.) gfsc_initPerfConfig
 !#      -> Initialises the global performance configuration
 !#
 !# </purpose>
@@ -74,7 +77,6 @@ module groupfemscalar
   private
   
   public :: gfsc_initPerfConfig
-  public :: gfsc_buildOperator
   public :: gfsc_buildOperatorNode
   public :: gfsc_buildOperatorEdge
   public :: gfsc_buildVectorNode
@@ -113,19 +115,8 @@ module groupfemscalar
   
   ! ****************************************************************************
 
-  interface gfsc_buildOperator
-    module procedure gfsc_buildOperatorConst
-    module procedure gfsc_buildOperatorNodeScalar
-    module procedure gfsc_buildOperatorNodeBlock1
-    module procedure gfsc_buildOperatorNodeBlock2
-    module procedure gfsc_buildOperatorNodeBlock3
-    module procedure gfsc_buildOperatorEdgeScalar
-    module procedure gfsc_buildOperatorEdgeBlock1
-    module procedure gfsc_buildOperatorEdgeBlock2
-    module procedure gfsc_buildOperatorEdgeBlock3
-  end interface
-
   interface gfsc_buildOperatorNode
+    module procedure gfsc_buildOperatorConst
     module procedure gfsc_buildOperatorNodeScalar
     module procedure gfsc_buildOperatorNodeBlock1
     module procedure gfsc_buildOperatorNodeBlock2
@@ -133,6 +124,7 @@ module groupfemscalar
   end interface
 
   interface gfsc_buildOperatorEdge
+    module procedure gfsc_buildOperatorConst
     module procedure gfsc_buildOperatorEdgeScalar
     module procedure gfsc_buildOperatorEdgeBlock1
     module procedure gfsc_buildOperatorEdgeBlock2
@@ -2751,7 +2743,7 @@ contains
             
             ! Get position of matrix entry
             ij = InodeList(2,idx+IAset-1)
-            
+
             ! Update the global operator
             Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
           end do
@@ -2916,9 +2908,9 @@ contains
 
 
   subroutine gfsc_buildOperatorEdgeBlock1(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
-      dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSc, rperfconfig)
+      fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
+      rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -2961,10 +2953,16 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSc.inc'
     optional :: fcb_calcOperatorEdgeSc
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -2986,8 +2984,8 @@ contains
     ! Check if user-defined callback function is present
     if (present(fcb_calcOperatorEdgeSc)) then
       
-      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrix, dscale,&
-          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrix,&
+          dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
       
     elseif ((rx%nblocks            .eq. 1) .and.&
@@ -2996,8 +2994,8 @@ contains
 
       ! Call scalar version of this routine
       call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab,&
+          fcb_calcMatrixSc_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
+          fcb_calcMatrixDiagSc_sim, cconstrType, rcollection, rafcstab,&
           rperfconfig=rperfconfig)
       
     else
@@ -3013,9 +3011,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildOperatorEdgeBlock2(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
-      dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSc, rperfconfig)
+      fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
+      rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -3058,10 +3056,16 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSc.inc'
     optional :: fcb_calcOperatorEdgeSc
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -3089,8 +3093,8 @@ contains
       ! Create auxiliary 1-block vector
       call lsysbl_createVecFromScalar(rx, rxBlock)
       
-      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrix, dscale,&
-          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrix,&
+          dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
       
       ! Release auxiliary 1-block vector
@@ -3101,8 +3105,8 @@ contains
       
       ! Call scalar version of this routine
       call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
-          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-          bclear, rmatrix%RmatrixBlock(1,1), rcollection, rafcstab,&
+          fcb_calcMatrixSc_sim, dscale, bclear, rmatrix%RmatrixBlock(1,1),&
+          fcb_calcMatrixDiagSc_sim, cconstrType, rcollection, rafcstab,&
           rperfconfig=rperfconfig)
       
     else
@@ -3118,9 +3122,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildOperatorEdgeBlock3(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
-      dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSc, rperfconfig)
+      fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
+      rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
     
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -3163,10 +3167,16 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSc.inc'
     optional :: fcb_calcOperatorEdgeSc
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -3194,8 +3204,8 @@ contains
       ! Create auxiliary 1-block matrix
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
       
-      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrixBlock, dscale,&
-          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rx, rmatrixBlock,&
+          dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
       
       ! Release auxiliary 1-block matrix
@@ -3205,8 +3215,9 @@ contains
       
       ! Call scalar version of this routine
       call gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim, dscale,&
-          bclear, rmatrix, rcollection, rafcstab, rperfconfig=rperfconfig)
+          fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
+          fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
+          rafcstab, rperfconfig=rperfconfig)
       
     else
       call output_line('Vector must not contain more than one block!',&
@@ -3221,9 +3232,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildOperatorEdgeScalar(rgroupFEMSet, rx,&
-      fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
-      dscale, bclear, rmatrix, rcollection, rafcstab,&
-      fcb_calcOperatorEdgeSc, rperfconfig)
+      fcb_calcMatrixSc_sim, dscale, bclear, rmatrix,&
+      fcb_calcMatrixDiagSc_sim, cconstrType, rcollection,&
+      rafcstab, fcb_calcOperatorEdgeSc, rperfconfig)
 
 !<description>
     ! This subroutine assembles a discrete operator by the group
@@ -3262,10 +3273,16 @@ contains
     ! Callback functions to compute matrix entries
     include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: callback function to overwrite the standard operation
     include 'intf_calcOperatorEdgeSc.inc'
     optional :: fcb_calcOperatorEdgeSc
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
 
     ! OPTIONAL: local performance configuration. If not given, the
     ! global performance configuration is used.
@@ -3295,6 +3312,8 @@ contains
     integer, dimension(:,:), pointer :: p_IdiagList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
+    integer :: ccType
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
     
@@ -3305,8 +3324,8 @@ contains
       call lsysbl_createMatFromScalar(rmatrix, rmatrixBlock)
       
       ! Call user-defined assembly
-      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrixBlock, dscale,&
-          bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
+      call fcb_calcOperatorEdgeSc(rgroupFEMSet, rxBlock, rmatrixBlock,&
+          dscale, bclear, fcb_calcMatrixDiagSc_sim, fcb_calcMatrixSc_sim,&
           rcollection, rafcstab)
       
       ! Release auxiliary 1-block vector and matrix
@@ -3332,6 +3351,10 @@ contains
       call sys_halt()
     end if
     
+    ! Set type of matrix construction method
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
+
     ! What type of assembly should be performed
     select case(rgroupFEMSet%cassemblyType)
 
@@ -3340,10 +3363,11 @@ contains
       ! Edge-based assembly
       !-------------------------------------------------------------------------
       
+      if ((ccType .eq. GFEM_MATC_LUMPED) .and. bclear)&
+          call lsyssc_clearMatrix(rmatrix)
+
       ! Check if group finite element set is prepared
-      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA) .eq. 0) .or.&
-          (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
+      if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
           (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA) .eq. 0)) then
         call output_line('Group finite element set does not provide required data!',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
@@ -3353,20 +3377,31 @@ contains
       ! Set pointers
       call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
       call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
-      call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
       
       ! What data types are we?
       select case(rgroupFEMSet%cdataType)
       case (ST_DOUBLE)
         ! Set pointers
-        call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
         call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
         call lsyssc_getbase_double(rmatrix, p_Ddata)
         call lsyssc_getbase_double(rx, p_Dx)
         
-        ! Assemble matrix diagonal
-        call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
-            p_Dx, dscale, bclear, p_Ddata)
+        ! Assemble matrix diagonal?
+        if (present(fcb_calcMatrixDiagSc_sim)) then
+          
+          ! Check if group finite element set is prepared
+          if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0) .or.&
+              (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA) .eq. 0)) then
+            call output_line('Group finite element set does not provide diagonal data!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildOperatorEdgeScalar')
+            call sys_halt()
+          end if
+          
+          call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
+          call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
+          call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
+              p_Dx, dscale, bclear, p_Ddata)
+        end if
         
         ! Do we have to build the stabilisation?
         if (present(rafcstab)) then
@@ -3395,7 +3430,8 @@ contains
             ! Assemble operator with stabilisation and generate coefficients
             !-------------------------------------------------------------------
             call doOperatorAFCDble(p_IedgeListIdx, p_IedgeList,&
-                p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata, p_Dcoefficients)
+                p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType,&
+                p_Ddata, p_Dcoefficients)
             
             ! Set state of stabilisation
             rafcstab%istabilisationSpec =&
@@ -3418,7 +3454,7 @@ contains
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
             call doOperatorStabDble(p_IedgeListIdx, p_IedgeList,&
-                p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata)
+                  p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType, p_Ddata)
           end if
           
         else   ! no stabilisation structure present
@@ -3427,7 +3463,7 @@ contains
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
           call doOperatorDble(p_IedgeListIdx, p_IedgeList,&
-              p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata)
+              p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType, p_Ddata)
         end if
         
       case default
@@ -3550,7 +3586,7 @@ contains
     ! Assemble operator edge-by-edge without stabilisation
     
     subroutine doOperatorDble(IedgeListIdx, IedgeList,&
-        DcoeffsAtEdge, Dx, dscale, bclear, Ddata)
+        DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
       
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
@@ -3559,6 +3595,7 @@ contains
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: ccType
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
@@ -3569,14 +3606,14 @@ contains
 
       ! local variables
       integer :: idx,IEDGEset,IEDGEmax
-      integer :: iedge,igroup,ij,ji
+      integer :: iedge,igroup,ii,jj,ij,ji
       
       !-------------------------------------------------------------------------
       ! Assemble off-diagonal entries
       !-------------------------------------------------------------------------
 
       !$omp parallel default(shared)&
-      !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ij,ji)&
+      !$omp private(Dcoefficients,DdataAtEdge,IEDGEmax,idx,iedge,ii,jj,ij,ji)&
       !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
@@ -3622,40 +3659,61 @@ contains
               dscale, IEDGEmax-IEDGEset+1,&
               Dcoefficients(:,1:IEDGEmax-IEDGEset+1), rcollection)
           
-          ! Loop through all edges in the current set
-          ! and scatter the entries to the global matrix
-          if (bclear) then
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
 
-            do idx = 1, IEDGEmax-IEDGEset+1
-              
-              ! Get actual edge number
-              iedge = idx+IEDGEset-1
-                            
-              ! Get position of off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
-              
-              ! Update the global operator
-              Ddata(ij) = Dcoefficients(1,idx)
-              Ddata(ji) = Dcoefficients(2,idx)
-            end do
-
-          else   ! do not clear matrix
-
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
               iedge = idx+IEDGEset-1
               
-              ! Get position of off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
+              ! Get position of diagonal entries
+              ii = IedgeList(5,iedge)
+              jj = IedgeList(6,iedge)
               
               ! Update the global operator
-              Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
-              Ddata(ji) = Ddata(ji) + Dcoefficients(2,idx)
+              Ddata(ii) = Ddata(ii) + Dcoefficients(1,idx)
+              Ddata(jj) = Ddata(jj) + Dcoefficients(2,idx)
             end do
-
+            
+          else
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            if (bclear) then
+              
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of off-diagonal entries
+                ij = IedgeList(3,iedge)
+                ji = IedgeList(4,iedge)
+                
+                ! Update the global operator
+                Ddata(ij) = Dcoefficients(1,idx)
+                Ddata(ji) = Dcoefficients(2,idx)
+              end do
+              
+            else   ! do not clear matrix
+              
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of off-diagonal entries
+                ij = IedgeList(3,iedge)
+                ji = IedgeList(4,iedge)
+                
+                ! Update the global operator
+                Ddata(ij) = Ddata(ij) + Dcoefficients(1,idx)
+                Ddata(ji) = Ddata(ji) + Dcoefficients(2,idx)
+              end do
+              
+            end if
           end if
         end do
         !$omp end do
@@ -3673,7 +3731,7 @@ contains
     ! Assemble operator edge-by-edge with stabilisation.
     
     subroutine doOperatorStabDble(IedgeListIdx, IedgeList,&
-        DcoeffsAtEdge, Dx, dscale, bclear, Ddata)
+        DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
@@ -3682,6 +3740,7 @@ contains
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: ccType
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
@@ -3748,52 +3807,74 @@ contains
               dscale, IEDGEmax-IEDGEset+1,&
               Dcoefficients(:,1:IEDGEmax-IEDGEset+1), rcollection)
           
-          ! Loop through all edges in the current set
-          ! and scatter the entries to the global matrix
-          if (bclear) then
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
 
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
               iedge = idx+IEDGEset-1
               
-              ! Get position of off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
-
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
               
               ! Update the global operator
-              Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
-              Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
-              Ddata(ij) =             Dcoefficients(2,idx) + Dcoefficients(1,idx)
-              Ddata(ji) =             Dcoefficients(3,idx) + Dcoefficients(1,idx)
+              Ddata(ii) = Ddata(ii) + Dcoefficients(2,idx)
+              Ddata(jj) = Ddata(jj) + Dcoefficients(3,idx)
             end do
 
-          else   ! do not clear matrix
+          else
 
-            do idx = 1, IEDGEmax-IEDGEset+1
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            if (bclear) then
               
-              ! Get actual edge number
-              iedge = idx+IEDGEset-1
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of off-diagonal entries
+                ij = IedgeList(3,iedge)
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of diagonal entries
+                ii = IedgeList(5,iedge)
+                jj = IedgeList(6,iedge)
               
-              ! Get position of off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
-              
-              ! Get position of diagonal entries
-              ii = IedgeList(5,iedge)
-              jj = IedgeList(6,iedge)
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
+                Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
+                Ddata(ij) =             Dcoefficients(2,idx) + Dcoefficients(1,idx)
+                Ddata(ji) =             Dcoefficients(3,idx) + Dcoefficients(1,idx)
+              end do
 
-              ! Update the global operator
-              Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
-              Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
-              Ddata(ij) = Ddata(ij) + Dcoefficients(2,idx) + Dcoefficients(1,idx)
-              Ddata(ji) = Ddata(ji) + Dcoefficients(3,idx) + Dcoefficients(1,idx)
-            end do
+            else   ! do not clear matrix
 
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of off-diagonal entries
+                ij = IedgeList(3,iedge)
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of diagonal entries
+                ii = IedgeList(5,iedge)
+                jj = IedgeList(6,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii) - Dcoefficients(1,idx)
+                Ddata(jj) = Ddata(jj) - Dcoefficients(1,idx)
+                Ddata(ij) = Ddata(ij) + Dcoefficients(2,idx) + Dcoefficients(1,idx)
+                Ddata(ji) = Ddata(ji) + Dcoefficients(3,idx) + Dcoefficients(1,idx)
+              end do
+              
+            end if
           end if
         end do
         !$omp end do
@@ -3811,7 +3892,7 @@ contains
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
     
     subroutine doOperatorAFCDble(IedgeListIdx, IedgeList,&
-        DcoeffsAtEdge, Dx, dscale, bclear, Ddata, Dcoefficients)
+        DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata, Dcoefficients)
 
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
@@ -3820,6 +3901,7 @@ contains
       logical, intent(in) :: bclear
       integer, dimension(:,:), intent(in) :: IedgeList
       integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: ccType
 
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
@@ -3887,60 +3969,86 @@ contains
               dscale, IEDGEmax-IEDGEset+1,&
               Dcoefficients(:,IEDGEset:IEDGEmax), rcollection)
           
-          ! Loop through all edges in the current set
-          ! and scatter the entries to the global matrix
-          if (bclear) then
-
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
+            
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
             do idx = 1, IEDGEmax-IEDGEset+1
               
               ! Get actual edge number
               iedge = idx+IEDGEset-1
               
-              ! Get position of off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
-
-              ! Get position of diagonal entries
-              ii = IedgeList(5,iedge)
-              jj = IedgeList(6,iedge)
-
-              ! Compute entries of low-order operator
-              Dcoefficients(2,iedge) = Dcoefficients(2,iedge) + Dcoefficients(1,iedge)
-              Dcoefficients(3,iedge) = Dcoefficients(3,iedge) + Dcoefficients(1,iedge)
-
-              ! Update the global operator
-              Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
-              Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
-              Ddata(ij) =             Dcoefficients(2,iedge)
-              Ddata(ji) =             Dcoefficients(3,iedge)
-            end do
-
-          else   ! do not clear matrix
-
-            do idx = 1, IEDGEmax-IEDGEset+1
-              
-              ! Get actual edge number
-              iedge = idx+IEDGEset-1
-                            
-              ! Get position of off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
-
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
               
-              ! Compute entries of low-order operator
-              Dcoefficients(2,iedge) = Dcoefficients(2,iedge) + Dcoefficients(1,iedge)
-              Dcoefficients(3,iedge) = Dcoefficients(3,iedge) + Dcoefficients(1,iedge)
-
               ! Update the global operator
-              Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
-              Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
-              Ddata(ij) = Ddata(ij) + Dcoefficients(2,iedge)
-              Ddata(ji) = Ddata(ji) + Dcoefficients(3,iedge)
+              Ddata(ii) = Ddata(ii) + Dcoefficients(2,iedge)
+              Ddata(jj) = Ddata(jj) + Dcoefficients(3,iedge)
             end do
+            
+          else
 
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            if (bclear) then
+              
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of off-diagonal entries
+                ij = IedgeList(3,iedge)
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of diagonal entries
+                ii = IedgeList(5,iedge)
+                jj = IedgeList(6,iedge)
+                
+                ! Compute entries of low-order operator
+                Dcoefficients(2,iedge) = Dcoefficients(2,iedge)&
+                                       + Dcoefficients(1,iedge)
+                Dcoefficients(3,iedge) = Dcoefficients(3,iedge)&
+                                       + Dcoefficients(1,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
+                Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
+                Ddata(ij) =             Dcoefficients(2,iedge)
+                Ddata(ji) =             Dcoefficients(3,iedge)
+              end do
+              
+            else   ! do not clear matrix
+              
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of off-diagonal entries
+                ij = IedgeList(3,iedge)
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of diagonal entries
+                ii = IedgeList(5,iedge)
+                jj = IedgeList(6,iedge)
+                
+                ! Compute entries of low-order operator
+                Dcoefficients(2,iedge) = Dcoefficients(2,iedge)&
+                                       + Dcoefficients(1,iedge)
+                Dcoefficients(3,iedge) = Dcoefficients(3,iedge)&
+                                       + Dcoefficients(1,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii) - Dcoefficients(1,iedge)
+                Ddata(jj) = Ddata(jj) - Dcoefficients(1,iedge)
+                Ddata(ij) = Ddata(ij) + Dcoefficients(2,iedge)
+                Ddata(ji) = Ddata(ji) + Dcoefficients(3,iedge)
+              end do
+              
+            end if
           end if
         end do
         !$omp end do
