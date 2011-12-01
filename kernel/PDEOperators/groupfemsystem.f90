@@ -672,7 +672,7 @@ contains
               do ivar = 1, NVAR
                 do jvar = 1, NVAR
                   ijpos = NVAR*(ivar-1)+jvar
-                  rarray(jvar,ivar)%p_Ddata(ia) = Dtemp(ijpos)
+                  rarray(jvar,ivar)%p_Ddata(ia) = rarray(jvar,ivar)%p_Ddata(ia)+Dtemp(ijpos)
                 end do
               end do
             end do
@@ -701,7 +701,7 @@ contains
               ! Update the diagonal entry of the global operator
               ia = InodeListIdx(ieq)
               do ivar = 1, NVAR
-                rarray(ivar,ivar)%p_Ddata(ia) = Dtemp(ivar)
+                rarray(ivar,ivar)%p_Ddata(ia) = rarray(ivar,ivar)%p_Ddata(ia)+Dtemp(ivar)
               end do
             end do
             
@@ -897,7 +897,7 @@ contains
       
       ! local variables
       real(DP), dimension(:), allocatable :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ijpos,ivar,jvar
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,iidx,ijpos,ivar,jvar
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -907,7 +907,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,&
-      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ivar,jvar,ijpos)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,iidx,ivar,jvar,ijpos)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -992,13 +992,13 @@ contains
 
           if (bisFullMatrix) then
 
-            do i = IAset, IAmax-1
+            do iidx = IAset, IAmax-1
               
               ! Clear temporal date
               Dtemp = 0.0_DP
               
               ! Loop over all contributions to this equation
-              do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+              do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
                 
                 ! Update local index
                 idx = idx+1
@@ -1008,11 +1008,11 @@ contains
               end do
               
               ! Update the diagonal entry of the global operator
-              ia = InodeListIdx(1,i)
+              ia = InodeListIdx(3,iidx)
               do ivar = 1, NVAR
                 do jvar = 1, NVAR
                   ijpos = NVAR*(ivar-1)+jvar
-                  rarray(jvar,ivar)%p_Ddata(ia) = Dtemp(ijpos)
+                  rarray(jvar,ivar)%p_Ddata(ia) = rarray(jvar,ivar)%p_Ddata(ia)+Dtemp(ijpos)
                 end do
               end do
             end do
@@ -1023,13 +1023,13 @@ contains
           
           else   ! matrix is block-diagonal
 
-            do i = IAset, IAmax-1
+            do iidx = IAset, IAmax-1
               
               ! Clear temporal date
               Dtemp = 0.0_DP
               
               ! Loop over all contributions to this equation
-              do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+              do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
                 
                 ! Update local index
                 idx = idx+1
@@ -1039,9 +1039,9 @@ contains
               end do
               
               ! Update the diagonal entry of the global operator
-              ia = InodeListIdx(1,i)
+              ia = InodeListIdx(1,iidx)
               do ivar = 1, NVAR
-                rarray(ivar,ivar)%p_Ddata(ia) = Dtemp(ivar)
+                rarray(ivar,ivar)%p_Ddata(ia) = rarray(ivar,ivar)%p_Ddata(ia)+Dtemp(ivar)
               end do
             end do
             
@@ -1737,7 +1737,7 @@ contains
             end do
             
             ! Update the diagonal entry of the global operator
-            Ddata(:,InodeListIdx(ieq)) = Dtemp
+            Ddata(:,InodeListIdx(ieq)) = Ddata(:,InodeListIdx(ieq))+Dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
@@ -1876,7 +1876,7 @@ contains
       
       ! local variables
       real(DP), dimension(MVAR) :: Dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,iidx
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -1886,7 +1886,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,Dtemp,&
-      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,iidx)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -1962,13 +1962,13 @@ contains
           
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
-          do i = IAset, IAmax-1
+          do iidx = IAset, IAmax-1
                         
             ! Clear temporal date
             Dtemp = 0.0_DP
             
             ! Loop over all contributions to this equation
-            do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+            do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
               
               ! Update local index
               idx = idx+1
@@ -1978,7 +1978,7 @@ contains
             end do
             
             ! Update the diagonal entry of the global operator
-            Ddata(:,InodeListIdx(1,i)) = Dtemp
+            Ddata(:,InodeListIdx(3,iidx)) = Ddata(:,InodeListIdx(3,iidx))+Dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
@@ -2183,6 +2183,7 @@ contains
             call sys_halt()
           end if
           
+          ! Assemble diagonal entries
           call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
           call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
           call doOperatorDiagDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
@@ -3302,6 +3303,7 @@ contains
               call sys_halt()
             end if
             
+            ! Assemble diagonal entries
             call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
             call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
             call doOperatorDiagDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
@@ -3347,6 +3349,7 @@ contains
               call sys_halt()
             end if
             
+            ! Assemble diagonal entries
             call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
             call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
             call doOperatorDiagDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&

@@ -2642,7 +2642,7 @@ contains
             end do
             
             ! Update the diagonal entry of the global operator
-            Ddata(InodeListIdx(ieq)) = dtemp
+            Ddata(InodeListIdx(ieq)) = Ddata(InodeListIdx(ieq))+dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
@@ -2780,7 +2780,7 @@ contains
       
       ! local variables
       real(DP) :: dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,iidx
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -2790,7 +2790,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,dtemp,&
-      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,iidx)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
       
       ! Allocate temporal memory
@@ -2866,13 +2866,13 @@ contains
           
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
-          do i = IAset, IAmax-1
+          do iidx = IAset, IAmax-1
                         
             ! Clear temporal date
             dtemp = 0.0_DP
             
             ! Loop over all contributions to this equation
-            do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+            do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
               
               ! Update local index
               idx = idx+1
@@ -2882,7 +2882,7 @@ contains
             end do
             
             ! Update the diagonal entry of the global operator
-            Ddata(InodeListIdx(1,i)) = dtemp
+            Ddata(InodeListIdx(3,iidx)) = Ddata(InodeListIdx(3,iidx))+dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
@@ -3397,6 +3397,7 @@ contains
             call sys_halt()
           end if
           
+          ! Assemble diagonal entries
           call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
           call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
           call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
@@ -3672,7 +3673,7 @@ contains
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
+
               ! Update the global operator
               Ddata(ii) = Ddata(ii) + Dcoefficients(1,idx)
               Ddata(jj) = Ddata(jj) + Dcoefficients(2,idx)
@@ -3691,7 +3692,7 @@ contains
                 ! Get position of off-diagonal entries
                 ij = IedgeList(3,iedge)
                 ji = IedgeList(4,iedge)
-                
+
                 ! Update the global operator
                 Ddata(ij) = Dcoefficients(1,idx)
                 Ddata(ji) = Dcoefficients(2,idx)
@@ -4468,7 +4469,7 @@ contains
       
       ! local variables
       real(DP) :: dtemp
-      integer :: IAmax,IApos,IAset,IEQmax,IEQset,i,ia,idx,ieq
+      integer :: IAmax,IApos,IAset,IEQmax,IEQset,ia,idx,ieq,iidx
 
       !-------------------------------------------------------------------------
       ! Assemble all entries
@@ -4478,7 +4479,7 @@ contains
 
       !$omp parallel default(shared)&
       !$omp private(Dcoefficients,DdataAtNode,dtemp,&
-      !$omp         IAmax,IApos,IAset,IEQmax,i,ia,idx,ieq)&
+      !$omp         IAmax,IApos,IAset,IEQmax,ia,idx,ieq,iidx)&
       !$omp if(size(InodeList,2) > p_rperfconfig%NAMIN_OMP)
 
       ! Allocate temporal memory
@@ -4555,16 +4556,16 @@ contains
 
           ! Loop through all equations in the current set
           ! and scatter the entries to the global matrix
-          do i = IAset, IAmax-1
+          do iidx = IAset, IAmax-1
             
             ! Get actual node number
-            ieq = InodeListIdx(2,i)
+            ieq = InodeListIdx(2,iidx)
             
             ! Clear temporal date
             dtemp = 0.0_DP
 
             ! Loop over all contributions to this equation
-            do ia = InodeListIdx(1,i), InodeListIdx(1,i+1)-1
+            do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
               
               ! Update local index
               idx = idx+1
