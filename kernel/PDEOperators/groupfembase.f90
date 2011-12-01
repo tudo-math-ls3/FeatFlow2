@@ -2519,7 +2519,7 @@ contains
       call gfem_initCoeffsFromMatrix2(rgroupFEMSet, (/rmatrix/), (/iposition/),&
           cinitcoeffs)
     else
-      call gfem_initCoeffsFromMatrix2(rgroupFEMSet, (/rmatrix/), (/iposition/))
+      call gfem_initCoeffsFromMatrix2(rgroupFEMSet, (/rmatrix/), (/1/), cinitcoeffs)
     end if
 
   end subroutine gfem_initCoeffsFromMatrix1
