@@ -1502,9 +1502,9 @@ contains
         
         ! Compute number of matrices to be copied
         nmatrices = 0
-        if (coeffMatrix_CX > 0) nmatrices = nmatrices+2
-        if (coeffMatrix_CY > 0) nmatrices = nmatrices+2
-        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+2
+        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
         
         ! Set pointer
         call storage_getbase_int(rbdrCondPrimal%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -1529,19 +1529,13 @@ contains
             
             ! Copy constant coefficient matrices to group finite element set
             if (coeffMatrix_CX > 0) then
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CX), 1)
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSx, 2)
+              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSx, 1)
             end if
             if (coeffMatrix_CY > 0) then
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CY), 3)
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSy, 4)
+              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSy, 2)
             end if
             if (coeffMatrix_CZ > 0) then
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CZ),    5)
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSz, 6)
+              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSz, 3)
             end if
             
           end do
@@ -1561,9 +1555,9 @@ contains
         
         ! Compute number of matrices to be copied
         nmatrices = 0
-        if (coeffMatrix_CX > 0) nmatrices = nmatrices+2
-        if (coeffMatrix_CY > 0) nmatrices = nmatrices+2
-        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+2
+        if (coeffMatrix_CX > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CY > 0) nmatrices = nmatrices+1
+        if (coeffMatrix_CZ > 0) nmatrices = nmatrices+1
         
         ! Set pointer
         call storage_getbase_int(rbdrCondDual%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -1588,19 +1582,13 @@ contains
             
             ! Copy constant coefficient matrices to group finite element set
             if (coeffMatrix_CX > 0) then
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CX), 1)
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSx, 2)
+              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSx, 1)
             end if
             if (coeffMatrix_CY > 0) then
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CY), 3)
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSy, 4)
+              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSy, 2)
             end if
             if (coeffMatrix_CZ > 0) then
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CZ),    5)
-              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSz, 6)
+              call gfem_initCoeffsFromMatrix(p_rgroupFEMSet, rmatrixBdrSz, 3)
             end if
           end do
         end do
@@ -1859,14 +1847,14 @@ contains
       if (rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
         ! Initialize finite element set for node-based assembly
         call gfem_initGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
-            0, 0, 0, GFEM_NODEBASED, rregionTest=rregion)
+            0, 0, 0, GFEM_NODEBASED, rregionTrial=rregion)
         
         ! Allocate memory for matrix entries
         call gfem_allocCoeffs(rgroupFEMSet, 0, nmatrices, 0)
       else
         ! Resize first group finite element set
         call gfem_resizeGroupFEMSetBoundary(rgroupFEMSet, rmatrix,&
-            rregionTest=rregion)
+            rregionTrial=rregion)
       end if
 
 !!$      ! Generate diagonal and edge structure derived from template matrix
