@@ -2719,7 +2719,7 @@ contains
             else
               ! Loop over selected nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
-                p_DcoeffsAtNode(ipos,ia) = p_Ddata(p_InodeList(1,ia))
+                p_DcoeffsAtNode(ipos,ia) = p_Ddata(p_InodeList(2,ia))
               end do
             end if
             
@@ -2739,7 +2739,7 @@ contains
             else
               ! Loop over selected nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
-                p_DcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(1,ia))
+                p_DcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(2,ia))
               end do
             end if
             
@@ -2780,7 +2780,7 @@ contains
             else
               ! Loop over selected nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
-                p_FcoeffsAtNode(ipos,ia) = p_Ddata(p_InodeList(1,ia))
+                p_FcoeffsAtNode(ipos,ia) = p_Ddata(p_InodeList(2,ia))
               end do
             end if
             
@@ -2800,7 +2800,7 @@ contains
             else
               ! Loop over selected nodes and copy matrix entries
               do ia = 1, rgroupFEMSet%NA
-                p_FcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(1,ia))
+                p_FcoeffsAtNode(ipos,ia) = p_Fdata(p_InodeList(2,ia))
               end do
             end if
             
@@ -2879,7 +2879,7 @@ contains
               p_DcoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
             end do
 
-            ! Loop over all equations and copy diagonal entroes
+            ! Loop over all equations and copy diagonal entries
             do ieq = 1, rgroupFEMSet%NEQ
               ii = p_IdiagList(2,ieq)
               p_DcoeffsAtDiag(ipos,ieq) = p_Ddata(ii)
@@ -2901,7 +2901,7 @@ contains
               p_DcoeffsAtEdge(ipos,2,iedge) = p_Fdata(ji)
             end do
             
-            ! Loop over all equations and copy diagonal entroes
+            ! Loop over all equations and copy diagonal entries
             do ieq = 1, rgroupFEMSet%NEQ
               ii = p_IdiagList(2,ieq)
               p_DcoeffsAtDiag(ipos,ieq) = p_Fdata(ii)
@@ -2947,7 +2947,7 @@ contains
               p_FcoeffsAtEdge(ipos,2,iedge) = p_Ddata(ji)
             end do
 
-            ! Loop over all equations and copy diagonal entroes
+            ! Loop over all equations and copy diagonal entries
             do ieq = 1, rgroupFEMSet%NEQ
               ii = p_IdiagList(2,ieq)
               p_FcoeffsAtDiag(ipos,ieq) = p_Ddata(ii)
@@ -2969,7 +2969,7 @@ contains
               p_FcoeffsAtEdge(ipos,2,iedge) = p_Fdata(ji)
             end do
             
-            ! Loop over all equations and copy diagonal entroes
+            ! Loop over all equations and copy diagonal entries
             do ieq = 1, rgroupFEMSet%NEQ
               ii = p_IdiagList(2,ieq)
               p_FcoeffsAtDiag(ipos,ieq) = p_Fdata(ii)
