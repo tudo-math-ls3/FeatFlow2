@@ -523,28 +523,25 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD1d_sim, hydro_calcMatGalMatD1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rsolution, hydro_calcMatGalMatD1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD1d_sim, rcollection=rcollection)
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD2d_sim, hydro_calcMatGalMatD2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rsolution, hydro_calcMatGalMatD2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD2d_sim, rcollection=rcollection)
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD3d_sim, hydro_calcMatGalMatD3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rsolution, hydro_calcMatGalMatD3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD3d_sim, rcollection=rcollection)
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -559,28 +556,28 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD1d_sim, hydro_calcMatScDissMatD1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatScDissMatD1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD1d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD2d_sim, hydro_calcMatScDissMatD2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatScDissMatD2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD2d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
           
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD3d_sim, hydro_calcMatScDissMatD3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatScDissMatD3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD3d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -595,28 +592,28 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD1d_sim, hydro_calcMatRoeDissMatD1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRoeDissMatD1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD1d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD2d_sim, hydro_calcMatRoeDissMatD2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRoeDissMatD2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD2d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD3d_sim, hydro_calcMatRoeDissMatD3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRoeDissMatD3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD3d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -631,28 +628,28 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD1d_sim, hydro_calcMatRusDissMatD1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRusDissMatD1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD1d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD2d_sim, hydro_calcMatRusDissMatD2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRusDissMatD2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD2d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiagMatD3d_sim, hydro_calcMatRusDissMatD3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRusDissMatD3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiagMatD3d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -682,28 +679,25 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag1d_sim, hydro_calcMatGal1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rsolution, hydro_calcMatGal1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag1d_sim, rcollection=rcollection)
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag2d_sim, hydro_calcMatGal2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rsolution, hydro_calcMatGal2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag2d_sim, rcollection=rcollection)
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag3d_sim, hydro_calcMatGal3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection)
+              rsolution, hydro_calcMatGal3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag3d_sim, rcollection=rcollection)
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -718,28 +712,28 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag1d_sim, hydro_calcMatScDiss1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatScDiss1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag1d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag2d_sim, hydro_calcMatScDiss2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatScDiss2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag2d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag3d_sim, hydro_calcMatScDiss3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatScDiss3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag3d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -754,28 +748,28 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag1d_sim, hydro_calcMatRoeDiss1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRoeDiss1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag1d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag2d_sim, hydro_calcMatRoeDiss2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRoeDiss2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag2d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag3d_sim, hydro_calcMatRoeDiss3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRoeDiss3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag3d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
@@ -790,28 +784,28 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag1d_sim, hydro_calcMatRusDiss1d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRusDiss1d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag1d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM2D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag2d_sim, hydro_calcMatRusDiss2d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRusDiss2d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag2d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case (NDIM3D)
-          call gfsys_buildOperator(&
+          call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rsolution,&
-              hydro_calcMatDiag3d_sim, hydro_calcMatRusDiss3d_sim,&
-              dscale, .true., rproblemLevel%RmatrixBlock(systemMatrix),&
-              rcollection, rproblemLevel%Rafcstab(inviscidAFC))
+              rsolution, hydro_calcMatRusDiss3d_sim, dscale, .true.,&
+              rproblemLevel%RmatrixBlock(systemMatrix),&
+              hydro_calcMatDiag3d_sim, rcollection=rcollection,&
+              rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
 
         case default
           call output_line('Invalid spatial dimension!',&
