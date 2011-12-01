@@ -2859,7 +2859,8 @@ contains
               DdataAtNode(1:idx),&
               DcoeffsAtNode(:,IApos:IApos+idx-1),&
               InodeList(:,IApos:IApos+idx-1),&
-              dscale, idx, Dcoefficients(:,1:idx), rcollection)
+              dscale, idx,&
+              Dcoefficients(:,1:idx), rcollection)
 
           ! Initialise local index which will run from IAset..IAmax
           idx = 0
@@ -2870,13 +2871,13 @@ contains
                         
             ! Clear temporal date
             dtemp = 0.0_DP
-            
+
             ! Loop over all contributions to this equation
             do ia = InodeListIdx(1,iidx), InodeListIdx(1,iidx+1)-1
               
               ! Update local index
               idx = idx+1
-              
+
               ! Update temporal data
               dtemp = dtemp + Dcoefficients(1,idx)
             end do
@@ -2897,7 +2898,7 @@ contains
       deallocate(DdataAtNode)
       deallocate(Dcoefficients)
       !$omp end parallel
-      
+
     end subroutine doOperatorLumpedDbleSel
 
   end subroutine gfsc_buildOperatorNodeScalar
@@ -4429,7 +4430,7 @@ contains
             end do
 
             ! Update the global vector
-            Ddata(ieq) = dtemp
+            Ddata(ieq) = Ddata(ieq)+dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
@@ -4575,7 +4576,7 @@ contains
             end do
             
             ! Update the global vector
-            Ddata(ieq) = dtemp
+            Ddata(ieq) = Ddata(ieq)+dtemp
           end do
           
           ! Proceed with next nonzero entries in current set
