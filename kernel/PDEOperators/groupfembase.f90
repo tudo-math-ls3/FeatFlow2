@@ -480,41 +480,43 @@ module groupfembase
     ! Example IedgeList(:,iedge) -> (/ i, j, ij, ji, ii, jj /)
     integer :: h_IedgeList = ST_NOHANDLE
     
-    ! Handle to index pointer for node structure
-    !
     ! If no restriction of DOFs is used:
-    ! InodeListIdx(1:NEQ+1) : the index separator of the node list
     !
-    ! All nodes in Inode List contributing to equation ieq are given by
-    ! InodeList( InodeListIdx(ieq) : InodeListIdx(ieq+1)-1 )
+    ! InodeListIdx(1:NEQ+1) : the index separator of the node list
+    ! InodeList(1:NA)       : the global column number of the node j
+    !
+    ! All nodes j in InodeList contributing to equation ieq are given by
+    ! ij = InodeListIdx(ieq)...InodeListIdx(ieq+1)-1
+    !  j = InodeList(ij)
+    ! and ij is the absolute position in the matrix connecting nodes i and j
     !
     ! OR
     !
     ! If restriction of DOFs is used:
+    !
     ! InodeListIdx(1,1:NEQ+1) : the index separator of the node list
     ! InodeListIdx(2,1:NEQ+1) : the equation number of the node
     ! InodeListIdx(3,1:NEQ+1) : the global position ia of the matrix entry
+    ! InodeList(1,1:NA)       : the global column number of the node j
+    ! InodeList(2,1:NA)       : the global position ia of the matrix entry
+    !
+    ! Example:
+    !
+    ! Consider the idx-ith index which corresponds to the equation
+    ! ieq = InodeListIdx(2,idx)
+    !  ii = InodeListIdx(3,idx)
+    ! and ii is the absolute position in the matrix of the diagonal entry
+    !
+    ! All nodes j in InodeList contributing to equation ieq are given by
+    !  id = InodeListIdx(1,idx)...InodeListIdx(1,idx+1)-1
+    !   j = InodeList(1,id)
+    !  ij = InodeList(2,idx)
+    ! and ij is the absolute position in the matrix connecting nodes i and j
+    
+    ! Handle to index pointer for node structure
     integer :: h_InodeListIdx = ST_NOHANDLE
 
     ! Handle to nodal structure
-    !
-    ! If no restriction of DOFs is used:
-    ! InodeList(1:NA)   : the global column number of the node j
-    !
-    ! OR
-    !
-    ! If restriction of DOFs is used:
-    ! InodeList(1,1:NA) : the global column number of the node j
-    ! InodeList(2,1:NA) : the global position ia of the matrix entry
-    !
-    ! Example: If there is no restriction to a selected subset of
-    ! degrees of freedom then InodeList(ia) -> column number of ia.
-    ! If only a restricted subset of degrees of freedom is considered
-    ! then InodeList(:,ia) -> (/ j, ia /), where ia is the global
-    ! position of the matrix entry connecting nodes i and j. By
-    ! definition, the second case (with restriction of DOFs) implies
-    ! InodeList(1,InodeListIdx(ieq)) -> i, where i is the gobal node
-    ! number the corresponds to equation ieq.
     integer :: h_InodeList = ST_NOHANDLE
     
     ! Handle to precomputed coefficiets at matrix diagonal
