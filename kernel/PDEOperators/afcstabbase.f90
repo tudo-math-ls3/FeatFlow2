@@ -3451,6 +3451,9 @@ contains
       ! We need the 2 edgewise vectors for the correction factors and the fluxes
       call afcstab_allocAlpha(rafcstab)
       call afcstab_allocFlux(rafcstab)
+
+      ! We need the nodal vector for the predictor
+      allocate(rafcstab%p_rvectorPredictor)
       
       ! We need the nodal vector for the predictor
       if (present(rblockDiscretisation)) then
