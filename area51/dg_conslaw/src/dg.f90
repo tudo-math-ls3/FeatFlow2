@@ -53,17 +53,17 @@ program dg
 !  call output_line ('----------------------------------------------------------')
 !  call dg2d_0_simple
   
-!  ! Call the problem to solve. Hyperbolic conservation law, system case:
-!  call output_lbrk ()
-!  call output_line ('Calculating hyperbolic system conservation problem with DG')
-!  call output_line ('----------------------------------------------------------')
-!  call dg2d_sys
-  
-  ! Call the problem to solve. Linear scalar equation, multigrid solver:
+  ! Call the problem to solve. Hyperbolic conservation law, system case:
   call output_lbrk ()
-  call output_line ('Linear scalar equation, multigrid solver')
-  call output_line ('----------------------------------------')
-  call dg2d_mgsc
+  call output_line ('Calculating hyperbolic system conservation problem with DG')
+  call output_line ('----------------------------------------------------------')
+  call dg2d_sys
+  
+!  ! Call the problem to solve. Linear scalar equation, multigrid solver:
+!  call output_lbrk ()
+!  call output_line ('Linear scalar equation, multigrid solver')
+!  call output_line ('----------------------------------------')
+!  call dg2d_mgsc
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

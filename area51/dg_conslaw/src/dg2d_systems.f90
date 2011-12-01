@@ -102,7 +102,9 @@ contains
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock, rmatrixiBlock, rmatrixABlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock,rsolSaveBlock,rsourceTermBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock
+    type(t_vectorBlock), target :: rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock
+    type(t_vectorBlock), target :: rsolLimiterBlock,rsolSaveBlock,rsourceTermBlock
     type(t_vectorBlock), target :: rk0, rk1, rk2, rk3, rdefBlock, rimf1, rimf2
 
 
@@ -209,7 +211,14 @@ contains
     integer :: i, j
     
     integer :: inumSolverCalls = 0, iiterations =0
-
+    
+    type(t_matrixBlock) :: rtempMatBl
+    type(t_vectorBlock) :: rtempVecBl, rtempVecBl2
+    
+    real(dp), dimension(:,:), pointer :: p_DvertexCoordinates
+    
+    real(dp), dimension(:), pointer :: p_Ddata1, p_Ddata2
+    
     ! Start time measurement
     call cpu_time(dtime1)
 
@@ -246,7 +255,7 @@ contains
     call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'theta', dtheta)
 
     ! Type of finite element to use
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 2)
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType)
 
     ! How many extra points for output
     call parlst_getvalue_int(rparlist, 'OUTPUT', 'extrapoints', iextraPoints, 3)
@@ -296,7 +305,6 @@ contains
     case (4)
        ielementtype = EL_DG_Q2_2D
     end select
-
 
 
     ! For video files
@@ -581,6 +589,17 @@ contains
        end do
 
        call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
+       
+!       ! Alternatively set initial condition point by point
+!       call lsyssc_getbase_double(rsolBlock%RvectorBlock(1),p_Ddata)
+!       call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
+!         p_DvertexCoordinates)
+!       p_Ddata(:)=1.0_dp
+!       do i = 1, size(p_Ddata)
+!         if(p_DvertexCoordinates(1,i)<0.5) then
+!         p_Ddata(i)=0.0_dp
+!         end if
+!       end do
 
 
        !    ! Kill all quadratic parts (can be needed, if unsteady initial condition is applied with dg_t2)
@@ -2794,13 +2813,6 @@ contains
 
 !             iEuler_defcorr3: do
 
-                ! Release solver data and structure
-                call linsol_doneData (p_rsolverNode)
-                call linsol_doneStructure (p_rsolverNode)
-
-                ! Release the solver node and all subnodes attached to it (if at all):
-                call linsol_releaseSolver (p_rsolverNode)
-
                 ! Calculate the defect vector
 
                 ! First calculate the matrix for the cell terms
@@ -2887,6 +2899,14 @@ contains
                 !        call matfil_discreteBC (rmatrixABlock)
 
                 ! Create a BiCGStab-solver.
+                
+                 ! Release solver data and structure
+                call linsol_doneData (p_rsolverNode)
+                call linsol_doneStructure (p_rsolverNode)
+
+                ! Release the solver node and all subnodes attached to it (if at all):
+                call linsol_releaseSolver (p_rsolverNode)
+                
                 nullify(p_rpreconditioner)
                 call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
                 !call linsol_initILU0(p_rpreconditioner)
@@ -2945,8 +2965,7 @@ contains
                 
                 ! Solve for solution update
                 call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-
-
+              
                 ! Update the solution
                 call lsysbl_vectorLinearComb (rSolUpBlock,rSolBlock,1.0_dp,1.0_dp)
                 !        call vecfil_discreteBCsol (rsolBlock)
@@ -3172,12 +3191,6 @@ contains
 
 !             iEuler_defcorr3: do
 
-                ! Release solver data and structure
-                call linsol_doneData (p_rsolverNode)
-                call linsol_doneStructure (p_rsolverNode)
-
-                ! Release the solver node and all subnodes attached to it (if at all):
-                call linsol_releaseSolver (p_rsolverNode)
 
                 ! Calculate the defect vector
 
@@ -3269,16 +3282,24 @@ contains
                 !        call matfil_discreteBC (rmatrixABlock)
 
                 ! Create a BiCGStab-solver.
+                
+                ! Release solver data and structure
+                call linsol_doneData (p_rsolverNode)
+                call linsol_doneStructure (p_rsolverNode)
+
+                ! Release the solver node and all subnodes attached to it (if at all):
+                call linsol_releaseSolver (p_rsolverNode)
+                
                 nullify(p_rpreconditioner)
                 !call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
                 !call linsol_initGMRES (p_rpreconditioner,1)
                 !call linsol_initBiCGStab (p_rpreconditioner)
-                call linsol_initJacobi (p_rpreconditioner)
+!                call linsol_initJacobi (p_rpreconditioner)
                 !call linsol_initSOR (p_rpreconditioner, 0.15_dp)
                 !call linsol_initILU0(p_rpreconditioner)
                 !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
-                call linsol_initGMRES (p_rsolverNode,50,p_rpreconditioner)
-                !call linsol_initUMFPACK4 (p_rsolverNode)
+!                call linsol_initGMRES (p_rsolverNode,50,p_rpreconditioner)
+                call linsol_initUMFPACK4 (p_rsolverNode)
                 
 
                 ! Set the output level of the solver to 2 for some output
@@ -3330,6 +3351,104 @@ contains
                 ! Solve for solution update
                 call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
                 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+!                !!! Solve with block MILU
+!                
+!                call lsysbl_clearVector (rSolUpBlock)
+!                  
+!                do j = 1, 1
+!                
+!                ! Calculate defect (in rtempVecBl2)
+!                call lsysbl_copyVector (rrhsBlock,rtempVecBl2)
+!                call lsysbl_blockMatVec (rmatrixABlock, rSolUpBlock, rtempVecBl2, -1.0_dp, 1.0_dp)
+! 
+! 
+!                ! Solve every component
+!                do i = 1, nvar2d
+!                   ! Release solver data and structure
+!                   call linsol_doneData (p_rsolverNode)
+!                   call linsol_doneStructure (p_rsolverNode)
+!
+!                   ! Release the solver node and all subnodes attached to it (if at all):
+!                   call linsol_releaseSolver (p_rsolverNode)
+!                   
+!                  ! Set up MILU iteration
+!!                  call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+!!                  call linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+!!                  call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
+!                  call linsol_initUMFPACK4 (p_rsolverNode)
+!                  p_rsolverNode%domega = 1.0
+!                  p_rsolverNode%nmaxIterations = 5000
+!                  p_rsolverNode%ioutputLevel = 2
+!                  ! The linear solver stops, when this relative or absolut norm of
+!                  ! the residual is reached.
+!                  p_rsolverNode%depsRel = 1.0e-4
+!                  p_rsolverNode%depsAbs = 1.0e-6
+!
+!                  ! Set matrix
+!                  call lsysbl_createMatFromScalar(rMatrixABlock%RmatrixBlock(i,i),rtempMatBl)
+!                  Rmatrices = (/rtempMatBl/)
+!                  call linsol_setMatrices(p_RsolverNode,Rmatrices)
+!                  
+!                  ! Get component of defect
+!                  call lsysbl_createVecFromScalar (rtempVecBl2%RvectorBlock(i),rtempVecBl)
+!
+!                  ! Init solver
+!                  call linsol_initStructure (p_rsolverNode,ierror)
+!                  if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!                  call linsol_initData (p_rsolverNode,ierror)
+!                  if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!                  
+!                  ! Solve for solution updade
+!                  ! Afterwards the defect vector contains the solution update
+!                  call linsol_precondDefect (p_RsolverNode,rtempVecBl)
+!                  
+!!                  ! Copy solution update to the right vector
+!!                  call lsyssc_copyVector (rtempVecBl%RvectorBlock(1),rsolUpBlock%RvectorBlock(i))
+!                  
+!                  ! Add defect correction to solution update
+!                  call lsyssc_vectorLinearComb (rtempVecBl%RvectorBlock(1),rsolUpBlock%RvectorBlock(i),0.33_dp,1.0_dp)
+!                  
+!                  ! Remove temp vector and matrix
+!                   
+!                end do
+!                
+!                end do ! Block MILU 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 iiterations=iiterations+p_rsolverNode%iiterations
                 inumSolverCalls = inumSolverCalls + 1
 
@@ -3337,6 +3456,7 @@ contains
                 ! Update the solution
                 call lsysbl_vectorLinearComb (rSolUpBlock,rSolBlock,1.0_dp,1.0_dp)
                 !        call vecfil_discreteBCsol (rsolBlock)
+                
                 
                 ! Limit solution
                 if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
@@ -3412,12 +3532,8 @@ contains
           end do iEulertimestepping3
 
 
-     
-
 
        end select
-
-
 
 
 
@@ -3425,13 +3541,6 @@ contains
 
 
     end do ! iwithoutlimiting
-
-
-
-
-
-
-
 
 
 
@@ -3481,12 +3590,33 @@ contains
     ! Output solution to vtk file
     sofile = './gmv/u2d_rho'
     call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-!    sofile = './gmv/u2d_rhou'
-!    call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
-!    sofile = './gmv/u2d_rhov'
-!    call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
-!    sofile = './gmv/u2d_rhoE'
-!    call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
+    sofile = './gmv/u2d_rhou'
+    call dg2vtk(rsolBlock%Rvectorblock(2),iextraPoints,sofile,ifilenumber)
+    sofile = './gmv/u2d_rhov'
+    call dg2vtk(rsolBlock%Rvectorblock(3),iextraPoints,sofile,ifilenumber)
+    sofile = './gmv/u2d_rhoE'
+    call dg2vtk(rsolBlock%Rvectorblock(4),iextraPoints,sofile,ifilenumber)
+    
+    
+    
+    
+    
+    
+    
+!    sofile = './gmv/velocity.vtk'
+!    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+!         sofile)
+!    call lsyssc_getbase_double (rsolBlock%RvectorBlock(2),p_Ddata1)
+!    call lsyssc_getbase_double (rsolBlock%RvectorBlock(3),p_Ddata2)
+!    call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+!    
+!    ! Write the file to disc, that's it.
+!    call ucd_write (rexport)
+!    call ucd_release (rexport)
+    
+    
+    
+    
 
 
 

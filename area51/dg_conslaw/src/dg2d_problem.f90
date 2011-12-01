@@ -1981,20 +1981,37 @@ contains
     
     F = Roe(uL, uR, nx, ny)
     
+    ! First order approx
     do i = 1,4
       U = uL
       U(i) = U(i) + h
-      DRoe(:,i) = Roe(U, uR, nx, ny) - F
+      DRoe(:,i) = (Roe(U, uR, nx, ny) - F)/h
     end do
     
     do i = 1,4
-      U = uL
+      U = uR
       U(i) = U(i) + h
-      DRoe(:,i+4) = Roe(uL, U, nx, ny) - F
+      DRoe(:,i+4) = (Roe(uL, U, nx, ny) - F)/h
     end do
-    
-      DRoe = Droe/h
-    
+
+!    ! Second order approx
+!    do i = 1,4
+!      U = uL
+!      U(i) = U(i) + h
+!      DRoe(:,i) = Roe(U, uR, nx, ny)
+!      U = uL
+!      U(i) = U(i) - h
+!      DRoe(:,i) = 0.5_dp*(DRoe(:,i)-Roe(U, uR, nx, ny))/h
+!    end do
+!    
+!    do i = 1,4
+!      U = uR
+!      U(i) = U(i) + h
+!      DRoe(:,i+4) = Roe(uL, U, nx, ny)
+!      U = uR
+!      U(i) = U(i) - h
+!      DRoe(:,i+4) = 0.5_dp*(DRoe(:,i+4)-Roe(uL, U, nx, ny))/h
+!    end do
     
   end function Droe
 
@@ -2203,7 +2220,451 @@ contains
     Rotated_RHLL = (SRp*fL - SLm*fR)/(SRp-SLm) - half*diss
 
   end function Rotated_RHLL
+  
+  
+  
+! This function builds the derivative of the absolute value of the largest eigenvalue
+
+function Euler_buildDlambda(Qll, Qrr, a, b) result(Ddlambda)
+
+    ! The left and right solution values
+    real(DP), dimension(4), intent(IN)		:: Qll, Qrr
+    
+    ! The components of the normal vector
+    real(dp), intent(in) :: a, b
+
+    ! The computed derivatives of max abs eigenvalue
+    real(DP), dimension(8)					:: Ddlambda
+
+    ! temp variables
+    real(DP)		:: rhol, rhor, denom, Hl, Hr, El, Er, pl, pr, velnorm, aux, ul, ur, vl, vr
+
+    ! Roe-values and speed of sound waves
+    real(dp), dimension(5) :: Qroe
+
+    ! Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    ! Delta
+    real(dp) :: ddelta = 0.0000001_dp
+
+    ! Lambda and temp Lambda
+    real(dp) :: dlambda, dtlambda
+    
+    ! Temporary left and right solution values
+    real(DP), dimension(4) :: Ql, Qr
 
 
+    ! Copy solution values to their temporary opposites
+    Ql = Qll
+    Qr = Qrr
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+
+
+
+
+    ! Now compute the temporal lambdas and the differences
+
+
+    ! Add delta
+    Ql(1) = Ql(1) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(1) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Ql(1) = Ql(1) - ddelta
+
+
+
+
+
+    ! Add delta
+    Ql(2) = Ql(2) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(2) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Ql(2) = Ql(2) - ddelta
+
+
+
+
+    ! Add delta
+    Ql(3) = Ql(3) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(3) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Ql(3) = Ql(3) - ddelta
+
+
+
+
+    ! Add delta
+    Ql(4) = Ql(4) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(4) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Ql(4) = Ql(4) - ddelta
+
+
+
+    ! Add delta
+    Qr(1) = Qr(1) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(5) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Qr(1) = Qr(1) - ddelta
+
+
+
+
+
+
+
+    ! Add delta
+    Qr(2) = Qr(2) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(6) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Qr(2) = Qr(2) - ddelta
+
+
+
+
+
+    ! Add delta
+    Qr(3) = Qr(3) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(7) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Qr(3) = Qr(3) - ddelta
+
+
+
+
+
+    ! Add delta
+    Qr(4) = Qr(4) + ddelta
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dtlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+    ! Save derivative
+    Ddlambda(8) = (dtlambda-dlambda)/ddelta
+
+    ! Substract delta
+    Qr(4) = Qr(4) - ddelta
+
+  end function 
+
+
+
+! This function builds the absolute value of the largest eigenvalue
+
+function Euler_buildlambda(Qll, Qrr, a, b) result(dlambda)
+
+    ! The left and right solution values
+    real(DP), dimension(4), intent(IN)		:: Qll, Qrr
+    
+    ! Lambda and temp Lambda
+    real(dp) :: dlambda
+    
+    ! The components of the normal vector
+    real(dp), intent(in) :: a, b
+
+    ! temp variables
+    real(DP)		:: rhol, rhor, denom, Hl, Hr, El, Er, pl, pr, velnorm, aux, ul, ur, vl, vr
+
+    ! Roe-values and speed of sound waves
+    real(dp), dimension(5) :: Qroe
+
+    ! Gamma
+    real(dp) :: gamma = 1.4_dp
+
+    ! Temporary left and right solution values
+    real(DP), dimension(4) :: Ql, Qr
+
+
+    ! Copy solution values to their temporary opposites
+    Ql = Qll
+    Qr = Qrr
+
+    ! Compute Roe mean values
+    rhol = Ql(1)
+    rhor = Qr(1)
+    ul = Ql(2)/Ql(1)
+    ur = Qr(2)/Qr(1)
+    vl = Ql(3)/Ql(1)
+    vr = Qr(3)/Qr(1)
+    El = Ql(4)/rhol
+    Er = Qr(4)/rhor
+    Qroe(1) = sqrt(rhol*rhor)
+    aux  = sqrt(max(rhol/rhor, SYS_EPSREAL_DP))
+    Qroe(2) = (aux*ul+ur)/(aux+1.0_DP)
+    Qroe(3) = (aux*vl+vr)/(aux+1.0_DP)
+    hl   = GAMMA*El-0.5_dp*(gamma-1.0_dp)*(ul*ul+vl*vl)
+    hr   = GAMMA*Er-0.5_dp*(gamma-1.0_dp)*(ur*ur+vr*vr)
+    Qroe(4) = (aux*hl+hr)/(aux+1.0_DP)
+    Qroe(5) = sqrt( max((gamma-1.0_dp)*(Qroe(4) - 0.5_dp*(Qroe(2)*Qroe(2)+Qroe(3)*Qroe(3)) ),0.0_dp) )
+
+    ! Compute the max abs eigenvalue
+    dlambda = abs(a*Qroe(2)+b*Qroe(3)) + Qroe(5)
+
+  end function
+  
+  
+  function LLF(uL, uR, nx, ny)
+    real(dp) :: uL(4), uR(4) !  Input: conservative variables rho*[1, u, v, E]
+    real(dp) :: nx, ny       !  Input: face normal vector, [nx, ny] (Left-to-Right)
+    real(dp) :: LLF(4)       ! Output: Roe flux function (upwind)
+    
+    
+    LLF = 0.5_dp*(nx*Euler_buildFlux(uL,1)+ny*Euler_buildFlux(uL,2) + nx*Euler_buildFlux(uR,1)+ny*Euler_buildFlux(uR,2) )&
+          -0.5_dp*Euler_buildlambda(uL, uR, nx, ny)*(uR-uL)
+
+    end function
+    
+  function DLLF(uL, uR, nx, ny, h)
+    real(dp) :: uL(4), uR(4)             !  Input: conservative variables rho*[1, u, v, E]
+    real(dp) :: nx, ny                   !  Input: face normal vector, [nx, ny]
+    real(dp) :: h                        !  Input: infinitesimal constant
+    real(dp), dimension(4,8) :: DLLF     ! Output: Approximate differential of Roe flux function
+    
+    real(dp), dimension(4) :: F, U
+    integer :: i
+    
+    F = LLF(uL, uR, nx, ny)
+    
+    ! First order approx
+    do i = 1,4
+      U = uL
+      U(i) = U(i) + h
+      DLLF(:,i) = (LLF(U, uR, nx, ny) - F)/h
+    end do
+    
+    do i = 1,4
+      U = uR
+      U(i) = U(i) + h
+      DLLF(:,i+4) = (LLF(uL, U, nx, ny) - F)/h
+    end do
+
+!    ! Second order approx
+!    do i = 1,4
+!      U = uL
+!      U(i) = U(i) + h
+!      DLLF(:,i) = LLF(U, uR, nx, ny)
+!      U = uL
+!      U(i) = U(i) - h
+!      DLLF(:,i) = 0.5_dp*(DLLF(:,i)-LLF(U, uR, nx, ny))/h
+!    end do
+!    
+!    do i = 1,4
+!      U = uR
+!      U(i) = U(i) + h
+!      DLLF(:,i+4) = LLF(uL, U, nx, ny)
+!      U = uR
+!      U(i) = U(i) - h
+!      DLLF(:,i+4) = 0.5_dp*(DLLF(:,i+4)-LLF(uL, U, nx, ny))/h
+!    end do
+    
+  end function DLLF
 
 end module dg2d_problem

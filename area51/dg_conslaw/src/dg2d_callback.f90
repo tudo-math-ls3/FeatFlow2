@@ -2346,13 +2346,14 @@ contains
 
              ! Constant
              !Dcoefficients (1,ipoint,iel) = 1.0_dp
-             !Dcoefficients (1,ipoint,iel) = 0.0_dp
+!             Dcoefficients (1,ipoint,iel) = 0.0_dp
 
 
-!         ! Mach 3 wall reflection
-!         Dcoefficients (1,ipoint,iel) = 1.0_dp
+         ! Mach 3 wall reflection
+         Dcoefficients (1,ipoint,iel) = 1.0_dp
+         
 
-          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx + 2.0_dp*dy
+!          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx + 2.0_dp*dy
 !          Dcoefficients (1,ipoint,iel) = 1.0_dp + dx*dx + 2.0_dp*dy*dy
           
 
@@ -2367,12 +2368,12 @@ contains
 !             ! For scalar burgers - continuous
 !             Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
 
-             !        ! For linear system
-             !        Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
+!        ! For linear system
+!        Dcoefficients (1,ipoint,iel) = 0.3_dp*exp(-50.0_dp*((dx-0.5_dp)**2.0_dp+(dy-0.5_dp)**2.0_dp))
 
 
 !        ! Isentropicvortex
-!        dt = 0
+!        dt = 1.0_dp
 !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
 !        Dcoefficients (1,ipoint,iel) = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
 
@@ -2410,7 +2411,7 @@ contains
              Dcoefficients (1,ipoint,iel) = 3.0_dp*sqrt(1.4_dp)
              
 !       ! Isentropicvortex
-!        dt = 0
+!        dt = 1.0_dp
 !        drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
 !        drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
 !        Dcoefficients (1,ipoint,iel) = drho*(1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi))
@@ -2435,7 +2436,7 @@ contains
 
 
 !             ! Isentropicvortex
-!             dt = 0
+!             dt = 1.0_dp
 !             drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
 !             drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
 !             Dcoefficients (1,ipoint,iel) = drho*(5.0_dp*exp(1.0_dp-drad*drad)*(dx-5.0_dp)/(2.0_dp*SYS_pi))
@@ -2470,7 +2471,7 @@ contains
               Dcoefficients (1,ipoint,iel) = 2.5_dp+4.5_dp*1.4_dp
               
 !             ! Isentropic vortex
-!             dt = 0.0_dp
+!             dt = 1.0_dp
 !             drad = sqrt((dx-dt-5.0_dp)**2.0_dp + dy*dy)
 !             drho = (1.0_dp-0.4_dp/(16.0_dp*1.4_dp*SYS_pi**2.0_dp)*25.0_dp*exp(2.0_dp*(1.0_dp-drad*drad)))**(1.0_dp/0.4_dp)
 !             du = 1.0_dp-5.0_dp*exp(1.0_dp-drad*drad)*(dy)/(2.0_dp*SYS_pi)
@@ -4530,8 +4531,8 @@ contains
 !                ! Save the calculated flux (HLLC)
 !                DfluxValues(:,1,ipoint,iedge) = Euler_buildFlux_HLLC2D(DQi,DQa,normal(1,iedge),normal(2,iedge))
 
-          !      ! Galerkin
-          !      DfluxValues(:,1,ipoint,iedge) = DFlux
+!                ! Galerkin
+!                DfluxValues(:,1,ipoint,iedge) = DFlux
           
 
        end do ! ipoint
@@ -7498,8 +7499,10 @@ contains
     real(dp), dimension(4) :: dQi, DQa
     real(dp), dimension(5) :: dQRoec
     real(dp) :: drho,du,dv,dvn,dvt,dx,dy,dt,drad,de,dpr,dH,dc,dW1o,dW2o,dW3o,dW4o,dW1,dW2,dW3,dW4,dlambda
-    real(dp), dimension(4,8) :: DDRoe
+    real(dp), dimension(4,8) :: DDRoe, DdLLF
     real(dp), parameter :: gamma = 1.4_dp
+    ! The computed derivatives of max abs eigenvalue
+    real(DP), dimension(8)					:: Ddlambda
 
 
 
@@ -7751,8 +7754,8 @@ contains
           DQi = Dsolutionvalues(1,ipoint,iedge,:)
           DQa = Dsolutionvalues(2,ipoint,iedge,:)
 
-          ! Calculate Roevalues
-          DQroec = Euler_calculateQroec(DQi,DQa)
+!          ! Calculate Roevalues
+!          DQroec = Euler_calculateQroec(DQi,DQa)
 
           ! Calculate Jacobi/Roematrix
           !      DL       = Euler_buildMixedLcfromRoe       (DQRoec,normal(1,iedge),normal(2,iedge))
@@ -7761,11 +7764,16 @@ contains
 !          DA       = Euler_buildJacobixcfromRoe      (DQRoec)
 !          DB       = Euler_buildJacobiycfromRoe      (DQRoec)
           
-          DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
-          dlambda = maxval(DaLambda)*2.0_dp
-          if (IelementList(iedge)==0) then
-             dlambda = 0.5_dp * dlambda
-          end if
+!          DaLambda = Euler_buildMixedaLambdacfromRoe (DQRoec,normal(1,iedge),normal(2,iedge))
+!          dlambda = maxval(DaLambda)*2.0_dp
+!          if (IelementList(iedge)==0) then
+!             dlambda = 0.5_dp * dlambda
+!          end if
+!          dlambda = maxval(DaLambda)
+
+!          ! Build absolute value of largest eigenvalue
+!          dlambda = Euler_buildlambda(DQi,DQa, normal(1,iedge),normal(2,iedge))
+
           
 !          write(*,*) '1:', dlambda
 
@@ -7773,43 +7781,65 @@ contains
 !          write(*,*) '2:', dlambda
 
 !         ! Calculate numerical derivative of Roe flux
-!         DDRoe = DRoe(DQi, DQa, normal(1,iedge), normal(2,iedge), 1.0_dp)
+!         DDRoe = DRoe(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
+         
+         ! Calculate numerical derivative of LLF flux
+         DdLLF = DLLF(DQi, DQa, normal(1,iedge), normal(2,iedge), 0.0000001_dp)
+
+!          ! Calculate derivative of lambda
+!          Ddlambda = Euler_buildDlambda(DQi, DQa, normal(1,iedge), normal(2,iedge))
           
           do iterm = 1, size(DfluxValues,3)
 
             select case (iterm)
               case (1) ! For first term
                 
-                ! Save Jacobimatrix for Galerkin flux
-                DA       = Euler_buildJacobixcfromRoe      (Euler_transformVector(DQi))
-                DB       = Euler_buildJacobiycfromRoe      (Euler_transformVector(DQi))
-                DfluxValues(:,:,iterm,ipoint,iedge) = 0.5_dp*(normal(1,iedge)*DA+normal(2,iedge)*DB)
-                
-                ! Lax Friedrichs
-                do i = 1, size(DfluxValues,1)
-                  DfluxValues(i,i,iterm,ipoint,iedge) = DfluxValues(i,i,iterm,ipoint,iedge) + 0.5_dp*dlambda
-                end do
+!                ! Save Jacobimatrix for Galerkin flux
+!                DA       = Euler_buildJacobixcfromRoe      (Euler_transformVector(DQi))
+!                DB       = Euler_buildJacobiycfromRoe      (Euler_transformVector(DQi))
+!                DfluxValues(:,:,iterm,ipoint,iedge) = 0.5_dp*(normal(1,iedge)*DA+normal(2,iedge)*DB)
+!                
+!                ! Lax Friedrichs
+!                do i = 1, size(DfluxValues,1)
+!                  DfluxValues(i,i,iterm,ipoint,iedge) = DfluxValues(i,i,iterm,ipoint,iedge) + 0.5_dp*dlambda
+!                end do
+!!                do i = 1, size(DfluxValues,1)
+!!                  do j = 1, size(DfluxValues,2)
+!!                    DfluxValues(i,j,iterm,ipoint,iedge) = DfluxValues(i,j,iterm,ipoint,iedge) - 0.5_dp*Ddlambda(j)*(DQa(i)-DQi(i))
+!!                  end do
+!!                end do
                 
 !                ! Roe
 !                DfluxValues(:,:,iterm,ipoint,iedge) = DDRoe(1:4,1:4)
+
+                ! LLF
+                DfluxValues(:,:,iterm,ipoint,iedge) = DdLLF(1:4,1:4)
                 
 !                ! Nothing
 !                DfluxValues(:,:,iterm,ipoint,iedge) = 0.0_dp
                 
               case (2) ! For second term
                  
-                ! Save Jacobimatrix for Galerkin flux
-                DA       = Euler_buildJacobixcfromRoe      (Euler_transformVector(DQa))
-                DB       = Euler_buildJacobiycfromRoe      (Euler_transformVector(DQa))
-                DfluxValues(:,:,iterm,ipoint,iedge) = 0.5_dp*(normal(1,iedge)*DA+normal(2,iedge)*DB)
-                
-                ! Lax Friedrichs
-                do i = 1, size(DfluxValues,1)
-                  DfluxValues(i,i,iterm,ipoint,iedge) = DfluxValues(i,i,iterm,ipoint,iedge) - 0.5_dp*dlambda
-                end do
+!                ! Save Jacobimatrix for Galerkin flux
+!                DA       = Euler_buildJacobixcfromRoe      (Euler_transformVector(DQa))
+!                DB       = Euler_buildJacobiycfromRoe      (Euler_transformVector(DQa))
+!                DfluxValues(:,:,iterm,ipoint,iedge) = 0.5_dp*(normal(1,iedge)*DA+normal(2,iedge)*DB)
+!                
+!                ! Lax Friedrichs
+!                do i = 1, size(DfluxValues,1)
+!                  DfluxValues(i,i,iterm,ipoint,iedge) = DfluxValues(i,i,iterm,ipoint,iedge) - 0.5_dp*dlambda
+!                end do
+!!                do i = 1, size(DfluxValues,1)
+!!                  do j = 1, size(DfluxValues,2)
+!!                    DfluxValues(i,j,iterm,ipoint,iedge) = DfluxValues(i,j,iterm,ipoint,iedge) - 0.5_dp*Ddlambda(4+j)*(DQa(i)-DQi(i))
+!!                  end do
+!!                end do
                 
 !                ! Roe
 !                DfluxValues(:,:,iterm,ipoint,iedge) = DDRoe(1:4,5:8)
+
+                ! LLF
+                DfluxValues(:,:,iterm,ipoint,iedge) = DDLLF(1:4,5:8)
                 
 !                ! Nothing
 !                DfluxValues(:,:,iterm,ipoint,iedge) = 0.0_dp
@@ -8737,13 +8767,16 @@ contains
   
   
     integer :: iedge, ipoint
-    real(dp) :: dx, dy
+    real(dp) :: dx, dy, dalpha
     
     Dside(1,1) = 1.0_dp
     Dside(2,1) = 0.0_dp
     
     Dside(1,2) = 0.0_dp
     Dside(2,2) = 1.0_dp
+
+    
+    dalpha = 0.0_dp
 
 
     do iedge = 1, size(DfluxValues,3)
@@ -8755,7 +8788,7 @@ contains
 
           DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
           
-
+          ! Upwind flux
           if (DfluxValues(1,ipoint,iedge).ge.0.0_dp) then
 
              DfluxValues(1,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
@@ -8767,6 +8800,16 @@ contains
              DfluxValues(2,ipoint,iedge) = -dy*normal(1,iedge) + dx*normal(2,iedge)
 
           end if
+          
+!!          if((dx>0.1_dp).and.(dx<0.9_dp).and.(dy>0.1_dp).and.(dy<0.9_dp)) then
+!!          if (iedge==2) then
+!          if (.NOT.((ielementList(iedge)==0).and.(-dy*normal(1,iedge) + dx*normal(2,iedge).ge.0.0_dp))) then
+!!          if (ielementList(iedge)==0) then
+!             ! Central flux
+!             DfluxValues(1,ipoint,iedge) = dalpha*DfluxValues(1,ipoint,iedge)+(1.0_dp-dalpha)*0.5_dp*(-dy*normal(1,iedge) + dx*normal(2,iedge))
+!             DfluxValues(2,ipoint,iedge) = dalpha*DfluxValues(2,ipoint,iedge)+(1.0_dp-dalpha)*0.5_dp*(-dy*normal(1,iedge) + dx*normal(2,iedge))
+!          end if
+!!          end if
 
        end do
     end do
@@ -8818,7 +8861,7 @@ contains
   
     integer :: ipoint, iedge
     real(dp), dimension(2) :: Dvel
-    real(DP) :: dvn ,dx, dy, dr
+    real(DP) :: dvn ,dx, dy, dr, dalpha
     real(dp), dimension(:,:,:), allocatable :: Dsolutionvalues
 
 
@@ -8836,6 +8879,8 @@ contains
     ! and
     ! Dsolutionvalues(2,ipoint,iedge) on the second side
     ! except on the elements, which are on the other side and where there is no other side (on the boundary)
+    
+    dalpha = 0.0_dp
 
     ! Loop over all edges
     do iedge = 1, ubound(Dcoefficients,3)
@@ -8858,6 +8903,12 @@ contains
           if (ielementList(iedge)==0) then
             if (abs(dx-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iedge) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
             if ((dy.le.0.0_dp)) Dsolutionvalues(2,ipoint,iedge) = sqrt((dx)**2.0_dp+(dy)**2.0_dp)**3.0_dp
+            
+            if (abs(dy-1.0_dp)<10.0_dp*SYS_EPSREAL_DP) Dsolutionvalues(2,ipoint,iedge) = sqrt((dy)**2.0_dp+(dx)**2.0_dp)**3.0_dp
+            if ((dx.le.0.0_dp)) Dsolutionvalues(2,ipoint,iedge) = sqrt((dy)**2.0_dp+(dx)**2.0_dp)**3.0_dp
+            
+!            Dsolutionvalues(2,ipoint,iedge) = 1.0_dp
+            
           end if
 
           ! Upwind flux
@@ -8866,6 +8917,15 @@ contains
           else
              Dcoefficients(1,ipoint,iedge) = dvn *Dsolutionvalues(2,ipoint,iedge)
           end if
+          
+!!          if((dx>0.1_dp).and.(dx<0.9_dp).and.(dy>0.1_dp).and.(dy<0.9_dp)) then
+!!          if (iedge==2) then
+!!          if (ielementList(iedge)/=0) then
+!          if (.not.((ielementList(iedge)==0).and.(-dy*normal(1,iedge) + dx*normal(2,iedge).ge.0.0_dp))) then
+!             ! Central flux
+!             Dcoefficients(1,ipoint,iedge) = dalpha*Dcoefficients(1,ipoint,iedge)+(1.0_dp-dalpha)*0.5_dp * dvn * (Dsolutionvalues(1,ipoint,iedge)+Dsolutionvalues(2,ipoint,iedge))
+!          end if
+!!          end if
 
        end do ! ipoint
     end do ! iedge
