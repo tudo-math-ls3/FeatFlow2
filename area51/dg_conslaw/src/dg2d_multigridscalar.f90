@@ -474,12 +474,14 @@ contains
     type(t_vectorBlock), target :: rtempBlock
     
     ! Später wieder löschen
-    type(t_vectorBlock) :: rvectorCoarse
+    type(t_vectorBlock) :: rvectorCoarse, rrhsCoarse, rtempCoarse
     character(LEN=SYS_STRLEN) :: sofile
     type(t_linearForm) :: rlinformIC
     type(t_bilinearForm) :: rform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     integer :: ivar
+    type(t_linsolNode), pointer :: p_rsolverNode1
+    
     
 
     ! A solver node that accepts parameters for the linear solver
@@ -646,7 +648,66 @@ contains
     
     
     
-    
+
+
+
+
+
+
+
+
+!    ! Test Projection of RHS (are the bounday conditions projected rightly)
+!    
+!
+!      i=rproblem%ilvmax-1
+!      ! Ask the problem structure to give us the discretisation structure
+!      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+!         
+!      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+!
+!       nullify(p_rpreconditioner)
+!       call linsol_initBiCGStab (p_rsolverNode1,p_rpreconditioner)
+!       
+!       allocate(Rmatrices(1))
+!    
+!      call lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+!          Rmatrices(1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!    
+!       call linsol_setMatrices(p_rsolverNode1,Rmatrices)
+!    
+!    call linsol_initStructure (p_rsolverNode1,ierror)
+!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!    call linsol_initData (p_rsolverNode1,ierror)
+!    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+!
+!    ! Create temporary empty solution vector which is needed to build the matrices
+!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,rvectorCoarse,.true.)
+!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,rrhsCoarse,.true.)
+!    call lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,rtempCoarse,.true.)
+!    
+!!    call Test_mlprj_performInterpolation (rvectorCoarse, &
+!!                                         p_rvector)
+!
+!!    call mlprj_initProjectionDiscr (rlevelInfo%p_rprojection,rdiscrCoarse)
+!    
+!    call mlprj_performRestriction (p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(2)%p_rprojection,rrhsCoarse, &
+!                                       rproblem%rrhs,rtempBlock%rvectorblock(1),1)
+!
+!    call linsol_solveAdaptively (p_rsolverNode1,rvectorCoarse,rrhsCoarse,rtempCoarse)
+!    
+!    sofile = './gmv/coarse' 
+!    
+!    ! Output solution to vtk file
+!    call dg2vtk(rvectorCoarse%Rvectorblock(1),3,sofile,-1)
+
+
+
+
+
+
+
+
+
     
     
     
