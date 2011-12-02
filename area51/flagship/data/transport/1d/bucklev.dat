@@ -145,6 +145,9 @@ ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
+# section name of the mass stabilization
+mass = Mass
+
 # section name of the convection stabilization
 convection = Convection
 
@@ -168,6 +171,18 @@ errorestimator = ErrorEstimator
 
 
 ################################################################################
+[Mass]
+################################################################################
+
+# type of spatial stabilization:
+# type of spatial stabilisation:
+#  0 = no stabilization
+# 40 = nonlinear FEM-LPT for mass contribution
+# 50 = linearised FEM-LPT for mass contribution
+istabilisation = 0
+
+
+################################################################################
 [Convection]
 ################################################################################
 
@@ -188,7 +203,7 @@ istabilisation = 20
 #  0 = no prelimiting
 #  1 = standard prelimiting
 #  2 = minmod prelimiting
-iprelimiting = 0
+iprelimiting = 1
 
 
 ################################################################################

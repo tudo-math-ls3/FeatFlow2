@@ -157,6 +157,9 @@ ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
+# section name of the mass stabilization
+mass = Mass
+
 # section name of the convection stabilization
 convection = Convection
 
@@ -180,6 +183,17 @@ errorestimator = ErrorEstimator
 
 
 ################################################################################
+[Mass]
+################################################################################
+
+# type of spatial stabilization:
+# type of spatial stabilisation:
+#  0 = no stabilization
+# 40 = nonlinear FEM-LPT for mass contribution
+# 50 = linearised FEM-LPT for mass contribution
+istabilisation = 40
+
+################################################################################
 [Convection]
 ################################################################################
 
@@ -194,7 +208,7 @@ errorestimator = ErrorEstimator
 # 31 = FEM-GP
 # 41 = nonlinear upwind-biased FEM-LPT
 # 51 = linearised upwind-biased FEM-LPT
-istabilisation = 20
+istabilisation = 41
 
 # perform prelimiting
 #  0 = no prelimiting
@@ -652,7 +666,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25

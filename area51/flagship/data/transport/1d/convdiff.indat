@@ -20,7 +20,7 @@ deffunc: @exactsol = (exp(_g0)-exp(_g0*x))/(exp(_g0)-1.0); x,t
 deffunc: @velocity_x = 1.0 ; x,t
 
 # Specify the diffusion coefficient
-deffunc: @diffusion = 1e-3 ; x,t
+deffunc: @diffusion = 1e-2 ; x,t
 
 # Specify the boundary conditions for the primal problem
 [bdrcond_primal]

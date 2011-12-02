@@ -219,7 +219,7 @@ iprelimiting = 1
 # 32 = nonlinear symmetric limiting
 # 42 = nonlinear symmetric FEM-LPT
 # 52 = linearised symmetric FEM-LPT
-istabilisation = 32
+istabilisation = 42
 
 
 ################################################################################
@@ -328,10 +328,10 @@ depsSteady = 0.0
 ioutputlevel = 3
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -460,7 +460,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 1000
+nmaxIterations = 100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -658,7 +658,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 8
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 50

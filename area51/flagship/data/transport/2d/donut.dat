@@ -200,7 +200,7 @@ errorestimator = ErrorEstimator
 # 31 = FEM-GP
 # 41 = nonlinear upwind-biased FEM-LPT
 # 51 = linearised upwind-biased FEM-LPT
-istabilisation = 20
+istabilisation = 30
 
 # perform prelimiting
 #  0 = no prelimiting
@@ -460,7 +460,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 100
+nmaxIterations = 300
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -658,7 +658,7 @@ nmaxIterations = 50
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 8
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -709,7 +709,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 4
+nadapt = 5
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -718,7 +718,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 4
+nsubdividemax = 5
 
 # adaptation strategy
 # 1 = red-green
