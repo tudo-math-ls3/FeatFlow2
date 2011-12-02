@@ -36,13 +36,15 @@ module mhd_basic
   use genoutput
   use linearsystemblock
   use linearsystemscalar
-  use mhd_basic1d
-  use mhd_basic2d
-  use mhd_basic3d
   use problem
   use statistics
   use triangulation
   use ucd
+
+  ! Modules from MHD model
+  use mhd_basic1d
+  use mhd_basic2d
+  use mhd_basic3d
 
   implicit none
 

@@ -9,53 +9,45 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_hadaptCallbackScalar2d
-!#     -> Performs application specific tasks in the adaptation
-!#        algorithm in 2D, whereby the vector is stored in interleave format
-!#
-!# 2.) zpinch_hadaptCallbackBlock2d
-!#     -> Performs application specific tasks in the adaptation
-!#        algorithm in 2D, whereby the vector is stored in block format
-!#
-!# 3.) zpinch_calcMatDiagConvIntlP2d_sim
+!# 1.) zpinch_calcMatDiagConvIntlP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 4.) zpinch_calcMatRusConvIntlP2d_sim
+!# 2.) zpinch_calcMatRusConvIntlP2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 5.) zpinch_calcMatDiagConvIntlD2d_sim
+!# 3.) zpinch_calcMatDiagConvIntlD2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 6.) zpinch_calcMatRusConvIntlD2d_sim
+!# 4.) zpinch_calcMatRusConvIntlD2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
 !#        and applies scalar artificial viscosities of Rusanov-type
 !#        for hydrodynamic systems stored in interleaved format
 !#
-!# 7.) zpinch_calcMatDiagConvBlockP2d_sim
+!# 5.) zpinch_calcMatDiagConvBlockP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
 !#        for hydrodynamic systems stored in block format
 !#
-!# 10.) zpinch_calcMatRusConvBlockP2d_sim
+!# 6.) zpinch_calcMatRusConvBlockP2d_sim
 !#      -> Calculates the off-diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (primal formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
 !#         for hydrodynamic systems stored in block format
 !#
-!# 11.) zpinch_calcMatDiagConvBlockD2d_sim
+!# 7.) zpinch_calcMatDiagConvBlockD2d_sim
 !#      -> Calculates the diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (dual formulation)
 !#         for hydrodynamic systems stored in block format
 !#
-!# 12.) zpinch_calcMatRusConvBlockD2d_sim
+!# 8.) zpinch_calcMatRusConvBlockD2d_sim
 !#      -> Calculates the off-diagonal Galerkin transport coefficients
 !#         for linear convection in 2D (dual formulation)
 !#         and applies scalar artificial viscosities of Rusanov-type
@@ -71,10 +63,8 @@ module zpinch_callback2d
 
   use collection
   use hydro_basic
-  use flagship_callback
   use fsystem
   use genoutput
-  use hadaptaux
   use linearsystemblock
   use linearsystemscalar
   use storage
@@ -82,375 +72,17 @@ module zpinch_callback2d
   implicit none
 
   private
-  public :: zpinch_hadaptCallbackScalar2d
-  public :: zpinch_hadaptCallbackBlock2d
-  
+
   public :: zpinch_calcMatDiagConvIntlP2d_sim
   public :: zpinch_calcMatRusConvIntlP2d_sim
-
   public :: zpinch_calcMatDiagConvIntlD2d_sim
   public :: zpinch_calcMatRusConvIntlD2d_sim
-
   public :: zpinch_calcMatDiagConvBlockP2d_sim
   public :: zpinch_calcMatRusConvBlockP2d_sim
-
   public :: zpinch_calcMatDiagConvBlockD2d_sim
   public :: zpinch_calcMatRusConvBlockD2d_sim
   
 contains
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_hadaptCallbackScalar2d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 2D. The solution vector is assumed
-    ! to be store in scalar interleave format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:5):   ivt1,...,ivt5
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolutionHydro, rsolutionTransport
-    real(DP), dimension(:), pointer, save :: p_DsolutionHydro, p_DsolutionTransport
-    integer :: ivar
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vectors from colletion and set pointer
-      rsolutionHydro     => rcollection%p_rvectorQuickAccess1
-      rsolutionTransport => rcollection%p_rvectorQuickAccess2
-
-      ! Check if solution is stored in interleave format
-      if (rsolutionHydro%nblocks .ne. 1) then
-        call output_line('Vector is not in interleave format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_hadaptCallbackScalar2d')
-        call sys_halt()
-      end if
-
-      ! Set pointers
-      call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vectors
-      nullify(rsolutionHydro, p_DsolutionHydro)
-      nullify(rsolutionTransport, p_DsolutionTransport)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector for the hydrodynamic model
-      if (rsolutionHydro%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionHydro,&
-            NVAR2D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      end if
-
-      ! Resize solution vector for the scalar transport model
-      if (rsolutionTransport%NEQ .ne. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionTransport,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector for the hydrodynamic model
-      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionHydro,&
-            NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      end if
-      do ivar = 1, NVAR2D
-        p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            0.5_DP*(p_DsolutionHydro((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
-                    p_DsolutionHydro((rcollection%IquickAccess(3)-1)*NVAR2D+ivar))
-      end do
-
-      ! Insert vertex into solution vector for the scalar transport model
-      if (rsolutionTransport%NEQ .lt. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionTransport,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      end if
-      p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-          0.5_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
-                  p_DsolutionTransport(rcollection%IquickAccess(3)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-      
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector for the hydrodynamic model
-      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionHydro,&
-            NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      end if
-      do ivar = 1, NVAR2D
-        p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            0.25_DP*(p_DsolutionHydro((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
-                     p_DsolutionHydro((rcollection%IquickAccess(3)-1)*NVAR2D+ivar)+&
-                     p_DsolutionHydro((rcollection%IquickAccess(4)-1)*NVAR2D+ivar)+&
-                     p_DsolutionHydro((rcollection%IquickAccess(5)-1)*NVAR2D+ivar))
-      end do
-
-      ! Insert vertex into solution vector for the scalar transport model
-      if (rsolutionTransport%NEQ .lt. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionTransport,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      end if
-      p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-          0.25_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(3))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(4))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(5)))
-
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution for the hydrodynamic model
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        do ivar = 1, NVAR2D
-          p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-              p_DsolutionHydro((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)
-        end do
-      else
-        do ivar = 1, NVAR2D
-          p_DsolutionHydro((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0_DP
-        end do
-      end if
-
-      ! Remove vertex from solution for the scalar transport model
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-            p_DsolutionTransport(rcollection%IquickAccess(2))
-      else
-        p_DsolutionTransport(rcollection%IquickAccess(1)) = 0.0_DP
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-    end select
-
-  end subroutine zpinch_hadaptCallbackScalar2d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_hadaptCallbackBlock2d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 2D. The solution vector is assumed
-    ! to be store in block format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:5):   ivt1,...,ivt5
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolutionHydro, rsolutionTransport
-    real(DP), dimension(:), pointer, save :: p_DsolutionHydro, p_DsolutionTransport
-    integer :: ivar,neq
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vectors from colletion and set pointer
-      rsolutionHydro     => rcollection%p_rvectorQuickAccess1
-      rsolutionTransport => rcollection%p_rvectorQuickAccess2
-
-      ! Check if solution is stored in interleave format
-      if (rsolutionHydro%nblocks .ne. NVAR2D) then
-        call output_line('Vector is not in block format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_hadaptCallbackBlock2d')
-        call sys_halt()
-      end if
-
-      ! Set pointers
-      call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vectors
-      nullify(rsolutionHydro, p_DsolutionHydro)
-      nullify(rsolutionTransport, p_DsolutionTransport)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector for the hydrodynamic model
-      if (rsolutionHydro%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionHydro,&
-            NVAR2D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      end if
-
-      ! Resize solution vector for the scalar transport model
-      if (rsolutionTransport%NEQ .ne. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionTransport,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector for the hydrodynamic model
-      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionHydro, NVAR2D&
-            *rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      end if
-      neq = rsolutionHydro%NEQ/NVAR2D
-      do ivar = 1, NVAR2D
-        p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            0.5_DP*(p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                    p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(3)) )
-      end do
-
-      ! Insert vertex into solution vector for the scalar transport model
-      if (rsolutionTransport%NEQ .lt. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionTransport,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      end if
-      p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-          0.5_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
-                  p_DsolutionTransport(rcollection%IquickAccess(3)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector for the hydrodynamic model
-      if (rsolutionHydro%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionHydro, NVAR2D&
-            *rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionHydro, p_DsolutionHydro)
-      end if
-      neq = rsolutionHydro%NEQ/NVAR2D
-      do ivar = 1, NVAR2D
-        p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) =&
-            0.25_DP*(p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                     p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(3))+&
-                     p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(4))+&
-                     p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(5)) )
-      end do
-
-      ! Insert vertex into solution vector for the scalar transport model
-      if (rsolutionTransport%NEQ .lt. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolutionTransport,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      end if
-      p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-          0.25_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(3))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(4))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(5)))
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution for the hydrodynamic model
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        neq = rsolutionHydro%NEQ/NVAR2D
-        do ivar = 1, NVAR2D
-          p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-              p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(2))
-        end do
-      else
-        neq = rsolutionHydro%NEQ/NVAR2D
-        do ivar = 1, NVAR2D
-          p_DsolutionHydro((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
-        end do
-      end if
-
-      ! Remove vertex from solution for the scalar transport model
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-            p_DsolutionTransport(rcollection%IquickAccess(2))
-      else
-        p_DsolutionTransport(rcollection%IquickAccess(1)) = 0.0_DP
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-    end select
-
-  end subroutine zpinch_hadaptCallbackBlock2d
 
   !*****************************************************************************
   

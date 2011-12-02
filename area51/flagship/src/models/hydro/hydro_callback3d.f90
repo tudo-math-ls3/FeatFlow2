@@ -194,14 +194,6 @@
 !# 47.) hydro_calcBoundaryvalues3d
 !#      -> Computes the boundary values for a given node
 !#
-!# 48.) hydro_hadaptCallbackScalar3d
-!#      -> Performs application specific tasks in the adaptation
-!#         algorithm in 3D, whereby the vector is stored in interleave format
-!#
-!# 49.) hydro_hadaptCallbackBlock3d
-!#      -> Performs application specific tasks in the adaptation
-!#         algorithm in 3D, whereby the vector is stored in block format
-!#
 !# </purpose>
 !##############################################################################
 
@@ -210,23 +202,25 @@ module hydro_callback3d
 #define HYDRO_NDIM 3
 #include "hydro.h"
 
+  use basicgeometry
   use collection
-  use flagship_callback
   use fsystem
   use genoutput
   use graph
   use groupfemsystem
-  use hadaptaux
-  use hydro_basic
   use linearsystemblock
   use linearsystemscalar
   use problem
   use solveraux
   use storage
 
+  ! Modules from hydrodynamic model
+  use hydro_basic
+
   implicit none
 
   private
+
   public :: hydro_calcFluxGal3d_sim
   public :: hydro_calcFluxGalNoBdr3d_sim
   public :: hydro_calcFluxScDiss3d_sim
@@ -274,8 +268,6 @@ module hydro_callback3d
   public :: hydro_trafoNodalDenPre3d_sim
   public :: hydro_trafoNodalDenPreVel3d_sim
   public :: hydro_calcBoundaryvalues3d
-  public :: hydro_hadaptCallbackScalar3d
-  public :: hydro_hadaptCallbackBlock3d
 
   public :: hydro_calcDivVecScDiss3d_cuda
   public :: hydro_calcDivVecScDissDiSp3d_cuda
@@ -8964,277 +8956,5 @@ contains
 !</subroutine>
 
   end subroutine hydro_calcBoundaryvalues3d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_hadaptCallbackScalar3d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 3D. The solution vector is assumed
-    ! to be store in scalar interleave format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:5):   ivt1,...,ivt5
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: ivar
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion
-      rsolution => rcollection%p_rvectorQuickAccess1
-
-      ! Check if solution is stored in interleave format
-      if (rsolution%nblocks .ne. 1) then
-        call output_line('Vector is not in interleave format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackScalar3d')
-        call sys_halt()
-      end if
-
-      ! Set pointer
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR3D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR3D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR3D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR3D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      do ivar = 1, NVAR3D
-        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR3D+ivar) = &
-            RCONST(0.5)*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR3D+ivar)+&
-                         p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR3D+ivar))
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR3D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR3D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      do ivar = 1, NVAR3D
-        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR3D+ivar) = &
-            RCONST(0.25)*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR3D+ivar)+&
-                          p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR3D+ivar)+&
-                          p_Dsolution((rcollection%IquickAccess(4)-1)*NVAR3D+ivar)+&
-                          p_Dsolution((rcollection%IquickAccess(5)-1)*NVAR3D+ivar))
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        do ivar = 1, NVAR3D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR3D+ivar) = &
-              p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR3D+ivar)
-        end do
-      else
-        do ivar = 1, NVAR3D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR3D+ivar) = RCONST(0.0)
-        end do
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-    end select
-
-  end subroutine hydro_hadaptCallbackScalar3d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_hadaptCallbackBlock3d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 3D. The solution vector is assumed
-    ! to be store in block format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:5):   ivt1,...,ivt5
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: ivar,neq
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion
-      rsolution => rcollection%p_rvectorQuickAccess1
-
-      ! Check if solution is stored in interleave format
-      if (rsolution%nblocks .ne. NVAR3D) then
-        call output_line('Vector is not in block format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackBlock3d')
-        call sys_halt()
-      end if
-
-      ! Set pointer
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR3D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR3D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR3D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR3D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      neq = rsolution%NEQ/NVAR3D
-      do ivar = 1, NVAR3D
-        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            RCONST(0.5)*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                         p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR3D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR3D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      neq = rsolution%NEQ/NVAR3D
-      do ivar = 1, NVAR3D
-        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) =&
-            RCONST(0.25)*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3))+&
-                          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(4))+&
-                          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(5)) )
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        neq = rsolution%NEQ/NVAR3D
-        do ivar = 1, NVAR3D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-              p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))
-        end do
-      else
-        neq = rsolution%NEQ/NVAR3D
-        do ivar = 1, NVAR3D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = RCONST(0.0)
-        end do
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback3d(iOperation, rcollection)
-
-    end select
-
-  end subroutine hydro_hadaptCallbackBlock3d
 
 end module hydro_callback3d

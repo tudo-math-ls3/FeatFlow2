@@ -40,11 +40,6 @@ module zpinch_callback
   use boundaryfilter
   use collection
   use derivatives
-  use hydro_basic
-  use hydro_callback
-  use hydro_callback1d
-  use hydro_callback2d
-  use hydro_callback3d
   use flagship_basic
   use fparser
   use fsystem
@@ -60,12 +55,23 @@ module zpinch_callback
   use solveraux
   use storage
   use timestepaux
+  use trilinearformevaluation
+  
+  ! Modules from hydro model
+  use hydro_basic
+  use hydro_callback
+  use hydro_callback1d
+  use hydro_callback2d
+  use hydro_callback3d
+
+  ! Modules from transport model
   use transport_basic, only : TRANSP_TROPER_UPDATE
   use transport_callback
   use transport_callback1d
   use transport_callback2d
   use transport_callback3d
-  use trilinearformevaluation
+
+  ! Modules from Z-pinch model
   use zpinch_callback2d
 
   implicit none
@@ -2219,20 +2225,20 @@ contains
         case (NDIM1D)
           call transp_calcLinfBdrCond1D(rproblemLevel,&
               rsolverTransport%rboundaryCondition, Rsolution(2),&
-              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP1d_sim,&
-              p_Rvector2(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+              rtimestep%dTime, 1.0_DP, ssectionNameTransport,&
+              transp_coeffVecBdrConvP1d_sim, p_Rvector2(2), rcollection)
 
         case (NDIM2D)
           call transp_calcLinfBdrCond2D(rproblemLevel,&
               rsolverTransport%rboundaryCondition, Rsolution(2),&
-              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP2d_sim,&
-              p_Rvector2(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+              rtimestep%dTime, 1.0_DP, ssectionNameTransport,&
+              transp_coeffVecBdrConvP2d_sim, p_Rvector2(2), rcollection)
 
         case (NDIM3D)
 !!$          call transp_calcLinfBdrCond3D(rproblemLevel,&
 !!$              rsolverTransport%rboundaryCondition, Rsolution(2),&
-!!$              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP3d_sim,&
-!!$              p_Rvector2(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+!!$              rtimestep%dTime, 1.0_DP, ssectionNameTransport,&
+!!$              transp_coeffVecBdrConvP3d_sim, p_Rvector2(2), rcollection)
           print *, "Boundary conditions in 3D have not been implemented yet!"
           stop
         end select
@@ -2320,20 +2326,20 @@ contains
         case (NDIM1D)
           call transp_calcLinfBdrCond1D(rproblemLevel,&
               rsolverTransport%rboundaryCondition, Rsolution(2),&
-              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP1d_sim,&
-              p_Rvector1(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+              rtimestep%dTime, 1.0_DP, ssectionNameTransport,&
+              transp_coeffVecBdrConvP1d_sim, p_Rvector1(2), rcollection)
 
         case (NDIM2D)
           call transp_calcLinfBdrCond2D(rproblemLevel,&
               rsolverTransport%rboundaryCondition, Rsolution(2),&
-              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP2d_sim,&
-              p_Rvector1(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+              rtimestep%dTime, 1.0_DP, ssectionNameTransport,&
+              transp_coeffVecBdrConvP2d_sim, p_Rvector1(2), rcollection)
 
         case (NDIM3D)
 !!$          call transp_calcLinfBdrCond3D(rproblemLevel,&
 !!$              rsolverTransport%rboundaryCondition, Rsolution(2),&
-!!$              rtimestep%dTime, 1.0_DP, transp_coeffVecBdrConvP3d_sim,&
-!!$              p_Rvector1(2)%RvectorBlock(1), ssectionNameTransport, rcollection)
+!!$              rtimestep%dTime, 1.0_DP, ssectionNameTransport,&
+!!$              transp_coeffVecBdrConvP3d_sim, p_Rvector1(2), rcollection)
           print *, "Boundary conditions in 3D have not been implemented yet!"
           stop
         end select

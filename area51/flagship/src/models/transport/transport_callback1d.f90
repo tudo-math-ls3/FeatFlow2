@@ -7,10 +7,15 @@
 !# This module contains all callback functions which are required to
 !# solve scalar conservation laws in 1D.
 !#
-!# The following routines are available:
+!# The following general routines are available:
 !#
-!# 1.) transp_hadaptCallback1d
-!#      -> Performs application specific tasks in the adaptation algorithm in 1D
+!# 1.) transp_calcBilfBdrCond1d
+!#     -> Calculates the bilinear form arising from the weak
+!#        imposition of boundary conditions in 1D
+!#
+!# 2.) transp_calcLinfBdrCond1d
+!#      -> Calculates the linear form arising from the weak
+!#         imposition of boundary conditions in 1D
 !#
 !#
 !# ****************************************************************************
@@ -118,29 +123,35 @@
 
 module transport_callback1d
 
+  use basicgeometry
+  use bilinearformevaluation
   use boundarycondaux
   use collection
   use derivatives
   use domainintegration
   use feevaluation
-  use flagship_callback
   use fparser
   use fsystem
   use genoutput
-  use hadaptaux
+  use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
+  use paramlist
+  use problem
   use scalarpde
   use spatialdiscretisation
   use storage
+
+  ! Modules from transport model
   use transport_basic
 
   implicit none
 
   private
-  
-  public :: transp_hadaptCallback1d
 
+  public :: transp_calcBilfBdrCond1d
+  public :: transp_calcLinfBdrCond1d
+  
   public :: transp_calcMatDiagConvP1d_sim
   public :: transp_calcMatGalConvP1d_sim
   public :: transp_calcMatUpwConvP1d_sim
@@ -171,99 +182,330 @@ contains
 
 !<subroutine>
 
-  subroutine transp_hadaptCallback1d(iOperation, rcollection)
-
+  subroutine transp_calcBilfBdrCond1d(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, ssectionName, fcoeff_buildMatrixScBdr1D_sim,&
+      rmatrix, rcollection, cconstrType)
+    
 !<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 1D.
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions in 1D. The following types of
+    ! boundary conditions are supported for this application
+    !
+    ! - (In-)homogeneous Neumann boundary conditions
+    ! - Dirichlet boundary conditions
+    ! - Robin boundary conditions
+    ! - Flux boundary conditions
+    ! - (Anti-)periodic boundary conditions
 !</description>
 
 !<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+    
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! callback routine for nonconstant coefficient matrices.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
+
+    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! BILF_MATC_ELEMENTBASED is used.
+    integer, intent(in), optional :: cconstrType
+!</intput>
 
 !<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:3):   ivt1,ivt2
-    type(t_collection), intent(inout) :: rcollection
+    ! matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
+    type(t_parlist), pointer :: p_rparlist
+    type(t_collection) :: rcollectionTmp
+    type(t_bilinearform) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondType
+    integer :: ivelocitytype, velocityfield
+    integer :: ibdc
 
+    ! Evaluate bilinear form for boundary integral and
+    ! return if there are no weak boundary conditions
+    if (.not.rboundaryCondition%bWeakBdrCond) return
 
-    ! What operation should be performed?
-    select case(iOperation)
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+    
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+    
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
 
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => rcollection%p_rvectorQuickAccess1
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+    
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
 
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        rboundaryCondition%rfparser, .true.)
+    
+    ! Attach velocity vector (if any) to second quick access vector of
+    ! the temporal collection structure
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    if (transp_hasVelocityVector(ivelocityType)) then
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+    else
+      nullify(rcollectionTmp%p_rvectorQuickAccess2)
+    end if
 
+    
+    ! Set pointers
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
 
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
+    ! Loop over all boundary components
+    do ibdc = 1, rboundaryCondition%iboundarycount
 
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
+      ! Check if this segment has weak boundary conditions
+      if (iand(p_IbdrCondType(ibdc), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+        
+      ! Prepare further quick access arrays of temporal collection
+      ! structure with boundary component and type
+      rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibdc)
+      rcollectionTmp%IquickAccess(2) = ibdc
 
+      ! What type of boundary conditions are we?
+      select case(iand(p_IbdrCondType(ibdc), BDRC_TYPEMASK))
+          
+      case (BDRC_ROBIN)
+        ! Do nothing since boundary conditions are build into the
+        ! linear form and the bilinear form has no boundary term
+          
+      case (BDRC_HOMNEUMANN, BDRC_INHOMNEUMANN,&
+            BDRC_FLUX, BDRC_DIRICHLET,&
+            BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+          
+        ! Initialize the bilinear form
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        ! We have no constant coefficients
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff    = .false.
+        
+        ! Assemble the bilinear form
+        call bilf_buildMatrixScalarBdr1D(rform, .false., rmatrix,&
+            fcoeff_buildMatrixScBdr1D_sim, ibdc, rcollectionTmp, cconstrType)
+          
+      case default
+        call output_line('Unsupported type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBilfBdrCond1d')
+        call sys_halt()
+        
+      end select
+        
+    end do ! ibdc
+    
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+      
+  end subroutine transp_calcBilfBdrCond1d
 
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
+  !*****************************************************************************
 
+!<subroutine>
 
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      p_Dsolution(rcollection%IquickAccess(1)) = &
-          0.5_DP*(p_Dsolution(rcollection%IquickAccess(2))+&
-                  p_Dsolution(rcollection%IquickAccess(3)))
+  subroutine transp_calcLinfBdrCond1d(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, ssectionName, fcoeff_buildVectorScBdr1D_sim,&
+      rvector, rcollection)
 
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
+!<description>
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions in 1D. The following types of
+    ! boundary conditions are supported for this application
+    !
+    ! - Inhomogeneous Neumann boundary conditions
+    ! - Dirichlet boundary conditions
+    ! - Robin boundary conditions
+    ! - Flux boundary conditions
+    ! - (Anti-)periodic boundary conditions
+!</description>
 
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        p_Dsolution(rcollection%IquickAccess(1)) = &
-            p_Dsolution(rcollection%IquickAccess(2))
-      else
-        p_Dsolution(rcollection%IquickAccess(1)) = 0.0_DP
-      end if
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+    
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
 
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
+    ! simulation time
+    real(DP), intent(in) :: dtime
 
+    ! scaling factor
+    real(DP), intent(in) :: dscale
 
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
 
-    end select
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorScBdr1D.inc'
+!</intput>
 
-  end subroutine transp_hadaptCallback1d
+!<inputoutput>
+    ! vector where to store the linear form
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_collection) :: rcollectionTmp
+    type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic
+    integer :: ivelocitytype, velocityfield
+    integer :: ibdc
+
+    ! Evaluate linear form for boundary integral and return if
+    ! there are no weak boundary conditions available
+    if (.not.rboundaryCondition%bWeakBdrCond) return
+
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+    
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+    
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        rboundaryCondition%rfparser, .true.)
+
+    ! Attach velocity vector (if any) to second quick access vector of
+    ! the temporal collection structure
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    if (transp_hasVelocityVector(ivelocityType)) then
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'velocityfield', velocityfield)
+      rcollectionTmp%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
+    else
+      nullify(rcollectionTmp%p_rvectorQuickAccess2)
+    end if
+    
+    
+    ! Set pointers
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
+        p_IbdrCondType)
+
+    ! Set additional pointers for periodic boundary conditions
+    if (rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
+          p_IbdrCompPeriodic)
+    end if
+
+    ! Loop over all boundary components
+    do ibdc = 1, rboundaryCondition%iboundarycount
+      
+      ! Check if this segment has weak boundary conditions
+      if (iand(p_IbdrCondType(ibdc), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+
+      ! Prepare further quick access arrays of temporal collection
+      ! structure with boundary component and type
+      rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibdc)
+      rcollectionTmp%IquickAccess(2) = ibdc
+      
+      ! What type of boundary conditions are we?
+      select case(iand(p_IbdrCondType(ibdc), BDRC_TYPEMASK))
+        
+      case (BDRC_HOMNEUMANN)
+        ! Do nothing for homogeneous Neumann boundary conditions
+        ! since the boundary integral vanishes by construction
+        
+      case (BDRC_INHOMNEUMANN, BDRC_ROBIN,&
+            BDRC_FLUX, BDRC_DIRICHLET,&
+            BDRC_PERIODIC, BDRC_ANTIPERIODIC)
+        
+        ! Initialize the linear form
+        rform%itermCount = 1
+        rform%Idescriptors(1) = DER_FUNC
+        
+        ! Check if special treatment of mirror boundary condition is required
+        if ((iand(p_IbdrCondType(ibdc), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+            (iand(p_IbdrCondType(ibdc), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+
+          ! Prepare further quick access arrays of temporal collection
+          ! with mirror boundary component number
+          rcollectionTmp%IquickAccess(3) = p_IbdrCompPeriodic(ibdc)
+        end if
+
+        ! Assemble the linear form
+        call linf_buildVectorScalarBdr1d(rform, .false., rvector%RvectorBlock(1),&
+            fcoeff_buildVectorScBdr1D_sim, ibdc, rcollectionTmp)
+
+      case default
+        call output_line('Unsupported type of boundary copnditions !',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCond1d')
+        call sys_halt()
+        
+      end select
+      
+    end do ! ibdc
+    
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+
+  end subroutine transp_calcLinfBdrCond1d  
 
   !*****************************************************************************
   

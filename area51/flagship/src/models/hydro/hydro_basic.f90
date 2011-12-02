@@ -33,9 +33,6 @@ module hydro_basic
   use boundarycondaux
   use fparser
   use fsystem
-  use hydro_basic1d
-  use hydro_basic2d
-  use hydro_basic3d
   use genoutput
   use linearsystemblock
   use linearsystemscalar
@@ -44,6 +41,11 @@ module hydro_basic
   use triangulation
   use ucd
 
+  ! Modules from hydrodynamic model
+  use hydro_basic1d
+  use hydro_basic2d
+  use hydro_basic3d
+  
   implicit none
 
   private

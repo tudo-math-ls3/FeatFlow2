@@ -194,13 +194,13 @@
 !# 47.) hydro_calcBoundaryvalues2d
 !#      -> Computes the boundary values for a given node
 !#
-!# 48.) hydro_hadaptCallbackScalar2d
-!#      -> Performs application specific tasks in the adaptation
-!#         algorithm in 2D, whereby the vector is stored in interleave format
+!# 48.) hydro_calcBilfBdrCond2d
+!#      -> Calculates the bilinear form arising from the weak
+!#         imposition of boundary conditions in 2D
 !#
-!# 49.) hydro_hadaptCallbackBlock2d
-!#      -> Performs application specific tasks in the adaptation
-!#         algorithm in 2D, whereby the vector is stored in block format
+!# 49.) hydro_calcLinfBdrCond2d
+!#      -> Calculates the linear form arising from the weak
+!#         imposition of boundary conditions in 2D
 !#
 !# 50.) hydro_coeffVectorBdr2d_sim
 !#      -> Calculates the coefficients for the linear form in 2D
@@ -213,6 +213,7 @@ module hydro_callback2d
 #define HYDRO_NDIM 2
 #include "hydro.h"
 
+  use basicgeometry
   use boundary
   use boundaryaux
   use boundarycondaux
@@ -222,26 +223,29 @@ module hydro_callback2d
   use domainintegration
   use element
   use feevaluation
-  use flagship_callback
   use fparser
   use fsystem
   use genoutput
   use graph
   use groupfemsystem
-  use hadaptaux
-  use hydro_basic
+  use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
   use mprimitives
+  use paramlist
   use problem
   use scalarpde
   use solveraux
   use spatialdiscretisation
   use storage
 
+  ! Modules from hydrodynamic model
+  use hydro_basic
+
   implicit none
 
   private
+
   public :: hydro_calcFluxGal2d_sim
   public :: hydro_calcFluxGalNoBdr2d_sim
   public :: hydro_calcFluxScDiss2d_sim
@@ -289,10 +293,11 @@ module hydro_callback2d
   public :: hydro_trafoNodalDenPre2d_sim
   public :: hydro_trafoNodalDenPreVel2d_sim
   public :: hydro_calcBoundaryvalues2d
+  public :: hydro_calcBilfBdrCond2d
+  public :: hydro_calcLinfBdrCond2d
   public :: hydro_coeffVectorBdr2d_sim
-  public :: hydro_hadaptCallbackScalar2d
-  public :: hydro_hadaptCallbackBlock2d
   
+  ! CUDA wrapper routines
   public :: hydro_calcDivVecScDiss2d_cuda
   public :: hydro_calcDivMatScDiss2d_cuda
   public :: hydro_calcDivVecScDissDiSp2d_cuda
@@ -7711,6 +7716,255 @@ contains
 
   end subroutine hydro_calcBoundaryvalues2d
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcBilfBdrCond2D(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, ssectionName, fcoeff_buildMatrixScBdr2D_sim,&
+      rmatrix, rcollection, cconstrType)
+
+!<description>
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions in 2D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+    
+    ! callback routine for nonconstant coefficient matrices.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
+
+    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! BILF_MATC_ELEMENTBASED is used.
+    integer, intent(in), optional :: cconstrType
+!</intput>
+
+!<inputoutput>
+    ! matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! At the moment, nothing is done in this subroutine and it should
+    ! not be called. It may be necessary to assemble some bilinear
+    ! forms at the boundary in future.
+
+  end subroutine hydro_calcBilfBdrCond2D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcLinfBdrCond2D(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, ssectionName, fcoeff_buildVectorBlBdr2D_sim,&
+      rvector, rcollection)
+
+!<description>
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions in 2D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+    
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr2D.inc'
+!</intput>
+
+!<inputoutput>
+    ! residual/right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_collection) :: rcollectionTmp
+    type(t_boundaryRegion) :: rboundaryRegion,rboundaryRegionMirror,rregion
+    type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    integer, dimension(:), pointer :: p_IbdrCompPeriodic, p_IbdrCondPeriodic
+    integer :: ibct, isegment, ccubTypeBdr
+
+    ! Evaluate linear form for boundary integral and return if
+    ! there are no weak boundary conditions available
+    if (.not.rboundaryCondition%bWeakBdrCond) return
+
+    ! Check if we are in 2D
+    if (rproblemLevel%rtriangulation%ndim .ne. NDIM2D) then
+      call output_line('Spatial dimension must be 2D!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcLinfBdrCond2D')
+      call sys_halt()
+    end if
+
+    ! Get pointer to parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection,&
+        'rparlist', ssectionName=ssectionName)
+    
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist, ssectionName,&
+        'ccubTypeBdr', ccubTypeBdr)
+
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+    rcollectionTmp%IquickAccess(4) = ccubTypeBdr
+
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+
+    ! Attach solution vector to first quick access vector of the
+    ! temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        rboundaryCondition%rfparser, .true.)
+    
+    
+    ! Set pointers
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx,&
+        p_IbdrCondCpIdx)
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
+        p_IbdrCondType)
+
+    ! Set additional pointers for periodic boundary conditions
+    if (rboundaryCondition%bPeriodic) then
+      call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
+          p_IbdrCompPeriodic)
+      call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic,&
+          p_IbdrCondPeriodic)
+    end if
+    
+    ! Loop over all boundary components
+    do ibct = 1, rboundaryCondition%iboundarycount
+      
+      ! Loop over all boundary segments
+      do isegment = p_IbdrCondCpIdx(ibct), p_IbdrCondCpIdx(ibct+1)-1
+        
+        ! Check if this segment has weak boundary conditions
+        if (iand(p_IbdrCondType(isegment), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+        
+        ! Prepare further quick access arrays of temporal collection
+        ! structure with boundary component, type and maximum expressions
+        rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
+        rcollectionTmp%IquickAccess(2) = isegment
+        rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
+        
+        ! Initialize the linear form
+        rform%itermCount = 1
+        rform%Idescriptors(1) = DER_FUNC
+        
+        ! Create boundary segment in 01-parametrisation
+        call bdrc_createRegion(rboundaryCondition, ibct,&
+            isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+        
+        ! Check if special treatment of mirror boundary condition is required
+        if ((iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
+            (iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
+          
+          ! Create boundary region for mirror boundary in 01-parametrisation
+          call bdrc_createRegion(rboundaryCondition, p_IbdrCompPeriodic(isegment),&
+              p_IbdrCondPeriodic(isegment)-p_IbdrCondCpIdx(p_IbdrCompPeriodic(isegment))+1,&
+              rboundaryRegionMirror)
+          
+          ! Attach boundary regin to temporal collection structure
+          call collct_setvalue_bdreg(rcollectionTmp, 'rboundaryRegionMirror',&
+              rboundaryRegionMirror, .true.)
+
+          ! In the callback-function, the minimum/maximum parameter
+          ! values of the boundary region and its mirrored
+          ! counterpartqq are required in length parametrisation to
+          ! determine the parameter values of the mirrored cubature
+          ! points. Therefore, we make a copy of both boundary
+          ! regions, convert them to length parametrisation and attach
+          ! the minimum/maximum parameter values to the quick access
+          ! arrays of the temporal collection structure.
+          rregion = rboundaryRegion
+          call boundary_convertRegion(&
+              rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
+              rregion, BDR_PAR_LENGTH)
+          
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(3) = rregion%dminParam
+          rcollectionTmp%DquickAccess(4) = rregion%dmaxParam
+
+          rregion = rboundaryRegionMirror
+          call boundary_convertRegion(&
+              rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
+              rregion, BDR_PAR_LENGTH)
+
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(5) = rregion%dminParam
+          rcollectionTmp%DquickAccess(6) = rregion%dmaxParam
+        end if
+
+        ! Assemble the linear form
+        if (rvector%nblocks .eq. 1) then
+          call linf_buildVecIntlScalarBdr2d(rform, ccubTypeBdr, .false.,&
+              rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+        else
+          call linf_buildVectorBlockBdr2d(rform, ccubTypeBdr, .false.,&
+              rvector, fcoeff_buildVectorBlBdr2D_sim,&
+              rboundaryRegion, rcollectionTmp)
+        end if
+        
+      end do ! isegment
+    end do ! ibct
+
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+    
+  end subroutine hydro_calcLinfBdrCond2D
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -8734,277 +8988,5 @@ contains
     end subroutine doEvaluateAtBdrBlock
     
   end subroutine hydro_coeffVectorBdr2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_hadaptCallbackScalar2d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 2D. The solution vector is assumed
-    ! to be store in scalar interleave format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:5):   ivt1,...,ivt5
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: ivar
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion
-      rsolution => rcollection%p_rvectorQuickAccess1
-
-      ! Check if solution is stored in interleave format
-      if (rsolution%nblocks .ne. 1) then
-        call output_line('Vector is not in interleave format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackScalar2d')
-        call sys_halt()
-      end if
-
-      ! Set pointer
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR2D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      do ivar = 1, NVAR2D
-        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            RCONST(0.5)*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
-                         p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR2D+ivar))
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      do ivar = 1, NVAR2D
-        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-            RCONST(0.25)*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
-                          p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR2D+ivar)+&
-                          p_Dsolution((rcollection%IquickAccess(4)-1)*NVAR2D+ivar)+&
-                          p_Dsolution((rcollection%IquickAccess(5)-1)*NVAR2D+ivar))
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        do ivar = 1, NVAR2D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
-              p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)
-        end do
-      else
-        do ivar = 1, NVAR2D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = RCONST(0.0)
-        end do
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-    end select
-
-  end subroutine hydro_hadaptCallbackScalar2d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_hadaptCallbackBlock2d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 2D. The solution vector is assumed
-    ! to be store in block format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:5):   ivt1,...,ivt5
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: ivar,neq
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion
-      rsolution => rcollection%p_rvectorQuickAccess1
-
-      ! Check if solution is stored in interleave format
-      if (rsolution%nblocks .ne. NVAR2D) then
-        call output_line('Vector is not in block format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackBlock2d')
-        call sys_halt()
-      end if
-
-      ! Set pointer
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR2D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*rcollection%IquickAccess(1),&
-            .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      neq = rsolution%NEQ/NVAR2D
-      do ivar = 1, NVAR2D
-        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            RCONST(0.5)*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                         p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_INSERTVERTEXCENTR)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR2D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      neq = rsolution%NEQ/NVAR2D
-      do ivar = 1, NVAR2D
-        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) =&
-            RCONST(0.25)*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3))+&
-                          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(4))+&
-                          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(5)) )
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        neq = rsolution%NEQ/NVAR2D
-        do ivar = 1, NVAR2D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-              p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))
-        end do
-      else
-        neq = rsolution%NEQ/NVAR2D
-        do ivar = 1, NVAR2D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = RCONST(0.0)
-        end do
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback2d(iOperation, rcollection)
-
-    end select
-
-  end subroutine hydro_hadaptCallbackBlock2d
 
 end module hydro_callback2d

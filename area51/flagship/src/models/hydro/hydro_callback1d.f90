@@ -179,13 +179,13 @@
 !# 44.) hydro_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 45.) hydro_hadaptCallbackScalar1d
-!#      -> Performs application specific tasks in the adaptation
-!#         algorithm in 1D, whereby the vector is stored in interleave format
+!# 45.) hydro_calcBilfBdrCond1d
+!#      -> Calculates the bilinear form arising from the weak
+!#         imposition of boundary conditions in 1D
 !#
-!# 46.) hydro_hadaptCallbackBlock1d
-!#      -> Performs application specific tasks in the adaptation
-!#         algorithm in 1D, whereby the vector is stored in block format
+!# 46.) hydro_calcLinfBdrCond1d
+!#      -> Calculates the linear form arising from the weak
+!#         imposition of boundary conditions in 1D
 !#
 !# 47.) hydro_coeffVectorBdr1d_sim
 !#      -> Calculates the coefficients for the linear form in 1D
@@ -198,6 +198,7 @@ module hydro_callback1d
 #define HYDRO_NDIM 1
 #include "hydro.h"
 
+  use basicgeometry
   use boundarycondaux
   use collection
   use derivatives
@@ -209,8 +210,7 @@ module hydro_callback1d
   use genoutput
   use graph
   use groupfemsystem
-  use hadaptaux
-  use hydro_basic
+  use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
   use problem
@@ -219,9 +219,13 @@ module hydro_callback1d
   use spatialdiscretisation
   use storage
 
+  ! Modules from hydrodynamic model
+  use hydro_basic
+
   implicit none
 
   private
+
   public :: hydro_calcFluxGal1d_sim
   public :: hydro_calcFluxGalNoBdr1d_sim
   public :: hydro_calcFluxScDiss1d_sim
@@ -266,9 +270,9 @@ module hydro_callback1d
   public :: hydro_trafoNodalDenPre1d_sim
   public :: hydro_trafoNodalDenPreVel1d_sim
   public :: hydro_calcBoundaryvalues1d
+  public :: hydro_calcBilfBdrCond1d
+  public :: hydro_calcLinfBdrCond1d
   public :: hydro_coeffVectorBdr1d_sim
-  public :: hydro_hadaptCallbackScalar1d
-  public :: hydro_hadaptCallbackBlock1d
 
 contains
 
@@ -4822,6 +4826,183 @@ contains
     end select
 
   end subroutine hydro_calcBoundaryvalues1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcBilfBdrCond1D(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, ssectionName, fcoeff_buildMatrixScBdr1D_sim,&
+      rmatrix, rcollection, cconstrType)
+
+!<description>
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions in 1D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! callback routine for nonconstant coefficient matrices.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr1D.inc'
+
+    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! BILF_MATC_ELEMENTBASED is used.
+    integer, intent(in), optional :: cconstrType
+!</intput>
+
+!<inputoutput>
+    ! matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! At the moment, nothing is done in this subroutine and it should
+    ! not be called. It may be necessary to assemble some bilinear
+    ! forms at the boundary in future.
+
+  end subroutine hydro_calcBilfBdrCond1D
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
+      rsolution, dtime, dscale, ssectionName, fcoeff_buildVectorBlBdr1D_sim,&
+      rvector, rcollection)
+
+!<description>
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions in 1D.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! boundary condition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr1D.inc'
+!</intput>
+
+!<inputoutput>
+    ! residual/right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollectionTmp
+    type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondType
+    integer :: ibct
+
+    ! Evaluate linear form for boundary integral and return if
+    ! there are no weak boundary conditions available
+    if (.not.rboundaryCondition%bWeakBdrCond) return
+
+    ! Check if we are in 1D
+    if (rproblemLevel%rtriangulation%ndim .ne. NDIM1D) then
+      call output_line('Spatial dimension must be 1D!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcLinfBdrCond1D')
+      call sys_halt()
+    end if
+
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+
+    ! Prepare quick access arrays of temporal collection structure
+    rcollectionTmp%SquickAccess(1) = ''
+    rcollectionTmp%SquickAccess(2) = 'rfparser'
+    rcollectionTmp%DquickAccess(1) = dtime
+    rcollectionTmp%DquickAccess(2) = dscale
+    
+    ! Attach user-defined collection structure to temporal collection
+    ! structure (may be required by the callback function)
+    rcollectionTmp%p_rnextCollection => rcollection
+    
+    ! Attach solution vector to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+    
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        rboundaryCondition%rfparser, .true.)
+    
+    
+    ! Set pointers
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
+    
+    ! Loop over all boundary components
+    do ibct = 1, rboundaryCondition%iboundarycount
+      
+      ! Check if this component has weak boundary conditions
+      if (iand(p_IbdrCondType(ibct), BDRC_WEAK) .ne. BDRC_WEAK) cycle
+
+      ! Prepare further quick access arrays of temporal collection
+      ! structure with boundary component, type and maximum expressions
+      rcollectionTmp%IquickAccess(1) = p_IbdrCondType(ibct)
+      rcollectionTmp%IquickAccess(2) = ibct
+      rcollectionTmp%IquickAccess(3) = rboundaryCondition%nmaxExpressions
+      
+      ! Initialize the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! Assemble the linear form
+      if (rvector%nblocks .eq. 1) then
+        call linf_buildVecIntlScalarBdr1d(rform, .false.,&
+            rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr1D_sim,&
+            ibct, rcollectionTmp)
+      else
+        call linf_buildVectorBlockBdr1d(rform, .false.,&
+            rvector, fcoeff_buildVectorBlBdr1D_sim,&
+            ibct, rcollectionTmp)
+      end if
+      
+    end do ! ibct
+    
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+
+  end subroutine hydro_calcLinfBdrCond1D
   
   ! ***************************************************************************
 
@@ -5790,238 +5971,5 @@ contains
     end subroutine doGalerkinFlux
 
   end subroutine hydro_coeffVectorBdr1d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_hadaptCallbackScalar1d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 1D. The solution vector is assumed
-    ! to be store in scalar interleave format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:3):   ivt1,ivt2
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: ivar
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion
-      rsolution => rcollection%p_rvectorQuickAccess1
-
-      ! Check if solution is stored in interleave format
-      if (rsolution%nblocks .ne. 1) then
-        call output_line('Vector is not in interleave format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackScalar1d')
-        call sys_halt()
-      end if
-
-      ! Set pointer
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR1D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR1D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR1D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR1D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      do ivar = 1, NVAR1D
-        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = &
-            RCONST(0.5)*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR1D+ivar)+&
-                    p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR1D+ivar))
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        do ivar = 1, NVAR1D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = &
-              p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR1D+ivar)
-        end do
-      else
-        do ivar = 1, NVAR1D
-          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR1D+ivar) = RCONST(0.0)
-        end do
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-    end select
-
-  end subroutine hydro_hadaptCallbackScalar1d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine hydro_hadaptCallbackBlock1d(iOperation, rcollection)
-
-!<description>
-    ! This callback function is used to perform postprocessing tasks
-    ! such as insertion/removal of elements and or vertices in the
-    ! grid adaptivity procedure in 1D. The solution vector is assumed
-    ! to be store in block format.
-!</description>
-
-!<input>
-    ! Identifier for the grid modification operation
-    integer, intent(in) :: iOperation
-!</input>
-
-!<inputoutput>
-    ! A collection structure to provide additional
-    ! information to the coefficient routine.
-    ! This subroutine assumes the following data:
-    !   rvectorQuickAccess1: solution vector
-    !   IquickAccess(1):     NEQ or ivt
-    !   IquickAccess(2:3):   ivt1,ivt2
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_vectorBlock), pointer, save :: rsolution
-    real(DP), dimension(:), pointer, save :: p_Dsolution
-    integer :: ivar,neq
-
-
-    ! What operation should be performed?
-    select case(iOperation)
-
-    case(HADAPT_OPR_INITCALLBACK)
-      ! Retrieve solution vector from colletion
-      rsolution => rcollection%p_rvectorQuickAccess1
-
-      ! Check if solution is stored in interleave format
-      if (rsolution%nblocks .ne. NVAR1D) then
-        call output_line('Vector is not in block format!',&
-            OU_CLASS_WARNING,OU_MODE_STD,'hydro_hadaptCallbackBlock1d')
-        call sys_halt()
-      end if
-
-      ! Set pointer
-      call lsysbl_getbase_double(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_DONECALLBACK)
-      ! Nullify solution vector
-      nullify(rsolution, p_Dsolution)
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_ADJUSTVERTEXDIM)
-      ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR1D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR1D*rcollection%IquickAccess(1), .false., .true.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-
-
-    case(HADAPT_OPR_INSERTVERTEXEDGE)
-      ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR1D*rcollection%IquickAccess(1)) then
-        call lsysbl_resizeVectorBlock(rsolution,&
-            NVAR1D*rcollection%IquickAccess(1), .false.)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-      end if
-      neq = rsolution%NEQ/NVAR1D
-      do ivar = 1, NVAR1D
-        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-            RCONST(0.5)*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
-                    p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
-      end do
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case(HADAPT_OPR_REMOVEVERTEX)
-      ! Remove vertex from solution
-      if (rcollection%IquickAccess(2) .ne. 0) then
-        neq = rsolution%NEQ/NVAR1D
-        do ivar = 1, NVAR1D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
-              p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))
-        end do
-      else
-        neq = rsolution%NEQ/NVAR1D
-        do ivar = 1, NVAR1D
-          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = RCONST(0.0)
-        end do
-      end if
-
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-
-    case default
-      ! Call the general callback function
-      call flagship_hadaptCallback1d(iOperation, rcollection)
-
-    end select
-
-  end subroutine hydro_hadaptCallbackBlock1d
 
 end module hydro_callback1d
